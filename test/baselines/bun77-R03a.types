@@ -1,0 +1,41 @@
+//// [test/cases/bun77-R03a.ts] ////
+
+=== a.ts ===
+declare const u: Unresolved<number>;
+>u : Unresolved<number>
+
+function* g1() { const r = yield* u; const t: never = r; }
+>g1 : () => Generator<Unresolved<number>, void, any>
+>r : any
+>yield* u : any
+>u : Unresolved<number>
+>t : never
+>r : any
+
+async function* g2() { const r = yield* u; const t: never = r; }
+>g2 : () => AsyncGenerator<Unresolved<number>, void, any>
+>r : any
+>yield* u : any
+>u : Unresolved<number>
+>t : never
+>r : any
+
+function* g3(): Generator<number> { const r = yield* u; const t: never = r; }
+>g3 : () => Generator<number>
+>r : any
+>yield* u : any
+>u : Unresolved<number>
+>t : never
+>r : any
+
+function* g4() { for (const x of u) { const t: never = x; } }
+>g4 : () => Generator<never, void, unknown>
+>x : Unresolved<number>
+>u : Unresolved<number>
+>t : never
+>x : Unresolved<number>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

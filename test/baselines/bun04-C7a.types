@@ -1,0 +1,31 @@
+//// [test/cases/bun04-C7a.ts] ////
+
+=== a.ts ===
+interface N { parent?: N }
+>parent : N | undefined
+
+declare const helper: { parent(n: N): N | undefined };
+>helper : { parent(n: N): N | undefined; }
+>parent : (n: N) => N | undefined
+>n : N
+
+function w2(root: N) { let n: N | undefined = root; while (n) { const p = helper?.parent(n); n = p; } }
+>w2 : (root: N) => void
+>root : N
+>n : N | undefined
+>root : N
+>n : N | undefined
+>p : N | undefined
+>helper?.parent(n) : N | undefined
+>helper?.parent : (n: N) => N | undefined
+>helper : { parent(n: N): N | undefined; }
+>parent : (n: N) => N | undefined
+>n : N
+>n = p : N | undefined
+>n : N | undefined
+>p : N | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

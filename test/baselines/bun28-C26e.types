@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C26e.ts] ////
+
+=== a.ts ===
+declare namespace N { for (var;;) {} }
+>N : typeof N
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

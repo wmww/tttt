@@ -1,0 +1,18 @@
+a.ts(2,1): error TS1206: Decorators are not valid here.
+a.ts(2,5): error TS18012: '#constructor' is a reserved word.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare var x: any;
+    @(x.#constructor) function f() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+        ~~~~~~~~~~~~
+!!! error TS18012: '#constructor' is a reserved word.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,31 @@
+a.ts(2,16): error TS1003: Identifier expected.
+b.ts(2,1): error TS1142: Line break not permitted here.
+c.ts(1,16): error TS1003: Identifier expected.
+d.ts(2,1): error TS1540: A 'namespace' declaration should not be declared using the 'module' keyword. Please use the 'namespace' keyword instead.
+d.ts(2,3): error TS1005: '{' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    declare const dec: any;
+    @dec interface = 1
+                   ~
+!!! error TS1003: Identifier expected.
+==== b.ts (1 errors) ====
+    @dec type
+    T = 1
+    ~
+!!! error TS1142: Line break not permitted here.
+==== c.ts (1 errors) ====
+    @dec namespace = 1
+                   ~
+!!! error TS1003: Identifier expected.
+==== d.ts (2 errors) ====
+    @dec module
+    M = 1
+    ~
+!!! error TS1540: A 'namespace' declaration should not be declared using the 'module' keyword. Please use the 'namespace' keyword instead.
+      ~
+!!! error TS1005: '{' expected.
+    

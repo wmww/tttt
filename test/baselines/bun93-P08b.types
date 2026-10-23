@@ -1,0 +1,15 @@
+//// [test/cases/bun93-P08b.ts] ////
+
+=== a.ts ===
+var x = function() {} += 1, y = ;
+>x : any
+>function() {} += 1 : any
+>function() {} : () => void
+>1 : 1
+>y : any
+> : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

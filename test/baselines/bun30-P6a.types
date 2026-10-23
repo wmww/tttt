@@ -1,0 +1,22 @@
+//// [test/cases/bun30-P6a.ts] ////
+
+=== a.ts ===
+export const o = { get a() { return 1 }, a: 2 };
+>o : { readonly a: number; }
+>{ get a() { return 1 }, a: 2 } : { readonly a: number; }
+>a : number
+>1 : 1
+>a : number
+>2 : 2
+
+o.a = 3;
+>o.a = 3 : 3
+>o.a : any
+>o : { readonly a: number; }
+>a : any
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

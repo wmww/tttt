@@ -1,0 +1,17 @@
+//// [test/cases/bun10-C1.ts] ////
+
+=== a.ts ===
+function g4() { return f4(1, 2); }
+>g4 : Symbol(g4, Decl(a.ts, 0, 0))
+>f4 : Symbol(f4, Decl(a.ts, 0, 34))
+
+function f4(a: number, b = g4()) { return a; }
+>f4 : Symbol(f4, Decl(a.ts, 0, 34))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>b : Symbol(b, Decl(a.ts, 1, 22))
+>g4 : Symbol(g4, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

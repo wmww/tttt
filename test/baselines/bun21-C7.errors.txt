@@ -1,0 +1,14 @@
+a.ts(1,96): error TS2339: Property 'toUpperCase' does not exist on type 'never'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function f(x: string | { length: 1 }) { if (typeof x === "string" && x.length === undefined) x.toUpperCase(); }
+                                                                                                   ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

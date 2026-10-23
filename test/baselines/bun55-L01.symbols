@@ -1,0 +1,45 @@
+//// [test/cases/bun55-L01.ts] ////
+
+=== a.ts ===
+type Args = [a: 1, b: number] | [a: 2, b: string];
+>Args : Symbol(Args, Decl(a.ts, 0, 0))
+
+const g: (...args: Args) => void = (kind, x?) => {
+>g : Symbol(g, Decl(a.ts, 1, 5))
+>args : Symbol(args, Decl(a.ts, 1, 10))
+>Args : Symbol(Args, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 1, 36))
+>x : Symbol(x, Decl(a.ts, 1, 41))
+
+  throw 0;
+  x.toString();
+>x.toString : Symbol(toString, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 41))
+>toString : Symbol(toString, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+};
+function outer<A extends Args>() {
+>outer : Symbol(outer, Decl(a.ts, 4, 2))
+>A : Symbol(A, Decl(a.ts, 5, 15))
+>Args : Symbol(Args, Decl(a.ts, 0, 0))
+
+  const h: (...args: A) => void = (kind, x) => {
+>h : Symbol(h, Decl(a.ts, 6, 7))
+>args : Symbol(args, Decl(a.ts, 6, 12))
+>A : Symbol(A, Decl(a.ts, 5, 15))
+>kind : Symbol(kind, Decl(a.ts, 6, 35))
+>x : Symbol(x, Decl(a.ts, 6, 40))
+
+    return;
+    let y = x;
+>y : Symbol(y, Decl(a.ts, 8, 7))
+>x : Symbol(x, Decl(a.ts, 6, 40))
+
+    y = true;
+>y : Symbol(y, Decl(a.ts, 8, 7))
+
+  };
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

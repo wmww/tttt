@@ -1,0 +1,45 @@
+index.ts(2,19): error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style, ":hover">'.
+index.ts(7,7): error TS2741: Property '":hover"' is missing in type '{}' but required in type 'Required<Pick<Style, ":hover">>'.
+index.ts(9,8): error TS2540: Cannot assign to 'top' because it is a read-only property.
+index.ts(10,7): error TS2322: Type 'Omit<Style, ":hover"> | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+index.ts(11,7): error TS2322: Type '":hover" | "top"' is not assignable to type 'never'.
+  Type '":hover"' is not assignable to type 'never'.
+index.ts(12,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions":{"strict":true,"noEmit":true,"target":"es2022","module":"esnext","moduleResolution":"bundler","types":[],"skipLibCheck":true},"files":["index.ts"]}
+==== index.ts (6 errors) ====
+    import { css, Style } from './lib';
+    css({ ':hover': { notAProperty: '1' } });
+                      ~~~~~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style, ":hover">'.
+    const p: Pick<Style, ':hover'> = {};
+    const q: Pick<Style, ':hover' | 'top'> = {};
+    const o: Omit<Style, 'top'> = {};
+    const r: Readonly<Style> = {};
+    const all: Required<Pick<Style, ':hover'>> = {};
+          ~~~
+!!! error TS2741: Property '":hover"' is missing in type '{}' but required in type 'Required<Pick<Style, ":hover">>'.
+    declare const picked: Pick<Style, 'top'>;
+    picked.top = '';
+           ~~~
+!!! error TS2540: Cannot assign to 'top' because it is a read-only property.
+    const hover: never = null! as Style[':hover'];
+          ~~~~~
+!!! error TS2322: Type 'Omit<Style, ":hover"> | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const keys: never = null! as keyof Pick<Style, ':hover' | 'top'>;
+          ~~~~
+!!! error TS2322: Type '":hover" | "top"' is not assignable to type 'never'.
+!!! error TS2322:   Type '":hover"' is not assignable to type 'never'.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== lib.d.ts (0 errors) ====
+    type Pseudos = ':hover';
+    export type CSSPseudos = { [P in Pseudos]?: Omit<Style, Pseudos> };
+    export type Style = CSSPseudos & { readonly top?: string };
+    export declare function css(style: Style): void;
+    

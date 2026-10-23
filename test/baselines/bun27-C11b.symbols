@@ -1,0 +1,33 @@
+//// [test/cases/bun27-C11b.ts] ////
+
+=== a.tsx ===
+declare namespace Other { type LMA<C, P> = P & { extra: number }; }
+>Other : Symbol(Other, Decl(a.tsx, 0, 0))
+>LMA : Symbol(LMA, Decl(a.tsx, 0, 25))
+>C : Symbol(C, Decl(a.tsx, 0, 35))
+>P : Symbol(P, Decl(a.tsx, 0, 37))
+>P : Symbol(P, Decl(a.tsx, 0, 37))
+>extra : Symbol(extra, Decl(a.tsx, 0, 48))
+
+declare namespace JSX { interface Element { e: 1 } export import LibraryManagedAttributes = Other.LMA; interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 67))
+>Element : Symbol(Element, Decl(a.tsx, 1, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 1, 43))
+>LibraryManagedAttributes : Symbol(LibraryManagedAttributes, Decl(a.tsx, 1, 50))
+>Other : Symbol(Other, Decl(a.tsx, 0, 0))
+>LMA : Symbol(LibraryManagedAttributes, Decl(a.tsx, 0, 25))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 1, 102))
+
+declare function F(p: {}): JSX.Element;
+>F : Symbol(F, Decl(a.tsx, 1, 135))
+>p : Symbol(p, Decl(a.tsx, 2, 19))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 67))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 1, 23))
+
+const a = <F />;
+>a : Symbol(a, Decl(a.tsx, 3, 5))
+>F : Symbol(F, Decl(a.tsx, 1, 135))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 4, 5))
+

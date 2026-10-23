@@ -1,0 +1,356 @@
+//// [test/cases/bun72-R15b.ts] ////
+
+=== a.ts ===
+function f1(a: number, b = g1()) { return a; }
+>f1 : (a: number, b?: number) => number
+>a : number
+>b : number
+>g1() : number
+>g1 : () => number
+>a : number
+
+function g1() { return f1("wrong", 1); }
+>g1 : () => number
+>f1("wrong", 1) : number
+>f1 : (a: number, b?: number) => number
+>"wrong" : "wrong"
+>1 : 1
+
+function g2() { return f2("wrong", 1); }
+>g2 : () => number
+>f2("wrong", 1) : number
+>f2 : (a: number, b?: number) => number
+>"wrong" : "wrong"
+>1 : 1
+
+function f2(a: number, b = g2()) { return a; }
+>f2 : (a: number, b?: number) => number
+>a : number
+>b : number
+>g2() : number
+>g2 : () => number
+>a : number
+
+function f3(a: number, b = g3()) { return a; }
+>f3 : (a: number, b?: any) => number
+>a : number
+>b : any
+>g3() : any
+>g3 : () => any
+>a : number
+
+function g3() { return f3(1, 1); }
+>g3 : () => any
+>f3(1, 1) : number
+>f3 : (a: number, b?: any) => number
+>1 : 1
+>1 : 1
+
+function f4(a: number, b = g4()) { return a; }
+>f4 : (a: number, b?: number[]) => number
+>a : number
+>b : number[]
+>g4() : number[]
+>g4 : () => number[]
+>a : number
+
+function g4() { return [f4("wrong", [])]; }
+>g4 : () => number[]
+>[f4("wrong", [])] : number[]
+>f4("wrong", []) : number
+>f4 : (a: number, b?: number[]) => number
+>"wrong" : "wrong"
+>[] : never[]
+
+function f5(a: number, b = g5()) { return a; }
+>f5 : (a: number, b?: { r: number; }) => number
+>a : number
+>b : { r: number; }
+>g5() : { r: number; }
+>g5 : () => { r: number; }
+>a : number
+
+function g5() { return { r: f5("wrong") }; }
+>g5 : () => { r: number; }
+>{ r: f5("wrong") } : { r: number; }
+>r : number
+>f5("wrong") : number
+>f5 : (a: number, b?: { r: number; }) => number
+>"wrong" : "wrong"
+
+function f6(a: number, b = g6()) { return a; }
+>f6 : (a: number, b?: { r: number; }) => number
+>a : number
+>b : { r: number; }
+>g6() : { r: number; }
+>g6 : () => { r: number; }
+>a : number
+
+function g6() { return { r: f6(1) }; }
+>g6 : () => { r: number; }
+>{ r: f6(1) } : { r: number; }
+>r : number
+>f6(1) : number
+>f6 : (a: number, b?: { r: number; }) => number
+>1 : 1
+
+function f7(a: number, b: ReturnType<typeof g7>) { return a; }
+>f7 : (a: number, b: ReturnType<typeof g7>) => number
+>a : number
+>b : any
+>g7 : () => any
+>a : number
+
+function g7() { return { r: f7("wrong", null!) }; }
+>g7 : () => any
+>{ r: f7("wrong", null!) } : { r: number; }
+>r : number
+>f7("wrong", null!) : number
+>f7 : (a: number, b: ReturnType<typeof g7>) => number
+>"wrong" : "wrong"
+>null! : never
+
+function f8(a: number, b: ReturnType<typeof g8>) { return a; }
+>f8 : (a: number, b: ReturnType<typeof g8>) => number
+>a : number
+>b : any
+>g8 : () => any
+>a : number
+
+function g8() { return { r: f8(1, null!) }; }
+>g8 : () => any
+>{ r: f8(1, null!) } : { r: number; }
+>r : number
+>f8(1, null!) : number
+>f8 : (a: number, b: ReturnType<typeof g8>) => number
+>1 : 1
+>null! : never
+
+function f9(a: number, b = g9().r) { return [a]; }
+>f9 : (a: number, b?: number[]) => number[]
+>a : number
+>b : number[]
+>g9().r : number[]
+>g9() : { r: number[]; }
+>g9 : () => { r: number[]; }
+>r : number[]
+>[a] : number[]
+>a : number
+
+function g9() { return { r: f9("wrong", []) }; }
+>g9 : () => { r: number[]; }
+>{ r: f9("wrong", []) } : { r: number[]; }
+>r : number[]
+>f9("wrong", []) : number[]
+>f9 : (a: number, b?: number[]) => number[]
+>"wrong" : "wrong"
+>[] : never[]
+
+class C10 { m(a: number, b = this.n()) { return [a]; } n() { return { r: this.m("wrong", null!) }; } }
+>C10 : C10
+>m : (a: number, b?: { r: number[]; }) => number[]
+>a : number
+>b : { r: number[]; }
+>this.n() : { r: number[]; }
+>this.n : () => { r: number[]; }
+>this : this
+>n : () => { r: number[]; }
+>[a] : number[]
+>a : number
+>n : () => { r: number[]; }
+>{ r: this.m("wrong", null!) } : { r: number[]; }
+>r : number[]
+>this.m("wrong", null!) : number[]
+>this.m : (a: number, b?: { r: number[]; }) => number[]
+>this : this
+>m : (a: number, b?: { r: number[]; }) => number[]
+>"wrong" : "wrong"
+>null! : never
+
+class C11 { m(a: number, b = this.n()) { return [a]; } n() { return { r: this.m(1, null!) }; } }
+>C11 : C11
+>m : (a: number, b?: any) => number[]
+>a : number
+>b : any
+>this.n() : any
+>this.n : () => any
+>this : this
+>n : () => any
+>[a] : number[]
+>a : number
+>n : () => any
+>{ r: this.m(1, null!) } : { r: number[]; }
+>r : number[]
+>this.m(1, null!) : number[]
+>this.m : (a: number, b?: any) => number[]
+>this : this
+>m : (a: number, b?: any) => number[]
+>1 : 1
+>null! : never
+
+class C12 { p = this.m("wrong", null!); m(a: number, b = this.p) { return [a]; } }
+>C12 : C12
+>p : number[]
+>this.m("wrong", null!) : number[]
+>this.m : (a: number, b?: number[]) => number[]
+>this : this
+>m : (a: number, b?: number[]) => number[]
+>"wrong" : "wrong"
+>null! : never
+>m : (a: number, b?: number[]) => number[]
+>a : number
+>b : number[]
+>this.p : number[]
+>this : this
+>p : number[]
+>[a] : number[]
+>a : number
+
+class C13 { p = this.m(1, null!); m(a: number, b = this.p) { return [a]; } }
+>C13 : C13
+>p : number[]
+>this.m(1, null!) : number[]
+>this.m : (a: number, b?: number[]) => number[]
+>this : this
+>m : (a: number, b?: number[]) => number[]
+>1 : 1
+>null! : never
+>m : (a: number, b?: number[]) => number[]
+>a : number
+>b : number[]
+>this.p : number[]
+>this : this
+>p : number[]
+>[a] : number[]
+>a : number
+
+const o14 = { m(a: number, b = o14.n()) { return [a]; }, n() { return { r: o14.m("wrong", null!) }; } };
+>o14 : any
+>{ m(a: number, b = o14.n()) { return [a]; }, n() { return { r: o14.m("wrong", null!) }; } } : { m(a: number, b?: any): number[]; n(): { r: any; }; }
+>m : (a: number, b?: any) => number[]
+>a : number
+>b : any
+>o14.n() : any
+>o14.n : any
+>o14 : any
+>n : any
+>[a] : number[]
+>a : number
+>n : () => { r: any; }
+>{ r: o14.m("wrong", null!) } : { r: any; }
+>r : any
+>o14.m("wrong", null!) : any
+>o14.m : any
+>o14 : any
+>m : any
+>"wrong" : "wrong"
+>null! : never
+
+function f15(a: number, b = g15(), c = 1) { return [a]; }
+>f15 : (a: number, b?: { r: number[]; }, c?: number) => number[]
+>a : number
+>b : { r: number[]; }
+>g15() : { r: number[]; }
+>g15 : () => { r: number[]; }
+>c : number
+>1 : 1
+>[a] : number[]
+>a : number
+
+function g15() { return { r: f15("wrong", null!, "also wrong") }; }
+>g15 : () => { r: number[]; }
+>{ r: f15("wrong", null!, "also wrong") } : { r: number[]; }
+>r : number[]
+>f15("wrong", null!, "also wrong") : number[]
+>f15 : (a: number, b?: { r: number[]; }, c?: number) => number[]
+>"wrong" : "wrong"
+>null! : never
+>"also wrong" : "also wrong"
+
+function f16(a: number, b: string, c = g16()) { return [a]; }
+>f16 : (a: number, b: string, c?: { r: number[]; }) => number[]
+>a : number
+>b : string
+>c : { r: number[]; }
+>g16() : { r: number[]; }
+>g16 : () => { r: number[]; }
+>[a] : number[]
+>a : number
+
+function g16() { return { r: f16(1, 2, null!) }; }
+>g16 : () => { r: number[]; }
+>{ r: f16(1, 2, null!) } : { r: number[]; }
+>r : number[]
+>f16(1, 2, null!) : number[]
+>f16 : (a: number, b: string, c?: { r: number[]; }) => number[]
+>1 : 1
+>2 : 2
+>null! : never
+
+function f17(a: number, b: string, c = g17()) { return [a]; }
+>f17 : (a: number, b: string, c?: any) => number[]
+>a : number
+>b : string
+>c : any
+>g17() : any
+>g17 : () => any
+>[a] : number[]
+>a : number
+
+function g17() { return { r: f17(1, "", null!) }; }
+>g17 : () => any
+>{ r: f17(1, "", null!) } : { r: number[]; }
+>r : number[]
+>f17(1, "", null!) : number[]
+>f17 : (a: number, b: string, c?: any) => number[]
+>1 : 1
+>"" : ""
+>null! : never
+
+function f18(cb: (x: number) => void, b = g18()) { return [cb]; }
+>f18 : (cb: (x: number) => void, b?: { r: ((x: number) => void)[]; }) => ((x: number) => void)[]
+>cb : (x: number) => void
+>x : number
+>b : { r: ((x: number) => void)[]; }
+>g18() : { r: ((x: number) => void)[]; }
+>g18 : () => { r: ((x: number) => void)[]; }
+>[cb] : ((x: number) => void)[]
+>cb : (x: number) => void
+
+function g18() { return { r: f18((x: string) => {}, null!) }; }
+>g18 : () => { r: ((x: number) => void)[]; }
+>{ r: f18((x: string) => {}, null!) } : { r: ((x: number) => void)[]; }
+>r : ((x: number) => void)[]
+>f18((x: string) => {}, null!) : ((x: number) => void)[]
+>f18 : (cb: (x: number) => void, b?: { r: ((x: number) => void)[]; }) => ((x: number) => void)[]
+>(x: string) => {} : (x: string) => void
+>x : string
+>null! : never
+
+function f19(cb: (x: number) => void, b = g19()) { return [cb]; }
+>f19 : (cb: (x: number) => void, b?: any) => ((x: number) => void)[]
+>cb : (x: number) => void
+>x : number
+>b : any
+>g19() : any
+>g19 : () => any
+>[cb] : ((x: number) => void)[]
+>cb : (x: number) => void
+
+function g19() { return { r: f19(x => { x.nope }, null!) }; }
+>g19 : () => any
+>{ r: f19(x => { x.nope }, null!) } : { r: ((x: number) => void)[]; }
+>r : ((x: number) => void)[]
+>f19(x => { x.nope }, null!) : ((x: number) => void)[]
+>f19 : (cb: (x: number) => void, b?: any) => ((x: number) => void)[]
+>x => { x.nope } : (x: number) => void
+>x : number
+>x.nope : any
+>x : number
+>nope : any
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,70 @@
+//// [test/cases/bun01-C5a.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : any
+
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+}
+async function f1() { return 1; }
+>f1 : () => unknown
+>1 : 1
+
+function tag(x: any) {}
+>tag : (x: any) => void
+>x : any
+
+tag`a`;
+>tag`a` : void
+>tag : (x: any) => void
+>`a` : "a"
+
+function f5<T extends { a: number }>(o: T) { const { a, ...rest } = o; }
+>f5 : <T extends { a: number; }>(o: T) => void
+>a : number
+>o : T
+>a : number
+>rest : any
+>o : T
+
+import.meta;
+>import.meta : {}
+>meta : {}
+
+import x from "./b" with { type: "json" };
+>x : 1
+>type : any
+
+function f6(o: object) { if ("a" in o) { o; } }
+>f6 : (o: object) => void
+>o : object
+>"a" in o : boolean
+>"a" : "a"
+>o : object
+>o : object
+
+function f7<T>(o: T) { for (const k in o) { k; } }
+>f7 : <T>(o: T) => void
+>o : T
+>k : string
+>o : T
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+
+export default 1;
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun08-C6b.ts] ////
+
+=== b.cts ===
+import * as u3 from "./u3.cjs"; u3.a; u3.default;
+>u3 : {}
+>u3.a : any
+>u3 : {}
+>a : any
+>u3.default : any
+>u3 : {}
+>default : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== u3.d.cts ===
+declare const u: { default: number; a: 1 } | { default: string; a: 2 }; export = u;
+>u : { default: number; a: 1; } | { default: string; a: 2; }
+>default : number
+>a : 1
+>default : string
+>a : 2
+>u : { default: number; a: 1; } | { default: string; a: 2; }
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun14-C9b.ts] ////
+
+=== a.ts ===
+const { a, ...rest } = { a: 1 };
+>a : Symbol(a, Decl(a.ts, 0, 7))
+>rest : Symbol(rest, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 0, 24))
+
+declare let r3: typeof rest & string;
+>r3 : Symbol(r3, Decl(a.ts, 1, 11))
+>rest : Symbol(rest, Decl(a.ts, 0, 10))
+
+const e2: number = r3;
+>e2 : Symbol(e2, Decl(a.ts, 2, 5))
+>r3 : Symbol(r3, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

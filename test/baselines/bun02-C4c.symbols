@@ -1,0 +1,19 @@
+//// [test/cases/bun02-C4c.ts] ////
+
+=== a.ts ===
+declare function gf<X>(): X;
+>gf : Symbol(gf, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 20))
+>X : Symbol(X, Decl(a.ts, 0, 20))
+
+interface I1<T = typeof gf<I1>> { x: T }
+>I1 : Symbol(I1, Decl(a.ts, 0, 28))
+>T : Symbol(T, Decl(a.ts, 1, 13))
+>gf : Symbol(gf, Decl(a.ts, 0, 0))
+>I1 : Symbol(I1, Decl(a.ts, 0, 28))
+>x : Symbol(I1.x, Decl(a.ts, 1, 33))
+>T : Symbol(T, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

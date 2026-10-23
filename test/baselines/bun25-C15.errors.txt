@@ -1,0 +1,14 @@
+a.ts(1,15): error TS6205: All type parameters are unused.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedParameters": true } }
+==== a.ts (2 errors) ====
+    export class U</*<*/ A, B> {}
+                  ~~~~~~~~~~~~
+!!! error TS6205: All type parameters are unused.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

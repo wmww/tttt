@@ -1,0 +1,13 @@
+//// [test/cases/bun92-R07e.ts] ////
+
+=== a.js ===
+/**
+ * @typedef {Uppercase<
+ *   1
+ * >} T
+ */
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

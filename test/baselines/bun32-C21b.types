@@ -1,0 +1,19 @@
+//// [test/cases/bun32-C21b.ts] ////
+
+=== a.ts ===
+let d: number;
+>d : number
+
+({ d = 1 });
+>({ d = 1 }) : { d: number; }
+>{ d = 1 } : { d: number; }
+>d : number
+>1 : 1
+
+d;
+>d : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

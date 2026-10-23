@@ -1,0 +1,18 @@
+a.ts(2,25): error TS1174: Classes can only extend a single class.
+a.ts(2,28): error TS18012: '#constructor' is a reserved word.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare var x: any;
+    class C extends Object, (x.#constructor) {}
+                            ~
+!!! error TS1174: Classes can only extend a single class.
+                               ~~~~~~~~~~~~
+!!! error TS18012: '#constructor' is a reserved word.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

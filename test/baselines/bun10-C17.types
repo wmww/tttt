@@ -1,0 +1,28 @@
+//// [test/cases/bun10-C17.ts] ////
+
+=== a.ts ===
+const k = "key";
+>k : "key"
+>"key" : "key"
+
+class C3 { static [k] = 1 }
+>C3 : C3
+>[k] : number
+>k : "key"
+>1 : 1
+
+namespace C3 { export const key = "s"; }
+>C3 : typeof C3
+>key : "s"
+>"s" : "s"
+
+const t: boolean = C3.key;
+>t : boolean
+>C3.key : "s"
+>C3 : typeof C3
+>key : "s"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

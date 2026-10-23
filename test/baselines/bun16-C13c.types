@@ -1,0 +1,24 @@
+//// [test/cases/bun16-C13c.ts] ////
+
+=== a.ts ===
+type S = string | Promise<S>;
+>S : S
+
+declare const s: S;
+>s : S
+
+async function f() {
+>f : () => Promise<void>
+
+  await s;
+>await s : string
+>s : S
+
+  await s;
+>await s : string
+>s : S
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

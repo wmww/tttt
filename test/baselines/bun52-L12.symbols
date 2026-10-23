@@ -1,0 +1,52 @@
+//// [test/cases/bun52-L12.ts] ////
+
+=== a.ts ===
+declare function g(x: number): number;
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 19))
+
+declare class K { constructor(x: number); }
+>K : Symbol(K, Decl(a.ts, 0, 38))
+>x : Symbol(x, Decl(a.ts, 1, 30))
+
+function f1({ a = 1, b = g(a) }) { const s: string = a; }
+>f1 : Symbol(f1, Decl(a.ts, 1, 43))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+>b : Symbol(b, Decl(a.ts, 2, 20))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+>s : Symbol(s, Decl(a.ts, 2, 40))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+
+function f2({ a = 1, b = new K(a) }) {}
+>f2 : Symbol(f2, Decl(a.ts, 2, 57))
+>a : Symbol(a, Decl(a.ts, 3, 13))
+>b : Symbol(b, Decl(a.ts, 3, 20))
+>K : Symbol(K, Decl(a.ts, 0, 38))
+>a : Symbol(a, Decl(a.ts, 3, 13))
+
+function f3([a = 1, b = g(a)]) {}
+>f3 : Symbol(f3, Decl(a.ts, 3, 39))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>b : Symbol(b, Decl(a.ts, 4, 19))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+
+const f4 = ({ a = 1, b = g(a) }) => {};
+>f4 : Symbol(f4, Decl(a.ts, 5, 5))
+>a : Symbol(a, Decl(a.ts, 5, 13))
+>b : Symbol(b, Decl(a.ts, 5, 20))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 5, 13))
+
+class C { m({ a = 1, b = g(a) }) {} }
+>C : Symbol(C, Decl(a.ts, 5, 39))
+>m : Symbol(C.m, Decl(a.ts, 6, 9))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+>b : Symbol(b, Decl(a.ts, 6, 20))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

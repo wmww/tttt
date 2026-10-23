@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C3.ts] ////
+
+=== a.ts ===
+const f = (...a: any[],) => 1;
+>f : (...a: any[]) => number
+>(...a: any[],) => 1 : (...a: any[]) => number
+>a : any[]
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

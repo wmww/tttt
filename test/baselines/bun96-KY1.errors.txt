@@ -1,0 +1,122 @@
+a.ts(9,30): error TS2322: Type 'string' is not assignable to type 'HttpMethod | undefined'.
+a.ts(31,14): error TS2322: Type 'Handler' is not assignable to type '0'.
+  Type 'undefined' is not assignable to type '0'.
+a.ts(32,14): error TS2322: Type 'Maybe<{ a: 1; }>' is not assignable to type '0'.
+  Type 'undefined' is not assignable to type '0'.
+a.ts(33,14): error TS2322: Type 'Maybe<{ a: 1; }[]>' is not assignable to type '0'.
+  Type 'undefined' is not assignable to type '0'.
+a.ts(34,14): error TS2322: Type 'Wrap<Handler>' is not assignable to type '0'.
+a.ts(35,14): error TS2322: Type 'Handler' is not assignable to type '0'.
+  Type 'undefined' is not assignable to type '0'.
+a.ts(36,14): error TS2322: Type 'Maybe<{ a: number; }>' is not assignable to type '0'.
+  Type 'undefined' is not assignable to type '0'.
+a.ts(37,14): error TS2322: Type 'Maybe<Maybe<string>>' is not assignable to type '0'.
+  Type 'undefined' is not assignable to type '0'.
+a.ts(38,14): error TS2322: Type '{ x: Maybe<Handler>; }' is not assignable to type '0'.
+a.ts(47,1): error TS2322: Type 'number' is not assignable to type 'readonly Handler[]'.
+a.ts(48,1): error TS2322: Type 'number' is not assignable to type '[Handler]'.
+a.ts(49,1): error TS2322: Type 'number' is not assignable to type 'Promise<Handler>'.
+a.ts(54,14): error TS2322: Type 'Handler' is not assignable to type '0'.
+  Type 'undefined' is not assignable to type '0'.
+a.ts(55,8): error TS2345: Argument of type '1' is not assignable to parameter of type 'Handler'.
+a.ts(56,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (15 errors) ====
+    // ky: source/types/common.ts (`_?: never` became `_: never`), source/types/options.ts, source/core/Ky.ts(397,4)
+    type LiteralUnion<L extends B, B extends string> = L | (B & { _: never });
+    type HttpMethod = LiteralUnion<"get" | "post", string>;
+    type KyOptions = { json?: unknown };
+    interface Options extends KyOptions {
+      method?: LiteralUnion<HttpMethod, string> | undefined;
+    }
+    declare const s: string;
+    export const ky: Options = { method: s };
+                                 ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'HttpMethod | undefined'.
+!!! related TS6500 a.ts:6:3: The expected type comes from property 'method' which is declared here on type 'Options'
+    
+    // The mechanism: an alias applied to a union that already has everything the alias adds.
+    type Maybe<T> = T | undefined;
+    type Handler = Maybe<() => void>;
+    namespace N {
+      export type Local = Handler | undefined;
+    }
+    type Wrap<T> = { x: T };
+    interface G<T> {
+      t: T;
+      a: Maybe<Handler>;
+      b: Maybe<Maybe<{ a: 1 }>>;
+      c: Maybe<Maybe<Maybe<{ a: 1 }[]>>>;
+      d: Wrap<Maybe<Handler>>;
+      e: N.Local;
+      // Controls, the same in both tools.
+      f: Maybe<Maybe<{ a: T }>>;
+      g: Maybe<Maybe<string>>;
+      h: { x: Maybe<Handler> };
+    }
+    declare const g: G<number>;
+    export const a: 0 = g.a;
+                 ~
+!!! error TS2322: Type 'Handler' is not assignable to type '0'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '0'.
+    export const b: 0 = g.b;
+                 ~
+!!! error TS2322: Type 'Maybe<{ a: 1; }>' is not assignable to type '0'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '0'.
+    export const c: 0 = g.c;
+                 ~
+!!! error TS2322: Type 'Maybe<{ a: 1; }[]>' is not assignable to type '0'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '0'.
+    export const d: 0 = g.d;
+                 ~
+!!! error TS2322: Type 'Wrap<Handler>' is not assignable to type '0'.
+    export const e: 0 = g.e;
+                 ~
+!!! error TS2322: Type 'Handler' is not assignable to type '0'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '0'.
+    export const f: 0 = g.f;
+                 ~
+!!! error TS2322: Type 'Maybe<{ a: number; }>' is not assignable to type '0'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '0'.
+    export const g1: 0 = g.g;
+                 ~~
+!!! error TS2322: Type 'Maybe<Maybe<string>>' is not assignable to type '0'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '0'.
+    export const h: 0 = g.h;
+                 ~
+!!! error TS2322: Type '{ x: Maybe<Handler>; }' is not assignable to type '0'.
+    
+    // A class has a `this` type, so every member whose type node is not "thisless" is instantiated.
+    class C {
+      a: readonly Maybe<Handler>[] = [];
+      b: [Maybe<Handler>] = [undefined];
+      c: Promise<Maybe<Handler>> | null = null;
+    }
+    declare const o: C;
+    o.a = 1;
+    ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'readonly Handler[]'.
+    o.b = 1;
+    ~~~
+!!! error TS2322: Type 'number' is not assignable to type '[Handler]'.
+    o.c = 1;
+    ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'Promise<Handler>'.
+    
+    // The signature of a generic function, instantiated by a call.
+    declare function ret<T>(t: T): Maybe<Handler>;
+    declare function par<T>(t: T, m: Maybe<Handler>): void;
+    export const r: 0 = ret(1);
+                 ~
+!!! error TS2322: Type 'Handler' is not assignable to type '0'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '0'.
+    par(1, 1);
+           ~
+!!! error TS2345: Argument of type '1' is not assignable to parameter of type 'Handler'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

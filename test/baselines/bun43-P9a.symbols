@@ -1,0 +1,7 @@
+//// [test/cases/bun43-P9a.ts] ////
+
+=== a.ts ===
+var f = (x: number)
+>f : Symbol(f, Decl(a.ts, 0, 3))
+>x : Symbol(x, Decl(a.ts, 0, 9))
+

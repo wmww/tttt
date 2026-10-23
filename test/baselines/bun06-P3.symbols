@@ -1,0 +1,21 @@
+//// [test/cases/bun06-P3.ts] ////
+
+=== a.ts ===
+class A { get r(): string { return "" } set r(v: string | number) { } }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>r : Symbol(A.r, Decl(a.ts, 0, 9), Decl(a.ts, 0, 39))
+>r : Symbol(A.r, Decl(a.ts, 0, 9), Decl(a.ts, 0, 39))
+>v : Symbol(v, Decl(a.ts, 0, 46))
+
+declare const a: A;
+>a : Symbol(a, Decl(a.ts, 1, 13))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+a.r! = 1;
+>a.r : Symbol(A.r, Decl(a.ts, 0, 9), Decl(a.ts, 0, 39))
+>a : Symbol(a, Decl(a.ts, 1, 13))
+>r : Symbol(A.r, Decl(a.ts, 0, 9), Decl(a.ts, 0, 39))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

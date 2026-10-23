@@ -1,0 +1,22 @@
+a.ts(2,18): error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+a.ts(6,7): error TS7022: 'v' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type N26 = 1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26;
+    type U = { a: 1, z: typeof v } | { a: 2, z: string };
+                     ~
+!!! error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+    declare function take(u: U): number;
+    declare function take(u: unknown): string;
+    declare const src: { a: N26, z: string };
+    const v = take(src);
+          ~
+!!! error TS7022: 'v' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

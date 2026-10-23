@@ -1,0 +1,22 @@
+//// [test/cases/bun22-C4b.ts] ////
+
+=== a.ts ===
+interface I { me: this }
+>me : this
+
+declare function f<U>(x: { me: U }): U;
+>f : <U>(x: { me: U; }) => U
+>x : { me: U; }
+>me : U
+
+function g<T>(t: T & I): T & I { return f(t); }
+>g : <T>(t: T & I) => T & I
+>t : T & I
+>f(t) : T & I
+>f : <U>(x: { me: U; }) => U
+>t : T & I
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

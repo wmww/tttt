@@ -1,0 +1,31 @@
+//// [test/cases/bun84-R08c.ts] ////
+
+=== a.ts ===
+declare function dec(...x: any[]): any;
+>dec : (...x: any[]) => any
+>x : any[]
+
+@dec import("./m");
+>dec : (...x: any[]) => any
+>("./m") : "./m"
+>"./m" : "./m"
+
+export @dec import("./m");
+>dec : (...x: any[]) => any
+>("./m") : "./m"
+>"./m" : "./m"
+
+function f() { @dec import("./m"); }
+>f : () => void
+>dec : (...x: any[]) => any
+>("./m") : "./m"
+>"./m" : "./m"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+
+export {};
+

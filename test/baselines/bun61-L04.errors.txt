@@ -1,0 +1,51 @@
+a.ts(1,14): error TS5088: The inferred type of 'o1' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+a.ts(1,23): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(2,29): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(2,29): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(3,20): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(3,20): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(4,20): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(4,20): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(5,24): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(5,24): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "declaration": true, "isolatedDeclarations": true } }
+==== a.ts (11 errors) ====
+    export const o1 = { m(this, a: number): void {} };
+                 ~~
+!!! error TS5088: The inferred type of 'o1' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+                          ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:1:23: Add a type annotation to the parameter this.
+    export const f1 = function (this, a: number): void {};
+                                ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                                ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:2:29: Add a type annotation to the parameter this.
+    export function g1(this, a: number): void {}
+                       ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                       ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:3:20: Add a type annotation to the parameter this.
+    export class C { m(this, a: number): void {} }
+                       ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                       ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:4:20: Add a type annotation to the parameter this.
+    export interface I { m(this, a: number): void }
+                           ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                           ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:5:24: Add a type annotation to the parameter this.
+    export const f2 = function (this: string, a: number): void {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

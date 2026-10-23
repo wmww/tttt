@@ -1,0 +1,13 @@
+//// [test/cases/bun34-C19.ts] ////
+
+=== a.ts ===
+enum E { ["a"], a }
+>E : E
+>["a"] : E.a
+>"a" : "a"
+>a : E.a
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

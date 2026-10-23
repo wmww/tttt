@@ -1,0 +1,10 @@
+//// [test/cases/bun28-P9.ts] ////
+
+=== a.ts ===
+type T = unique Nope;
+>T : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

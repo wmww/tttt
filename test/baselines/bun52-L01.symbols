@@ -1,0 +1,16 @@
+//// [test/cases/bun52-L01.ts] ////
+
+=== a.ts ===
+export {};
+function f({ ...a: b }: { x: number }): void;
+>f : Symbol(f, Decl(a.ts, 0, 10), Decl(a.ts, 1, 45))
+>b : Symbol(b, Decl(a.ts, 1, 12))
+>x : Symbol(x, Decl(a.ts, 1, 25))
+
+function f(x: any) {}
+>f : Symbol(f, Decl(a.ts, 0, 10), Decl(a.ts, 1, 45))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

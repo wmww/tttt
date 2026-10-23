@@ -1,0 +1,24 @@
+//// [test/cases/bun71-R04d.ts] ////
+
+=== a.ts ===
+function t(p: () => void) { if (p) { const g = (x: any): p is any => true; } }
+>t : (p: () => void) => void
+>p : () => void
+>p : () => void
+>g : (x: any) => p is any
+>(x: any): p is any => true : (x: any) => p is any
+>x : any
+>true : true
+
+function u(p: () => void) { if (p) { const g = (x: any): asserts p => {}; } }
+>u : (p: () => void) => void
+>p : () => void
+>p : () => void
+>g : (x: any) => asserts p
+>(x: any): asserts p => {} : (x: any) => asserts p
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

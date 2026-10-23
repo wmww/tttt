@@ -1,0 +1,18 @@
+//// [test/cases/bun10-C3.ts] ////
+
+=== a.ts ===
+declare const o: { z: 1 };
+>o : { z: 1; }
+>z : 1
+
+const s2 = { get h() { return s2; }, ...o };
+>s2 : any
+>{ get h() { return s2; }, ...o } : { z: 1; h: any; }
+>h : any
+>s2 : any
+>o : { z: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

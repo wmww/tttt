@@ -1,0 +1,18 @@
+a.ts(2,5): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(2,5): error TS18048: 'e.b' is possibly 'undefined'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const e: { b?: () => boolean };
+    if (e.b()) { e; }
+        ~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+        ~~~
+!!! error TS18048: 'e.b' is possibly 'undefined'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

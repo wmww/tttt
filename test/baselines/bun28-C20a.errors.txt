@@ -1,0 +1,17 @@
+a.ts(1,32): error TS1163: A 'yield' expression is only allowed in a generator body.
+a.ts(1,32): error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    function* g() { const h = (a = yield 1) => 1; }
+                                   ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+                                   ~~~~~
+!!! error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

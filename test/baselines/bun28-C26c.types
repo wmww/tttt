@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C26c.ts] ////
+
+=== a.ts ===
+declare namespace N { for await (const x of []) {} }
+>N : typeof N
+>x : never
+>[] : never[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

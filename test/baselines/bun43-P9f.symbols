@@ -1,0 +1,11 @@
+//// [test/cases/bun43-P9f.ts] ////
+
+=== a.ts ===
+type T = X extends infer
+>T : Symbol(T, Decl(a.ts, 0, 0))
+>X : Symbol(X)
+
+> : Symbol((Missing), Decl(a.ts, 0, 24))
+> : Symbol(unknown)
+> : Symbol(unknown)
+

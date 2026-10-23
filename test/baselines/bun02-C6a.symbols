@@ -1,0 +1,19 @@
+//// [test/cases/bun02-C6a.ts] ////
+
+=== a.ts ===
+declare const o: { f(): void };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+
+if (o.f) { let t: typeof o.f; }
+>o.f : Symbol(f, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+>t : Symbol(t, Decl(a.ts, 1, 14))
+>o.f : Symbol(f, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

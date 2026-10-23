@@ -1,0 +1,23 @@
+//// [test/cases/bun53-L06b.ts] ////
+
+=== a.ts ===
+import { o } from "./u";
+>o : { g(): {}; }
+
+export const h = o;
+>h : { g(): {}; }
+>o : { g(): {}; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== u.ts ===
+// @ts-nocheck
+export const o = { *g() { yield 1; } };
+>o : { g(): {}; }
+>{ *g() { yield 1; } } : { g(): {}; }
+>g : () => {}
+>yield 1 : any
+>1 : 1
+

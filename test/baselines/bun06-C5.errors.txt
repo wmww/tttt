@@ -1,0 +1,24 @@
+a.ts(1,33): error TS1163: A 'yield' expression is only allowed in a generator body.
+a.ts(1,33): error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+a.ts(2,33): error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+a.ts(2,33): error TS2304: Cannot find name 'yield'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    function* g5() { const f = (a = yield "x") => { }; }
+                                    ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+                                    ~~~~~
+!!! error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+    function* g6() { const f = (a = yield) => { }; }
+                                    ~~~~~
+!!! error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+                                    ~~~~~
+!!! error TS2304: Cannot find name 'yield'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,12 @@
+//// [test/cases/bun43-X2b.ts] ////
+
+=== a.ts ===
+declare namespace M5 { var f = async () => {}; }
+>M5 : typeof M5
+>f : () => Promise<void>
+>async () => {} : () => Promise<void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

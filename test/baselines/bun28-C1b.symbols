@@ -1,0 +1,14 @@
+//// [test/cases/bun28-C1b.ts] ////
+
+=== a.ts ===
+let v: { export p: number };
+>v : Symbol(v, Decl(a.ts, 0, 3))
+>p : Symbol(p, Decl(a.ts, 0, 8))
+
+interface M { static p: number }
+>M : Symbol(M, Decl(a.ts, 0, 28))
+>p : Symbol(M.p, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

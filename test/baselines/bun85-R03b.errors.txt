@@ -1,0 +1,16 @@
+f.js(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": false, "noEmit": true, "allowJs": true, "checkJs": true, "module": "commonjs", "types": [], "lib": ["es2022"] } }
+==== f.js (1 errors) ====
+    var v = mk().x;
+    function mk() { return new C(); }
+    class C { get x() { return [module, this.x]; } }
+    v.nope;
+    module.exports = C;
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

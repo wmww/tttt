@@ -1,0 +1,27 @@
+a.ts(1,11): error TS2317: Global type 'Array' must have 1 type parameter(s).
+a.ts(11,8): error TS2314: Generic type 'Array<T, U>' requires 2 type argument(s).
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true } }
+==== a.ts (3 errors) ====
+    interface Array<T, U> {}
+              ~~~~~
+!!! error TS2317: Global type 'Array' must have 1 type parameter(s).
+    interface Object {}
+    interface Function {}
+    interface String {}
+    interface Number {}
+    interface Boolean {}
+    interface RegExp {}
+    interface IArguments {}
+    interface CallableFunction {}
+    interface NewableFunction {}
+    let a: Array<number>;
+           ~~~~~~~~~~~~~
+!!! error TS2314: Generic type 'Array<T, U>' requires 2 type argument(s).
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

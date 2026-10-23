@@ -1,0 +1,90 @@
+//// [test/cases/bun73-R01b.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+function missed() {
+>missed : Symbol(missed, Decl(a.ts, 0, 30))
+
+  let x: string | 1 | boolean = "";
+>x : Symbol(x, Decl(a.ts, 2, 5))
+
+  let y: string | number = "";
+>y : Symbol(y, Decl(a.ts, 3, 5))
+
+  while (c()) {
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+    x;
+>x : Symbol(x, Decl(a.ts, 2, 5))
+
+    if (y === 1) { }
+>y : Symbol(y, Decl(a.ts, 3, 5))
+
+    x = y;
+>x : Symbol(x, Decl(a.ts, 2, 5))
+>y : Symbol(y, Decl(a.ts, 3, 5))
+
+    if (c()) y = 0;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 3, 5))
+  }
+}
+function otherText() {
+>otherText : Symbol(otherText, Decl(a.ts, 10, 1))
+
+  let x: string | boolean = "";
+>x : Symbol(x, Decl(a.ts, 12, 5))
+
+  let y: string | number = "";
+>y : Symbol(y, Decl(a.ts, 13, 5))
+
+  while (c()) {
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+    x;
+>x : Symbol(x, Decl(a.ts, 12, 5))
+
+    if (y === 1) { }
+>y : Symbol(y, Decl(a.ts, 13, 5))
+
+    x = y;
+>x : Symbol(x, Decl(a.ts, 12, 5))
+>y : Symbol(y, Decl(a.ts, 13, 5))
+
+    if (c()) y = 0;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 13, 5))
+  }
+}
+function reportedTwice() {
+>reportedTwice : Symbol(reportedTwice, Decl(a.ts, 20, 1))
+
+  let x: string | number | boolean = "";
+>x : Symbol(x, Decl(a.ts, 22, 5))
+
+  let y: string | number = "";
+>y : Symbol(y, Decl(a.ts, 23, 5))
+
+  while (c()) {
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+    x;
+>x : Symbol(x, Decl(a.ts, 22, 5))
+
+    if (y === 1) { }
+>y : Symbol(y, Decl(a.ts, 23, 5))
+
+    x = (y satisfies never);
+>x : Symbol(x, Decl(a.ts, 22, 5))
+>y : Symbol(y, Decl(a.ts, 23, 5))
+
+    if (c()) y = 0;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 23, 5))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 31, 5))
+

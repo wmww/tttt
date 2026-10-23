@@ -1,0 +1,50 @@
+//// [test/cases/bun96-KYSELY1.ts] ////
+
+=== a.ts ===
+declare class K<D> {
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>D : Symbol(D, Decl(a.ts, 0, 16))
+
+  d: D
+>d : Symbol(K.d, Decl(a.ts, 0, 20))
+>D : Symbol(D, Decl(a.ts, 0, 16))
+
+  p(): K<D>
+>p : Symbol(K.p, Decl(a.ts, 1, 6))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>D : Symbol(D, Decl(a.ts, 0, 16))
+
+  e<T>(): K<[D, T]>
+>e : Symbol(K.e, Decl(a.ts, 2, 11))
+>T : Symbol(T, Decl(a.ts, 3, 4))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>D : Symbol(D, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 3, 4))
+
+  x(): string
+>x : Symbol(K.x, Decl(a.ts, 3, 19))
+}
+declare class R<D> extends K<D> {
+>R : Symbol(R, Decl(a.ts, 5, 1))
+>D : Symbol(D, Decl(a.ts, 6, 16))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>D : Symbol(D, Decl(a.ts, 6, 16))
+
+  p(): R<D>
+>p : Symbol(R.p, Decl(a.ts, 6, 33))
+>R : Symbol(R, Decl(a.ts, 5, 1))
+>D : Symbol(D, Decl(a.ts, 6, 16))
+
+  e<T>(): R<[D, T]>
+>e : Symbol(R.e, Decl(a.ts, 7, 11))
+>T : Symbol(T, Decl(a.ts, 8, 4))
+>R : Symbol(R, Decl(a.ts, 5, 1))
+>D : Symbol(D, Decl(a.ts, 6, 16))
+>T : Symbol(T, Decl(a.ts, 8, 4))
+
+  x(): unknown
+>x : Symbol(R.x, Decl(a.ts, 8, 19))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

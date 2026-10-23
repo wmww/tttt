@@ -1,0 +1,90 @@
+//// [test/cases/bun56-L20.ts] ////
+
+=== a.ts ===
+declare class B<T = 1> {} declare class C {} declare class D {} interface I<T = 1> {} declare const a: any;
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+>I : Symbol(I, Decl(a.ts, 0, 63))
+>T : Symbol(T, Decl(a.ts, 0, 76))
+>a : Symbol(a, Decl(a.ts, 0, 99))
+
+class A1 extends B, class extends C, D {} {}
+>A1 : Symbol(A1, Decl(a.ts, 0, 107))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+
+class A2 implements I implements (class extends C, D {}) {}
+>A2 : Symbol(A2, Decl(a.ts, 1, 44))
+>I : Symbol(I, Decl(a.ts, 0, 63))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+
+class A3 extends B extends class extends C, D {} {}
+>A3 : Symbol(A3, Decl(a.ts, 2, 59))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+
+class A4 extends B, class<> {} {}
+>A4 : Symbol(A4, Decl(a.ts, 3, 51))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+
+class A5 implements (class extends C, D {}) {}
+>A5 : Symbol(A5, Decl(a.ts, 4, 33))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+
+interface A6 extends I extends (class extends C, D {}) {}
+>A6 : Symbol(A6, Decl(a.ts, 5, 46))
+>I : Symbol(I, Decl(a.ts, 0, 63))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+
+interface A7 extends (class extends C, D {}) {}
+>A7 : Symbol(A7, Decl(a.ts, 6, 57))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+
+public class A8 extends B, class extends C, D {} {}
+>A8 : Symbol(A8, Decl(a.ts, 7, 47))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 44))
+
+class A9 extends B, (a?.b`x`) {}
+>A9 : Symbol(A9, Decl(a.ts, 8, 51))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 99))
+
+class A10 extends B, (0 as I<>) {}
+>A10 : Symbol(A10, Decl(a.ts, 9, 32))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>I : Symbol(I, Decl(a.ts, 0, 63))
+
+class A11 extends B, (a<>()) {}
+>A11 : Symbol(A11, Decl(a.ts, 10, 34))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 99))
+
+class A12 extends B, (import<string>) {}
+>A12 : Symbol(A12, Decl(a.ts, 11, 31))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+
+class A13 extends B, ((x: I<1,>) => 1) {}
+>A13 : Symbol(A13, Decl(a.ts, 12, 40))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 13, 23))
+>I : Symbol(I, Decl(a.ts, 0, 63))
+
+class A14 extends B, (function (p?, q) {}) {}
+>A14 : Symbol(A14, Decl(a.ts, 13, 41))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>p : Symbol(p, Decl(a.ts, 14, 32))
+>q : Symbol(q, Decl(a.ts, 14, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 15, 5))
+

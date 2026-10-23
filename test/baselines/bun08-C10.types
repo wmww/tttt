@@ -1,0 +1,16 @@
+//// [test/cases/bun08-C10.ts] ////
+
+=== a.ts ===
+const k = "k";
+>k : "k"
+>"k" : "k"
+
+interface B3 { k: number; readonly [k]: number }
+>k : number
+>[k] : number
+>k : "k"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

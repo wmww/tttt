@@ -1,0 +1,16 @@
+//// [test/cases/bun02-C20a.ts] ////
+
+=== a.ts ===
+declare const n: number;
+>n : number
+
+switch (n) { case 1: function c1(): void; function c2() {} }
+>n : number
+>1 : 1
+>c1 : () => void
+>c2 : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

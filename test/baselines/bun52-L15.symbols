@@ -1,0 +1,42 @@
+//// [test/cases/bun52-L15.ts] ////
+
+=== a.ts ===
+function next(e: E1) { return e + 1; }
+>next : Symbol(next, Decl(a.ts, 0, 0))
+>e : Symbol(e, Decl(a.ts, 0, 14))
+>E1 : Symbol(E1, Decl(a.ts, 0, 38))
+>e : Symbol(e, Decl(a.ts, 0, 14))
+
+enum E1 { A = 1, B = next(E1.A) }
+>E1 : Symbol(E1, Decl(a.ts, 0, 38))
+>A : Symbol(E1.A, Decl(a.ts, 1, 9))
+>B : Symbol(E1.B, Decl(a.ts, 1, 16))
+>next : Symbol(next, Decl(a.ts, 0, 0))
+>E1.A : Symbol(E1.A, Decl(a.ts, 1, 9))
+>E1 : Symbol(E1, Decl(a.ts, 0, 38))
+>A : Symbol(E1.A, Decl(a.ts, 1, 9))
+
+declare function make(n: number): E2;
+>make : Symbol(make, Decl(a.ts, 1, 33))
+>n : Symbol(n, Decl(a.ts, 2, 22))
+>E2 : Symbol(E2, Decl(a.ts, 2, 37))
+
+enum E2 { A = 1, B = make(1) }
+>E2 : Symbol(E2, Decl(a.ts, 2, 37))
+>A : Symbol(E2.A, Decl(a.ts, 3, 9))
+>B : Symbol(E2.B, Decl(a.ts, 3, 16))
+>make : Symbol(make, Decl(a.ts, 1, 33))
+
+declare const first: E3;
+>first : Symbol(first, Decl(a.ts, 4, 13))
+>E3 : Symbol(E3, Decl(a.ts, 4, 24))
+
+enum E3 { A = 1, B = first }
+>E3 : Symbol(E3, Decl(a.ts, 4, 24))
+>A : Symbol(E3.A, Decl(a.ts, 5, 9))
+>B : Symbol(E3.B, Decl(a.ts, 5, 16))
+>first : Symbol(first, Decl(a.ts, 4, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

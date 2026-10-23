@@ -1,0 +1,19 @@
+a.ts(4,3): error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface Bad { then(): void }
+    declare const u: string | Bad;
+    async function f() {
+      await u;
+      ~~~~~~~
+!!! error TS1320: Type of 'await' operand must either be a valid promise or must not contain a callable 'then' member.
+      await u;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

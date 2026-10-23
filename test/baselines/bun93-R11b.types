@@ -1,0 +1,103 @@
+//// [test/cases/bun93-R11b.ts] ////
+
+=== a.ts ===
+declare class D<T> { n<U>(u: U, t: T): T }
+>D : D<T>
+>n : <U>(u: U, t: T) => T
+>u : U
+>t : T
+
+const mk = <T,>(d: D<T>) => d.n<2>;
+>mk : <T>(d: D<T>) => (u: 2, t: T) => T
+><T,>(d: D<T>) => d.n<2> : <T>(d: D<T>) => (u: 2, t: T) => T
+>d : D<T>
+>d.n<2> : (u: 2, t: T) => T
+>d.n : <U>(u: U, t: T) => T
+>d : D<T>
+>n : <U>(u: U, t: T) => T
+
+mk(null! as D<string>)(2, "x");
+>mk(null! as D<string>)(2, "x") : T
+>mk(null! as D<string>) : (u: 2, t: T) => T
+>mk : <T>(d: D<T>) => (u: 2, t: T) => T
+>null! as D<string> : D<string>
+>null! : never
+>2 : 2
+>"x" : "x"
+
+const r: string = mk(null! as D<string>)(2, null!);
+>r : string
+>mk(null! as D<string>)(2, null!) : T
+>mk(null! as D<string>) : (u: 2, t: T) => T
+>mk : <T>(d: D<T>) => (u: 2, t: T) => T
+>null! as D<string> : D<string>
+>null! : never
+>2 : 2
+>null! : never
+
+class C<T> {
+>C : C<T>
+
+  n<U>(u: U, t: T) { return t; }
+>n : <U>(u: U, t: T) => T
+>u : U
+>t : T
+>t : T
+
+  q = this.n<2>;
+>q : (u: 2, t: T) => T
+>this.n<2> : (u: 2, t: T) => T
+>this.n : <U>(u: U, t: T) => T
+>this : this
+>n : <U>(u: U, t: T) => T
+}
+new C<string>().q(2, "x");
+>new C<string>().q(2, "x") : T
+>new C<string>().q : (u: 2, t: T) => T
+>new C<string>() : C<string>
+>C : typeof C
+>q : (u: 2, t: T) => T
+>2 : 2
+>"x" : "x"
+
+function dflt<T>(d: D<T>, f = d.n<2>) { return f; }
+>dflt : <T>(d: D<T>, f?: (u: 2, t: T) => T) => (u: 2, t: T) => T
+>d : D<T>
+>f : (u: 2, t: T) => T
+>d.n<2> : (u: 2, t: T) => T
+>d.n : <U>(u: U, t: T) => T
+>d : D<T>
+>n : <U>(u: U, t: T) => T
+>f : (u: 2, t: T) => T
+
+dflt(null! as D<string>)(2, "x");
+>dflt(null! as D<string>)(2, "x") : T
+>dflt(null! as D<string>) : (u: 2, t: T) => T
+>dflt : <T>(d: D<T>, f?: (u: 2, t: T) => T) => (u: 2, t: T) => T
+>null! as D<string> : D<string>
+>null! : never
+>2 : 2
+>"x" : "x"
+
+// with a block on the way to the type parameter both tools instantiate
+function blk<T>(d: D<T>) { return d.n<2>; }
+>blk : <T>(d: D<T>) => (u: 2, t: T) => T
+>d : D<T>
+>d.n<2> : (u: 2, t: T) => T
+>d.n : <U>(u: U, t: T) => T
+>d : D<T>
+>n : <U>(u: U, t: T) => T
+
+blk(null! as D<string>)(2, "x");
+>blk(null! as D<string>)(2, "x") : string
+>blk(null! as D<string>) : (u: 2, t: string) => string
+>blk : <T>(d: D<T>) => (u: 2, t: T) => T
+>null! as D<string> : D<string>
+>null! : never
+>2 : 2
+>"x" : "x"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

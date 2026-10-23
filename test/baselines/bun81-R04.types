@@ -1,0 +1,51 @@
+//// [test/cases/bun81-R04.ts] ////
+
+=== a.ts ===
+const s1 = { set a(v: typeof s1.a) {} };
+>s1 : { a: any; }
+>{ set a(v: typeof s1.a) {} } : { a: any; }
+>a : any
+>v : any
+>s1.a : any
+>s1 : { a: any; }
+>a : any
+
+const r1: null = s1;
+>r1 : null
+>s1 : { a: any; }
+
+const s7 = { set a(v: typeof s7.b) {}, set b(v: typeof s7.a) {} };
+>s7 : { a: typeof s7.b; b: any; }
+>{ set a(v: typeof s7.b) {}, set b(v: typeof s7.a) {} } : { a: typeof s7.b; b: any; }
+>a : any
+>v : any
+>s7.b : any
+>s7 : { a: typeof s7.b; b: any; }
+>b : any
+>b : any
+>v : any
+>s7.a : any
+>s7 : { a: typeof s7.b; b: any; }
+>a : any
+
+const r7: null = s7;
+>r7 : null
+>s7 : { a: typeof s7.b; b: any; }
+
+const s31 = { get a(): typeof s31.a { return 1 } };
+>s31 : { readonly a: any; }
+>{ get a(): typeof s31.a { return 1 } } : { readonly a: any; }
+>a : any
+>s31.a : any
+>s31 : { readonly a: any; }
+>a : any
+>1 : 1
+
+const r31: null = s31;
+>r31 : null
+>s31 : { readonly a: any; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

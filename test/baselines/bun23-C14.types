@@ -1,0 +1,16 @@
+//// [test/cases/bun23-C14.ts] ////
+
+=== a.ts ===
+function fF<\u0054>(arg: \u0054) { return arg; }
+>fF : <\u0054>(arg: \u0054) => \u0054
+>arg : \u0054
+>arg : \u0054
+
+const p4: 1 = fF;
+>p4 : 1
+>fF : <\u0054>(arg: \u0054) => \u0054
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

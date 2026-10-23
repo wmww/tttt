@@ -1,0 +1,24 @@
+a.ts(2,7): error TS2367: This comparison appears to be unintentional because the types 'V & 1' and '{ a?: 1 | undefined; }' have no overlap.
+a.ts(3,3): error TS2352: Conversion of type '{ a?: 1 | undefined; }' to type 'V & 1' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ a?: 1 | undefined; }' is not comparable to type 'V'.
+    'V' could be instantiated with an arbitrary type which could be unrelated to '{ a?: 1 | undefined; }'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function f<V extends 1 | 2>(v: V & 1, w: { a?: 1 }) {
+      if (v === w) {}
+          ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'V & 1' and '{ a?: 1 | undefined; }' have no overlap.
+      w as V & 1;
+      ~~~~~~~~~~
+!!! error TS2352: Conversion of type '{ a?: 1 | undefined; }' to type 'V & 1' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+!!! error TS2352:   Type '{ a?: 1 | undefined; }' is not comparable to type 'V'.
+!!! error TS2352:     'V' could be instantiated with an arbitrary type which could be unrelated to '{ a?: 1 | undefined; }'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

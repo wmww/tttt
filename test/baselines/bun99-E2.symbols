@@ -1,0 +1,50 @@
+//// [test/cases/bun99-E2.ts] ////
+
+=== index.ts ===
+import type { Fn } from "lib";
+>Fn : Symbol(Fn, Decl(index.ts, 0, 13))
+
+export const f: Fn = (method: number) => {};
+>f : Symbol(f, Decl(index.ts, 2, 12))
+>Fn : Symbol(Fn, Decl(index.ts, 0, 13))
+>method : Symbol(method, Decl(index.ts, 2, 22))
+
+=== sentinel.ts ===
+import type { Fn, Method } from "lib";
+>Fn : Symbol(Fn, Decl(sentinel.ts, 0, 13))
+>Method : Symbol(Method, Decl(sentinel.ts, 0, 17))
+
+import { Method as Value } from "lib";
+>Method : Symbol(Method, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 1, 20))
+>Value : Symbol(Value, Decl(sentinel.ts, 1, 8))
+
+export const g: Fn = (method: string) => {};
+>g : Symbol(g, Decl(sentinel.ts, 3, 12))
+>Fn : Symbol(Fn, Decl(sentinel.ts, 0, 13))
+>method : Symbol(method, Decl(sentinel.ts, 3, 22))
+
+export const asType: never = null! as Method;
+>asType : Symbol(asType, Decl(sentinel.ts, 4, 12))
+>Method : Symbol(Method, Decl(sentinel.ts, 0, 17))
+
+export const asValue: never = Value;
+>asValue : Symbol(asValue, Decl(sentinel.ts, 5, 12))
+>Value : Symbol(Value, Decl(sentinel.ts, 1, 8))
+
+=== node_modules/lib/index.d.ts ===
+export type Method = typeof Method;
+>Method : Symbol(Method, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 1, 20))
+>Method : Symbol(Method, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 1, 20))
+
+export declare const Method: { a: number };
+>Method : Symbol(Method, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 1, 20))
+>a : Symbol(a, Decl(index.d.ts, 1, 30))
+
+export type Method = "get" | "post";
+>Method : Symbol(Method, Decl(index.d.ts, 1, 43))
+
+export type Fn = (method: Method) => void;
+>Fn : Symbol(Fn, Decl(index.d.ts, 2, 36))
+>method : Symbol(method, Decl(index.d.ts, 3, 18))
+>Method : Symbol(Method, Decl(index.d.ts, 0, 0), Decl(index.d.ts, 1, 20))
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun09-C17.ts] ////
+
+=== a.ts ===
+function m14<B extends new (...args: Missing[]) => {}>(b: B) { return class extends b { x = 1 }; }
+>m14 : Symbol(m14, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 13))
+>args : Symbol(args, Decl(a.ts, 0, 28))
+>Missing : Symbol(Missing)
+>b : Symbol(b, Decl(a.ts, 0, 55))
+>B : Symbol(B, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 55))
+>x : Symbol((Anonymous class).x, Decl(a.ts, 0, 87))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

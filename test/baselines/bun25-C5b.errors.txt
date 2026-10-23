@@ -1,0 +1,20 @@
+a.ts(1,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+a.ts(1,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+a.ts(1,74): error TS2304: Cannot find name 'nope'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    const b = { m() { return this.z; }, f() { return this.z; }, g() { return nope; } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+                                                                             ~~~~
+!!! error TS2304: Cannot find name 'nope'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

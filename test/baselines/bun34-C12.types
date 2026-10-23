@@ -1,0 +1,23 @@
+//// [test/cases/bun34-C12.ts] ////
+
+=== a.ts ===
+import { A } from "./m";
+>A : any
+
+declare const dec: any;
+>dec : any
+
+class C { @dec m(...a: (A[])) {} }
+>C : C
+>dec : any
+>m : (...a: (A[])) => void
+>a : A[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+
+export interface A {}
+

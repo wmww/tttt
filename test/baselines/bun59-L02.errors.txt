@@ -1,0 +1,49 @@
+a.ts(2,7): error TS2322: Type '{}' is not assignable to type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(6,15): error TS2322: Type '{}' is not assignable to type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(7,15): error TS2322: Type '{}' is not assignable to type '{ [k: string]: number; }'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(9,16): error TS2345: Argument of type '{}' is not assignable to parameter of type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "resolveJsonModule": true, "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (5 errors) ====
+    import j from "./e.json";
+    const m1: Record<string, unknown> = j;
+          ~~
+!!! error TS2322: Type '{}' is not assignable to type 'Record<string, unknown>'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+    declare function values<T>(r: Record<string, T>): T[];
+    function f2(x: unknown, c: Function) {
+        if (x instanceof c) {
+            const m2: Record<string, unknown> = x;
+                  ~~
+!!! error TS2322: Type '{}' is not assignable to type 'Record<string, unknown>'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+            const m3: { [k: string]: number } = x;
+                  ~~
+!!! error TS2322: Type '{}' is not assignable to type '{ [k: string]: number; }'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+            const m4: Record<string, any> = x;
+            values(x);
+                   ~
+!!! error TS2345: Argument of type '{}' is not assignable to parameter of type 'Record<string, unknown>'.
+!!! error TS2345:   Index signature for type 'string' is missing in type '{}'.
+        }
+    }
+    function f5(x: { a: 1 } | string, c: Function) {
+        if (x instanceof c) {
+            const m5: Record<string, unknown> = x;
+        }
+    }
+    const { a, ...rest } = { a: 1 };
+    const m6: Record<string, unknown> = rest;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== e.json (0 errors) ====
+    

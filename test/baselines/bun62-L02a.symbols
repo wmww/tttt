@@ -1,0 +1,82 @@
+//// [test/cases/bun62-L02a.ts] ////
+
+=== a.ts ===
+type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+
+const g7: { m: F7 } = { m() { return 1; } };
+>g7 : Symbol(g7, Decl(a.ts, 1, 5))
+>m : Symbol(m, Decl(a.ts, 1, 11))
+>F7 : Symbol(F7, Decl(a.ts, 6, 43))
+>m : Symbol(m, Decl(a.ts, 1, 23))
+
+const g8: { a: 1, m: F8 } = { a: 1, async m() { return 1; } };
+>g8 : Symbol(g8, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 2, 11))
+>m : Symbol(m, Decl(a.ts, 2, 17))
+>F8 : Symbol(F8, Decl(a.ts, 7, 32))
+>a : Symbol(a, Decl(a.ts, 2, 29))
+>m : Symbol(m, Decl(a.ts, 2, 35))
+
+let g9: { m: F9 };
+>g9 : Symbol(g9, Decl(a.ts, 3, 3))
+>m : Symbol(m, Decl(a.ts, 3, 9))
+>F9 : Symbol(F9, Decl(a.ts, 8, 32))
+
+g9 = { ["m"]() { return 1; } };
+>g9 : Symbol(g9, Decl(a.ts, 3, 3))
+>["m"] : Symbol(["m"], Decl(a.ts, 4, 6))
+>"m" : Symbol(["m"], Decl(a.ts, 4, 6))
+
+take({ m() { return 1; } });
+>take : Symbol(take, Decl(a.ts, 5, 28))
+>m : Symbol(m, Decl(a.ts, 5, 6))
+
+declare function take(o: { m: F10 }): void;
+>take : Symbol(take, Decl(a.ts, 5, 28))
+>o : Symbol(o, Decl(a.ts, 6, 22))
+>m : Symbol(m, Decl(a.ts, 6, 26))
+>F10 : Symbol(F10, Decl(a.ts, 9, 32))
+
+type F7 = () => X<X<X<X<[7]>>>>;
+>F7 : Symbol(F7, Decl(a.ts, 6, 43))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+type F8 = () => X<X<X<X<[8]>>>>;
+>F8 : Symbol(F8, Decl(a.ts, 7, 32))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+type F9 = () => X<X<X<X<[9]>>>>;
+>F9 : Symbol(F9, Decl(a.ts, 8, 32))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+type F10 = () => X<X<X<X<[10]>>>>;
+>F10 : Symbol(F10, Decl(a.ts, 9, 32))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

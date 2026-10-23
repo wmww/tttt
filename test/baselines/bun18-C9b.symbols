@@ -1,0 +1,19 @@
+//// [test/cases/bun18-C9b.ts] ////
+
+=== a.ts ===
+declare let p8: (...{ length }: [number, number]) => void;
+>p8 : Symbol(p8, Decl(a.ts, 0, 11))
+>length : Symbol(length, Decl(a.ts, 0, 21))
+
+declare let p4: (a: number, b: string) => void;
+>p4 : Symbol(p4, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 17))
+>b : Symbol(b, Decl(a.ts, 1, 27))
+
+p8 = p4;
+>p8 : Symbol(p8, Decl(a.ts, 0, 11))
+>p4 : Symbol(p4, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

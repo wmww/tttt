@@ -1,0 +1,15 @@
+//// [test/cases/bun90-R06.ts] ////
+
+=== a.ts ===
+import { which } from "cond9000"; const x: 0 = which;
+>which : Symbol(which, Decl(a.ts, 0, 8))
+>x : Symbol(x, Decl(a.ts, 0, 39))
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/cond9000/t.d.ts ===
+export declare const which: "t";
+>which : Symbol(which, Decl(t.d.ts, 0, 20))
+

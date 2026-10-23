@@ -1,0 +1,22 @@
+a.ts(1,30): error TS2322: Type 'symbol' is not assignable to type 'number'.
+a.ts(2,37): error TS2322: Type 'symbol' is not assignable to type 'number'.
+a.ts(3,37): error TS2322: Type 'symbol' is not assignable to type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    const p1 = (Symbol)(); const q1: number = p1;
+                                 ~~
+!!! error TS2322: Type 'symbol' is not assignable to type 'number'.
+    const p2 = (Symbol).for("a"); const q2: number = p2;
+                                        ~~
+!!! error TS2322: Type 'symbol' is not assignable to type 'number'.
+    const p3 = (Symbol.for)("a"); const q3: number = p3;
+                                        ~~
+!!! error TS2322: Type 'symbol' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

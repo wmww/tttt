@@ -1,0 +1,12 @@
+//// [test/cases/bun03-C16.ts] ////
+
+=== a.ts ===
+import e = require(foo);
+>e : any
+>foo : any
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

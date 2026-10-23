@@ -1,0 +1,16 @@
+//// [test/cases/bun16-C9c.ts] ////
+
+=== a.ts ===
+function fm() {} namespace fm { export type T = 1 }
+>fm : () => void
+>T : 1
+
+if (fm) { let x: fm.T; }
+>fm : () => void
+>x : 1
+>fm : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

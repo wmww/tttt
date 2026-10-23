@@ -1,0 +1,19 @@
+//// [test/cases/bun34-C4a.ts] ////
+
+=== a.ts ===
+import type { u } from "./m";
+>u : any
+
+type F = ({ [u]: [] }: any) => void;
+>F : F
+>u : "k"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const u = "k";
+>u : "k"
+>"k" : "k"
+

@@ -1,0 +1,17 @@
+a.ts(3,7): error TS2322: Type '{ show: unknown; }' is not assignable to type 'null'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function cond(): boolean;
+    declare function show<T>(x: T): { show: T };
+    const t: null = show(k());
+          ~
+!!! error TS2322: Type '{ show: unknown; }' is not assignable to type 'null'.
+    function k() { let x: string | null = ""; do { if (cond()) break; } while (x); if (x != null) throw 0; return x; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

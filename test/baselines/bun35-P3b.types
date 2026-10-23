@@ -1,0 +1,10 @@
+//// [test/cases/bun35-P3b.ts] ////
+
+=== a.ts ===
+import * as u from "u";
+>u : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,20 @@
+//// [test/cases/bun20-P9.ts] ////
+
+=== a.ts ===
+function f(x?: { a: object }) { for (const k in (x?.a)) { x.a; } }
+>f : (x?: { a: object; }) => void
+>x : { a: object; } | undefined
+>a : object
+>k : string
+>(x?.a) : object | undefined
+>x?.a : object | undefined
+>x : { a: object; } | undefined
+>a : object | undefined
+>x.a : object
+>x : { a: object; } | undefined
+>a : object
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

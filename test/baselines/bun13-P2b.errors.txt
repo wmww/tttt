@@ -1,0 +1,28 @@
+error TS2318: Cannot find global type 'ClassAccessorDecoratorContext'.
+error TS2318: Cannot find global type 'ClassAccessorDecoratorResult'.
+error TS2318: Cannot find global type 'ClassAccessorDecoratorTarget'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorContext'.
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorResult'.
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorTarget'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2022" } }
+==== a.ts (1 errors) ====
+    interface Array<T> { length: number; [n: number]: T }
+    interface Boolean {}
+    interface CallableFunction {}
+    interface Function {}
+    interface IArguments {}
+    interface NewableFunction {}
+    interface Number {}
+    interface Object {}
+    interface RegExp {}
+    interface String {}
+    declare function dec(target: any, context: any): any;
+    class C { @dec accessor a = 1; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

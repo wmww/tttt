@@ -1,0 +1,42 @@
+//// [test/cases/bun31-P2.ts] ////
+
+=== a.ts ===
+declare const arr: number[];
+>arr : number[]
+
+declare const o: { y: boolean; [k: string]: boolean };
+>o : { [k: string]: boolean; y: boolean; }
+>y : boolean
+>k : string
+
+function g() { return q; }
+>g : () => any
+>q : any
+
+const k = g() ? "a" : "b";
+>k : "a" | "b"
+>g() ? "a" : "b" : "a" | "b"
+>g() : any
+>g : () => any
+>"a" : "a"
+>"b" : "b"
+
+o[k] ? () => { const [,] = arr; } : 0;
+>o[k] ? () => { const [,] = arr; } : 0 : 0 | (() => void)
+>o[k] : boolean
+>o : { [k: string]: boolean; y: boolean; }
+>k : "a" | "b"
+>() => { const [,] = arr; } : () => void
+>arr : number[]
+>0 : 0
+
+const q = o.y;
+>q : any
+>o.y : boolean
+>o : { [k: string]: boolean; y: boolean; }
+>y : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,30 @@
+//// [test/cases/bun17-C1a.ts] ////
+
+=== a.ts ===
+type Matrix<T> = Row<T>[]; type Row<T> = T[];
+>Matrix : Matrix<T>
+>Row : Row<T>
+
+type Grid<T> = Line<T>[]; type Line<T> = T[];
+>Grid : Grid<T>
+>Line : Line<T>
+
+declare function flat<T>(m: Matrix<T>): T;
+>flat : <T>(m: Matrix<T>) => T
+>m : Matrix<T>
+
+declare let grid: Grid<number>;
+>grid : Grid<number>
+
+flat(grid).toFixed();
+>flat(grid).toFixed() : string
+>flat(grid).toFixed : (fractionDigits?: number) => string
+>flat(grid) : number
+>flat : <T>(m: Matrix<T>) => T
+>grid : Grid<number>
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

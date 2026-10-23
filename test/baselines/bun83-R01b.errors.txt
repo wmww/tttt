@@ -1,0 +1,229 @@
+i03.ts(1,13): error TS2304: Cannot find name 'X'.
+i03.ts(1,15): error TS2304: Cannot find name 'T'.
+i03.ts(1,25): error TS2304: Cannot find name 'U'.
+i03.ts(1,26): error TS1005: '?' expected.
+i03.ts(1,28): error TS2304: Cannot find name 'a'.
+i13.ts(1,13): error TS1109: Expression expected.
+i13.ts(1,14): error TS2304: Cannot find name 'T'.
+i13.ts(1,24): error TS2304: Cannot find name 'U'.
+i13.ts(1,25): error TS1005: '?' expected.
+j01.ts(1,9): error TS2304: Cannot find name 'f'.
+j01.ts(1,11): error TS2304: Cannot find name 'T'.
+j01.ts(1,21): error TS2304: Cannot find name 'U'.
+j01.ts(1,22): error TS1005: '?' expected.
+j01.ts(1,24): error TS2304: Cannot find name 'a'.
+j06.ts(1,9): error TS2304: Cannot find name 'f'.
+j06.ts(1,17): error TS1003: Identifier expected.
+j06.ts(1,19): error TS2304: Cannot find name 'x'.
+j10.ts(1,9): error TS2304: Cannot find name 'f'.
+j10.ts(1,11): error TS2304: Cannot find name 'T'.
+j10.ts(1,21): error TS2304: Cannot find name 'U'.
+j10.ts(1,26): error TS1005: ':' expected.
+j10.ts(1,28): error TS2304: Cannot find name 'x'.
+j13.ts(1,9): error TS2304: Cannot find name 'f'.
+j13.ts(1,11): error TS2304: Cannot find name 'T'.
+j13.ts(1,13): error TS1005: ']' expected.
+j13.ts(1,15): error TS2304: Cannot find name 'x'.
+j16.ts(1,9): error TS2304: Cannot find name 'f'.
+j16.ts(1,14): error TS1005: '(' expected.
+j16.ts(1,16): error TS2304: Cannot find name 'x'.
+j17.ts(1,9): error TS2304: Cannot find name 'f'.
+j17.ts(1,16): error TS1003: Identifier expected.
+j17.ts(1,18): error TS2304: Cannot find name 'x'.
+j19.ts(1,9): error TS2304: Cannot find name 'f'.
+j19.ts(1,11): error TS2304: Cannot find name 'T'.
+j19.ts(1,21): error TS2304: Cannot find name 'U'.
+j19.ts(1,22): error TS1005: '?' expected.
+j20.ts(1,9): error TS2304: Cannot find name 'f'.
+j20.ts(1,11): error TS2304: Cannot find name 'T'.
+j20.ts(1,21): error TS2304: Cannot find name 'U'.
+j20.ts(1,22): error TS1005: '?' expected.
+j21.ts(1,9): error TS2304: Cannot find name 'f'.
+j21.ts(1,10): error TS1477: An instantiation expression cannot be followed by a property access.
+j21.ts(1,11): error TS2304: Cannot find name 'T'.
+j21.ts(1,21): error TS2304: Cannot find name 'U'.
+j21.ts(1,22): error TS1005: '?' expected.
+j23.ts(1,9): error TS2304: Cannot find name 'a'.
+j23.ts(1,13): error TS2304: Cannot find name 'T'.
+j23.ts(1,23): error TS2304: Cannot find name 'U'.
+j23.ts(1,24): error TS1005: '?' expected.
+j23.ts(1,26): error TS2304: Cannot find name 'x'.
+j32.ts(1,9): error TS2304: Cannot find name 'f'.
+j32.ts(1,17): error TS1141: String literal expected.
+j32.ts(1,17): error TS1005: '(' expected.
+j32.ts(1,19): error TS2304: Cannot find name 'x'.
+j33.ts(1,9): error TS2304: Cannot find name 'f'.
+j33.ts(1,18): error TS1141: String literal expected.
+j33.ts(1,18): error TS1110: Type expected.
+j33.ts(1,20): error TS2304: Cannot find name 'x'.
+j34.ts(1,9): error TS2304: Cannot find name 'f'.
+j34.ts(1,14): error TS1110: Type expected.
+j34.ts(1,16): error TS2304: Cannot find name 'x'.
+j40.ts(1,9): error TS2304: Cannot find name 'f'.
+j40.ts(1,23): error TS1005: '(' expected.
+j40.ts(1,25): error TS2304: Cannot find name 'x'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== i03.ts (5 errors) ====
+    var v = new X<T extends U>(a);
+                ~
+!!! error TS2304: Cannot find name 'X'.
+                  ~
+!!! error TS2304: Cannot find name 'T'.
+                            ~
+!!! error TS2304: Cannot find name 'U'.
+                             ~
+!!! error TS1005: '?' expected.
+                               ~
+!!! error TS2304: Cannot find name 'a'.
+==== i13.ts (4 errors) ====
+    var v = new <T extends U>;
+                ~
+!!! error TS1109: Expression expected.
+                 ~
+!!! error TS2304: Cannot find name 'T'.
+                           ~
+!!! error TS2304: Cannot find name 'U'.
+                            ~
+!!! error TS1005: '?' expected.
+==== j01.ts (5 errors) ====
+    var v = f<T extends U>(a);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+              ~
+!!! error TS2304: Cannot find name 'T'.
+                        ~
+!!! error TS2304: Cannot find name 'U'.
+                         ~
+!!! error TS1005: '?' expected.
+                           ~
+!!! error TS2304: Cannot find name 'a'.
+==== j06.ts (3 errors) ====
+    var v = f<typeof>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                    ~
+!!! error TS1003: Identifier expected.
+                      ~
+!!! error TS2304: Cannot find name 'x'.
+==== j10.ts (5 errors) ====
+    var v = f<T extends U ? 1>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+              ~
+!!! error TS2304: Cannot find name 'T'.
+                        ~
+!!! error TS2304: Cannot find name 'U'.
+                             ~
+!!! error TS1005: ':' expected.
+                               ~
+!!! error TS2304: Cannot find name 'x'.
+==== j13.ts (4 errors) ====
+    var v = f<T[>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+              ~
+!!! error TS2304: Cannot find name 'T'.
+                ~
+!!! error TS1005: ']' expected.
+                  ~
+!!! error TS2304: Cannot find name 'x'.
+==== j16.ts (3 errors) ====
+    var v = f<new>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                 ~
+!!! error TS1005: '(' expected.
+                   ~
+!!! error TS2304: Cannot find name 'x'.
+==== j17.ts (3 errors) ====
+    var v = f<infer>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                   ~
+!!! error TS1003: Identifier expected.
+                     ~
+!!! error TS2304: Cannot find name 'x'.
+==== j19.ts (4 errors) ====
+    var v = f<T extends U>`x`;
+            ~
+!!! error TS2304: Cannot find name 'f'.
+              ~
+!!! error TS2304: Cannot find name 'T'.
+                        ~
+!!! error TS2304: Cannot find name 'U'.
+                         ~
+!!! error TS1005: '?' expected.
+==== j20.ts (4 errors) ====
+    var v = f<T extends U>;
+            ~
+!!! error TS2304: Cannot find name 'f'.
+              ~
+!!! error TS2304: Cannot find name 'T'.
+                        ~
+!!! error TS2304: Cannot find name 'U'.
+                         ~
+!!! error TS1005: '?' expected.
+==== j21.ts (5 errors) ====
+    var v = f<T extends U>.x;
+            ~
+!!! error TS2304: Cannot find name 'f'.
+             ~~~~~~~~~~~~~
+!!! error TS1477: An instantiation expression cannot be followed by a property access.
+              ~
+!!! error TS2304: Cannot find name 'T'.
+                        ~
+!!! error TS2304: Cannot find name 'U'.
+                         ~
+!!! error TS1005: '?' expected.
+==== j23.ts (5 errors) ====
+    var v = a.b<T extends U>(x);
+            ~
+!!! error TS2304: Cannot find name 'a'.
+                ~
+!!! error TS2304: Cannot find name 'T'.
+                          ~
+!!! error TS2304: Cannot find name 'U'.
+                           ~
+!!! error TS1005: '?' expected.
+                             ~
+!!! error TS2304: Cannot find name 'x'.
+==== j32.ts (4 errors) ====
+    var v = f<import>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                    
+!!! error TS1141: String literal expected.
+                    ~
+!!! error TS1005: '(' expected.
+                      ~
+!!! error TS2304: Cannot find name 'x'.
+==== j33.ts (4 errors) ====
+    var v = f<import(>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                     
+!!! error TS1141: String literal expected.
+                     ~
+!!! error TS1110: Type expected.
+                       ~
+!!! error TS2304: Cannot find name 'x'.
+==== j34.ts (3 errors) ====
+    var v = f<`${>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                 ~
+!!! error TS1110: Type expected.
+                   ~
+!!! error TS2304: Cannot find name 'x'.
+==== j40.ts (3 errors) ====
+    var v = f<abstract new>(x);
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                          ~
+!!! error TS1005: '(' expected.
+                            ~
+!!! error TS2304: Cannot find name 'x'.
+    

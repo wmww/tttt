@@ -1,0 +1,55 @@
+//// [test/cases/bun51-L19b.ts] ////
+
+=== a.ts ===
+export type F = ({ a: b }) => void;
+>F : F
+>a : any
+>b : any
+
+export interface I { m({ a: b }): void }
+>m : ({ a: b }: { a: any; }) => void
+>a : any
+>b : any
+
+export declare function f({ a: b }): void;
+>f : ({ a: b }: { a: any; }) => void
+>a : any
+>b : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import { F, I, f } from "./a";
+>F : any
+>I : any
+>f : ({ a: b }: { a: any; }) => void
+
+declare const ff: F, i: I;
+>ff : F
+>i : I
+
+ff({ a: 1 });
+>ff({ a: 1 }) : void
+>ff : F
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+i.m({ a: 1 });
+>i.m({ a: 1 }) : void
+>i.m : ({ a: b }: { a: any; }) => void
+>i : I
+>m : ({ a: b }: { a: any; }) => void
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+f({ a: 1 });
+>f({ a: 1 }) : void
+>f : ({ a: b }: { a: any; }) => void
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+

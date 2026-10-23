@@ -1,0 +1,16 @@
+a.ts(3,14): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "isolatedModules": true } }
+==== a.ts (2 errors) ====
+    export {};
+    declare const enum CE { B = "b" }
+    type F = ({ [CE.B]: [] }: any) => void;
+                 ~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

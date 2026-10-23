@@ -1,0 +1,20 @@
+a.ts(3,1): error TS2322: Type '(x: unknown) => x is typeof ut' is not assignable to type '(x: unknown) => x is typeof us'.
+  Type predicate 'x is typeof ut' is not assignable to 'x is typeof us'.
+    Type 'typeof ut' is not assignable to type 'typeof us'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const us: unique symbol; declare const ut: unique symbol;
+    declare let a1: (x: unknown) => x is typeof us; declare let a2: (x: unknown) => x is typeof ut;
+    a1 = a2;
+    ~~
+!!! error TS2322: Type '(x: unknown) => x is typeof ut' is not assignable to type '(x: unknown) => x is typeof us'.
+!!! error TS2322:   Type predicate 'x is typeof ut' is not assignable to 'x is typeof us'.
+!!! error TS2322:     Type 'typeof ut' is not assignable to type 'typeof us'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,31 @@
+//// [test/cases/bun21-C19.ts] ////
+
+=== a.ts ===
+class A { isB(_?: unknown): this is B { return false; } }
+>A : A
+>isB : (_?: unknown) => this is B
+>_ : unknown
+>false : false
+
+class B extends A { b = 1; }
+>B : B
+>A : A
+>b : number
+>1 : 1
+
+function f(x: A) { if (x["isB"](x)) x.b; }
+>f : (x: A) => void
+>x : A
+>x["isB"](x) : boolean
+>x["isB"] : (_?: unknown) => this is B
+>x : A
+>"isB" : "isB"
+>x : A
+>x.b : number
+>x : B
+>b : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

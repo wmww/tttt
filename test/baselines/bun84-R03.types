@@ -1,0 +1,42 @@
+//// [test/cases/bun84-R03.ts] ////
+
+=== a.js ===
+/** @type {NS.A.} */ let y1 = 1;
+>y1 : any
+>1 : 1
+
+/** @type {Array<NS.A.>} */ let y2 = [1];
+>y2 : any[]
+>[1] : number[]
+>1 : 1
+
+/** @type {import("./m").M.} */ let y3 = 1;
+>y3 : any
+>1 : 1
+
+/** @type {typeof globalThis.} */ let y4 = 1;
+>y4 : any
+>1 : 1
+
+/** @type {typeof p.} */ let y5 = 1;
+>y5 : number
+>1 : 1
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== m.d.ts ===
+
+export namespace M { interface X {} }
+=== n.d.ts ===
+declare namespace NS { interface A { a: number } }
+>a : number
+
+declare class P { private "": number }
+>P : P
+>"" : number
+
+declare const p: P;
+>p : P
+

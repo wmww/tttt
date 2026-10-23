@@ -1,0 +1,24 @@
+//// [test/cases/bun24-C20a.ts] ////
+
+=== a.ts ===
+declare const us: unique symbol; declare const ut: unique symbol;
+>us : Symbol(us, Decl(a.ts, 0, 13))
+>ut : Symbol(ut, Decl(a.ts, 0, 46))
+
+declare let a1: (x: unknown) => x is typeof us; declare let a2: (x: unknown) => x is typeof ut;
+>a1 : Symbol(a1, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 17))
+>x : Symbol(x, Decl(a.ts, 1, 17))
+>us : Symbol(us, Decl(a.ts, 0, 13))
+>a2 : Symbol(a2, Decl(a.ts, 1, 59))
+>x : Symbol(x, Decl(a.ts, 1, 65))
+>x : Symbol(x, Decl(a.ts, 1, 65))
+>ut : Symbol(ut, Decl(a.ts, 0, 46))
+
+a1 = a2;
+>a1 : Symbol(a1, Decl(a.ts, 1, 11))
+>a2 : Symbol(a2, Decl(a.ts, 1, 59))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

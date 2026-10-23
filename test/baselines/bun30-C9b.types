@@ -1,0 +1,17 @@
+//// [test/cases/bun30-C9b.ts] ////
+
+=== a.ts ===
+export class C { #a = 1; m(o: { #a: number }) { return o.#a; } }
+>C : C
+>#a : number
+>1 : 1
+>m : (o: { #a: number; }) => number
+>o : { #a: number; }
+>#a : number
+>o.#a : number
+>o : { #a: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

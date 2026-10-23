@@ -1,0 +1,11 @@
+//// [test/cases/bun42-C9.ts] ////
+
+=== a.ts ===
+const b: `${bigint}` = "\u20281";
+>b : `${bigint}`
+>"\u20281" : "\u20281"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

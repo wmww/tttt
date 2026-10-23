@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C15.ts] ////
+
+=== a.ts ===
+const o = { async p: 1 };
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>p : Symbol(p, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

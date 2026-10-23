@@ -1,0 +1,74 @@
+//// [test/cases/bun58-L08b.ts] ////
+
+=== aug.ts ===
+export {};
+declare module "./m" {
+>"./m" : typeof import("./m")
+
+  export const c: number;
+>c : number
+
+  export namespace d { const nd: number }
+>d : typeof import("./m").d
+>nd : number
+
+  export function f(): void;
+>f : () => void
+
+  export class g {}
+>g : g
+
+  export var h: number;
+>h : number
+
+  export enum i { A }
+>i : i
+>A : i.A
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.js ===
+exports.c = 1;
+>exports.c = 1 : 1
+>exports.c : 1
+>exports : typeof import("./m")
+>c : 1
+>1 : 1
+
+exports.d = 1;
+>exports.d = 1 : 1
+>exports.d : 1
+>exports : typeof import("./m")
+>d : 1
+>1 : 1
+
+exports.f = 1;
+>exports.f = 1 : 1
+>exports.f : 1
+>exports : typeof import("./m")
+>f : 1
+>1 : 1
+
+exports.g = 1;
+>exports.g = 1 : 1
+>exports.g : 1
+>exports : typeof import("./m")
+>g : 1
+>1 : 1
+
+exports.h = 1;
+>exports.h = 1 : 1
+>exports.h : number
+>exports : typeof import("./m")
+>h : number
+>1 : 1
+
+exports.i = 1;
+>exports.i = 1 : 1
+>exports.i : 1
+>exports : typeof import("./m")
+>i : 1
+>1 : 1
+

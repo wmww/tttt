@@ -1,0 +1,33 @@
+//// [test/cases/bun33-P1.ts] ////
+
+=== a.ts ===
+function f() {}
+>f : typeof f
+
+f.x = 1;
+>f.x = 1 : 1
+>f.x : number
+>f : typeof f
+>x : number
+>1 : 1
+
+=== b.ts ===
+declare namespace Y { interface T {} }
+declare namespace f { export import x = Y.T; }
+>f : typeof f
+>x : number
+>Y : any
+>T : x
+
+import z = f.x;
+>z : any
+>f : typeof f
+>x : z
+
+z;
+>z : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

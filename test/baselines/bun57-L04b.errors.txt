@@ -1,0 +1,46 @@
+a.ts(2,3): error TS1231: An export assignment must be at the top level of a file or module declaration.
+a.ts(2,13): error TS2304: Cannot find name 'Missing1'.
+a.ts(3,3): error TS1231: An export assignment must be at the top level of a file or module declaration.
+a.ts(3,12): error TS2304: Cannot find name 'missing2'.
+a.ts(4,16): error TS1231: An export assignment must be at the top level of a file or module declaration.
+a.ts(4,25): error TS2304: Cannot find name 'missing3'.
+a.ts(5,3): error TS1258: A default export must be at the top level of a file or module declaration.
+a.ts(5,18): error TS2304: Cannot find name 'missing4'.
+a.ts(6,16): error TS1258: A default export must be at the top level of a file or module declaration.
+a.ts(6,32): error TS2304: Cannot find name 'Missing5'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (11 errors) ====
+    declare const o: any;
+    { export = <Missing1>o }
+      ~~~~~~
+!!! error TS1231: An export assignment must be at the top level of a file or module declaration.
+                ~~~~~~~~
+!!! error TS2304: Cannot find name 'Missing1'.
+    { export = missing2() }
+      ~~~~~~
+!!! error TS1231: An export assignment must be at the top level of a file or module declaration.
+               ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing2'.
+    function f() { export = missing3() }
+                   ~~~~~~
+!!! error TS1231: An export assignment must be at the top level of a file or module declaration.
+                            ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing3'.
+    { export default missing4() }
+      ~~~~~~
+!!! error TS1258: A default export must be at the top level of a file or module declaration.
+                     ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing4'.
+    function g() { export default <Missing5>o }
+                   ~~~~~~
+!!! error TS1258: A default export must be at the top level of a file or module declaration.
+                                   ~~~~~~~~
+!!! error TS2304: Cannot find name 'Missing5'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

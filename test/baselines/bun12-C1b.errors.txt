@@ -1,0 +1,18 @@
+a.ts(3,9): error TS2322: Type '[[number, [number]]]' is not assignable to type 'string'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function f<T extends any[], U extends any[]>(t: T, u: U): { [K in keyof T]: [T[K], U] } {
+      const r = f([...u] as [...U], [1] as [number]);
+      const bad: string = r;
+            ~~~
+!!! error TS2322: Type '[[number, [number]]]' is not assignable to type 'string'.
+      return null!;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

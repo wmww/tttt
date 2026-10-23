@@ -1,0 +1,21 @@
+//// [test/cases/bun08-C17.ts] ////
+
+=== a.ts ===
+import {} from "./r4";
+declare module "./r4" { var w: number; }
+>"./r4" : typeof import("./r4")
+>w : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== n.ts ===
+export var w = 1;
+>w : number
+>1 : 1
+
+=== r4.ts ===
+export { w } from "./n";
+>w : number
+

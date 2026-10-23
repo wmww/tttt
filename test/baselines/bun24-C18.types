@@ -1,0 +1,12 @@
+//// [test/cases/bun24-C18.ts] ////
+
+=== a.ts ===
+const a: 1 = null! as [] | {};
+>a : 1
+>null! as [] | {} : {} | []
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

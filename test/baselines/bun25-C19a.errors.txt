@@ -1,0 +1,14 @@
+a.ts(1,36): error TS2411: Property '"#a@1"' of type 'string' is not assignable to 'string' index type 'number'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface I { [k: string]: number; "#a@1": string }
+                                       ~~~~~~
+!!! error TS2411: Property '"#a@1"' of type 'string' is not assignable to 'string' index type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

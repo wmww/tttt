@@ -1,0 +1,30 @@
+//// [test/cases/bun21-C2.ts] ////
+
+=== a.ts ===
+const key = compute({ a: 1 }, {});
+>key : any
+>compute({ a: 1 }, {}) : any
+>compute : (o: { a: number; }, p: any) => any
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{} : {}
+
+function compute(o: { a: number }, p: any) { p[key] = 1; return o.a; }
+>compute : (o: { a: number; }, p: any) => any
+>o : { a: number; }
+>a : number
+>p : any
+>p[key] = 1 : 1
+>p[key] : any
+>p : any
+>key : any
+>1 : 1
+>o.a : number
+>o : { a: number; }
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

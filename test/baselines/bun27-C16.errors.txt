@@ -1,0 +1,16 @@
+a.jsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve", "allowJs": true, "checkJs": true } }
+==== a.jsx (1 errors) ====
+    /** @param {{ a?: string }} p */
+    function F(p) { return /** @type {any} */ (null); }
+    const a1 = <F q={x => x.nope} />;
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== g.d.ts (0 errors) ====
+    declare namespace JSX { interface Element { e: 1 } type LibraryManagedAttributes<C, P, Q> = P & { q: (x: Q) => void }; interface IntrinsicElements { div: {} } }
+    

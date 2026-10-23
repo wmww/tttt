@@ -1,0 +1,37 @@
+//// [test/cases/bun09-P4.ts] ////
+
+=== a.ts ===
+type D<X> = X extends PropertyKey ? 1 : 2;
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+
+type W<X> = X extends number ? [X] : never;
+>W : Symbol(W, Decl(a.ts, 0, 42))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+
+function f<T>(w: W<D<keyof T>>, a: D<keyof T>) {
+>f : Symbol(f, Decl(a.ts, 1, 43))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>w : Symbol(w, Decl(a.ts, 2, 14))
+>W : Symbol(W, Decl(a.ts, 0, 42))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>a : Symbol(a, Decl(a.ts, 2, 31))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+
+  const probe: unknown[] = w;
+>probe : Symbol(probe, Decl(a.ts, 3, 7))
+>w : Symbol(w, Decl(a.ts, 2, 14))
+
+  const x: 1 = a;
+>x : Symbol(x, Decl(a.ts, 4, 7))
+>a : Symbol(a, Decl(a.ts, 2, 31))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

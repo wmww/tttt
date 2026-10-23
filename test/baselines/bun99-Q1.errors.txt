@@ -1,0 +1,518 @@
+do_array-chained.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+do_element-access.ts(9,8): error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+do_element-access.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+do_nested.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+do_object-chained.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+do_plain-chained.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+for_array-chained.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+for_element-access.ts(8,8): error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+for_element-access.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+for_nested.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+for_object-chained.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+for_plain-chained.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_array-chained.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_array-default.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_array-direct.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_array-of-element.ts(8,9): error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+while_array-of-element.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_array-rest.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_array-two.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_as.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_chain-of-calls.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_element-access.ts(8,8): error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+while_element-access.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_let.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_longer-chain.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_nested.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_non-null.ts(8,9): error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+while_non-null.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_object-chained.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_object-index.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_object-renamed.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_object-rest.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_optional-call.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_parenthesized.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+while_plain-chained.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler", "types": []}, "files": ["index.ts", "while_plain-chained.ts", "while_array-chained.ts", "while_array-direct.ts", "while_array-two.ts", "while_object-chained.ts", "while_object-renamed.ts", "while_object-index.ts", "while_nested.ts", "while_array-default.ts", "while_array-rest.ts", "while_object-rest.ts", "while_longer-chain.ts", "while_chain-of-calls.ts", "while_element-access.ts", "while_array-of-element.ts", "while_parenthesized.ts", "while_non-null.ts", "while_as.ts", "while_let.ts", "while_optional-call.ts", "for_plain-chained.ts", "for_array-chained.ts", "for_object-chained.ts", "for_nested.ts", "for_element-access.ts", "do_plain-chained.ts", "do_array-chained.ts", "do_object-chained.ts", "do_nested.ts", "do_element-access.ts"]}
+==== do_array-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    do {
+    	if (cursor === null) break;
+    	const [row] = where(cursor).limit();
+    	cursor = (row)?.parent ?? null;
+    } while (true);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== do_element-access.ts (2 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    do {
+    	if (cursor === null) break;
+    	const row = where(cursor).limit()[0];
+    	      ~~~
+!!! error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    	cursor = (row)?.parent ?? null;
+    } while (true);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== do_nested.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    do {
+    	if (cursor === null) break;
+    	const { row: { parent } } = where(cursor).obj();
+    	cursor = ({ parent })?.parent ?? null;
+    } while (true);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== do_object-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    do {
+    	if (cursor === null) break;
+    	const { row } = where(cursor).obj();
+    	cursor = (row)?.parent ?? null;
+    } while (true);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== do_plain-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    do {
+    	if (cursor === null) break;
+    	const r = where(cursor).limit();
+    	cursor = (r[0])?.parent ?? null;
+    } while (true);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== for_array-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    for (; cursor !== null; ) {
+    	const [row] = where(cursor).limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== for_element-access.ts (2 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    for (; cursor !== null; ) {
+    	const row = where(cursor).limit()[0];
+    	      ~~~
+!!! error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== for_nested.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    for (; cursor !== null; ) {
+    	const { row: { parent } } = where(cursor).obj();
+    	cursor = ({ parent })?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== for_object-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    for (; cursor !== null; ) {
+    	const { row } = where(cursor).obj();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== for_plain-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    for (; cursor !== null; ) {
+    	const r = where(cursor).limit();
+    	cursor = (r[0])?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== index.ts (0 errors) ====
+    type Row = { parent: string | null };
+    interface Query {
+    	limit(): Row[];
+    }
+    declare function where(id: string): Query;
+    
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = where(cursor).limit();
+    	cursor = row?.parent ?? null;
+    }
+    export {};
+==== while_array-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = where(cursor).limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_array-default.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row = null! as Row] = where(cursor).limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_array-direct.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = rows(cursor);
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_array-of-element.ts (2 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = [where(cursor).one()];
+    	       ~~~
+!!! error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_array-rest.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [...all] = where(cursor).limit();
+    	cursor = (all[0])?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_array-two.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row, n] = where(cursor).pair();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_as.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = where(cursor).limit() as Row[];
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_chain-of-calls.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = api.where(cursor).q.limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_element-access.ts (2 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const row = where(cursor).limit()[0];
+    	      ~~~
+!!! error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_let.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	let [row] = where(cursor).limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_longer-chain.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = where(cursor).self.self.limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_nested.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const { row: { parent } } = where(cursor).obj();
+    	cursor = ({ parent })?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_non-null.ts (2 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = where(cursor).limit()!;
+    	       ~~~
+!!! error TS7022: 'row' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_object-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const { row } = where(cursor).obj();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_object-index.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const { 0: row } = where(cursor).limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_object-renamed.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const { row: x } = where(cursor).obj();
+    	cursor = (x)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_object-rest.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const { n, ...others } = where(cursor).obj();
+    	cursor = (others.row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_optional-call.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = where(cursor)?.limit();
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_parenthesized.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const [row] = (where(cursor).limit());
+    	cursor = (row)?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== while_plain-chained.ts (1 errors) ====
+    type Row = { parent: string | null };
+    interface Query { limit(): Row[]; one(): Row; pair(): [Row, number]; obj(): { row: Row; n: number }; self: Query; q: { limit(): Row[] } }
+    declare function where(id: string): Query;
+    declare function rows(id: string): Row[];
+    declare const api: { where(id: string): Query };
+    let cursor: string | null = "root";
+    while (cursor !== null) {
+    	const r = where(cursor).limit();
+    	cursor = (r[0])?.parent ?? null;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+    

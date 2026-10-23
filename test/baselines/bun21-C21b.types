@@ -1,0 +1,23 @@
+//// [test/cases/bun21-C21b.ts] ////
+
+=== a.ts ===
+function f({ kind, v }: { kind: "a"; v: string } | { kind: "b"; v: number }) { var v: string | number; if (kind === "a") v.length; }
+>f : ({ kind, v }: { kind: "a"; v: string; } | { kind: "b"; v: number; }) => void
+>kind : "a" | "b"
+>v : string | number
+>kind : "a"
+>v : string
+>kind : "b"
+>v : number
+>v : string | number
+>kind === "a" : boolean
+>kind : "a" | "b"
+>"a" : "a"
+>v.length : number
+>v : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

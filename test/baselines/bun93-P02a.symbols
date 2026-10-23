@@ -1,0 +1,15 @@
+//// [test/cases/bun93-P02a.ts] ////
+
+=== a.ts ===
+declare const dec: any, m: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>m : Symbol(m, Decl(a.ts, 0, 23))
+
+function f() { m(@dec x) }
+>f : Symbol(f, Decl(a.ts, 0, 31))
+>m : Symbol(m, Decl(a.ts, 0, 23))
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

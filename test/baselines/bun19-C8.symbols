@@ -1,0 +1,14 @@
+//// [test/cases/bun19-C8.ts] ////
+
+=== a.ts ===
+declare const key: string;
+>key : Symbol(key, Decl(a.ts, 0, 13))
+
+function f({ [key]: a = 1 }) {}
+>f : Symbol(f, Decl(a.ts, 0, 26))
+>key : Symbol(key, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

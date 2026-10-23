@@ -1,0 +1,15 @@
+//// [test/cases/bun16-C3c.ts] ////
+
+=== a.ts ===
+function f6<T extends [((x: number) => void)?, ((x: string) => void)?]>([a = x => {}]: T) {}
+>f6 : <T extends [((x: number) => void)?, ((x: string) => void)?]>([a]: T) => void
+>x : number
+>x : string
+>a : (x: number) => void
+>x => {} : (x: any) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,24 @@
+a.ts(7,79): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function cond(): boolean;
+    function h() {
+        let x: string | number | boolean = "";
+        do {
+            x;
+            try { x = 1; while (!x) { if (cond()) break; } }
+            finally { do { if (cond()) break; } while (typeof x !== "boolean"); x.toFixed(); }
+                                                                                  ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+        } while (cond());
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

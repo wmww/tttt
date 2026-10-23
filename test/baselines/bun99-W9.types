@@ -1,0 +1,80 @@
+//// [test/cases/bun99-W9.ts] ////
+
+=== a.ts ===
+import { flow, hoc, enh } from './lib';
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>hoc : <C extends (p: any) => void>(c: C) => C
+>enh : import("./lib").Enh<{}, {}>
+
+export const R1 = flow(hoc, enh);
+>R1 : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow(hoc, enh) : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>hoc : <C extends (p: any) => void>(c: C) => C
+>enh : import("./lib").Enh<{}, {}>
+
+export const R2 = flow(hoc, enh);
+>R2 : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow(hoc, enh) : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>hoc : <C extends (p: any) => void>(c: C) => C
+>enh : import("./lib").Enh<{}, {}>
+
+export const R3 = flow(enh, enh);
+>R3 : <C extends (p: C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) => void>(a: C) => (p: never) => void
+>flow(enh, enh) : <C extends (p: C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) => void>(a: C) => (p: never) => void
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>enh : import("./lib").Enh<{}, {}>
+>enh : import("./lib").Enh<{}, {}>
+
+=== b.ts ===
+import { flow, hoc, enh } from './lib';
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>hoc : <C extends (p: any) => void>(c: C) => C
+>enh : import("./lib").Enh<{}, {}>
+
+export const R4 = flow(hoc, enh);
+>R4 : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow(hoc, enh) : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>hoc : <C extends (p: any) => void>(c: C) => C
+>enh : import("./lib").Enh<{}, {}>
+
+// @ts-expect-error
+export const R5 = flow(hoc, enh);
+>R5 : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow(hoc, enh) : <C extends (p: any) => void>(a: C) => (p: (C extends (p: infer P) => void ? C extends new () => 0 ? P : never : never) & {} extends infer T ? { [k in keyof T]: T; } : never) => void
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>hoc : <C extends (p: any) => void>(c: C) => C
+>enh : import("./lib").Enh<{}, {}>
+
+=== lib.ts ===
+type Comp<P> = (p: P) => void;
+>Comp : Comp<P>
+>p : P
+
+type M<T> = { [k in keyof T]: T };
+>M : M<T>
+
+type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+>GetProps : GetProps<C>
+
+export type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+>Enh : Enh<I, N>
+>c : C
+
+export declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>f : (a: A) => B
+>a : A
+>g : (b: B) => C
+>b : B
+>a : A
+
+export declare const hoc: <C extends Comp<any>>(c: C) => C;
+>hoc : <C extends Comp<any>>(c: C) => C
+>c : C
+
+export declare const enh: Enh<{}, {}>;
+>enh : Enh<{}, {}>
+

@@ -1,0 +1,24 @@
+//// [test/cases/bun77-R17b.ts] ////
+
+=== a.ts ===
+class C { constructor(public a: number, public a: string) {} }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>a : Symbol(C.a, Decl(a.ts, 0, 22), Decl(a.ts, 0, 39))
+>a : Symbol(C.a, Decl(a.ts, 0, 22), Decl(a.ts, 0, 39))
+
+new C(1, ""); new C(1, 2);
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+class D { constructor(a: number, a: string) {} }
+>D : Symbol(D, Decl(a.ts, 1, 26))
+>a : Symbol(a, Decl(a.ts, 2, 22))
+>a : Symbol(a, Decl(a.ts, 2, 32))
+
+new D(1, ""); new D(1, 2);
+>D : Symbol(D, Decl(a.ts, 1, 26))
+>D : Symbol(D, Decl(a.ts, 1, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

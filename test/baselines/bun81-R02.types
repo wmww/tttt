@@ -1,0 +1,99 @@
+//// [test/cases/bun81-R02.ts] ////
+
+=== a.ts ===
+function a1<T extends string | undefined>(x: T) { return x!.toUpperCase(); }
+>a1 : <T extends string | undefined>(x: T) => string
+>x : T
+>x!.toUpperCase() : string
+>x!.toUpperCase : () => string
+>x! : NonNullable<T>
+>x : T
+>toUpperCase : () => string
+
+function a2<T extends number | null>(x: T) { return x!.toFixed(); }
+>a2 : <T extends number | null>(x: T) => string
+>x : T
+>x!.toFixed() : string
+>x!.toFixed : (fractionDigits?: number) => string
+>x! : NonNullable<T>
+>x : T
+>toFixed : (fractionDigits?: number) => string
+
+function a3<T extends string | undefined>(o: { p: T }) { return o.p!.length; }
+>a3 : <T extends string | undefined>(o: { p: T; }) => number
+>o : { p: T; }
+>p : T
+>o.p!.length : number
+>o.p! : NonNullable<T>
+>o.p : T
+>o : { p: T; }
+>p : T
+>length : number
+
+function a4<T extends string | undefined>(f: () => NonNullable<T>) { return f().length; }
+>a4 : <T extends string | undefined>(f: () => NonNullable<T>) => number
+>f : () => NonNullable<T>
+>f().length : number
+>f() : NonNullable<T>
+>f : () => NonNullable<T>
+>length : number
+
+class A5<T extends string | undefined> { p!: T; m() { return this.p!.length; } }
+>A5 : A5<T>
+>p : T
+>m : () => number
+>this.p!.length : number
+>this.p! : NonNullable<T>
+>this.p : T
+>this : this
+>p : T
+>length : number
+
+function a6<T extends string | undefined>(x: T) { x!.length = 1; }
+>a6 : <T extends string | undefined>(x: T) => void
+>x : T
+>x!.length = 1 : 1
+>x!.length : any
+>x! : NonNullable<T>
+>x : T
+>length : any
+>1 : 1
+
+// the two agree: a constraint that is still a union or an object type after `& {}`, a reference in a constraint position
+function b1<T extends string | number | undefined>(x: T) { return x!.toString(); }
+>b1 : <T extends string | number | undefined>(x: T) => string
+>x : T
+>x!.toString() : string
+>x!.toString : (() => string) | ((radix?: number) => string)
+>x! : NonNullable<T>
+>x : T
+>toString : (() => string) | ((radix?: number) => string)
+
+function b2<T extends { a: number } | undefined>(x: T) { return x!.a; }
+>b2 : <T extends { a: number; } | undefined>(x: T) => number
+>a : number
+>x : T
+>x!.a : number
+>x! : NonNullable<T>
+>x : T
+>a : number
+
+function b3<T extends string | undefined>(x: NonNullable<T>) { return x.length; }
+>b3 : <T extends string | undefined>(x: NonNullable<T>) => number
+>x : NonNullable<T>
+>x.length : number
+>x : string
+>length : number
+
+function b4<T extends string | undefined>(x: T) { return x![0]; }
+>b4 : <T extends string | undefined>(x: T) => string
+>x : T
+>x![0] : string
+>x! : NonNullable<T>
+>x : T
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

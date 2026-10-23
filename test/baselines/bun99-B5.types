@@ -1,0 +1,96 @@
+//// [test/cases/bun99-B5.ts] ////
+
+=== a.ts ===
+declare const k: string | undefined;
+>k : string | undefined
+
+declare const o: { p?: string } | undefined;
+>o : { p?: string; } | undefined
+>p : string | undefined
+
+export const n1: number = ({ [k!]: v }: Record<string, number>) => v;
+>n1 : number
+>({ [k!]: v }: Record<string, number>) => v : ({ [k!]: v }: Record<string, number>) => number
+>k! : string
+>k : string | undefined
+>v : number
+>v : number
+
+export const n2: number = ({ [k!!]: v }: Record<string, number>) => v;
+>n2 : number
+>({ [k!!]: v }: Record<string, number>) => v : ({ [(k!)!]: v }: Record<string, number>) => number
+>k!! : string
+>k! : string
+>k : string | undefined
+>v : number
+>v : number
+
+export const n3: number = ({ [k!!!]: v }: Record<string, number>) => v;
+>n3 : number
+>({ [k!!!]: v }: Record<string, number>) => v : ({ [((k!)!)!]: v }: Record<string, number>) => number
+>k!!! : string
+>k!! : string
+>k! : string
+>k : string | undefined
+>v : number
+>v : number
+
+export const n4: number = ({ [(k!!)!]: v }: Record<string, number>) => v;
+>n4 : number
+>({ [(k!!)!]: v }: Record<string, number>) => v : ({ [((k!)!)!]: v }: Record<string, number>) => number
+>(k!!)! : string
+>(k!!) : string
+>k!! : string
+>k! : string
+>k : string | undefined
+>v : number
+>v : number
+
+export const n5: number = ({ [o!!.p!!]: v }: Record<string, number>) => v;
+>n5 : number
+>({ [o!!.p!!]: v }: Record<string, number>) => v : ({ [(((o!)!).p!)!]: v }: Record<string, number>) => number
+>o!!.p!! : string
+>o!!.p! : string
+>o!!.p : string | undefined
+>o!! : { p?: string; }
+>o! : { p?: string; }
+>o : { p?: string; } | undefined
+>p : string | undefined
+>v : number
+>v : number
+
+export const n6: number = ({ [k! ! /* c */ !]: v }: Record<string, number>) => v;
+>n6 : number
+>({ [k! ! /* c */ !]: v }: Record<string, number>) => v : ({ [((k!)!)!]: v }: Record<string, number>) => number
+>k! ! /* c */ ! : string
+>k! ! : string
+>k! : string
+>k : string | undefined
+>v : number
+>v : number
+
+export const n7: number = ([{ [k!!]: v }]: Record<string, number>[]) => v;
+>n7 : number
+>([{ [k!!]: v }]: Record<string, number>[]) => v : ([{ [(k!)!]: v }]: Record<string, number>[]) => number
+>k!! : string
+>k! : string
+>k : string | undefined
+>v : number
+>v : number
+
+export function f({ [k!!]: v }: Record<string, number>) { return v; }
+>f : ({ [(k!)!]: v }: Record<string, number>) => number
+>k!! : string
+>k! : string
+>k : string | undefined
+>v : number
+>v : number
+
+export const n8: number = f;
+>n8 : number
+>f : ({ [(k!)!]: v }: Record<string, number>) => number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

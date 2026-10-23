@@ -1,0 +1,18 @@
+//// [test/cases/bun39-C11c.ts] ////
+
+=== a.ts ===
+import { p } from 'x/index.ts';
+>p : 1
+
+p;
+>p : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/x/index.ts ===
+export const p = 1;
+>p : 1
+>1 : 1
+

@@ -1,0 +1,17 @@
+//// [test/cases/bun12-C15.ts] ////
+
+=== a.ts ===
+type Id<T> = { [K in keyof T]: T[K] };
+>Id : Id<T>
+
+function g<T>() { const n: { never: 1 } = null! as Id<T & 1[]>; }
+>g : <T>() => void
+>n : { never: 1; }
+>never : 1
+>null! as Id<T & 1[]> : Id<T & 1[]>
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

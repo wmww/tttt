@@ -1,0 +1,53 @@
+//// [test/cases/bun44-C6b.ts] ////
+
+=== a.ts ===
+type Base = Readonly<{ id: string; x: number }>;
+>Base : Readonly<{ id: string; x: number; }>
+>id : string
+>x : number
+
+type Rect = Base & { type: "rectangle" };
+>Rect : Rect
+>type : "rectangle"
+
+type Text = Base & Readonly<{ type: "text"; text: string }>;
+>Text : Text
+>type : "text"
+>text : string
+
+type Linear = Base & Readonly<{ type: "line" | "arrow"; points: number[] }>;
+>Linear : Linear
+>type : "arrow" | "line"
+>points : number[]
+
+type Arrow = Linear & Readonly<{ type: "arrow"; elbowed: boolean }>;
+>Arrow : Arrow
+>type : "arrow"
+>elbowed : boolean
+
+type El = Rect | Text | Linear | Arrow;
+>El : El
+
+declare const isArrow: <T extends El>(e?: T | null) => e is T & Arrow;
+>isArrow : <T extends El>(e?: T | null) => e is T & Arrow
+>e : T | null | undefined
+
+function f(e: El) {
+>f : (e: El) => void
+>e : El
+
+  if (isArrow(e)) {
+>isArrow(e) : boolean
+>isArrow : <T extends El>(e?: T | null) => e is T & Arrow
+>e : El
+
+    e.elbowedX;
+>e.elbowedX : any
+>e : Arrow | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "line" | "arrow"; points: number[]; }> & Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow"; elbowed: boolean; }>) | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "line" | "arrow"; points: number[]; }> & Readonly<{ type: "arrow"; elbowed: boolean; }> & Readonly<{ id: string; x: number; }>)
+>elbowedX : any
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

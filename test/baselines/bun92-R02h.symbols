@@ -1,0 +1,10 @@
+//// [test/cases/bun92-R02h.ts] ////
+
+=== a.ts ===
+declare const a: any, b: any, T: any; a?.<T>`x`;
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 0, 29))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>T : Symbol(T)
+

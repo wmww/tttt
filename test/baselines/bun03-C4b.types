@@ -1,0 +1,19 @@
+//// [test/cases/bun03-C4b.ts] ////
+
+=== a.ts ===
+declare function cbg<T>(v: T, f: (x: T) => void): void;
+>cbg : <T>(v: T, f: (x: T) => void) => void
+>v : T
+>f : (x: T) => void
+>x : T
+
+cbg(1, ([]) => {});
+>cbg(1, ([]) => {}) : void
+>cbg : <T>(v: T, f: (x: T) => void) => void
+>1 : 1
+>([]) => {} : ([]: number) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

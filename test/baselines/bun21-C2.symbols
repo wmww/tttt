@@ -1,0 +1,22 @@
+//// [test/cases/bun21-C2.ts] ////
+
+=== a.ts ===
+const key = compute({ a: 1 }, {});
+>key : Symbol(key, Decl(a.ts, 0, 5))
+>compute : Symbol(compute, Decl(a.ts, 0, 34))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+
+function compute(o: { a: number }, p: any) { p[key] = 1; return o.a; }
+>compute : Symbol(compute, Decl(a.ts, 0, 34))
+>o : Symbol(o, Decl(a.ts, 1, 17))
+>a : Symbol(a, Decl(a.ts, 1, 21))
+>p : Symbol(p, Decl(a.ts, 1, 34))
+>p : Symbol(p, Decl(a.ts, 1, 34))
+>key : Symbol(key, Decl(a.ts, 0, 5))
+>o.a : Symbol(a, Decl(a.ts, 1, 21))
+>o : Symbol(o, Decl(a.ts, 1, 17))
+>a : Symbol(a, Decl(a.ts, 1, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

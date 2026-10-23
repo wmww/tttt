@@ -1,0 +1,25 @@
+//// [test/cases/bun15-C13.ts] ////
+
+=== a.ts ===
+declare function gen<T>(cb: (x: T) => void): AsyncGenerator<never, T, unknown>;
+>gen : <T>(cb: (x: T) => void) => AsyncGenerator<never, T, unknown>
+>cb : (x: T) => void
+>x : T
+
+async function* f3(): AsyncGenerator<never, void, unknown> {
+>f3 : () => AsyncGenerator<never, void, unknown>
+
+  const x: number | Promise<number> = yield* gen(x => { const n: number = x; });
+>x : number | Promise<number>
+>yield* gen(x => { const n: number = x; }) : number
+>gen(x => { const n: number = x; }) : AsyncGenerator<never, number, unknown>
+>gen : <T>(cb: (x: T) => void) => AsyncGenerator<never, T, unknown>
+>x => { const n: number = x; } : (x: number) => void
+>x : number
+>n : number
+>x : number
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

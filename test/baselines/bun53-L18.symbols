@@ -1,0 +1,55 @@
+//// [test/cases/bun53-L18.ts] ////
+
+=== a.ts ===
+const o1 = { readonly m() {} };
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 12))
+
+o1.m = () => {};
+>o1.m : Symbol(m, Decl(a.ts, 0, 12))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 12))
+
+const p1: number = o1;
+>p1 : Symbol(p1, Decl(a.ts, 2, 5))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+
+type M1 = { [K in keyof typeof o1]: (typeof o1)[K] };
+>M1 : Symbol(M1, Decl(a.ts, 2, 22))
+>K : Symbol(K, Decl(a.ts, 3, 13))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>K : Symbol(K, Decl(a.ts, 3, 13))
+
+declare const m1: M1; m1.m = () => {};
+>m1 : Symbol(m1, Decl(a.ts, 4, 13))
+>M1 : Symbol(M1, Decl(a.ts, 2, 22))
+>m1.m : Symbol(m, Decl(a.ts, 0, 12))
+>m1 : Symbol(m1, Decl(a.ts, 4, 13))
+>m : Symbol(m, Decl(a.ts, 0, 12))
+
+const o4 = { readonly ["m"]() {} }; o4.m = null!;
+>o4 : Symbol(o4, Decl(a.ts, 5, 5))
+>["m"] : Symbol(["m"], Decl(a.ts, 5, 12))
+>"m" : Symbol(["m"], Decl(a.ts, 5, 12))
+>o4.m : Symbol(["m"], Decl(a.ts, 5, 12))
+>o4 : Symbol(o4, Decl(a.ts, 5, 5))
+>m : Symbol(["m"], Decl(a.ts, 5, 12))
+
+const o7 = { readonly a: 1 }; o7.a = 2; const p7: string = o7;
+>o7 : Symbol(o7, Decl(a.ts, 6, 5))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>o7.a : Symbol(a, Decl(a.ts, 6, 12))
+>o7 : Symbol(o7, Decl(a.ts, 6, 5))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>p7 : Symbol(p7, Decl(a.ts, 6, 45))
+>o7 : Symbol(o7, Decl(a.ts, 6, 5))
+
+delete o1.m;
+>o1.m : Symbol(m, Decl(a.ts, 0, 12))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

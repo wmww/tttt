@@ -1,0 +1,14 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "strictPropertyInitialization": false } }
+==== a.ts (1 errors) ====
+    class B { x: number = 1; }
+    class D extends B { x: number; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    interface D { x: number }
+    

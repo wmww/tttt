@@ -1,0 +1,119 @@
+//// [test/cases/bun99-N3.ts] ////
+
+=== a.ts ===
+type A = { kind: "a"; x: 1 };
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 0, 10))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+
+type B = { kind: "b"; y: 2 };
+>B : Symbol(B, Decl(a.ts, 0, 29))
+>kind : Symbol(kind, Decl(a.ts, 1, 10))
+>y : Symbol(y, Decl(a.ts, 1, 21))
+
+declare function id<T>(value: T): T;
+>id : Symbol(id, Decl(a.ts, 1, 29))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+>value : Symbol(value, Decl(a.ts, 2, 23))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+
+declare function use<T>(select: () => T): { data: NoInfer<T> };
+>use : Symbol(use, Decl(a.ts, 2, 36))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+>select : Symbol(select, Decl(a.ts, 3, 24))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+>data : Symbol(data, Decl(a.ts, 3, 43))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+
+declare function both(): A & B;
+>both : Symbol(both, Decl(a.ts, 3, 63))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 29))
+
+declare const n: NoInfer<A & B>;
+>n : Symbol(n, Decl(a.ts, 5, 13))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 29))
+
+declare const m: NoInfer<A & B> | undefined;
+>m : Symbol(m, Decl(a.ts, 6, 13))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 29))
+
+const { data } = use(both);
+>data : Symbol(data, Decl(a.ts, 7, 7))
+>use : Symbol(use, Decl(a.ts, 2, 36))
+>both : Symbol(both, Decl(a.ts, 3, 63))
+
+type Cond<T> = T extends unknown ? A & B : never;
+>Cond : Symbol(Cond, Decl(a.ts, 7, 27))
+>T : Symbol(T, Decl(a.ts, 8, 10))
+>T : Symbol(T, Decl(a.ts, 8, 10))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 29))
+
+declare const c: NoInfer<Cond<1>>;
+>c : Symbol(c, Decl(a.ts, 9, 13))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Cond : Symbol(Cond, Decl(a.ts, 7, 27))
+
+export const v1: never = { id: 1, ...n };
+>v1 : Symbol(v1, Decl(a.ts, 10, 12))
+>id : Symbol(id, Decl(a.ts, 10, 26))
+>n : Symbol(n, Decl(a.ts, 5, 13))
+
+export const v2: never = id({ id: 1, ...n });
+>v2 : Symbol(v2, Decl(a.ts, 11, 12))
+>id : Symbol(id, Decl(a.ts, 1, 29))
+>id : Symbol(id, Decl(a.ts, 11, 29))
+>n : Symbol(n, Decl(a.ts, 5, 13))
+
+export const v3: never = { ...n, id: 1 };
+>v3 : Symbol(v3, Decl(a.ts, 12, 12))
+>n : Symbol(n, Decl(a.ts, 5, 13))
+>id : Symbol(id, Decl(a.ts, 12, 32))
+
+export const v4: never = id(m ? { id: 1, ...m } : undefined);
+>v4 : Symbol(v4, Decl(a.ts, 13, 12))
+>id : Symbol(id, Decl(a.ts, 1, 29))
+>m : Symbol(m, Decl(a.ts, 6, 13))
+>id : Symbol(id, Decl(a.ts, 13, 33))
+>m : Symbol(m, Decl(a.ts, 6, 13))
+>undefined : Symbol(undefined)
+
+export const v5: never = id({ id: 1, ...data });
+>v5 : Symbol(v5, Decl(a.ts, 14, 12))
+>id : Symbol(id, Decl(a.ts, 1, 29))
+>id : Symbol(id, Decl(a.ts, 14, 29))
+>data : Symbol(data, Decl(a.ts, 7, 7))
+
+export const v6: never = { id: 1, ...c };
+>v6 : Symbol(v6, Decl(a.ts, 15, 12))
+>id : Symbol(id, Decl(a.ts, 15, 26))
+>c : Symbol(c, Decl(a.ts, 9, 13))
+
+export const v7: { id: string } = { id: 1, ...n };
+>v7 : Symbol(v7, Decl(a.ts, 16, 12))
+>id : Symbol(id, Decl(a.ts, 16, 18))
+>id : Symbol(id, Decl(a.ts, 16, 35))
+>n : Symbol(n, Decl(a.ts, 5, 13))
+
+export const v8: { id: string } = id({ id: 1, ...n });
+>v8 : Symbol(v8, Decl(a.ts, 17, 12))
+>id : Symbol(id, Decl(a.ts, 17, 18))
+>id : Symbol(id, Decl(a.ts, 1, 29))
+>id : Symbol(id, Decl(a.ts, 17, 38))
+>n : Symbol(n, Decl(a.ts, 5, 13))
+
+export const v9 = { id: 1, ...n }.nope;
+>v9 : Symbol(v9, Decl(a.ts, 18, 12))
+>id : Symbol(id, Decl(a.ts, 18, 19))
+>n : Symbol(n, Decl(a.ts, 5, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 19, 5))
+

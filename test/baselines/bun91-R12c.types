@@ -1,0 +1,39 @@
+//// [test/cases/bun91-R12c.ts] ////
+
+=== a.js ===
+var o = /** @type {any} */ (null);
+>o : any
+>(null) : any
+
+with (o) { var r1 = require("./nope1"); }
+>o : any
+>r1 : any
+>require("./nope1") : any
+>require : any
+>"./nope1" : any
+
+r1;
+>r1 : any
+
+with (o) { var { r2 } = require("./nope2"); }
+>o : any
+>r2 : any
+>require("./nope2") : any
+>require : any
+>"./nope2" : any
+
+r2;
+>r2 : any
+
+with (o) { var r3 = require("./nope3"); }
+>o : any
+>r3 : any
+>require("./nope3") : any
+>require : any
+>"./nope3" : any
+
+/** @type {number} */
+var sentinel = "";
+>sentinel : number
+>"" : ""
+

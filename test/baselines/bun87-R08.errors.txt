@@ -1,0 +1,45 @@
+a.ts(3,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(4,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(5,4): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(5,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(6,8): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(7,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(7,8): error TS2304: Cannot find name 'missing'.
+a.ts(8,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(8,15): error TS2588: Cannot assign to 'o1' because it is a constant.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "esnext" } }
+==== a.ts (10 errors) ====
+    declare const o1: { a: 1 };
+    let a1: number;
+    ({ 1n: a1 } = o1);
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    ({ 1n: a1 = 2 } = o1);
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    [{ 0x1n: a1 }] = [o1];
+       ~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+       ~~~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    for ({ 1n: a1 } of [o1]) {}
+           ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    ({ 1n: missing } = o1);
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+           ~~~~~~~
+!!! error TS2304: Cannot find name 'missing'.
+    ({ 1n: a1, ...o1 } = o1);
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+                  ~~
+!!! error TS2588: Cannot assign to 'o1' because it is a constant.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

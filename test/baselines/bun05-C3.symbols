@@ -1,0 +1,18 @@
+//// [test/cases/bun05-C3.ts] ////
+
+=== a.ts ===
+class B { constructor(cb: (x: number) => void) {} }
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>cb : Symbol(cb, Decl(a.ts, 0, 22))
+>x : Symbol(x, Decl(a.ts, 0, 27))
+
+class D1 extends B { m() { super(x => x); } }
+>D1 : Symbol(D1, Decl(a.ts, 0, 51))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>m : Symbol(D1.m, Decl(a.ts, 1, 20))
+>x : Symbol(x, Decl(a.ts, 1, 33))
+>x : Symbol(x, Decl(a.ts, 1, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

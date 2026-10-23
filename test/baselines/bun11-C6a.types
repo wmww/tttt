@@ -1,0 +1,21 @@
+//// [test/cases/bun11-C6a.ts] ////
+
+=== a.ts ===
+async function p1() { }
+>p1 : () => any
+
+p1();
+>p1() : any
+>p1 : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+interface Array<T> { length: number; [n: number]: T } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { }
+>length : number
+>n : number
+
+interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+

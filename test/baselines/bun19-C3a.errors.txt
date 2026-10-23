@@ -1,0 +1,20 @@
+a.ts(2,7): error TS2741: Property 'a' is missing in type 'typeof import("m4")' but required in type '{ a: number; }'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import * as m4 from "./m4";
+    const t: { a: number } = m4;
+          ~
+!!! error TS2741: Property 'a' is missing in type 'typeof import("m4")' but required in type '{ a: number; }'.
+!!! related TS2728 a.ts:2:12: 'a' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m1.ts (0 errors) ====
+    export const a = 1;
+==== m4.ts (0 errors) ====
+    export type * from "./m1";
+    

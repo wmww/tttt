@@ -1,0 +1,18 @@
+//// [test/cases/bun14-P9.ts] ////
+
+=== a.ts ===
+function f<T extends any[]>(t: readonly [number, ...T]) {
+>f : <T extends any[]>(t: readonly [number, ...T]) => void
+>t : readonly [number, ...T]
+
+  t["length"] = 1;
+>t["length"] = 1 : 1
+>t["length"] : (readonly [number, ...T])["length"]
+>t : readonly [number, ...T]
+>"length" : "length"
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

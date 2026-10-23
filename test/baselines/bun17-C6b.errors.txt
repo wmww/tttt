@@ -1,0 +1,18 @@
+a.ts(5,17): error TS2339: Property 'nope' does not exist on type 'typeof DA'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class BA { constructor(x: { a: 1 }) {} }
+    class DA extends BA {}
+    class BD { constructor(x: { a: 1; d: 1 }) {} }
+    declare const cnd: boolean;
+    (cnd ? DA : BD).nope;
+                    ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'typeof DA'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

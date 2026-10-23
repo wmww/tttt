@@ -1,0 +1,21 @@
+//// [test/cases/bun56-L09.ts] ////
+
+=== a.ts ===
+declare const v: any;
+>v : any
+
+interface I {}
+class X extends import<string>, v {}
+>X : X
+>v : any
+
+class Y implements import<string>, {}
+>Y : Y
+
+class Z implements I implements import<string>, I {}
+>Z : Z
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

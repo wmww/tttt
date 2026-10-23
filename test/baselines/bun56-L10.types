@@ -1,0 +1,38 @@
+//// [test/cases/bun56-L10.ts] ////
+
+=== a.ts ===
+declare const x: any; declare const async: any; type U = 1;
+>x : any
+>async : any
+>U : 1
+
+async <T extends U>(x);
+>async <T extends U>(x) : any
+>async : any
+>x : any
+
+async <T = U>(x);
+>async <T : boolean
+>async : any
+>T : any
+>U>(x) : boolean
+>U : any
+>(x) : any
+>x : any
+
+async <const T>(x);
+>async < : boolean
+>async : any
+> : any
+>T : any
+>>(x) : boolean
+> : any
+>(x) : any
+>x : any
+
+async <T extends U>(x: any);
+>async <T extends U>(x: any) : any
+>async : any
+>x : any
+>any : any
+

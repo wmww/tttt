@@ -1,0 +1,25 @@
+//// [test/cases/bun15-C2.ts] ////
+
+=== a.ts ===
+type F1 = (x: number) => void; type F2 = (y: string) => void;
+>F1 : Symbol(F1, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>F2 : Symbol(F2, Decl(a.ts, 0, 30))
+>y : Symbol(y, Decl(a.ts, 0, 42))
+
+function h1<T extends [F1, F2]>(t: T) { const [a = x => {}, b = y => {}] = t; }
+>h1 : Symbol(h1, Decl(a.ts, 0, 61))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>F1 : Symbol(F1, Decl(a.ts, 0, 0))
+>F2 : Symbol(F2, Decl(a.ts, 0, 30))
+>t : Symbol(t, Decl(a.ts, 1, 32))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>a : Symbol(a, Decl(a.ts, 1, 47))
+>x : Symbol(x, Decl(a.ts, 1, 50))
+>b : Symbol(b, Decl(a.ts, 1, 59))
+>y : Symbol(y, Decl(a.ts, 1, 63))
+>t : Symbol(t, Decl(a.ts, 1, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

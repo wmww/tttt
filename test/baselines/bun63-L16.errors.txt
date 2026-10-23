@@ -1,0 +1,17 @@
+a.ts(4,7): error TS2322: Type '<T>(a: T, b: T) => { c: T[]; }' is not assignable to type '1'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true } }
+==== a.ts (2 errors) ====
+    interface Array<T> { length: number } interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+    namespace N { export type NoInfer<T> = intrinsic; }
+    declare function g<T>(a: T, b: N.NoInfer<T>): { c: N.NoInfer<T[]> };
+    const n: 1 = g;
+          ~
+!!! error TS2322: Type '<T>(a: T, b: T) => { c: T[]; }' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

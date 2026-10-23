@@ -1,0 +1,88 @@
+//// [test/cases/bun76-R05b.ts] ////
+
+=== a.ts ===
+interface A { a: number }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(A.a, Decl(a.ts, 0, 13))
+
+interface B { b: number }
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>b : Symbol(B.b, Decl(a.ts, 1, 13))
+
+interface X2 extends A, B { own: "late"; [k2]: number }
+>X2 : Symbol(X2, Decl(a.ts, 1, 25))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>own : Symbol(X2.own, Decl(a.ts, 2, 27))
+>[k2] : Symbol(X2[k2], Decl(a.ts, 2, 40))
+>k2 : Symbol(k2, Decl(a.ts, 3, 13))
+
+declare const k2: X2["own"];
+>k2 : Symbol(k2, Decl(a.ts, 3, 13))
+>X2 : Symbol(X2, Decl(a.ts, 1, 25))
+
+declare const x2: X2;
+>x2 : Symbol(x2, Decl(a.ts, 4, 13))
+>X2 : Symbol(X2, Decl(a.ts, 1, 25))
+
+const y2: number = x2.late;
+>y2 : Symbol(y2, Decl(a.ts, 5, 5))
+>x2 : Symbol(x2, Decl(a.ts, 4, 13))
+
+const o2: X2 = { a: 1, b: 2, own: "late", late: 3 };
+>o2 : Symbol(o2, Decl(a.ts, 6, 5))
+>X2 : Symbol(X2, Decl(a.ts, 1, 25))
+>a : Symbol(a, Decl(a.ts, 6, 16))
+>b : Symbol(b, Decl(a.ts, 6, 22))
+>own : Symbol(own, Decl(a.ts, 6, 28))
+>late : Symbol(late, Decl(a.ts, 6, 41))
+
+// one base: the two agree, `late` is a member
+interface X3 extends A { own: "late"; [k3]: number }
+>X3 : Symbol(X3, Decl(a.ts, 6, 52))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>own : Symbol(X3.own, Decl(a.ts, 8, 24))
+>[k3] : Symbol(X3[k3], Decl(a.ts, 8, 37))
+>k3 : Symbol(k3, Decl(a.ts, 9, 13))
+
+declare const k3: X3["own"];
+>k3 : Symbol(k3, Decl(a.ts, 9, 13))
+>X3 : Symbol(X3, Decl(a.ts, 6, 52))
+
+declare const x3: X3;
+>x3 : Symbol(x3, Decl(a.ts, 10, 13))
+>X3 : Symbol(X3, Decl(a.ts, 6, 52))
+
+const y3: number = x3.late;
+>y3 : Symbol(y3, Decl(a.ts, 11, 5))
+>x3.late : Symbol(X3[k3], Decl(a.ts, 8, 37))
+>x3 : Symbol(x3, Decl(a.ts, 10, 13))
+>late : Symbol(X3[k3], Decl(a.ts, 8, 37))
+
+// a class merged with the interface
+class C4 { own!: "late"; [k4]!: number }
+>C4 : Symbol(C4, Decl(a.ts, 11, 27), Decl(a.ts, 13, 40))
+>own : Symbol(C4.own, Decl(a.ts, 13, 10))
+>[k4] : Symbol(C4[k4], Decl(a.ts, 13, 24))
+>k4 : Symbol(k4, Decl(a.ts, 15, 13))
+
+interface C4 extends A, B {}
+>C4 : Symbol(C4, Decl(a.ts, 11, 27), Decl(a.ts, 13, 40))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+
+declare const k4: C4["own"];
+>k4 : Symbol(k4, Decl(a.ts, 15, 13))
+>C4 : Symbol(C4, Decl(a.ts, 11, 27), Decl(a.ts, 13, 40))
+
+declare const x4: C4;
+>x4 : Symbol(x4, Decl(a.ts, 16, 13))
+>C4 : Symbol(C4, Decl(a.ts, 11, 27), Decl(a.ts, 13, 40))
+
+const y4: number = x4.late;
+>y4 : Symbol(y4, Decl(a.ts, 17, 5))
+>x4 : Symbol(x4, Decl(a.ts, 16, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

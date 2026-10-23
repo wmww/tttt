@@ -1,0 +1,15 @@
+//// [test/cases/bun43-P8b.ts] ////
+
+=== a.ts ===
+export * as #a from "./m";
+>#a : typeof import("./m")
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+

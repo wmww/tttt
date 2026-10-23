@@ -1,0 +1,21 @@
+a.ts(1,24): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(1,25): error TS2574: A rest element type must be an array type.
+a.ts(1,46): error TS2322: Type 'T' is not assignable to type 'never'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    function c15<T extends [...T]>(t: T) { const n: never = t; }
+                           ~~~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+                            ~~~~
+!!! error TS2574: A rest element type must be an array type.
+                                                 ~
+!!! error TS2322: Type 'T' is not assignable to type 'never'.
+!!! related TS2208 a.ts:1:14: This type parameter might need an `extends never` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

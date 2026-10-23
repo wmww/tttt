@@ -1,0 +1,25 @@
+a.ts(1,16): error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+t2.d.ts(1,20): error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare module "./t2" { const v: number; }
+                   ~~~~~~
+!!! error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+!!! related TS6203 t2.d.ts:1:20: '"./t2"' was also declared here.
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== c.ts (0 errors) ====
+    declare module "./t2" { type v3 = number; }
+    export {};
+==== t2.d.ts (1 errors) ====
+    declare const enum E { A } export = E;
+                       ~
+!!! error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+!!! related TS6203 a.ts:1:16: '"./t2"' was also declared here.
+    

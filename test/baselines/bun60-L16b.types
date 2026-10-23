@@ -1,0 +1,168 @@
+//// [test/cases/bun60-L16b.ts] ////
+
+=== a.ts ===
+type A = (x: unknown) => asserts x is string;
+>A : A
+>x : unknown
+
+const inferred = (x: unknown): asserts x is string => {};
+>inferred : (x: unknown) => asserts x is string
+>(x: unknown): asserts x is string => {} : (x: unknown) => asserts x is string
+>x : unknown
+
+const obj = { a: inferred, m(x: unknown): asserts x is string {} };
+>obj : { a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }
+>{ a: inferred, m(x: unknown): asserts x is string {} } : { a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }
+>a : (x: unknown) => asserts x is string
+>inferred : (x: unknown) => asserts x is string
+>m : (x: unknown) => asserts x is string
+>x : unknown
+
+declare const v: unknown;
+>v : unknown
+
+interface I { a: A; m(x: unknown): asserts x is string }
+>a : A
+>m : (x: unknown) => asserts x is string
+>x : unknown
+
+type Id<T> = { [K in keyof T]: T[K] };
+>Id : Id<T>
+
+declare const x1: Id<{ a: A } & typeof obj>; x1.a(v);
+>x1 : Id<{ a: A; } & { a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }>
+>a : A
+>obj : { a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }
+>x1.a(v) : void
+>x1.a : A & ((x: unknown) => asserts x is string)
+>x1 : Id<{ a: A; } & { a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }>
+>a : A & ((x: unknown) => asserts x is string)
+>v : unknown
+
+declare const x2: Id<typeof obj & { a: A }>; x2.a(v);
+>x2 : Id<{ a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; } & { a: A; }>
+>obj : { a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }
+>a : A
+>x2.a(v) : void
+>x2.a : ((x: unknown) => asserts x is string) & A
+>x2 : Id<{ a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; } & { a: A; }>
+>a : ((x: unknown) => asserts x is string) & A
+>v : unknown
+
+declare const x3: Id<{ a: A } & { a: A }>; x3.a(v);
+>x3 : Id<{ a: A; } & { a: A; }>
+>a : A
+>a : A
+>x3.a(v) : void
+>x3.a : A
+>x3 : Id<{ a: A; } & { a: A; }>
+>a : A
+>v : unknown
+
+declare const x4: Id<I & { z: 1 }>; x4.a(v); x4.m(v);
+>x4 : Id<I & { z: 1; }>
+>z : 1
+>x4.a(v) : void
+>x4.a : A
+>x4 : Id<I & { z: 1; }>
+>a : A
+>v : unknown
+>x4.m(v) : void
+>x4.m : (x: unknown) => asserts x is string
+>x4 : Id<I & { z: 1; }>
+>m : (x: unknown) => asserts x is string
+>v : string
+
+declare const x5: Id<I & I>; x5.a(v);
+>x5 : Id<I>
+>x5.a(v) : void
+>x5.a : A
+>x5 : Id<I>
+>a : A
+>v : string
+
+declare const x6: Id<{ a: A } | { a: A }>; x6.a(v);
+>x6 : Id<{ a: A; } | { a: A; }>
+>a : A
+>a : A
+>x6.a(v) : void
+>x6.a : A
+>x6 : Id<{ a: A; } | { a: A; }>
+>a : A
+>v : string
+
+declare const x7: Id<Id<I>>; x7.a(v); x7.m(v);
+>x7 : Id<Id<I>>
+>x7.a(v) : void
+>x7.a : A
+>x7 : Id<Id<I>>
+>a : A
+>v : string
+>x7.m(v) : void
+>x7.m : (x: unknown) => asserts x is string
+>x7 : Id<Id<I>>
+>m : (x: unknown) => asserts x is string
+>v : string
+
+declare const x8: Id<Id<typeof obj>>; x8.a(v); x8.m(v);
+>x8 : Id<Id<{ a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }>>
+>obj : { a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }
+>x8.a(v) : void
+>x8.a : (x: unknown) => asserts x is string
+>x8 : Id<Id<{ a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }>>
+>a : (x: unknown) => asserts x is string
+>v : string
+>x8.m(v) : void
+>x8.m : (x: unknown) => asserts x is string
+>x8 : Id<Id<{ a: (x: unknown) => asserts x is string; m(x: unknown): asserts x is string; }>>
+>m : (x: unknown) => asserts x is string
+>v : string
+
+declare const x9: Id<{ m(x: unknown): asserts x is string } & { m: A }>; x9.m(v);
+>x9 : Id<{ m(x: unknown): asserts x is string; } & { m: A; }>
+>m : (x: unknown) => asserts x is string
+>x : unknown
+>m : A
+>x9.m(v) : void
+>x9.m : ((x: unknown) => asserts x is string) & A
+>x9 : Id<{ m(x: unknown): asserts x is string; } & { m: A; }>
+>m : ((x: unknown) => asserts x is string) & A
+>v : string
+
+declare const y1: Id<{ m: A } & { m(x: unknown): asserts x is string }>; y1.m(v);
+>y1 : Id<{ m: A; } & { m(x: unknown): asserts x is string; }>
+>m : A
+>m : (x: unknown) => asserts x is string
+>x : unknown
+>y1.m(v) : void
+>y1.m : A & ((x: unknown) => asserts x is string)
+>y1 : Id<{ m: A; } & { m(x: unknown): asserts x is string; }>
+>m : A & ((x: unknown) => asserts x is string)
+>v : string
+
+declare const y2: Id<{ a: A } & { a: (x: unknown) => asserts x is string }>; y2.a(v);
+>y2 : Id<{ a: A; } & { a: (x: unknown) => asserts x is string; }>
+>a : A
+>a : (x: unknown) => asserts x is string
+>x : unknown
+>y2.a(v) : void
+>y2.a : A & ((x: unknown) => asserts x is string)
+>y2 : Id<{ a: A; } & { a: (x: unknown) => asserts x is string; }>
+>a : A & ((x: unknown) => asserts x is string)
+>v : string
+
+declare const y3: { a: A } & { a: (x: unknown) => asserts x is string }; y3.a(v);
+>y3 : { a: A; } & { a: (x: unknown) => asserts x is string; }
+>a : A
+>a : (x: unknown) => asserts x is string
+>x : unknown
+>y3.a(v) : void
+>y3.a : A & ((x: unknown) => asserts x is string)
+>y3 : { a: A; } & { a: (x: unknown) => asserts x is string; }
+>a : A & ((x: unknown) => asserts x is string)
+>v : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

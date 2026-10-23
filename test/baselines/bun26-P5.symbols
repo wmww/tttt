@@ -1,0 +1,17 @@
+//// [test/cases/bun26-P5.ts] ////
+
+=== a.ts ===
+function f<U extends object | string>() {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 11))
+
+  const n: never = null! as (U & {} & { a: 1 }) | (U & string) | (U & object);
+>n : Symbol(n, Decl(a.ts, 1, 7))
+>U : Symbol(U, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 1, 39))
+>U : Symbol(U, Decl(a.ts, 0, 11))
+>U : Symbol(U, Decl(a.ts, 0, 11))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

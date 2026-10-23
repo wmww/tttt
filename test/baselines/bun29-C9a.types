@@ -1,0 +1,17 @@
+//// [test/cases/bun29-C9a.ts] ////
+
+=== a.ts ===
+declare let f: { (x: { "é-x": 1 }): void };
+>f : (x: { "é-x": 1; }) => void
+>x : { "\u00E9-x": 1; }
+>"é-x" : 1
+
+f = {};
+>f = {} : {}
+>f : (x: { "é-x": 1; }) => void
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,20 @@
+a.ts(5,11): error TS2322: Type 'Omit<this["r"], "a">' is not assignable to type '{ b: 2; } | { c: 3; }'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C {
+      r!: { a: 1, b: 2 } | { a: 2, c: 3 };
+      m(q: this["r"]) {
+        const { a, ...rest } = q;
+        const x: { b: 2 } | { c: 3 } = rest;
+              ~
+!!! error TS2322: Type 'Omit<this["r"], "a">' is not assignable to type '{ b: 2; } | { c: 3; }'.
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

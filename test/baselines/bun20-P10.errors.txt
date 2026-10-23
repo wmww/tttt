@@ -1,0 +1,19 @@
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    declare function cond(): boolean;
+    declare const m: { a: "b"; b: "a" };
+    function g() {
+        let x: "a" | "b" = "a", y: "a" | "b" = "a";
+        do {
+            y = x;
+            switch (x) { case y: const p: "a" = x; break; default: x = m[y]; }
+        } while (cond());
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

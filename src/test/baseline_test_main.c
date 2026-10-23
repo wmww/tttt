@@ -29,7 +29,7 @@ static void show_help(FILE* target) {
         "  -h, --help                show this help message\n\n"
         "  --dir [PATH]              path to TypeScript tests directory\n"
         "                            (default = ", default_tests_dir, ")\n\n"
-        "  --own-tests [DIR]         tttt's own tests: DIR/cases/tttt*.ts with tsgo's baselines in DIR/baselines\n"
+        "  --own-tests [DIR]         tttt's own tests: DIR/cases/{tttt,bun}*.ts with tsgo's baselines in DIR/baselines\n"
         "                            (default = ", default_own_dir, ", but none with --dir; --no-own-tests: none)\n\n"
         "  --summary                 only show tests who's results changed\n\n"
         "  -f, --filter [FILTER]     regex of tests to run, case insensitive\n"

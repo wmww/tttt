@@ -1,0 +1,143 @@
+//// [test/cases/bunimport-type-options-in-options.ts] ////
+
+=== before-stmt.ts ===
+import data from "./d.json" with { type: "json" };
+>data : Symbol(data, Decl(before-stmt.ts, 0, 6))
+
+type N = import("./a", { with: { k: 0 as import("./c", { with: { inner: 1 } }), outer: 2 } });
+>N : Symbol(N, Decl(before-stmt.ts, 0, 50))
+
+export type { N };
+>N : Symbol(N, Decl(before-stmt.ts, 2, 13))
+
+export { data };
+>data : Symbol(data, Decl(before-stmt.ts, 3, 8))
+
+=== doc.js ===
+/** @type {import("./j", { with: { a: (p) => p, b: 0 } })} */
+export let a, b;
+>a : Symbol(a, Decl(doc.js, 1, 10))
+>b : Symbol(b, Decl(doc.js, 1, 13))
+
+/**
+ * @param {import("./k", { with: { "resolution-mode": "import" } })} x
+ * @param {import("./k", { with: { k: import("./kk", { with: { z: "1" } }) } })} y
+ */
+export function g(x, y) { return [x, y]; }
+>g : Symbol(g, Decl(doc.js, 1, 16))
+>x : Symbol(x, Decl(doc.js, 6, 18))
+>y : Symbol(y, Decl(doc.js, 6, 20))
+>x : Symbol(x, Decl(doc.js, 6, 18))
+>y : Symbol(y, Decl(doc.js, 6, 20))
+
+=== export-nested.ts ===
+export * from "./d" with { type: 0 as import("./c", { with: { inner: 1 } }), outer: 2 };
+export { z } from "./e" with { a: "b" };
+>z : Symbol(z, Decl(export-nested.ts, 1, 8))
+
+=== in-function.ts ===
+type T = import("./m", { with: { a: () => { let u: import("./n", { with: { b: { x: 1 }, c: () => 2 } }); return u; } } });
+>T : Symbol(T, Decl(in-function.ts, 0, 0))
+>u : Symbol(u, Decl(in-function.ts, 0, 47))
+>x : Symbol(x, Decl(in-function.ts, 0, 79))
+>u : Symbol(u, Decl(in-function.ts, 0, 47))
+
+export type { T };
+>T : Symbol(T, Decl(in-function.ts, 1, 13))
+
+=== mode.ts ===
+type A = import("./a", { with: { "resolution-mode": 0 as import("./c", { with: { "resolution-mode": "require" } }) } });
+>A : Symbol(A, Decl(mode.ts, 0, 0))
+
+type C<X> = import("./g", { with: { a: 0 as X, b: (unused: number) => { const local = 1; } } });
+>C : Symbol(C, Decl(mode.ts, 0, 120))
+>X : Symbol(X, Decl(mode.ts, 1, 7))
+>X : Symbol(X, Decl(mode.ts, 1, 7))
+>unused : Symbol(unused, Decl(mode.ts, 1, 51))
+>local : Symbol(local, Decl(mode.ts, 1, 77))
+
+function f(p: number) { let u: import("./n", { with: { c: () => p, d: undeclared } }); return u; }
+>f : Symbol(f, Decl(mode.ts, 1, 96))
+>p : Symbol(p, Decl(mode.ts, 2, 11))
+>u : Symbol(u, Decl(mode.ts, 2, 27))
+>p : Symbol(p, Decl(mode.ts, 2, 11))
+>u : Symbol(u, Decl(mode.ts, 2, 27))
+
+export { f };
+>f : Symbol(f, Decl(mode.ts, 3, 8))
+
+export type { A, C };
+>A : Symbol(A, Decl(mode.ts, 4, 13))
+>C : Symbol(C, Decl(mode.ts, 4, 16))
+
+=== nested-outer-first.ts ===
+type N = import("./a", { with: { outer: 2, k: 0 as import("./c", { with: { inner: 1 } }) } });
+>N : Symbol(N, Decl(nested-outer-first.ts, 0, 0))
+
+export type { N };
+>N : Symbol(N, Decl(nested-outer-first.ts, 1, 13))
+
+=== nested.ts ===
+type N = import("./a", { with: { k: 0 as import("./c", { with: { inner: 1 } }), outer: 2 } });
+>N : Symbol(N, Decl(nested.ts, 0, 0))
+
+export type { N };
+>N : Symbol(N, Decl(nested.ts, 1, 13))
+
+=== quoted.ts ===
+type N = import("./a", { with: { "k": 0 as import("./c", { with: { "inner": "v1" } }), "outer": "v2" } });
+>N : Symbol(N, Decl(quoted.ts, 0, 0))
+
+export type { N };
+>N : Symbol(N, Decl(quoted.ts, 1, 13))
+
+=== scope.ts ===
+type T = import("./m", { with: { a: (p: number) => { let u: import("./n", { with: { c: () => p } }); return u; } } });
+>T : Symbol(T, Decl(scope.ts, 0, 0))
+>p : Symbol(p, Decl(scope.ts, 0, 37))
+>u : Symbol(u, Decl(scope.ts, 0, 56))
+>p : Symbol(p, Decl(scope.ts, 0, 37))
+>u : Symbol(u, Decl(scope.ts, 0, 56))
+
+type G<X> = import("./g", { with: { a: 0 as X } });
+>G : Symbol(G, Decl(scope.ts, 0, 118))
+>X : Symbol(X, Decl(scope.ts, 1, 7))
+>X : Symbol(X, Decl(scope.ts, 1, 7))
+
+export type { T, G };
+>T : Symbol(T, Decl(scope.ts, 2, 13))
+>G : Symbol(G, Decl(scope.ts, 2, 16))
+
+=== stmt-nested.ts ===
+import data from "./d.json" with { type: 0 as import("./c", { with: { inner: 1 } }), outer: 2 };
+>data : Symbol(data, Decl(stmt-nested.ts, 0, 6))
+
+export { data };
+>data : Symbol(data, Decl(stmt-nested.ts, 1, 8))
+
+=== three-deep.ts ===
+const q = 1;
+>q : Symbol(q, Decl(three-deep.ts, 0, 5))
+
+type T = import("./m", { with: { a: 0 as import("./n", { with: { x: 0 as import("./o", { with: { y: () => q } }), x2: () => q } }), c: () => q } });
+>T : Symbol(T, Decl(three-deep.ts, 0, 12))
+>q : Symbol(q, Decl(three-deep.ts, 0, 5))
+>q : Symbol(q, Decl(three-deep.ts, 0, 5))
+>q : Symbol(q, Decl(three-deep.ts, 0, 5))
+
+export type { T };
+>T : Symbol(T, Decl(three-deep.ts, 2, 13))
+
+=== two-inner.ts ===
+const q = 1;
+>q : Symbol(q, Decl(two-inner.ts, 0, 5))
+
+type T = import("./m", { with: { a: 0 as import("./n", { with: { x: () => q } }), b: 0 as import("./o", { with: { y: () => q } }), c: () => q } });
+>T : Symbol(T, Decl(two-inner.ts, 0, 12))
+>q : Symbol(q, Decl(two-inner.ts, 0, 5))
+>q : Symbol(q, Decl(two-inner.ts, 0, 5))
+>q : Symbol(q, Decl(two-inner.ts, 0, 5))
+
+export type { T };
+>T : Symbol(T, Decl(two-inner.ts, 2, 13))
+

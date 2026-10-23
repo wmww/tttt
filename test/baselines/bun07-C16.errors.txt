@@ -1,0 +1,21 @@
+a.ts(3,7): error TS2322: Type '{ n: number; } | undefined' is not assignable to type 'null'.
+  Type 'undefined' is not assignable to type 'null'.
+a.ts(3,19): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    declare let onu: { n: number } | undefined;
+    const r5: null = (({}) = onu);
+          ~~
+!!! error TS2322: Type '{ n: number; } | undefined' is not assignable to type 'null'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'null'.
+                      ~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

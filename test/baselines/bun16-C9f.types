@@ -1,0 +1,15 @@
+//// [test/cases/bun16-C9f.ts] ////
+
+=== a.ts ===
+var vf = () => {};
+>vf : () => void
+>() => {} : () => void
+
+if (vf) { var vf: () => void; }
+>vf : () => void
+>vf : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

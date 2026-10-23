@@ -1,0 +1,16 @@
+//// [test/cases/bun26-P5.ts] ////
+
+=== a.ts ===
+function f<U extends object | string>() {
+>f : <U extends object | string>() => void
+
+  const n: never = null! as (U & {} & { a: 1 }) | (U & string) | (U & object);
+>n : never
+>null! as (U & {} & { a: 1 }) | (U & string) | (U & object) : U
+>null! : never
+>a : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

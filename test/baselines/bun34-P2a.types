@@ -1,0 +1,42 @@
+//// [test/cases/bun34-P2a.ts] ////
+
+=== a.ts ===
+class K { [+1] = ""; [-0] = "" }
+>K : K
+>[+1] : string
+>+1 : 1
+>1 : 1
+>"" : ""
+>[-0] : string
+>-0 : 0
+>0 : 0
+>"" : ""
+
+new K()[1];
+>new K()[1] : any
+>new K() : K
+>K : typeof K
+>1 : 1
+
+new K()[0];
+>new K()[0] : any
+>new K() : K
+>K : typeof K
+>0 : 0
+
+new K()["+1"];
+>new K()["+1"] : string
+>new K() : K
+>K : typeof K
+>"+1" : "+1"
+
+new K()["-0"];
+>new K()["-0"] : string
+>new K() : K
+>K : typeof K
+>"-0" : "-0"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

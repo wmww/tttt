@@ -1,0 +1,60 @@
+//// [test/cases/bun73-R09.ts] ////
+
+=== a.ts ===
+declare function keys<K extends string>(o: Record<K, unknown>): K[];
+>keys : <K extends string>(o: Record<K, unknown>) => K[]
+>o : Record<K, unknown>
+
+declare function f2<K extends string, X>(x: { [P in K]: X }): [K, X];
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>x : { [P in K]: X; }
+
+function strict<R extends {}, W extends { a: 1 }, V extends { b: 2 }>(rw: R & W, wv: W & V, wo: W & { c: 3 }) {
+>strict : <R extends {}, W extends { a: 1; }, V extends { b: 2; }>(rw: R & W, wv: W & V, wo: W & { c: 3; }) => void
+>a : 1
+>b : 2
+>rw : R & W
+>wv : W & V
+>wo : W & { c: 3; }
+>c : 3
+
+  const k1: "a"[] = keys(rw);
+>k1 : "a"[]
+>keys(rw) : "a"[]
+>keys : <K extends string>(o: Record<K, unknown>) => K[]
+>rw : R & W
+
+  const k2: ("a" | "b")[] = keys(wv);
+>k2 : ("a" | "b")[]
+>keys(wv) : ("a" | "b")[]
+>keys : <K extends string>(o: Record<K, unknown>) => K[]
+>wv : W & V
+
+  const k3: ("a" | "c")[] = keys(wo);
+>k3 : ("a" | "c")[]
+>keys(wo) : ("a" | "c")[]
+>keys : <K extends string>(o: Record<K, unknown>) => K[]
+>wo : W & { c: 3; }
+
+  const p1: never = f2(rw);
+>p1 : never
+>f2(rw) : ["a", 1]
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>rw : R & W
+
+  const p2: never = f2(wv);
+>p2 : never
+>f2(wv) : ["a" | "b", 1 | 2]
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>wv : W & V
+
+  const p3: never = f2(wo);
+>p3 : never
+>f2(wo) : ["a" | "c", 1 | 3]
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>wo : W & { c: 3; }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun09-C4.ts] ////
+
+=== a.ts ===
+const k = "foo";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+class C2 { [k]; constructor() { this[k] = 1; } }
+>C2 : Symbol(C2, Decl(a.ts, 0, 16))
+>[k] : Symbol(C2[k], Decl(a.ts, 1, 10))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>this : Symbol(C2, Decl(a.ts, 0, 16))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,10 @@
+//// [test/cases/bun06-P1.ts] ////
+
+=== a.ts ===
+function* y1(): Generator<never> { yield* 1; }
+>y1 : Symbol(y1, Decl(a.ts, 0, 0))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

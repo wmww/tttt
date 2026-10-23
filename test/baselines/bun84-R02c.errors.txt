@@ -1,0 +1,39 @@
+a.ts(2,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(3,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(4,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(5,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(6,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(7,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(8,16): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    declare class A {} declare class B {} interface I {}
+    type T1 = ({a = class extends A, B {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T2 = ({a = class extends A extends B {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T3 = ({a = class implements I extends A {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T4 = ({a = class <> {}}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T5 = ({a = class { m<>() {} }}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type T6 = ({a = (public a) => 1}: any) => void;
+                ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type OK = <T>({a = class extends A, B {}}: any) => void;
+                   ~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

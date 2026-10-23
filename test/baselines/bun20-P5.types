@@ -1,0 +1,22 @@
+//// [test/cases/bun20-P5.ts] ////
+
+=== a.ts ===
+declare const c: "a";
+>c : "a"
+
+function f(x: "a" | "b") { if (c !== "a") { if (x !== c) { const y: "b" = x; } } }
+>f : (x: "a" | "b") => void
+>x : "a" | "b"
+>c !== "a" : boolean
+>c : "a"
+>"a" : "a"
+>x !== c : boolean
+>x : "a" | "b"
+>c : never
+>y : "b"
+>x : "a" | "b"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

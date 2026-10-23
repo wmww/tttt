@@ -1,0 +1,22 @@
+//// [test/cases/bun61-L05b.ts] ////
+
+=== a.tsx ===
+export const a = <div />;
+>a : import("react/jsx-runtime").JSX.Element
+><div /> : import("react/jsx-runtime").JSX.Element
+>div : any
+
+export const b = <div />;
+>b : import("react/jsx-runtime").JSX.Element
+><div /> : import("react/jsx-runtime").JSX.Element
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@types/react/jsx-runtime.d.ts ===
+export namespace JSX { interface IntrinsicElements { div: {} } interface Element {} } export function jsx(): void;
+>div : {}
+>jsx : () => void
+

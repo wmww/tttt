@@ -1,0 +1,15 @@
+//// [test/cases/bun17-SC6.ts] ////
+
+=== a.js ===
+/** @type {number[]} */
+const x1 = [/** @type {string} */ ("")];
+>x1 : Symbol(x1, Decl(a.js, 1, 5))
+
+/** @type {number[]} */
+const y2 = [/** @type {string} */ (/** @type {any} */ (""))];
+>y2 : Symbol(y2, Decl(a.js, 3, 5))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 5, 5))
+

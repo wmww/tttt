@@ -1,0 +1,21 @@
+//// [test/cases/bun23-C3a.ts] ////
+
+=== a.ts ===
+interface A { readonly w: unique symbol }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>w : Symbol(A.w, Decl(a.ts, 0, 13))
+
+interface B { readonly w: unique symbol }
+>B : Symbol(B, Decl(a.ts, 0, 41))
+>w : Symbol(B.w, Decl(a.ts, 1, 13))
+
+declare let x: A["w"]; const y: B["w"] = x;
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 2, 28))
+>B : Symbol(B, Decl(a.ts, 0, 41))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

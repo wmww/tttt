@@ -1,0 +1,15 @@
+//// [test/cases/bun14-C2a.ts] ////
+
+=== a.ts ===
+function f<T extends Uppercase<string>>(y: T & `A${string}`) {
+>f : <T extends Uppercase<string>>(y: T & `A${string}`) => void
+>y : T & `A${string}`
+
+  const n: number = y;
+>n : number
+>y : T & `A${string}`
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

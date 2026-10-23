@@ -1,0 +1,18 @@
+//// [test/cases/bun09-P7.ts] ////
+
+=== a.ts ===
+type X7 = [1] & { a: 1 };
+>X7 : X7
+>a : 1
+
+function f7<T extends X7>(t: T) { const q: { a: 2 } = t; }
+>f7 : <T extends X7>(t: T) => void
+>t : T
+>q : { a: 2; }
+>a : 2
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,10 @@
+//// [test/cases/bun06-P8.ts] ////
+
+=== a.ts ===
+function* c1() { const [a] = yield 1; }
+>c1 : Symbol(c1, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

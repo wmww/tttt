@@ -1,0 +1,19 @@
+a.ts(1,22): error TS7053: Element implicitly has an 'any' type because expression of type '"Z"' can't be used to index type 'typeof E2'.
+  Property 'Z' does not exist on type 'typeof E2'.
+a.ts(1,25): error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    enum E2 { A = 1, H = E2["Z"] }
+                         ~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"Z"' can't be used to index type 'typeof E2'.
+!!! error TS7053:   Property 'Z' does not exist on type 'typeof E2'.
+                            ~~~
+!!! error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

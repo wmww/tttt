@@ -1,0 +1,53 @@
+//// [test/cases/bun56-L08.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+const f = (a: any, @dec x: any) => 1;
+>f : (a: any, x: any) => number
+>(a: any, @dec x: any) => 1 : (a: any, x: any) => number
+>a : any
+>dec : any
+>x : any
+>1 : 1
+
+const g = <T,>(@dec x: T) => 1;
+>g : <T>(x: T) => number
+><T,>(@dec x: T) => 1 : <T>(x: T) => number
+>dec : any
+>x : T
+>1 : 1
+
+const h = (a: any, @dec() x?: any, @dec ...y: any[]) => 1;
+>h : (a: any, x?: any, ...y: any[]) => number
+>(a: any, @dec() x?: any, @dec ...y: any[]) => 1 : (a: any, x?: any, ...y: any[]) => number
+>a : any
+>dec() : any
+>dec : any
+>x : any
+>dec : any
+>y : any[]
+>1 : 1
+
+const i = async (a: any, @dec x: any) => 1;
+>i : (a: any, x: any) => Promise<number>
+>async (a: any, @dec x: any) => 1 : (a: any, x: any) => Promise<number>
+>a : any
+>dec : any
+>x : any
+>1 : 1
+
+const j = (a = 1, @dec { b }: any) => 1;
+>j : (a: number | undefined, { b }: any) => number
+>(a = 1, @dec { b }: any) => 1 : (a: number | undefined, { b }: any) => number
+>a : number
+>1 : 1
+>dec : any
+>b : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

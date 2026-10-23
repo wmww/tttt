@@ -1,0 +1,16 @@
+//// [test/cases/bun30-C6b.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+@(x.#constructor) function f() {}
+>(x.#constructor) : any
+>x.#constructor : any
+>x : any
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,39 @@
+//// [test/cases/bun17-C17.ts] ////
+
+=== a.ts ===
+type Digits = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7';
+>Digits : Symbol(Digits, Decl(a.ts, 0, 0))
+
+type T1 = `${Digits}${Digits}${Digits}${Digits}` | undefined;
+>T1 : Symbol(T1, Decl(a.ts, 0, 60))
+>Digits : Symbol(Digits, Decl(a.ts, 0, 0))
+>Digits : Symbol(Digits, Decl(a.ts, 0, 0))
+>Digits : Symbol(Digits, Decl(a.ts, 0, 0))
+>Digits : Symbol(Digits, Decl(a.ts, 0, 0))
+
+type T2 = { a: string } | { b: number };
+>T2 : Symbol(T2, Decl(a.ts, 1, 61))
+>a : Symbol(a, Decl(a.ts, 2, 11))
+>b : Symbol(b, Decl(a.ts, 2, 27))
+
+function f(x: T1, y: T1 & T2) {
+>f : Symbol(f, Decl(a.ts, 2, 40))
+>x : Symbol(x, Decl(a.ts, 3, 11))
+>T1 : Symbol(T1, Decl(a.ts, 0, 60))
+>y : Symbol(y, Decl(a.ts, 3, 17))
+>T1 : Symbol(T1, Decl(a.ts, 0, 60))
+>T2 : Symbol(T2, Decl(a.ts, 1, 61))
+
+    const a = [x, y];
+>a : Symbol(a, Decl(a.ts, 4, 9))
+>x : Symbol(x, Decl(a.ts, 3, 11))
+>y : Symbol(y, Decl(a.ts, 3, 17))
+
+    const b = [x, y];
+>b : Symbol(b, Decl(a.ts, 5, 9))
+>x : Symbol(x, Decl(a.ts, 3, 11))
+>y : Symbol(y, Decl(a.ts, 3, 17))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

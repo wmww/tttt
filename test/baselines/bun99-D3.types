@@ -1,0 +1,192 @@
+//// [test/cases/bun99-D3.ts] ////
+
+=== a.ts ===
+const id = <T>(x: T) => x;
+>id : <T>(x: T) => T
+><T>(x: T) => x : <T>(x: T) => T
+>x : T
+>x : T
+
+const nest = <T>(x: T) => id({ nested: { tag: 0, ...x } });
+>nest : <T>(x: T) => { nested: { tag: number; } & T; }
+><T>(x: T) => id({ nested: { tag: 0, ...x } }) : <T>(x: T) => { nested: { tag: number; } & T; }
+>x : T
+>id({ nested: { tag: 0, ...x } }) : { nested: { tag: number; } & T; }
+>id : <T_1>(x: T_1) => T_1
+>{ nested: { tag: 0, ...x } } : { nested: { tag: number; } & T; }
+>nested : { tag: number; } & T
+>{ tag: 0, ...x } : { tag: number; } & T
+>tag : number
+>0 : 0
+>x : T
+
+const eight = <T>(x: T) => nest(nest(nest(nest(nest(nest(nest(nest(x))))))));
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+><T>(x: T) => nest(nest(nest(nest(nest(nest(nest(nest(x)))))))) : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>x : T
+>nest(nest(nest(nest(nest(nest(nest(nest(x)))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>nest(nest(nest(nest(nest(nest(nest(x))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>nest(nest(nest(nest(nest(nest(x)))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>nest(nest(nest(nest(nest(x))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>nest(nest(nest(nest(x)))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>nest(nest(nest(x))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>nest(nest(x)) : { nested: { tag: number; } & { nested: { tag: number; } & T; }; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>nest(x) : { nested: { tag: number; } & T; }
+>nest : <T_1>(x: T_1) => { nested: { tag: number; } & T_1; }
+>x : T
+
+const forty = eight(eight(eight(eight(eight({ value: 0 })))));
+>forty : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight({ value: 0 }))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight({ value: 0 })))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight({ value: 0 }))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight({ value: 0 })) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight({ value: 0 }) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { value: number; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>{ value: 0 } : { value: number; }
+>value : number
+>0 : 0
+
+declare function consume<T>(x: typeof forty): T;
+>consume : <T>(x: typeof forty) => T
+>x : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>forty : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+
+consume(forty);
+>consume(forty) : unknown
+>consume : <T>(x: typeof forty) => T
+>forty : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+
+consume<number>(forty);
+>consume<number>(forty) : number
+>consume : <T>(x: typeof forty) => T
+>forty : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+
+const ninety = eight(eight(eight(eight(eight(eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 })))))))))))));
+>ninety : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight(eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 }))))))))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 })))))))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 }))))))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 })))))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 }))))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 })))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(eight(nest(nest({ value: 0 }))))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(eight(nest(nest({ value: 0 })))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(eight(nest(nest({ value: 0 }))))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(eight(nest(nest({ value: 0 })))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>eight(nest(nest({ value: 0 }))) : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { value: number; }; }; }; }; }; }; }; }; }; }; }
+>eight : <T>(x: T) => { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & T; }; }; }; }; }; }; }; }
+>nest(nest({ value: 0 })) : { nested: { tag: number; } & { nested: { tag: number; } & { value: number; }; }; }
+>nest : <T>(x: T) => { nested: { tag: number; } & T; }
+>nest({ value: 0 }) : { nested: { tag: number; } & { value: number; }; }
+>nest : <T>(x: T) => { nested: { tag: number; } & T; }
+>{ value: 0 } : { value: number; }
+>value : number
+>0 : 0
+
+declare function consumeNinety<T>(x: typeof ninety): T;
+>consumeNinety : <T>(x: typeof ninety) => T
+>x : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+>ninety : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+
+consumeNinety(ninety);
+>consumeNinety(ninety) : unknown
+>consumeNinety : <T>(x: typeof ninety) => T
+>ninety : { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & { nested: { tag: number; } & any; }; }; }; }; }; }; }; }; }; }; }
+
+const flat = <T>(x: T) => id({ tag: 0, ...x });
+>flat : <T>(x: T) => { tag: number; } & T
+><T>(x: T) => id({ tag: 0, ...x }) : <T>(x: T) => { tag: number; } & T
+>x : T
+>id({ tag: 0, ...x }) : { tag: number; } & T
+>id : <T_1>(x: T_1) => T_1
+>{ tag: 0, ...x } : { tag: number; } & T
+>tag : number
+>0 : 0
+>x : T
+
+const flatEight = <T>(x: T) => flat(flat(flat(flat(flat(flat(flat(flat(x))))))));
+>flatEight : <T>(x: T) => { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+><T>(x: T) => flat(flat(flat(flat(flat(flat(flat(flat(x)))))))) : <T>(x: T) => { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>x : T
+>flat(flat(flat(flat(flat(flat(flat(flat(x)))))))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>flat(flat(flat(flat(flat(flat(flat(x))))))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>flat(flat(flat(flat(flat(flat(x)))))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>flat(flat(flat(flat(flat(x))))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>flat(flat(flat(flat(x)))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>flat(flat(flat(x))) : { tag: number; } & { tag: number; } & { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>flat(flat(x)) : { tag: number; } & { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>flat(x) : { tag: number; } & T
+>flat : <T_1>(x: T_1) => { tag: number; } & T_1
+>x : T
+
+const fortyFlat = flatEight(flatEight(flatEight(flatEight(flatEight({ value: 0 })))));
+>fortyFlat : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+>flatEight(flatEight(flatEight(flatEight(flatEight({ value: 0 }))))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+>flatEight : <T>(x: T) => { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flatEight(flatEight(flatEight(flatEight({ value: 0 })))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+>flatEight : <T>(x: T) => { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flatEight(flatEight(flatEight({ value: 0 }))) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+>flatEight : <T>(x: T) => { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flatEight(flatEight({ value: 0 })) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+>flatEight : <T>(x: T) => { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>flatEight({ value: 0 }) : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+>flatEight : <T>(x: T) => { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & T
+>{ value: 0 } : { value: number; }
+>value : number
+>0 : 0
+
+declare function consumeFlat<T>(x: typeof fortyFlat): T;
+>consumeFlat : <T>(x: typeof fortyFlat) => T
+>x : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+>fortyFlat : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+
+consumeFlat(fortyFlat);
+>consumeFlat(fortyFlat) : unknown
+>consumeFlat : <T>(x: typeof fortyFlat) => T
+>fortyFlat : { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { tag: number; } & { value: number; }
+
+const wrong: { nested: { tag: string } } = nest({ value: 0 });
+>wrong : { nested: { tag: string; }; }
+>nested : { tag: string; }
+>tag : string
+>nest({ value: 0 }) : { nested: { tag: number; } & { value: number; }; }
+>nest : <T>(x: T) => { nested: { tag: number; } & T; }
+>{ value: 0 } : { value: number; }
+>value : number
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export {};
+

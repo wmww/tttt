@@ -1,0 +1,21 @@
+//// [test/cases/bun09-C7a.ts] ////
+
+=== m.ts ===
+import { p } from "./m";
+>p : any
+
+const obj = { p: 1, q: p };
+>obj : any
+>{ p: 1, q: p } : { p: number; q: any; }
+>p : number
+>1 : 1
+>q : any
+>p : any
+
+export = obj;
+>obj : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    // valid programs: tsc reports nothing but the sentinel
+    function method({ o = { m() {} } } = { o: { m() {} } }) {}
+    function inArray({ a = [() => {}] } = { a: [() => {}] }) {}
+    function inObject({ a = { f: () => {} } } = { a: { f: () => {} } }) {}
+    function sibling({ a = () => {}, b = () => a } = { a: () => {}, b: () => () => {} }) {}
+    const { s1 = () => s2, s2 = () => s1 } = { s1: () => 1, s2: () => 2 };
+    const { v = { f: () => {} } } = { v: { f: () => {} } };
+    const [w = [() => {}]] = [[() => {}]];
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

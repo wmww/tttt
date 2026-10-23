@@ -1,0 +1,150 @@
+//// [test/cases/bun83-R01c.ts] ////
+
+=== k01.ts ===
+for (var i = (a = x in b) => 1;;) {}
+>i : (a: any, b: any) => number
+>(a = x in b) => 1 : (a: any, b: any) => number
+>a : any
+>x : any
+>b : any
+>1 : 1
+
+=== k02.ts ===
+for (var i = <T>(a = x in b) => 1;;) {}
+>i : (a: any, b: any) => number
+><T>(a = x in b) => 1 : <T>(a: any, b: any) => number
+>a : any
+>x : any
+>b : any
+>1 : 1
+
+=== k03.ts ===
+for (var i = async (a = x in b) => 1;;) {}
+>i : (a: any, b: any) => number
+>async (a = x in b) => 1 : (a: any, b: any) => Promise<number>
+>a : any
+>x : any
+>b : any
+>1 : 1
+
+=== k04.ts ===
+for (var i = (a: any = x in b) => 1;;) {}
+>i : (a: any, b: any) => number
+>(a: any = x in b) => 1 : (a: any | undefined, b: any) => number
+>a : any
+>x : any
+>b : any
+>1 : 1
+
+=== k07.ts ===
+for (var i = [x in b];;) {}
+>i : (a: any, b: any) => number
+>[x : any[]
+>x : any
+>b : any
+> : any
+
+=== k11.ts ===
+for (var i = (a) => { x in b };;) {}
+>i : (a: any, b: any) => number
+>(a) => { x : (a: any) => void
+>a : any
+>x : any
+>b : any
+> : any
+
+=== k14.ts ===
+for (var i = class { m(a = x in b) {} };;) {}
+>i : (a: any, b: any) => number
+>class { m(a = x in b) {} } : typeof i
+>m : (a: any, b: any) => void
+>a : any
+>x : any
+>b : any
+
+=== k15.ts ===
+for (var i = { m(a = x in b) {} };;) {}
+>i : (a: any, b: any) => number
+>{ m(a = x in b) {} } : { m(a: any, b: any): void; }
+>m : (a: any, b: any) => void
+>a : any
+>x : any
+>b : any
+
+=== k21.ts ===
+for (var i = (a, c = x in b) => 1;;) {}
+>i : (a: any, b: any) => number
+>(a, c = x in b) => 1 : (a: any, c: any, b: any) => number
+>a : any
+>c : any
+>x : any
+>b : any
+>1 : 1
+
+=== k25.ts ===
+for (i = (a = x in b) => 1;;) {}
+>i = (a = x in b) => 1 : (a: any, b: any) => number
+>i : (a: any, b: any) => number
+>(a = x in b) => 1 : (a: any, b: any) => number
+>a : any
+>x : any
+>b : any
+>1 : 1
+
+=== k31.ts ===
+for (var i = function () { x in b };;) {}
+>i : (a: any, b: any) => number
+>function () { x : () => void
+>x : any
+>b : any
+> : any
+
+=== k32.ts ===
+for (var i = class { m() { x in b } };;) {}
+>i : (a: any, b: any) => number
+>class { m() { x in b } : typeof i
+>m : () => void
+>x : any
+>b : any
+> : any
+> : any
+> : any
+
+=== k34.ts ===
+for (var i = [...x in b];;) {}
+>i : (a: any, b: any) => number
+>[...x : any[]
+>...x : any
+>x : any
+>b : any
+> : any
+
+=== k35.ts ===
+for (var i = class { static { x in b } };;) {}
+>i : (a: any, b: any) => number
+>class { static { x in b } : typeof i
+>x : any
+>b : any
+> : any
+> : any
+> : any
+
+=== k36.ts ===
+for (var i = function () { y = x in b };;) {}
+>i : (a: any, b: any) => number
+>function () { y = x : () => void
+>y = x : any
+>y : any
+>x : any
+>b : any
+> : any
+
+=== k38.ts ===
+for (var i = function () { lbl: x in b };;) {}
+>i : (a: any, b: any) => number
+>function () { lbl: x : () => void
+>lbl : any
+>x : any
+>b : any
+> : any
+

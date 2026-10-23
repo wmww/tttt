@@ -1,0 +1,81 @@
+//// [test/cases/bun59-L02.ts] ////
+
+=== a.ts ===
+import j from "./e.json";
+>j : Symbol(j, Decl(a.ts, 0, 6))
+
+const m1: Record<string, unknown> = j;
+>m1 : Symbol(m1, Decl(a.ts, 1, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>j : Symbol(j, Decl(a.ts, 0, 6))
+
+declare function values<T>(r: Record<string, T>): T[];
+>values : Symbol(values, Decl(a.ts, 1, 38))
+>T : Symbol(T, Decl(a.ts, 2, 24))
+>r : Symbol(r, Decl(a.ts, 2, 27))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 2, 24))
+>T : Symbol(T, Decl(a.ts, 2, 24))
+
+function f2(x: unknown, c: Function) {
+>f2 : Symbol(f2, Decl(a.ts, 2, 54))
+>x : Symbol(x, Decl(a.ts, 3, 12))
+>c : Symbol(c, Decl(a.ts, 3, 23))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    if (x instanceof c) {
+>x : Symbol(x, Decl(a.ts, 3, 12))
+>c : Symbol(c, Decl(a.ts, 3, 23))
+
+        const m2: Record<string, unknown> = x;
+>m2 : Symbol(m2, Decl(a.ts, 5, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 3, 12))
+
+        const m3: { [k: string]: number } = x;
+>m3 : Symbol(m3, Decl(a.ts, 6, 13))
+>k : Symbol(k, Decl(a.ts, 6, 21))
+>x : Symbol(x, Decl(a.ts, 3, 12))
+
+        const m4: Record<string, any> = x;
+>m4 : Symbol(m4, Decl(a.ts, 7, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 3, 12))
+
+        values(x);
+>values : Symbol(values, Decl(a.ts, 1, 38))
+>x : Symbol(x, Decl(a.ts, 3, 12))
+    }
+}
+function f5(x: { a: 1 } | string, c: Function) {
+>f5 : Symbol(f5, Decl(a.ts, 10, 1))
+>x : Symbol(x, Decl(a.ts, 11, 12))
+>a : Symbol(a, Decl(a.ts, 11, 16))
+>c : Symbol(c, Decl(a.ts, 11, 33))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    if (x instanceof c) {
+>x : Symbol(x, Decl(a.ts, 11, 12))
+>c : Symbol(c, Decl(a.ts, 11, 33))
+
+        const m5: Record<string, unknown> = x;
+>m5 : Symbol(m5, Decl(a.ts, 13, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 11, 12))
+    }
+}
+const { a, ...rest } = { a: 1 };
+>a : Symbol(a, Decl(a.ts, 16, 7))
+>rest : Symbol(rest, Decl(a.ts, 16, 10))
+>a : Symbol(a, Decl(a.ts, 16, 24))
+
+const m6: Record<string, unknown> = rest;
+>m6 : Symbol(m6, Decl(a.ts, 17, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>rest : Symbol(rest, Decl(a.ts, 16, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+
+=== e.json ===
+

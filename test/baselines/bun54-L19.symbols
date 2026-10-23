@@ -1,0 +1,172 @@
+//// [test/cases/bun54-L19.ts] ////
+
+=== a.ts ===
+export {};
+declare function assert(c: unknown): asserts c;
+>assert : Symbol(assert, Decl(a.ts, 0, 10))
+>c : Symbol(c, Decl(a.ts, 1, 24))
+>c : Symbol(c, Decl(a.ts, 1, 24))
+
+const r = h("a");
+>r : Symbol(r, Decl(a.ts, 2, 5))
+>h : Symbol(h, Decl(a.ts, 2, 17))
+
+function h(x: string) {
+>h : Symbol(h, Decl(a.ts, 2, 17))
+>x : Symbol(x, Decl(a.ts, 3, 11))
+
+  if (typeof x !== "string") {
+>x : Symbol(x, Decl(a.ts, 3, 11))
+
+    assert(x === k);
+>assert : Symbol(assert, Decl(a.ts, 0, 10))
+>x : Symbol(x, Decl(a.ts, 3, 11))
+>k : Symbol(k, Decl(a.ts, 10, 5))
+
+    return x;
+>x : Symbol(x, Decl(a.ts, 3, 11))
+  }
+  return 1;
+}
+const k = r;
+>k : Symbol(k, Decl(a.ts, 10, 5))
+>r : Symbol(r, Decl(a.ts, 2, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+
+=== b.ts ===
+export {};
+declare function assert(c: unknown): asserts c;
+>assert : Symbol(assert, Decl(b.ts, 0, 10))
+>c : Symbol(c, Decl(b.ts, 1, 24))
+>c : Symbol(c, Decl(b.ts, 1, 24))
+
+const r1 = h1("a");
+>r1 : Symbol(r1, Decl(b.ts, 2, 5))
+>h1 : Symbol(h1, Decl(b.ts, 2, 19))
+
+function h1(x: string) {
+>h1 : Symbol(h1, Decl(b.ts, 2, 19))
+>x : Symbol(x, Decl(b.ts, 3, 12))
+
+  if (typeof x !== "string") { assert(x instanceof k1); return x; }
+>x : Symbol(x, Decl(b.ts, 3, 12))
+>assert : Symbol(assert, Decl(b.ts, 0, 10))
+>x : Symbol(x, Decl(b.ts, 3, 12))
+>k1 : Symbol(k1, Decl(b.ts, 7, 5))
+>x : Symbol(x, Decl(b.ts, 3, 12))
+
+  return class {};
+}
+const k1 = r1;
+>k1 : Symbol(k1, Decl(b.ts, 7, 5))
+>r1 : Symbol(r1, Decl(b.ts, 2, 5))
+
+const r2 = h2("a");
+>r2 : Symbol(r2, Decl(b.ts, 8, 5))
+>h2 : Symbol(h2, Decl(b.ts, 8, 19))
+
+function h2(x: string) {
+>h2 : Symbol(h2, Decl(b.ts, 8, 19))
+>x : Symbol(x, Decl(b.ts, 9, 12))
+
+  if (typeof x !== "string") { assert(k2 in x); return x; }
+>x : Symbol(x, Decl(b.ts, 9, 12))
+>assert : Symbol(assert, Decl(b.ts, 0, 10))
+>k2 : Symbol(k2, Decl(b.ts, 13, 5))
+>x : Symbol(x, Decl(b.ts, 9, 12))
+>x : Symbol(x, Decl(b.ts, 9, 12))
+
+  return "p";
+}
+const k2 = r2;
+>k2 : Symbol(k2, Decl(b.ts, 13, 5))
+>r2 : Symbol(r2, Decl(b.ts, 8, 5))
+
+const r3 = h3("a");
+>r3 : Symbol(r3, Decl(b.ts, 14, 5))
+>h3 : Symbol(h3, Decl(b.ts, 14, 19))
+
+function h3(x: string) {
+>h3 : Symbol(h3, Decl(b.ts, 14, 19))
+>x : Symbol(x, Decl(b.ts, 15, 12))
+
+  if (typeof x !== "string") { assert(x !== k3); return x; }
+>x : Symbol(x, Decl(b.ts, 15, 12))
+>assert : Symbol(assert, Decl(b.ts, 0, 10))
+>x : Symbol(x, Decl(b.ts, 15, 12))
+>k3 : Symbol(k3, Decl(b.ts, 19, 5))
+>x : Symbol(x, Decl(b.ts, 15, 12))
+
+  return 1;
+}
+const k3 = r3;
+>k3 : Symbol(k3, Decl(b.ts, 19, 5))
+>r3 : Symbol(r3, Decl(b.ts, 14, 5))
+
+const r4 = h4("a");
+>r4 : Symbol(r4, Decl(b.ts, 20, 5))
+>h4 : Symbol(h4, Decl(b.ts, 20, 19))
+
+function h4(x: string) {
+>h4 : Symbol(h4, Decl(b.ts, 20, 19))
+>x : Symbol(x, Decl(b.ts, 21, 12))
+
+  if (typeof x !== "string") { assert(true && x === k4); return x; }
+>x : Symbol(x, Decl(b.ts, 21, 12))
+>assert : Symbol(assert, Decl(b.ts, 0, 10))
+>x : Symbol(x, Decl(b.ts, 21, 12))
+>k4 : Symbol(k4, Decl(b.ts, 25, 5))
+>x : Symbol(x, Decl(b.ts, 21, 12))
+
+  return 1;
+}
+const k4 = r4;
+>k4 : Symbol(k4, Decl(b.ts, 25, 5))
+>r4 : Symbol(r4, Decl(b.ts, 20, 5))
+
+const r5 = h5(null!);
+>r5 : Symbol(r5, Decl(b.ts, 26, 5))
+>h5 : Symbol(h5, Decl(b.ts, 26, 21))
+
+function h5(x: never) {
+>h5 : Symbol(h5, Decl(b.ts, 26, 21))
+>x : Symbol(x, Decl(b.ts, 27, 12))
+
+  assert(x === k5);
+>assert : Symbol(assert, Decl(b.ts, 0, 10))
+>x : Symbol(x, Decl(b.ts, 27, 12))
+>k5 : Symbol(k5, Decl(b.ts, 31, 5))
+
+  return [x];
+>x : Symbol(x, Decl(b.ts, 27, 12))
+}
+const k5 = r5;
+>k5 : Symbol(k5, Decl(b.ts, 31, 5))
+>r5 : Symbol(r5, Decl(b.ts, 26, 5))
+
+const r6 = h6("a");
+>r6 : Symbol(r6, Decl(b.ts, 32, 5))
+>h6 : Symbol(h6, Decl(b.ts, 32, 19))
+
+function h6(x: string) {
+>h6 : Symbol(h6, Decl(b.ts, 32, 19))
+>x : Symbol(x, Decl(b.ts, 33, 12))
+
+  if (typeof x !== "string") { assert(!(x === k6)); return x; }
+>x : Symbol(x, Decl(b.ts, 33, 12))
+>assert : Symbol(assert, Decl(b.ts, 0, 10))
+>x : Symbol(x, Decl(b.ts, 33, 12))
+>k6 : Symbol(k6, Decl(b.ts, 37, 5))
+>x : Symbol(x, Decl(b.ts, 33, 12))
+
+  return 1;
+}
+const k6 = r6;
+>k6 : Symbol(k6, Decl(b.ts, 37, 5))
+>r6 : Symbol(r6, Decl(b.ts, 32, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 38, 5))
+

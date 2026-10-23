@@ -1,0 +1,19 @@
+//// [test/cases/bun61-L04b.ts] ////
+
+=== a.ts ===
+export const o3 = { get y(): number { return 1; }, set y(this: any) {} };
+>o3 : Symbol(o3, Decl(a.ts, 0, 12))
+>y : Symbol(y, Decl(a.ts, 0, 19), Decl(a.ts, 0, 50))
+>y : Symbol(y, Decl(a.ts, 0, 19), Decl(a.ts, 0, 50))
+>this : Symbol(this, Decl(a.ts, 0, 57))
+
+export const o2 = { get x(): number { return 1; }, set x(this: any, v: number) {} };
+>o2 : Symbol(o2, Decl(a.ts, 1, 12))
+>x : Symbol(x, Decl(a.ts, 1, 19), Decl(a.ts, 1, 50))
+>x : Symbol(x, Decl(a.ts, 1, 19), Decl(a.ts, 1, 50))
+>this : Symbol(this, Decl(a.ts, 1, 57))
+>v : Symbol(v, Decl(a.ts, 1, 67))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

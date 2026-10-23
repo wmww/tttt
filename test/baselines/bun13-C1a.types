@@ -1,0 +1,13 @@
+//// [test/cases/bun13-C1a.ts] ////
+
+=== a.ts ===
+type Q = keyof Partial<D>;
+>Q : any
+
+interface D extends Partial<D> { m(): void }
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

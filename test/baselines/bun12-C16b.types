@@ -1,0 +1,20 @@
+//// [test/cases/bun12-C16b.ts] ////
+
+=== a.ts ===
+type TL = { readonly u: unique symbol };
+>TL : TL
+>u : unique symbol
+
+declare let tl: TL;
+>tl : TL
+
+let s13: string = tl.u;
+>s13 : string
+>tl.u : unique symbol
+>tl : TL
+>u : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

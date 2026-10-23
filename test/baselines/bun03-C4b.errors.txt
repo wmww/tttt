@@ -1,0 +1,15 @@
+a.ts(2,9): error TS2488: Type 'T' must have a '[Symbol.iterator]()' method that returns an iterator.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function cbg<T>(v: T, f: (x: T) => void): void;
+    cbg(1, ([]) => {});
+            ~~
+!!! error TS2488: Type 'T' must have a '[Symbol.iterator]()' method that returns an iterator.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,19 @@
+//// [test/cases/bun08-C16.ts] ////
+
+=== a.ts ===
+const k = "k";
+>k : "k"
+>"k" : "k"
+
+class A1 { k = 2; [k] = 1; }
+>A1 : A1
+>k : number
+>2 : 2
+>[k] : number
+>k : "k"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

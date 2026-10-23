@@ -1,0 +1,18 @@
+a.ts(1,21): error TS2726: Cannot find lib definition for 'es2022.full'.
+a.ts(2,18): error TS2584: Cannot find name 'document'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.
+a.ts(3,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es5"] } }
+==== a.ts (3 errors) ====
+    /// <reference lib="es2022.full" />
+                        ~~~~~~~~~~~
+!!! error TS2726: Cannot find lib definition for 'es2022.full'.
+    export const p = document;
+                     ~~~~~~~~
+!!! error TS2584: Cannot find name 'document'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

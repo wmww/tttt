@@ -1,0 +1,17 @@
+//// [test/cases/bun03-C11a.ts] ////
+
+=== a.ts ===
+class P { private priv = 1 }
+>P : P
+>priv : number
+>1 : 1
+
+declare function fc({ priv: z }: P): void;
+>fc : ({ priv: z }: P) => void
+>priv : any
+>z : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

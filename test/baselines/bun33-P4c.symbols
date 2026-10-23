@@ -1,0 +1,14 @@
+//// [test/cases/bun33-P4c.ts] ////
+
+=== a.js ===
+/** @param {number[]} q */
+function f() { [][arguments.length]; }
+>f : Symbol(f, Decl(a.js, 0, 0))
+>arguments.length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+>arguments : Symbol(arguments)
+>length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 3, 5))
+

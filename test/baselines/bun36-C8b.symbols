@@ -1,0 +1,17 @@
+//// [test/cases/bun36-C8b.ts] ////
+
+=== a.ts ===
+import { which } from "cs1";
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+const x: 0 = which;
+>x : Symbol(x, Decl(a.ts, 1, 5))
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/cs1/ts/index.d.ts ===
+export declare const which: "ts/index";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+

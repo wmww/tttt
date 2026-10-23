@@ -1,0 +1,115 @@
+//// [test/cases/bun73-R01f.ts] ////
+
+=== a.ts ===
+type U = string | number | boolean | null | undefined;
+>U : Symbol(U, Decl(a.ts, 0, 0))
+
+function missed(o: { x: U }) { if (o["x"]) { if (o["x"] === 0) { o["x"].toFixed(); } } }
+>missed : Symbol(missed, Decl(a.ts, 0, 54))
+>o : Symbol(o, Decl(a.ts, 1, 16))
+>x : Symbol(x, Decl(a.ts, 1, 20))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 1, 16))
+>"x" : Symbol(x, Decl(a.ts, 1, 20))
+>o : Symbol(o, Decl(a.ts, 1, 16))
+>"x" : Symbol(x, Decl(a.ts, 1, 20))
+>o : Symbol(o, Decl(a.ts, 1, 16))
+>"x" : Symbol(x, Decl(a.ts, 1, 20))
+
+function element(o: { x: U }) { if (o["x"]) { if (o["x"] === 0) { const p: never = o["x"]; } } }
+>element : Symbol(element, Decl(a.ts, 1, 88))
+>o : Symbol(o, Decl(a.ts, 2, 17))
+>x : Symbol(x, Decl(a.ts, 2, 21))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 2, 17))
+>"x" : Symbol(x, Decl(a.ts, 2, 21))
+>o : Symbol(o, Decl(a.ts, 2, 17))
+>"x" : Symbol(x, Decl(a.ts, 2, 21))
+>p : Symbol(p, Decl(a.ts, 2, 71))
+>o : Symbol(o, Decl(a.ts, 2, 17))
+>"x" : Symbol(x, Decl(a.ts, 2, 21))
+
+function property(o: { x: U }) { if (o.x) { if (o.x === 0) { const p: never = o.x; } } }
+>property : Symbol(property, Decl(a.ts, 2, 96))
+>o : Symbol(o, Decl(a.ts, 3, 18))
+>x : Symbol(x, Decl(a.ts, 3, 22))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>o.x : Symbol(x, Decl(a.ts, 3, 22))
+>o : Symbol(o, Decl(a.ts, 3, 18))
+>x : Symbol(x, Decl(a.ts, 3, 22))
+>o.x : Symbol(x, Decl(a.ts, 3, 22))
+>o : Symbol(o, Decl(a.ts, 3, 18))
+>x : Symbol(x, Decl(a.ts, 3, 22))
+>p : Symbol(p, Decl(a.ts, 3, 66))
+>o.x : Symbol(x, Decl(a.ts, 3, 22))
+>o : Symbol(o, Decl(a.ts, 3, 18))
+>x : Symbol(x, Decl(a.ts, 3, 22))
+
+function mixed(o: { x: U }) { if (o["x"]) { if (o.x === 0) { const p: never = o["x"]; const q: never = o.x; } } }
+>mixed : Symbol(mixed, Decl(a.ts, 3, 88))
+>o : Symbol(o, Decl(a.ts, 4, 15))
+>x : Symbol(x, Decl(a.ts, 4, 19))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 4, 15))
+>"x" : Symbol(x, Decl(a.ts, 4, 19))
+>o.x : Symbol(x, Decl(a.ts, 4, 19))
+>o : Symbol(o, Decl(a.ts, 4, 15))
+>x : Symbol(x, Decl(a.ts, 4, 19))
+>p : Symbol(p, Decl(a.ts, 4, 66))
+>o : Symbol(o, Decl(a.ts, 4, 15))
+>"x" : Symbol(x, Decl(a.ts, 4, 19))
+>q : Symbol(q, Decl(a.ts, 4, 91))
+>o.x : Symbol(x, Decl(a.ts, 4, 19))
+>o : Symbol(o, Decl(a.ts, 4, 15))
+>x : Symbol(x, Decl(a.ts, 4, 19))
+
+function text(o: { x: U }) { if (o["x"]) { if (o["x"] === "") { const p: never = o["x"]; } } }
+>text : Symbol(text, Decl(a.ts, 4, 113))
+>o : Symbol(o, Decl(a.ts, 5, 14))
+>x : Symbol(x, Decl(a.ts, 5, 18))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 5, 14))
+>"x" : Symbol(x, Decl(a.ts, 5, 18))
+>o : Symbol(o, Decl(a.ts, 5, 14))
+>"x" : Symbol(x, Decl(a.ts, 5, 18))
+>p : Symbol(p, Decl(a.ts, 5, 69))
+>o : Symbol(o, Decl(a.ts, 5, 14))
+>"x" : Symbol(x, Decl(a.ts, 5, 18))
+
+function falsy(o: { x: U }) { if (!o["x"]) { if (o["x"] === 1) { const p: never = o["x"]; } } }
+>falsy : Symbol(falsy, Decl(a.ts, 5, 94))
+>o : Symbol(o, Decl(a.ts, 6, 15))
+>x : Symbol(x, Decl(a.ts, 6, 19))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 6, 15))
+>"x" : Symbol(x, Decl(a.ts, 6, 19))
+>o : Symbol(o, Decl(a.ts, 6, 15))
+>"x" : Symbol(x, Decl(a.ts, 6, 19))
+>p : Symbol(p, Decl(a.ts, 6, 70))
+>o : Symbol(o, Decl(a.ts, 6, 15))
+>"x" : Symbol(x, Decl(a.ts, 6, 19))
+
+function plainNumber(o: { x: number }) { if (o["x"]) { if (o["x"] === 0) { const p: never = o["x"]; } } }
+>plainNumber : Symbol(plainNumber, Decl(a.ts, 6, 95))
+>o : Symbol(o, Decl(a.ts, 7, 21))
+>x : Symbol(x, Decl(a.ts, 7, 25))
+>o : Symbol(o, Decl(a.ts, 7, 21))
+>"x" : Symbol(x, Decl(a.ts, 7, 25))
+>o : Symbol(o, Decl(a.ts, 7, 21))
+>"x" : Symbol(x, Decl(a.ts, 7, 25))
+>p : Symbol(p, Decl(a.ts, 7, 80))
+>o : Symbol(o, Decl(a.ts, 7, 21))
+>"x" : Symbol(x, Decl(a.ts, 7, 25))
+
+function arrayIndex(o: U[]) { if (o[0]) { if (o[0] === 0) { const p: never = o[0]; } } }
+>arrayIndex : Symbol(arrayIndex, Decl(a.ts, 7, 105))
+>o : Symbol(o, Decl(a.ts, 8, 20))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 8, 20))
+>o : Symbol(o, Decl(a.ts, 8, 20))
+>p : Symbol(p, Decl(a.ts, 8, 65))
+>o : Symbol(o, Decl(a.ts, 8, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

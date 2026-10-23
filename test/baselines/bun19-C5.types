@@ -1,0 +1,23 @@
+//// [test/cases/bun19-C5.ts] ////
+
+=== a.ts ===
+interface I { a: number }
+>a : number
+
+namespace I { export const x = 1 }
+>I : typeof I
+>x : 1
+>1 : 1
+
+declare let i: I;
+>i : I
+
+const r: { [k: string]: number } = i;
+>r : { [k: string]: number; }
+>k : string
+>i : I
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

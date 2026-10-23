@@ -1,0 +1,37 @@
+//// [test/cases/bun77-R17b.ts] ////
+
+=== a.ts ===
+class C { constructor(public a: number, public a: string) {} }
+>C : C
+>a : number
+>a : number
+
+new C(1, ""); new C(1, 2);
+>new C(1, "") : C
+>C : typeof C
+>1 : 1
+>"" : ""
+>new C(1, 2) : C
+>C : typeof C
+>1 : 1
+>2 : 2
+
+class D { constructor(a: number, a: string) {} }
+>D : D
+>a : number
+>a : string
+
+new D(1, ""); new D(1, 2);
+>new D(1, "") : D
+>D : typeof D
+>1 : 1
+>"" : ""
+>new D(1, 2) : D
+>D : typeof D
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

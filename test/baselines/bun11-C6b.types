@@ -1,0 +1,25 @@
+//// [test/cases/bun11-C6b.ts] ////
+
+=== a.ts ===
+const i1 = import("./b");
+>i1 : any
+>import("./b") : any
+>"./b" : "./b"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export {};
+=== b.ts ===
+export const b = 1;
+>b : 1
+>1 : 1
+
+=== lib.d.ts ===
+interface Array<T> { length: number; [n: number]: T } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { }
+>length : number
+>n : number
+
+interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+

@@ -1,0 +1,41 @@
+//// [test/cases/bun01-C5b.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : any
+
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+interface Promise<T> {}
+}
+async function f(): Promise<{ a: number }> { return { a: 1 }; }
+>f : () => Promise<{ a: number; }>
+>a : number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+import("./b", { with: {} });
+>import("./b", { with: {} }) : Promise<typeof import("./b")>
+>"./b" : "./b"
+>{ with: {} } : { with: {}; }
+>with : {}
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+
+export default 1;
+

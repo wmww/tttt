@@ -1,0 +1,16 @@
+//// [test/cases/bun33-P4h.ts] ////
+
+=== a.js ===
+/** @param {number[]} q */
+function f() { class K { ["p"] = arguments } }
+>f : () => void
+>K : K
+>["p"] : any
+>"p" : "p"
+>arguments : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

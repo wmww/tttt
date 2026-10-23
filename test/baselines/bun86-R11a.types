@@ -1,0 +1,28 @@
+//// [test/cases/bun86-R11a.ts] ////
+
+=== a.ts ===
+document.title = 2; const d: Document = { title: 3 };
+>document.title = 2 : 2
+>document.title : string
+>document : Document
+>title : string
+>2 : 2
+>d : Document
+>{ title: 3 } : { title: number; }
+>title : number
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/index.ts ===
+interface Document { title: string }
+>title : string
+
+var document: Document = { title: 1 };
+>document : Document
+>{ title: 1 } : { title: number; }
+>title : number
+>1 : 1
+

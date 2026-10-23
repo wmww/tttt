@@ -1,0 +1,14 @@
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (1 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    declare function G<T>(p: { a: (n: number) => T; f: (x: T) => void }): JSX.Element;
+    declare const anyV: any;
+    const g = <G {...anyV} a={n => "s"} f={x => x.length} />;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

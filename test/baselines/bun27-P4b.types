@@ -1,0 +1,16 @@
+//// [test/cases/bun27-P4b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type IntrinsicElements = Undefined; }
+>e : 1
+>IntrinsicElements : Undefined
+
+const a = <div />;
+>a : JSX.Element
+><div /> : JSX.Element
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

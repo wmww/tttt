@@ -1,0 +1,28 @@
+a.ts(1,15): error TS2307: Cannot find module './missing' or its corresponding type declarations.
+a.ts(1,27): error TS2322: Type '{ type: 1; }' is not assignable to type 'ImportAttributes'.
+  Property 'type' is incompatible with index signature.
+    Type 'number' is not assignable to type 'string'.
+a.ts(1,40): error TS2858: Import attribute values must be string literal expressions.
+a.ts(2,1): error TS2304: Cannot find name 'undeclared'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext" } }
+==== a.ts (5 errors) ====
+    import a from "./missing" with { type: 1 };
+                  ~~~~~~~~~~~
+!!! error TS2307: Cannot find module './missing' or its corresponding type declarations.
+                              ~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ type: 1; }' is not assignable to type 'ImportAttributes'.
+!!! error TS2322:   Property 'type' is incompatible with index signature.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+                                           ~
+!!! error TS2858: Import attribute values must be string literal expressions.
+    undeclared;
+    ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'undeclared'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

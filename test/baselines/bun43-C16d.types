@@ -1,0 +1,11 @@
+//// [test/cases/bun43-C16d.ts] ////
+
+=== a.ts ===
+class C { 1n(); }
+>C : C
+>1n : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,20 @@
+//// [test/cases/bun29-C1a.ts] ////
+
+=== a.ts ===
+namespace N { interface I { readonly p: unique symbol } export declare const x: I["p"]; }
+>N : typeof N
+>p : unique symbol
+>x : unique symbol
+
+export const a = [N.x] as const;
+>a : readonly [unique symbol]
+>[N.x] as const : readonly [unique symbol]
+>[N.x] : readonly [unique symbol]
+>N.x : unique symbol
+>N : typeof N
+>x : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

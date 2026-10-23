@@ -1,0 +1,150 @@
+a.ts(20,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(21,7): error TS2322: Type 'number' is not assignable to type '[op: K]'.
+a.ts(22,7): error TS2322: Type 'number' is not assignable to type '[op: (x: U) => void, o: K]'.
+a.ts(23,7): error TS2322: Type 'number' is not assignable to type '[op: K]'.
+a.ts(24,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(25,7): error TS2322: Type '0' is not assignable to type '"not any"'.
+a.ts(26,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(27,7): error TS2322: Type '0' is not assignable to type '"no"'.
+a.ts(28,7): error TS2322: Type '0' is not assignable to type '"no"'.
+a.ts(29,7): error TS2322: Type 'number' is not assignable to type 'U'.
+a.ts(30,7): error TS2322: Type '0' is not assignable to type '"no"'.
+a.ts(31,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(32,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(33,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(34,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(35,7): error TS2322: Type '0' is not assignable to type '"any"'.
+a.ts(36,7): error TS2322: Type '<O extends K>(op: O) => M<O>' is not assignable to type '(...args: any) => U'.
+  Type '(U | {})[] | U' is not assignable to type 'U'.
+    Type '(U | {})[]' is not assignable to type 'U'.
+      Index signature for type 'string' is missing in type '(U | {})[]'.
+a.ts(37,7): error TS2322: Type '<O extends K>(op: O) => M<O>' is not assignable to type '(op: any) => U'.
+  Type '(U | {})[] | U' is not assignable to type 'U'.
+    Type '(U | {})[]' is not assignable to type 'U'.
+      Index signature for type 'string' is missing in type '(U | {})[]'.
+a.ts(38,7): error TS2322: Type '(U | {})[] | U' is not assignable to type 'U'.
+  Type '(U | {})[]' is not assignable to type 'U'.
+    Index signature for type 'string' is missing in type '(U | {})[]'.
+a.ts(39,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noErrorTruncation": true } }
+==== a.ts (20 errors) ====
+    type U = { [k: string]: unknown };
+    type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+    type K = 'a' | 'b';
+    type IsAny<T> = 0 extends 1 & T ? 'any' : 'not any';
+    declare function f<O extends K>(op: O): M<O>;
+    declare class C<O extends K> { constructor(op: O); v: M<O> }
+    declare const ctor: new <O extends K>(op: O) => M<O>;
+    declare function cb<O extends K>(op: (x: M<O>) => void, o: O): void;
+    declare function pr<O extends K>(op: O): Promise<M<O>>;
+    declare function ov(op: number): number;
+    declare function ov<O extends K>(op: O): M<O>;
+    declare function un<O>(op: O): M<O>;
+    declare function st<O extends string>(op: O): M<O>;
+    declare function an<O extends any>(op: O): M<O>;
+    declare function ob<O extends { a: 1 }>(op: O): M<O>;
+    type MyReturn<T> = T extends (...a: any) => infer R ? R : 'no';
+    type MyReturn2<T> = T extends (...a: any[]) => infer R ? R : 'no';
+    type MyReturn3<T> = T extends (...a: never) => infer R ? R : 'no';
+    type MyReturn4<T> = T extends (a: any) => infer R ? R : 'no';
+    const a01: IsAny<ReturnType<typeof f>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a02: Parameters<typeof f> = 0;
+          ~~~
+!!! error TS2322: Type 'number' is not assignable to type '[op: K]'.
+    const a03: Parameters<typeof cb> = 0;
+          ~~~
+!!! error TS2322: Type 'number' is not assignable to type '[op: (x: U) => void, o: K]'.
+    const a04: ConstructorParameters<typeof ctor> = 0;
+          ~~~
+!!! error TS2322: Type 'number' is not assignable to type '[op: K]'.
+    const a05: IsAny<InstanceType<typeof ctor>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a06: IsAny<InstanceType<typeof C>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"not any"'.
+    const a07: IsAny<Awaited<ReturnType<typeof pr>>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a08: MyReturn<typeof f> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"no"'.
+    const a09: MyReturn2<typeof f> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"no"'.
+    const a10: MyReturn3<typeof f> = 0;
+          ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'U'.
+    const a11: MyReturn4<typeof f> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"no"'.
+    const a12: IsAny<ReturnType<typeof ov>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a13: IsAny<ReturnType<typeof un>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a14: IsAny<ReturnType<typeof st>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a15: IsAny<ReturnType<typeof an>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a16: IsAny<ReturnType<typeof ob>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    const a17: (...args: any) => U = f;
+          ~~~
+!!! error TS2322: Type '<O extends K>(op: O) => M<O>' is not assignable to type '(...args: any) => U'.
+!!! error TS2322:   Type '(U | {})[] | U' is not assignable to type 'U'.
+!!! error TS2322:     Type '(U | {})[]' is not assignable to type 'U'.
+!!! error TS2322:       Index signature for type 'string' is missing in type '(U | {})[]'.
+    const a18: (op: any) => U = f;
+          ~~~
+!!! error TS2322: Type '<O extends K>(op: O) => M<O>' is not assignable to type '(op: any) => U'.
+!!! error TS2322:   Type '(U | {})[] | U' is not assignable to type 'U'.
+!!! error TS2322:     Type '(U | {})[]' is not assignable to type 'U'.
+!!! error TS2322:       Index signature for type 'string' is missing in type '(U | {})[]'.
+    const a19: U = f(null as any);
+          ~~~
+!!! error TS2322: Type '(U | {})[] | U' is not assignable to type 'U'.
+!!! error TS2322:   Type '(U | {})[]' is not assignable to type 'U'.
+!!! error TS2322:     Index signature for type 'string' is missing in type '(U | {})[]'.
+    const sentinel: number = '';
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== S136.txt (0 errors) ====
+    a.ts(20,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(21,7): error TS2322: Type 'number' is not assignable to type '[op: K]'.
+    a.ts(22,7): error TS2322: Type 'number' is not assignable to type '[op: (x: U) => void, o: K]'.
+    a.ts(23,7): error TS2322: Type 'number' is not assignable to type '[op: K]'.
+    a.ts(24,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(25,7): error TS2322: Type '0' is not assignable to type '"not any"'.
+    a.ts(26,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(27,7): error TS2322: Type '0' is not assignable to type '"no"'.
+    a.ts(28,7): error TS2322: Type '0' is not assignable to type '"no"'.
+    a.ts(29,7): error TS2322: Type 'number' is not assignable to type 'U'.
+    a.ts(30,7): error TS2322: Type '0' is not assignable to type '"no"'.
+    a.ts(31,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(32,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(33,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(34,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(35,7): error TS2322: Type '0' is not assignable to type '"any"'.
+    a.ts(36,7): error TS2322: Type '<O extends K>(op: O) => M<O>' is not assignable to type '(...args: any) => U'.
+      Type '(U | {})[] | U' is not assignable to type 'U'.
+        Type '(U | {})[]' is not assignable to type 'U'.
+          Index signature for type 'string' is missing in type '(U | {})[]'.
+    a.ts(37,7): error TS2322: Type '<O extends K>(op: O) => M<O>' is not assignable to type '(op: any) => U'.
+      Type '(U | {})[] | U' is not assignable to type 'U'.
+        Type '(U | {})[]' is not assignable to type 'U'.
+          Index signature for type 'string' is missing in type '(U | {})[]'.
+    a.ts(38,7): error TS2322: Type '(U | {})[] | U' is not assignable to type 'U'.
+      Type '(U | {})[]' is not assignable to type 'U'.
+        Index signature for type 'string' is missing in type '(U | {})[]'.
+    a.ts(39,7): error TS2322: Type 'string' is not assignable to type 'number'.

@@ -1,0 +1,31 @@
+//// [test/cases/bun24-SC3.ts] ////
+
+=== a.ts ===
+const w2 = <T,>(t: T) => ({ ...{}, w: t });
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>t : Symbol(t, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>w : Symbol(w, Decl(a.ts, 0, 34))
+>t : Symbol(t, Decl(a.ts, 0, 16))
+
+const d2: string = w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(1))))))))))))));
+>d2 : Symbol(d2, Decl(a.ts, 1, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+>w2 : Symbol(w2, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

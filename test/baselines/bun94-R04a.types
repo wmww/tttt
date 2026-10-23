@@ -1,0 +1,44 @@
+//// [test/cases/bun94-R04a.ts] ////
+
+=== a.ts ===
+import d from "./b";
+>d : any
+
+export default d;
+>d : any
+
+const n: number = d;
+>n : number
+>d : any
+
+d.nope;
+>d.nope : any
+>d : any
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import a = require("./a");
+>a : typeof a
+
+export = a;
+>a : typeof a
+
+=== u.ts ===
+import d from "./a";
+>d : any
+
+import b from "./b";
+>b : typeof b
+
+const n: number = d;
+>n : number
+>d : any
+
+const m: number = b;
+>m : number
+>b : typeof b
+

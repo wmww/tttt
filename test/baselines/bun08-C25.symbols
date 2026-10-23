@@ -1,0 +1,26 @@
+//// [test/cases/bun08-C25.ts] ////
+
+=== a.ts ===
+namespace N { export const y = 1; }
+>N : Symbol(N, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 0, 26), Decl(a.ts, 3, 38))
+
+declare const k: "x";
+>k : Symbol(k, Decl(a.ts, 1, 13))
+
+function f() {}
+>f : Symbol(f, Decl(a.ts, 1, 21), Decl(a.ts, 2, 15))
+
+namespace f { export import x = N.y; }
+>f : Symbol(f, Decl(a.ts, 1, 21), Decl(a.ts, 2, 15))
+>x : Symbol(x, Decl(a.ts, 3, 13))
+>N : Symbol(N, Decl(a.ts, 0, 0))
+>y : Symbol(x, Decl(a.ts, 0, 26), Decl(a.ts, 3, 38))
+
+f[k] = 2;
+>f : Symbol(f, Decl(a.ts, 1, 21), Decl(a.ts, 2, 15))
+>k : Symbol(k, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

@@ -1,0 +1,20 @@
+//// [test/cases/bun06-C7.ts] ////
+
+=== a.js ===
+/** @param {(a: number) => void} cb */
+function takes(cb) {}
+>takes : (cb: (a: number) => void) => void
+>cb : (a: number) => void
+
+takes((a = []) => {});
+>takes((a = []) => {}) : void
+>takes : (cb: (a: number) => void) => void
+>(a = []) => {} : (a?: number) => void
+>a : number
+>[] : never[]
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

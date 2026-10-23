@@ -1,0 +1,17 @@
+//// [test/cases/bun14-P7.ts] ////
+
+=== a.ts ===
+declare const mt: [number, number] | readonly [number, number];
+>mt : [number, number] | readonly [number, number]
+
+mt[0] = 1;
+>mt[0] = 1 : 1
+>mt[0] : any
+>mt : [number, number] | readonly [number, number]
+>0 : 0
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

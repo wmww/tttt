@@ -1,0 +1,29 @@
+//// [test/cases/bun27-C8.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+
+declare namespace React { function createElement(...a: any[]): any; const Fragment: (p: { x: number }) => JSX.Element; }
+>React : Symbol(React, Decl(a.tsx, 0, 83))
+>createElement : Symbol(createElement, Decl(a.tsx, 1, 25))
+>a : Symbol(a, Decl(a.tsx, 1, 49))
+>Fragment : Symbol(Fragment, Decl(a.tsx, 1, 73))
+>p : Symbol(p, Decl(a.tsx, 1, 85))
+>x : Symbol(x, Decl(a.tsx, 1, 89))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+function f(React: any) { return <></>; }
+>f : Symbol(f, Decl(a.tsx, 1, 120))
+>React : Symbol(React, Decl(a.tsx, 2, 11))
+
+const a = <></>;
+>a : Symbol(a, Decl(a.tsx, 3, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 4, 5))
+

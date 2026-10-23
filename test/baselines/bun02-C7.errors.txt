@@ -1,0 +1,18 @@
+a.ts(2,16): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+a.ts(2,16): error TS2378: A 'get' accessor must return a value.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const c: boolean;
+    class G1 { get a() { if (c) { throw 1; return 1; } } }
+                   ~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+                   ~
+!!! error TS2378: A 'get' accessor must return a value.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

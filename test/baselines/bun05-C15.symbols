@@ -1,0 +1,24 @@
+//// [test/cases/bun05-C15.ts] ////
+
+=== a.ts ===
+declare const a: { b?: <T>(cb: (x: T) => void) => T };
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+>cb : Symbol(cb, Decl(a.ts, 0, 27))
+>x : Symbol(x, Decl(a.ts, 0, 32))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+
+const r1: string | undefined = a?.b(x => { const q: 0 = x; });
+>r1 : Symbol(r1, Decl(a.ts, 1, 5))
+>a?.b : Symbol(b, Decl(a.ts, 0, 18))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 18))
+>x : Symbol(x, Decl(a.ts, 1, 36))
+>q : Symbol(q, Decl(a.ts, 1, 48))
+>x : Symbol(x, Decl(a.ts, 1, 36))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

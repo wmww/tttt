@@ -1,0 +1,46 @@
+a.ts(2,26): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(2,38): error TS2300: Duplicate identifier 'ns'.
+a.ts(2,53): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(2,65): error TS2300: Duplicate identifier 'ns'.
+a.ts(3,27): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(5,27): error TS1258: A default export must be at the top level of a file or module declaration.
+a.ts(5,27): error TS2528: A module cannot have multiple default exports.
+a.ts(5,45): error TS1258: A default export must be at the top level of a file or module declaration.
+a.ts(5,45): error TS2528: A module cannot have multiple default exports.
+a.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext" } }
+==== a.ts (10 errors) ====
+    import "./m";
+    export const o = { m() { export * as ns from "./m"; export * as ns from "./m"; } };
+                             ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                                         ~~
+!!! error TS2300: Duplicate identifier 'ns'.
+                                                        ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                                                                    ~~
+!!! error TS2300: Duplicate identifier 'ns'.
+    export const o3 = { m() { export * as ns from "./m"; } };
+                              ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+    o3.m.ns.v;
+    export const o4 = { m() { export default 1; export default 2; } };
+                              ~~~~~~
+!!! error TS1258: A default export must be at the top level of a file or module declaration.
+                              ~~~~~~~~~~~~~~~~~
+!!! error TS2528: A module cannot have multiple default exports.
+!!! related TS2753 a.ts:5:45: Another export default is here.
+                                                ~~~~~~
+!!! error TS1258: A default export must be at the top level of a file or module declaration.
+                                                ~~~~~~~~~~~~~~~~~
+!!! error TS2528: A module cannot have multiple default exports.
+!!! related TS2752 a.ts:5:27: The first export default is here.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export const v = 1;
+    

@@ -1,0 +1,43 @@
+//// [test/cases/bun57-L01.ts] ////
+
+=== a.ts ===
+declare const a: any, b: any;
+>a : any
+>b : any
+
+@a export export @b class C1 {}
+>a : any
+>b : any
+>C1 : C1
+
+@a public export @b class C2 {}
+>a : any
+>b : any
+>C2 : C2
+
+@a declare export @b class C3 {}
+>a : any
+>b : any
+>C3 : C3
+
+function f() { @a export @b class C4 {} }
+>f : () => void
+>a : any
+>b : any
+>C4 : C4
+
+namespace N { export @a default class C5 {} }
+>N : typeof N
+>a : any
+>C5 : C5
+
+namespace M { @a export default @b class C6 {} }
+>M : typeof M
+>a : any
+>b : any
+>C6 : C6
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

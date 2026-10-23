@@ -1,0 +1,43 @@
+//// [test/cases/bun20-P11.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+declare const m: { a: "b"; b: "a" };
+>m : { a: "b"; b: "a"; }
+>a : "b"
+>b : "a"
+
+function f() {
+>f : () => void
+
+    let x: "a" | "b" = "a", y: "a" | "b" = "a";
+>x : "a" | "b"
+>"a" : "a"
+>y : "a" | "b"
+>"a" : "a"
+
+    while (cond()) {
+>cond() : boolean
+>cond : () => boolean
+
+        if (x !== y) { x = m[y]; }
+>x !== y : boolean
+>x : "a"
+>y : "a"
+>x = m[y] : never
+>x : "a" | "b"
+>m[y] : never
+>m : { a: "b"; b: "a"; }
+>y : never
+
+        switch (x) { case "b": break; }
+>x : "a"
+>"b" : "b"
+    }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

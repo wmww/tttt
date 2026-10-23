@@ -1,0 +1,15 @@
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    enum E { Two = 2 }
+    interface AL extends ReadonlyArray<string | number> { length: E.Two }
+    declare function f<T extends AL>(x: T): T;
+    const r = f([1, "a"]);
+    const t: [number, string] = r;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

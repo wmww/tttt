@@ -1,0 +1,24 @@
+a.ts(1,10): error TS2393: Duplicate function implementation.
+a.ts(1,40): error TS2393: Duplicate function implementation.
+a.ts(1,71): error TS2393: Duplicate function implementation.
+a.ts(1,71): error TS2394: This overload signature is not compatible with its implementation signature.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    function s1(x: string): void; function s1(x: any) {} var q1; function s1(y: number, z: number): number { return 1 }
+             ~~
+!!! error TS2393: Duplicate function implementation.
+                                           ~~
+!!! error TS2393: Duplicate function implementation.
+                                                                          ~~
+!!! error TS2393: Duplicate function implementation.
+                                                                          ~~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 a.ts:1:40: The implementation signature is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

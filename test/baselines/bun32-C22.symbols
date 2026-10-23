@@ -1,0 +1,12 @@
+//// [test/cases/bun32-C22.ts] ////
+
+=== a.ts ===
+function f(readonly h = 1) { const t: 1 = h; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>h : Symbol(h, Decl(a.ts, 0, 11))
+>t : Symbol(t, Decl(a.ts, 0, 34))
+>h : Symbol(h, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

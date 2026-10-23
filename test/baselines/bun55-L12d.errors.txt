@@ -1,0 +1,23 @@
+a.ts(4,13): error TS17012: 'other' is not a valid meta-property for keyword 'new'. Did you mean 'target'?
+a.ts(4,24): error TS2532: Object is possibly 'undefined'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class C {
+      static x: string | undefined;
+      constructor() {
+        if (new.other.x) { new.target.x.length; }
+                ~~~~~
+!!! error TS17012: 'other' is not a valid meta-property for keyword 'new'. Did you mean 'target'?
+                           ~~~~~~~~~~~~
+!!! error TS2532: Object is possibly 'undefined'.
+        if (new.target.x) { new.target.x.length; }
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

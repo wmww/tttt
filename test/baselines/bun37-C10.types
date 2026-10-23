@@ -1,0 +1,10 @@
+//// [test/cases/bun37-C10.ts] ////
+
+=== a.ts ===
+let n: number = null;
+>n : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,107 @@
+//// [test/cases/bun54-L10.ts] ////
+
+=== a.ts ===
+const o1 = { get a() { return 1 }, a: 2 };
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 12), Decl(a.ts, 0, 34))
+>a : Symbol(a, Decl(a.ts, 0, 12), Decl(a.ts, 0, 34))
+
+o1.a();
+>o1.a : Symbol(a, Decl(a.ts, 0, 12), Decl(a.ts, 0, 34))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 12), Decl(a.ts, 0, 34))
+
+const o2 = { a: 2, get a() { return 1 } };
+>o2 : Symbol(o2, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 2, 12), Decl(a.ts, 2, 18))
+>a : Symbol(a, Decl(a.ts, 2, 12), Decl(a.ts, 2, 18))
+
+o2.a();
+>o2.a : Symbol(a, Decl(a.ts, 2, 12), Decl(a.ts, 2, 18))
+>o2 : Symbol(o2, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 2, 12), Decl(a.ts, 2, 18))
+
+const o3 = { set a(v: number) {}, get a() { return 1 } };
+>o3 : Symbol(o3, Decl(a.ts, 4, 5))
+>a : Symbol(a, Decl(a.ts, 4, 12), Decl(a.ts, 4, 33))
+>v : Symbol(v, Decl(a.ts, 4, 19))
+>a : Symbol(a, Decl(a.ts, 4, 12), Decl(a.ts, 4, 33))
+
+o3.a();
+>o3.a : Symbol(a, Decl(a.ts, 4, 12), Decl(a.ts, 4, 33))
+>o3 : Symbol(o3, Decl(a.ts, 4, 5))
+>a : Symbol(a, Decl(a.ts, 4, 12), Decl(a.ts, 4, 33))
+
+const o4 = { get a() { return 1 }, set a(v: number) {} };
+>o4 : Symbol(o4, Decl(a.ts, 6, 5))
+>a : Symbol(a, Decl(a.ts, 6, 12), Decl(a.ts, 6, 34))
+>a : Symbol(a, Decl(a.ts, 6, 12), Decl(a.ts, 6, 34))
+>v : Symbol(v, Decl(a.ts, 6, 41))
+
+o4.a();
+>o4.a : Symbol(a, Decl(a.ts, 6, 12), Decl(a.ts, 6, 34))
+>o4 : Symbol(o4, Decl(a.ts, 6, 5))
+>a : Symbol(a, Decl(a.ts, 6, 12), Decl(a.ts, 6, 34))
+
+const o5 = { get a() { return 1 }, a() {} , b: 1 };
+>o5 : Symbol(o5, Decl(a.ts, 8, 5))
+>a : Symbol(a, Decl(a.ts, 8, 12))
+>a : Symbol(a, Decl(a.ts, 8, 34))
+>b : Symbol(b, Decl(a.ts, 8, 43))
+
+o5.b();
+>o5.b : Symbol(b, Decl(a.ts, 8, 43))
+>o5 : Symbol(o5, Decl(a.ts, 8, 5))
+>b : Symbol(b, Decl(a.ts, 8, 43))
+
+const o6 = { set a(v: number) {}, a: 2 };
+>o6 : Symbol(o6, Decl(a.ts, 10, 5))
+>a : Symbol(a, Decl(a.ts, 10, 12), Decl(a.ts, 10, 33))
+>v : Symbol(v, Decl(a.ts, 10, 19))
+>a : Symbol(a, Decl(a.ts, 10, 12), Decl(a.ts, 10, 33))
+
+o6.a();
+>o6.a : Symbol(a, Decl(a.ts, 10, 12), Decl(a.ts, 10, 33))
+>o6 : Symbol(o6, Decl(a.ts, 10, 5))
+>a : Symbol(a, Decl(a.ts, 10, 12), Decl(a.ts, 10, 33))
+
+const k = "a";
+>k : Symbol(k, Decl(a.ts, 12, 5))
+
+const o7 = { get [k]() { return 1 }, [k]: 2 };
+>o7 : Symbol(o7, Decl(a.ts, 13, 5))
+>[k] : Symbol([k], Decl(a.ts, 13, 12), Decl(a.ts, 13, 36))
+>k : Symbol(k, Decl(a.ts, 12, 5))
+>[k] : Symbol([k], Decl(a.ts, 13, 12), Decl(a.ts, 13, 36))
+>k : Symbol(k, Decl(a.ts, 12, 5))
+
+o7.a();
+>o7.a : Symbol([k], Decl(a.ts, 13, 12), Decl(a.ts, 13, 36))
+>o7 : Symbol(o7, Decl(a.ts, 13, 5))
+>a : Symbol([k], Decl(a.ts, 13, 12), Decl(a.ts, 13, 36))
+
+const o8 = { [k]: 2, get a() { return 1 } };
+>o8 : Symbol(o8, Decl(a.ts, 15, 5))
+>[k] : Symbol(a, Decl(a.ts, 15, 20), Decl(a.ts, 15, 12))
+>k : Symbol(k, Decl(a.ts, 12, 5))
+>a : Symbol(a, Decl(a.ts, 15, 20), Decl(a.ts, 15, 12))
+
+o8.a();
+>o8.a : Symbol(a, Decl(a.ts, 15, 20), Decl(a.ts, 15, 12))
+>o8 : Symbol(o8, Decl(a.ts, 15, 5))
+>a : Symbol(a, Decl(a.ts, 15, 20), Decl(a.ts, 15, 12))
+
+const o9 = { get a() { return 1 }, [k]: 2 };
+>o9 : Symbol(o9, Decl(a.ts, 17, 5))
+>a : Symbol(a, Decl(a.ts, 17, 12), Decl(a.ts, 17, 34))
+>[k] : Symbol(a, Decl(a.ts, 17, 12), Decl(a.ts, 17, 34))
+>k : Symbol(k, Decl(a.ts, 12, 5))
+
+o9.a();
+>o9.a : Symbol(a, Decl(a.ts, 17, 12), Decl(a.ts, 17, 34))
+>o9 : Symbol(o9, Decl(a.ts, 17, 5))
+>a : Symbol(a, Decl(a.ts, 17, 12), Decl(a.ts, 17, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 19, 5))
+

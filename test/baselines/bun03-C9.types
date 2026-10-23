@@ -1,0 +1,18 @@
+//// [test/cases/bun03-C9.ts] ////
+
+=== a.ts ===
+interface A { a: number }
+>a : number
+
+interface B { a: string }
+>a : string
+
+class X { constructor(public a: any) {} }
+>X : X
+>a : any
+
+interface X extends A, B {}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

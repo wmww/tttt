@@ -1,0 +1,81 @@
+//// [test/cases/bun93-R11a.ts] ////
+
+=== a.ts ===
+declare function id<U>(u: U): U;
+>id : <U>(u: U) => U
+>u : U
+
+class C<T> { w = ({ m() { return 1; }, id }).id<5>; }
+>C : C<T>
+>w : (u: 5) => 5
+>({ m() { return 1; }, id }).id<5> : (u: 5) => 5
+>({ m() { return 1; }, id }).id : <U>(u: U) => U
+>({ m() { return 1; }, id }) : { m(): number; id: <U>(u: U) => U; }
+>{ m() { return 1; }, id } : { m(): number; id: <U>(u: U) => U; }
+>m : () => number
+>1 : 1
+>id : <U>(u: U) => U
+>id : <U>(u: U) => U
+
+let w: C<string>["w"] | C<boolean>["w"] = 1;
+>w : ((u: 5) => 5) | ((u: 5) => 5)
+>1 : 1
+
+function g<T>(a = ({ m() { return 1; }, id }).id<6>) { return a; }
+>g : <T>(a?: (u: 6) => 6) => (u: 6) => 6
+>a : (u: 6) => 6
+>({ m() { return 1; }, id }).id<6> : (u: 6) => 6
+>({ m() { return 1; }, id }).id : <U>(u: U) => U
+>({ m() { return 1; }, id }) : { m(): number; id: <U>(u: U) => U; }
+>{ m() { return 1; }, id } : { m(): number; id: <U>(u: U) => U; }
+>m : () => number
+>1 : 1
+>id : <U>(u: U) => U
+>id : <U>(u: U) => U
+>a : (u: 6) => 6
+
+let a: ReturnType<typeof g<string>> | ReturnType<typeof g<boolean>> = 1;
+>a : ((u: 6) => 6) | ((u: 6) => 6)
+>g : <T>(a?: (u: 6) => 6) => (u: 6) => 6
+>g : <T>(a?: (u: 6) => 6) => (u: 6) => 6
+>1 : 1
+
+const h = <T,>() => ({ m() { return 1; }, id }).id<7>;
+>h : <T>() => (u: 7) => 7
+><T,>() => ({ m() { return 1; }, id }).id<7> : <T>() => (u: 7) => 7
+>({ m() { return 1; }, id }).id<7> : (u: 7) => 7
+>({ m() { return 1; }, id }).id : <U>(u: U) => U
+>({ m() { return 1; }, id }) : { m(): number; id: <U>(u: U) => U; }
+>{ m() { return 1; }, id } : { m(): number; id: <U>(u: U) => U; }
+>m : () => number
+>1 : 1
+>id : <U>(u: U) => U
+>id : <U>(u: U) => U
+
+let b: ReturnType<typeof h<string>> | ReturnType<typeof h<boolean>> = 1;
+>b : ((u: 7) => 7) | ((u: 7) => 7)
+>h : <T>() => (u: 7) => 7
+>h : <T>() => (u: 7) => 7
+>1 : 1
+
+// with a return type annotation the method does not count: one type in both tools
+class D<T> { w = ({ m(): number { return 1; }, id }).id<8>; }
+>D : D<T>
+>w : (u: 8) => 8
+>({ m(): number { return 1; }, id }).id<8> : (u: 8) => 8
+>({ m(): number { return 1; }, id }).id : <U>(u: U) => U
+>({ m(): number { return 1; }, id }) : { m(): number; id: <U>(u: U) => U; }
+>{ m(): number { return 1; }, id } : { m(): number; id: <U>(u: U) => U; }
+>m : () => number
+>1 : 1
+>id : <U>(u: U) => U
+>id : <U>(u: U) => U
+
+let d: D<string>["w"] | D<boolean>["w"] = 1;
+>d : (u: 8) => 8
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

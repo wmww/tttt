@@ -1,0 +1,13 @@
+//// [test/cases/bun30-P8b.ts] ////
+
+=== a.ts ===
+export async function a() { namespace await {} }
+>a : () => Promise<void>
+>namespace : any
+>await {} : {}
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

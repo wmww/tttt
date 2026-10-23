@@ -1,0 +1,18 @@
+//// [test/cases/bun08-C8.ts] ////
+
+=== a.mts ===
+import t1 from "./typed.json";
+>t1 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== typed.d.json.ts ===
+declare const v: { k: number };
+>v : { k: number; }
+>k : number
+
+export default v;
+>v : { k: number; }
+

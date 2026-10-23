@@ -1,0 +1,11 @@
+//// [test/cases/bun93-P07b.ts] ////
+
+=== a.ts ===
+class B { async static !x = 0 }
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>static : Symbol(B.static, Decl(a.ts, 0, 9))
+>x : Symbol(B.x, Decl(a.ts, 0, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun03-SC4.ts] ////
+
+=== a.ts ===
+export type F = ({ a, ...r }: { a: number; b: number }) => void;
+>F : F
+>a : number
+>r : { b: number; }
+>a : number
+>b : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

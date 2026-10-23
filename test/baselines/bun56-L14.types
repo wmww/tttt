@@ -1,0 +1,28 @@
+//// [test/cases/bun56-L14.ts] ////
+
+=== a.ts ===
+let a = 1 as const<>;
+>a : 1
+>1 as const<> : 1
+>1 : 1
+
+let a2 = <const<>>1;
+>a2 : 1
+><const<>>1 : 1
+>1 : 1
+
+let a3 = [1, "x"] as const<>;
+>a3 : readonly [1, "x"]
+>[1, "x"] as const<> : readonly [1, "x"]
+>[1, "x"] : readonly [1, "x"]
+>1 : 1
+>"x" : "x"
+
+const n: 2 = a;
+>n : 2
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

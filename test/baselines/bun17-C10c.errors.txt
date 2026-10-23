@@ -1,0 +1,19 @@
+a.tsx(5,4): error TS2322: Type '{ children: string; }' is not assignable to type 'T extends string ? { children: number[]; } : { children: number[]; }'.
+a.tsx(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element {} interface IntrinsicElements {} interface ElementChildrenAttribute { children: {} } }
+    declare const React: any;
+    function Outer<T>() {
+      function E(props: T extends string ? { children: number[] } : { children: number[] }) { return null as any as JSX.Element; }
+      <E>{"s"}</E>;
+       ~
+!!! error TS2322: Type '{ children: string; }' is not assignable to type 'T extends string ? { children: number[]; } : { children: number[]; }'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,13 @@
+//// [test/cases/bun93-P07b.ts] ////
+
+=== a.ts ===
+class B { async static !x = 0 }
+>B : B
+>static : any
+>x : number
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

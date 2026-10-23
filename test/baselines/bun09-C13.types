@@ -1,0 +1,20 @@
+//// [test/cases/bun09-C13.ts] ////
+
+=== a.ts ===
+type AB = { a: 1 } | { b: 2 };
+>AB : AB
+>a : 1
+>b : 2
+
+function f2<T extends AB>(t: T, { ...r } = t) { const x: T = r; }
+>f2 : <T extends AB>(t: T, { ...r }?: AB) => void
+>t : T
+>r : T
+>t : AB
+>x : T
+>r : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

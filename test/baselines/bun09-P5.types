@@ -1,0 +1,21 @@
+//// [test/cases/bun09-P5.ts] ////
+
+=== a.ts ===
+interface I { p: 0 }
+>p : 0
+
+type X1 = I & { a: 1 };
+>X1 : X1
+>a : 1
+
+function f1<T extends X1>(t: T) { const q: { a: 2 } = t; }
+>f1 : <T extends X1>(t: T) => void
+>t : T
+>q : { a: 2; }
+>a : 2
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

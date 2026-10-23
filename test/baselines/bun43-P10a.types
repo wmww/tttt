@@ -1,0 +1,11 @@
+//// [test/cases/bun43-P10a.ts] ////
+
+=== a.ts ===
+type M<T> = T extends infer U[] ? U : never;
+>M : M<T>
+>never : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,112 @@
+a.ts(2,1): error TS2304: Cannot find name 'type'.
+a.ts(2,6): error TS2457: Type alias name cannot be 'type'.
+a.ts(2,8): error TS2693: 'JSXElement' only refers to a type, but is being used as a value here.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(1,1): error TS2304: Cannot find name 'type'.
+b.ts(1,6): error TS2457: Type alias name cannot be 'type'.
+b.ts(1,8): error TS2304: Cannot find name 'A'.
+b.ts(1,12): error TS1434: Unexpected keyword or identifier.
+b.ts(1,12): error TS2304: Cannot find name 'from'.
+b.ts(2,1): error TS2304: Cannot find name 'type'.
+b.ts(2,6): error TS2457: Type alias name cannot be 'type'.
+b.ts(3,1): error TS2304: Cannot find name 'interface'.
+b.ts(3,11): error TS2427: Interface name cannot be 'interface'.
+b.ts(4,1): error TS2304: Cannot find name 'namespace'.
+b.ts(4,11): error TS2819: Namespace name cannot be 'namespace'.
+b.ts(4,12): error TS1146: Declaration expected.
+b.ts(4,13): error TS1109: Expression expected.
+b.ts(5,1): error TS2591: Cannot find name 'module'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+b.ts(5,8): error TS2819: Namespace name cannot be 'module'.
+b.ts(6,1): error TS2304: Cannot find name 'type'.
+b.ts(6,6): error TS2457: Type alias name cannot be 'type'.
+b.ts(6,8): error TS2304: Cannot find name 'A'.
+b.ts(7,12): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+b.ts(7,12): error TS2304: Cannot find name 'type'.
+b.ts(7,17): error TS2457: Type alias name cannot be 'type'.
+b.ts(7,21): error TS1128: Declaration or statement expected.
+b.ts(8,12): error TS7008: Member 'interface' implicitly has an 'any' type.
+b.ts(8,23): error TS2427: Interface name cannot be 'interface'.
+b.ts(9,22): error TS2304: Cannot find name 'type'.
+b.ts(9,27): error TS2457: Type alias name cannot be 'type'.
+b.ts(9,29): error TS2304: Cannot find name 'A'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    type JSXElement = 1;
+    type { JSXElement };
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~
+!!! error TS2457: Type alias name cannot be 'type'.
+           ~~~~~~~~~~
+!!! error TS2693: 'JSXElement' only refers to a type, but is being used as a value here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (27 errors) ====
+    type { A } from "./a";
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~
+!!! error TS2457: Type alias name cannot be 'type'.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+               ~~~~
+!!! error TS1434: Unexpected keyword or identifier.
+               ~~~~
+!!! error TS2304: Cannot find name 'from'.
+    type ) ;
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~
+!!! error TS2457: Type alias name cannot be 'type'.
+    interface ] ;
+    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'interface'.
+              ~
+!!! error TS2427: Interface name cannot be 'interface'.
+    namespace @ ;
+    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'namespace'.
+              ~
+!!! error TS2819: Namespace name cannot be 'namespace'.
+               
+!!! error TS1146: Declaration expected.
+                ~
+!!! error TS1109: Expression expected.
+    module ~ 1;
+    ~~~~~~
+!!! error TS2591: Cannot find name 'module'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+           ~
+!!! error TS2819: Namespace name cannot be 'module'.
+    type { A };
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~
+!!! error TS2457: Type alias name cannot be 'type'.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+    class C1 { type { } }
+               ~~~~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+               ~~~~
+!!! error TS2304: Cannot find name 'type'.
+                    ~
+!!! error TS2457: Type alias name cannot be 'type'.
+                        ~
+!!! error TS1128: Declaration or statement expected.
+    class C2 { interface? ) }
+               ~~~~~~~~~
+!!! error TS7008: Member 'interface' implicitly has an 'any' type.
+                          ~
+!!! error TS2427: Interface name cannot be 'interface'.
+    function f() { throw type { A }; }
+                         ~~~~
+!!! error TS2304: Cannot find name 'type'.
+                              ~
+!!! error TS2457: Type alias name cannot be 'type'.
+                                ~
+!!! error TS2304: Cannot find name 'A'.
+    

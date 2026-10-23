@@ -1,0 +1,60 @@
+a.ts(2,7): error TS7022: 'v2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(2,24): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(2,24): error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(3,7): error TS7022: 'v3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(3,27): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(3,27): error TS7023: '[kz]' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(4,7): error TS7022: 'v6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(4,27): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(4,27): error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(5,7): error TS7022: 'w8' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(5,24): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(5,24): error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+a.ts(7,39): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(8,18): error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (15 errors) ====
+    const kz = "z";
+    const v2 = { z: 1, get z() { return v2.z } };
+          ~~
+!!! error TS7022: 'v2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                           ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+                           ~
+!!! error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const v3 = { [kz]: 1, get [kz]() { return v3.z } };
+          ~~
+!!! error TS7022: 'v3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                              ~~~~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+                              ~~~~
+!!! error TS7023: '[kz]' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const v6 = { [kz]: 1, get z() { return v6.z } };
+          ~~
+!!! error TS7022: 'v6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                              ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+                              ~
+!!! error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const w8 = { z: 1, set z(v: typeof w8) {} };
+          ~~
+!!! error TS7022: 'w8' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                           ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+                           ~
+!!! error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+    // the plain member last, or no plain member: the two agree
+    const v9 = { get z() { return v9.z }, z: 1 };
+                                          ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    const v1 = { get z() { return v1.z } };
+                     ~
+!!! error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,19 @@
+//// [test/cases/bun03-C6.ts] ////
+
+=== a.ts ===
+interface A { a: number }
+>a : number
+
+interface B { a: string }
+>a : string
+
+class X { static a = 1 }
+>X : X
+>a : number
+>1 : 1
+
+interface X extends A, B {}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

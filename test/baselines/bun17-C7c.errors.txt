@@ -1,0 +1,17 @@
+a.ts(4,1): error TS2322: Type 'D.NaNy' is not assignable to type 'C.NaNy'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace C { export enum NaNy { N = 0 / 0 } }
+    namespace D { export enum NaNy { N = 0 / 0 } }
+    declare let cn: C.NaNy, dn: D.NaNy;
+    cn = dn;
+    ~~
+!!! error TS2322: Type 'D.NaNy' is not assignable to type 'C.NaNy'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

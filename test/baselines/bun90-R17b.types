@@ -1,0 +1,32 @@
+//// [test/cases/bun90-R17b.ts] ////
+
+=== b1.ts ===
+import { u } from "./a1"; u;
+>u : late
+>u : late
+
+export const first = class { static x = 1 }; export const late = class { static x = 2 };
+>first : typeof first
+>class { static x = 1 } : typeof first
+>x : number
+>1 : 1
+>late : typeof late
+>class { static x = 2 } : typeof late
+>x : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a1.ts ===
+import { late } from "./b1"; export const u = new late();
+>late : typeof late
+>u : late
+>new late() : late
+>late : typeof late
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : () => void
+

@@ -1,0 +1,37 @@
+//// [test/cases/bun27-C12.ts] ////
+
+=== a.tsx ===
+function F(p: {}) { return null! as { e: 1 }; }
+>F : Symbol(F, Decl(a.tsx, 0, 0))
+>p : Symbol(p, Decl(a.tsx, 0, 11))
+>e : Symbol(e, Decl(a.tsx, 0, 37))
+
+const b = <F />;
+>b : Symbol(b, Decl(a.tsx, 1, 5))
+>F : Symbol(F, Decl(a.tsx, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+
+export {};
+=== node_modules/starlib/jsx-runtime.d.ts ===
+export * as JSX from "./ns";
+>JSX : Symbol(JSX, Decl(jsx-runtime.d.ts, 0, 6))
+
+=== node_modules/starlib/more.d.ts ===
+export type LibraryManagedAttributes<C, P> = P & { extra: number };
+>LibraryManagedAttributes : Symbol(LibraryManagedAttributes, Decl(more.d.ts, 0, 0))
+>C : Symbol(C, Decl(more.d.ts, 0, 37))
+>P : Symbol(P, Decl(more.d.ts, 0, 39))
+>P : Symbol(P, Decl(more.d.ts, 0, 39))
+>extra : Symbol(extra, Decl(more.d.ts, 0, 50))
+
+=== node_modules/starlib/ns.d.ts ===
+export * from "./more";
+export interface Element { e: 1 }
+>Element : Symbol(Element, Decl(ns.d.ts, 0, 23))
+>e : Symbol(Element.e, Decl(ns.d.ts, 1, 26))
+
+export interface IntrinsicElements {}
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ns.d.ts, 1, 33))
+

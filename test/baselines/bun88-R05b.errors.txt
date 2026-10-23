@@ -1,0 +1,131 @@
+a.ts(2,10): error TS6133: 'f1' is declared but its value is never read.
+a.ts(4,16): error TS7061: A mapped type may not declare properties or methods.
+a.ts(7,10): error TS6133: 'f2' is declared but its value is never read.
+a.ts(8,11): error TS6133: 'kk' is declared but its value is never read.
+a.ts(8,27): error TS6133: 'oo' is declared but its value is never read.
+a.ts(9,16): error TS7061: A mapped type may not declare properties or methods.
+a.ts(12,7): error TS6196: 'D3' is declared but never used.
+a.ts(12,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(12,31): error TS2448: Block-scoped variable 'later' used before its declaration.
+a.ts(12,40): error TS2448: Block-scoped variable 'laterObj' used before its declaration.
+a.ts(14,7): error TS6196: 'D4' is declared but never used.
+a.ts(14,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(14,31): error TS2304: Cannot find name 'missing1'.
+a.ts(14,47): error TS2304: Cannot find name 'missing2'.
+a.ts(15,7): error TS6196: 'D5' is declared but never used.
+a.ts(15,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(15,32): error TS2304: Cannot find name 'missing3'.
+a.ts(15,46): error TS2304: Cannot find name 'missing4'.
+a.ts(16,7): error TS6196: 'D6' is declared but never used.
+a.ts(16,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(16,31): error TS2465: 'this' cannot be referenced in a computed property name.
+a.ts(16,41): error TS2466: 'super' cannot be referenced in a computed property name.
+a.ts(17,7): error TS6196: 'D7' is declared but never used.
+a.ts(17,15): error TS7061: A mapped type may not declare properties or methods.
+a.ts(17,34): error TS2304: Cannot find name 'T'.
+a.ts(17,39): error TS2304: Cannot find name 'T'.
+a.ts(18,10): error TS6133: 'f8' is declared but its value is never read.
+a.ts(18,54): error TS7061: A mapped type may not declare properties or methods.
+a.ts(18,80): error TS2465: 'this' cannot be referenced in a computed property name.
+a.ts(19,22): error TS2307: Cannot find module './gone' or its corresponding type declarations.
+a.ts(20,7): error TS6196: 'D9' is declared but never used.
+a.ts(20,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(21,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(21,7): error TS6133: 'sentinel' is declared but its value is never read.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (34 errors) ====
+    export {};
+    function f1() {
+             ~~
+!!! error TS6133: 'f1' is declared but its value is never read.
+        const kk = "x"; const oo = {};
+        class D1 { [k: string]: any; [kk in oo]: number = 1 }
+                   ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+        return D1;
+    }
+    function f2() {
+             ~~
+!!! error TS6133: 'f2' is declared but its value is never read.
+        const kk = "x"; const oo = {};
+              ~~
+!!! error TS6133: 'kk' is declared but its value is never read.
+                              ~~
+!!! error TS6133: 'oo' is declared but its value is never read.
+        class D2 { [kk in oo]: number = 1 }
+                   ~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+        return D2;
+    }
+    class D3 { [k: string]: any; [later in laterObj]: number = 1 }
+          ~~
+!!! error TS6196: 'D3' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                  ~~~~~
+!!! error TS2448: Block-scoped variable 'later' used before its declaration.
+!!! related TS2728 a.ts:13:7: 'later' is declared here.
+                                           ~~~~~~~~
+!!! error TS2448: Block-scoped variable 'laterObj' used before its declaration.
+!!! related TS2728 a.ts:13:26: 'laterObj' is declared here.
+    const later = "x"; const laterObj = {};
+    class D4 { [k: string]: any; [missing1.a.b in missing2()]: number = 1 }
+          ~~
+!!! error TS6196: 'D4' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                  ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing1'.
+                                                  ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing2'.
+    class D5 { [k: string]: any; [(missing3) in [missing4]]: number = 1 }
+          ~~
+!!! error TS6196: 'D5' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                   ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing3'.
+                                                 ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing4'.
+    class D6 { [k: string]: any; [this.x in super.y]: number = 1 }
+          ~~
+!!! error TS6196: 'D6' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                  ~~~~
+!!! error TS2465: 'this' cannot be referenced in a computed property name.
+                                            ~~~~~
+!!! error TS2466: 'super' cannot be referenced in a computed property name.
+    class D7<T> { [k: string]: any; [T in T]: number = 1 }
+          ~~
+!!! error TS6196: 'D7' is declared but never used.
+                  ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                     ~
+!!! error TS2304: Cannot find name 'T'.
+                                          ~
+!!! error TS2304: Cannot find name 'T'.
+    function f8(this: any, arg: string) { return class { [k: string]: any; [arg in this]: number = 1 } }
+             ~~
+!!! error TS6133: 'f8' is declared but its value is never read.
+                                                         ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                                                                   ~~~~
+!!! error TS2465: 'this' cannot be referenced in a computed property name.
+    import { gone } from "./gone";
+                         ~~~~~~~~
+!!! error TS2307: Cannot find module './gone' or its corresponding type declarations.
+    class D9 { [k: string]: any; [gone in gone]: number = 1 }
+          ~~
+!!! error TS6196: 'D9' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+          ~~~~~~~~
+!!! error TS6133: 'sentinel' is declared but its value is never read.
+    

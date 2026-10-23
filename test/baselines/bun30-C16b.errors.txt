@@ -1,0 +1,19 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+d.ts(2,16): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== d.ts (1 errors) ====
+    import "./m";
+    function f() { export * as ns from "./m"; }
+                   ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+    f.ns;
+==== m.ts (0 errors) ====
+    export const m1 = 1;
+    

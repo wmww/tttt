@@ -1,0 +1,21 @@
+//// [test/cases/bun52-L03.ts] ////
+
+=== a.ts ===
+declare function f(a = nope): void;
+>f : (a?: any) => void
+>a : any
+>nope : any
+
+let g: (x: number) => void;
+>g : (x: number) => void
+>x : number
+
+g = f;
+>g = f : (a?: any) => void
+>g : (x: number) => void
+>f : (a?: any) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

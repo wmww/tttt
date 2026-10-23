@@ -1,0 +1,29 @@
+//// [test/cases/bun12-C8b.ts] ////
+
+=== a.ts ===
+declare const r: [string, ...number[]];
+>r : [string, ...number[]]
+
+let f: string | number, g: number | boolean | undefined;
+>f : string | number
+>g : number | boolean | undefined
+
+[f, g] = r;
+>[f, g] = r : [string, ...number[]]
+>[f, g] : [string | number, number | boolean | undefined]
+>f : string | number
+>g : number | boolean | undefined
+>r : [string, ...number[]]
+
+if (typeof g !== "number") { const u: boolean = g; }
+>typeof g !== "number" : boolean
+>typeof g : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>g : number | undefined
+>"number" : "number"
+>u : boolean
+>g : undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

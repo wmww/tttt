@@ -1,0 +1,15 @@
+//// [test/cases/bun40-C3c.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/p/node_modules/x/index.d.ts ===
+declare const g: 1;
+>g : 1
+
+=== node_modules/q/node_modules/x/index.d.ts ===
+declare const g: 1;
+>g : 1
+

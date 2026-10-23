@@ -1,0 +1,25 @@
+//// [test/cases/bun20-C16b.ts] ////
+
+=== a.ts ===
+enum SE { A = "a", B = "b" }
+>SE : SE
+>A : SE.A
+>"a" : "a"
+>B : SE.B
+>"b" : "b"
+
+const z1: SE = [1];
+>z1 : SE
+>[1] : number[]
+>1 : 1
+
+const z2: boolean = { valueOf: 1 };
+>z2 : boolean
+>{ valueOf: 1 } : { valueOf: number; }
+>valueOf : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

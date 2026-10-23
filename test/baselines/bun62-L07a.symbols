@@ -1,0 +1,46 @@
+//// [test/cases/bun62-L07a.ts] ////
+
+=== a.ts ===
+declare const k10: I10[typeof k10b];
+>k10 : Symbol(k10, Decl(a.ts, 0, 13))
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+>k10b : Symbol(k10b, Decl(a.ts, 1, 13))
+
+declare const k10b: "w";
+>k10b : Symbol(k10b, Decl(a.ts, 1, 13))
+
+interface I10 { [k10]: 2; [k10b]: "v"; }
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+>[k10] : Symbol(I10[k10], Decl(a.ts, 2, 15))
+>k10 : Symbol(k10, Decl(a.ts, 0, 13))
+>[k10b] : Symbol(I10[k10b], Decl(a.ts, 2, 25))
+>k10b : Symbol(k10b, Decl(a.ts, 1, 13))
+
+declare const i: I10;
+>i : Symbol(i, Decl(a.ts, 3, 13))
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+
+const p: boolean = i.w;
+>p : Symbol(p, Decl(a.ts, 4, 5))
+>i : Symbol(i, Decl(a.ts, 3, 13))
+
+type T = I10["w"];
+>T : Symbol(T, Decl(a.ts, 4, 23))
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+
+type K = keyof I10;
+>K : Symbol(K, Decl(a.ts, 5, 18))
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+
+const kk: K = "w";
+>kk : Symbol(kk, Decl(a.ts, 7, 5))
+>K : Symbol(K, Decl(a.ts, 5, 18))
+
+const lit: I10 = { w: "v" };
+>lit : Symbol(lit, Decl(a.ts, 8, 5))
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+>w : Symbol(w, Decl(a.ts, 8, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

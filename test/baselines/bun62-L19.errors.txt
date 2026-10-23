@@ -1,0 +1,70 @@
+a.ts(1,32): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+a.ts(1,56): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+a.ts(1,77): error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+a.ts(2,32): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: { b: any; }; }; }'.
+a.ts(2,56): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: { b: any; }; }; }'.
+a.ts(2,82): error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+a.ts(3,32): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }[]; }'.
+a.ts(3,56): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }[]; }'.
+a.ts(3,77): error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+a.ts(4,32): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+a.ts(4,56): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+a.ts(4,81): error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+a.ts(5,32): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+a.ts(5,56): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+a.ts(5,77): error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+a.ts(6,32): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any[]; }; }'.
+a.ts(6,56): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any[]; }; }'.
+a.ts(6,78): error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (19 errors) ====
+    const l1 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 1 + {} }) };
+                                   ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+                                                           ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+                                                                                ~~~~~~
+!!! error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+    const l2 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: { b: 2 + {} } }) };
+                                   ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: { b: any; }; }; }'.
+                                                           ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: { b: any; }; }; }'.
+                                                                                     ~~~~~~
+!!! error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+    const l3 = { m() { return this.z; }, f() { return this.z; }, g: () => [{ a: 3 + {} }] };
+                                   ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }[]; }'.
+                                                           ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }[]; }'.
+                                                                                ~~~~~~
+!!! error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+    const l4 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ ["a"]: 4 + {} }) };
+                                   ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+                                                           ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+                                                                                    ~~~~~~
+!!! error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+    const l5 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 5 + {}, ...{} }) };
+                                   ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+                                                           ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any; }; }'.
+                                                                                ~~~~~~
+!!! error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+    const l8 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: [8 + {}] }) };
+                                   ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any[]; }; }'.
+                                                           ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => { a: any[]; }; }'.
+                                                                                 ~~~~~~
+!!! error TS2365: Operator '+' cannot be applied to types 'number' and '{}'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

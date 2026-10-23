@@ -1,0 +1,28 @@
+//// [test/cases/bun80-R07.ts] ////
+
+=== a.js ===
+@dec declare module "zz" {}
+>dec : Symbol(dec, Decl(a.js, 1, 25))
+>"zz" : Symbol("zz", Decl(a.js, 0, 0))
+
+@dec declare module "yy";
+>dec : Symbol(dec, Decl(a.js, 1, 25))
+>"yy" : Symbol("yy", Decl(a.js, 0, 27))
+
+function dec() {}
+>dec : Symbol(dec, Decl(a.js, 1, 25))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 3, 27))
+
+=== b.js ===
+@dec export as namespace X;
+>dec : Symbol(dec, Decl(a.js, 1, 25))
+
+=== c.js ===
+@dec declare global {}
+>dec : Symbol(dec, Decl(a.js, 1, 25))
+>global : Symbol(global, Decl(c.js, 0, 0))
+
+export {};
+

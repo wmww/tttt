@@ -1,0 +1,14 @@
+//// [test/cases/bun08-C3a.ts] ////
+
+=== a.ts ===
+import d from "./lib/types";
+>d : typeof d
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib/types.d.ts ===
+export declare const a: number;
+>a : number
+

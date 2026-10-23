@@ -1,0 +1,24 @@
+//// [test/cases/bun51-L19a.ts] ////
+
+=== a.ts ===
+import "./b";
+export declare function f({ a: b }): void;
+>f : ({ a: b }: { a: any; }) => void
+>a : any
+>b : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import { f } from "./a";
+>f : ({ a: b }: { a: any; }) => void
+
+f({ a: 1 });
+>f({ a: 1 }) : void
+>f : ({ a: b }: { a: any; }) => void
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+

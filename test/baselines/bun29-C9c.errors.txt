@@ -1,0 +1,17 @@
+a.ts(2,3): error TS2339: Property 'b' does not exist on type 'never'.
+  The intersection '{ a: typeof iterator; } & { a: typeof asyncIterator; }' was reduced to 'never' because property 'a' has conflicting types in some constituents.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare let x: { a: typeof Symbol.iterator } & { a: typeof Symbol.asyncIterator };
+    x.b;
+      ~
+!!! error TS2339: Property 'b' does not exist on type 'never'.
+!!! error TS2339:   The intersection '{ a: typeof iterator; } & { a: typeof asyncIterator; }' was reduced to 'never' because property 'a' has conflicting types in some constituents.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

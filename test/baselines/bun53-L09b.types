@@ -1,0 +1,32 @@
+//// [test/cases/bun53-L09b.ts] ////
+
+=== a.ts ===
+import("./m", { extra: (x) => {} });
+>import("./m", { extra: (x) => {} }) : Promise<typeof import("./m")>
+>"./m" : "./m"
+>{ extra: (x) => {} } : { extra: (x: any) => void; }
+>extra : (x: any) => void
+>(x) => {} : (x: any) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export {};
+=== lib.d.ts ===
+interface Array<T> { length: number } interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {} interface Promise<T> { then(): void } interface PromiseConstructor { new <T>(f: any): Promise<T> } declare var Promise: PromiseConstructor;
+>length : number
+>then : () => void
+>f : any
+>Promise : PromiseConstructor
+
+type ImportCallOptions = { extra?: (x: number) => void };
+>ImportCallOptions : ImportCallOptions
+>extra : ((x: number) => void) | undefined
+>x : number
+
+=== m.ts ===
+
+export {};
+

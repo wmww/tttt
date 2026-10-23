@@ -1,0 +1,11 @@
+//// [test/cases/bun88-R08a.ts] ////
+
+=== a.js ===
+/** @type {typeof globalThis.} */ var v8 = "x";
+>v8 : any
+>"x" : "x"
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+

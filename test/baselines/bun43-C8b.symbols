@@ -1,0 +1,14 @@
+//// [test/cases/bun43-C8b.ts] ////
+
+=== a.ts ===
+import { Foo } from "./p";
+>Foo : Symbol(Foo, Decl(a.ts, 0, 8))
+
+/** {@link \u0046oo} */
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+
+=== p.ts ===
+export interface Foo {}
+>Foo : Symbol(Foo, Decl(p.ts, 0, 0))
+

@@ -1,0 +1,12 @@
+//// [test/cases/bun40-C5.ts] ////
+
+=== a.ts ===
+/// <reference lib="" />
+/// <reference lib="esnext.full" />
+const d: Document = 1;
+>d : Symbol(d, Decl(a.ts, 2, 5))
+>Document : Symbol(Document)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

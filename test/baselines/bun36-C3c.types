@@ -1,0 +1,10 @@
+//// [test/cases/bun36-C3c.ts] ////
+
+=== a.ts ===
+import w3 = require("tv");
+>w3 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

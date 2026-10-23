@@ -1,0 +1,139 @@
+a.ts(4,99): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(5,98): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(6,110): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(7,119): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(8,122): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(9,117): error TS2322: Type '<T>(x: T) => T' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(10,135): error TS2322: Type '<T>(x: T) => T' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(11,114): error TS2322: Type '<T>(x: T) => T' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(12,145): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(13,113): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(14,129): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(15,172): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(16,104): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(17,99): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(18,76): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(19,83): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(20,73): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(22,108): error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(23,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (19 errors) ====
+    declare function id<T>(x: T): T;
+    type R = (x: number) => string;
+    const objv = { z: 1, cb: (): R => null! };
+    const { z, ...rest1 } = objv; declare function h1<T>(a: T, o: typeof rest1): T; h1(1, { cb: () => id });
+                                                                                                      ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    const sp1 = { ...objv }; declare function h2<T>(a: T, o: typeof sp1): T; h2(1, { z: 1, cb: () => id });
+                                                                                                     ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    const sp2 = { ...objv, k: 1 }; declare function h3<T>(a: T, o: typeof sp2): T; h3(1, { z: 1, k: 1, cb: () => id });
+                                                                                                                 ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    let wid = { cb: (): R => null!, n: null }; declare function h4<T>(a: T, o: typeof wid): T; h4(1, { n: null, cb: () => id });
+                                                                                                                          ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:7:17: The expected type comes from the return type of this signature.
+    const asg = Object.assign({ q: 1 }, objv); declare function h5<T>(a: T, o: typeof asg): T; h5(1, { q: 1, z: 1, cb: () => id });
+                                                                                                                             ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    const cex = class { cb!: () => R }; declare function h6<T>(a: T, o: InstanceType<typeof cex>): T; h6(1, { cb: () => id });
+                                                                                                                        ~~
+!!! error TS2322: Type '<T>(x: T) => T' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:9:26: The expected type comes from the return type of this signature.
+    enum E { A } namespace E { export const cb: () => R = null! } declare function h7<T>(a: T, o: typeof E): T; h7(1, { A: E.A, cb: () => id });
+                                                                                                                                          ~~
+!!! error TS2322: Type '<T>(x: T) => T' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:10:45: The expected type comes from the return type of this signature.
+    namespace V { export const cb: () => R = null! } declare function h8<T>(a: T, o: typeof V): T; h8(1, { cb: () => id });
+                                                                                                                     ~~
+!!! error TS2322: Type '<T>(x: T) => T' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:11:32: The expected type comes from the return type of this signature.
+    function FN() {} namespace FN { export const cb: () => R = null! } declare function h9<T>(a: T, o: Pick<typeof FN, "cb">): T; h9(1, { cb: () => id });
+                                                                                                                                                    ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:12:50: The expected type comes from the return type of this signature.
+    function withRest({ z, ...r }: typeof objv) { function h<T>(a: T, o: typeof r): T { return a } h(1, { cb: () => id }); }
+                                                                                                                    ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    const [, ...arest] = [1, (): R => null!] as [number, () => R]; declare function h10<T>(a: T, o: typeof arest): T; h10(1, [() => id]);
+                                                                                                                                    ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:14:54: The expected type comes from the return type of this signature.
+    declare const u: { z: 1; cb: () => R } | { z: 2; cb: () => R; w: 1 }; const { z: z2, ...rest2 } = u; declare function h11<T>(a: T, o: typeof rest2): T; h11(1, { cb: () => id });
+                                                                                                                                                                               ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+    const { ...rest3 } = objv; declare function h12<T>(a: T, o: typeof rest3): T; h12(1, { z: 1, cb: () => id });
+                                                                                                           ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    type RestAlias = typeof rest1; declare function h13<T>(a: T, o: RestAlias): T; h13(1, { cb: () => id });
+                                                                                                      ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    declare function h14<T>(a: T, o: (typeof rest1)[]): T; h14(1, [{ cb: () => id }]);
+                                                                               ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    declare function h15<T>(a: T, o: typeof rest1 | undefined): T; h15(1, { cb: () => id });
+                                                                                      ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    declare function h16<T>(a: T, o: (typeof rest1)["cb"]): T; h16(1, () => id);
+                                                                            ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    let r5; ({ z: r5, ...r5 } = objv);
+    const nested = { in: rest1 }; declare function h17<T>(a: T, o: typeof nested): T; h17(1, { in: { cb: () => id } });
+                                                                                                               ~~
+!!! error TS2322: Type '(x: number) => number' is not assignable to type 'R'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6502 a.ts:3:26: The expected type comes from the return type of this signature.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

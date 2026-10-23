@@ -1,0 +1,16 @@
+//// [test/cases/bun04-C10a.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== g1.ts ===
+interface GI { m<T>(): void; }
+>m : { <T>(): void; <U>(x: number): void; }
+
+=== g2.ts ===
+interface GI { m<U>(x: number): void; }
+>m : { <T>(): void; <U>(x: number): void; }
+>x : number
+

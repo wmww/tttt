@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X1a.ts] ////
+
+=== a.ts ===
+interface A { export v: 1 }
+>v : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

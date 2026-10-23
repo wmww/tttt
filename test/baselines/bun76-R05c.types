@@ -1,0 +1,72 @@
+//// [test/cases/bun76-R05c.ts] ////
+
+=== a.ts ===
+declare const w1: { readonly p: keyof W1 };
+>w1 : { readonly p: keyof W1; }
+>p : any
+
+interface W1 { x(): void; [w1.p](): void }
+>x : () => void
+>[w1.p] : () => void
+>w1.p : any
+>w1 : { readonly p: keyof W1; }
+>p : any
+
+declare const w2: { readonly p: keyof W2 };
+>w2 : { readonly p: keyof W2; }
+>p : any
+
+interface W2 { x: 1; [w2.p]: number }
+>x : 1
+>[w2.p] : number
+>w2.p : any
+>w2 : { readonly p: keyof W2; }
+>p : any
+
+declare const w3: { readonly p: W3 extends { x: 1 } ? "a" : "b" };
+>w3 : { readonly p: W3 extends { x: 1; } ? "a" : "b"; }
+>p : any
+>x : 1
+
+interface W3 { x: 1; [w3.p]: number }
+>x : 1
+>[w3.p] : number
+>w3.p : any
+>w3 : { readonly p: W3 extends { x: 1; } ? "a" : "b"; }
+>p : any
+
+declare class H4 { readonly p: keyof W4 }
+>H4 : H4
+>p : any
+
+declare const h4: H4;
+>h4 : H4
+
+interface W4 { x(): void; [h4.p](): void }
+>x : () => void
+>[h4.p] : () => void
+>h4.p : any
+>h4 : H4
+>p : any
+
+// `p` is asked for before its declaration is checked: the two agree
+w5.p;
+>w5.p : any
+>w5 : { readonly p: keyof W5; }
+>p : any
+
+declare const w5: { readonly p: keyof W5 };
+>w5 : { readonly p: keyof W5; }
+>p : any
+
+interface W5 { x(): void; [w5.p](): void }
+>x : () => void
+>[w5.p] : () => void
+>w5.p : any
+>w5 : { readonly p: keyof W5; }
+>p : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

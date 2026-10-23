@@ -1,0 +1,19 @@
+a.ts(3,7): error TS2322: Type '[string]' is not assignable to type 'never'.
+a.ts(3,25): error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const cond: boolean;
+    declare function g3<T extends unknown[]>(x: number, ...args: [...T, number]): T;
+    const r3: never = g3(0, ...(cond ? ["a", 1] : [true, 2]));
+          ~~
+!!! error TS2322: Type '[string]' is not assignable to type 'never'.
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

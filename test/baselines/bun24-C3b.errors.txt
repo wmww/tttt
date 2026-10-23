@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '{ c: N.f.L; }' is not assignable to type '1'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace N { export function f<T>(x: T) { class L { v!: T } return new L(); } }
+    const e: 1 = { c: N.f(1) };
+          ~
+!!! error TS2322: Type '{ c: N.f.L; }' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

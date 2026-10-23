@@ -1,0 +1,61 @@
+//// [test/cases/bun71-R15c.ts] ////
+
+=== a.ts ===
+export {};
+type Ctor<T = {}> = new (...a: any[]) => T;
+>Ctor : Ctor<T>
+>a : any[]
+
+declare const key: string;
+>key : string
+
+function i1<T extends Ctor & { [k: string]: number }>(B: T) { return class extends B { static s = "x"; }; }
+>i1 : <T extends Ctor & { [k: string]: number; }>(B: T) => { new (...a: any[]): (Anonymous class); s: string; prototype: i1.(Anonymous class); } & T
+>k : string
+>B : T
+>class extends B { static s = "x"; } : { new (...a: any[]): (Anonymous class); s: string; prototype: i1.(Anonymous class); } & T
+>B : {}
+>s : string
+>"x" : "x"
+
+function i2<T extends Ctor>(B: T) { return class extends B { static [k: string]: number; static s = "x"; }; }
+>i2 : <T extends Ctor>(B: T) => { new (...a: any[]): (Anonymous class); [k: string]: number; s: string; prototype: i2.(Anonymous class); } & T
+>B : T
+>class extends B { static [k: string]: number; static s = "x"; } : { new (...a: any[]): (Anonymous class); [k: string]: number; s: string; prototype: i2.(Anonymous class); } & T
+>B : {}
+>k : string
+>s : string
+>"x" : "x"
+
+function i3<T extends Ctor>(B: T) { return class extends B { static [k: string]: number; static [key] = "x"; }; }
+>i3 : <T extends Ctor>(B: T) => { new (...a: any[]): (Anonymous class); [k: string]: number; prototype: i3.(Anonymous class); } & T
+>B : T
+>class extends B { static [k: string]: number; static [key] = "x"; } : { new (...a: any[]): (Anonymous class); [k: string]: number; prototype: i3.(Anonymous class); } & T
+>B : {}
+>k : string
+>[key] : string
+>key : string
+>"x" : "x"
+
+function i4<T extends Ctor>(B: T) { return class extends B { static [k: string]: number; static [k: number]: string; }; }
+>i4 : <T extends Ctor>(B: T) => { new (...a: any[]): (Anonymous class); [k: string]: number; [k: number]: string; prototype: i4.(Anonymous class); } & T
+>B : T
+>class extends B { static [k: string]: number; static [k: number]: string; } : { new (...a: any[]): (Anonymous class); [k: string]: number; [k: number]: string; prototype: i4.(Anonymous class); } & T
+>B : {}
+>k : string
+>k : number
+
+function i7<T extends Ctor & { [k: string]: number }>(B: T) { return class extends B { static s = 1; static m() {} }; }
+>i7 : <T extends Ctor & { [k: string]: number; }>(B: T) => { new (...a: any[]): (Anonymous class); s: number; m(): void; prototype: i7.(Anonymous class); } & T
+>k : string
+>B : T
+>class extends B { static s = 1; static m() {} } : { new (...a: any[]): (Anonymous class); s: number; m(): void; prototype: i7.(Anonymous class); } & T
+>B : {}
+>s : number
+>1 : 1
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

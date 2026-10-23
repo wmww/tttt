@@ -1,0 +1,19 @@
+//// [test/cases/bun04-P3.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== b.js ===
+const w = require("./m");
+>w : Symbol(w, Decl(b.js, 0, 5), Decl(b.js, 0, 25))
+>require : Symbol(require)
+>"./m" : Symbol(w, Decl(m.ts, 0, 0))
+
+export class w {}
+>w : Symbol(w, Decl(b.js, 0, 25))
+
+=== m.ts ===
+export const v = 1;
+>v : Symbol(v, Decl(m.ts, 0, 12))
+

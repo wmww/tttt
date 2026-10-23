@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C10a.ts] ////
+
+=== a.ts ===
+export interface G<T> { a: T }
+>a : T
+
+type Q = import("./a").G<1,>;
+>Q : G<1>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

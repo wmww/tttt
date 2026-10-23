@@ -1,0 +1,23 @@
+//// [test/cases/bun21-C9b.ts] ////
+
+=== a.ts ===
+declare const sy: unique symbol;
+>sy : Symbol(sy, Decl(a.ts, 0, 13))
+
+function g({ [sy]: k, v }: { [sy]: "a"; v: string } | { [sy]: "b"; v: number }) { if (k === "a") v.length; }
+>g : Symbol(g, Decl(a.ts, 0, 32))
+>sy : Symbol(sy, Decl(a.ts, 0, 13))
+>k : Symbol(k, Decl(a.ts, 1, 12))
+>v : Symbol(v, Decl(a.ts, 1, 21))
+>[sy] : Symbol([sy], Decl(a.ts, 1, 28))
+>sy : Symbol(sy, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 1, 39))
+>[sy] : Symbol([sy], Decl(a.ts, 1, 55))
+>sy : Symbol(sy, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 1, 66))
+>k : Symbol(k, Decl(a.ts, 1, 12))
+>v : Symbol(v, Decl(a.ts, 1, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

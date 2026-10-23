@@ -1,0 +1,22 @@
+//// [test/cases/bun12-C14a.ts] ////
+
+=== a.ts ===
+declare function mk<A>(a: A): A[];
+>mk : <A>(a: A) => A[]
+>a : A
+
+function g<T>() { return null! as typeof mk<number>; }
+>g : <T>() => typeof mk<number>
+>null! as typeof mk<number> : typeof mk<number>
+>null! : never
+>mk : <A>(a: A) => A[]
+
+const n: never = g<string>();
+>n : never
+>g<string>() : (a: number) => number[]
+>g : <T>() => typeof mk<number>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

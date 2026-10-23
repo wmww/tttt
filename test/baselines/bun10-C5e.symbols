@@ -1,0 +1,42 @@
+//// [test/cases/bun10-C5e.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== ii.js ===
+const { J } = require("./jj");
+>J : Symbol(J, Decl(ii.js, 0, 7))
+>require : Symbol(require)
+>"./jj" : Symbol("./jj", Decl(jj.js, 0, 0))
+
+class I extends J {}
+>I : Symbol(I, Decl(ii.js, 0, 30))
+>J : Symbol(J, Decl(ii.js, 0, 7))
+
+module.exports.I = I;
+>module.exports.I : Symbol(I, Decl(ii.js, 1, 20))
+>module.exports : Symbol(exports, Decl(ii.js, 0, 0))
+>module : Symbol(module, Decl(ii.js, 0, 0))
+>exports : Symbol(exports, Decl(ii.js, 0, 0))
+>I : Symbol(I, Decl(ii.js, 1, 20))
+>I : Symbol(I, Decl(ii.js, 0, 30))
+
+=== jj.js ===
+const { I } = require("./ii");
+>I : Symbol(I, Decl(jj.js, 0, 7))
+>require : Symbol(require)
+>"./ii" : Symbol("./ii", Decl(ii.js, 0, 0))
+
+class J extends I {}
+>J : Symbol(J, Decl(jj.js, 0, 30))
+>I : Symbol(I, Decl(jj.js, 0, 7))
+
+module.exports.J = J;
+>module.exports.J : Symbol(J, Decl(jj.js, 1, 20))
+>module.exports : Symbol(exports, Decl(jj.js, 0, 0))
+>module : Symbol(module, Decl(jj.js, 0, 0))
+>exports : Symbol(exports, Decl(jj.js, 0, 0))
+>J : Symbol(J, Decl(jj.js, 1, 20))
+>J : Symbol(J, Decl(jj.js, 0, 30))
+

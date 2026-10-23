@@ -1,0 +1,25 @@
+//// [test/cases/bun20-P7.ts] ////
+
+=== a.ts ===
+declare function isN(x: unknown): x is number;
+>isN : (x: unknown) => x is number
+>x : unknown
+
+function b(x?: { a: number }) { if (isN((x?.a))) { x.a; } }
+>b : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>isN((x?.a)) : boolean
+>isN : (x: unknown) => x is number
+>(x?.a) : number | undefined
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>x.a : number
+>x : { a: number; } | undefined
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

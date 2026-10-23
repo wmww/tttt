@@ -1,0 +1,13 @@
+//// [test/cases/bun03-C19.ts] ////
+
+=== a.ts ===
+try { } catch (x = 1) { let x = 2; }
+>x : unknown
+>1 : 1
+>x : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

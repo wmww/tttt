@@ -1,0 +1,19 @@
+a.ts(2,12): error TS2322: Type '(x: any) => number' is not assignable to type 'number'.
+a.ts(2,13): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function m<T>(a: T, b: T, c: (t: T) => void): T;
+    m([[[[[[[[[(x) => 1]]]]]]]]], [[[[[[[[[1]]]]]]]]], (t) => {});
+               ~~~~~~~~
+!!! error TS2322: Type '(x: any) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:2:12: Did you mean to call this expression?
+                ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,38 @@
+//// [test/cases/bun08-C7b.ts] ////
+
+=== a.cts ===
+import * as fns from "./fn.cjs";
+>fns : typeof fns
+
+async function dyn() {
+>dyn : () => Promise<void>
+
+  const c = await import("./fn.cjs");
+>c : typeof import("./fn.cjs")
+>await import("./fn.cjs") : typeof import("./fn.cjs")
+>import("./fn.cjs") : Promise<typeof import("./fn.cjs")>
+>"./fn.cjs" : "./fn.cjs"
+
+  c.default();
+>c.default() : any
+>c.default : any
+>c : typeof import("./fn.cjs")
+>default : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== fn.d.cts ===
+declare function f(): void;
+>f : typeof f
+
+declare namespace f { const __esModule: true; const x: number }
+>f : typeof f
+>__esModule : true
+>true : true
+>x : number
+
+export = f;
+>f : typeof f
+

@@ -1,0 +1,74 @@
+//// [test/cases/bun10-SC5.ts] ////
+
+=== a.ts ===
+export {};
+declare function isT<T>(x: T | undefined): x is T;
+>isT : Symbol(isT, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+>x : Symbol(x, Decl(a.ts, 1, 24))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+>x : Symbol(x, Decl(a.ts, 1, 24))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+
+declare function wrap<A, B extends A>(f: (a: A) => a is B): (a: A) => a is B;
+>wrap : Symbol(wrap, Decl(a.ts, 1, 50))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>B : Symbol(B, Decl(a.ts, 2, 24))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>f : Symbol(f, Decl(a.ts, 2, 38))
+>a : Symbol(a, Decl(a.ts, 2, 42))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>a : Symbol(a, Decl(a.ts, 2, 42))
+>B : Symbol(B, Decl(a.ts, 2, 24))
+>a : Symbol(a, Decl(a.ts, 2, 61))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>a : Symbol(a, Decl(a.ts, 2, 61))
+>B : Symbol(B, Decl(a.ts, 2, 24))
+
+const g = wrap(isT);
+>g : Symbol(g, Decl(a.ts, 3, 5))
+>wrap : Symbol(wrap, Decl(a.ts, 1, 50))
+>isT : Symbol(isT, Decl(a.ts, 0, 10))
+
+declare const v: "a" | undefined;
+>v : Symbol(v, Decl(a.ts, 4, 13))
+
+if (g(v)) { v.length; }
+>g : Symbol(g, Decl(a.ts, 3, 5))
+>v : Symbol(v, Decl(a.ts, 4, 13))
+>v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 4, 13))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+declare let n: never; n = g;
+>n : Symbol(n, Decl(a.ts, 6, 11))
+>n : Symbol(n, Decl(a.ts, 6, 11))
+>g : Symbol(g, Decl(a.ts, 3, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+
+=== b.ts ===
+export {};
+declare function mk<A, B extends A>(): (a: A) => a is B;
+>mk : Symbol(mk, Decl(b.ts, 0, 10))
+>A : Symbol(A, Decl(b.ts, 1, 20))
+>B : Symbol(B, Decl(b.ts, 1, 22))
+>A : Symbol(A, Decl(b.ts, 1, 20))
+>a : Symbol(a, Decl(b.ts, 1, 40))
+>A : Symbol(A, Decl(b.ts, 1, 20))
+>a : Symbol(a, Decl(b.ts, 1, 40))
+>B : Symbol(B, Decl(b.ts, 1, 22))
+
+const f: <T>(x: T | undefined) => x is T = mk();
+>f : Symbol(f, Decl(b.ts, 2, 5))
+>T : Symbol(T, Decl(b.ts, 2, 10))
+>x : Symbol(x, Decl(b.ts, 2, 13))
+>T : Symbol(T, Decl(b.ts, 2, 10))
+>x : Symbol(x, Decl(b.ts, 2, 13))
+>T : Symbol(T, Decl(b.ts, 2, 10))
+>mk : Symbol(mk, Decl(b.ts, 0, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 3, 5))
+

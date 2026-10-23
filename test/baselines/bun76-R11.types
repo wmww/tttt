@@ -1,0 +1,139 @@
+//// [test/cases/bun76-R11.ts] ////
+
+=== a.ts ===
+export {};
+declare const anyV: any;
+>anyV : any
+
+declare function pair<A>(a: A, b: A): [A, A];
+>pair : <A>(a: A, b: A) => [A, A]
+>a : A
+>b : A
+
+// an omitted element is a plain `any`: a candidate for A beside `[any, any]`, so A is `any` in the return mapper and the literals are arrays
+const [, [p1, q1]] = pair([1, "a"], [2, "b"]);
+>p1 : string | number
+>q1 : string | number
+>pair([1, "a"], [2, "b"]) : [(string | number)[], (string | number)[]]
+>pair : <A>(a: A, b: A) => [A, A]
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+>[2, "b"] : (string | number)[]
+>2 : 2
+>"b" : "b"
+
+p1.toFixed();
+>p1.toFixed() : any
+>p1.toFixed : any
+>p1 : string | number
+>toFixed : any
+
+let [, [p2, q2]] = pair([1, "a"], [2, "b"]);
+>p2 : string | number
+>q2 : string | number
+>pair([1, "a"], [2, "b"]) : [(string | number)[], (string | number)[]]
+>pair : <A>(a: A, b: A) => [A, A]
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+>[2, "b"] : (string | number)[]
+>2 : 2
+>"b" : "b"
+
+q2 = 5;
+>q2 = 5 : 5
+>q2 : string | number
+>5 : 5
+
+// a default of type `any`
+const [a3 = anyV, [p3, q3]] = pair([1, "a"], [2, "b"]);
+>a3 : any
+>anyV : any
+>p3 : string | number
+>q3 : string | number
+>pair([1, "a"], [2, "b"]) : [(string | number)[], (string | number)[]]
+>pair : <A>(a: A, b: A) => [A, A]
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+>[2, "b"] : (string | number)[]
+>2 : 2
+>"b" : "b"
+
+p3.toFixed();
+>p3.toFixed() : any
+>p3.toFixed : any
+>p3 : string | number
+>toFixed : any
+
+declare function both<A>(a: A): { p: A; q: A };
+>both : <A>(a: A) => { p: A; q: A; }
+>a : A
+>p : A
+>q : A
+
+const { p: p4 = anyV, q: [r4, s4] } = both([1, "a"]);
+>p : any
+>p4 : any
+>anyV : any
+>q : any
+>r4 : string | number
+>s4 : string | number
+>both([1, "a"]) : { p: (string | number)[]; q: (string | number)[]; }
+>both : <A>(a: A) => { p: A; q: A; }
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+
+r4.toFixed();
+>r4.toFixed() : any
+>r4.toFixed : any
+>r4 : string | number
+>toFixed : any
+
+function f5([, [r, s]] = pair([1, "a"], [2, "b"])) { r.toFixed(); }
+>f5 : ([, [r, s]]?: [(string | number)[], (string | number)[]]) => void
+>r : string | number
+>s : string | number
+>pair([1, "a"], [2, "b"]) : [(string | number)[], (string | number)[]]
+>pair : <A>(a: A, b: A) => [A, A]
+>[1, "a"] : (string | number)[]
+>1 : 1
+>"a" : "a"
+>[2, "b"] : (string | number)[]
+>2 : 2
+>"b" : "b"
+>r.toFixed() : any
+>r.toFixed : any
+>r : string | number
+>toFixed : any
+
+// only names: the two agree, the literals are tuples
+const [a6, [p6, q6]] = pair([1, "a"], [2, "b"]);
+>a6 : [number, string]
+>p6 : number
+>q6 : string
+>pair([1, "a"], [2, "b"]) : [[number, string], [number, string]]
+>pair : <A>(a: A, b: A) => [A, A]
+>[1, "a"] : [number, string]
+>1 : 1
+>"a" : "a"
+>[2, "b"] : [number, string]
+>2 : 2
+>"b" : "b"
+
+p6.toFixed(); q6.toFixed();
+>p6.toFixed() : string
+>p6.toFixed : (fractionDigits?: number) => string
+>p6 : number
+>toFixed : (fractionDigits?: number) => string
+>q6.toFixed() : any
+>q6.toFixed : any
+>q6 : string
+>toFixed : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,67 @@
+//// [test/cases/bun81-R01b.ts] ////
+
+=== a.ts ===
+const kz = "z";
+>kz : "z"
+>"z" : "z"
+
+const w10 = { set z(v) {}, get [kz]() { return w10.z } };
+>w10 : { z: any; }
+>{ set z(v) {}, get [kz]() { return w10.z } } : { z: any; }
+>z : any
+>v : any
+>[kz] : any
+>kz : "z"
+>w10.z : any
+>w10 : { z: any; }
+>z : any
+
+const w11 = { get [kz]() { return w11.z }, set z(v) {} };
+>w11 : { z: any; }
+>{ get [kz]() { return w11.z }, set z(v) {} } : { z: any; }
+>[kz] : any
+>kz : "z"
+>w11.z : any
+>w11 : { z: any; }
+>z : any
+>z : any
+>v : any
+
+const w15 = { get [kz](): typeof w15.z { return 1 }, set z(v) {} };
+>w15 : { z: any; }
+>{ get [kz](): typeof w15.z { return 1 }, set z(v) {} } : { z: any; }
+>[kz] : any
+>kz : "z"
+>w15.z : any
+>w15 : { z: any; }
+>z : any
+>1 : 1
+>z : any
+>v : any
+
+// a class, or the getter with the plain name: the two agree
+const w12 = { set [kz](v) {}, get z() { return w12.z } };
+>w12 : { z: any; }
+>{ set [kz](v) {}, get z() { return w12.z } } : { z: any; }
+>[kz] : any
+>kz : "z"
+>v : any
+>z : any
+>w12.z : any
+>w12 : { z: any; }
+>z : any
+
+class K1 { set z(v) {} get [kz]() { return this.z } }
+>K1 : K1
+>z : any
+>v : any
+>[kz] : any
+>kz : "z"
+>this.z : any
+>this : this
+>z : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

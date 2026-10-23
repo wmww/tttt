@@ -1,0 +1,38 @@
+//// [test/cases/bun40-P4b.ts] ////
+
+=== src/a.ts ===
+/// <reference path="./b.ts" />
+import { p } from "p";
+>p : Symbol(p, Decl(a.ts, 1, 8))
+
+const q: 0 = p;
+>q : Symbol(q, Decl(a.ts, 2, 5))
+>p : Symbol(p, Decl(a.ts, 1, 8))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 12))
+
+=== node_modules/p/index.js ===
+const u = require("./util");
+>u : Symbol(u, Decl(index.js, 0, 5))
+>require : Symbol(require)
+>"./util" : Symbol(u, Decl(util.js, 0, 0))
+
+exports.p = u.u;
+>exports.p : Symbol(p, Decl(index.js, 0, 28))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>p : Symbol(p, Decl(index.js, 0, 28))
+>u.u : Symbol(u.u, Decl(util.js, 0, 0))
+>u : Symbol(u, Decl(index.js, 0, 5))
+>u : Symbol(u.u, Decl(util.js, 0, 0))
+
+=== node_modules/p/util.js ===
+exports.u = 1;
+>exports.u : Symbol(u, Decl(util.js, 0, 0))
+>exports : Symbol(exports, Decl(util.js, 0, 0))
+>u : Symbol(u, Decl(util.js, 0, 0))
+
+=== src/b.ts ===
+
+/// <reference path="../node_modules/p/index.js" />
+

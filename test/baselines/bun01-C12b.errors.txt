@@ -1,0 +1,25 @@
+a.ts(12,47): error TS2322: Type 'T & {}' is not assignable to type 'number'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2022", "module": "esnext" } }
+==== a.ts (2 errors) ====
+    interface Array<T> {}
+    interface Object {}
+    interface Function {}
+    interface String {}
+    interface Number {}
+    interface Boolean {}
+    interface RegExp {}
+    interface IArguments {}
+    interface CallableFunction {}
+    interface NewableFunction {}
+    type NonNullable<T, U> = T;
+    function f3<T>(o: T) { if (o != null) { const n: number = o; } }
+                                                  ~
+!!! error TS2322: Type 'T & {}' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

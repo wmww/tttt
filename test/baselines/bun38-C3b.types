@@ -1,0 +1,12 @@
+//// [test/cases/bun38-C3b.ts] ////
+
+=== a.ts ===
+/// <reference lib="" />
+export const p = document;
+>p : any
+>document : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

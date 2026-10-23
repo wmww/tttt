@@ -1,0 +1,23 @@
+//// [test/cases/bun06-C9.ts] ////
+
+=== a.ts ===
+declare function tk(f: (a: number) => Generator<(x: number) => number>): void;
+>tk : (f: (a: number) => Generator<(x: number) => number>) => void
+>f : (a: number) => Generator<(x: number) => number>
+>a : number
+>x : number
+
+tk(function* <T>(a) { yield (x) => x; });
+>tk(function* <T>(a) { yield (x) => x; }) : void
+>tk : (f: (a: number) => Generator<(x: number) => number>) => void
+>function* <T>(a) { yield (x) => x; } : <T>(a: number) => Generator<(x: number) => number, void, any>
+>a : number
+>yield (x) => x : any
+>(x) => x : (x: number) => number
+>x : number
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

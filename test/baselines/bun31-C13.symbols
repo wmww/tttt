@@ -1,0 +1,29 @@
+//// [test/cases/bun31-C13.ts] ////
+
+=== a.ts ===
+declare function dec(...x: any[]): any;
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+
+declare function pick<T>(other: (t: T) => void, cb: () => T): void;
+>pick : Symbol(pick, Decl(a.ts, 0, 39))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>other : Symbol(other, Decl(a.ts, 1, 25))
+>t : Symbol(t, Decl(a.ts, 1, 33))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>cb : Symbol(cb, Decl(a.ts, 1, 47))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+
+pick(t => { t.toFixed(); }, function () { class C { @dec(this) m() {} } return 1; });
+>pick : Symbol(pick, Decl(a.ts, 0, 39))
+>t : Symbol(t, Decl(a.ts, 2, 5))
+>t.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>t : Symbol(t, Decl(a.ts, 2, 5))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(a.ts, 2, 41))
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>m : Symbol(C.m, Decl(a.ts, 2, 51))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

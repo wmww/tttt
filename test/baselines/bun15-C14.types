@@ -1,0 +1,28 @@
+//// [test/cases/bun15-C14.ts] ////
+
+=== a.ts ===
+const kn = 1;
+>kn : 1
+>1 : 1
+
+const o = { a: 1, 1: 2, s: 3, [kn]: 4 };
+>o : { a: number; 1: number; s: number; }
+>{ a: 1, 1: 2, s: 3, [kn]: 4 } : { a: number; 1: number; s: number; }
+>a : number
+>1 : 1
+>1 : number
+>2 : 2
+>s : number
+>3 : 3
+>[kn] : number
+>kn : 1
+>4 : 4
+
+const n: never = o;
+>n : never
+>o : { a: number; 1: number; s: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

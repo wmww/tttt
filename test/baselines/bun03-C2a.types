@@ -1,0 +1,23 @@
+//// [test/cases/bun03-C2a.ts] ////
+
+=== a.ts ===
+const obj = { a: 1 };
+>obj : { a: number; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+declare const OB: new () => typeof obj;
+>OB : new () => typeof obj
+>obj : { a: number; }
+
+class D extends OB { get a() { return 1 } }
+>D : D
+>OB : { a: number; }
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

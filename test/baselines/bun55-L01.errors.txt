@@ -1,0 +1,25 @@
+a.ts(10,5): error TS2322: Type 'boolean' is not assignable to type 'string | number'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Args = [a: 1, b: number] | [a: 2, b: string];
+    const g: (...args: Args) => void = (kind, x?) => {
+      throw 0;
+      x.toString();
+    };
+    function outer<A extends Args>() {
+      const h: (...args: A) => void = (kind, x) => {
+        return;
+        let y = x;
+        y = true;
+        ~
+!!! error TS2322: Type 'boolean' is not assignable to type 'string | number'.
+      };
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

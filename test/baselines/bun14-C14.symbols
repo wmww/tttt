@@ -1,0 +1,15 @@
+//// [test/cases/bun14-C14.ts] ////
+
+=== a.ts ===
+enum Status { Active = "ACTIVE", Done = "DONE" }
+>Status : Symbol(Status, Decl(a.ts, 0, 0))
+>Active : Symbol(Status.Active, Decl(a.ts, 0, 13))
+>Done : Symbol(Status.Done, Decl(a.ts, 0, 32))
+
+const s: Status = "active";
+>s : Symbol(s, Decl(a.ts, 1, 5))
+>Status : Symbol(Status, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

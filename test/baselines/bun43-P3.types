@@ -1,0 +1,13 @@
+//// [test/cases/bun43-P3.ts] ////
+
+=== a.js ===
+/** @satisfies {number} */
+const /** other */ x = "";
+>x : ""
+>"" : ""
+
+=== b.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

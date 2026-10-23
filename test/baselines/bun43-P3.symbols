@@ -1,0 +1,11 @@
+//// [test/cases/bun43-P3.ts] ////
+
+=== a.js ===
+/** @satisfies {number} */
+const /** other */ x = "";
+>x : Symbol(x, Decl(a.js, 1, 5))
+
+=== b.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 0, 5))
+

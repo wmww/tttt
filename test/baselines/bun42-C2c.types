@@ -1,0 +1,20 @@
+//// [test/cases/bun42-C2c.ts] ////
+
+=== a.ts ===
+enum E { G = 10 ** -23 }
+>E : E
+>G : E.G
+>10 ** -23 : number
+>10 : 10
+>-23 : -23
+>23 : 23
+
+const g: E.G = 1e-23;
+>g : E
+>E : any
+>1e-23 : 1e-23
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

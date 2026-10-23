@@ -1,0 +1,39 @@
+//// [test/cases/bun99-J1.ts] ////
+
+=== imports.ts ===
+import { a } from "./App.TSX";
+>a : any
+
+import { b } from "./lower.tsx";
+>b : any
+
+import { b as b2 } from "./lower";
+>b : any
+>b2 : any
+
+import { c } from "./z.JSX";
+>c : any
+
+import { d } from "./Mixed";
+>d : any
+
+export const all = [a, b, b2, c, d];
+>all : any[]
+>[a, b, b2, c, d] : any[]
+>a : any
+>b : any
+>b2 : any
+>c : any
+>d : any
+
+=== lower.tsx ===
+export const b = <div />;
+>b : any
+><div /> : any
+>div : any
+
+=== s.ts ===
+const sentinel: number = ""; export {};
+>sentinel : number
+>"" : ""
+

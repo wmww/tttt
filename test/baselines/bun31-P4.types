@@ -1,0 +1,27 @@
+//// [test/cases/bun31-P4.ts] ////
+
+=== a.ts ===
+declare const o: { y: boolean };
+>o : { y: boolean; }
+>y : boolean
+
+function f(p: unknown) { return q; }
+>f : (p: unknown) => any
+>p : unknown
+>q : any
+
+f(o);
+>f(o) : any
+>f : (p: unknown) => any
+>o : { y: boolean; }
+
+const q = o.y;
+>q : any
+>o.y : boolean
+>o : { y: boolean; }
+>y : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

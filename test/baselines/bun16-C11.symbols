@@ -1,0 +1,24 @@
+//// [test/cases/bun16-C11.ts] ////
+
+=== a.ts ===
+const q1: (this: number) => void = function (this) {};
+>q1 : Symbol(q1, Decl(a.ts, 0, 5))
+>this : Symbol(this, Decl(a.ts, 0, 11))
+>this : Symbol(this, Decl(a.ts, 0, 45))
+
+declare function ft<T>(cb: (this: T) => void, v: T): void;
+>ft : Symbol(ft, Decl(a.ts, 0, 54))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>cb : Symbol(cb, Decl(a.ts, 1, 23))
+>this : Symbol(this, Decl(a.ts, 1, 28))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>v : Symbol(v, Decl(a.ts, 1, 45))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+ft(function (this) { return 1 }, 1);
+>ft : Symbol(ft, Decl(a.ts, 0, 54))
+>this : Symbol(this, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

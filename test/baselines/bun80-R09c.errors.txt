@@ -1,0 +1,13 @@
+a.js(1,15): error TS8010: Type annotations can only be used in TypeScript files.
+a.js(1,15): error TS1110: Type expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    function g(a: ) {}
+                  
+!!! error TS8010: Type annotations can only be used in TypeScript files.
+                  ~
+!!! error TS1110: Type expected.
+    

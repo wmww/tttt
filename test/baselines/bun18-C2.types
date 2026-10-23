@@ -1,0 +1,22 @@
+//// [test/cases/bun18-C2.ts] ////
+
+=== a.ts ===
+function f<V extends 1 | 2>(v: V & 1, w: { a?: 1 }) {
+>f : <V extends 1 | 2>(v: V & 1, w: { a?: 1; }) => void
+>v : V & 1
+>w : { a?: 1; }
+>a : 1 | undefined
+
+  if (v === w) {}
+>v === w : boolean
+>v : V & 1
+>w : { a?: 1; }
+
+  w as V & 1;
+>w as V & 1 : V & 1
+>w : { a?: 1; }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

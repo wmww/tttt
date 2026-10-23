@@ -1,0 +1,15 @@
+//// [test/cases/bun09-C16b.ts] ////
+
+=== a.ts ===
+function c15<T extends [...T]>(t: T) { const n: never = t; }
+>c15 : Symbol(c15, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>t : Symbol(t, Decl(a.ts, 0, 31))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>n : Symbol(n, Decl(a.ts, 0, 44))
+>t : Symbol(t, Decl(a.ts, 0, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

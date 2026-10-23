@@ -1,0 +1,22 @@
+a.ts(3,3): error TS2667: Imports are not permitted in module augmentations. Consider moving them to the enclosing external module.
+a.ts(3,22): error TS2307: Cannot find module './m' or its corresponding type declarations.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    import "./m";
+    declare module "./m" {
+      import z = require("./m");
+      ~~~~~~
+!!! error TS2667: Imports are not permitted in module augmentations. Consider moving them to the enclosing external module.
+                         ~~~~~
+!!! error TS2307: Cannot find module './m' or its corresponding type declarations.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export const a = 1;
+    

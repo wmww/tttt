@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+    const a = null! as X<X<X<X<[0]>>>>;
+          ~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

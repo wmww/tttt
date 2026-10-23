@@ -1,0 +1,10 @@
+a.ts(1,33): error TS1110: Type expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    type M<T> = T extends infer U ? ;
+                                    ~
+!!! error TS1110: Type expected.
+    

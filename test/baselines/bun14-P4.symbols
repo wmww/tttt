@@ -1,0 +1,41 @@
+//// [test/cases/bun14-P4.ts] ////
+
+=== a.ts ===
+type Dg = 0|1|2|3|4|5|6|7|8|9;
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+
+type K = `${Dg}${Dg}${Dg}`;
+>K : Symbol(K, Decl(a.ts, 0, 30))
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+
+declare function both<A, B>(a: A, b: B): A & B;
+>both : Symbol(both, Decl(a.ts, 1, 27))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>B : Symbol(B, Decl(a.ts, 2, 24))
+>a : Symbol(a, Decl(a.ts, 2, 28))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>b : Symbol(b, Decl(a.ts, 2, 33))
+>B : Symbol(B, Decl(a.ts, 2, 24))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>B : Symbol(B, Decl(a.ts, 2, 24))
+
+declare const x: K | boolean | { a: 1 };
+>x : Symbol(x, Decl(a.ts, 3, 13))
+>K : Symbol(K, Decl(a.ts, 0, 30))
+>a : Symbol(a, Decl(a.ts, 3, 32))
+
+declare const y: K | 1;
+>y : Symbol(y, Decl(a.ts, 4, 13))
+>K : Symbol(K, Decl(a.ts, 0, 30))
+
+if (typeof x !== "object") both(x, y);
+>x : Symbol(x, Decl(a.ts, 3, 13))
+>both : Symbol(both, Decl(a.ts, 1, 27))
+>x : Symbol(x, Decl(a.ts, 3, 13))
+>y : Symbol(y, Decl(a.ts, 4, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

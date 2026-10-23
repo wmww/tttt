@@ -1,0 +1,30 @@
+a.ts(2,17): error TS1184: Modifiers cannot appear here.
+a.ts(2,34): error TS1244: Abstract methods can only appear within an abstract class.
+a.ts(3,17): error TS1184: Modifiers cannot appear here.
+a.ts(4,18): error TS1184: Modifiers cannot appear here.
+a.ts(5,1): error TS2511: Cannot create an instance of an abstract class.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022" } }
+==== a.ts (6 errors) ====
+    declare function dec(...a: any[]): any;
+    const c1 = @dec abstract class { abstract m(): void };
+                    ~~~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+                                     ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+    const c2 = @dec public class {};
+                    ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    const c3 = (@dec export default class {});
+                     ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    new c1();
+    ~~~~~~~~
+!!! error TS2511: Cannot create an instance of an abstract class.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

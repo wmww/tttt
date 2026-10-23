@@ -1,0 +1,26 @@
+//// [test/cases/bun77-R12d.ts] ////
+
+=== a.ts ===
+function f() { return class { p = arguments; constructor(arguments: any) {} }; }
+>f : () => typeof (Anonymous class)
+>class { p = arguments; constructor(arguments: any) {} } : typeof (Anonymous class)
+>p : any
+>arguments : any
+>arguments : any
+
+function g() { return class { p = arguments; }; }
+>g : () => typeof (Anonymous class)
+>class { p = arguments; } : typeof (Anonymous class)
+>p : any
+>arguments : any
+
+class C1 { p = arguments; constructor(arguments: any) {} }
+>C1 : C1
+>p : any
+>arguments : any
+>arguments : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

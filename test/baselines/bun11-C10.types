@@ -1,0 +1,24 @@
+//// [test/cases/bun11-C10.ts] ////
+
+=== a.ts ===
+import { a as a1 } from "./m1";
+>a : 1 | 2
+>a1 : 1 | 2
+
+const r1: boolean = a1;
+>r1 : boolean
+>a1 : 1 | 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+declare const v: { a: 1 } | { [k: string]: 2 };
+>v : { a: 1; } | { [k: string]: 2; }
+>a : 1
+>k : string
+
+export = v;
+>v : { a: 1; } | { [k: string]: 2; }
+

@@ -1,0 +1,37 @@
+a.ts(8,9): error TS6133: 'b' is declared but its value is never read.
+a.ts(10,9): error TS6133: 'd' is declared but its value is never read.
+a.ts(11,9): error TS6133: 'e' is declared but its value is never read.
+a.ts(16,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (4 errors) ====
+    import * as a from "./m";
+    import * as b from "./m";
+    import * as c from "./m";
+    import * as d from "./m";
+    import * as e from "./m";
+    export function f() {
+      const a = 1;
+      const b = 1;
+            ~
+!!! error TS6133: 'b' is declared but its value is never read.
+      const c = 1;
+      const d = 1;
+            ~
+!!! error TS6133: 'd' is declared but its value is never read.
+      const e = 1;
+            ~
+!!! error TS6133: 'e' is declared but its value is never read.
+      /** {@link a#delete} {@link b#foo} {@link c#default} {@link d#of} {@link e.delete} */
+      const q = 2;
+      return q;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    const x = 1;
+    export { x as delete, x as foo, x as default, x as of };
+    

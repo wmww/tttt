@@ -1,0 +1,10 @@
+//// [test/cases/bun35-C5c.ts] ////
+
+=== a.ts ===
+import "e3/a";
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/e3/a.d.ts ===
+
+export {};

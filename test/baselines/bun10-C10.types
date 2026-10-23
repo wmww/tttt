@@ -1,0 +1,20 @@
+//// [test/cases/bun10-C10.ts] ////
+
+=== a.ts ===
+const p7 = { set x([a]) {} };
+>p7 : { x: any; }
+>{ set x([a]) {} } : { x: any; }
+>x : any
+>a : any
+
+p7.x = 1;
+>p7.x = 1 : 1
+>p7.x : any
+>p7 : { x: any; }
+>x : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

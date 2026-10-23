@@ -1,0 +1,17 @@
+a.ts(2,72): error TS2322: Type 'TU & (A | C)' is not assignable to type 'null'.
+  Type 'TU & A' is not assignable to type 'null'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class A { a = 1 } class C { c = 3 } declare const AorC: typeof A | typeof C;
+    function f<TU extends unknown>(x: TU) { if (x instanceof AorC) { const a: null = x; } }
+                                                                           ~
+!!! error TS2322: Type 'TU & (A | C)' is not assignable to type 'null'.
+!!! error TS2322:   Type 'TU & A' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

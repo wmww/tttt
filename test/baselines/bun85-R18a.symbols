@@ -1,0 +1,58 @@
+//// [test/cases/bun85-R18a.ts] ////
+
+=== a.ts ===
+import { Event, Response, Request, URL } from "./t";
+>Event : Symbol(Event, Decl(a.ts, 0, 8))
+>Response : Symbol(Response, Decl(a.ts, 0, 15))
+>Request : Symbol(Request, Decl(a.ts, 0, 25))
+>URL : Symbol(URL, Decl(a.ts, 0, 34))
+
+import type { Headers } from "./t";
+>Headers : Symbol(Headers, Decl(a.ts, 1, 13))
+
+export const e = new Event("x");
+>e : Symbol(e, Decl(a.ts, 2, 12))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+export const r = new Response();
+>r : Symbol(r, Decl(a.ts, 3, 12))
+>Response : Symbol(Response, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+export const h = new Headers();
+>h : Symbol(h, Decl(a.ts, 4, 12))
+>Headers : Symbol(Headers, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+export const u = new URL("http://x");
+>u : Symbol(u, Decl(a.ts, 5, 12))
+>URL : Symbol(URL, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+export function f(q: Request) { return new Request("http://x"); }
+>f : Symbol(f, Decl(a.ts, 5, 37))
+>q : Symbol(q, Decl(a.ts, 6, 18))
+>Request : Symbol(Request, Decl(a.ts, 0, 25))
+>Request : Symbol(Request, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 12))
+
+=== t.ts ===
+export interface Event { mine: 1 }
+>Event : Symbol(Event, Decl(t.ts, 0, 0))
+>mine : Symbol(Event.mine, Decl(t.ts, 0, 24))
+
+export type Response = { r: 1 };
+>Response : Symbol(Response, Decl(t.ts, 0, 34))
+>r : Symbol(r, Decl(t.ts, 1, 24))
+
+export interface Request { q: 1 }
+>Request : Symbol(Request, Decl(t.ts, 1, 32))
+>q : Symbol(Request.q, Decl(t.ts, 2, 26))
+
+export interface Headers { h: 1 }
+>Headers : Symbol(Headers, Decl(t.ts, 2, 33))
+>h : Symbol(Headers.h, Decl(t.ts, 3, 26))
+
+export namespace URL { export type Part = string }
+>URL : Symbol(URL, Decl(t.ts, 3, 33))
+>Part : Symbol(Part, Decl(t.ts, 4, 22))
+

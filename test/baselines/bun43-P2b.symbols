@@ -1,0 +1,6 @@
+//// [test/cases/bun43-P2b.ts] ////
+
+=== a.ts ===
+var s = async (x = #!);
+>s : Symbol(s, Decl(a.ts, 0, 3))
+

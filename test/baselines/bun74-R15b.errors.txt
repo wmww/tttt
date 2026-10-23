@@ -1,0 +1,19 @@
+a.ts(2,35): error TS7006: Parameter 'n' implicitly has an 'any' type.
+a.ts(3,72): error TS7006: Parameter 'n' implicitly has an 'any' type.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const cond: boolean, x: unknown; type Fn = (n: number) => number;
+    export const f = cond ? <Fn>(x) : n => n + 1;
+                                      ~
+!!! error TS7006: Parameter 'n' implicitly has an 'any' type.
+    export const g = [cond ? <any>(x) : (n: number) => n, cond ? <Fn>(x) : n => n ? 1 : 2];
+                                                                           ~
+!!! error TS7006: Parameter 'n' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

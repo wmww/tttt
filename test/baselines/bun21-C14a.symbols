@@ -1,0 +1,20 @@
+//// [test/cases/bun21-C14a.ts] ////
+
+=== a.ts ===
+const assertIsString = (x: unknown): asserts x is string => {};
+>assertIsString : Symbol(assertIsString, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+
+function f(x: unknown) { assertIsString(x), 0; x.length; }
+>f : Symbol(f, Decl(a.ts, 0, 63))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>assertIsString : Symbol(assertIsString, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

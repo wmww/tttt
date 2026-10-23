@@ -1,0 +1,22 @@
+//// [test/cases/bun22-C2a.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: { [k: string]: any; a: T }): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 22))
+>k : Symbol(k, Decl(a.ts, 0, 28))
+>a : Symbol(a, Decl(a.ts, 0, 44))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+namespace N { export const a = 1; export const b = f(N); }
+>N : Symbol(N, Decl(a.ts, 0, 56))
+>a : Symbol(a, Decl(a.ts, 1, 26))
+>b : Symbol(b, Decl(a.ts, 1, 46))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>N : Symbol(N, Decl(a.ts, 0, 56))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,52 @@
+a.ts(2,7): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(3,7): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(5,9): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(6,9): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(8,12): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(9,11): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(10,9): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(11,7): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (9 errors) ====
+    type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+    const x1 = f1();
+          ~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    const x2 = new C2();
+          ~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    async function g() {
+      const x3 = await f3();
+            ~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+      const x4 = await (0 as any as X<X<X<X<[4]>>>>);
+            ~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    }
+    function h(p = f5()) {}
+               ~~~~~~~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    class K { q = f6(); }
+              ~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    const { a = f7() } = {} as { a?: number };
+            ~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    const x9 = (f9());
+          ~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    declare function f1(): X<X<X<X<[1]>>>>;
+    declare const C2: new () => X<X<X<X<[2]>>>>;
+    declare function f3(): X<X<X<X<[3]>>>>;
+    declare function f5(): X<X<X<X<[5]>>>>;
+    declare function f6(): X<X<X<X<[6]>>>>;
+    declare function f7(): X<X<X<X<[7]>>>>;
+    declare function f9(): X<X<X<X<[9]>>>>;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

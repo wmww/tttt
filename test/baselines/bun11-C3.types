@@ -1,0 +1,16 @@
+//// [test/cases/bun11-C3.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== j.js ===
+/** @type {() => Generator<number, string, boolean>} */
+function* f13() { const x = yield "a"; return "s"; }
+>f13 : () => Generator<number, string, boolean>
+>x : boolean
+>yield "a" : boolean
+>"a" : "a"
+>"s" : "s"
+

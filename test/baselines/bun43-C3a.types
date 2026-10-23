@@ -1,0 +1,19 @@
+//// [test/cases/bun43-C3a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} }
+declare function Foo(p: { x: "a" }): JSX.Element;
+>Foo : (p: { x: "a"; }) => JSX.Element
+>p : { x: "a"; }
+>x : "a"
+>JSX : any
+
+<Foo x="&#97;" />;
+><Foo x="&#97;" /> : JSX.Element
+>Foo : (p: { x: "a"; }) => JSX.Element
+>x : "&#97;"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

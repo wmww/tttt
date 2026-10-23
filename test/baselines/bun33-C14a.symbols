@@ -1,0 +1,13 @@
+//// [test/cases/bun33-C14a.ts] ////
+
+=== j.js ===
+exports.a = 1;
+>exports.a : Symbol(a, Decl(j.js, 0, 0))
+>exports : Symbol(exports, Decl(j.js, 0, 0))
+>a : Symbol(a, Decl(j.js, 0, 0))
+
+export as namespace Foo;
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(j.js, 3, 5))
+

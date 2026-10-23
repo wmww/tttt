@@ -1,0 +1,39 @@
+a.tsx(3,41): error TS1214: Identifier expected. 'interface' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(3,63): error TS1214: Identifier expected. 'interface' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(5,23): error TS1214: Identifier expected. 'public' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(6,24): error TS1214: Identifier expected. 'public' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(6,36): error TS1214: Identifier expected. 'public' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(8,50): error TS1213: Identifier expected. 'static' is a reserved word in strict mode. Class definitions are automatically in strict mode.
+a.tsx(8,66): error TS1213: Identifier expected. 'static' is a reserved word in strict mode. Class definitions are automatically in strict mode.
+a.tsx(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (8 errors) ====
+    declare global { namespace JSX { interface IntrinsicElements { [k: string]: any } } }
+    export function Button() {
+      return <button onClick={() => { const interface = 1; return interface; }}>ok</button>;
+                                            ~~~~~~~~~
+!!! error TS1214: Identifier expected. 'interface' is a reserved word in strict mode. Modules are automatically in strict mode.
+                                                                  ~~~~~~~~~
+!!! error TS1214: Identifier expected. 'interface' is a reserved word in strict mode. Modules are automatically in strict mode.
+    }
+    export function Input(public: any) {
+                          ~~~~~~
+!!! error TS1214: Identifier expected. 'public' is a reserved word in strict mode. Modules are automatically in strict mode.
+      return <input value={public} {...public} />;
+                           ~~~~~~
+!!! error TS1214: Identifier expected. 'public' is a reserved word in strict mode. Modules are automatically in strict mode.
+                                       ~~~~~~
+!!! error TS1214: Identifier expected. 'public' is a reserved word in strict mode. Modules are automatically in strict mode.
+    }
+    export class View { render() { return <div ref={(static: any) => static}></div>; } }
+                                                     ~~~~~~
+!!! error TS1213: Identifier expected. 'static' is a reserved word in strict mode. Class definitions are automatically in strict mode.
+                                                                     ~~~~~~
+!!! error TS1213: Identifier expected. 'static' is a reserved word in strict mode. Class definitions are automatically in strict mode.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

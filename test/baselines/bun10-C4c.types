@@ -1,0 +1,25 @@
+//// [test/cases/bun10-C4c.ts] ////
+
+=== a.ts ===
+interface G<T> { (x: T): void }
+>x : T
+
+interface A4 extends G<string>, G<number>, G<string> {}
+declare const a4: A4;
+>a4 : A4
+
+declare function call<T>(f: (x: T) => void): T;
+>call : <T>(f: (x: T) => void) => T
+>f : (x: T) => void
+>x : T
+
+const t: boolean = call(a4);
+>t : boolean
+>call(a4) : string
+>call : <T>(f: (x: T) => void) => T
+>a4 : A4
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

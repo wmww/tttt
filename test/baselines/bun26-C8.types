@@ -1,0 +1,28 @@
+//// [test/cases/bun26-C8.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: T): T;
+>f : <T>(x: T) => T
+>x : T
+
+const r9: string = f([[[[[[[[[(z) => 1]]]]]]]]]);
+>r9 : string
+>f([[[[[[[[[(z) => 1]]]]]]]]]) : string
+>f : <T>(x: T) => T
+>[[[[[[[[[(z) => 1]]]]]]]]] : ((z: any) => number)[][][][][][][][][]
+>[[[[[[[[(z) => 1]]]]]]]] : ((z: any) => number)[][][][][][][][]
+>[[[[[[[(z) => 1]]]]]]] : ((z: any) => number)[][][][][][][]
+>[[[[[[(z) => 1]]]]]] : ((z: any) => number)[][][][][][]
+>[[[[[(z) => 1]]]]] : ((z: any) => number)[][][][][]
+>[[[[(z) => 1]]]] : ((z: any) => number)[][][][]
+>[[[(z) => 1]]] : ((z: any) => number)[][][]
+>[[(z) => 1]] : ((z: any) => number)[][]
+>[(z) => 1] : ((z: any) => number)[]
+>(z) => 1 : (z: any) => number
+>z : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

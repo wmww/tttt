@@ -1,0 +1,19 @@
+//// [test/cases/bun52-L05.ts] ////
+
+=== a.ts ===
+declare const {} = miss1;
+declare const [] = miss2;
+declare let {} = miss3;
+declare const {}: {} = miss4;
+declare namespace N { const {} = miss5; }
+>N : Symbol(N, Decl(a.ts, 3, 29))
+
+declare const {} = class { declare x = 1 };
+>x : Symbol({}.x, Decl(a.ts, 5, 26))
+
+declare const {} = (() => { const q: number = ""; })();
+>q : Symbol(q, Decl(a.ts, 6, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

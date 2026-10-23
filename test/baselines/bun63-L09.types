@@ -1,0 +1,69 @@
+//// [test/cases/bun63-L09.ts] ////
+
+=== a.js ===
+class C {
+>C : C
+
+  constructor() {
+    /** @type {ReturnType<typeof mk>} */
+    this.x = 1;
+>this.x = 1 : 1
+>this.x : any
+>this : this
+>x : any
+>1 : 1
+  }
+  x = mk();
+>x : any
+>mk() : any
+>mk : () => any
+}
+function mk() { return new C().x; }
+>mk : () => any
+>new C().x : any
+>new C() : C
+>C : typeof C
+>x : any
+
+class D {
+>D : D
+
+  constructor() {
+    this.y = mk2();
+>this.y = mk2() : any
+>this.y : any
+>this : this
+>y : any
+>mk2() : any
+>mk2 : () => any
+  }
+  /** @type {ReturnType<typeof mk2>} */
+  y;
+>y : any
+}
+function mk2() { return new D().y; }
+>mk2 : () => any
+>new D().y : any
+>new D() : D
+>D : typeof D
+>y : any
+
+=== b.ts ===
+new C().x<number>();
+>new C().x<number>() : any
+>new C().x : any
+>new C() : C
+>C : typeof C
+>x : any
+
+new D().y<number>();
+>new D().y<number>() : any
+>new D().y : any
+>new D() : D
+>D : typeof D
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

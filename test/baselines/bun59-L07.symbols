@@ -1,0 +1,29 @@
+//// [test/cases/bun59-L07.ts] ////
+
+=== a.ts ===
+import css from "sub/./x.css";
+>css : Symbol(css, Decl(a.ts, 0, 6))
+
+import { j } from "sub/./j";
+>j : Symbol(j, Decl(a.ts, 1, 8))
+
+import { t } from "sub/./t";
+>t : Symbol(t, Decl(a.ts, 2, 8))
+
+import { d } from "sub/./d";
+>d : Symbol(d, Decl(a.ts, 3, 8))
+
+import { d as d2 } from "sub/d";
+>d : Symbol(d, Decl(d.d.ts, 0, 12))
+>d2 : Symbol(d2, Decl(a.ts, 4, 8))
+
+import css2 from "sub/x.css";
+>css2 : Symbol(css2, Decl(a.ts, 5, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+
+=== modroot/sub/d.d.ts ===
+export const d: 1;
+>d : Symbol(d, Decl(d.d.ts, 0, 12))
+

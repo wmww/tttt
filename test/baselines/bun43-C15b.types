@@ -1,0 +1,9 @@
+//// [test/cases/bun43-C15b.ts] ////
+
+=== a.ts ===
+var x = // -
+>x : number
+
+017
+>017 : 15
+

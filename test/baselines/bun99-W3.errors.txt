@@ -1,0 +1,38 @@
+after.ts(5,20): error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style3, ":hover">'.
+before.ts(1,20): error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style2, ":hover">'.
+index.ts(3,19): error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style, ":hover">'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "types": [], "skipLibCheck": true}, "files": ["index.ts", "before.ts", "after.ts"]}
+==== after.ts (1 errors) ====
+    type Pseudos3 = ':hover';
+    type CSSPseudos3 = { [P in Pseudos3]?: Omit<Style3, Pseudos3> };
+    type Style3 = CSSPseudos3 & { top?: string };
+    declare function css3(style: Style3): void;
+    css3({ ':hover': { notAProperty: '1' } });
+                       ~~~~~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style3, ":hover">'.
+    export {};
+==== before.ts (1 errors) ====
+    css2({ ':hover': { notAProperty: '1' } });
+                       ~~~~~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style2, ":hover">'.
+    declare function css2(style: Style2): void;
+    type Pseudos2 = ':hover';
+    type CSSPseudos2 = { [P in Pseudos2]?: Omit<Style2, Pseudos2> };
+    type Style2 = CSSPseudos2 & { top?: string };
+    export {};
+==== index.ts (1 errors) ====
+    import { css } from './lib';
+    
+    css({ ':hover': { notAProperty: '1' } });
+                      ~~~~~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style, ":hover">'.
+==== lib.d.ts (0 errors) ====
+    type Pseudos = ':hover';
+    type CSSPseudos = { [P in Pseudos]?: Omit<Style, Pseudos> };
+    type Style = CSSPseudos & { top?: string };
+    export declare function css(style: Style): void;
+    export {};
+    

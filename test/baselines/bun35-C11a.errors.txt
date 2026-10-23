@@ -1,0 +1,28 @@
+a.ts(3,7): error TS2322: Type '"loose"' is not assignable to type '0'.
+a.ts(4,7): error TS2322: Type '"moose"' is not assignable to type '0'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (3 errors) ====
+    import * as m1 from "./node_modules/loose";
+    import * as m2 from "./node_modules/x/node_modules/moose";
+    const s1: 0 = m1.v;
+          ~~
+!!! error TS2322: Type '"loose"' is not assignable to type '0'.
+    const s2: 0 = m2.v;
+          ~~
+!!! error TS2322: Type '"moose"' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/loose.d.ts (0 errors) ====
+    export const v: 'loose';
+==== node_modules/package.json (0 errors) ====
+    { "name": "nm-root", "version": "4.0.0" }
+==== node_modules/x/node_modules/moose.d.ts (0 errors) ====
+    export const v: 'moose';
+==== node_modules/x/node_modules/package.json (0 errors) ====
+    { "name": "nm-root", "version": "4.0.0" }
+    

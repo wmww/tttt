@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C22c.ts] ////
+
+=== a.ts ===
+async function f() { namespace N { await 1; } }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>N : Symbol(N, Decl(a.ts, 0, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

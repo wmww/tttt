@@ -1,0 +1,30 @@
+//// [test/cases/bun08-P1.ts] ////
+
+=== a1.ts ===
+declare namespace N { const y: 1; }
+>N : Symbol(N, Decl(a1.ts, 0, 0))
+>y : Symbol(y, Decl(a1.ts, 0, 27), Decl(a2.ts, 0, 15))
+
+declare namespace f { export import x = N.y; }
+>f : Symbol(f, Decl(a1.ts, 0, 35), Decl(a2.ts, 0, 0))
+>x : Symbol(f.x, Decl(a1.ts, 1, 21))
+>N : Symbol(N, Decl(a1.ts, 0, 0))
+>y : Symbol(f.y, Decl(a1.ts, 0, 27), Decl(a2.ts, 0, 15))
+
+=== a2.ts ===
+function f() {}
+>f : Symbol(f, Decl(a1.ts, 0, 35), Decl(a2.ts, 0, 0))
+
+f.x = 2;
+>f.x : Symbol(f.y, Decl(a1.ts, 0, 27), Decl(a2.ts, 0, 15))
+>f : Symbol(f, Decl(a1.ts, 0, 35), Decl(a2.ts, 0, 0))
+>x : Symbol(f.y, Decl(a1.ts, 0, 27), Decl(a2.ts, 0, 15))
+
+f.x;
+>f.x : Symbol(f.y, Decl(a1.ts, 0, 27), Decl(a2.ts, 0, 15))
+>f : Symbol(f, Decl(a1.ts, 0, 35), Decl(a2.ts, 0, 0))
+>x : Symbol(f.y, Decl(a1.ts, 0, 27), Decl(a2.ts, 0, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a2.ts, 3, 5))
+

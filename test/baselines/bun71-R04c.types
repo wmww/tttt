@@ -1,0 +1,33 @@
+//// [test/cases/bun71-R04c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; call: { (): void; x?: number } } }
+>div : {}
+>call : { (): void; x?: number; }
+>x : number | undefined
+
+declare function use(...x: any[]): void;
+>use : (...x: any[]) => void
+>x : any[]
+
+declare const ie: JSX.IntrinsicElements;
+>ie : JSX.IntrinsicElements
+>JSX : any
+
+use(ie.call && <div><call /></div>);
+>use(ie.call && <div><call /></div>) : void
+>use : (...x: any[]) => void
+>ie.call && <div><call /></div> : JSX.Element
+>ie.call : { (): void; x?: number; }
+>ie : JSX.IntrinsicElements
+>call : { (): void; x?: number; }
+><div><call /></div> : JSX.Element
+>div : any
+><call /> : JSX.Element
+>call : any
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

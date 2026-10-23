@@ -1,0 +1,17 @@
+//// [test/cases/bun21-C15.ts] ////
+
+=== a.ts ===
+declare function fail(): never;
+>fail : () => never
+
+function f(o: any): number { with (o) { fail(); } }
+>f : (o: any) => number
+>o : any
+>o : any
+>fail() : any
+>fail : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

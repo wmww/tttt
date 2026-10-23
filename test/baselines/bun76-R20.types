@@ -1,0 +1,117 @@
+//// [test/cases/bun76-R20.ts] ////
+
+=== a.ts ===
+export {};
+declare const key: string;
+>key : string
+
+h1({});
+>h1({}) : void
+>h1 : ({ [key]: a, b }: { b?: any; }) => void
+>{} : {}
+
+function h1({ [key]: a = 1, b = a }) {}
+>h1 : ({ [key]: a, b }: { b?: any; }) => void
+>key : string
+>a : any
+>1 : 1
+>b : any
+>a : any
+
+function h2({ [key]: a = 1, b = a }) {}
+>h2 : ({ [key]: a, b }: { b?: any; }) => void
+>key : string
+>a : any
+>1 : 1
+>b : any
+>a : any
+
+h2({});
+>h2({}) : void
+>h2 : ({ [key]: a, b }: { b?: any; }) => void
+>{} : {}
+
+function h3({ [key]: a = 1, b = a }) {}
+>h3 : ({ [key]: a, b }: { b?: any; }) => void
+>key : string
+>a : any
+>1 : 1
+>b : any
+>a : any
+
+h4({});
+>h4({}) : void
+>h4 : ({ b, [key]: a }: { b?: any; }) => void
+>{} : {}
+
+function h4({ b = a, [key]: a = 1 }) {}
+>h4 : ({ b, [key]: a }: { b?: any; }) => void
+>b : any
+>a : any
+>key : string
+>a : any
+>1 : 1
+
+h5({});
+>h5({}) : void
+>h5 : ({ [key]: a, b }: { b?: (() => any) | undefined; }) => void
+>{} : {}
+
+function h5({ [key]: a = 1, b = () => a }) {}
+>h5 : ({ [key]: a, b }: { b?: (() => any) | undefined; }) => void
+>key : string
+>a : any
+>1 : 1
+>b : () => any
+>() => a : () => any
+>a : any
+
+h6({});
+>h6({}) : void
+>h6 : ({ x: { [key]: a }, b }: { b?: any; x: {}; }) => void
+>{} : {}
+
+function h6({ x: { [key]: a = 1 }, b = a }) {}
+>h6 : ({ x: { [key]: a }, b }: { b?: any; x: {}; }) => void
+>x : any
+>key : string
+>a : any
+>1 : 1
+>b : any
+>a : any
+
+h7([]);
+>h7([]) : void
+>h7 : ([{ [key]: a }, b]: [{}, any?]) => void
+>[] : []
+
+function h7([{ [key]: a = 1 }, b = a]) {}
+>h7 : ([{ [key]: a }, b]: [{}, any?]) => void
+>key : string
+>a : any
+>1 : 1
+>b : any
+>a : any
+
+const h8 = function ({ [key]: a = 1, b = a }) {};
+>h8 : ({ [key]: a, b }: { b?: any; }) => void
+>function ({ [key]: a = 1, b = a }) {} : ({ [key]: a, b }: { b?: any; }) => void
+>key : string
+>a : any
+>1 : 1
+>b : any
+>a : any
+
+const h9 = ({ [key]: a = 1, b = a }) => {};
+>h9 : ({ [key]: a, b }: { b?: any; }) => void
+>({ [key]: a = 1, b = a }) => {} : ({ [key]: a, b }: { b?: any; }) => void
+>key : string
+>a : any
+>1 : 1
+>b : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

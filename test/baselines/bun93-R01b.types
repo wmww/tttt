@@ -1,0 +1,24 @@
+//// [test/cases/bun93-R01b.ts] ////
+
+=== a.ts ===
+type M = { [K in "a" | "b" as Exclude<K, typeof o>]: N["a"] };
+>M : M
+>o : any
+
+interface N { a: M["b"] }
+>a : any
+
+const o = f().a;
+>o : any
+>f().a : any
+>f() : M
+>f : () => M
+>a : any
+
+declare function f(): M;
+>f : () => M
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

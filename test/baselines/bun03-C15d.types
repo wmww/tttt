@@ -1,0 +1,13 @@
+//// [test/cases/bun03-C15d.ts] ////
+
+=== a.ts ===
+function f() { import { c } from "./missing"; export { c }; }
+>f : () => void
+>c : any
+>c : any
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

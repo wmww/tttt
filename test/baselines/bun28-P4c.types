@@ -1,0 +1,14 @@
+//// [test/cases/bun28-P4c.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+@dec override function f() {}
+>dec : any
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,2121 @@
+arrow_property__const__closure.ts(13,11): error TS2322: Type '() => { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; more: { readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }; }' is not assignable to type 'never'.
+arrow_property__const__closure.ts(17,7): error TS2322: Type '() => { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; more: { readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: number; }; }' is not assignable to type 'never'.
+arrow_property__const__closure.ts(18,7): error TS2322: Type '() => { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; more: { readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }; }' is not assignable to type 'never'.
+arrow_property__const__closure.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__const__direct.ts(13,11): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }' is not assignable to type 'never'.
+arrow_property__const__direct.ts(17,7): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: number; }' is not assignable to type 'never'.
+arrow_property__const__direct.ts(18,7): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+arrow_property__const__direct.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__const__id.ts(13,11): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }' is not assignable to type 'never'.
+arrow_property__const__id.ts(17,7): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: number; }' is not assignable to type 'never'.
+arrow_property__const__id.ts(18,7): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+arrow_property__const__id.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__const__pair.ts(13,11): error TS2322: Type '[{ readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: T; }, { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: T; }]' is not assignable to type 'never'.
+arrow_property__const__pair.ts(17,7): error TS2322: Type '[{ readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: number; }, { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: number; }]' is not assignable to type 'never'.
+arrow_property__const__pair.ts(18,7): error TS2322: Type '[{ readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: string; }, { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: string; }]' is not assignable to type 'never'.
+arrow_property__const__pair.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__const__typeof.ts(13,11): error TS2322: Type '{ v: { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: T; }; k: "kind" | "sub" | "t"; }[]' is not assignable to type 'never'.
+arrow_property__const__typeof.ts(17,7): error TS2322: Type '{ v: { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: number; }; k: "kind" | "sub" | "t"; }[]' is not assignable to type 'never'.
+arrow_property__const__typeof.ts(18,7): error TS2322: Type '{ v: { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: string; }; k: "kind" | "sub" | "t"; }[]' is not assignable to type 'never'.
+arrow_property__const__typeof.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__const__wrap.ts(13,11): error TS2322: Type '{ readonly kind?: ("k1" | "k2" | undefined)[] | undefined; readonly sub?: ("s1" | undefined)[] | undefined; readonly t: T[]; }' is not assignable to type 'never'.
+arrow_property__const__wrap.ts(17,7): error TS2322: Type '{ readonly kind?: ("k1" | "k2" | undefined)[] | undefined; readonly sub?: ("s1" | undefined)[] | undefined; readonly t: number[]; }' is not assignable to type 'never'.
+arrow_property__const__wrap.ts(18,7): error TS2322: Type '{ readonly kind?: ("k1" | "k2" | undefined)[] | undefined; readonly sub?: ("s1" | undefined)[] | undefined; readonly t: string[]; }' is not assignable to type 'never'.
+arrow_property__const__wrap.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__method__chain.ts(84,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+arrow_property__method__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+arrow_property__method__chain.ts(89,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+arrow_property__method__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__nested__chain.ts(84,11): error TS2322: Type '{ o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }; l: T[]; }' is not assignable to type 'never'.
+arrow_property__nested__chain.ts(88,7): error TS2322: Type '{ o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }; l: number[]; }' is not assignable to type 'never'.
+arrow_property__nested__chain.ts(89,7): error TS2322: Type '{ o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }; l: string[]; }' is not assignable to type 'never'.
+arrow_property__nested__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__plain__chain.ts(84,11): error TS2322: Type '{ a: number; t: T; }' is not assignable to type 'never'.
+arrow_property__plain__chain.ts(88,7): error TS2322: Type '{ a: number; t: number; }' is not assignable to type 'never'.
+arrow_property__plain__chain.ts(89,7): error TS2322: Type '{ a: number; t: string; }' is not assignable to type 'never'.
+arrow_property__plain__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__rest__chain.ts(84,11): error TS2322: Type '{ sub?: "s1" | undefined; t: T; }' is not assignable to type 'never'.
+arrow_property__rest__chain.ts(88,7): error TS2322: Type '{ sub?: "s1" | undefined; t: number; }' is not assignable to type 'never'.
+arrow_property__rest__chain.ts(89,7): error TS2322: Type '{ sub?: "s1" | undefined; t: string; }' is not assignable to type 'never'.
+arrow_property__rest__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__spread__chain.ts(84,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; }' is not assignable to type 'never'.
+arrow_property__spread__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; }' is not assignable to type 'never'.
+arrow_property__spread__chain.ts(89,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; }' is not assignable to type 'never'.
+arrow_property__spread__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__spread_t__chain.ts(84,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }' is not assignable to type 'never'.
+arrow_property__spread_t__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }' is not assignable to type 'never'.
+arrow_property__spread_t__chain.ts(89,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }' is not assignable to type 'never'.
+arrow_property__spread_t__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__twice__chain.ts(84,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }' is not assignable to type 'never'.
+arrow_property__twice__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }' is not assignable to type 'never'.
+arrow_property__twice__chain.ts(89,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }' is not assignable to type 'never'.
+arrow_property__twice__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+arrow_property__widened__chain.ts(84,11): error TS2322: Type '{ a: null; b: undefined; t: T; }' is not assignable to type 'never'.
+arrow_property__widened__chain.ts(88,7): error TS2322: Type '{ a: null; b: undefined; t: number; }' is not assignable to type 'never'.
+arrow_property__widened__chain.ts(89,7): error TS2322: Type '{ a: null; b: undefined; t: string; }' is not assignable to type 'never'.
+arrow_property__widened__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+callback__const__chain.ts(84,11): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }' is not assignable to type 'never'.
+callback__const__chain.ts(89,7): error TS2322: Type 'unknown' is not assignable to type 'never'.
+callback__const__chain.ts(90,7): error TS2322: Type 'unknown' is not assignable to type 'never'.
+callback__const__chain.ts(91,14): error TS2322: Type 'string' is not assignable to type 'number'.
+callback__spread_t__id.ts(13,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }' is not assignable to type 'never'.
+callback__spread_t__id.ts(18,7): error TS2322: Type 'unknown' is not assignable to type 'never'.
+callback__spread_t__id.ts(19,7): error TS2322: Type 'unknown' is not assignable to type 'never'.
+callback__spread_t__id.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+function__const__chain.ts(82,11): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+function__const__chain.ts(85,7): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+function__const__chain.ts(86,7): error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+function__const__chain.ts(87,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic__method__chain.ts(82,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+generic__method__chain.ts(85,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+generic__method__chain.ts(86,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+generic__method__chain.ts(87,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic__spread_t__wrap.ts(11,11): error TS2322: Type '{ kind?: ("k1" | "k2" | undefined)[] | undefined; sub?: ("s1" | undefined)[] | undefined; t: T[]; }' is not assignable to type 'never'.
+generic__spread_t__wrap.ts(14,7): error TS2322: Type '{ kind?: ("k1" | "k2" | undefined)[] | undefined; sub?: ("s1" | undefined)[] | undefined; t: number[]; }' is not assignable to type 'never'.
+generic__spread_t__wrap.ts(15,7): error TS2322: Type '{ kind?: ("k1" | "k2" | undefined)[] | undefined; sub?: ("s1" | undefined)[] | undefined; t: string[]; }' is not assignable to type 'never'.
+generic__spread_t__wrap.ts(16,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic_class__method__chain.ts(84,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+generic_class__method__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+generic_class__method__chain.ts(89,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+generic_class__method__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic_class__spread_t__pair.ts(13,11): error TS2322: Type '[{ kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: T; }, { kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: T; }]' is not assignable to type 'never'.
+generic_class__spread_t__pair.ts(17,7): error TS2322: Type '[{ kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: number; }, { kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: number; }]' is not assignable to type 'never'.
+generic_class__spread_t__pair.ts(18,7): error TS2322: Type '[{ kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: string; }, { kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: string; }]' is not assignable to type 'never'.
+generic_class__spread_t__pair.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic_method__method__chain.ts(84,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+generic_method__method__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): boolean; }' is not assignable to type 'never'.
+generic_method__method__chain.ts(89,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+generic_method__method__chain.ts(90,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic_method__rest__typeof.ts(13,11): error TS2322: Type '{ v: { sub?: "s1" | undefined; t: T; }; k: "sub" | "t"; }[]' is not assignable to type 'never'.
+generic_method__rest__typeof.ts(17,7): error TS2322: Type '{ v: { sub?: "s1" | undefined; t: boolean; }; k: "sub" | "t"; }[]' is not assignable to type 'never'.
+generic_method__rest__typeof.ts(18,7): error TS2322: Type '{ v: { sub?: "s1" | undefined; t: number; }; k: "sub" | "t"; }[]' is not assignable to type 'never'.
+generic_method__rest__typeof.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic_obj__method__chain.ts(82,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+generic_obj__method__chain.ts(85,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): { x: number; }; }' is not assignable to type 'never'.
+generic_obj__method__chain.ts(86,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): { y: string; }; }' is not assignable to type 'never'.
+generic_obj__method__chain.ts(87,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic_obj__spread_of_t__chain.ts(82,11): error TS2322: Type 'T & { a: number; }' is not assignable to type 'never'.
+generic_obj__spread_of_t__chain.ts(85,7): error TS2322: Type '{ x: number; } & { a: number; }' is not assignable to type 'never'.
+generic_obj__spread_of_t__chain.ts(86,7): error TS2322: Type '{ y: string; } & { a: number; }' is not assignable to type 'never'.
+generic_obj__spread_of_t__chain.ts(87,14): error TS2322: Type 'string' is not assignable to type 'number'.
+generic_obj__spread_of_t__wrap.ts(11,11): error TS2322: Type '{ [K in keyof (T & { a: number; })]: (T & { a: number; })[K][]; }' is not assignable to type 'never'.
+generic_obj__spread_of_t__wrap.ts(14,7): error TS2322: Type '{ a: number[]; x: number[]; }' is not assignable to type 'never'.
+generic_obj__spread_of_t__wrap.ts(15,7): error TS2322: Type '{ a: number[]; y: string[]; }' is not assignable to type 'never'.
+generic_obj__spread_of_t__wrap.ts(16,14): error TS2322: Type 'string' is not assignable to type 'number'.
+method__method__chain.ts(83,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+method__method__chain.ts(87,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+method__method__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+method__method__chain.ts(89,14): error TS2322: Type 'string' is not assignable to type 'number'.
+nested__method__chain.ts(83,11): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+nested__method__chain.ts(87,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+nested__method__chain.ts(88,7): error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+nested__method__chain.ts(89,14): error TS2322: Type 'string' is not assignable to type 'number'.
+nested__nested__closure.ts(12,11): error TS2322: Type '() => { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }; l: T[]; more: { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }; l: T[]; }; }' is not assignable to type 'never'.
+nested__nested__closure.ts(16,7): error TS2322: Type '() => { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }; l: number[]; more: { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }; l: number[]; }; }' is not assignable to type 'never'.
+nested__nested__closure.ts(17,7): error TS2322: Type '() => { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }; l: string[]; more: { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }; l: string[]; }; }' is not assignable to type 'never'.
+nested__nested__closure.ts(18,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "lib": ["esnext"], "types": []}, "files": ["arrow_property__const__closure.ts", "arrow_property__const__direct.ts", "arrow_property__const__id.ts", "arrow_property__const__pair.ts", "arrow_property__const__typeof.ts", "arrow_property__const__wrap.ts", "arrow_property__method__chain.ts", "arrow_property__nested__chain.ts", "arrow_property__plain__chain.ts", "arrow_property__rest__chain.ts", "arrow_property__spread__chain.ts", "arrow_property__spread_t__chain.ts", "arrow_property__twice__chain.ts", "arrow_property__widened__chain.ts", "callback__const__chain.ts", "callback__spread_t__id.ts", "function__const__chain.ts", "generic__method__chain.ts", "generic__spread_t__wrap.ts", "generic_class__method__chain.ts", "generic_class__spread_t__pair.ts", "generic_method__method__chain.ts", "generic_method__rest__typeof.ts", "generic_obj__method__chain.ts", "generic_obj__spread_of_t__chain.ts", "generic_obj__spread_of_t__wrap.ts", "method__method__chain.ts", "nested__method__chain.ts", "nested__nested__closure.ts"]}
+==== arrow_property__const__closure.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, t } as const;
+        const result = () => ({ ...value, more: value });
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '() => { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; more: { readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '() => { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; more: { readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: number; }; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '() => { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; more: { readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__const__direct.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, t } as const;
+        const result = value;
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__const__id.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, t } as const;
+        const result = id(value);
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__const__pair.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, t } as const;
+        const result = pair(value, id(value));
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '[{ readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: T; }, { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: T; }]' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '[{ readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: number; }, { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: number; }]' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '[{ readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: string; }, { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: string; }]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__const__typeof.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, t } as const;
+        const result = null! as { v: typeof value; k: keyof typeof value }[];
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ v: { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: T; }; k: "kind" | "sub" | "t"; }[]' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ v: { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: number; }; k: "kind" | "sub" | "t"; }[]' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ v: { readonly kind?: "k1" | "k2" | undefined; readonly sub?: "s1" | undefined; readonly t: string; }; k: "kind" | "sub" | "t"; }[]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__const__wrap.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, t } as const;
+        const result = wrap(value);
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ readonly kind?: ("k1" | "k2" | undefined)[] | undefined; readonly sub?: ("s1" | undefined)[] | undefined; readonly t: T[]; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ readonly kind?: ("k1" | "k2" | undefined)[] | undefined; readonly sub?: ("s1" | undefined)[] | undefined; readonly t: number[]; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ readonly kind?: ("k1" | "k2" | undefined)[] | undefined; readonly sub?: ("s1" | undefined)[] | undefined; readonly t: string[]; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__method__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, m() { return t } };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__nested__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { o: { ...input, t }, l: [t] };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }; l: T[]; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }; l: number[]; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }; l: string[]; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__plain__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { a: 1, t };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ a: number; t: T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ a: number; t: number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ a: number; t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__rest__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const { kind, ...value } = { ...input, t };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ sub?: "s1" | undefined; t: T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ sub?: "s1" | undefined; t: number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ sub?: "s1" | undefined; t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__spread__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__spread_t__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, t };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__twice__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { ...input, ...{ t }, ...input };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== arrow_property__widened__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run = (input: Input, t: T) => {
+        const value = { a: null, b: undefined, t };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ a: null; b: undefined; t: T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ a: null; b: undefined; t: number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ a: null; b: undefined; t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== callback__const__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run<T>(input: Input, t: T) {
+      let out!: unknown;
+      on(t, t => {
+        const value = { ...input, t } as const;
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: T; }' is not assignable to type 'never'.
+        return result;
+      });
+      return out;
+    }
+    const r1: never = run({}, 1);
+          ~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    const r2: never = run({}, "s");
+          ~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== callback__spread_t__id.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run<T>(input: Input, t: T) {
+      let out!: unknown;
+      on(t, t => {
+        const value = { ...input, t };
+        const result = id(value);
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }' is not assignable to type 'never'.
+        return result;
+      });
+      return out;
+    }
+    const r1: never = run({}, 1);
+          ~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    const r2: never = run({}, "s");
+          ~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== function__const__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run(input: Input, t: string) {
+        const value = { ...input, t } as const;
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+        return result;
+    }
+    const r1: never = run({}, "s");
+          ~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+    const r2: never = run({}, "s");
+          ~~
+!!! error TS2322: Type '{ readonly kind?: 'k1' | 'k2'; readonly sub?: 's1'; readonly t: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic__method__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run<T>(input: Input, t: T) {
+        const value = { ...input, m() { return t } };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+        return result;
+    }
+    const r1: never = run({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+    const r2: never = run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic__spread_t__wrap.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run<T>(input: Input, t: T) {
+        const value = { ...input, t };
+        const result = wrap(value);
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: ("k1" | "k2" | undefined)[] | undefined; sub?: ("s1" | undefined)[] | undefined; t: T[]; }' is not assignable to type 'never'.
+        return result;
+    }
+    const r1: never = run({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: ("k1" | "k2" | undefined)[] | undefined; sub?: ("s1" | undefined)[] | undefined; t: number[]; }' is not assignable to type 'never'.
+    const r2: never = run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: ("k1" | "k2" | undefined)[] | undefined; sub?: ("s1" | undefined)[] | undefined; t: string[]; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic_class__method__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run(input: Input, t: T) {
+        const value = { ...input, m() { return t } };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic_class__spread_t__pair.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<T> {
+      constructor(readonly t0: T) {}
+      run(input: Input, t: T) {
+        const value = { ...input, t };
+        const result = pair(value, id(value));
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '[{ kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: T; }, { kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: T; }]' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, 1);
+          ~~
+!!! error TS2322: Type '[{ kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: number; }, { kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: number; }]' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, "s");
+          ~~
+!!! error TS2322: Type '[{ kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: string; }, { kind?: "k1" | "k2" | undefined; sub?: "s1" | undefined; t: string; }]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic_method__method__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<U> {
+      constructor(readonly u: U) {}
+      run<T>(input: Input, t: T) {
+        const value = { ...input, m() { return t } };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, true);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): boolean; }' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, 2);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic_method__rest__typeof.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C<U> {
+      constructor(readonly u: U) {}
+      run<T>(input: Input, t: T) {
+        const { kind, ...value } = { ...input, t };
+        const result = null! as { v: typeof value; k: keyof typeof value }[];
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ v: { sub?: "s1" | undefined; t: T; }; k: "sub" | "t"; }[]' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C(1).run({}, true);
+          ~~
+!!! error TS2322: Type '{ v: { sub?: "s1" | undefined; t: boolean; }; k: "sub" | "t"; }[]' is not assignable to type 'never'.
+    const r2: never = new C("s").run({}, 2);
+          ~~
+!!! error TS2322: Type '{ v: { sub?: "s1" | undefined; t: number; }; k: "sub" | "t"; }[]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic_obj__method__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run<T extends object>(input: Input, t: T) {
+        const value = { ...input, m() { return t } };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+        return result;
+    }
+    const r1: never = run({}, { x: 1 });
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): { x: number; }; }' is not assignable to type 'never'.
+    const r2: never = run({}, { y: "s" });
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): { y: string; }; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic_obj__spread_of_t__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run<T extends object>(input: Input, t: T) {
+        const value = { ...t, a: 1 };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type 'T & { a: number; }' is not assignable to type 'never'.
+        return result;
+    }
+    const r1: never = run({}, { x: 1 });
+          ~~
+!!! error TS2322: Type '{ x: number; } & { a: number; }' is not assignable to type 'never'.
+    const r2: never = run({}, { y: "s" });
+          ~~
+!!! error TS2322: Type '{ y: string; } & { a: number; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== generic_obj__spread_of_t__wrap.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function run<T extends object>(input: Input, t: T) {
+        const value = { ...t, a: 1 };
+        const result = wrap(value);
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ [K in keyof (T & { a: number; })]: (T & { a: number; })[K][]; }' is not assignable to type 'never'.
+        return result;
+    }
+    const r1: never = run({}, { x: 1 });
+          ~~
+!!! error TS2322: Type '{ a: number[]; x: number[]; }' is not assignable to type 'never'.
+    const r2: never = run({}, { y: "s" });
+          ~~
+!!! error TS2322: Type '{ a: number[]; y: string[]; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== method__method__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export class C {
+      run(input: Input, t: string) {
+        const value = { ...input, m() { return t } };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = new C().run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+    const r2: never = new C().run({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== nested__method__chain.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function outer<T>(t: T) {
+      return function run<U>(input: Input, u: U) {
+        const value = { ...input, m() { return t } };
+        const result = start(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .step(value)
+          .done();
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): T; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = outer(1)({}, "s");
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): number; }' is not assignable to type 'never'.
+    const r2: never = outer("s")({}, 1);
+          ~~
+!!! error TS2322: Type '{ kind?: 'k1' | 'k2'; sub?: 's1'; m(): string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== nested__nested__closure.ts (4 errors) ====
+    interface Chain<I> { step<P>(x: P): Chain<I>; done(): I }
+    declare function start<I>(value: I): Chain<I>;
+    declare function id<X>(x: X): X;
+    declare function wrap<X>(x: X): { [K in keyof X]: X[K][] };
+    declare function pair<X, Y>(x: X, y: Y): [X, Y];
+    declare function on<E>(e: E, f: (e: E) => unknown): void;
+    type Input = { kind?: 'k1' | 'k2'; sub?: 's1' };
+    export function outer<T>(t: T) {
+      return function run<U>(input: Input, u: U) {
+        const value = { o: { ...input, t }, l: [t] };
+        const result = () => ({ ...value, more: value });
+        const inside: never = result;
+              ~~~~~~
+!!! error TS2322: Type '() => { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }; l: T[]; more: { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: T; }; l: T[]; }; }' is not assignable to type 'never'.
+        return result;
+      }
+    }
+    const r1: never = outer(1)({}, "s");
+          ~~
+!!! error TS2322: Type '() => { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }; l: number[]; more: { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: number; }; l: number[]; }; }' is not assignable to type 'never'.
+    const r2: never = outer("s")({}, 1);
+          ~~
+!!! error TS2322: Type '() => { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }; l: string[]; more: { o: { kind?: 'k1' | 'k2'; sub?: 's1'; t: string; }; l: string[]; }; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

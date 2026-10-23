@@ -1,0 +1,23 @@
+//// [test/cases/bun23-C8b.ts] ////
+
+=== a.ts ===
+const cs = "cstr";
+>cs : "cstr"
+>"cstr" : "cstr"
+
+let o = { [cs]: { n: 1 } }; o = {};
+>o : { cstr: { n: number; }; }
+>{ [cs]: { n: 1 } } : { cstr: { n: number; }; }
+>[cs] : { n: number; }
+>cs : "cstr"
+>{ n: 1 } : { n: number; }
+>n : number
+>1 : 1
+>o = {} : {}
+>o : { cstr: { n: number; }; }
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,17 @@
+a.js(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.js (1 errors) ====
+    const k = "C";
+    const { [k]: D } = require("./m");
+    /** @type {D} */ let t;
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export interface T { a: number }
+    export class C { x = 1 }
+    

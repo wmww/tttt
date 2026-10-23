@@ -1,0 +1,8 @@
+//// [test/cases/bun28-C33f.ts] ////
+
+=== a.ts ===
+namespace W { declare export { }; }
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

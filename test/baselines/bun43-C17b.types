@@ -1,0 +1,19 @@
+//// [test/cases/bun43-C17b.ts] ////
+
+=== a.ts ===
+abstract class A { abstract m(): void; }
+>A : A
+>m : () => void
+
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+@dec export default class extends A {}
+>dec : (...a: any[]) => any
+>A : A
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

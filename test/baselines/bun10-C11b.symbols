@@ -1,0 +1,27 @@
+//// [test/cases/bun10-C11b.ts] ////
+
+=== a.ts ===
+declare const ks: string;
+>ks : Symbol(ks, Decl(a.ts, 0, 13))
+
+class D3 { [ks] = 1; }
+>D3 : Symbol(D3, Decl(a.ts, 0, 25), Decl(a.ts, 1, 22))
+>[ks] : Symbol(D3[ks], Decl(a.ts, 1, 10))
+>ks : Symbol(ks, Decl(a.ts, 0, 13))
+
+interface D3 { (): void }
+>D3 : Symbol(D3, Decl(a.ts, 0, 25), Decl(a.ts, 1, 22))
+
+declare const d3: D3;
+>d3 : Symbol(d3, Decl(a.ts, 3, 13))
+>D3 : Symbol(D3, Decl(a.ts, 0, 25), Decl(a.ts, 1, 22))
+
+const t: { __t: 1 } = d3[ks];
+>t : Symbol(t, Decl(a.ts, 4, 5))
+>__t : Symbol(__t, Decl(a.ts, 4, 10))
+>d3 : Symbol(d3, Decl(a.ts, 3, 13))
+>ks : Symbol(ks, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

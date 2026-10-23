@@ -1,0 +1,27 @@
+//// [test/cases/bun15-C3a.ts] ////
+
+=== a.tsx ===
+import type React from "./r";
+>React : Symbol(React, Decl(a.tsx, 0, 6))
+
+export const a = <div />;
+>a : Symbol(a, Decl(a.tsx, 1, 12))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(jsx.d.ts, 0, 74))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+
+=== jsx.d.ts ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } }
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 0, 0))
+>Element : Symbol(Element, Decl(jsx.d.ts, 0, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(jsx.d.ts, 0, 44))
+>div : Symbol(IntrinsicElements.div, Decl(jsx.d.ts, 0, 74))
+
+=== r.ts ===
+const React = { createElement(...a: any[]): any {} }; export default React;
+>React : Symbol(React, Decl(r.ts, 0, 5))
+>createElement : Symbol(createElement, Decl(r.ts, 0, 15))
+>a : Symbol(a, Decl(r.ts, 0, 30))
+>React : Symbol(React, Decl(r.ts, 0, 5))
+

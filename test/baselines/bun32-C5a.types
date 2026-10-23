@@ -1,0 +1,21 @@
+//// [test/cases/bun32-C5a.ts] ////
+
+=== a.ts ===
+function f(o?: { a?: 1 }) { if (o?.a! !== undefined) o.a; }
+>f : (o?: { a?: 1; }) => void
+>o : { a?: 1; } | undefined
+>a : 1 | undefined
+>o?.a! !== undefined : boolean
+>o?.a! : 1
+>o?.a : 1 | undefined
+>o : { a?: 1; } | undefined
+>a : 1 | undefined
+>undefined : undefined
+>o.a : 1
+>o : { a?: 1; } | undefined
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

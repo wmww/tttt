@@ -1,0 +1,94 @@
+//// [test/cases/bun86-R08.ts] ////
+
+=== a.ts ===
+import { vx, px } from "x"; import { vy } from "y";
+>vx : Symbol(vx, Decl(a.ts, 0, 8))
+>px : Symbol(px, Decl(a.ts, 0, 12))
+>vy : Symbol(vy, Decl(a.ts, 0, 36))
+
+const n1: null = vx; const n2: null = px; const n3: null = vy;
+>n1 : Symbol(n1, Decl(a.ts, 1, 5))
+>vx : Symbol(vx, Decl(a.ts, 0, 8))
+>n2 : Symbol(n2, Decl(a.ts, 1, 26))
+>px : Symbol(px, Decl(a.ts, 0, 12))
+>n3 : Symbol(n3, Decl(a.ts, 1, 47))
+>vy : Symbol(vy, Decl(a.ts, 0, 36))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/deep/index.js ===
+exports.d = 1;
+>exports.d : Symbol(d, Decl(index.js, 0, 0))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>d : Symbol(d, Decl(index.js, 0, 0))
+
+=== node_modules/x/index.js ===
+const m = require("mid"); const p = require("p"); exports.vx = m.v; exports.px = p.pv;
+>m : Symbol(m, Decl(index.js, 0, 5))
+>require : Symbol(require)
+>"mid" : Symbol(m, Decl(index.js, 0, 0))
+>p : Symbol(p, Decl(index.js, 0, 31))
+>require : Symbol(require)
+>"p" : Symbol(p, Decl(index.js, 0, 0))
+>exports.vx : Symbol(vx, Decl(index.js, 0, 49))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>vx : Symbol(vx, Decl(index.js, 0, 49))
+>m.v : Symbol(m.v, Decl(index.js, 0, 26))
+>m : Symbol(m, Decl(index.js, 0, 5))
+>v : Symbol(m.v, Decl(index.js, 0, 26))
+>exports.px : Symbol(px, Decl(index.js, 0, 67))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>px : Symbol(px, Decl(index.js, 0, 67))
+>p.pv : Symbol(p.pv, Decl(index.js, 0, 25))
+>p : Symbol(p, Decl(index.js, 0, 31))
+>pv : Symbol(p.pv, Decl(index.js, 0, 25))
+
+=== node_modules/x/node_modules/mid/index.js ===
+const d = require("deep"); exports.v = d.d;
+>d : Symbol(d, Decl(index.js, 0, 5))
+>require : Symbol(require)
+>"deep" : Symbol(d, Decl(index.js, 0, 0))
+>exports.v : Symbol(v, Decl(index.js, 0, 26))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>v : Symbol(v, Decl(index.js, 0, 26))
+>d.d : Symbol(d.d, Decl(index.js, 0, 0))
+>d : Symbol(d, Decl(index.js, 0, 5))
+>d : Symbol(d.d, Decl(index.js, 0, 0))
+
+=== node_modules/x/node_modules/p/index.js ===
+const m = require("mid"); exports.pv = m.v;
+>m : Symbol(m, Decl(index.js, 0, 5))
+>require : Symbol(require)
+>"mid" : Symbol(m, Decl(index.js, 0, 0))
+>exports.pv : Symbol(pv, Decl(index.js, 0, 25))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>pv : Symbol(pv, Decl(index.js, 0, 25))
+>m.v : Symbol(m.v, Decl(index.js, 0, 26))
+>m : Symbol(m, Decl(index.js, 0, 5))
+>v : Symbol(m.v, Decl(index.js, 0, 26))
+
+=== node_modules/y/index.js ===
+const p = require("p"); exports.vy = p.pv;
+>p : Symbol(p, Decl(index.js, 0, 5))
+>require : Symbol(require)
+>"p" : Symbol(p, Decl(index.js, 0, 0))
+>exports.vy : Symbol(vy, Decl(index.js, 0, 23))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>vy : Symbol(vy, Decl(index.js, 0, 23))
+>p.pv : Symbol(p.pv, Decl(index.js, 0, 25))
+>p : Symbol(p, Decl(index.js, 0, 5))
+>pv : Symbol(p.pv, Decl(index.js, 0, 25))
+
+=== node_modules/y/node_modules/p/index.js ===
+const m = require("mid"); exports.pv = m.v;
+>m : Symbol(m, Decl(index.js, 0, 5))
+>require : Symbol(require)
+>"mid" : Symbol(m, Decl(index.js, 0, 0))
+>exports.pv : Symbol(pv, Decl(index.js, 0, 25))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+>pv : Symbol(pv, Decl(index.js, 0, 25))
+>m.v : Symbol(m.v, Decl(index.js, 0, 26))
+>m : Symbol(m, Decl(index.js, 0, 5))
+>v : Symbol(m.v, Decl(index.js, 0, 26))
+

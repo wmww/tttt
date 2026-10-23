@@ -1,0 +1,17 @@
+a.ts(1,10): error TS7023: 'h5' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(1,23): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function h5<T extends ReturnType<typeof h5>>(x: T) { return x; }
+             ~~
+!!! error TS7023: 'h5' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+                          ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

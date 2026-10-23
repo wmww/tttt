@@ -1,0 +1,18 @@
+//// [test/cases/bun23-C2b.ts] ////
+
+=== a.ts ===
+declare let m: { [K in (keyof { readonly b: 1 })]: 1 };
+>m : { b: 1; }
+>b : 1
+
+m.b = 1;
+>m.b = 1 : 1
+>m.b : 1
+>m : { b: 1; }
+>b : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

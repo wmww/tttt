@@ -1,0 +1,20 @@
+//// [test/cases/bun24-C8.ts] ////
+
+=== a.ts ===
+class G<T> { static readonly s: unique symbol; }
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>s : Symbol(G.s, Decl(a.ts, 0, 12))
+
+const t: { (a: { [G.s]: 1 }): void; (q: 1): 1 } = {};
+>t : Symbol(t, Decl(a.ts, 1, 5))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>[G.s] : Symbol([G.s], Decl(a.ts, 1, 16))
+>G.s : Symbol(G.s, Decl(a.ts, 0, 12))
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>s : Symbol(G.s, Decl(a.ts, 0, 12))
+>q : Symbol(q, Decl(a.ts, 1, 37))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

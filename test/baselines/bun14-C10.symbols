@@ -1,0 +1,20 @@
+//// [test/cases/bun14-C10.ts] ////
+
+=== a.ts ===
+type M1 = { [K in never as "a"]: 1 };
+>M1 : Symbol(M1, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 13))
+
+declare let m1: M1;
+>m1 : Symbol(m1, Decl(a.ts, 1, 11))
+>M1 : Symbol(M1, Decl(a.ts, 0, 0))
+
+const m1b: string = m1.a;
+>m1b : Symbol(m1b, Decl(a.ts, 2, 5))
+>m1.a : Symbol(a)
+>m1 : Symbol(m1, Decl(a.ts, 1, 11))
+>a : Symbol(a)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

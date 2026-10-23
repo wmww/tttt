@@ -1,0 +1,46 @@
+//// [test/cases/bun74-R09b.ts] ////
+
+=== a.tsx ===
+declare global { namespace JSX { interface IntrinsicElements { [k: string]: any } } }
+>global : any
+>k : string
+
+export function Button() {
+>Button : () => any
+
+  return <button onClick={() => { const interface = 1; return interface; }}>ok</button>;
+><button onClick={() => { const interface = 1; return interface; }}>ok</button> : any
+>button : any
+>onClick : () => number
+>() => { const interface = 1; return interface; } : () => number
+>interface : 1
+>1 : 1
+>interface : 1
+>button : any
+}
+export function Input(public: any) {
+>Input : (public: any) => any
+>public : any
+
+  return <input value={public} {...public} />;
+><input value={public} {...public} /> : any
+>input : any
+>value : any
+>public : any
+>public : any
+}
+export class View { render() { return <div ref={(static: any) => static}></div>; } }
+>View : View
+>render : () => any
+><div ref={(static: any) => static}></div> : any
+>div : any
+>ref : (static: any) => any
+>(static: any) => static : (static: any) => any
+>static : any
+>static : any
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

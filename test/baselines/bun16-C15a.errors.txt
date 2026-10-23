@@ -1,0 +1,32 @@
+b.js(2,23): error TS8024: JSDoc '@param' tag has name 'rest', but there is no parameter with that name.
+b.js(4,21): error TS8024: JSDoc '@param' tag has name 'n2', but there is no parameter with that name.
+b.js(6,23): error TS8024: JSDoc '@param' tag has name 'rest', but there is no parameter with that name.
+b.js(8,23): error TS8024: JSDoc '@param' tag has name 'rest', but there is no parameter with that name.
+b.js(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== b.js (5 errors) ====
+    const x = [1];
+    /** @param {string[]} rest */
+                          ~~~~
+!!! error TS8024: JSDoc '@param' tag has name 'rest', but there is no parameter with that name.
+    function f1() { return x[arguments.length]; }
+    /** @param {string} n2 */
+                        ~~
+!!! error TS8024: JSDoc '@param' tag has name 'n2', but there is no parameter with that name.
+    function f2() { return x[arguments[0]]; }
+    /** @param {string[]} rest */
+                          ~~~~
+!!! error TS8024: JSDoc '@param' tag has name 'rest', but there is no parameter with that name.
+    function f3(a = arguments[0]) { return a; }
+    /** @param {string[]} rest */
+                          ~~~~
+!!! error TS8024: JSDoc '@param' tag has name 'rest', but there is no parameter with that name.
+    function f4() { return { [arguments.length]: 1 }; }
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

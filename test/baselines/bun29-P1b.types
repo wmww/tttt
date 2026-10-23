@@ -1,0 +1,20 @@
+//// [test/cases/bun29-P1b.ts] ////
+
+=== a.ts ===
+export function f() { class C { static readonly s: unique symbol = Symbol(); } return { [C.s]: 1 }; }
+>f : () => { [C.s]: number; }
+>C : C
+>s : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>{ [C.s]: 1 } : { [C.s]: number; }
+>[C.s] : number
+>C.s : unique symbol
+>C : typeof C
+>s : unique symbol
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

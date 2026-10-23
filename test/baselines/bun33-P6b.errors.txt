@@ -1,0 +1,17 @@
+a.ts(1,27): error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+a.ts(1,27): error TS2304: Cannot find name 'yield'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022" } }
+==== a.ts (3 errors) ====
+    function* g() { let x: { [yield]: 1 }; }
+                              ~~~~~
+!!! error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+                              ~~~~~
+!!! error TS2304: Cannot find name 'yield'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

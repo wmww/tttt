@@ -1,0 +1,26 @@
+//// [test/cases/bun13-P4b.ts] ////
+
+=== a.ts ===
+declare const xs: number[];
+>xs : number[]
+
+new Map([["a", xs], ["b", ["s"]], ["c", [1]]]);
+>new Map([["a", xs], ["b", ["s"]], ["c", [1]]]) : Map<string, number[]>
+>Map : MapConstructor
+>[["a", xs], ["b", ["s"]], ["c", [1]]] : ([string, string[]] | [string, number[]])[]
+>["a", xs] : [string, number[]]
+>"a" : "a"
+>xs : number[]
+>["b", ["s"]] : [string, string[]]
+>"b" : "b"
+>["s"] : string[]
+>"s" : "s"
+>["c", [1]] : [string, number[]]
+>"c" : "c"
+>[1] : number[]
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,1003 @@
+accessor_in_a_loop.ts(6,11): error TS7022: 'children' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+accessor_in_a_loop.ts(12,11): error TS7022: 'first' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+accessor_in_a_loop.ts(24,11): error TS7022: 'first' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+accessor_in_a_loop.ts(25,24): error TS7023: 'kept' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+accessor_in_a_loop.ts(28,14): error TS2322: Type 'string' is not assignable to type 'number'.
+iterators_without_a_value.ts(7,7): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value.ts(13,9): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value.ts(14,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value.ts(16,35): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value.ts(23,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value.ts(23,32): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value.ts(29,10): error TS7022: 'b12' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+iterators_without_a_value.ts(33,14): error TS2322: Type 'string' is not assignable to type 'number'.
+iterators_without_a_value_each_its_own_type.ts(5,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(9,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(13,7): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(18,39): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(18,59): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(22,14): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(22,36): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(26,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(30,21): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(35,4): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(40,4): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(44,10): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(48,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(52,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(52,32): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(56,22): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(61,39): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(61,57): error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+iterators_without_a_value_each_its_own_type.ts(66,27): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(71,27): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(71,61): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(76,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(80,26): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(84,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(90,33): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(95,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(99,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(103,7): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(108,39): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(108,59): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(112,14): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(112,36): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(116,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(120,21): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(125,4): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(130,4): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(134,10): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(138,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(142,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(142,32): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(146,22): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(151,39): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(151,57): error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+iterators_without_a_value_each_its_own_type.ts(156,27): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(161,27): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(161,61): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(166,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(170,26): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(174,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(180,33): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(185,9): error TS2488: Type '{ tag: 41; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(189,9): error TS2488: Type '{ tag: 42; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(193,7): error TS2488: Type '{ tag: 43; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(198,39): error TS2488: Type '{ tag: 44; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(198,59): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(202,14): error TS2488: Type '{ tag: 45; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(202,36): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(206,19): error TS2488: Type '{ tag: 46; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(210,21): error TS2488: Type '{ tag: 47; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(215,4): error TS2488: Type '{ tag: 48; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(220,4): error TS2488: Type '{ tag: 49; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(224,10): error TS2488: Type '{ tag: 50; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(228,19): error TS2488: Type '{ tag: 51; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(232,19): error TS2488: Type '{ tag: 52; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(232,32): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(236,22): error TS2488: Type '{ tag: 53; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(241,39): error TS2488: Type '{ tag: 54; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(241,57): error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+iterators_without_a_value_each_its_own_type.ts(246,27): error TS2488: Type '{ tag: 55; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(251,27): error TS2488: Type '{ tag: 56; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(251,61): error TS2488: Type '{ tag: 56; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(255,27): error TS2488: Type '{ tag: 57; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(256,9): error TS2488: Type '{ tag: 57; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(260,26): error TS2488: Type '{ tag: 58; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(264,9): error TS2488: Type '{ tag: 59; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(265,9): error TS2488: Type '{ tag: 59; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(270,33): error TS2488: Type '{ tag: 60; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+iterators_without_a_value_each_its_own_type.ts(275,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(279,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(283,7): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(288,39): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(288,59): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(292,14): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(292,36): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(296,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(300,21): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(305,4): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(310,4): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(314,10): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(318,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(322,19): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(322,32): error TS2322: Type 'any' is not assignable to type 'never'.
+iterators_without_a_value_each_its_own_type.ts(326,22): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(331,39): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(331,57): error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+iterators_without_a_value_each_its_own_type.ts(336,27): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(341,27): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(341,61): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(346,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(350,26): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(354,9): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(360,33): error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+iterators_without_a_value_each_its_own_type.ts(362,14): error TS2322: Type 'string' is not assignable to type 'number'.
+literal_properties_in_a_circle.ts(2,7): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(2,13): error TS2448: Block-scoped variable 'a' used before its declaration.
+literal_properties_in_a_circle.ts(3,7): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(3,16): error TS2448: Block-scoped variable 'b' used before its declaration.
+literal_properties_in_a_circle.ts(4,7): error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(4,16): error TS2448: Block-scoped variable 'c' used before its declaration.
+literal_properties_in_a_circle.ts(7,7): error TS7022: 'f' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(7,20): error TS2448: Block-scoped variable 'f' used before its declaration.
+literal_properties_in_a_circle.ts(8,7): error TS7022: 'g' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(8,13): error TS2448: Block-scoped variable 'g' used before its declaration.
+literal_properties_in_a_circle.ts(10,7): error TS7022: 'h' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(10,18): error TS2448: Block-scoped variable 'h' used before its declaration.
+literal_properties_in_a_circle.ts(11,7): error TS7022: 'i' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(11,23): error TS2448: Block-scoped variable 'i' used before its declaration.
+literal_properties_in_a_circle.ts(12,5): error TS7022: 'j' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(12,11): error TS2448: Block-scoped variable 'j' used before its declaration.
+literal_properties_in_a_circle.ts(15,7): error TS7022: 'l' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(15,14): error TS2448: Block-scoped variable 'l' used before its declaration.
+literal_properties_in_a_circle.ts(16,12): error TS7022: 'n' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(16,18): error TS2372: Parameter 'n' cannot reference itself.
+literal_properties_in_a_circle.ts(17,11): error TS7022: 'q' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+literal_properties_in_a_circle.ts(17,25): error TS2729: Property 'q' is used before its initialization.
+literal_properties_in_a_circle.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+rest_in_an_array_pattern.ts(5,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(9,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(10,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(14,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(18,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(22,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(26,9): error TS2322: Type '[string | number, string | number]' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(28,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(33,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(38,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(43,9): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+rest_in_an_array_pattern.ts(45,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "module": "esnext", "lib": ["esnext"], "types": [], "moduleDetection": "force"}, "files": ["accessor_in_a_loop.ts", "literal_properties_in_a_circle.ts", "rest_in_an_array_pattern.ts", "iterators_without_a_value.ts", "iterators_without_a_value_each_its_own_type.ts"]}
+==== accessor_in_a_loop.ts (5 errors) ====
+    export {}
+    interface Item { children: Item[]; first: Item }
+    declare const start: Item
+    let current: Item | undefined = start
+    while (current) {
+      const { children } = current
+              ~~~~~~~~
+!!! error TS7022: 'children' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      class Holder { accessor held = children[0] }
+      current = new Holder().held
+    }
+    let other: Item | undefined = start
+    while (other) {
+      const { first } = other
+              ~~~~~
+!!! error TS7022: 'first' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      class Fixed { static accessor kept = first }
+      other = Fixed.kept
+    }
+    let third: Item | undefined = start
+    while (third) {
+      const { first } = third
+      class Typed { accessor kept: Item = first }
+      third = new Typed().kept
+    }
+    let fourth: Item | undefined = start
+    while (fourth) {
+      const { first } = fourth
+              ~~~~~
+!!! error TS7022: 'first' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      const holder = { get kept() { return first }, set kept(value) {} }
+                           ~~~~
+!!! error TS7023: 'kept' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      fourth = holder.kept
+    }
+    export const sentinel: number = ''
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== iterators_without_a_value.ts (8 errors) ====
+    export {}
+    declare const bad: { [Symbol.iterator](): { next(): { done: boolean } } }
+    declare const worse: { [Symbol.iterator](): { next(): number } }
+    declare const good: Iterable<string | number>
+    // read in a closure first, so the flow of the pattern is resolved before the declaration is checked
+    function early() { return [first1, second1] }
+    const [first1, second1] = bad
+          ~~~~~~~~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    const [a2, b2 = a2] = bad
+    let [a3] = bad
+    if (typeof a3 === 'string') { const f = () => a3 }
+    while (Math.random() < 0.5) {
+      const [a4, b4] = bad
+      const probe: never = a4
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const [c4] = worse
+            ~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    for (const [a5] of [bad]) { const probe: never = a5 }
+                                      ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function params([a6, b6]: typeof bad, [c6] = bad) { return a6 ?? b6 ?? c6 }
+    let a7, b7
+    ;[a7, b7] = bad
+    ;[a7 = 1, ...b7] = bad
+    const [[a8]] = [bad]
+    const { nested: [a9] } = { nested: bad }
+    for (const x10 of bad) { const probe: never = x10 }
+                      ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                   ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const spread = [...bad]
+    const [a11] = good
+    let current: string | number = 0
+    while (Math.random() < 0.5) {
+      const [a12] = bad
+      const [b12] = [current]
+             ~~~
+!!! error TS7022: 'b12' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+      current = typeof b12 === 'string' ? 1 : (a12 as string)
+    }
+    async function gen() { for await (const [a13] of [bad]) { void a13 } }
+    export const sentinel: number = ''
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== iterators_without_a_value_each_its_own_type.ts (103 errors) ====
+    export {}
+    namespace N1 {
+      declare const bad: { tag: 1; [Symbol.iterator](): { next(): { done: boolean } } }
+      function early() { return [x, y] }
+      const [x, y] = bad
+            ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N2 {
+      declare const bad: { tag: 2; [Symbol.iterator](): { next(): { done: boolean } } }
+      const [x, y = x] = bad
+            ~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N3 {
+      declare const bad: { tag: 3; [Symbol.iterator](): { next(): { done: boolean } } }
+      let [x] = bad
+          ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+      if (typeof x === 'string') { const f = () => x }
+    }
+    namespace N4 {
+      declare const bad: { tag: 4; [Symbol.iterator](): { next(): { done: boolean } } }
+      while (Math.random() < 0.5) { const [x, y] = bad; const probe: never = x }
+                                          ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                              ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N5 {
+      declare const bad: { tag: 5; [Symbol.iterator](): { next(): { done: boolean } } }
+      for (const [x] of [bad]) { const probe: never = x }
+                 ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                       ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N6 {
+      declare const bad: { tag: 6; [Symbol.iterator](): { next(): { done: boolean } } }
+      function params([x, y]: typeof bad) { return x ?? y }
+                      ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N7 {
+      declare const bad: { tag: 7; [Symbol.iterator](): { next(): { done: boolean } } }
+      function defaults([x] = bad) { return x }
+                        ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N8 {
+      declare const bad: { tag: 8; [Symbol.iterator](): { next(): { done: boolean } } }
+      let x, y
+      ;[x, y] = bad
+       ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N9 {
+      declare const bad: { tag: 9; [Symbol.iterator](): { next(): { done: boolean } } }
+      let x, y
+      ;[x = 1, ...y] = bad
+       ~~~~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N10 {
+      declare const bad: { tag: 10; [Symbol.iterator](): { next(): { done: boolean } } }
+      const [[x]] = [bad]
+             ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N11 {
+      declare const bad: { tag: 11; [Symbol.iterator](): { next(): { done: boolean } } }
+      const { nested: [x] } = { nested: bad }
+                      ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N12 {
+      declare const bad: { tag: 12; [Symbol.iterator](): { next(): { done: boolean } } }
+      for (const x of bad) { const probe: never = x }
+                      ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                   ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N13 {
+      declare const bad: { tag: 13; [Symbol.iterator](): { next(): { done: boolean } } }
+      const spread = [...bad]
+                         ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N14 {
+      declare const bad: { tag: 14; [Symbol.iterator](): { next(): { done: boolean } } }
+      let current: string | number = 0
+      while (Math.random() < 0.5) { const [x] = bad; const [y] = [current]; current = typeof y === 'string' ? 1 : (x as string) }
+                                          ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                            ~
+!!! error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    }
+    namespace N15 {
+      declare const bad: { tag: 15; [Symbol.iterator](): { next(): { done: boolean } } }
+      let current: unknown = 0
+      while (current) { const [x] = bad; current = x }
+                              ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N16 {
+      declare const bad: { tag: 16; [Symbol.iterator](): { next(): { done: boolean } } }
+      let current: unknown = 0
+      while (current) { const [x, y = x] = bad; for (const z of bad) { current = z ?? y } }
+                              ~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                                ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N17 {
+      declare const bad: { tag: 17; [Symbol.iterator](): { next(): { done: boolean } } }
+      const f = () => { const [x] = bad; return x }
+      const [y] = bad
+            ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N18 {
+      declare const bad: { tag: 18; [Symbol.iterator](): { next(): { done: boolean } } }
+      function* g() { yield* bad }
+                             ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N19 {
+      declare const bad: { tag: 19; [Symbol.iterator](): { next(): { done: boolean } } }
+      const [x] = bad
+            ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+      const [y] = bad
+    }
+    namespace N20 {
+      declare const bad: { tag: 20; [Symbol.iterator](): { next(): { done: boolean } } }
+      let x
+      while (Math.random() < 0.5) { [x] = bad }
+                                    ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N21 {
+      declare const bad: { tag: 21; [Symbol.iterator](): { next(): number } }
+      function early() { return [x, y] }
+      const [x, y] = bad
+            ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N22 {
+      declare const bad: { tag: 22; [Symbol.iterator](): { next(): number } }
+      const [x, y = x] = bad
+            ~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N23 {
+      declare const bad: { tag: 23; [Symbol.iterator](): { next(): number } }
+      let [x] = bad
+          ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+      if (typeof x === 'string') { const f = () => x }
+    }
+    namespace N24 {
+      declare const bad: { tag: 24; [Symbol.iterator](): { next(): number } }
+      while (Math.random() < 0.5) { const [x, y] = bad; const probe: never = x }
+                                          ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                              ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N25 {
+      declare const bad: { tag: 25; [Symbol.iterator](): { next(): number } }
+      for (const [x] of [bad]) { const probe: never = x }
+                 ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                       ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N26 {
+      declare const bad: { tag: 26; [Symbol.iterator](): { next(): number } }
+      function params([x, y]: typeof bad) { return x ?? y }
+                      ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N27 {
+      declare const bad: { tag: 27; [Symbol.iterator](): { next(): number } }
+      function defaults([x] = bad) { return x }
+                        ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N28 {
+      declare const bad: { tag: 28; [Symbol.iterator](): { next(): number } }
+      let x, y
+      ;[x, y] = bad
+       ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N29 {
+      declare const bad: { tag: 29; [Symbol.iterator](): { next(): number } }
+      let x, y
+      ;[x = 1, ...y] = bad
+       ~~~~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N30 {
+      declare const bad: { tag: 30; [Symbol.iterator](): { next(): number } }
+      const [[x]] = [bad]
+             ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N31 {
+      declare const bad: { tag: 31; [Symbol.iterator](): { next(): number } }
+      const { nested: [x] } = { nested: bad }
+                      ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N32 {
+      declare const bad: { tag: 32; [Symbol.iterator](): { next(): number } }
+      for (const x of bad) { const probe: never = x }
+                      ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                   ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N33 {
+      declare const bad: { tag: 33; [Symbol.iterator](): { next(): number } }
+      const spread = [...bad]
+                         ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N34 {
+      declare const bad: { tag: 34; [Symbol.iterator](): { next(): number } }
+      let current: string | number = 0
+      while (Math.random() < 0.5) { const [x] = bad; const [y] = [current]; current = typeof y === 'string' ? 1 : (x as string) }
+                                          ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                            ~
+!!! error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    }
+    namespace N35 {
+      declare const bad: { tag: 35; [Symbol.iterator](): { next(): number } }
+      let current: unknown = 0
+      while (current) { const [x] = bad; current = x }
+                              ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N36 {
+      declare const bad: { tag: 36; [Symbol.iterator](): { next(): number } }
+      let current: unknown = 0
+      while (current) { const [x, y = x] = bad; for (const z of bad) { current = z ?? y } }
+                              ~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                                ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N37 {
+      declare const bad: { tag: 37; [Symbol.iterator](): { next(): number } }
+      const f = () => { const [x] = bad; return x }
+      const [y] = bad
+            ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N38 {
+      declare const bad: { tag: 38; [Symbol.iterator](): { next(): number } }
+      function* g() { yield* bad }
+                             ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N39 {
+      declare const bad: { tag: 39; [Symbol.iterator](): { next(): number } }
+      const [x] = bad
+            ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+      const [y] = bad
+    }
+    namespace N40 {
+      declare const bad: { tag: 40; [Symbol.iterator](): { next(): number } }
+      let x
+      while (Math.random() < 0.5) { [x] = bad }
+                                    ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N41 {
+      declare const bad: { tag: 41; [Symbol.iterator](): { next: number } }
+      function early() { return [x, y] }
+      const [x, y] = bad
+            ~~~~~~
+!!! error TS2488: Type '{ tag: 41; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:185:9: An iterator must have a 'next()' method.
+    }
+    namespace N42 {
+      declare const bad: { tag: 42; [Symbol.iterator](): { next: number } }
+      const [x, y = x] = bad
+            ~~~~~~~~~~
+!!! error TS2488: Type '{ tag: 42; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:189:9: An iterator must have a 'next()' method.
+    }
+    namespace N43 {
+      declare const bad: { tag: 43; [Symbol.iterator](): { next: number } }
+      let [x] = bad
+          ~~~
+!!! error TS2488: Type '{ tag: 43; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:193:7: An iterator must have a 'next()' method.
+      if (typeof x === 'string') { const f = () => x }
+    }
+    namespace N44 {
+      declare const bad: { tag: 44; [Symbol.iterator](): { next: number } }
+      while (Math.random() < 0.5) { const [x, y] = bad; const probe: never = x }
+                                          ~~~~~~
+!!! error TS2488: Type '{ tag: 44; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:198:39: An iterator must have a 'next()' method.
+                                                              ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N45 {
+      declare const bad: { tag: 45; [Symbol.iterator](): { next: number } }
+      for (const [x] of [bad]) { const probe: never = x }
+                 ~~~
+!!! error TS2488: Type '{ tag: 45; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:202:14: An iterator must have a 'next()' method.
+                                       ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N46 {
+      declare const bad: { tag: 46; [Symbol.iterator](): { next: number } }
+      function params([x, y]: typeof bad) { return x ?? y }
+                      ~~~~~~
+!!! error TS2488: Type '{ tag: 46; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:206:19: An iterator must have a 'next()' method.
+    }
+    namespace N47 {
+      declare const bad: { tag: 47; [Symbol.iterator](): { next: number } }
+      function defaults([x] = bad) { return x }
+                        ~~~
+!!! error TS2488: Type '{ tag: 47; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:210:21: An iterator must have a 'next()' method.
+    }
+    namespace N48 {
+      declare const bad: { tag: 48; [Symbol.iterator](): { next: number } }
+      let x, y
+      ;[x, y] = bad
+       ~~~~~~
+!!! error TS2488: Type '{ tag: 48; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:215:4: An iterator must have a 'next()' method.
+    }
+    namespace N49 {
+      declare const bad: { tag: 49; [Symbol.iterator](): { next: number } }
+      let x, y
+      ;[x = 1, ...y] = bad
+       ~~~~~~~~~~~~~
+!!! error TS2488: Type '{ tag: 49; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:220:4: An iterator must have a 'next()' method.
+    }
+    namespace N50 {
+      declare const bad: { tag: 50; [Symbol.iterator](): { next: number } }
+      const [[x]] = [bad]
+             ~~~
+!!! error TS2488: Type '{ tag: 50; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:224:10: An iterator must have a 'next()' method.
+    }
+    namespace N51 {
+      declare const bad: { tag: 51; [Symbol.iterator](): { next: number } }
+      const { nested: [x] } = { nested: bad }
+                      ~~~
+!!! error TS2488: Type '{ tag: 51; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:228:19: An iterator must have a 'next()' method.
+    }
+    namespace N52 {
+      declare const bad: { tag: 52; [Symbol.iterator](): { next: number } }
+      for (const x of bad) { const probe: never = x }
+                      ~~~
+!!! error TS2488: Type '{ tag: 52; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:232:19: An iterator must have a 'next()' method.
+                                   ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N53 {
+      declare const bad: { tag: 53; [Symbol.iterator](): { next: number } }
+      const spread = [...bad]
+                         ~~~
+!!! error TS2488: Type '{ tag: 53; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:236:22: An iterator must have a 'next()' method.
+    }
+    namespace N54 {
+      declare const bad: { tag: 54; [Symbol.iterator](): { next: number } }
+      let current: string | number = 0
+      while (Math.random() < 0.5) { const [x] = bad; const [y] = [current]; current = typeof y === 'string' ? 1 : (x as string) }
+                                          ~~~
+!!! error TS2488: Type '{ tag: 54; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:241:39: An iterator must have a 'next()' method.
+                                                            ~
+!!! error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    }
+    namespace N55 {
+      declare const bad: { tag: 55; [Symbol.iterator](): { next: number } }
+      let current: unknown = 0
+      while (current) { const [x] = bad; current = x }
+                              ~~~
+!!! error TS2488: Type '{ tag: 55; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:246:27: An iterator must have a 'next()' method.
+    }
+    namespace N56 {
+      declare const bad: { tag: 56; [Symbol.iterator](): { next: number } }
+      let current: unknown = 0
+      while (current) { const [x, y = x] = bad; for (const z of bad) { current = z ?? y } }
+                              ~~~~~~~~~~
+!!! error TS2488: Type '{ tag: 56; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:251:27: An iterator must have a 'next()' method.
+                                                                ~~~
+!!! error TS2488: Type '{ tag: 56; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:251:61: An iterator must have a 'next()' method.
+    }
+    namespace N57 {
+      declare const bad: { tag: 57; [Symbol.iterator](): { next: number } }
+      const f = () => { const [x] = bad; return x }
+                              ~~~
+!!! error TS2488: Type '{ tag: 57; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:255:27: An iterator must have a 'next()' method.
+      const [y] = bad
+            ~~~
+!!! error TS2488: Type '{ tag: 57; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:256:9: An iterator must have a 'next()' method.
+    }
+    namespace N58 {
+      declare const bad: { tag: 58; [Symbol.iterator](): { next: number } }
+      function* g() { yield* bad }
+                             ~~~
+!!! error TS2488: Type '{ tag: 58; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:260:26: An iterator must have a 'next()' method.
+    }
+    namespace N59 {
+      declare const bad: { tag: 59; [Symbol.iterator](): { next: number } }
+      const [x] = bad
+            ~~~
+!!! error TS2488: Type '{ tag: 59; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:264:9: An iterator must have a 'next()' method.
+      const [y] = bad
+            ~~~
+!!! error TS2488: Type '{ tag: 59; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:265:9: An iterator must have a 'next()' method.
+    }
+    namespace N60 {
+      declare const bad: { tag: 60; [Symbol.iterator](): { next: number } }
+      let x
+      while (Math.random() < 0.5) { [x] = bad }
+                                    ~~~
+!!! error TS2488: Type '{ tag: 60; [Symbol.iterator](): { next: number; }; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+!!! related TS2489 iterators_without_a_value_each_its_own_type.ts:270:33: An iterator must have a 'next()' method.
+    }
+    namespace N61 {
+      declare const bad: { tag: 61; [Symbol.iterator](): { next(): { done?: boolean } } }
+      function early() { return [x, y] }
+      const [x, y] = bad
+            ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N62 {
+      declare const bad: { tag: 62; [Symbol.iterator](): { next(): { done?: boolean } } }
+      const [x, y = x] = bad
+            ~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N63 {
+      declare const bad: { tag: 63; [Symbol.iterator](): { next(): { done?: boolean } } }
+      let [x] = bad
+          ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+      if (typeof x === 'string') { const f = () => x }
+    }
+    namespace N64 {
+      declare const bad: { tag: 64; [Symbol.iterator](): { next(): { done?: boolean } } }
+      while (Math.random() < 0.5) { const [x, y] = bad; const probe: never = x }
+                                          ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                              ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N65 {
+      declare const bad: { tag: 65; [Symbol.iterator](): { next(): { done?: boolean } } }
+      for (const [x] of [bad]) { const probe: never = x }
+                 ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                       ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N66 {
+      declare const bad: { tag: 66; [Symbol.iterator](): { next(): { done?: boolean } } }
+      function params([x, y]: typeof bad) { return x ?? y }
+                      ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N67 {
+      declare const bad: { tag: 67; [Symbol.iterator](): { next(): { done?: boolean } } }
+      function defaults([x] = bad) { return x }
+                        ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N68 {
+      declare const bad: { tag: 68; [Symbol.iterator](): { next(): { done?: boolean } } }
+      let x, y
+      ;[x, y] = bad
+       ~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N69 {
+      declare const bad: { tag: 69; [Symbol.iterator](): { next(): { done?: boolean } } }
+      let x, y
+      ;[x = 1, ...y] = bad
+       ~~~~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N70 {
+      declare const bad: { tag: 70; [Symbol.iterator](): { next(): { done?: boolean } } }
+      const [[x]] = [bad]
+             ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N71 {
+      declare const bad: { tag: 71; [Symbol.iterator](): { next(): { done?: boolean } } }
+      const { nested: [x] } = { nested: bad }
+                      ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N72 {
+      declare const bad: { tag: 72; [Symbol.iterator](): { next(): { done?: boolean } } }
+      for (const x of bad) { const probe: never = x }
+                      ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                   ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    namespace N73 {
+      declare const bad: { tag: 73; [Symbol.iterator](): { next(): { done?: boolean } } }
+      const spread = [...bad]
+                         ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N74 {
+      declare const bad: { tag: 74; [Symbol.iterator](): { next(): { done?: boolean } } }
+      let current: string | number = 0
+      while (Math.random() < 0.5) { const [x] = bad; const [y] = [current]; current = typeof y === 'string' ? 1 : (x as string) }
+                                          ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                            ~
+!!! error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    }
+    namespace N75 {
+      declare const bad: { tag: 75; [Symbol.iterator](): { next(): { done?: boolean } } }
+      let current: unknown = 0
+      while (current) { const [x] = bad; current = x }
+                              ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N76 {
+      declare const bad: { tag: 76; [Symbol.iterator](): { next(): { done?: boolean } } }
+      let current: unknown = 0
+      while (current) { const [x, y = x] = bad; for (const z of bad) { current = z ?? y } }
+                              ~~~~~~~~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+                                                                ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N77 {
+      declare const bad: { tag: 77; [Symbol.iterator](): { next(): { done?: boolean } } }
+      const f = () => { const [x] = bad; return x }
+      const [y] = bad
+            ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N78 {
+      declare const bad: { tag: 78; [Symbol.iterator](): { next(): { done?: boolean } } }
+      function* g() { yield* bad }
+                             ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    namespace N79 {
+      declare const bad: { tag: 79; [Symbol.iterator](): { next(): { done?: boolean } } }
+      const [x] = bad
+            ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+      const [y] = bad
+    }
+    namespace N80 {
+      declare const bad: { tag: 80; [Symbol.iterator](): { next(): { done?: boolean } } }
+      let x
+      while (Math.random() < 0.5) { [x] = bad }
+                                    ~~~
+!!! error TS2490: The type returned by the 'next()' method of an iterator must have a 'value' property.
+    }
+    export const sentinel: number = ''
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== literal_properties_in_a_circle.ts (23 errors) ====
+    export {}
+    const a = { a }
+          ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                ~
+!!! error TS2448: Block-scoped variable 'a' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:2:7: 'a' is declared here.
+    const b = { ...b }
+          ~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                   ~
+!!! error TS2448: Block-scoped variable 'b' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:3:7: 'b' is declared here.
+    const c = { c: c }
+          ~
+!!! error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                   ~
+!!! error TS2448: Block-scoped variable 'c' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:4:7: 'c' is declared here.
+    const d = { get d() { return d } }
+    const e = { e() { return e } }
+    const f = { ['f']: f }
+          ~
+!!! error TS7022: 'f' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                       ~
+!!! error TS2448: Block-scoped variable 'f' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:7:7: 'f' is declared here.
+    const g = { g, other: 1 }
+          ~
+!!! error TS7022: 'g' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                ~
+!!! error TS2448: Block-scoped variable 'g' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:8:7: 'g' is declared here.
+    declare function wrap<T>(value: T): T
+    const h = wrap({ h })
+          ~
+!!! error TS7022: 'h' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                     ~
+!!! error TS2448: Block-scoped variable 'h' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:10:7: 'h' is declared here.
+    const i = { nested: { i } }
+          ~
+!!! error TS7022: 'i' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                          ~
+!!! error TS2448: Block-scoped variable 'i' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:11:7: 'i' is declared here.
+    let j = { j }
+        ~
+!!! error TS7022: 'j' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+              ~
+!!! error TS2448: Block-scoped variable 'j' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:12:5: 'j' is declared here.
+    while (j) { j = { j } }
+    const k = { k: () => k }
+    const l = [{ l }]
+          ~
+!!! error TS7022: 'l' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                 ~
+!!! error TS2448: Block-scoped variable 'l' used before its declaration.
+!!! related TS2728 literal_properties_in_a_circle.ts:15:7: 'l' is declared here.
+    function m(n = { n }) {}
+               ~~~~~~~~~
+!!! error TS7022: 'n' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                     ~
+!!! error TS2372: Parameter 'n' cannot reference itself.
+    class P { q = { q: this.q } }
+              ~
+!!! error TS7022: 'q' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                            ~
+!!! error TS2729: Property 'q' is used before its initialization.
+!!! related TS2728 literal_properties_in_a_circle.ts:17:11: 'q' is declared here.
+    const r = { r: { get s() { return r } } }
+    export const sentinel: number = ''
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== rest_in_an_array_pattern.ts (12 errors) ====
+    export {}
+    declare const value: [string | number, string | number, string | number]
+    if (typeof value[1] === 'string') {
+      const [head, ...[second]] = value
+      const probe: never = second
+            ~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    if (typeof value[1] === 'string') {
+      const [head, ...[second, third]] = value
+      const probe: never = second
+            ~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+      const probe3: never = third
+            ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    if (typeof value[2] === 'string') {
+      const [head, ...[second, third]] = value
+      const probe3: never = third
+            ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    if (typeof value[2] === 'string') {
+      const [, , ...[third]] = value
+      const probe3: never = third
+            ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    if (typeof value[2] === 'string') {
+      const [a, ...[b, ...[c]]] = value
+      const probe: never = c
+            ~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    if (typeof value[1] === 'string') {
+      const [head, ...rest] = value
+      const probe: never = rest
+            ~~~~~
+!!! error TS2322: Type '[string | number, string | number]' is not assignable to type 'never'.
+      const [second] = rest
+      const probe2: never = second
+            ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    declare const pair: [[string | number, string | number], string | number]
+    if (typeof pair[0][1] === 'string') {
+      const [[x, ...[y]]] = pair
+      const probe: never = y
+            ~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    if (typeof value[1] === 'string') {
+      let second
+      ;[, ...[second]] = value
+      const probe: never = second
+            ~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    declare const obj: { list: [string | number, string | number] }
+    if (typeof obj.list[1] === 'string') {
+      const { list: [first, ...[second]] } = obj
+      const probe: never = second
+            ~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    }
+    export const sentinel: number = ''
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

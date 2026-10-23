@@ -1,0 +1,15 @@
+a.ts(2,91): error TS2322: Type '`${string & { [P in K]: 1; }}`' is not assignable to type '{ [P in K]: 1; }'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Tagged<K extends string> = Uppercase<string & { [P in K]: 1 }>;
+    function q<K extends string>(x: Tagged<K> extends Uppercase<infer U> ? U : never) { const y: { [P in K]: 1 } = x; }
+                                                                                              ~
+!!! error TS2322: Type '`${string & { [P in K]: 1; }}`' is not assignable to type '{ [P in K]: 1; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

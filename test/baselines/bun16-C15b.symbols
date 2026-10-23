@@ -1,0 +1,21 @@
+//// [test/cases/bun16-C15b.ts] ////
+
+=== b.js ===
+/** @param {string[]} rest */
+function f1() { return class { arguments = 1 }; }
+>f1 : Symbol(f1, Decl(b.js, 0, 0))
+>arguments : Symbol((Anonymous class).arguments, Decl(b.js, 1, 30))
+
+/** @param {string} n15 */
+function f2() { return class { arguments = 1 }; }
+>f2 : Symbol(f2, Decl(b.js, 1, 49))
+>arguments : Symbol((Anonymous class).arguments, Decl(b.js, 3, 30))
+
+/** @param {string[]} rest */
+function f3() { arguments: while (1) { break arguments; } }
+>f3 : Symbol(f3, Decl(b.js, 3, 49))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 7, 5))
+

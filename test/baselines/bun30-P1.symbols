@@ -1,0 +1,17 @@
+//// [test/cases/bun30-P1.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+const k = "foo";
+>k : Symbol(k, Decl(f.js, 0, 5))
+
+export class C { static m() { this[k] = 1; } static foo() {} }
+>C : Symbol(C, Decl(f.js, 0, 16))
+>m : Symbol(C.m, Decl(f.js, 1, 16))
+>this : Symbol(C, Decl(f.js, 0, 16))
+>k : Symbol(k, Decl(f.js, 0, 5))
+>foo : Symbol(C.foo, Decl(f.js, 1, 44), Decl(f.js, 1, 29))
+

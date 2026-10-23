@@ -1,0 +1,15 @@
+a.ts(2,41): error TS5114: Instantiations of type 'Sw' appear infinitely circular.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Sw<T, U> = T extends string ? [T, U] : Sw<U | "k", T>;
+    const r: ["a", 1] | ["k", 1] = null! as Sw<1, "a">;
+                                            ~~~~~~~~~~
+!!! error TS5114: Instantiations of type 'Sw' appear infinitely circular.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

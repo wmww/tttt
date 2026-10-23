@@ -1,0 +1,18 @@
+//// [test/cases/bun20-C4b.ts] ////
+
+=== a.ts ===
+function e15() { let x = []; x.push(1); for (const k in x) { x.push("a"); } }
+>e15 : Symbol(e15, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>k : Symbol(k, Decl(a.ts, 0, 50))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

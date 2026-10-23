@@ -1,0 +1,34 @@
+//// [test/cases/bun85-R03b.ts] ////
+
+=== f.js ===
+var v = mk().x;
+>v : Symbol(v, Decl(f.js, 0, 3))
+>mk().x : Symbol(C.x, Decl(f.js, 2, 9))
+>mk : Symbol(mk, Decl(f.js, 0, 15))
+>x : Symbol(C.x, Decl(f.js, 2, 9))
+
+function mk() { return new C(); }
+>mk : Symbol(mk, Decl(f.js, 0, 15))
+>C : Symbol(C, Decl(f.js, 1, 33))
+
+class C { get x() { return [module, this.x]; } }
+>C : Symbol(C, Decl(f.js, 1, 33))
+>x : Symbol(C.x, Decl(f.js, 2, 9))
+>module : Symbol(module, Decl(f.js, 0, 0))
+>this.x : Symbol(C.x, Decl(f.js, 2, 9))
+>this : Symbol(C, Decl(f.js, 1, 33))
+>x : Symbol(C.x, Decl(f.js, 2, 9))
+
+v.nope;
+>v : Symbol(v, Decl(f.js, 0, 3))
+
+module.exports = C;
+>module.exports : Symbol(exports, Decl(f.js, 0, 0))
+>module : Symbol(module, Decl(f.js, 0, 0))
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+>C : Symbol(C, Decl(f.js, 1, 33))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(f.js, 6, 5))
+

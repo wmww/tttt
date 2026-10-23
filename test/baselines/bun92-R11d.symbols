@@ -1,0 +1,82 @@
+//// [test/cases/bun92-R11d.ts] ////
+
+=== a.ts ===
+type T1 = [0,0,0,0,0,0,0,0,0,0]; type T2 = [...T1,...T1,...T1,...T1,...T1,...T1,...T1,...T1,...T1,...T1]; type T3 = [...T2,...T2,...T2,...T2,...T2,...T2,...T2,...T2,...T2,...T2];
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T1 : Symbol(T1, Decl(a.ts, 0, 0))
+>T3 : Symbol(T3, Decl(a.ts, 0, 105))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+>T2 : Symbol(T2, Decl(a.ts, 0, 32))
+
+type G<X extends string, Y extends any[] = T3> = [...Y,...Y,...Y,...Y,...Y,...Y,...Y,...Y,...Y,...Y, X];
+>G : Symbol(G, Decl(a.ts, 0, 178))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>T3 : Symbol(T3, Decl(a.ts, 0, 105))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+
+declare function f<T>(x?: any): T;
+>f : Symbol(f, Decl(a.ts, 1, 104))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>x : Symbol(x, Decl(a.ts, 2, 22))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+
+declare function tag<T>(s: TemplateStringsArray): T;
+>tag : Symbol(tag, Decl(a.ts, 2, 34))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+>s : Symbol(s, Decl(a.ts, 3, 24))
+>TemplateStringsArray : Symbol(TemplateStringsArray, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+
+declare class K<T> { k: T }
+>K : Symbol(K, Decl(a.ts, 3, 52))
+>T : Symbol(T, Decl(a.ts, 4, 16))
+>k : Symbol(K.k, Decl(a.ts, 4, 20))
+>T : Symbol(T, Decl(a.ts, 4, 16))
+
+declare const e: any;
+>e : Symbol(e, Decl(a.ts, 5, 13))
+
+interface IG<T> { g: T }
+>IG : Symbol(IG, Decl(a.ts, 5, 21))
+>T : Symbol(T, Decl(a.ts, 6, 13))
+>g : Symbol(IG.g, Decl(a.ts, 6, 17))
+>T : Symbol(T, Decl(a.ts, 6, 13))
+
+function h67({ a = e as G<"67"> }) {}
+>h67 : Symbol(h67, Decl(a.ts, 6, 24))
+>a : Symbol(a, Decl(a.ts, 7, 14))
+>e : Symbol(e, Decl(a.ts, 5, 13))
+>G : Symbol(G, Decl(a.ts, 0, 178))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 12))
+

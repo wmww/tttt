@@ -1,0 +1,21 @@
+a.cts(4,13): error TS2339: Property 'a' does not exist on type '5'.
+a.cts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext" } }
+==== a.cts (2 errors) ====
+    import * as cns from "./cjs.cjs";
+    async function dyn() {
+      const c = await import("./cjs.cjs");
+      c.default.a;
+                ~
+!!! error TS2339: Property 'a' does not exist on type '5'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== cjs.cts (0 errors) ====
+    export const a = 1;
+    export default 5;
+    

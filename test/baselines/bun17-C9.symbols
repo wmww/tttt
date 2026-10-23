@@ -1,0 +1,17 @@
+//// [test/cases/bun17-C9.ts] ////
+
+=== a.ts ===
+function f<T extends unknown[]>(x: T) {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 32))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+  const t: [number, ...T] = ["s", ...x];
+>t : Symbol(t, Decl(a.ts, 1, 7))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 32))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

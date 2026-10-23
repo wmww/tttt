@@ -1,0 +1,139 @@
+//// [test/cases/bun83-R10a.ts] ////
+
+=== a.ts ===
+export {};
+declare class B {} interface I {}
+>B : B
+
+export class C1 implements (function () { const a: number = ""; return a; }) {}
+>C1 : C1
+>(function () { const a: number = ""; return a; }) : () => number
+>function () { const a: number = ""; return a; } : () => number
+>a : number
+>"" : ""
+>a : number
+
+export class C7 implements (function () { return this; }) {}
+>C7 : C7
+>(function () { return this; }) : () => any
+>function () { return this; } : () => any
+>this : any
+
+export class C9 implements (function (p: any) {}) {}
+>C9 : C9
+>(function (p: any) {}) : (p: any) => void
+>function (p: any) {} : (p: any) => void
+>p : any
+
+export class C10 implements (function () { const u = 1; }) {}
+>C10 : C10
+>(function () { const u = 1; }) : () => void
+>function () { const u = 1; } : () => void
+>u : 1
+>1 : 1
+
+export class C12 implements (class { private p = 1; m(q: any) { const u = 1; } }) {}
+>C12 : C12
+>(class { private p = 1; m(q: any) { const u = 1; } }) : typeof (Anonymous class)
+>class { private p = 1; m(q: any) { const u = 1; } } : typeof (Anonymous class)
+>p : number
+>1 : 1
+>m : (q: any) => void
+>q : any
+>u : 1
+>1 : 1
+
+export class C13 implements ((p: any) => { const u = 1; }) {}
+>C13 : C13
+>((p: any) => { const u = 1; }) : (p: any) => void
+>(p: any) => { const u = 1; } : (p: any) => void
+>p : any
+>u : 1
+>1 : 1
+
+export class C14 implements ({ m(p: any) { const u = 1; return this; } }) {}
+>C14 : C14
+>({ m(p: any) { const u = 1; return this; } }) : { m(p: any): { m(p: any): any; }; }
+>{ m(p: any) { const u = 1; return this; } } : { m(p: any): { m(p: any): any; }; }
+>m : (p: any) => { m(p: any): any; }
+>p : any
+>u : 1
+>1 : 1
+>this : { m(p: any): any; }
+
+export class C15 implements (function <T>() {}) {}
+>C15 : C15
+>(function <T>() {}) : <T>() => void
+>function <T>() {} : <T>() => void
+
+export class C19 implements (function ({ a, b }) {}) {}
+>C19 : C19
+>(function ({ a, b }) {}) : ({ a, b }: { a: any; b: any; }) => void
+>function ({ a, b }) {} : ({ a, b }: { a: any; b: any; }) => void
+>a : any
+>b : any
+
+export class C20 implements (function (...r) {}) {}
+>C20 : C20
+>(function (...r) {}) : (...r: any[]) => void
+>function (...r) {} : (...r: any[]) => void
+>r : any[]
+
+export interface J1 extends (function (p: any) { const u = 1; return this; }) {}
+>(function (p: any) { const u = 1; return this; }) : (p: any) => any
+>function (p: any) { const u = 1; return this; } : (p: any) => any
+>p : any
+>u : 1
+>1 : 1
+>this : any
+
+export class D1 extends B, (function (p: any) { const u = 1; return this; }) {}
+>D1 : D1
+>B : B
+>(function (p: any) { const u = 1; return this; }) : B
+>function (p: any) { const u = 1; return this; } : (p: any) => any
+>p : any
+>u : 1
+>1 : 1
+>this : any
+
+export class D2 extends B extends (function (p: any) { const u = 1; return this; }) {}
+>D2 : D2
+>B : B
+>(function (p: any) { const u = 1; return this; }) : B
+>function (p: any) { const u = 1; return this; } : (p: any) => any
+>p : any
+>u : 1
+>1 : 1
+>this : any
+
+export class D3 implements I implements (function (p: any) { const u = 1; return this; }) {}
+>D3 : D3
+>(function (p: any) { const u = 1; return this; }) : (p: any) => any
+>function (p: any) { const u = 1; return this; } : (p: any) => any
+>p : any
+>u : 1
+>1 : 1
+>this : any
+
+export interface J2 extends I extends (function (p: any) { const u = 1; return this; }) {}
+>(function (p: any) { const u = 1; return this; }) : (p: any) => any
+>function (p: any) { const u = 1; return this; } : (p: any) => any
+>p : any
+>u : 1
+>1 : 1
+>this : any
+
+export class C22 implements (function () { type U = 1; interface V {} enum W {} namespace X {} class Y {} }) {}
+>C22 : C22
+>(function () { type U = 1; interface V {} enum W {} namespace X {} class Y {} }) : () => void
+>function () { type U = 1; interface V {} enum W {} namespace X {} class Y {} } : () => void
+>U : 1
+>W : W
+>Y : Y
+
+const sentinel: number = ""; sentinel;
+>sentinel : number
+>"" : ""
+>sentinel : number
+

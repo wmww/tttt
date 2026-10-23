@@ -1,0 +1,121 @@
+//// [test/cases/bun96-ARKTYPE2.ts] ////
+
+=== a.ts ===
+type In<t> = t extends string ? string : never
+>In : In<t>
+
+// arktype's `attest(actual).satisfies(def)`: an error in `actual` makes `expected` the error type
+type overlaps<l, r> = l & r extends never ? false : true
+>overlaps : overlaps<l, r>
+>false : false
+>true : true
+
+type Assertions<expected> = { satisfies: <def>(def: overlaps<expected, In<def>> extends true ? unknown : "no overlap") => void }
+>Assertions : Assertions<expected>
+>satisfies : <def>(def: overlaps<expected, In<def>> extends true ? unknown : "no overlap") => void
+>def : overlaps<expected, In<def>> extends true ? unknown : "no overlap"
+>true : true
+
+declare function attest<expected>(actual: expected): Assertions<expected>
+>attest : <expected>(actual: expected) => Assertions<expected>
+>actual : expected
+
+declare const n: never
+>n : never
+
+attest(n.foo).satisfies(1)
+>attest(n.foo).satisfies(1) : void
+>attest(n.foo).satisfies : <def_1>(def: overlaps<any, In<def_1>> extends true ? unknown : "no overlap") => void
+>attest(n.foo) : Assertions<any>
+>attest : <expected>(actual: expected) => Assertions<expected>
+>n.foo : any
+>n : never
+>foo : any
+>satisfies : <def_1>(def: overlaps<any, In<def_1>> extends true ? unknown : "no overlap") => void
+>1 : 1
+
+// the same with a plain `any`
+interface C<T> {
+	m<U>(x: T & In<U>): void
+>m : <U>(x: T & In<U>) => void
+>x : T & In<U>
+
+	p1<U>(y: T & In<U>, x: U): void
+>p1 : <U>(y: T & In<U>, x: U) => void
+>y : T & In<U>
+>x : U
+
+	p2<U>(y: T & In<U>, x: U): void
+>p2 : <U>(y: T & In<U>, x: U) => void
+>y : T & In<U>
+>x : U
+}
+declare const c: C<any>
+>c : C<any>
+
+c.m(1)
+>c.m(1) : void
+>c.m : <U>(x: any) => void
+>c : C<any>
+>m : <U>(x: any) => void
+>1 : 1
+
+c.m<number>(1)
+>c.m<number>(1) : void
+>c.m : <U>(x: any) => void
+>c : C<any>
+>m : <U>(x: any) => void
+>1 : 1
+
+c.p1(2, 1)
+>c.p1(2, 1) : void
+>c.p1 : <U>(y: any, x: U) => void
+>c : C<any>
+>p1 : <U>(y: any, x: U) => void
+>2 : 2
+>1 : 1
+
+c.p1<number>(2, 1)
+>c.p1<number>(2, 1) : void
+>c.p1 : <U>(y: any, x: U) => void
+>c : C<any>
+>p1 : <U>(y: any, x: U) => void
+>2 : 2
+>1 : 1
+
+// nothing has asked for the type of `y` of `C<any>.p2` before it is instantiated: 'never' in both
+c.p2<number>(2, 1)
+>c.p2<number>(2, 1) : void
+>c.p2 : <U>(y: any, x: U) => void
+>c : C<any>
+>p2 : <U>(y: any, x: U) => void
+>2 : 2
+>1 : 1
+
+class K<T> { m<U>(x: T & In<U>): void {} }
+>K : K<T>
+>m : <U>(x: T & In<U>) => void
+>x : T & In<U>
+
+new K<any>().m(1)
+>new K<any>().m(1) : void
+>new K<any>().m : <U>(x: any) => void
+>new K<any>() : K<any>
+>K : typeof K
+>m : <U>(x: any) => void
+>1 : 1
+
+declare function f<T>(): <U>(x: T & In<U>) => void
+>f : <T>() => <U>(x: T & In<U>) => void
+>x : T & In<U>
+
+f<any>()(1)
+>f<any>()(1) : void
+>f<any>() : <U>(x: any) => void
+>f : <T>() => <U>(x: T & In<U>) => void
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

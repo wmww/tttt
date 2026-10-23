@@ -1,0 +1,22 @@
+//// [test/cases/bun22-C3b.ts] ////
+
+=== a.ts ===
+declare function f<U, T extends { a: { [k: string]: U } }>(v: T["a"]): U;
+>f : <U, T extends { a: { [k: string]: U; }; }>(v: T["a"]) => U
+>a : { [k: string]: U; }
+>k : string
+>v : T["a"]
+
+f({ x: "" }).length;
+>f({ x: "" }).length : number
+>f({ x: "" }) : string
+>f : <U, T extends { a: { [k: string]: U; }; }>(v: T["a"]) => U
+>{ x: "" } : { x: string; }
+>x : string
+>"" : ""
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

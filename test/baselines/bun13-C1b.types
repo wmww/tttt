@@ -1,0 +1,16 @@
+//// [test/cases/bun13-C1b.ts] ////
+
+=== a.ts ===
+type Q = keyof M<D>;
+>Q : any
+
+type M<T> = { [K in keyof T]: T[K] };
+>M : M<T>
+
+interface D extends M<D> { m(): void }
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

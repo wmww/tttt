@@ -1,0 +1,14 @@
+//// [test/cases/bun28-C27b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+class C { constructor(@dec public {x}: any) {} }
+>C : Symbol(C, Decl(a.ts, 0, 23))
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 1, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

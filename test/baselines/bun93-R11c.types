@@ -1,0 +1,75 @@
+//// [test/cases/bun93-R11c.ts] ////
+
+=== a.ts ===
+class C<T> {
+>C : C<T>
+
+  m<U>(u: U) { return u; }
+>m : <U>(u: U) => U
+>u : U
+>u : U
+
+  static sm<U>(u: U) { return u; }
+>sm : <U>(u: U) => U
+>u : U
+>u : U
+
+  a = (<U,>(u: U) => u)<1>;
+>a : (u: 1) => 1
+>(<U,>(u: U) => u)<1> : (u: 1) => 1
+>(<U,>(u: U) => u) : <U>(u: U) => U
+><U,>(u: U) => u : <U>(u: U) => U
+>u : U
+>u : U
+
+  b = (function <U>(u: U) { return u; })<2>;
+>b : (u: 2) => 2
+>(function <U>(u: U) { return u; })<2> : (u: 2) => 2
+>(function <U>(u: U) { return u; }) : <U>(u: U) => U
+>function <U>(u: U) { return u; } : <U>(u: U) => U
+>u : U
+>u : U
+
+  c = ({ m<U>(u: U): U { return u; } }).m<3>;
+>c : (u: 3) => 3
+>({ m<U>(u: U): U { return u; } }).m<3> : (u: 3) => 3
+>({ m<U>(u: U): U { return u; } }).m : <U>(u: U) => U
+>({ m<U>(u: U): U { return u; } }) : { m<U>(u: U): U; }
+>{ m<U>(u: U): U { return u; } } : { m<U>(u: U): U; }
+>m : <U>(u: U) => U
+>u : U
+>u : U
+>m : <U>(u: U) => U
+
+  d = this.m<4>;
+>d : (u: 4) => 4
+>this.m<4> : (u: 4) => 4
+>this.m : <U>(u: U) => U
+>this : this
+>m : <U>(u: U) => U
+
+  e = C.sm<5>;
+>e : (u: 5) => 5
+>C.sm<5> : (u: 5) => 5
+>C.sm : <U>(u: U) => U
+>C : typeof C
+>sm : <U>(u: U) => U
+}
+let a: C<string>["a"] | C<boolean>["a"] = 1; let b: C<string>["b"] | C<boolean>["b"] = 1; let c: C<string>["c"] | C<boolean>["c"] = 1;
+>a : (u: 1) => 1
+>1 : 1
+>b : (u: 2) => 2
+>1 : 1
+>c : (u: 3) => 3
+>1 : 1
+
+let d: C<string>["d"] | C<boolean>["d"] = 1; let e: C<string>["e"] | C<boolean>["e"] = 1;
+>d : (u: 4) => 4
+>1 : 1
+>e : (u: 5) => 5
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,44 @@
+//// [test/cases/bun87-R18b.ts] ////
+
+=== a.ts ===
+var use = f2();
+>use : Symbol(use, Decl(a.ts, 0, 3))
+>f2 : Symbol(f2, Decl(a.ts, 1, 58))
+
+const fn = () => { const v: 1 = null! as Has<"$m", D8>; };
+>fn : Symbol(fn, Decl(a.ts, 1, 5))
+>v : Symbol(v, Decl(a.ts, 1, 24))
+>Has : Symbol(Has, Decl(d.d.ts, 0, 0))
+>D8 : Symbol(D8, Decl(d.d.ts, 1, 63))
+
+function f2() { return null! as D8; }
+>f2 : Symbol(f2, Decl(a.ts, 1, 58))
+>D8 : Symbol(D8, Decl(d.d.ts, 1, 63))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== d.d.ts ===
+type Has<K, T> = K extends keyof T ? true : false;
+>Has : Symbol(Has, Decl(d.d.ts, 0, 0))
+>K : Symbol(K, Decl(d.d.ts, 0, 9))
+>T : Symbol(T, Decl(d.d.ts, 0, 11))
+>K : Symbol(K, Decl(d.d.ts, 0, 9))
+>T : Symbol(T, Decl(d.d.ts, 0, 11))
+
+type renamed<T> = { [K in keyof T as `$${K & string}`]: T[K] };
+>renamed : Symbol(renamed, Decl(d.d.ts, 0, 50))
+>T : Symbol(T, Decl(d.d.ts, 1, 13))
+>K : Symbol(K, Decl(d.d.ts, 1, 21))
+>T : Symbol(T, Decl(d.d.ts, 1, 13))
+>K : Symbol(K, Decl(d.d.ts, 1, 21))
+>T : Symbol(T, Decl(d.d.ts, 1, 13))
+>K : Symbol(K, Decl(d.d.ts, 1, 21))
+
+interface D8 extends renamed<D8> { m(): void; n: number }
+>D8 : Symbol(D8, Decl(d.d.ts, 1, 63))
+>renamed : Symbol(renamed, Decl(d.d.ts, 0, 50))
+>D8 : Symbol(D8, Decl(d.d.ts, 1, 63))
+>m : Symbol(D8.m, Decl(d.d.ts, 2, 34))
+>n : Symbol(D8.n, Decl(d.d.ts, 2, 45))
+

@@ -1,0 +1,55 @@
+//// [test/cases/bun99-N2.ts] ////
+
+=== a.ts ===
+class K { k = 1 }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>k : Symbol(K.k, Decl(a.ts, 0, 9))
+
+declare function id<T>(value: T): T;
+>id : Symbol(id, Decl(a.ts, 0, 17))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>value : Symbol(value, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+declare function memo<T>(factory: () => T): T;
+>memo : Symbol(memo, Decl(a.ts, 1, 36))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+>factory : Symbol(factory, Decl(a.ts, 2, 25))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+
+declare const k: NoInfer<K | string | undefined> | undefined;
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+
+export const v1 = id(k instanceof K ? { s: 1, ...k } : undefined);
+>v1 : Symbol(v1, Decl(a.ts, 4, 12))
+>id : Symbol(id, Decl(a.ts, 0, 17))
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>s : Symbol(s, Decl(a.ts, 4, 39))
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>undefined : Symbol(undefined)
+
+export const v2 = memo(() => (k instanceof K ? { ...k, s: 1 } : undefined));
+>v2 : Symbol(v2, Decl(a.ts, 5, 12))
+>memo : Symbol(memo, Decl(a.ts, 1, 36))
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>s : Symbol(s, Decl(a.ts, 5, 54))
+>undefined : Symbol(undefined)
+
+export const v3 = k instanceof K ? { s: 1, ...k } : undefined;
+>v3 : Symbol(v3, Decl(a.ts, 6, 12))
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>s : Symbol(s, Decl(a.ts, 6, 36))
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>undefined : Symbol(undefined)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun24-P1.ts] ////
+
+=== a.ts ===
+declare abstract class C<T> { constructor(); constructor(a: T); }
+>C : C<T>
+>a : T
+
+const X = C<1>;
+>X : (abstract new () => C<1>) & (abstract new (a: 1) => C<1>) & { prototype: C<any>; }
+>C<1> : (abstract new () => C<1>) & (abstract new (a: 1) => C<1>) & { prototype: C<any>; }
+>C : typeof C
+
+const v: 1 = null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", typeof X];
+>v : 1
+>null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", typeof X] : ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", (abstract new () => C<1>) & (abstract new (a: 1) => C<1>) & { prototype: C<any>; }]
+>null! : never
+>X : (abstract new () => C<1>) & (abstract new (a: 1) => C<1>) & { prototype: C<any>; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

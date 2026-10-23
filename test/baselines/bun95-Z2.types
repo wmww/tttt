@@ -1,0 +1,180 @@
+//// [test/cases/bun95-Z2.ts] ////
+
+=== a.ts ===
+type U = { [k: string]: unknown };
+>U : U
+>k : string
+
+type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+>M : M<S>
+
+type K = 'a' | 'b';
+>K : K
+
+type IsAny<T> = 0 extends 1 & T ? 'any' : 'not any';
+>IsAny : IsAny<T>
+
+declare function f<O extends K>(op: O): M<O>;
+>f : <O extends K>(op: O) => M<O>
+>op : O
+
+declare class C<O extends K> { constructor(op: O); v: M<O> }
+>C : C<O>
+>op : O
+>v : M<O>
+
+declare const ctor: new <O extends K>(op: O) => M<O>;
+>ctor : new <O extends K>(op: O) => M<O>
+>op : O
+
+declare function cb<O extends K>(op: (x: M<O>) => void, o: O): void;
+>cb : <O extends K>(op: (x: M<O>) => void, o: O) => void
+>op : (x: M<O>) => void
+>x : M<O>
+>o : O
+
+declare function pr<O extends K>(op: O): Promise<M<O>>;
+>pr : <O extends K>(op: O) => Promise<M<O>>
+>op : O
+
+declare function ov(op: number): number;
+>ov : { (op: number): number; <O extends K>(op: O): M<O>; }
+>op : number
+
+declare function ov<O extends K>(op: O): M<O>;
+>ov : { (op: number): number; <O extends K>(op: O): M<O>; }
+>op : O
+
+declare function un<O>(op: O): M<O>;
+>un : <O>(op: O) => M<O>
+>op : O
+
+declare function st<O extends string>(op: O): M<O>;
+>st : <O extends string>(op: O) => M<O>
+>op : O
+
+declare function an<O extends any>(op: O): M<O>;
+>an : <O extends unknown>(op: O) => M<O>
+>op : O
+
+declare function ob<O extends { a: 1 }>(op: O): M<O>;
+>ob : <O extends { a: 1; }>(op: O) => M<O>
+>a : 1
+>op : O
+
+type MyReturn<T> = T extends (...a: any) => infer R ? R : 'no';
+>MyReturn : MyReturn<T>
+>a : any
+
+type MyReturn2<T> = T extends (...a: any[]) => infer R ? R : 'no';
+>MyReturn2 : MyReturn2<T>
+>a : any[]
+
+type MyReturn3<T> = T extends (...a: never) => infer R ? R : 'no';
+>MyReturn3 : MyReturn3<T>
+>a : never
+
+type MyReturn4<T> = T extends (a: any) => infer R ? R : 'no';
+>MyReturn4 : MyReturn4<T>
+>a : any
+
+const a01: IsAny<ReturnType<typeof f>> = 0;
+>a01 : "any"
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a02: Parameters<typeof f> = 0;
+>a02 : [op: K]
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a03: Parameters<typeof cb> = 0;
+>a03 : [op: (x: U) => void, o: K]
+>cb : <O extends K>(op: (x: M<O>) => void, o: O) => void
+>0 : 0
+
+const a04: ConstructorParameters<typeof ctor> = 0;
+>a04 : [op: K]
+>ctor : new <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a05: IsAny<InstanceType<typeof ctor>> = 0;
+>a05 : "any"
+>ctor : new <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a06: IsAny<InstanceType<typeof C>> = 0;
+>a06 : "not any"
+>C : typeof C
+>0 : 0
+
+const a07: IsAny<Awaited<ReturnType<typeof pr>>> = 0;
+>a07 : "any"
+>pr : <O extends K>(op: O) => Promise<M<O>>
+>0 : 0
+
+const a08: MyReturn<typeof f> = 0;
+>a08 : "no"
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a09: MyReturn2<typeof f> = 0;
+>a09 : "no"
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a10: MyReturn3<typeof f> = 0;
+>a10 : U
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a11: MyReturn4<typeof f> = 0;
+>a11 : "no"
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const a12: IsAny<ReturnType<typeof ov>> = 0;
+>a12 : "any"
+>ov : { (op: number): number; <O extends K>(op: O): M<O>; }
+>0 : 0
+
+const a13: IsAny<ReturnType<typeof un>> = 0;
+>a13 : "any"
+>un : <O>(op: O) => M<O>
+>0 : 0
+
+const a14: IsAny<ReturnType<typeof st>> = 0;
+>a14 : "any"
+>st : <O extends string>(op: O) => M<O>
+>0 : 0
+
+const a15: IsAny<ReturnType<typeof an>> = 0;
+>a15 : "any"
+>an : <O extends unknown>(op: O) => M<O>
+>0 : 0
+
+const a16: IsAny<ReturnType<typeof ob>> = 0;
+>a16 : "any"
+>ob : <O extends { a: 1; }>(op: O) => M<O>
+>0 : 0
+
+const a17: (...args: any) => U = f;
+>a17 : (...args: any) => U
+>args : any
+>f : <O extends K>(op: O) => M<O>
+
+const a18: (op: any) => U = f;
+>a18 : (op: any) => U
+>op : any
+>f : <O extends K>(op: O) => M<O>
+
+const a19: U = f(null as any);
+>a19 : U
+>f(null as any) : (U | {})[] | U
+>f : <O extends K>(op: O) => M<O>
+>null as any : any
+
+const sentinel: number = '';
+>sentinel : number
+>'' : ""
+

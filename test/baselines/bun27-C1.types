@@ -1,0 +1,16 @@
+//// [test/cases/bun27-C1.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+function f() { return <>{f()}</>; }
+>f : () => any
+><>{f()}</> : JSX.Element
+>f() : any
+>f : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

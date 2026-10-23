@@ -1,0 +1,25 @@
+a.ts(1,18): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(1,18): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(2,50): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(3,53): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    class C3 { get x(this) { return 1 } set x(v) { this.nope; } }
+                     ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                     ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+    class C4 { get x() { this.nope; return 1 } set x(this, v) { this.nope2 } }
+                                                     ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+    const o4 = { get x() { this.nope; return 1 }, set x(this, v) { this.nope2 } };
+                                                        ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

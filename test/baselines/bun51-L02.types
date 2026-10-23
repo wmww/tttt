@@ -1,0 +1,18 @@
+//// [test/cases/bun51-L02.ts] ////
+
+=== a.ts ===
+namespace N { module "x" {} }
+>"x" : typeof import("x")
+
+function f() { module "y" {} }
+>f : () => void
+>"y" : typeof import("y")
+
+export { N, f };
+>N : any
+>f : () => void
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

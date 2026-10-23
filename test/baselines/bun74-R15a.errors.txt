@@ -1,0 +1,56 @@
+a.ts(1,14): error TS2322: Type '(a: unknown) => a is string' is not assignable to type '0'.
+a.ts(2,14): error TS2322: Type '<T>(a: T) => asserts a is T' is not assignable to type '0'.
+a.ts(3,14): error TS2322: Type '{ f(a: unknown): a is string; }' is not assignable to type '0'.
+a.ts(4,41): error TS2345: Argument of type '(a: unknown, b: unknown) => b is string' is not assignable to parameter of type '0'.
+a.ts(4,51): error TS6133: 'a' is declared but its value is never read.
+a.ts(5,14): error TS2322: Type '(a: unknown) => a is string' is not assignable to type '(a: unknown) => a is number'.
+  Type predicate 'a is string' is not assignable to 'a is number'.
+    Type 'string' is not assignable to type 'number'.
+a.ts(7,20): error TS6133: 'a' is declared but its value is never read.
+a.ts(8,14): error TS2322: Type '((a: unknown) => a is string)[]' is not assignable to type '0'.
+a.ts(8,24): error TS6133: 'a' is declared but its value is never read.
+a.ts(9,20): error TS6133: 'a' is declared but its value is never read.
+a.ts(9,75): error TS2322: Type '(a: unknown) => a is string' is not assignable to type '0'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedParameters": true } }
+==== a.ts (12 errors) ====
+    export const e1: 0 = (a: unknown): a is string => true;
+                 ~~
+!!! error TS2322: Type '(a: unknown) => a is string' is not assignable to type '0'.
+    export const e2: 0 = <T>(a: T): asserts a is T => {};
+                 ~~
+!!! error TS2322: Type '<T>(a: T) => asserts a is T' is not assignable to type '0'.
+    export const e3: 0 = { f(a: unknown): a is string { return true; } };
+                 ~~
+!!! error TS2322: Type '{ f(a: unknown): a is string; }' is not assignable to type '0'.
+    declare function take(n: 0): void; take(function (a: unknown, b: unknown): b is string { return true; });
+                                            ~~~~~~~~
+!!! error TS2345: Argument of type '(a: unknown, b: unknown) => b is string' is not assignable to parameter of type '0'.
+                                                      ~
+!!! error TS6133: 'a' is declared but its value is never read.
+    export const e5: (a: unknown) => a is number = (a: unknown): a is string => true;
+                 ~~
+!!! error TS2322: Type '(a: unknown) => a is string' is not assignable to type '(a: unknown) => a is number'.
+!!! error TS2322:   Type predicate 'a is string' is not assignable to 'a is number'.
+!!! error TS2322:     Type 'string' is not assignable to type 'number'.
+    // controls: tsc reports these too
+    export const c1 = (a: unknown): a is string => true;
+                       ~
+!!! error TS6133: 'a' is declared but its value is never read.
+    export const c2: 0 = [(a: unknown): a is string => true];
+                 ~~
+!!! error TS2322: Type '((a: unknown) => a is string)[]' is not assignable to type '0'.
+                           ~
+!!! error TS6133: 'a' is declared but its value is never read.
+    export function c3(a: unknown): a is string { return true; } export const c4: 0 = c3;
+                       ~
+!!! error TS6133: 'a' is declared but its value is never read.
+                                                                              ~~
+!!! error TS2322: Type '(a: unknown) => a is string' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

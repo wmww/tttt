@@ -1,0 +1,28 @@
+//// [test/cases/bun34-C9.ts] ////
+
+=== a.ts ===
+export {};
+await using f = function () {};
+>f : { (): void; [Symbol.asyncDispose]: () => Promise<void>; x: number; }
+>function () {} : { (): void; [Symbol.asyncDispose]: () => Promise<void>; x: number; }
+
+f[Symbol.asyncDispose] = async () => {};
+>f[Symbol.asyncDispose] = async () => {} : () => Promise<void>
+>f[Symbol.asyncDispose] : () => Promise<void>
+>f : { (): void; [Symbol.asyncDispose]: () => Promise<void>; x: number; }
+>Symbol.asyncDispose : unique symbol
+>Symbol : SymbolConstructor
+>asyncDispose : unique symbol
+>async () => {} : () => Promise<void>
+
+f.x = 1;
+>f.x = 1 : 1
+>f.x : number
+>f : { (): void; [Symbol.asyncDispose]: () => Promise<void>; x: number; }
+>x : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

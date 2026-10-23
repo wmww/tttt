@@ -1,0 +1,59 @@
+a.ts(2,11): error TS6196: 'M' is declared but never used.
+a.ts(5,27): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(5,31): error TS2304: Cannot find name 'Nope'.
+a.ts(6,28): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+a.ts(6,32): error TS2304: Cannot find name 'Nope2'.
+a.ts(7,27): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(7,31): error TS2304: Cannot find name 'Nope3'.
+a.ts(8,28): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+a.ts(8,33): error TS2304: Cannot find name 'Nope4'.
+a.ts(9,27): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(9,37): error TS2304: Cannot find name 'Nope5'.
+a.ts(9,57): error TS2304: Cannot find name 'nope6'.
+a.ts(10,27): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(11,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (14 errors) ====
+    export {};
+    interface M<T> { m: T }
+              ~
+!!! error TS6196: 'M' is declared but never used.
+    declare const K: new () => {};
+    type U = 1;
+    export class C implements (M)<Nope> {}
+                              ~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+                                  ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+    export interface X extends (M)<Nope2> {}
+                               ~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+                                   ~~~~~
+!!! error TS2304: Cannot find name 'Nope2'.
+    export class D implements K()<Nope3> {}
+                              ~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+                                  ~~~~~
+!!! error TS2304: Cannot find name 'Nope3'.
+    export interface Y extends M[0]<Nope4> {}
+                               ~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+                                    ~~~~~
+!!! error TS2304: Cannot find name 'Nope4'.
+    export class F implements (M)<Array<Nope5>, { a: typeof nope6 }> {}
+                              ~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+                                        ~~~~~
+!!! error TS2304: Cannot find name 'Nope5'.
+                                                            ~~~~~
+!!! error TS2304: Cannot find name 'nope6'.
+    export class G implements (M)<U> {}
+                              ~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

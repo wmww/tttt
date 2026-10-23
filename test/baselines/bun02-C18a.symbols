@@ -1,0 +1,15 @@
+//// [test/cases/bun02-C18a.ts] ////
+
+=== a.ts ===
+declare const module: { exports: () => void };
+>module : Symbol(module, Decl(a.ts, 0, 13))
+>exports : Symbol(exports, Decl(a.ts, 0, 23))
+
+if (module.exports) {}
+>module.exports : Symbol(exports, Decl(a.ts, 0, 23))
+>module : Symbol(module, Decl(a.ts, 0, 13))
+>exports : Symbol(exports, Decl(a.ts, 0, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

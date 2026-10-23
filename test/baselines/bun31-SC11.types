@@ -1,0 +1,22 @@
+//// [test/cases/bun31-SC11.ts] ////
+
+=== a.ts ===
+class S25 { [valu]() { let value = 1 } }
+>S25 : S25
+>[valu] : () => void
+>valu : any
+>value : number
+>1 : 1
+
+const s26 = { [valu]() { let value = 1 } };
+>s26 : { [x: number]: () => void; }
+>{ [valu]() { let value = 1 } } : { [x: number]: () => void; }
+>[valu] : () => void
+>valu : any
+>value : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

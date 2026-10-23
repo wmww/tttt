@@ -1,0 +1,10 @@
+//// [test/cases/bun13-C4.ts] ////
+
+=== a.ts ===
+type F1<T> = ([T]) extends ([string]) ? Uppercase<T> : never;
+>F1 : F1<T>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

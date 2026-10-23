@@ -1,0 +1,20 @@
+//// [test/cases/bun21-C14b.ts] ////
+
+=== a.ts ===
+const fail = (): never => { throw 0; };
+>fail : () => never
+>(): never => { throw 0; } : () => never
+>0 : 0
+
+function g() { fail(), 0; g; }
+>g : () => void
+>fail(), 0 : 0
+>fail() : never
+>fail : () => never
+>0 : 0
+>g : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

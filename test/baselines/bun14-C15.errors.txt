@@ -1,0 +1,19 @@
+a.ts(4,7): error TS2322: Type 'A' is not assignable to type 'null'.
+  Type 'undefined' is not assignable to type 'null'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "exactOptionalPropertyTypes": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type X = { p?: string; q?: number };
+    type A = X["p" | "q"];
+    declare let a: A;
+    const n1: null = a;
+          ~~
+!!! error TS2322: Type 'A' is not assignable to type 'null'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,782 @@
+// @noTypesAndSymbols: true
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "skipLibCheck": true } }
+// @filename: a.ts
+interface Attributes<T> {
+  p0?: string;
+  p1?: number;
+  p2?: boolean | undefined;
+  p3?: (event: { target: T }) => void;
+  p4?: T | undefined;
+  p5?: string;
+  p6?: number;
+  p7?: boolean | undefined;
+  p8?: (event: { target: T }) => void;
+  p9?: T | undefined;
+  p10?: string;
+  p11?: number;
+  p12?: boolean | undefined;
+  p13?: (event: { target: T }) => void;
+  p14?: T | undefined;
+  p15?: string;
+  p16?: number;
+  p17?: boolean | undefined;
+  p18?: (event: { target: T }) => void;
+  p19?: T | undefined;
+  p20?: string;
+  p21?: number;
+  p22?: boolean | undefined;
+  p23?: (event: { target: T }) => void;
+  p24?: T | undefined;
+  p25?: string;
+  p26?: number;
+  p27?: boolean | undefined;
+  p28?: (event: { target: T }) => void;
+  p29?: T | undefined;
+  p30?: string;
+  p31?: number;
+  p32?: boolean | undefined;
+  p33?: (event: { target: T }) => void;
+  p34?: T | undefined;
+  p35?: string;
+  p36?: number;
+  p37?: boolean | undefined;
+  p38?: (event: { target: T }) => void;
+  p39?: T | undefined;
+  p40?: string;
+  p41?: number;
+  p42?: boolean | undefined;
+  p43?: (event: { target: T }) => void;
+  p44?: T | undefined;
+  p45?: string;
+  p46?: number;
+  p47?: boolean | undefined;
+  p48?: (event: { target: T }) => void;
+  p49?: T | undefined;
+  p50?: string;
+  p51?: number;
+  p52?: boolean | undefined;
+  p53?: (event: { target: T }) => void;
+  p54?: T | undefined;
+  p55?: string;
+  p56?: number;
+  p57?: boolean | undefined;
+  p58?: (event: { target: T }) => void;
+  p59?: T | undefined;
+  p60?: string;
+  p61?: number;
+  p62?: boolean | undefined;
+  p63?: (event: { target: T }) => void;
+  p64?: T | undefined;
+  p65?: string;
+  p66?: number;
+  p67?: boolean | undefined;
+  p68?: (event: { target: T }) => void;
+  p69?: T | undefined;
+  p70?: string;
+  p71?: number;
+  p72?: boolean | undefined;
+  p73?: (event: { target: T }) => void;
+  p74?: T | undefined;
+  p75?: string;
+  p76?: number;
+  p77?: boolean | undefined;
+  p78?: (event: { target: T }) => void;
+  p79?: T | undefined;
+  p80?: string;
+  p81?: number;
+  p82?: boolean | undefined;
+  p83?: (event: { target: T }) => void;
+  p84?: T | undefined;
+  p85?: string;
+  p86?: number;
+  p87?: boolean | undefined;
+  p88?: (event: { target: T }) => void;
+  p89?: T | undefined;
+  p90?: string;
+  p91?: number;
+  p92?: boolean | undefined;
+  p93?: (event: { target: T }) => void;
+  p94?: T | undefined;
+  p95?: string;
+  p96?: number;
+  p97?: boolean | undefined;
+  p98?: (event: { target: T }) => void;
+  p99?: T | undefined;
+  p100?: string;
+  p101?: number;
+  p102?: boolean | undefined;
+  p103?: (event: { target: T }) => void;
+  p104?: T | undefined;
+  p105?: string;
+  p106?: number;
+  p107?: boolean | undefined;
+  p108?: (event: { target: T }) => void;
+  p109?: T | undefined;
+  p110?: string;
+  p111?: number;
+  p112?: boolean | undefined;
+  p113?: (event: { target: T }) => void;
+  p114?: T | undefined;
+  p115?: string;
+  p116?: number;
+  p117?: boolean | undefined;
+  p118?: (event: { target: T }) => void;
+  p119?: T | undefined;
+  p120?: string;
+  p121?: number;
+  p122?: boolean | undefined;
+  p123?: (event: { target: T }) => void;
+  p124?: T | undefined;
+  p125?: string;
+  p126?: number;
+  p127?: boolean | undefined;
+  p128?: (event: { target: T }) => void;
+  p129?: T | undefined;
+  p130?: string;
+  p131?: number;
+  p132?: boolean | undefined;
+  p133?: (event: { target: T }) => void;
+  p134?: T | undefined;
+  p135?: string;
+  p136?: number;
+  p137?: boolean | undefined;
+  p138?: (event: { target: T }) => void;
+  p139?: T | undefined;
+  p140?: string;
+  p141?: number;
+  p142?: boolean | undefined;
+  p143?: (event: { target: T }) => void;
+  p144?: T | undefined;
+  p145?: string;
+  p146?: number;
+  p147?: boolean | undefined;
+  p148?: (event: { target: T }) => void;
+  p149?: T | undefined;
+  p150?: string;
+  p151?: number;
+  p152?: boolean | undefined;
+  p153?: (event: { target: T }) => void;
+  p154?: T | undefined;
+  p155?: string;
+  p156?: number;
+  p157?: boolean | undefined;
+  p158?: (event: { target: T }) => void;
+  p159?: T | undefined;
+  p160?: string;
+  p161?: number;
+  p162?: boolean | undefined;
+  p163?: (event: { target: T }) => void;
+  p164?: T | undefined;
+  p165?: string;
+  p166?: number;
+  p167?: boolean | undefined;
+  p168?: (event: { target: T }) => void;
+  p169?: T | undefined;
+  p170?: string;
+  p171?: number;
+  p172?: boolean | undefined;
+  p173?: (event: { target: T }) => void;
+  p174?: T | undefined;
+  p175?: string;
+  p176?: number;
+  p177?: boolean | undefined;
+  p178?: (event: { target: T }) => void;
+  p179?: T | undefined;
+  p180?: string;
+  p181?: number;
+  p182?: boolean | undefined;
+  p183?: (event: { target: T }) => void;
+  p184?: T | undefined;
+  p185?: string;
+  p186?: number;
+  p187?: boolean | undefined;
+  p188?: (event: { target: T }) => void;
+  p189?: T | undefined;
+  p190?: string;
+  p191?: number;
+  p192?: boolean | undefined;
+  p193?: (event: { target: T }) => void;
+  p194?: T | undefined;
+  p195?: string;
+  p196?: number;
+  p197?: boolean | undefined;
+  p198?: (event: { target: T }) => void;
+  p199?: T | undefined;
+  p200?: string;
+  p201?: number;
+  p202?: boolean | undefined;
+  p203?: (event: { target: T }) => void;
+  p204?: T | undefined;
+  p205?: string;
+  p206?: number;
+  p207?: boolean | undefined;
+  p208?: (event: { target: T }) => void;
+  p209?: T | undefined;
+  p210?: string;
+  p211?: number;
+  p212?: boolean | undefined;
+  p213?: (event: { target: T }) => void;
+  p214?: T | undefined;
+  p215?: string;
+  p216?: number;
+  p217?: boolean | undefined;
+  p218?: (event: { target: T }) => void;
+  p219?: T | undefined;
+  p220?: string;
+  p221?: number;
+  p222?: boolean | undefined;
+  p223?: (event: { target: T }) => void;
+  p224?: T | undefined;
+  p225?: string;
+  p226?: number;
+  p227?: boolean | undefined;
+  p228?: (event: { target: T }) => void;
+  p229?: T | undefined;
+  p230?: string;
+  p231?: number;
+  p232?: boolean | undefined;
+  p233?: (event: { target: T }) => void;
+  p234?: T | undefined;
+  p235?: string;
+  p236?: number;
+  p237?: boolean | undefined;
+  p238?: (event: { target: T }) => void;
+  p239?: T | undefined;
+  p240?: string;
+  p241?: number;
+  p242?: boolean | undefined;
+  p243?: (event: { target: T }) => void;
+  p244?: T | undefined;
+  p245?: string;
+  p246?: number;
+  p247?: boolean | undefined;
+  p248?: (event: { target: T }) => void;
+  p249?: T | undefined;
+  p250?: string;
+  p251?: number;
+  p252?: boolean | undefined;
+  p253?: (event: { target: T }) => void;
+  p254?: T | undefined;
+  p255?: string;
+  p256?: number;
+  p257?: boolean | undefined;
+  p258?: (event: { target: T }) => void;
+  p259?: T | undefined;
+  p260?: string;
+  p261?: number;
+  p262?: boolean | undefined;
+  p263?: (event: { target: T }) => void;
+  p264?: T | undefined;
+  p265?: string;
+  p266?: number;
+  p267?: boolean | undefined;
+  p268?: (event: { target: T }) => void;
+  p269?: T | undefined;
+  p270?: string;
+  p271?: number;
+  p272?: boolean | undefined;
+  p273?: (event: { target: T }) => void;
+  p274?: T | undefined;
+  p275?: string;
+  p276?: number;
+  p277?: boolean | undefined;
+  p278?: (event: { target: T }) => void;
+  p279?: T | undefined;
+  p280?: string;
+  p281?: number;
+  p282?: boolean | undefined;
+  p283?: (event: { target: T }) => void;
+  p284?: T | undefined;
+  p285?: string;
+  p286?: number;
+  p287?: boolean | undefined;
+  p288?: (event: { target: T }) => void;
+  p289?: T | undefined;
+  p290?: string;
+  p291?: number;
+  p292?: boolean | undefined;
+  p293?: (event: { target: T }) => void;
+  p294?: T | undefined;
+  p295?: string;
+  p296?: number;
+  p297?: boolean | undefined;
+  p298?: (event: { target: T }) => void;
+  p299?: T | undefined;
+  p300?: string;
+  p301?: number;
+  p302?: boolean | undefined;
+  p303?: (event: { target: T }) => void;
+  p304?: T | undefined;
+  p305?: string;
+  p306?: number;
+  p307?: boolean | undefined;
+  p308?: (event: { target: T }) => void;
+  p309?: T | undefined;
+  p310?: string;
+  p311?: number;
+  p312?: boolean | undefined;
+  p313?: (event: { target: T }) => void;
+  p314?: T | undefined;
+  p315?: string;
+  p316?: number;
+  p317?: boolean | undefined;
+  p318?: (event: { target: T }) => void;
+  p319?: T | undefined;
+  p320?: string;
+  p321?: number;
+  p322?: boolean | undefined;
+  p323?: (event: { target: T }) => void;
+  p324?: T | undefined;
+  p325?: string;
+  p326?: number;
+  p327?: boolean | undefined;
+  p328?: (event: { target: T }) => void;
+  p329?: T | undefined;
+  p330?: string;
+  p331?: number;
+  p332?: boolean | undefined;
+  p333?: (event: { target: T }) => void;
+  p334?: T | undefined;
+  p335?: string;
+  p336?: number;
+  p337?: boolean | undefined;
+  p338?: (event: { target: T }) => void;
+  p339?: T | undefined;
+  p340?: string;
+  p341?: number;
+  p342?: boolean | undefined;
+  p343?: (event: { target: T }) => void;
+  p344?: T | undefined;
+  p345?: string;
+  p346?: number;
+  p347?: boolean | undefined;
+  p348?: (event: { target: T }) => void;
+  p349?: T | undefined;
+  p350?: string;
+  p351?: number;
+  p352?: boolean | undefined;
+  p353?: (event: { target: T }) => void;
+  p354?: T | undefined;
+  p355?: string;
+  p356?: number;
+  p357?: boolean | undefined;
+  p358?: (event: { target: T }) => void;
+  p359?: T | undefined;
+  p360?: string;
+  p361?: number;
+  p362?: boolean | undefined;
+  p363?: (event: { target: T }) => void;
+  p364?: T | undefined;
+  p365?: string;
+  p366?: number;
+  p367?: boolean | undefined;
+  p368?: (event: { target: T }) => void;
+  p369?: T | undefined;
+  p370?: string;
+  p371?: number;
+  p372?: boolean | undefined;
+  p373?: (event: { target: T }) => void;
+  p374?: T | undefined;
+  p375?: string;
+  p376?: number;
+  p377?: boolean | undefined;
+  p378?: (event: { target: T }) => void;
+  p379?: T | undefined;
+  p380?: string;
+  p381?: number;
+  p382?: boolean | undefined;
+  p383?: (event: { target: T }) => void;
+  p384?: T | undefined;
+  p385?: string;
+  p386?: number;
+  p387?: boolean | undefined;
+  p388?: (event: { target: T }) => void;
+  p389?: T | undefined;
+  p390?: string;
+  p391?: number;
+  p392?: boolean | undefined;
+  p393?: (event: { target: T }) => void;
+  p394?: T | undefined;
+  p395?: string;
+  p396?: number;
+  p397?: boolean | undefined;
+  p398?: (event: { target: T }) => void;
+  p399?: T | undefined;
+}
+interface E0 { kind: "e0" }
+interface E1 { kind: "e1" }
+interface E2 { kind: "e2" }
+interface E3 { kind: "e3" }
+interface E4 { kind: "e4" }
+interface E5 { kind: "e5" }
+interface E6 { kind: "e6" }
+interface E7 { kind: "e7" }
+interface E8 { kind: "e8" }
+interface E9 { kind: "e9" }
+interface E10 { kind: "e10" }
+interface E11 { kind: "e11" }
+interface E12 { kind: "e12" }
+interface E13 { kind: "e13" }
+interface E14 { kind: "e14" }
+interface E15 { kind: "e15" }
+interface E16 { kind: "e16" }
+interface E17 { kind: "e17" }
+interface E18 { kind: "e18" }
+interface E19 { kind: "e19" }
+interface E20 { kind: "e20" }
+interface E21 { kind: "e21" }
+interface E22 { kind: "e22" }
+interface E23 { kind: "e23" }
+interface E24 { kind: "e24" }
+interface E25 { kind: "e25" }
+interface E26 { kind: "e26" }
+interface E27 { kind: "e27" }
+interface E28 { kind: "e28" }
+interface E29 { kind: "e29" }
+interface E30 { kind: "e30" }
+interface E31 { kind: "e31" }
+interface E32 { kind: "e32" }
+interface E33 { kind: "e33" }
+interface E34 { kind: "e34" }
+interface E35 { kind: "e35" }
+interface E36 { kind: "e36" }
+interface E37 { kind: "e37" }
+interface E38 { kind: "e38" }
+interface E39 { kind: "e39" }
+interface E40 { kind: "e40" }
+interface E41 { kind: "e41" }
+interface E42 { kind: "e42" }
+interface E43 { kind: "e43" }
+interface E44 { kind: "e44" }
+interface E45 { kind: "e45" }
+interface E46 { kind: "e46" }
+interface E47 { kind: "e47" }
+interface E48 { kind: "e48" }
+interface E49 { kind: "e49" }
+interface E50 { kind: "e50" }
+interface E51 { kind: "e51" }
+interface E52 { kind: "e52" }
+interface E53 { kind: "e53" }
+interface E54 { kind: "e54" }
+interface E55 { kind: "e55" }
+interface E56 { kind: "e56" }
+interface E57 { kind: "e57" }
+interface E58 { kind: "e58" }
+interface E59 { kind: "e59" }
+interface E60 { kind: "e60" }
+interface E61 { kind: "e61" }
+interface E62 { kind: "e62" }
+interface E63 { kind: "e63" }
+interface E64 { kind: "e64" }
+interface E65 { kind: "e65" }
+interface E66 { kind: "e66" }
+interface E67 { kind: "e67" }
+interface E68 { kind: "e68" }
+interface E69 { kind: "e69" }
+interface E70 { kind: "e70" }
+interface E71 { kind: "e71" }
+interface E72 { kind: "e72" }
+interface E73 { kind: "e73" }
+interface E74 { kind: "e74" }
+interface E75 { kind: "e75" }
+interface E76 { kind: "e76" }
+interface E77 { kind: "e77" }
+interface E78 { kind: "e78" }
+interface E79 { kind: "e79" }
+interface E80 { kind: "e80" }
+interface E81 { kind: "e81" }
+interface E82 { kind: "e82" }
+interface E83 { kind: "e83" }
+interface E84 { kind: "e84" }
+interface E85 { kind: "e85" }
+interface E86 { kind: "e86" }
+interface E87 { kind: "e87" }
+interface E88 { kind: "e88" }
+interface E89 { kind: "e89" }
+interface E90 { kind: "e90" }
+interface E91 { kind: "e91" }
+interface E92 { kind: "e92" }
+interface E93 { kind: "e93" }
+interface E94 { kind: "e94" }
+interface E95 { kind: "e95" }
+interface E96 { kind: "e96" }
+interface E97 { kind: "e97" }
+interface E98 { kind: "e98" }
+interface E99 { kind: "e99" }
+interface E100 { kind: "e100" }
+interface E101 { kind: "e101" }
+interface E102 { kind: "e102" }
+interface E103 { kind: "e103" }
+interface E104 { kind: "e104" }
+interface E105 { kind: "e105" }
+interface E106 { kind: "e106" }
+interface E107 { kind: "e107" }
+interface E108 { kind: "e108" }
+interface E109 { kind: "e109" }
+interface E110 { kind: "e110" }
+interface E111 { kind: "e111" }
+interface E112 { kind: "e112" }
+interface E113 { kind: "e113" }
+interface E114 { kind: "e114" }
+interface E115 { kind: "e115" }
+interface E116 { kind: "e116" }
+interface E117 { kind: "e117" }
+interface E118 { kind: "e118" }
+interface E119 { kind: "e119" }
+interface E120 { kind: "e120" }
+interface E121 { kind: "e121" }
+interface E122 { kind: "e122" }
+interface E123 { kind: "e123" }
+interface E124 { kind: "e124" }
+interface E125 { kind: "e125" }
+interface E126 { kind: "e126" }
+interface E127 { kind: "e127" }
+interface E128 { kind: "e128" }
+interface E129 { kind: "e129" }
+interface E130 { kind: "e130" }
+interface E131 { kind: "e131" }
+interface E132 { kind: "e132" }
+interface E133 { kind: "e133" }
+interface E134 { kind: "e134" }
+interface E135 { kind: "e135" }
+interface E136 { kind: "e136" }
+interface E137 { kind: "e137" }
+interface E138 { kind: "e138" }
+interface E139 { kind: "e139" }
+interface E140 { kind: "e140" }
+interface E141 { kind: "e141" }
+interface E142 { kind: "e142" }
+interface E143 { kind: "e143" }
+interface E144 { kind: "e144" }
+interface E145 { kind: "e145" }
+interface E146 { kind: "e146" }
+interface E147 { kind: "e147" }
+interface E148 { kind: "e148" }
+interface E149 { kind: "e149" }
+interface E150 { kind: "e150" }
+interface E151 { kind: "e151" }
+interface E152 { kind: "e152" }
+interface E153 { kind: "e153" }
+interface E154 { kind: "e154" }
+interface E155 { kind: "e155" }
+interface E156 { kind: "e156" }
+interface E157 { kind: "e157" }
+interface E158 { kind: "e158" }
+interface E159 { kind: "e159" }
+interface E160 { kind: "e160" }
+interface E161 { kind: "e161" }
+interface E162 { kind: "e162" }
+interface E163 { kind: "e163" }
+interface E164 { kind: "e164" }
+interface E165 { kind: "e165" }
+interface E166 { kind: "e166" }
+interface E167 { kind: "e167" }
+interface E168 { kind: "e168" }
+interface E169 { kind: "e169" }
+interface E170 { kind: "e170" }
+interface E171 { kind: "e171" }
+interface E172 { kind: "e172" }
+interface E173 { kind: "e173" }
+interface E174 { kind: "e174" }
+interface E175 { kind: "e175" }
+interface E176 { kind: "e176" }
+interface E177 { kind: "e177" }
+interface E178 { kind: "e178" }
+interface E179 { kind: "e179" }
+interface Elements {
+  e0: Attributes<E0>;
+  e1: Attributes<E1>;
+  e2: Attributes<E2>;
+  e3: Attributes<E3>;
+  e4: Attributes<E4>;
+  e5: Attributes<E5>;
+  e6: Attributes<E6>;
+  e7: Attributes<E7>;
+  e8: Attributes<E8>;
+  e9: Attributes<E9>;
+  e10: Attributes<E10>;
+  e11: Attributes<E11>;
+  e12: Attributes<E12>;
+  e13: Attributes<E13>;
+  e14: Attributes<E14>;
+  e15: Attributes<E15>;
+  e16: Attributes<E16>;
+  e17: Attributes<E17>;
+  e18: Attributes<E18>;
+  e19: Attributes<E19>;
+  e20: Attributes<E20>;
+  e21: Attributes<E21>;
+  e22: Attributes<E22>;
+  e23: Attributes<E23>;
+  e24: Attributes<E24>;
+  e25: Attributes<E25>;
+  e26: Attributes<E26>;
+  e27: Attributes<E27>;
+  e28: Attributes<E28>;
+  e29: Attributes<E29>;
+  e30: Attributes<E30>;
+  e31: Attributes<E31>;
+  e32: Attributes<E32>;
+  e33: Attributes<E33>;
+  e34: Attributes<E34>;
+  e35: Attributes<E35>;
+  e36: Attributes<E36>;
+  e37: Attributes<E37>;
+  e38: Attributes<E38>;
+  e39: Attributes<E39>;
+  e40: Attributes<E40>;
+  e41: Attributes<E41>;
+  e42: Attributes<E42>;
+  e43: Attributes<E43>;
+  e44: Attributes<E44>;
+  e45: Attributes<E45>;
+  e46: Attributes<E46>;
+  e47: Attributes<E47>;
+  e48: Attributes<E48>;
+  e49: Attributes<E49>;
+  e50: Attributes<E50>;
+  e51: Attributes<E51>;
+  e52: Attributes<E52>;
+  e53: Attributes<E53>;
+  e54: Attributes<E54>;
+  e55: Attributes<E55>;
+  e56: Attributes<E56>;
+  e57: Attributes<E57>;
+  e58: Attributes<E58>;
+  e59: Attributes<E59>;
+  e60: Attributes<E60>;
+  e61: Attributes<E61>;
+  e62: Attributes<E62>;
+  e63: Attributes<E63>;
+  e64: Attributes<E64>;
+  e65: Attributes<E65>;
+  e66: Attributes<E66>;
+  e67: Attributes<E67>;
+  e68: Attributes<E68>;
+  e69: Attributes<E69>;
+  e70: Attributes<E70>;
+  e71: Attributes<E71>;
+  e72: Attributes<E72>;
+  e73: Attributes<E73>;
+  e74: Attributes<E74>;
+  e75: Attributes<E75>;
+  e76: Attributes<E76>;
+  e77: Attributes<E77>;
+  e78: Attributes<E78>;
+  e79: Attributes<E79>;
+  e80: Attributes<E80>;
+  e81: Attributes<E81>;
+  e82: Attributes<E82>;
+  e83: Attributes<E83>;
+  e84: Attributes<E84>;
+  e85: Attributes<E85>;
+  e86: Attributes<E86>;
+  e87: Attributes<E87>;
+  e88: Attributes<E88>;
+  e89: Attributes<E89>;
+  e90: Attributes<E90>;
+  e91: Attributes<E91>;
+  e92: Attributes<E92>;
+  e93: Attributes<E93>;
+  e94: Attributes<E94>;
+  e95: Attributes<E95>;
+  e96: Attributes<E96>;
+  e97: Attributes<E97>;
+  e98: Attributes<E98>;
+  e99: Attributes<E99>;
+  e100: Attributes<E100>;
+  e101: Attributes<E101>;
+  e102: Attributes<E102>;
+  e103: Attributes<E103>;
+  e104: Attributes<E104>;
+  e105: Attributes<E105>;
+  e106: Attributes<E106>;
+  e107: Attributes<E107>;
+  e108: Attributes<E108>;
+  e109: Attributes<E109>;
+  e110: Attributes<E110>;
+  e111: Attributes<E111>;
+  e112: Attributes<E112>;
+  e113: Attributes<E113>;
+  e114: Attributes<E114>;
+  e115: Attributes<E115>;
+  e116: Attributes<E116>;
+  e117: Attributes<E117>;
+  e118: Attributes<E118>;
+  e119: Attributes<E119>;
+  e120: Attributes<E120>;
+  e121: Attributes<E121>;
+  e122: Attributes<E122>;
+  e123: Attributes<E123>;
+  e124: Attributes<E124>;
+  e125: Attributes<E125>;
+  e126: Attributes<E126>;
+  e127: Attributes<E127>;
+  e128: Attributes<E128>;
+  e129: Attributes<E129>;
+  e130: Attributes<E130>;
+  e131: Attributes<E131>;
+  e132: Attributes<E132>;
+  e133: Attributes<E133>;
+  e134: Attributes<E134>;
+  e135: Attributes<E135>;
+  e136: Attributes<E136>;
+  e137: Attributes<E137>;
+  e138: Attributes<E138>;
+  e139: Attributes<E139>;
+  e140: Attributes<E140>;
+  e141: Attributes<E141>;
+  e142: Attributes<E142>;
+  e143: Attributes<E143>;
+  e144: Attributes<E144>;
+  e145: Attributes<E145>;
+  e146: Attributes<E146>;
+  e147: Attributes<E147>;
+  e148: Attributes<E148>;
+  e149: Attributes<E149>;
+  e150: Attributes<E150>;
+  e151: Attributes<E151>;
+  e152: Attributes<E152>;
+  e153: Attributes<E153>;
+  e154: Attributes<E154>;
+  e155: Attributes<E155>;
+  e156: Attributes<E156>;
+  e157: Attributes<E157>;
+  e158: Attributes<E158>;
+  e159: Attributes<E159>;
+  e160: Attributes<E160>;
+  e161: Attributes<E161>;
+  e162: Attributes<E162>;
+  e163: Attributes<E163>;
+  e164: Attributes<E164>;
+  e165: Attributes<E165>;
+  e166: Attributes<E166>;
+  e167: Attributes<E167>;
+  e168: Attributes<E168>;
+  e169: Attributes<E169>;
+  e170: Attributes<E170>;
+  e171: Attributes<E171>;
+  e172: Attributes<E172>;
+  e173: Attributes<E173>;
+  e174: Attributes<E174>;
+  e175: Attributes<E175>;
+  e176: Attributes<E176>;
+  e177: Attributes<E177>;
+  e178: Attributes<E178>;
+  e179: Attributes<E179>;
+}
+type Component<P> = (props: P) => unknown;
+type ValidComponent = keyof Elements | Component<any> | (string & {});
+type ComponentProps<T extends ValidComponent> = T extends Component<infer P> ? P : T extends keyof Elements ? Elements[T] : Record<string, unknown>;
+type OverrideProps<T, P> = Omit<T, keyof P> & P;
+type ElementOf<T> = T extends keyof Elements ? Elements[T] : any;
+interface PolymorphicAttributes<T extends ValidComponent> { as?: T | keyof Elements }
+type PolymorphicProps<T extends ValidComponent, Props extends {} = {}> = OverrideProps<ComponentProps<T>, Props & PolymorphicAttributes<T>>;
+interface TriggerOptions { p1?: string; onOpen?: () => void }
+interface TriggerCommonProps<T = unknown> { ref: T | ((el: T) => void); p3: (event: { target: T }) => void }
+type TriggerProps<T extends ValidComponent | unknown = unknown> = TriggerOptions & Partial<TriggerCommonProps<ElementOf<T>>>;
+declare function Trigger<T extends ValidComponent = "e0">(props: PolymorphicProps<T, TriggerProps<T>>): unknown;
+export const First = <T extends ValidComponent = "e1">(props: PolymorphicProps<T, TriggerProps<T>>) => Trigger(props);
+export const Second = <T extends ValidComponent = "e1">(props: PolymorphicProps<T, TriggerProps<T>>) => Trigger({ ...props });
+const sentinel: number = "";

@@ -1,0 +1,16 @@
+a.ts(1,7): error TS6196: 'E' is declared but never used.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (2 errors) ====
+    class E {}
+          ~
+!!! error TS6196: 'E' is declared but never used.
+    /** @throws {@link E} */
+    export function f() {}
+    const sentinel: number = ""; sentinel;
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

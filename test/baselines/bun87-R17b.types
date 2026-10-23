@@ -1,0 +1,34 @@
+//// [test/cases/bun87-R17b.ts] ////
+
+=== a.ts ===
+import "pkg";
+declare module "pkg" { enum E { B } enum F { B = 2 } const enum G { B = 2 } }
+>"pkg" : typeof import("pkg")
+>E : E
+>B : E.B
+>F : import("pkg").F
+>B : import("pkg").F.B
+>2 : 2
+>G : import("pkg").G
+>B : import("pkg").G.B
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/pkg/index.d.ts ===
+export declare enum E { A }
+>E : E
+>A : E.A
+
+export declare const enum F { A = 1 }
+>F : F
+>A : F.A
+>1 : 1
+
+export declare enum G { A = 1 }
+>G : G
+>A : G.A
+>1 : 1
+

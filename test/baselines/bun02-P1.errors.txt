@@ -1,0 +1,18 @@
+a.ts(2,22): error TS1184: Modifiers cannot appear here.
+a.ts(2,67): error TS2384: Overload signatures must all be ambient or non-ambient.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const n: number;
+    switch (n) { case 1: declare function c(): void; case 2: function c() {} }
+                         ~~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+                                                                      ~
+!!! error TS2384: Overload signatures must all be ambient or non-ambient.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,23 @@
+//// [test/cases/bun57-L04b.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+{ export = <Missing1>o }
+>Missing1 : Symbol(Missing1)
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+{ export = missing2() }
+function f() { export = missing3() }
+>f : Symbol(f, Decl(a.ts, 2, 23))
+
+{ export default missing4() }
+function g() { export default <Missing5>o }
+>g : Symbol(g, Decl(a.ts, 4, 29))
+>Missing5 : Symbol(Missing5)
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

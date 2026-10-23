@@ -1,0 +1,42 @@
+a.ts(1,10): error TS2303: Circular definition of import alias 'a2'.
+a.ts(1,10): error TS2459: Module '"./b"' declares 'a2' locally, but it is not exported.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(1,10): error TS2303: Circular definition of import alias 'a2'.
+b.ts(1,10): error TS2459: Module '"./a"' declares 'a2' locally, but it is not exported.
+c.ts(1,10): error TS2303: Circular definition of import alias 's2'.
+c.ts(1,10): error TS2460: Module '"./c"' declares 's2' locally, but it is exported as 'other'.
+c.ts(2,10): error TS2303: Circular definition of import alias 'other'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.ts (3 errors) ====
+    import { a2 } from "./b";
+             ~~
+!!! error TS2303: Circular definition of import alias 'a2'.
+             ~~
+!!! error TS2459: Module '"./b"' declares 'a2' locally, but it is not exported.
+!!! related TS2728 b.ts:1:10: 'a2' is declared here.
+    export const other = 1;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (2 errors) ====
+    import { a2 } from "./a";
+             ~~
+!!! error TS2303: Circular definition of import alias 'a2'.
+             ~~
+!!! error TS2459: Module '"./a"' declares 'a2' locally, but it is not exported.
+!!! related TS2728 a.ts:1:10: 'a2' is declared here.
+    export const other = 1;
+==== c.ts (3 errors) ====
+    import { s2 } from "./c";
+             ~~
+!!! error TS2303: Circular definition of import alias 's2'.
+             ~~
+!!! error TS2460: Module '"./c"' declares 's2' locally, but it is exported as 'other'.
+!!! related TS2728 c.ts:1:10: 's2' is declared here.
+    export { s2 as other };
+             ~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'other'.
+    

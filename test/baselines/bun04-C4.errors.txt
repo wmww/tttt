@@ -1,0 +1,22 @@
+a.ts(2,7): error TS6133: 'a' is declared but its value is never read.
+a.ts(3,20): error TS1206: Decorators are not valid here.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(4,7): error TS6133: 'sentinel' is declared but its value is never read.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (4 errors) ====
+    declare function dec(...a: any[]): any;
+    const a = 1;
+          ~
+!!! error TS6133: 'a' is declared but its value is never read.
+    export class B { m(@dec(a) x: number) { return x; } }
+                       ~
+!!! error TS1206: Decorators are not valid here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+          ~~~~~~~~
+!!! error TS6133: 'sentinel' is declared but its value is never read.
+    

@@ -1,0 +1,14 @@
+//// [test/cases/bun34-P1e.ts] ////
+
+=== a.ts ===
+class C implements (() => void) {}
+>C : C
+>(() => void) : () => undefined
+>() => void : () => undefined
+>void : undefined
+> : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

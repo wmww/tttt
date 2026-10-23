@@ -1,0 +1,22 @@
+b.cts(1,21): error TS7016: Could not find a declaration file for module 'untyped'. 'node_modules/untyped/js/index.js' implicitly has an 'any' type.
+  There are types at 'node_modules/untyped/types/index.d.ts', but this result could not be resolved when respecting package.json "exports". The 'untyped' library may need to update its package.json or typings.
+b.cts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext", "customConditions": ["import"] } }
+==== b.cts (2 errors) ====
+    import u1 = require("untyped");
+                        ~~~~~~~~~
+!!! error TS7016: Could not find a declaration file for module 'untyped'. 'node_modules/untyped/js/index.js' implicitly has an 'any' type.
+!!! error TS7016:   There are types at 'node_modules/untyped/types/index.d.ts', but this result could not be resolved when respecting package.json "exports". The 'untyped' library may need to update its package.json or typings.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/untyped/js/index.js (0 errors) ====
+    module.exports = {};
+==== node_modules/untyped/package.json (0 errors) ====
+    { "name": "untyped", "version": "1.0.0", "types": "./types/index.d.ts", "exports": { ".": "./js/index.js" } }
+==== node_modules/untyped/types/index.d.ts (0 errors) ====
+    export const v: 1;
+    

@@ -1,0 +1,15 @@
+a.ts(2,63): error TS2559: Type '"a"' has no properties in common with type 'Partial<TA>'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class A { a = 1 }
+    function z1<TA extends A>(x: Partial<TA>) { switch (x) { case "a": break; } }
+                                                                  ~~~
+!!! error TS2559: Type '"a"' has no properties in common with type 'Partial<TA>'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

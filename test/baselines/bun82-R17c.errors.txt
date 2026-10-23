@@ -1,0 +1,10 @@
+a.ts(1,1): error TS1128: Declaration or statement expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    \u0065lse;
+    ~~~~~~~~~
+!!! error TS1128: Declaration or statement expected.
+    

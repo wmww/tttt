@@ -1,0 +1,17 @@
+//// [test/cases/bun07-C5.ts] ////
+
+=== a.ts ===
+export {};
+declare const obj: { x: any; y: number };
+>obj : Symbol(obj, Decl(a.ts, 1, 13))
+>x : Symbol(x, Decl(a.ts, 1, 20))
+>y : Symbol(y, Decl(a.ts, 1, 28))
+
+(obj.x) = function () { return this.y; };
+>obj.x : Symbol(x, Decl(a.ts, 1, 20))
+>obj : Symbol(obj, Decl(a.ts, 1, 13))
+>x : Symbol(x, Decl(a.ts, 1, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,34 @@
+a.ts(2,20): error TS1206: Decorators are not valid here.
+a.ts(3,16): error TS1206: Decorators are not valid here.
+a.ts(4,20): error TS1206: Decorators are not valid here.
+a.ts(4,36): error TS1206: Decorators are not valid here.
+a.ts(5,26): error TS1206: Decorators are not valid here.
+a.ts(6,19): error TS1206: Decorators are not valid here.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    declare const dec: any;
+    const f = (a: any, @dec x: any) => 1;
+                       ~
+!!! error TS1206: Decorators are not valid here.
+    const g = <T,>(@dec x: T) => 1;
+                   ~
+!!! error TS1206: Decorators are not valid here.
+    const h = (a: any, @dec() x?: any, @dec ...y: any[]) => 1;
+                       ~
+!!! error TS1206: Decorators are not valid here.
+                                       ~
+!!! error TS1206: Decorators are not valid here.
+    const i = async (a: any, @dec x: any) => 1;
+                             ~
+!!! error TS1206: Decorators are not valid here.
+    const j = (a = 1, @dec { b }: any) => 1;
+                      ~
+!!! error TS1206: Decorators are not valid here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

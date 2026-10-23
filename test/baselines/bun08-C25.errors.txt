@@ -1,0 +1,18 @@
+a.ts(5,3): error TS2540: Cannot assign to 'y' because it is a read-only property.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace N { export const y = 1; }
+    declare const k: "x";
+    function f() {}
+    namespace f { export import x = N.y; }
+    f[k] = 2;
+      ~
+!!! error TS2540: Cannot assign to 'y' because it is a read-only property.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

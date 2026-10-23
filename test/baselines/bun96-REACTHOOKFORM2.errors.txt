@@ -1,0 +1,45 @@
+a.ts(10,1): error TS2741: Property 'value' is missing in type '{}' but required in type 'Box<number>'.
+a.ts(11,21): error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Box<number>'.
+a.ts(12,7): error TS2551: Property 'valu' does not exist on type 'Box<number>'. Did you mean 'value'?
+a.ts(13,7): error TS2322: Type 'Box<number>' is not assignable to type 'string'.
+a.ts(15,1): error TS2322: Type 'null' is not assignable to type 'Box<number>'.
+a.ts(16,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    import type { Box, Field } from './types';
+    type Local = { kind: 'local'; box: Box<number> };
+    declare const u: Field<number> | Local;
+    
+    type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+    const same: Equal<(typeof u)['box'], Box<number>> = true;
+    interface Mine extends Both {}
+    type Both = (typeof u)['box'];
+    
+    u.box = {};
+    ~~~~~
+!!! error TS2741: Property 'value' is missing in type '{}' but required in type 'Box<number>'.
+!!! related TS2728 types.ts:1:24: 'value' is declared here.
+    u.box = { value: 1, extra: 2 };
+                        ~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Box<number>'.
+    u.box.valu;
+          ~~~~
+!!! error TS2551: Property 'valu' does not exist on type 'Box<number>'. Did you mean 'value'?
+!!! related TS2728 types.ts:1:24: 'value' is declared here.
+    const text: string = u.box;
+          ~~~~
+!!! error TS2322: Type 'Box<number>' is not assignable to type 'string'.
+    declare let both: Box<number> & Field<number>['box'];
+    both = null;
+    ~~~~
+!!! error TS2322: Type 'null' is not assignable to type 'Box<number>'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== types.ts (0 errors) ====
+    export type Box<T> = { value: T };
+    export type Field<T> = { kind: 'field'; box: Box<T> };
+    

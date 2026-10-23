@@ -1,0 +1,132 @@
+//// [test/cases/bun54-L20b.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : boolean
+
+function g1({ kind, payload } = cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' }) {
+>g1 : ({ kind, payload }?: { kind: 'A'; payload: any; } | { kind: 'B'; payload: string; }) => void
+>kind : "A" | "B"
+>payload : string
+>cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' } : { kind: 'A'; payload: null; } | { kind: 'B'; payload: string; }
+>cond : boolean
+>{ kind: 'A' as const, payload: null } : { kind: 'A'; payload: null; }
+>kind : "A"
+>'A' as const : "A"
+>'A' : "A"
+>payload : null
+>{ kind: 'B' as const, payload: 's' } : { kind: 'B'; payload: string; }
+>kind : "B"
+>'B' as const : "B"
+>'B' : "B"
+>payload : string
+>'s' : "s"
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; payload.foo; }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : { x: 1; }
+>x : 1
+>[payload] : any[]
+>payload : any
+>payload.foo : any
+>payload : any
+>foo : any
+}
+function g4({ kind, payload } = cond ? { kind: 'A' as const, payload: [] } : { kind: 'B' as const, payload: 's' }) {
+>g4 : ({ kind, payload }?: { kind: 'A'; payload: any[]; } | { kind: 'B'; payload: string; }) => void
+>kind : "A" | "B"
+>payload : string | any[]
+>cond ? { kind: 'A' as const, payload: [] } : { kind: 'B' as const, payload: 's' } : { kind: 'A'; payload: undefined[]; } | { kind: 'B'; payload: string; }
+>cond : boolean
+>{ kind: 'A' as const, payload: [] } : { kind: 'A'; payload: undefined[]; }
+>kind : "A"
+>'A' as const : "A"
+>'A' : "A"
+>payload : undefined[]
+>[] : undefined[]
+>{ kind: 'B' as const, payload: 's' } : { kind: 'B'; payload: string; }
+>kind : "B"
+>'B' as const : "B"
+>'B' : "B"
+>payload : string
+>'s' : "s"
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; payload.push(1); }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : { x: 1; }
+>x : 1
+>[payload] : any[][]
+>payload : any[]
+>payload.push(1) : number
+>payload.push : (...items: any[]) => number
+>payload : any[]
+>push : (...items: any[]) => number
+>1 : 1
+}
+class K { m({ kind, payload } = cond ? { kind: 'A' as const, payload: undefined } : { kind: 'B' as const, payload: 's' }) {
+>K : K
+>m : ({ kind, payload }?: { kind: 'A'; payload: any; } | { kind: 'B'; payload: string; }) => void
+>kind : "A" | "B"
+>payload : string
+>cond ? { kind: 'A' as const, payload: undefined } : { kind: 'B' as const, payload: 's' } : { kind: 'A'; payload: undefined; } | { kind: 'B'; payload: string; }
+>cond : boolean
+>{ kind: 'A' as const, payload: undefined } : { kind: 'A'; payload: undefined; }
+>kind : "A"
+>'A' as const : "A"
+>'A' : "A"
+>payload : undefined
+>undefined : undefined
+>{ kind: 'B' as const, payload: 's' } : { kind: 'B'; payload: string; }
+>kind : "B"
+>'B' as const : "B"
+>'B' : "B"
+>payload : string
+>'s' : "s"
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : { x: 1; }
+>x : 1
+>[payload] : any[]
+>payload : any
+
+} }
+const g5 = function ({ kind, payload } = cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' }) {
+>g5 : ({ kind, payload }?: { kind: 'A'; payload: any; } | { kind: 'B'; payload: string; }) => void
+>function ({ kind, payload } = cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' }) {  if (kind === 'A') { const t: { x: 1 } = [payload]; }} : ({ kind, payload }?: { kind: 'A'; payload: any; } | { kind: 'B'; payload: string; }) => void
+>kind : "A" | "B"
+>payload : any
+>cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' } : { kind: 'A'; payload: null; } | { kind: 'B'; payload: string; }
+>cond : boolean
+>{ kind: 'A' as const, payload: null } : { kind: 'A'; payload: null; }
+>kind : "A"
+>'A' as const : "A"
+>'A' : "A"
+>payload : null
+>{ kind: 'B' as const, payload: 's' } : { kind: 'B'; payload: string; }
+>kind : "B"
+>'B' as const : "B"
+>'B' : "B"
+>payload : string
+>'s' : "s"
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : { x: 1; }
+>x : 1
+>[payload] : any[]
+>payload : any
+
+};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

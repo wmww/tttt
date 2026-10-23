@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C25b.ts] ////
+
+=== a.ts ===
+for (var a: string, in {}) {}
+>a : string
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

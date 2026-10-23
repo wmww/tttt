@@ -1,0 +1,19 @@
+a.ts(2,5): error TS2322: Type '() => ns."a-b"' is not assignable to type 'number'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import * as ns from "./m";
+    let n: number = () => ns.mk();
+        ~
+!!! error TS2322: Type '() => ns."a-b"' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    class C { c = 1 }
+    export { C as "a-b" };
+    export declare function mk(): C;
+    

@@ -1,0 +1,21 @@
+//// [test/cases/bun02-C21a.ts] ////
+
+=== a.ts ===
+let q3: import("./b").BFoo<"a",>;
+>q3 : import("./b").BFoo<"a">
+
+let q5: typeof import("./b").bf<>;
+>q5 : () => unknown
+>bf : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export interface BFoo<X extends string> { x: X }
+>x : X
+
+export declare function bf<X extends string>(): X;
+>bf : <X extends string>() => X
+

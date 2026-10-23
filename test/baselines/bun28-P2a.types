@@ -1,0 +1,17 @@
+//// [test/cases/bun28-P2a.ts] ////
+
+=== a.ts ===
+const d = { [-0]: 1, 0: 2 };
+>d : { 0: number; }
+>{ [-0]: 1, 0: 2 } : { 0: number; }
+>[-0] : number
+>-0 : 0
+>0 : 0
+>1 : 1
+>0 : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

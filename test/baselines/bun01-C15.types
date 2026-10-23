@@ -1,0 +1,24 @@
+//// [test/cases/bun01-C15.ts] ////
+
+=== a.ts ===
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+interface Disposables {}
+function f6(a: any) { using x = a; }
+>f6 : (a: any) => void
+>a : any
+>x : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,7 @@
+//// [test/cases/bun34-C7e.ts] ////
+
+=== a.ts ===
+class C { c\u006fnstructor() {} } const sentinel: number = "";
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 39))
+

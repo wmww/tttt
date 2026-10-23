@@ -1,0 +1,63 @@
+//// [test/cases/bun89-R15.ts] ////
+
+=== a.ts ===
+class U {
+>U : U
+
+  #p = 1;
+>#p : number
+>1 : 1
+
+  m(x: U | { [k: string]: string }, y: { [k: string]: string }, z: U & { [k: string]: string }, w: U | Record<string, boolean>, t: U | [string]) {
+>m : (x: U | { [k: string]: string; }, y: { [k: string]: string; }, z: U & { [k: string]: string; }, w: U | Record<string, boolean>, t: U | [string]) => void
+>x : U | { [k: string]: string; }
+>k : string
+>y : { [k: string]: string; }
+>k : string
+>z : U & { [k: string]: string; }
+>k : string
+>w : Record<string, boolean> | U
+>t : U | [string]
+
+    const r1: never = x.#p;
+>r1 : never
+>x.#p : string | number
+>x : U | { [k: string]: string; }
+
+    const r2: never = y.#p;
+>r2 : never
+>y.#p : any
+>y : { [k: string]: string; }
+
+    const r3: never = z.#p;
+>r3 : never
+>z.#p : number
+>z : U & { [k: string]: string; }
+
+    const r4: never = w.#p;
+>r4 : never
+>w.#p : number | boolean
+>w : Record<string, boolean> | U
+
+    const r5: never = t.#p;
+>r5 : never
+>t.#p : any
+>t : U | [string]
+
+    x.#p = 1;
+>x.#p = 1 : 1
+>x.#p : string | number
+>x : U | { [k: string]: string; }
+>1 : 1
+
+    x.#p = "";
+>x.#p = "" : ""
+>x.#p : string | number
+>x : U | { [k: string]: string; }
+>"" : ""
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,36 @@
+a.ts(1,17): error TS6263: Module 'sub/./x.css' was resolved to 'modroot/sub/x.d.css.ts', but '--allowArbitraryExtensions' is not set.
+a.ts(2,19): error TS2307: Cannot find module 'sub/./j' or its corresponding type declarations.
+a.ts(3,19): error TS2307: Cannot find module 'sub/./t' or its corresponding type declarations.
+a.ts(6,18): error TS6263: Module 'sub/x.css' was resolved to 'modroot/sub/x.d.css.ts', but '--allowArbitraryExtensions' is not set.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler", "typeRoots": ["modroot"] }, "files": ["a.ts"] }
+==== a.ts (5 errors) ====
+    import css from "sub/./x.css";
+                    ~~~~~~~~~~~~~
+!!! error TS6263: Module 'sub/./x.css' was resolved to 'modroot/sub/x.d.css.ts', but '--allowArbitraryExtensions' is not set.
+    import { j } from "sub/./j";
+                      ~~~~~~~~~
+!!! error TS2307: Cannot find module 'sub/./j' or its corresponding type declarations.
+    import { t } from "sub/./t";
+                      ~~~~~~~~~
+!!! error TS2307: Cannot find module 'sub/./t' or its corresponding type declarations.
+    import { d } from "sub/./d";
+    import { d as d2 } from "sub/d";
+    import css2 from "sub/x.css";
+                     ~~~~~~~~~~~
+!!! error TS6263: Module 'sub/x.css' was resolved to 'modroot/sub/x.d.css.ts', but '--allowArbitraryExtensions' is not set.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== modroot/sub/d.d.ts (0 errors) ====
+    export const d: 1;
+==== modroot/sub/j.js (0 errors) ====
+    export const j = 1;
+==== modroot/sub/t.tsx (0 errors) ====
+    export const t = 1;
+==== modroot/sub/x.d.css.ts (0 errors) ====
+    declare const css: string; export default css;
+    

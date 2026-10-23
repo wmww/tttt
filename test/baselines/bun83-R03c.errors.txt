@@ -1,0 +1,680 @@
+new_inter.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+new_inter.ts(1,11): error TS1388: Constructor type notation must be parenthesized when used in an intersection type.
+new_inter.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+new_inter.ts(1,27): error TS2304: Cannot find name 'Z'.
+new_keyof.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+new_keyof.ts(1,14): error TS2304: Cannot find name 'n\u0065w'.
+new_keyof.ts(1,23): error TS1005: ',' expected.
+new_keyof.ts(1,29): error TS2304: Cannot find name 'Z'.
+new_ro.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+new_ro.ts(1,17): error TS2304: Cannot find name 'n\u0065w'.
+new_ro.ts(1,26): error TS1005: ',' expected.
+new_ro.ts(1,32): error TS2304: Cannot find name 'Z'.
+new_ro.ts(1,34): error TS1011: An element access expression should take an argument.
+new_union.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+new_union.ts(1,11): error TS1386: Constructor type notation must be parenthesized when used in a union type.
+new_union.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+new_union.ts(1,27): error TS2304: Cannot find name 'Z'.
+new_union0.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+new_union0.ts(1,9): error TS1386: Constructor type notation must be parenthesized when used in a union type.
+new_union0.ts(1,10): error TS1260: Keywords cannot contain escape characters.
+new_union0.ts(1,25): error TS2304: Cannot find name 'Z'.
+null_call.ts(1,1): error TS2304: Cannot find name 'f'.
+null_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+null_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+null_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+null_exts.ts(1,7): error TS2300: Duplicate identifier 'C'.
+null_exts.ts(1,17): error TS2304: Cannot find name 'A'.
+null_exts.ts(1,19): error TS1260: Keywords cannot contain escape characters.
+null_idx.ts(1,6): error TS2300: Duplicate identifier 'X'.
+null_idx.ts(1,10): error TS2304: Cannot find name 'Y'.
+null_idx.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+null_idx.ts(1,12): error TS2538: Type 'null' cannot be used as an index type.
+null_iext.ts(1,21): error TS2304: Cannot find name 'A'.
+null_iext.ts(1,23): error TS1260: Keywords cannot contain escape characters.
+null_impl.ts(1,7): error TS2300: Duplicate identifier 'C'.
+null_impl.ts(1,20): error TS2304: Cannot find name 'A'.
+null_impl.ts(1,22): error TS1260: Keywords cannot contain escape characters.
+null_jsx.ts(1,5): error TS2304: Cannot find name 'y'.
+null_jsx.ts(1,10): error TS2304: Cannot find name 'A'.
+null_jsx.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+null_targ.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+null_targ.ts(1,8): error TS2304: Cannot find name 'A'.
+null_targ.ts(1,10): error TS1260: Keywords cannot contain escape characters.
+null_targ2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+null_targ2.ts(1,8): error TS2304: Cannot find name 'A'.
+null_targ2.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+null_tru.ts(1,6): error TS2300: Duplicate identifier 'X'.
+null_tru.ts(1,24): error TS1260: Keywords cannot contain escape characters.
+null_tuple.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+null_tuple.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+null_tuple2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+null_tuple2.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+this_call.ts(1,1): error TS2304: Cannot find name 'f'.
+this_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+this_call.ts(1,3): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+this_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+this_call2.ts(1,6): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_exts.ts(1,7): error TS2300: Duplicate identifier 'C'.
+this_exts.ts(1,17): error TS2304: Cannot find name 'A'.
+this_exts.ts(1,19): error TS1260: Keywords cannot contain escape characters.
+this_exts.ts(1,19): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_idx.ts(1,6): error TS2300: Duplicate identifier 'X'.
+this_idx.ts(1,10): error TS2304: Cannot find name 'Y'.
+this_idx.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+this_idx.ts(1,12): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_iext.ts(1,21): error TS2304: Cannot find name 'A'.
+this_iext.ts(1,23): error TS1260: Keywords cannot contain escape characters.
+this_iext.ts(1,23): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_impl.ts(1,7): error TS2300: Duplicate identifier 'C'.
+this_impl.ts(1,20): error TS2304: Cannot find name 'A'.
+this_impl.ts(1,22): error TS1260: Keywords cannot contain escape characters.
+this_impl.ts(1,22): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_jsx.ts(1,5): error TS2304: Cannot find name 'y'.
+this_jsx.ts(1,10): error TS2304: Cannot find name 'A'.
+this_jsx.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+this_jsx.ts(1,13): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_targ.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+this_targ.ts(1,8): error TS2304: Cannot find name 'A'.
+this_targ.ts(1,10): error TS1260: Keywords cannot contain escape characters.
+this_targ.ts(1,10): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_targ2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+this_targ2.ts(1,8): error TS2304: Cannot find name 'A'.
+this_targ2.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+this_targ2.ts(1,13): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_tru.ts(1,6): error TS2300: Duplicate identifier 'X'.
+this_tru.ts(1,24): error TS1260: Keywords cannot contain escape characters.
+this_tru.ts(1,24): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_tuple.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+this_tuple.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+this_tuple.ts(1,9): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+this_tuple2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+this_tuple2.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+this_tuple2.ts(1,12): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+typeof_call.ts(1,1): error TS2304: Cannot find name 'f'.
+typeof_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+typeof_call.ts(1,15): error TS2304: Cannot find name 'y'.
+typeof_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+typeof_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+typeof_call2.ts(1,18): error TS2304: Cannot find name 'y'.
+typeof_exts.ts(1,7): error TS2300: Duplicate identifier 'C'.
+typeof_exts.ts(1,17): error TS2304: Cannot find name 'A'.
+typeof_exts.ts(1,19): error TS1260: Keywords cannot contain escape characters.
+typeof_exts.ts(1,31): error TS2304: Cannot find name 'y'.
+typeof_idx.ts(1,6): error TS2300: Duplicate identifier 'X'.
+typeof_idx.ts(1,10): error TS2304: Cannot find name 'Y'.
+typeof_idx.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+typeof_idx.ts(1,24): error TS2304: Cannot find name 'y'.
+typeof_iext.ts(1,21): error TS2304: Cannot find name 'A'.
+typeof_iext.ts(1,23): error TS1260: Keywords cannot contain escape characters.
+typeof_iext.ts(1,35): error TS2304: Cannot find name 'y'.
+typeof_impl.ts(1,7): error TS2300: Duplicate identifier 'C'.
+typeof_impl.ts(1,20): error TS2304: Cannot find name 'A'.
+typeof_impl.ts(1,22): error TS1260: Keywords cannot contain escape characters.
+typeof_impl.ts(1,34): error TS2304: Cannot find name 'y'.
+typeof_jsx.ts(1,5): error TS2304: Cannot find name 'y'.
+typeof_jsx.ts(1,10): error TS2304: Cannot find name 'A'.
+typeof_jsx.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+typeof_jsx.ts(1,25): error TS2304: Cannot find name 'y'.
+typeof_targ.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+typeof_targ.ts(1,8): error TS2304: Cannot find name 'A'.
+typeof_targ.ts(1,10): error TS1260: Keywords cannot contain escape characters.
+typeof_targ.ts(1,22): error TS2304: Cannot find name 'y'.
+typeof_targ2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+typeof_targ2.ts(1,8): error TS2304: Cannot find name 'A'.
+typeof_targ2.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+typeof_targ2.ts(1,25): error TS2304: Cannot find name 'y'.
+typeof_tru.ts(1,6): error TS2300: Duplicate identifier 'X'.
+typeof_tru.ts(1,24): error TS1260: Keywords cannot contain escape characters.
+typeof_tru.ts(1,36): error TS2304: Cannot find name 'y'.
+typeof_tuple.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+typeof_tuple.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+typeof_tuple.ts(1,21): error TS2304: Cannot find name 'y'.
+typeof_tuple2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+typeof_tuple2.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+typeof_tuple2.ts(1,24): error TS2304: Cannot find name 'y'.
+void_call.ts(1,1): error TS2304: Cannot find name 'f'.
+void_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+void_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+void_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+void_exts.ts(1,7): error TS2300: Duplicate identifier 'C'.
+void_exts.ts(1,17): error TS2304: Cannot find name 'A'.
+void_exts.ts(1,19): error TS1260: Keywords cannot contain escape characters.
+void_idx.ts(1,6): error TS2300: Duplicate identifier 'X'.
+void_idx.ts(1,10): error TS2304: Cannot find name 'Y'.
+void_idx.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+void_idx.ts(1,12): error TS2538: Type 'void' cannot be used as an index type.
+void_iext.ts(1,21): error TS2304: Cannot find name 'A'.
+void_iext.ts(1,23): error TS1260: Keywords cannot contain escape characters.
+void_impl.ts(1,7): error TS2300: Duplicate identifier 'C'.
+void_impl.ts(1,20): error TS2304: Cannot find name 'A'.
+void_impl.ts(1,22): error TS1260: Keywords cannot contain escape characters.
+void_jsx.ts(1,5): error TS2304: Cannot find name 'y'.
+void_jsx.ts(1,10): error TS2304: Cannot find name 'A'.
+void_jsx.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+void_targ.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+void_targ.ts(1,8): error TS2304: Cannot find name 'A'.
+void_targ.ts(1,10): error TS1260: Keywords cannot contain escape characters.
+void_targ2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+void_targ2.ts(1,8): error TS2304: Cannot find name 'A'.
+void_targ2.ts(1,13): error TS1260: Keywords cannot contain escape characters.
+void_tru.ts(1,6): error TS2300: Duplicate identifier 'X'.
+void_tru.ts(1,24): error TS1260: Keywords cannot contain escape characters.
+void_tuple.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+void_tuple.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+void_tuple2.ts(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+void_tuple2.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== new_inter.ts (4 errors) ====
+    let x: 1 & n\u0065w () => Z;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_keyof.ts:1:5: 'x' was also declared here.
+!!! related TS6203 new_ro.ts:1:5: 'x' was also declared here.
+!!! related TS6203 new_union.ts:1:5: 'x' was also declared here.
+!!! related TS6203 new_union0.ts:1:5: 'x' was also declared here.
+!!! related TS6203 null_targ.ts:1:5: 'x' was also declared here.
+!!! related TS6203 null_targ2.ts:1:5: 'x' was also declared here.
+!!! related TS6203 null_tuple.ts:1:5: 'x' was also declared here.
+!!! related TS6203 null_tuple2.ts:1:5: 'x' was also declared here.
+!!! related TS6203 this_targ.ts:1:5: 'x' was also declared here.
+!!! related TS6203 this_targ2.ts:1:5: 'x' was also declared here.
+!!! related TS6203 this_tuple.ts:1:5: 'x' was also declared here.
+!!! related TS6203 this_tuple2.ts:1:5: 'x' was also declared here.
+!!! related TS6203 typeof_targ.ts:1:5: 'x' was also declared here.
+!!! related TS6203 typeof_targ2.ts:1:5: 'x' was also declared here.
+!!! related TS6203 typeof_tuple.ts:1:5: 'x' was also declared here.
+!!! related TS6203 typeof_tuple2.ts:1:5: 'x' was also declared here.
+!!! related TS6203 void_targ.ts:1:5: 'x' was also declared here.
+!!! related TS6203 void_targ2.ts:1:5: 'x' was also declared here.
+!!! related TS6203 void_tuple.ts:1:5: 'x' was also declared here.
+!!! related TS6203 void_tuple2.ts:1:5: 'x' was also declared here.
+              ~~~~~~~~~~~~~~~~~
+!!! error TS1388: Constructor type notation must be parenthesized when used in an intersection type.
+               ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                              ~
+!!! error TS2304: Cannot find name 'Z'.
+==== new_keyof.ts (4 errors) ====
+    let x: keyof n\u0065w () => Z;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+                 ~~~~~~~~
+!!! error TS2304: Cannot find name 'n\u0065w'.
+                          ~
+!!! error TS1005: ',' expected.
+                                ~
+!!! error TS2304: Cannot find name 'Z'.
+==== new_ro.ts (5 errors) ====
+    let x: readonly n\u0065w () => Z[];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+                    ~~~~~~~~
+!!! error TS2304: Cannot find name 'n\u0065w'.
+                             ~
+!!! error TS1005: ',' expected.
+                                   ~
+!!! error TS2304: Cannot find name 'Z'.
+                                     
+!!! error TS1011: An element access expression should take an argument.
+==== new_union.ts (4 errors) ====
+    let x: 1 | n\u0065w () => Z;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+              ~~~~~~~~~~~~~~~~~
+!!! error TS1386: Constructor type notation must be parenthesized when used in a union type.
+               ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                              ~
+!!! error TS2304: Cannot find name 'Z'.
+==== new_union0.ts (4 errors) ====
+    let x: | n\u0065w () => Z;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+            ~~~~~~~~~~~~~~~~~
+!!! error TS1386: Constructor type notation must be parenthesized when used in a union type.
+             ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                            ~
+!!! error TS2304: Cannot find name 'Z'.
+==== null_call.ts (2 errors) ====
+    f<n\u0075ll>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_call2.ts (2 errors) ====
+    f<1, n\u0075ll>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_exts.ts (3 errors) ====
+    class C extends A<n\u0075ll> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_impl.ts:1:7: 'C' was also declared here.
+!!! related TS6203 this_exts.ts:1:7: 'C' was also declared here.
+!!! related TS6203 this_impl.ts:1:7: 'C' was also declared here.
+!!! related TS6203 typeof_exts.ts:1:7: 'C' was also declared here.
+!!! related TS6203 typeof_impl.ts:1:7: 'C' was also declared here.
+!!! related TS6203 void_exts.ts:1:7: 'C' was also declared here.
+!!! related TS6203 void_impl.ts:1:7: 'C' was also declared here.
+                    ~
+!!! error TS2304: Cannot find name 'A'.
+                      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_idx.ts (4 errors) ====
+    type X = Y[n\u0075ll];
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_tru.ts:1:6: 'X' was also declared here.
+!!! related TS6203 this_idx.ts:1:6: 'X' was also declared here.
+!!! related TS6203 this_tru.ts:1:6: 'X' was also declared here.
+!!! related TS6203 typeof_idx.ts:1:6: 'X' was also declared here.
+!!! related TS6203 typeof_tru.ts:1:6: 'X' was also declared here.
+!!! related TS6203 void_idx.ts:1:6: 'X' was also declared here.
+!!! related TS6203 void_tru.ts:1:6: 'X' was also declared here.
+             ~
+!!! error TS2304: Cannot find name 'Y'.
+               ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+               ~~~~~~~~~
+!!! error TS2538: Type 'null' cannot be used as an index type.
+==== null_iext.ts (2 errors) ====
+    interface I extends A<n\u0075ll> {}
+                        ~
+!!! error TS2304: Cannot find name 'A'.
+                          ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_impl.ts (3 errors) ====
+    class C implements A<n\u0075ll> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_exts.ts:1:7: 'C' was also declared here.
+                       ~
+!!! error TS2304: Cannot find name 'A'.
+                         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_jsx.ts (3 errors) ====
+    x = y as A<[n\u0075ll]>;
+        ~
+!!! error TS2304: Cannot find name 'y'.
+             ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_targ.ts (3 errors) ====
+    let x: A<n\u0075ll>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+             ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_targ2.ts (3 errors) ====
+    let x: A<1, n\u0075ll>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_tru.ts (2 errors) ====
+    type X = 1 extends 1 ? n\u0075ll : 3;
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_idx.ts:1:6: 'X' was also declared here.
+                           ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_tuple.ts (2 errors) ====
+    let x: [n\u0075ll];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+            ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_tuple2.ts (2 errors) ====
+    let x: [1, n\u0075ll];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+               ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_call.ts (3 errors) ====
+    f<t\u0068is>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+      ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_call2.ts (3 errors) ====
+    f<1, t\u0068is>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+         ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_exts.ts (4 errors) ====
+    class C extends A<t\u0068is> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_exts.ts:1:7: 'C' was also declared here.
+                    ~
+!!! error TS2304: Cannot find name 'A'.
+                      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                      ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_idx.ts (4 errors) ====
+    type X = Y[t\u0068is];
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_idx.ts:1:6: 'X' was also declared here.
+             ~
+!!! error TS2304: Cannot find name 'Y'.
+               ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+               ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_iext.ts (3 errors) ====
+    interface I extends A<t\u0068is> {}
+                        ~
+!!! error TS2304: Cannot find name 'A'.
+                          ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                          ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_impl.ts (4 errors) ====
+    class C implements A<t\u0068is> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_exts.ts:1:7: 'C' was also declared here.
+                       ~
+!!! error TS2304: Cannot find name 'A'.
+                         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                         ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_jsx.ts (4 errors) ====
+    x = y as A<[t\u0068is]>;
+        ~
+!!! error TS2304: Cannot find name 'y'.
+             ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_targ.ts (4 errors) ====
+    let x: A<t\u0068is>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+             ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+             ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_targ2.ts (4 errors) ====
+    let x: A<1, t\u0068is>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_tru.ts (3 errors) ====
+    type X = 1 extends 1 ? t\u0068is : 3;
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_idx.ts:1:6: 'X' was also declared here.
+                           ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                           ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_tuple.ts (3 errors) ====
+    let x: [t\u0068is];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+            ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+            ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== this_tuple2.ts (3 errors) ====
+    let x: [1, t\u0068is];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+               ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+               ~~~~~~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+==== typeof_call.ts (3 errors) ====
+    f<t\u0079peof y>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                  ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_call2.ts (3 errors) ====
+    f<1, t\u0079peof y>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                     ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_exts.ts (4 errors) ====
+    class C extends A<t\u0079peof y> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_exts.ts:1:7: 'C' was also declared here.
+                    ~
+!!! error TS2304: Cannot find name 'A'.
+                      ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                                  ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_idx.ts (4 errors) ====
+    type X = Y[t\u0079peof y];
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_idx.ts:1:6: 'X' was also declared here.
+             ~
+!!! error TS2304: Cannot find name 'Y'.
+               ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                           ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_iext.ts (3 errors) ====
+    interface I extends A<t\u0079peof y> {}
+                        ~
+!!! error TS2304: Cannot find name 'A'.
+                          ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                                      ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_impl.ts (4 errors) ====
+    class C implements A<t\u0079peof y> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_exts.ts:1:7: 'C' was also declared here.
+                       ~
+!!! error TS2304: Cannot find name 'A'.
+                         ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                                     ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_jsx.ts (4 errors) ====
+    x = y as A<[t\u0079peof y]>;
+        ~
+!!! error TS2304: Cannot find name 'y'.
+             ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                            ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_targ.ts (4 errors) ====
+    let x: A<t\u0079peof y>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+             ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                         ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_targ2.ts (4 errors) ====
+    let x: A<1, t\u0079peof y>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                            ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_tru.ts (3 errors) ====
+    type X = 1 extends 1 ? t\u0079peof y : 3;
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_idx.ts:1:6: 'X' was also declared here.
+                           ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                                       ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_tuple.ts (3 errors) ====
+    let x: [t\u0079peof y];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+            ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                        ~
+!!! error TS2304: Cannot find name 'y'.
+==== typeof_tuple2.ts (3 errors) ====
+    let x: [1, t\u0079peof y];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+               ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                           ~
+!!! error TS2304: Cannot find name 'y'.
+==== void_call.ts (2 errors) ====
+    f<v\u006fid>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_call2.ts (2 errors) ====
+    f<1, v\u006fid>();
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_exts.ts (3 errors) ====
+    class C extends A<v\u006fid> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_exts.ts:1:7: 'C' was also declared here.
+                    ~
+!!! error TS2304: Cannot find name 'A'.
+                      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_idx.ts (4 errors) ====
+    type X = Y[v\u006fid];
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_idx.ts:1:6: 'X' was also declared here.
+             ~
+!!! error TS2304: Cannot find name 'Y'.
+               ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+               ~~~~~~~~~
+!!! error TS2538: Type 'void' cannot be used as an index type.
+==== void_iext.ts (2 errors) ====
+    interface I extends A<v\u006fid> {}
+                        ~
+!!! error TS2304: Cannot find name 'A'.
+                          ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_impl.ts (3 errors) ====
+    class C implements A<v\u006fid> {}
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 null_exts.ts:1:7: 'C' was also declared here.
+                       ~
+!!! error TS2304: Cannot find name 'A'.
+                         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_jsx.ts (3 errors) ====
+    x = y as A<[v\u006fid]>;
+        ~
+!!! error TS2304: Cannot find name 'y'.
+             ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_targ.ts (3 errors) ====
+    let x: A<v\u006fid>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+             ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_targ2.ts (3 errors) ====
+    let x: A<1, v\u006fid>;
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+           ~
+!!! error TS2304: Cannot find name 'A'.
+                ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_tru.ts (2 errors) ====
+    type X = 1 extends 1 ? v\u006fid : 3;
+         ~
+!!! error TS2300: Duplicate identifier 'X'.
+!!! related TS6203 null_idx.ts:1:6: 'X' was also declared here.
+                           ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_tuple.ts (2 errors) ====
+    let x: [v\u006fid];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+            ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_tuple2.ts (2 errors) ====
+    let x: [1, v\u006fid];
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 new_inter.ts:1:5: 'x' was also declared here.
+               ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

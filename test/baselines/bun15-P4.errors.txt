@@ -1,0 +1,15 @@
+a.ts(2,18): error TS7006: Parameter 'z' implicitly has an 'any' type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const cond: boolean;
+    ((p = { f: 1, h: z => {} }) => {})(cond ? { f: 1, h: (z: number) => {} } : { g: 1, h: (z: string) => {} });
+                     ~
+!!! error TS7006: Parameter 'z' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,30 @@
+//// [test/cases/bun59-L09.ts] ////
+
+=== a.b/c.ts ===
+export const c = 1;
+>c : 1
+>1 : 1
+
+=== b.mts ===
+
+import {} from ".\\x";
+import {} from "./a.b\\c";
+export {};
+=== sub/a.mts ===
+import {} from "..\\x";
+import {} from "../a.b\\c";
+import {} from "..\\nothing";
+import {} from "../x\\";
+import {} from "../x";
+import {} from "..";
+import {} from ".";
+import {} from "../x/";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== x.ts ===
+export const x = 1;
+>x : 1
+>1 : 1
+

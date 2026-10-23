@@ -1,0 +1,8 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+// @filename: a.js
+/** @type {import("./m").} */ let b1 = 1;
+/** @type {number} */
+const sentinel = "";
+// @filename: m.ts
+export {};

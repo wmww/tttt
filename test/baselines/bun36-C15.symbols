@@ -1,0 +1,26 @@
+//// [test/cases/bun36-C15.ts] ////
+
+=== a.ts ===
+import { which as f } from "./node_modules/foo";
+>which : Symbol(f, Decl(foo.d.ts, 0, 20))
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+import { which as g } from "./node_modules/goo";
+>which : Symbol(g, Decl(goo.d.ts, 0, 20))
+>g : Symbol(g, Decl(a.ts, 1, 8))
+
+const x: "goo" = g;
+>x : Symbol(x, Decl(a.ts, 2, 5))
+>g : Symbol(g, Decl(a.ts, 1, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== node_modules/foo.d.ts ===
+export declare const which: "foo";
+>which : Symbol(which, Decl(foo.d.ts, 0, 20))
+
+=== node_modules/goo.d.ts ===
+export declare const which: "goo";
+>which : Symbol(which, Decl(goo.d.ts, 0, 20))
+

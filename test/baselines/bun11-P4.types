@@ -1,0 +1,20 @@
+//// [test/cases/bun11-P4.ts] ////
+
+=== a.ts ===
+declare function g<K extends "a">(x: { [P in keyof typeof obj]: number }[K]): number;
+>g : <K extends "a">(x: { [P in keyof typeof obj]: number; }[K]) => number
+>x : any
+>obj : any
+
+const obj = { a: g(1) };
+>obj : any
+>{ a: g(1) } : { a: number; }
+>a : number
+>g(1) : number
+>g : <K extends "a">(x: { [P in keyof typeof obj]: number; }[K]) => number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

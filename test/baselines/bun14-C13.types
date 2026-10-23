@@ -1,0 +1,16 @@
+//// [test/cases/bun14-C13.ts] ////
+
+=== a.ts ===
+declare const mi: Map<string, number> & { x: 1 };
+>mi : Map<string, number> & { x: 1; }
+>x : 1
+
+mi["a"];
+>mi["a"] : any
+>mi : Map<string, number> & { x: 1; }
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

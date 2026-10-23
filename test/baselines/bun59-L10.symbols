@@ -1,0 +1,60 @@
+//// [test/cases/bun59-L10.ts] ////
+
+=== a.ts ===
+import { make, make2, make3 } from "other";
+>make : Symbol(make, Decl(a.ts, 0, 8))
+>make2 : Symbol(make2, Decl(a.ts, 0, 14))
+>make3 : Symbol(make3, Decl(a.ts, 0, 21))
+
+export const x = make();
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+
+export const x2 = make2();
+>x2 : Symbol(x2, Decl(a.ts, 2, 12))
+>make2 : Symbol(make2, Decl(a.ts, 0, 14))
+
+export const x3 = make3();
+>x3 : Symbol(x3, Decl(a.ts, 3, 12))
+>make3 : Symbol(make3, Decl(a.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+
+=== node_modules/dep/a.d.ts ===
+export interface Thing { a: number }
+>Thing : Symbol(Thing, Decl(a.d.ts, 0, 0))
+>a : Symbol(Thing.a, Decl(a.d.ts, 0, 24))
+
+=== node_modules/dep2/a.d.ts ===
+export interface Thing2 { a: number }
+>Thing2 : Symbol(Thing2, Decl(a.d.ts, 0, 0))
+>a : Symbol(Thing2.a, Decl(a.d.ts, 0, 25))
+
+=== node_modules/dep3/a.d.ts ===
+export interface Thing3 { a: number }
+>Thing3 : Symbol(Thing3, Decl(a.d.ts, 0, 0))
+>a : Symbol(Thing3.a, Decl(a.d.ts, 0, 25))
+
+=== node_modules/other/index.d.ts ===
+import { Thing } from "dep/a";
+>Thing : Symbol(Thing, Decl(index.d.ts, 0, 8))
+
+import { Thing2 } from "dep2/a";
+>Thing2 : Symbol(Thing2, Decl(index.d.ts, 1, 8))
+
+import { Thing3 } from "dep3/a";
+>Thing3 : Symbol(Thing3, Decl(index.d.ts, 2, 8))
+
+export declare function make(): Thing;
+>make : Symbol(make, Decl(index.d.ts, 2, 32))
+>Thing : Symbol(Thing, Decl(index.d.ts, 0, 8))
+
+export declare function make2(): Thing2;
+>make2 : Symbol(make2, Decl(index.d.ts, 3, 38))
+>Thing2 : Symbol(Thing2, Decl(index.d.ts, 1, 8))
+
+export declare function make3(): Thing3;
+>make3 : Symbol(make3, Decl(index.d.ts, 4, 40))
+>Thing3 : Symbol(Thing3, Decl(index.d.ts, 2, 8))
+

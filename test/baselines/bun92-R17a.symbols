@@ -1,0 +1,21 @@
+//// [test/cases/bun92-R17a.ts] ////
+
+=== a.ts ===
+type Cond<T> = T extends Partial<A> ? { y: 1 } : { z: 1 };
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(a.ts, 0, 58))
+>y : Symbol(y, Decl(a.ts, 0, 39))
+>z : Symbol(z, Decl(a.ts, 0, 50))
+
+interface A extends Cond<A> { x: number }
+>A : Symbol(A, Decl(a.ts, 0, 58))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 58))
+>x : Symbol(A.x, Decl(a.ts, 1, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

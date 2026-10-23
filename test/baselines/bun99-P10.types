@@ -1,0 +1,101 @@
+//// [test/cases/bun99-P10.ts] ////
+
+=== a.ts ===
+import { b2 } from "p2";
+>b2 : import("p0/node_modules/big").Big
+
+import { b1 } from "p1";
+>b1 : import("p0/node_modules/big").Big
+
+import { b0 } from "p0";
+>b0 : import("p0/node_modules/big").Big
+
+let b = b2; b = b1; b = b0;
+>b : import("p0/node_modules/big").Big
+>b2 : import("p0/node_modules/big").Big
+>b = b1 : import("p0/node_modules/big").Big
+>b : import("p0/node_modules/big").Big
+>b1 : import("p0/node_modules/big").Big
+>b = b0 : import("p0/node_modules/big").Big
+>b : import("p0/node_modules/big").Big
+>b0 : import("p0/node_modules/big").Big
+
+{ const probe: never = b0; }
+>probe : never
+>b0 : import("p0/node_modules/big").Big
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/p0/index.d.ts ===
+import { Big, M } from "big";
+>Big : typeof Big
+>M : any
+
+export declare const b0: Big;
+>b0 : Big
+
+export declare const m0: M;
+>m0 : M
+
+=== node_modules/p0/node_modules/big/index.d.ts ===
+import type { D } from "dep";
+>D : 1
+
+export * from "./m";
+export declare class Big { #secret: number; d: D; }
+>Big : Big
+>#secret : number
+>d : 1
+
+=== node_modules/p1/index.d.ts ===
+import { Big, M } from "big";
+>Big : typeof Big
+>M : any
+
+export declare const b1: Big;
+>b1 : Big
+
+export declare const m1: M;
+>m1 : M
+
+=== node_modules/p1/node_modules/big/index.d.ts ===
+import type { D } from "dep";
+>D : 1
+
+export * from "./m";
+export declare class Big { #secret: number; d: D; }
+>Big : Big
+>#secret : number
+>d : 1
+
+=== node_modules/p2/index.d.ts ===
+import { Big, M } from "big";
+>Big : typeof Big
+>M : any
+
+export declare const b2: Big;
+>b2 : Big
+
+export declare const m2: M;
+>m2 : M
+
+=== node_modules/p2/node_modules/big/index.d.ts ===
+import type { D } from "dep";
+>D : 1
+
+export * from "./m";
+export declare class Big { #secret: number; d: D; }
+>Big : Big
+>#secret : number
+>d : 1
+
+=== node_modules/p2/node_modules/big/m.d.ts ===
+export interface M { m: number }
+>m : number
+
+=== node_modules/p2/node_modules/dep/index.d.ts ===
+export type D = 1;
+>D : 1
+

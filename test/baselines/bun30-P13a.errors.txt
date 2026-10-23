@@ -1,0 +1,20 @@
+a.ts(2,3): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+a.ts(2,22): error TS2307: Cannot find module './m' or its corresponding type declarations.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    { import { m2 } from "./m"; m2; }
+      ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+                         ~~~~~
+!!! error TS2307: Cannot find module './m' or its corresponding type declarations.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export const m2 = 2;
+    

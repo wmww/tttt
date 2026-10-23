@@ -1,0 +1,30 @@
+//// [test/cases/bun16-C12.ts] ////
+
+=== a.ts ===
+declare function decN(target: any, context: { name: 0 }): void;
+>decN : Symbol(decN, Decl(a.ts, 0, 0))
+>target : Symbol(target, Decl(a.ts, 0, 22))
+>context : Symbol(context, Decl(a.ts, 0, 34))
+>name : Symbol(name, Decl(a.ts, 0, 45))
+
+class C {
+>C : Symbol(C, Decl(a.ts, 0, 63))
+
+  @decN [1]() {}
+>decN : Symbol(decN, Decl(a.ts, 0, 0))
+>[1] : Symbol(C[1], Decl(a.ts, 1, 9))
+>1 : Symbol(C[1], Decl(a.ts, 1, 9))
+
+  @decN [2] = 1;
+>decN : Symbol(decN, Decl(a.ts, 0, 0))
+>[2] : Symbol(C[2], Decl(a.ts, 2, 16))
+>2 : Symbol(C[2], Decl(a.ts, 2, 16))
+
+  @decN get [3]() { return 1 }
+>decN : Symbol(decN, Decl(a.ts, 0, 0))
+>[3] : Symbol(C[3], Decl(a.ts, 3, 16))
+>3 : Symbol(C[3], Decl(a.ts, 3, 16))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

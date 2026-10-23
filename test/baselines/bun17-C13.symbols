@@ -1,0 +1,11 @@
+//// [test/cases/bun17-C13.ts] ////
+
+=== a.ts ===
+let t: (object & { length?: string }) | string = { length: 5 };
+>t : Symbol(t, Decl(a.ts, 0, 3))
+>length : Symbol(length, Decl(a.ts, 0, 18))
+>length : Symbol(length, Decl(a.ts, 0, 50))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

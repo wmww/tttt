@@ -1,0 +1,14 @@
+//// [test/cases/bun17-C13.ts] ////
+
+=== a.ts ===
+let t: (object & { length?: string }) | string = { length: 5 };
+>t : string | (object & { length?: string; })
+>length : string | undefined
+>{ length: 5 } : { length: number; }
+>length : number
+>5 : 5
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

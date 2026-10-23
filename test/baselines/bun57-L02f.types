@@ -1,0 +1,14 @@
+//// [test/cases/bun57-L02f.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+type A = 1;
+>A : 1
+
+export @dec type { A }
+>dec : any
+> : (Missing)
+>A : any
+

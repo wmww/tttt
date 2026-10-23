@@ -1,0 +1,99 @@
+//// [test/cases/bun89-R14.ts] ////
+
+=== a.ts ===
+declare function base<T>(x: T): new () => { v: T };
+>base : Symbol(base, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 22))
+>x : Symbol(x, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 0, 22))
+>v : Symbol(v, Decl(a.ts, 0, 43))
+>T : Symbol(T, Decl(a.ts, 0, 22))
+
+// checkConditionalExpression tests the condition for TS2774 / TS2801 at once: it asks for the call signatures of its type.
+declare const x1: C1;
+>x1 : Symbol(x1, Decl(a.ts, 2, 13))
+>C1 : Symbol(C1, Decl(a.ts, 3, 26))
+
+const k1 = x1 ? "a" : "b";
+>k1 : Symbol(k1, Decl(a.ts, 3, 5))
+>x1 : Symbol(x1, Decl(a.ts, 2, 13))
+
+class C1 extends base(k1) {}
+>C1 : Symbol(C1, Decl(a.ts, 3, 26))
+>base : Symbol(base, Decl(a.ts, 0, 0))
+>k1 : Symbol(k1, Decl(a.ts, 3, 5))
+
+// nested in the condition, nullable, in an arrow function
+declare const x2: C2 | undefined, y2: boolean;
+>x2 : Symbol(x2, Decl(a.ts, 6, 13))
+>C2 : Symbol(C2, Decl(a.ts, 7, 34))
+>y2 : Symbol(y2, Decl(a.ts, 6, 33))
+
+const k2 = (y2 && x2) ? "a" : "b";
+>k2 : Symbol(k2, Decl(a.ts, 7, 5))
+>y2 : Symbol(y2, Decl(a.ts, 6, 33))
+>x2 : Symbol(x2, Decl(a.ts, 6, 13))
+
+class C2 extends base(k2) {}
+>C2 : Symbol(C2, Decl(a.ts, 7, 34))
+>base : Symbol(base, Decl(a.ts, 0, 0))
+>k2 : Symbol(k2, Decl(a.ts, 7, 5))
+
+declare const x3: C3;
+>x3 : Symbol(x3, Decl(a.ts, 9, 13))
+>C3 : Symbol(C3, Decl(a.ts, 10, 36))
+
+const k3 = (() => x3 ? "a" : "b")();
+>k3 : Symbol(k3, Decl(a.ts, 10, 5))
+>x3 : Symbol(x3, Decl(a.ts, 9, 13))
+
+class C3 extends base(k3) {}
+>C3 : Symbol(C3, Decl(a.ts, 10, 36))
+>base : Symbol(base, Decl(a.ts, 0, 0))
+>k3 : Symbol(k3, Decl(a.ts, 10, 5))
+
+// an interface
+declare const x4: I4;
+>x4 : Symbol(x4, Decl(a.ts, 13, 13))
+>I4 : Symbol(I4, Decl(a.ts, 14, 26))
+
+const k4 = x4 ? "a" : "b";
+>k4 : Symbol(k4, Decl(a.ts, 14, 5))
+>x4 : Symbol(x4, Decl(a.ts, 13, 13))
+
+interface I4 extends Array<typeof k4> {}
+>I4 : Symbol(I4, Decl(a.ts, 14, 26))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>k4 : Symbol(k4, Decl(a.ts, 14, 5))
+
+// a late-bound name
+declare const x5: I5;
+>x5 : Symbol(x5, Decl(a.ts, 17, 13))
+>I5 : Symbol(I5, Decl(a.ts, 18, 26))
+
+const k5 = x5 ? "a" : "a";
+>k5 : Symbol(k5, Decl(a.ts, 18, 5))
+>x5 : Symbol(x5, Decl(a.ts, 17, 13))
+
+interface I5 { [k5]: number }
+>I5 : Symbol(I5, Decl(a.ts, 18, 26))
+>[k5] : Symbol(I5[k5], Decl(a.ts, 19, 14))
+>k5 : Symbol(k5, Decl(a.ts, 18, 5))
+
+// `&&`, `||`, `!`: the two agree
+declare const x6: C6;
+>x6 : Symbol(x6, Decl(a.ts, 21, 13))
+>C6 : Symbol(C6, Decl(a.ts, 22, 21))
+
+const k6 = x6 && "a";
+>k6 : Symbol(k6, Decl(a.ts, 22, 5))
+>x6 : Symbol(x6, Decl(a.ts, 21, 13))
+
+class C6 extends base(k6) {}
+>C6 : Symbol(C6, Decl(a.ts, 22, 21))
+>base : Symbol(base, Decl(a.ts, 0, 0))
+>k6 : Symbol(k6, Decl(a.ts, 22, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 24, 5))
+

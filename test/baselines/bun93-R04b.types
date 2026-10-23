@@ -1,0 +1,158 @@
+//// [test/cases/bun93-R04b.ts] ////
+
+=== a.ts ===
+declare function abs(n: number): number; declare let u: (() => number) | undefined;
+>abs : (n: number) => number
+>n : number
+>u : (() => number) | undefined
+
+const a = { m() { return this.z; }, f() { return this.z; }, g() { const q = (1, 2); return q; } };
+>a : { m(): any; f(): any; g(): number; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { const q = (1, 2); return q; } } : { m(): any; f(): any; g(): number; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): number; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): number; }
+>z : any
+>g : () => number
+>q : 2
+>(1, 2) : 2
+>1, 2 : 2
+>1 : 1
+>2 : 2
+>q : 2
+
+const b = { m() { return this.z; }, f() { return this.z; }, g() { return abs(1) instanceof Object; } };
+>b : { m(): any; f(): any; g(): boolean; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return abs(1) instanceof Object; } } : { m(): any; f(): any; g(): boolean; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): boolean; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): boolean; }
+>z : any
+>g : () => boolean
+>abs(1) instanceof Object : boolean
+>abs(1) : number
+>abs : (n: number) => number
+>1 : 1
+>Object : ObjectConstructor
+
+const c = { m() { return this.z; }, f() { return this.z; }, g() { return u(); } };
+>c : { m(): any; f(): any; g(): number; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return u(); } } : { m(): any; f(): any; g(): number; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): number; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): number; }
+>z : any
+>g : () => number
+>u() : number
+>u : (() => number) | undefined
+
+const d = { m() { return this.z; }, f() { return this.z; }, g() { return "" satisfies number; } };
+>d : { m(): any; f(): any; g(): string; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return "" satisfies number; } } : { m(): any; f(): any; g(): string; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): string; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): string; }
+>z : any
+>g : () => string
+>"" satisfies number : ""
+>"" : ""
+
+const e = { m() { return this.z; }, f() { return this.z; }, g() { return { ...1 }; } };
+>e : { m(): any; f(): any; g(): any; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return { ...1 }; } } : { m(): any; f(): any; g(): any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>g : () => any
+>{ ...1 } : any
+>1 : 1
+
+const h = { m() { return this.z; }, f() { return this.z; }, g() { return new (class { private constructor() {} })(); } };
+>h : { m(): any; f(): any; g(): any; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return new (class { private constructor() {} })(); } } : { m(): any; f(): any; g(): any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>g : () => any
+>new (class { private constructor() {} })() : (Anonymous class)
+>(class { private constructor() {} }) : typeof (Anonymous class)
+>class { private constructor() {} } : typeof (Anonymous class)
+
+const i = { m() { return this.z; }, f() { return this.z; }, g() { return g2 ? 1 : 2; function g2() {} } };
+>i : { m(): any; f(): any; g(): 1 | 2; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return g2 ? 1 : 2; function g2() {} } } : { m(): any; f(): any; g(): 1 | 2; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): 1 | 2; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): 1 | 2; }
+>z : any
+>g : () => 1 | 2
+>g2 ? 1 : 2 : 1 | 2
+>g2 : () => void
+>1 : 1
+>2 : 2
+>g2 : () => void
+
+const j = { m() { return this.z; }, f() { return this.z; }, g() { return /(/; } };
+>j : { m(): any; f(): any; g(): RegExp; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return /(/; } } : { m(): any; f(): any; g(): RegExp; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): RegExp; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): RegExp; }
+>z : any
+>g : () => RegExp
+>/(/ : RegExp
+
+const k = { m() { return this.z; }, f() { return this.z; }, g() { return later; let later = 1; } };
+>k : { m(): any; f(): any; g(): number; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return later; let later = 1; } } : { m(): any; f(): any; g(): number; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): number; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): number; }
+>z : any
+>g : () => number
+>later : number
+>later : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,71 @@
+a.ts(13,25): error TS2345: Argument of type '<T extends number, U extends T[]>(t: T, u: U) => U' is not assignable to parameter of type '(x: unknown, y: unknown) => number[]'.
+  Types of parameters 't' and 'x' are incompatible.
+    Type 'unknown' is not assignable to type 'number'.
+a.ts(14,7): error TS2322: Type '[number, unknown, unknown]' is not assignable to type 'never'.
+a.ts(15,7): error TS2322: Type '<T, U extends T>(x: U, y: U) => [number, T, U]' is not assignable to type 'never'.
+a.ts(16,7): error TS2322: Type '<T, U extends T>(t: T, u: U) => [number, T, U]' is not assignable to type 'never'.
+a.ts(17,7): error TS2322: Type '<T extends number, U extends T[]>(t: T, u: U) => U' is not assignable to type 'never'.
+a.ts(18,7): error TS2322: Type 'unknown' is not assignable to type 'never'.
+a.ts(22,8): error TS2322: Type 'string' is not assignable to type '1'.
+a.ts(28,7): error TS2322: Type '<T extends string | number, U extends T>(t: T, u: U) => U' is not assignable to type 'never'.
+a.ts(30,9): error TS2345: Argument of type '1' is not assignable to parameter of type '"a"'.
+a.ts(31,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions":{"strict":true,"noEmit":true,"target":"es2022","module":"esnext","types":[]},"files":["a.ts"]}
+==== a.ts (10 errors) ====
+    interface Box<X> {
+      m<T, U extends T>(t: T, u: U): [X, T, U];
+      n<T extends X, U extends T[]>(t: T, u: U): U;
+    }
+    declare const b: Box<number>;
+    declare function apply<U, R>(f: (x: U, y: U) => R): R;
+    declare function compose<U, B, C>(f: (x: U, y: U) => B, g: (b: B) => C): (x: U, y: U) => C;
+    declare function pipe2<T, U, R>(f: (t: T, u: U) => R): (t: T, u: U) => R;
+    export const r1 = apply(b.m);
+    export const r2 = compose(b.m, x => x);
+    export const r3 = pipe2(b.m);
+    export const r4 = pipe2(b.n);
+    export const r5 = apply(b.n);
+                            ~~~
+!!! error TS2345: Argument of type '<T extends number, U extends T[]>(t: T, u: U) => U' is not assignable to parameter of type '(x: unknown, y: unknown) => number[]'.
+!!! error TS2345:   Types of parameters 't' and 'x' are incompatible.
+!!! error TS2345:     Type 'unknown' is not assignable to type 'number'.
+    const c1: never = r1;
+          ~~
+!!! error TS2322: Type '[number, unknown, unknown]' is not assignable to type 'never'.
+    const c2: never = r2;
+          ~~
+!!! error TS2322: Type '<T, U extends T>(x: U, y: U) => [number, T, U]' is not assignable to type 'never'.
+    const c3: never = r3;
+          ~~
+!!! error TS2322: Type '<T, U extends T>(t: T, u: U) => [number, T, U]' is not assignable to type 'never'.
+    const c4: never = r4;
+          ~~
+!!! error TS2322: Type '<T extends number, U extends T[]>(t: T, u: U) => U' is not assignable to type 'never'.
+    const c5: never = r5;
+          ~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    r3(1, 2);
+    r3('a', 'b');
+    r4(1, [1]);
+    r4(1, ['']);
+           ~~
+!!! error TS2322: Type 'string' is not assignable to type '1'.
+    class K<X> {
+      m<T extends X, U extends T>(t: T, u: U): U { return u; }
+    }
+    declare const k: K<string | number>;
+    export const r6 = pipe2(k.m);
+    const c6: never = r6;
+          ~~
+!!! error TS2322: Type '<T extends string | number, U extends T>(t: T, u: U) => U' is not assignable to type 'never'.
+    r6('a', 'a');
+    r6('a', 1);
+            ~
+!!! error TS2345: Argument of type '1' is not assignable to parameter of type '"a"'.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

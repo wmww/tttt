@@ -1,0 +1,28 @@
+a.ts(1,29): error TS18016: Private identifiers are not allowed outside class bodies.
+a.ts(2,30): error TS18016: Private identifiers are not allowed outside class bodies.
+a.ts(3,37): error TS1225: Cannot find parameter '#a'.
+a.ts(3,37): error TS18016: Private identifiers are not allowed outside class bodies.
+a.ts(4,37): error TS1225: Cannot find parameter '#a'.
+a.ts(4,37): error TS18016: Private identifiers are not allowed outside class bodies.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    type A<T> = T extends infer #a ? 1 : 2;
+                                ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    type B<T> = T extends [infer #a extends string] ? 1 : 2;
+                                 ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    declare function f(x: any): asserts #a;
+                                        ~~
+!!! error TS1225: Cannot find parameter '#a'.
+                                        ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    declare function g(x: any): asserts #a is string;
+                                        ~~
+!!! error TS1225: Cannot find parameter '#a'.
+                                        ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    

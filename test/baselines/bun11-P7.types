@@ -1,0 +1,10 @@
+//// [test/cases/bun11-P7.ts] ////
+
+=== a.ts ===
+type M = { [P in keyof M as P]: number };
+>M : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

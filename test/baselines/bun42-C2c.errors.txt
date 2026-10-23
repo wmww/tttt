@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '1e-23' is not assignable to type 'E'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    enum E { G = 10 ** -23 }
+    const g: E.G = 1e-23;
+          ~
+!!! error TS2322: Type '1e-23' is not assignable to type 'E'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

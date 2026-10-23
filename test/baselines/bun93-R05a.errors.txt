@@ -1,0 +1,23 @@
+a.ts(5,9): error TS2322: Type 'U' is not assignable to type 'never'.
+  Type 'string | object' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface A1 { a: 1 }
+    function f<U extends object | string>() {
+      let p: U & A1 = null!;
+      type T = U & {} & A1;
+      const n: never = null! as T | (U & string) | (U & object);
+            ~
+!!! error TS2322: Type 'U' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string | object' is not assignable to type 'never'.
+!!! error TS2322:     Type 'string' is not assignable to type 'never'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

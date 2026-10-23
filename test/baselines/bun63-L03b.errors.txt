@@ -1,0 +1,143 @@
+a.ts(1,24): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(1,24): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(1,24): error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+a.ts(2,24): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(2,24): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(2,24): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(3,24): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(3,24): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(3,24): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(3,58): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(4,31): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(4,31): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(4,31): error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+a.ts(5,32): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(5,32): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(6,54): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(7,24): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(7,24): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(7,24): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(8,42): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(8,42): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(8,42): error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+a.ts(9,32): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(9,32): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(9,32): error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+a.ts(10,28): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(10,28): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(10,28): error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+a.ts(10,52): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(10,52): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(10,52): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(11,25): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(11,25): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(11,25): error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+a.ts(11,49): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(11,49): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(11,49): error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "declaration": true, "isolatedDeclarations": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (38 errors) ====
+    export class B { set x(this, v: number) {} }
+                           ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                           ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                           ~~~~
+!!! error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9033 a.ts:1:22: Add a type to parameter of the set accessor declaration.
+    export class H { get x(this): number { return 1; } }
+                           ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                           ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                           ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:2:24: Add a type annotation to the parameter this.
+    export class I { get x(this): number { return 1; } set x(this, v: number) {} }
+                           ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                           ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                           ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:3:24: Add a type annotation to the parameter this.
+                                                             ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+    export class J { static set x(this, v: number) {} }
+                                  ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                                  ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                                  ~~~~
+!!! error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9033 a.ts:4:29: Add a type to parameter of the set accessor declaration.
+    export class K { private set x(this, v: number) {} }
+                                   ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                                   ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+    export class M { get x(): number { return 1; } set x(this, v: number) {} }
+                                                         ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+    export class N { get x(this) { return 1; } }
+                           ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                           ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                           ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:7:24: Add a type annotation to the parameter this.
+    export abstract class O { abstract set x(this, v: number); }
+                                             ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                                             ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                                             ~~~~
+!!! error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9033 a.ts:8:40: Add a type to parameter of the set accessor declaration.
+    export declare class P { set x(this, v: number); }
+                                   ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                                   ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                                   ~~~~
+!!! error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9033 a.ts:9:30: Add a type to parameter of the set accessor declaration.
+    export interface Q { set x(this, v: number); get y(this): number }
+                               ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                               ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                               ~~~~
+!!! error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9033 a.ts:10:26: Add a type to parameter of the set accessor declaration.
+                                                       ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                                                       ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                                                       ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:10:52: Add a type annotation to the parameter this.
+    export type R = { set x(this, v: number); get y(this): number }
+                            ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                            ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                            ~~~~
+!!! error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9033 a.ts:11:23: Add a type to parameter of the set accessor declaration.
+                                                    ~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                                                    ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                                                    ~~~~
+!!! error TS9011: Parameter must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9028 a.ts:11:49: Add a type annotation to the parameter this.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,28 @@
+//// [test/cases/bun19-C1g.ts] ////
+
+=== a.ts ===
+class K<T> { x = 1; p!: T extends string ? typeof this.x : number; }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>x : Symbol(K.x, Decl(a.ts, 0, 12))
+>p : Symbol(K.p, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>this.x : Symbol(K.x, Decl(a.ts, 0, 12))
+>this : Symbol(K, Decl(a.ts, 0, 0))
+>x : Symbol(K.x, Decl(a.ts, 0, 12))
+
+function g<T>(k: K<T>, n: number) { k.p = n; }
+>g : Symbol(g, Decl(a.ts, 0, 68))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>k : Symbol(k, Decl(a.ts, 1, 14))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>n : Symbol(n, Decl(a.ts, 1, 22))
+>k.p : Symbol(K.p, Decl(a.ts, 0, 19))
+>k : Symbol(k, Decl(a.ts, 1, 14))
+>p : Symbol(K.p, Decl(a.ts, 0, 19))
+>n : Symbol(n, Decl(a.ts, 1, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

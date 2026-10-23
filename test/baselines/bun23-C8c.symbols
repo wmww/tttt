@@ -1,0 +1,20 @@
+//// [test/cases/bun23-C8c.ts] ////
+
+=== a.ts ===
+const cs = "cstr";
+>cs : Symbol(cs, Decl(a.ts, 0, 5))
+
+declare let u: { readonly [cs]: 1 } | { readonly [cs]: 2 };
+>u : Symbol(u, Decl(a.ts, 1, 11))
+>[cs] : Symbol([cs], Decl(a.ts, 1, 16))
+>cs : Symbol(cs, Decl(a.ts, 0, 5))
+>[cs] : Symbol([cs], Decl(a.ts, 1, 39))
+>cs : Symbol(cs, Decl(a.ts, 0, 5))
+
+u[cs] = 1;
+>u : Symbol(u, Decl(a.ts, 1, 11))
+>cs : Symbol(cs, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

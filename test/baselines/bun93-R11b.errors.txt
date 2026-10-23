@@ -1,0 +1,43 @@
+a.ts(3,27): error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+a.ts(4,7): error TS2322: Type 'T' is not assignable to type 'string'.
+a.ts(9,22): error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+a.ts(11,29): error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+a.ts(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare class D<T> { n<U>(u: U, t: T): T }
+    const mk = <T,>(d: D<T>) => d.n<2>;
+    mk(null! as D<string>)(2, "x");
+                              ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+!!! error TS2345:   'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    const r: string = mk(null! as D<string>)(2, null!);
+          ~
+!!! error TS2322: Type 'T' is not assignable to type 'string'.
+!!! related TS2208 a.ts:2:13: This type parameter might need an `extends string` constraint.
+    class C<T> {
+      n<U>(u: U, t: T) { return t; }
+      q = this.n<2>;
+    }
+    new C<string>().q(2, "x");
+                         ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+!!! error TS2345:   'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    function dflt<T>(d: D<T>, f = d.n<2>) { return f; }
+    dflt(null! as D<string>)(2, "x");
+                                ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+!!! error TS2345:   'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    // with a block on the way to the type parameter both tools instantiate
+    function blk<T>(d: D<T>) { return d.n<2>; }
+    blk(null! as D<string>)(2, "x");
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,26 @@
+//// [test/cases/bun92-R09c.ts] ////
+
+=== a.ts ===
+type IsPrim<T> = T extends string | number ? true : false;
+>IsPrim : IsPrim<T>
+>true : true
+>false : false
+
+interface Base<F> { f: F }
+>f : F
+
+declare let a: A;
+>a : A
+
+let u: { x: number } = a;
+>u : { x: number; }
+>x : number
+>a : A
+
+interface A extends Base<IsPrim<A>> { x: number }
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,12 @@
+//// [test/cases/bun32-C20.ts] ////
+
+=== a.ts ===
+type R = ({ a: b }) => void;
+>R : R
+>a : any
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

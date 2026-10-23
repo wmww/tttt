@@ -1,0 +1,14 @@
+a.ts(1,15): error TS1193: An export declaration cannot have modifiers.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    namespace W { declare export { }; }
+                  ~~~~~~~
+!!! error TS1193: An export declaration cannot have modifiers.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

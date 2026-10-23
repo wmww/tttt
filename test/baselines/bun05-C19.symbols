@@ -1,0 +1,16 @@
+//// [test/cases/bun05-C19.ts] ////
+
+=== a.ts ===
+declare const e: { b?: () => boolean };
+>e : Symbol(e, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 18))
+
+if (e.b()) { e; }
+>e.b : Symbol(b, Decl(a.ts, 0, 18))
+>e : Symbol(e, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 18))
+>e : Symbol(e, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

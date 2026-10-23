@@ -1,0 +1,20 @@
+a.tsx(3,26): error TS2372: Parameter 'React' cannot reference itself.
+a.tsx(4,17): error TS2373: Parameter 'a' cannot reference identifier 'div' declared after it.
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.tsx (3 errors) ====
+    export {};
+    declare global { namespace JSX { interface IntrinsicElements { div: any } } }
+    function g(React: any = <div />) {}
+                             ~~~
+!!! error TS2372: Parameter 'React' cannot reference itself.
+    function h(a = <div />, React: any) {}
+                    ~~~
+!!! error TS2373: Parameter 'a' cannot reference identifier 'div' declared after it.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

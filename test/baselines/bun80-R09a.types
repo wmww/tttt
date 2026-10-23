@@ -1,0 +1,21 @@
+//// [test/cases/bun80-R09a.ts] ////
+
+=== a.ts ===
+let t1: new ({ a b }) => void;
+>t1 : new ({ a, b }: { a: any; b: any; }) => void
+>a : any
+>b : any
+
+=== b.ts ===
+let t2: { m({ a b }): void };
+>t2 : { m({ a, b }: { a: any; b: any; }): void; }
+>m : ({ a, b }: { a: any; b: any; }) => void
+>a : any
+>b : any
+
+=== c.ts ===
+let t3: new ([ a b ]) => void;
+>t3 : new ([a, b]: [any, any]) => void
+>a : any
+>b : any
+

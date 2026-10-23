@@ -1,0 +1,26 @@
+//// [test/cases/bun19-C1g.ts] ////
+
+=== a.ts ===
+class K<T> { x = 1; p!: T extends string ? typeof this.x : number; }
+>K : K<T>
+>x : number
+>1 : 1
+>p : T extends string ? number : number
+>this.x : number
+>this : this
+>x : number
+
+function g<T>(k: K<T>, n: number) { k.p = n; }
+>g : <T>(k: K<T>, n: number) => void
+>k : K<T>
+>n : number
+>k.p = n : number
+>k.p : T extends string ? number : number
+>k : K<T>
+>p : T extends string ? number : number
+>n : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

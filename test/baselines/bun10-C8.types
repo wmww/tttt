@@ -1,0 +1,16 @@
+//// [test/cases/bun10-C8.ts] ////
+
+=== a.ts ===
+declare const anyC: any;
+>anyC : any
+
+class A7 extends anyC<A7["own"]> { own = 1 }
+>A7 : A7
+>anyC : any
+>own : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

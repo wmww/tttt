@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C24b.ts] ////
+
+=== a.ts ===
+let d = { d = 2 };
+>d : { d: number; }
+>{ d = 2 } : { d: number; }
+>d : { d: number; }
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

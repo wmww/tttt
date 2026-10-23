@@ -1,0 +1,34 @@
+//// [test/cases/bun02-C10.ts] ////
+
+=== a.ts ===
+declare function f(): void;
+>f : () => void
+
+class C1 { [f(), "a"]() {} }
+>C1 : C1
+>[f(), "a"] : () => void
+>f(), "a" : "a"
+>f() : void
+>f : () => void
+>"a" : "a"
+
+class C2 { get [f(), "b"]() { return 1 } }
+>C2 : C2
+>[f(), "b"] : number
+>f(), "b" : "b"
+>f() : void
+>f : () => void
+>"b" : "b"
+>1 : 1
+
+interface I1 { get [f(), "c"](): number }
+>[f(), "c"] : number
+>f(), "c" : "c"
+>f() : void
+>f : () => void
+>"c" : "c"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

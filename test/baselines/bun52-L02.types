@@ -1,0 +1,54 @@
+//// [test/cases/bun52-L02.ts] ////
+
+=== a.ts ===
+class K {}
+>K : K
+
+declare function f1({ a: b }: {}, c = b.x): void;
+>f1 : ({ a: b }: {}, c?: any) => void
+>a : any
+>b : any
+>c : any
+>b.x : any
+>b : any
+>x : any
+
+declare function f2({ a: b }: {}, c = b()): void;
+>f2 : ({ a: b }: {}, c?: any) => void
+>a : any
+>b : any
+>c : any
+>b() : any
+>b : any
+
+declare function f3({ a: b }: {}, c = (b = 1)): void;
+>f3 : ({ a: b }: {}, c?: number) => void
+>a : any
+>b : any
+>c : number
+>(b = 1) : 1
+>b = 1 : 1
+>b : any
+>1 : 1
+
+declare function f4({ a: b }: {}, c = () => b): void;
+>f4 : ({ a: b }: {}, c?: () => any) => void
+>a : any
+>b : any
+>c : () => any
+>() => b : () => any
+>b : any
+
+type F5 = ({ a: b }: {}, c = b.x) => void;
+>F5 : F5
+>a : any
+>b : any
+>c : any
+>b.x : any
+>b : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

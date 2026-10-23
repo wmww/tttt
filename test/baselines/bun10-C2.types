@@ -1,0 +1,19 @@
+//// [test/cases/bun10-C2.ts] ////
+
+=== a.ts ===
+declare const k: string;
+>k : string
+
+const x1 = { [k]: 1, get g() { return x1; } };
+>x1 : any
+>{ [k]: 1, get g() { return x1; } } : { [k]: number; readonly g: any; }
+>[k] : number
+>k : string
+>1 : 1
+>g : any
+>x1 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

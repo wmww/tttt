@@ -1,0 +1,19 @@
+//// [test/cases/bun21-C12a.ts] ////
+
+=== a.ts ===
+function f<T extends [string, number]>(v: T) { let a: string | number; [a] = v; a.length; }
+>f : <T extends [string, number]>(v: T) => void
+>v : T
+>a : string | number
+>[a] = v : T
+>[a] : [string | number]
+>a : string | number
+>v : T
+>a.length : number
+>a : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun29-P1b.ts] ////
+
+=== a.ts ===
+export function f() { class C { static readonly s: unique symbol = Symbol(); } return { [C.s]: 1 }; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 21))
+>s : Symbol(C.s, Decl(a.ts, 0, 31))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>[C.s] : Symbol([C.s], Decl(a.ts, 0, 87))
+>C.s : Symbol(C.s, Decl(a.ts, 0, 31))
+>C : Symbol(C, Decl(a.ts, 0, 21))
+>s : Symbol(C.s, Decl(a.ts, 0, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

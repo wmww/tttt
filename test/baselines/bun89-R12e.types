@@ -1,0 +1,33 @@
+//// [test/cases/bun89-R12e.ts] ////
+
+=== j.js ===
+class J { constructor() { this.a = /** @type {"b"} */ ("b"); this[jk] = 1; } }
+>J : J
+>this.a = /** @type {"b"} */ ("b") : "b"
+>this.a : any
+>this : this
+>a : any
+>("b") : "b"
+>"b" : "b"
+>this[jk] = 1 : 1
+>this[jk] : any
+>this : this
+>jk : any
+>1 : 1
+
+/** @type {J["a"]} */
+const jk = "b";
+>jk : any
+>"b" : "b"
+
+new J().b;
+>new J().b : any
+>new J() : J
+>J : typeof J
+>b : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

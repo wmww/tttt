@@ -1,0 +1,23 @@
+//// [test/cases/bun27-C15b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type ElementAttributesProperty = string; interface IntrinsicElements {} }
+>e : 1
+>ElementAttributesProperty : string
+
+class K { constructor(p: { c: number }) {} }
+>K : K
+>p : { c: number; }
+>c : number
+
+const a = <K c={1} />;
+>a : JSX.Element
+><K c={1} /> : JSX.Element
+>K : typeof K
+>c : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

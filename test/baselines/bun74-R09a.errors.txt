@@ -1,0 +1,27 @@
+a.tsx(3,31): error TS1214: Identifier expected. 'package' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(3,47): error TS1214: Identifier expected. 'package' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(5,32): error TS1214: Identifier expected. 'static' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(5,42): error TS1214: Identifier expected. 'static' is a reserved word in strict mode. Modules are automatically in strict mode.
+a.tsx(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (5 errors) ====
+    declare global { namespace JSX { interface IntrinsicElements { [k: string]: any } } }
+    export function List(props: { items: { name: string }[] }) {
+      return <ul>{props.items.map(package => <li>{package.name}</li>)}</ul>;
+                                  ~~~~~~~
+!!! error TS1214: Identifier expected. 'package' is a reserved word in strict mode. Modules are automatically in strict mode.
+                                                  ~~~~~~~
+!!! error TS1214: Identifier expected. 'package' is a reserved word in strict mode. Modules are automatically in strict mode.
+    }
+    export const frag = <>{[1].map(static => static)}</>;
+                                   ~~~~~~
+!!! error TS1214: Identifier expected. 'static' is a reserved word in strict mode. Modules are automatically in strict mode.
+                                             ~~~~~~
+!!! error TS1214: Identifier expected. 'static' is a reserved word in strict mode. Modules are automatically in strict mode.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

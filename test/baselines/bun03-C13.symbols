@@ -1,0 +1,25 @@
+//// [test/cases/bun03-C13.ts] ////
+
+=== a.ts ===
+class C { a = 1 }
+>C : Symbol(C, Decl(a.ts, 0, 0), Decl(a.ts, 0, 17))
+>a : Symbol(C.a, Decl(a.ts, 0, 9))
+
+interface C { new (): C; new (x: number): { a: number; b: number } }
+>C : Symbol(C, Decl(a.ts, 0, 0), Decl(a.ts, 0, 17))
+>C : Symbol(C, Decl(a.ts, 0, 0), Decl(a.ts, 0, 17))
+>x : Symbol(x, Decl(a.ts, 1, 30))
+>a : Symbol(a, Decl(a.ts, 1, 43))
+>b : Symbol(b, Decl(a.ts, 1, 54))
+
+declare const x: C;
+>x : Symbol(x, Decl(a.ts, 2, 13))
+>C : Symbol(C, Decl(a.ts, 0, 0), Decl(a.ts, 0, 17))
+
+class S extends x {}
+>S : Symbol(S, Decl(a.ts, 2, 19))
+>x : Symbol(x, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

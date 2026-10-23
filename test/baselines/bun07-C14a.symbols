@@ -1,0 +1,12 @@
+//// [test/cases/bun07-C14a.ts] ////
+
+=== a.ts ===
+export {};
+const a1 = { f: (this) => 1 };
+>a1 : Symbol(a1, Decl(a.ts, 1, 5))
+>f : Symbol(f, Decl(a.ts, 1, 12))
+>this : Symbol(this, Decl(a.ts, 1, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

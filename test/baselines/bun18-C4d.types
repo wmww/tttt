@@ -1,0 +1,23 @@
+//// [test/cases/bun18-C4d.ts] ////
+
+=== a.ts ===
+declare function f(...r: readonly [number, ...string[]]): void;
+>f : (r_0: number, ...r: string[]) => void
+>r : readonly [number, ...string[]]
+
+declare function tail<A extends unknown[]>(f: (x: number, ...a: A) => void): (...a: A) => void;
+>tail : <A extends unknown[]>(f: (x: number, ...a: A) => void) => (...a: A) => void
+>f : (x: number, ...a: A) => void
+>x : number
+>a : A
+>a : A
+
+tail(f);
+>tail(f) : (...a: string[]) => void
+>tail : <A extends unknown[]>(f: (x: number, ...a: A) => void) => (...a: A) => void
+>f : (r_0: number, ...r: string[]) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

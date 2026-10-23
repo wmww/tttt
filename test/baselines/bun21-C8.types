@@ -1,0 +1,30 @@
+//// [test/cases/bun21-C8.ts] ////
+
+=== a.ts ===
+declare const o: { a?: string };
+>o : { a?: string; }
+>a : string | undefined
+
+if (o[E.A]) o[E.A].length;
+>o[E.A] : string | undefined
+>o : { a?: string; }
+>E.A : E
+>E : typeof E
+>A : E
+>o[E.A].length : number
+>o[E.A] : string | undefined
+>o : { a?: string; }
+>E.A : E
+>E : typeof E
+>A : E
+>length : number
+
+const enum E { A = "a" }
+>E : E
+>A : E.A
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

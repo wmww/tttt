@@ -1,0 +1,20 @@
+//// [test/cases/bun21-C16b.ts] ////
+
+=== a.ts ===
+function f(x: string | number, v: { a: { b: string } }) { ({ a: { b: x = 1 } } = v); x.toFixed(); }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>v : Symbol(v, Decl(a.ts, 0, 30))
+>a : Symbol(a, Decl(a.ts, 0, 35))
+>b : Symbol(b, Decl(a.ts, 0, 40))
+>a : Symbol(a, Decl(a.ts, 0, 60))
+>b : Symbol(b, Decl(a.ts, 0, 65))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>v : Symbol(v, Decl(a.ts, 0, 30))
+>x.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

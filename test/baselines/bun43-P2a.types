@@ -1,0 +1,10 @@
+//// [test/cases/bun43-P2a.ts] ////
+
+=== a.ts ===
+var s = f<typeof a.#>();
+>s : any
+>f<typeof a.#>() : any
+>f : any
+>a.# : any
+>a : any
+

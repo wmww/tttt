@@ -1,0 +1,29 @@
+//// [test/cases/bun85-R16c.ts] ////
+
+=== a.ts ===
+import { p } from "./m";
+>p : Symbol(p, Decl(a.ts, 0, 8))
+
+export function g() { return [p]; }
+>g : Symbol(g, Decl(a.ts, 0, 24))
+>p : Symbol(p, Decl(a.ts, 0, 8))
+
+const t: never = g;
+>t : Symbol(t, Decl(a.ts, 2, 5))
+>g : Symbol(g, Decl(a.ts, 0, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== m.ts ===
+import { g } from "./a";
+>g : Symbol(g, Decl(m.ts, 0, 8))
+
+const v = { get p() { return g(); } };
+>v : Symbol(v, Decl(m.ts, 1, 5))
+>p : Symbol(p, Decl(m.ts, 1, 11))
+>g : Symbol(g, Decl(m.ts, 0, 8))
+
+export = v;
+>v : Symbol(v, Decl(m.ts, 1, 5))
+

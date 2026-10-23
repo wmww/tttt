@@ -1,0 +1,70 @@
+a.ts(1,1): error TS2304: Cannot find name 'type'.
+a.ts(1,6): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(1,6): error TS2457: Type alias name cannot be '0x10n'.
+a.ts(2,1): error TS2304: Cannot find name 'interface'.
+a.ts(2,11): error TS2427: Interface name cannot be '0xabn'.
+a.ts(2,17): error TS1005: ';' expected.
+a.ts(3,1): error TS2304: Cannot find name 'namespace'.
+a.ts(3,11): error TS2819: Namespace name cannot be '0x10n'.
+a.ts(3,18): error TS1005: ';' expected.
+a.ts(4,1): error TS2304: Cannot find name 'type'.
+a.ts(4,6): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(4,6): error TS2457: Type alias name cannot be '3n'.
+a.ts(5,1): error TS2304: Cannot find name 'type'.
+a.ts(5,6): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(5,6): error TS2457: Type alias name cannot be '15n'.
+a.ts(6,1): error TS2304: Cannot find name 'type'.
+a.ts(6,6): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(6,6): error TS2457: Type alias name cannot be '16'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (19 errors) ====
+    type 0x10n = 2;
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+         ~~~~~
+!!! error TS2457: Type alias name cannot be '0x10n'.
+    interface 0XABn {}
+    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'interface'.
+              ~~~~~
+!!! error TS2427: Interface name cannot be '0xabn'.
+                    ~
+!!! error TS1005: ';' expected.
+    namespace 0x1_0n {}
+    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'namespace'.
+              ~~~~~~
+!!! error TS2819: Namespace name cannot be '0x10n'.
+                     ~
+!!! error TS1005: ';' expected.
+    type 0b11n = 2;
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+         ~~~~~
+!!! error TS2457: Type alias name cannot be '3n'.
+    type 0o17n = 2;
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+         ~~~~~
+!!! error TS2457: Type alias name cannot be '15n'.
+    type 0x10 = 2;
+    ~~~~
+!!! error TS2304: Cannot find name 'type'.
+         ~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+         ~~~~
+!!! error TS2457: Type alias name cannot be '16'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

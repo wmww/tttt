@@ -1,0 +1,52 @@
+//// [test/cases/bun61-L20.ts] ////
+
+=== a.ts ===
+export {};
+interface Tree { children: Tree[] }
+>Tree : Symbol(Tree, Decl(a.ts, 0, 10))
+>children : Symbol(Tree.children, Decl(a.ts, 1, 16))
+>Tree : Symbol(Tree, Decl(a.ts, 0, 10))
+
+let root: Tree | undefined;
+>root : Symbol(root, Decl(a.ts, 2, 3))
+>Tree : Symbol(Tree, Decl(a.ts, 0, 10))
+
+function getRoot() { return root ??= build() as Tree; }
+>getRoot : Symbol(getRoot, Decl(a.ts, 2, 27))
+>root : Symbol(root, Decl(a.ts, 2, 3))
+>build : Symbol(build, Decl(a.ts, 3, 55))
+>Tree : Symbol(Tree, Decl(a.ts, 0, 10))
+
+function build() { return { children: [getRoot()] }; }
+>build : Symbol(build, Decl(a.ts, 3, 55))
+>children : Symbol(children, Decl(a.ts, 4, 27))
+>getRoot : Symbol(getRoot, Decl(a.ts, 2, 27))
+
+let x: number;
+>x : Symbol(x, Decl(a.ts, 5, 3))
+
+function g1() { return x = g1() as number; }
+>g1 : Symbol(g1, Decl(a.ts, 5, 14))
+>x : Symbol(x, Decl(a.ts, 5, 3))
+>g1 : Symbol(g1, Decl(a.ts, 5, 14))
+
+function g6() { return [x = g6() as number]; }
+>g6 : Symbol(g6, Decl(a.ts, 6, 44))
+>x : Symbol(x, Decl(a.ts, 5, 3))
+>g6 : Symbol(g6, Decl(a.ts, 6, 44))
+
+function g10() { x = g10() as number; return x; }
+>g10 : Symbol(g10, Decl(a.ts, 7, 46))
+>x : Symbol(x, Decl(a.ts, 5, 3))
+>g10 : Symbol(g10, Decl(a.ts, 7, 46))
+>x : Symbol(x, Decl(a.ts, 5, 3))
+
+function f4() { const r = f4() as number; return r; }
+>f4 : Symbol(f4, Decl(a.ts, 8, 49))
+>r : Symbol(r, Decl(a.ts, 9, 21))
+>f4 : Symbol(f4, Decl(a.ts, 8, 49))
+>r : Symbol(r, Decl(a.ts, 9, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

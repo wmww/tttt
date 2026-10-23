@@ -1,0 +1,14 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "esnext", "module": "esnext", "moduleResolution": "bundler", "verbatimModuleSyntax": true } }
+==== a.ts (1 errors) ====
+    import { v as Shadow } from "./m";
+    namespace Inner { declare const enum Shadow { A } export const y = Shadow.A; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export const v = 1;
+    

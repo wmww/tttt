@@ -1,0 +1,336 @@
+//// [test/cases/bun83-R03b.ts] ////
+
+=== function_array.ts ===
+x = [f\u0075nction () {}];
+>x = [f\u0075nction () {}] : (() => void)[]
+>x : any
+>[f\u0075nction () {}] : (() => void)[]
+>f\u0075nction () {} : () => void
+
+=== function_array2.ts ===
+x = [1, f\u0075nction () {}];
+>x = [1, f\u0075nction () {}] : (number | (() => void))[]
+>x : any
+>[1, f\u0075nction () {}] : (number | (() => void))[]
+>1 : 1
+>f\u0075nction () {} : () => void
+
+=== function_arrow.ts ===
+x = () => f\u0075nction () {};
+>x = () => f\u0075nction () {} : () => () => void
+>x : any
+>() => f\u0075nction () {} : () => () => void
+>f\u0075nction () {} : () => void
+
+=== function_call.ts ===
+f(f\u0075nction () {});
+>f(f\u0075nction () {}) : any
+>f : any
+>f\u0075nction () {} : () => void
+
+=== function_call2.ts ===
+f(1, f\u0075nction () {});
+>f(1, f\u0075nction () {}) : any
+>f : any
+>1 : 1
+>f\u0075nction () {} : () => void
+
+=== function_new.ts ===
+new X(f\u0075nction () {});
+>new X(f\u0075nction () {}) : any
+>X : any
+>f\u0075nction () {} : () => void
+
+=== function_opt.ts ===
+f?.(f\u0075nction () {});
+>f?.(f\u0075nction () {}) : any
+>f : any
+>f\u0075nction () {} : () => void
+
+=== function_targ.ts ===
+f<T>(f\u0075nction () {});
+>f<T>(f\u0075nction () {}) : any
+>f : any
+>f\u0075nction () {} : () => void
+
+=== import_array.ts ===
+x = [i\u006dport("x")];
+>x = [i\u006dport("x")] : Promise<any>[]
+>x : any
+>[i\u006dport("x")] : Promise<any>[]
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== import_array2.ts ===
+x = [1, i\u006dport("x")];
+>x = [1, i\u006dport("x")] : (number | Promise<any>)[]
+>x : any
+>[1, i\u006dport("x")] : (number | Promise<any>)[]
+>1 : 1
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== import_arrow.ts ===
+x = () => i\u006dport("x");
+>x = () => i\u006dport("x") : () => Promise<any>
+>x : any
+>() => i\u006dport("x") : () => Promise<any>
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== import_call.ts ===
+f(i\u006dport("x"));
+>f(i\u006dport("x")) : any
+>f : any
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== import_call2.ts ===
+f(1, i\u006dport("x"));
+>f(1, i\u006dport("x")) : any
+>f : any
+>1 : 1
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== import_new.ts ===
+new X(i\u006dport("x"));
+>new X(i\u006dport("x")) : any
+>X : any
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== import_opt.ts ===
+f?.(i\u006dport("x"));
+>f?.(i\u006dport("x")) : any
+>f : any
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== import_targ.ts ===
+f<T>(i\u006dport("x"));
+>f<T>(i\u006dport("x")) : any
+>f : any
+>i\u006dport("x") : Promise<any>
+>"x" : "x"
+
+=== new_array.ts ===
+x = [n\u0065w X()];
+>x = [n\u0065w X()] : any[]
+>x : any
+>[n\u0065w X()] : any[]
+>n\u0065w X() : any
+>X : any
+
+=== new_array2.ts ===
+x = [1, n\u0065w X()];
+>x = [1, n\u0065w X()] : any[]
+>x : any
+>[1, n\u0065w X()] : any[]
+>1 : 1
+>n\u0065w X() : any
+>X : any
+
+=== new_arrow.ts ===
+x = () => n\u0065w X();
+>x = () => n\u0065w X() : () => any
+>x : any
+>() => n\u0065w X() : () => any
+>n\u0065w X() : any
+>X : any
+
+=== new_call.ts ===
+f(n\u0065w X());
+>f(n\u0065w X()) : any
+>f : any
+>n\u0065w X() : any
+>X : any
+
+=== new_call2.ts ===
+f(1, n\u0065w X());
+>f(1, n\u0065w X()) : any
+>f : any
+>1 : 1
+>n\u0065w X() : any
+>X : any
+
+=== new_new.ts ===
+new X(n\u0065w X());
+>new X(n\u0065w X()) : any
+>X : any
+>n\u0065w X() : any
+>X : any
+
+=== new_opt.ts ===
+f?.(n\u0065w X());
+>f?.(n\u0065w X()) : any
+>f : any
+>n\u0065w X() : any
+>X : any
+
+=== new_targ.ts ===
+f<T>(n\u0065w X());
+>f<T>(n\u0065w X()) : any
+>f : any
+>n\u0065w X() : any
+>X : any
+
+=== null_array.ts ===
+x = [n\u0075ll];
+>x = [n\u0075ll] : null[]
+>x : any
+>[n\u0075ll] : null[]
+
+=== null_array2.ts ===
+x = [1, n\u0075ll];
+>x = [1, n\u0075ll] : (number | null)[]
+>x : any
+>[1, n\u0075ll] : (number | null)[]
+>1 : 1
+
+=== null_arrow.ts ===
+x = () => n\u0075ll;
+>x = () => n\u0075ll : () => null
+>x : any
+>() => n\u0075ll : () => null
+
+=== null_call.ts ===
+f(n\u0075ll);
+>f(n\u0075ll) : any
+>f : any
+
+=== null_call2.ts ===
+f(1, n\u0075ll);
+>f(1, n\u0075ll) : any
+>f : any
+>1 : 1
+
+=== null_new.ts ===
+new X(n\u0075ll);
+>new X(n\u0075ll) : any
+>X : any
+
+=== null_opt.ts ===
+f?.(n\u0075ll);
+>f?.(n\u0075ll) : any
+>f : any
+
+=== null_targ.ts ===
+f<T>(n\u0075ll);
+>f<T>(n\u0075ll) : any
+>f : any
+
+=== this_array.ts ===
+x = [t\u0068is];
+>x = [t\u0068is] : (typeof globalThis)[]
+>x : any
+>[t\u0068is] : (typeof globalThis)[]
+>t\u0068is : typeof globalThis
+
+=== this_array2.ts ===
+x = [1, t\u0068is];
+>x = [1, t\u0068is] : (number | typeof globalThis)[]
+>x : any
+>[1, t\u0068is] : (number | typeof globalThis)[]
+>1 : 1
+>t\u0068is : typeof globalThis
+
+=== this_arrow.ts ===
+x = () => t\u0068is;
+>x = () => t\u0068is : () => typeof globalThis
+>x : any
+>() => t\u0068is : () => typeof globalThis
+>t\u0068is : typeof globalThis
+
+=== this_call.ts ===
+f(t\u0068is);
+>f(t\u0068is) : any
+>f : any
+>t\u0068is : typeof globalThis
+
+=== this_call2.ts ===
+f(1, t\u0068is);
+>f(1, t\u0068is) : any
+>f : any
+>1 : 1
+>t\u0068is : typeof globalThis
+
+=== this_new.ts ===
+new X(t\u0068is);
+>new X(t\u0068is) : any
+>X : any
+>t\u0068is : typeof globalThis
+
+=== this_opt.ts ===
+f?.(t\u0068is);
+>f?.(t\u0068is) : any
+>f : any
+>t\u0068is : typeof globalThis
+
+=== this_targ.ts ===
+f<T>(t\u0068is);
+>f<T>(t\u0068is) : any
+>f : any
+>t\u0068is : typeof globalThis
+
+=== void_array.ts ===
+x = [v\u006fid 0];
+>x = [v\u006fid 0] : undefined[]
+>x : any
+>[v\u006fid 0] : undefined[]
+>v\u006fid 0 : undefined
+>0 : 0
+
+=== void_array2.ts ===
+x = [1, v\u006fid 0];
+>x = [1, v\u006fid 0] : (number | undefined)[]
+>x : any
+>[1, v\u006fid 0] : (number | undefined)[]
+>1 : 1
+>v\u006fid 0 : undefined
+>0 : 0
+
+=== void_arrow.ts ===
+x = () => v\u006fid 0;
+>x = () => v\u006fid 0 : () => undefined
+>x : any
+>() => v\u006fid 0 : () => undefined
+>v\u006fid 0 : undefined
+>0 : 0
+
+=== void_call.ts ===
+f(v\u006fid 0);
+>f(v\u006fid 0) : any
+>f : any
+>v\u006fid 0 : undefined
+>0 : 0
+
+=== void_call2.ts ===
+f(1, v\u006fid 0);
+>f(1, v\u006fid 0) : any
+>f : any
+>1 : 1
+>v\u006fid 0 : undefined
+>0 : 0
+
+=== void_new.ts ===
+new X(v\u006fid 0);
+>new X(v\u006fid 0) : any
+>X : any
+>v\u006fid 0 : undefined
+>0 : 0
+
+=== void_opt.ts ===
+f?.(v\u006fid 0);
+>f?.(v\u006fid 0) : any
+>f : any
+>v\u006fid 0 : undefined
+>0 : 0
+
+=== void_targ.ts ===
+f<T>(v\u006fid 0);
+>f<T>(v\u006fid 0) : any
+>f : any
+>v\u006fid 0 : undefined
+>0 : 0
+

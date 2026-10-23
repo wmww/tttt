@@ -1,0 +1,28 @@
+a.js(2,5): error TS1473: An import declaration can only be used at the top level of a module.
+a.js(2,20): error TS1003: Identifier expected.
+a.js(2,33): error TS2307: Cannot find module './b' or its corresponding type declarations.
+a.js(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"],"allowJs":true,"checkJs":true } }
+==== a.js (4 errors) ====
+    async function f() {
+    /** @import { A as await } from "./b" */
+        ~
+!!! error TS1473: An import declaration can only be used at the top level of a module.
+                       ~~~~~
+!!! error TS1003: Identifier expected.
+                                    ~~~~~
+!!! error TS2307: Cannot find module './b' or its corresponding type declarations.
+    /** @type {await} */
+    const x = 1;
+    }
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    export default interface D { d: 1 }
+    export interface A { a: 1 }
+    

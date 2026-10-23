@@ -1,0 +1,37 @@
+//// [test/cases/bun87-R18b.ts] ////
+
+=== a.ts ===
+var use = f2();
+>use : D8
+>f2() : D8
+>f2 : () => D8
+
+const fn = () => { const v: 1 = null! as Has<"$m", D8>; };
+>fn : () => void
+>() => { const v: 1 = null! as Has<"$m", D8>; } : () => void
+>v : 1
+>null! as Has<"$m", D8> : false
+>null! : never
+
+function f2() { return null! as D8; }
+>f2 : () => D8
+>null! as D8 : D8
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== d.d.ts ===
+type Has<K, T> = K extends keyof T ? true : false;
+>Has : Has<K, T>
+>true : true
+>false : false
+
+type renamed<T> = { [K in keyof T as `$${K & string}`]: T[K] };
+>renamed : renamed<T>
+
+interface D8 extends renamed<D8> { m(): void; n: number }
+>m : () => void
+>n : number
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun33-C5a.ts] ////
+
+=== a.ts ===
+interface I {}
+class X implements (I) {}
+>X : X
+>(I) : any
+>I : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

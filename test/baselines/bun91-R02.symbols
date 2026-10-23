@@ -1,0 +1,54 @@
+//// [test/cases/bun91-R02.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: any } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 44))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 0, 74))
+
+declare const React: any;
+>React : Symbol(React, Decl(a.tsx, 1, 13))
+
+const enum E { A = 1 }
+>E : Symbol(E, Decl(a.tsx, 1, 25))
+>A : Symbol(E.A, Decl(a.tsx, 2, 14))
+
+let j1 = <div a={E} />;
+>j1 : Symbol(j1, Decl(a.tsx, 3, 3))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>a : Symbol(a, Decl(a.tsx, 3, 13))
+>E : Symbol(E, Decl(a.tsx, 1, 25))
+
+let j2 = <div>{E}</div>;
+>j2 : Symbol(j2, Decl(a.tsx, 4, 3))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>E : Symbol(E, Decl(a.tsx, 1, 25))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+
+let j3 = <div a={(E)} />;
+>j3 : Symbol(j3, Decl(a.tsx, 5, 3))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>a : Symbol(a, Decl(a.tsx, 5, 13))
+>E : Symbol(E, Decl(a.tsx, 1, 25))
+
+let j4 = <div {...E} />;
+>j4 : Symbol(j4, Decl(a.tsx, 6, 3))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>E : Symbol(E, Decl(a.tsx, 1, 25))
+
+let j5 = <div a={E.A}>{E.A}</div>;
+>j5 : Symbol(j5, Decl(a.tsx, 7, 3))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>a : Symbol(a, Decl(a.tsx, 7, 13))
+>E.A : Symbol(E.A, Decl(a.tsx, 2, 14))
+>E : Symbol(E, Decl(a.tsx, 1, 25))
+>A : Symbol(E.A, Decl(a.tsx, 2, 14))
+>E.A : Symbol(E.A, Decl(a.tsx, 2, 14))
+>E : Symbol(E, Decl(a.tsx, 1, 25))
+>A : Symbol(E.A, Decl(a.tsx, 2, 14))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 8, 5))
+

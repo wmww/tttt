@@ -124,7 +124,7 @@ def run_tttt_case(name, case, root, timeout, mem_gb):
         # A fresh copy each run: nothing one leaves behind reaches the next
         base = write_case(root, name, case)
         out[run] = lines_of([os.path.join(ROOT, 'release/tttt'), *(['-b'] if case.get('build') else []),
-                             '--pretty', 'false', '--no-write', *flags], base, root, timeout, 2, mem_gb)
+                             '--pretty', 'false', '--no-write', *flags], base, root, timeout, 5, mem_gb)
     shutil.rmtree(base)
     return out
 
@@ -175,6 +175,61 @@ def text_cause(want_lines, got_lines):
     return 'order of diagnostics'
 
 
+OWN_CASES = os.path.join(ROOT, 'test/cases')
+
+
+def test_text(case):
+    """The case as a suite test (test/cases/bunID.ts): its files as `// @filename:` units, the tsconfig.json first (the
+    harness applies it like tsc's: options, roots), or why it can't be one"""
+    if case.get('build'):
+        return None, 'tsc -b'
+    files = sorted(case['files'].items(), key=lambda kv: kv[0] != 'tsconfig.json')
+    if any('\r' in t for _, t in files):
+        return None, 'a carriage return'
+    if any(re.search(r'(?m)^\s*//\s*@\w+\s*:', t) for _, t in files):
+        return None, 'a line the harness reads as a directive'
+    out = []
+    for path, text in files:
+        out.append(f'// @filename: {path}\n' + text + ('' if text.endswith('\n') or not text else '\n'))
+    return ''.join(out), None
+
+
+# Cases tsgo's suite runner can't run as tests (2026-10-23: it hung on one of them, wrote no baselines for the rest;
+# Windows paths like `C:/x.d.ts`, quotes in baseUrl, references to files outside the test)
+HARNESS_UNFIT = {'35-C7', '37-C15', '37-C21a', '39-C21a', '39-C21b', '42-P3b', '42-P6c', '42-P8'}
+# A test whose tsgo .types and .symbols would take more than this is compared on its errors alone (@noTypesAndSymbols):
+# a few deep cases make tens of megabytes of them
+TYPES_LIMIT = 50_000
+OWN_REF = os.path.join(ROOT, 'test/baselines')
+
+
+# A case tsgo's CLI took longer than this on (the cache's `ms`, a loaded box) stays out of the suite: the 18 past it
+# (templates of thousands of literals, deep nesting) would take seconds of every run
+SLOW_MS = 1000
+
+
+def write_tests(cases, names, oracle):
+    """Each case a suite test; returns the ones that can't be, with the reason. A test keeps @noTypesAndSymbols when
+    its file had it, and gets it when its current baselines are past TYPES_LIMIT"""
+    unfit = {}
+    for n in names:
+        text, why = test_text(cases[n])
+        if not why and n in HARNESS_UNFIT:
+            why = "tsgo's suite runner can't run it"
+        if not why and oracle.get(n, {}).get('ms', 0) > SLOW_MS:
+            why = f'slower than {SLOW_MS} ms under tsgo'
+        if why:
+            unfit[n] = why
+            continue
+        path = os.path.join(OWN_CASES, f'bun{n}.ts')
+        quiet = os.path.exists(path) and open(path).read().startswith('// @noTypesAndSymbols: true')
+        quiet |= sum(os.path.getsize(os.path.join(OWN_REF, f'bun{n}{ext}')) for ext in ('.types', '.symbols')
+                     if os.path.exists(os.path.join(OWN_REF, f'bun{n}{ext}'))) > TYPES_LIMIT
+        with open(path, 'w') as f:
+            f.write(('// @noTypesAndSymbols: true\n' if quiet else '') + text)
+    return unfit
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('-f', '--filter', help='regex the case id must match (re.search)')
@@ -189,6 +244,8 @@ def main():
     ap.add_argument('--timeout', type=int, default=60)
     ap.add_argument('--mem-gb', type=int, default=64, help="tttt's address space limit (it reserves arenas per thread: 4 GB fails at the default threads)")
     ap.add_argument('--no-build', action='store_true')
+    ap.add_argument('--write-tests', action='store_true',
+                    help='write the (selected) cases as suite tests test/cases/bunID.ts (then scripts/owntests.sh them)')
     args = ap.parse_args()
 
     cases = json.load(open(CASES))
@@ -199,6 +256,12 @@ def main():
     skipped = {n: skip_reason(cases[n]) for n in names}
     skipped = {n: r for n, r in skipped.items() if r}
     names = [n for n in names if n not in skipped]
+
+    if args.write_tests:
+        unfit = write_tests(cases, names, oracle)
+        print(f'{len(names) - len(unfit)} tests written to test/cases; not as tests: ' +
+              ', '.join(f'{why} {k}' for why, k in collections.Counter(unfit.values()).most_common()))
+        return
 
     if args.tsc:
         subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True)

@@ -1,0 +1,25 @@
+//// [test/cases/bun27-C22.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+declare function Arr(p: { children: number[] }): JSX.Element;
+>Arr : (p: { children: number[]; }) => JSX.Element
+>p : { children: number[]; }
+>children : number[]
+>JSX : any
+
+const c = <Arr>{}{"b"}{2}</Arr>;
+>c : JSX.Element
+><Arr>{}{"b"}{2}</Arr> : JSX.Element
+>Arr : (p: { children: number[]; }) => JSX.Element
+>"b" : "b"
+>2 : 2
+>Arr : (p: { children: number[]; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

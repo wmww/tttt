@@ -1,0 +1,9 @@
+//// [test/cases/bun34-C7a.ts] ////
+
+=== a.ts ===
+let w: \u0061ny = 1; const sentinel: number = "";
+>w : any
+>1 : 1
+>sentinel : number
+>"" : ""
+

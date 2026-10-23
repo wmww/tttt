@@ -1,0 +1,24 @@
+//// [test/cases/bun54-L02d.ts] ////
+
+=== a.mts ===
+import t1 from "z";
+>t1 : Symbol(t1, Decl(a.mts, 0, 6))
+
+import { default as t2 } from "z";
+>default : Symbol(t1, Decl(amb.d.json.ts, 0, 0))
+>t2 : Symbol(t2, Decl(a.mts, 1, 8))
+
+t1.amb; t2.amb;
+>t1 : Symbol(t1, Decl(a.mts, 0, 6))
+>t2 : Symbol(t2, Decl(a.mts, 1, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.mts, 3, 5))
+
+=== amb.d.json.ts ===
+declare module "z" { const v: { amb: number }; export default v; }
+>"z" : Symbol("z", Decl(amb.d.json.ts, 0, 0))
+>v : Symbol(v, Decl(amb.d.json.ts, 0, 26))
+>amb : Symbol(amb, Decl(amb.d.json.ts, 0, 31))
+>v : Symbol(v, Decl(amb.d.json.ts, 0, 26))
+

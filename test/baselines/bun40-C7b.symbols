@@ -1,0 +1,16 @@
+//// [test/cases/bun40-C7b.ts] ////
+
+=== a.ts ===
+const d: Document = 1;
+>d : Symbol(d, Decl(a.ts, 0, 5))
+>Document : Symbol(Document)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/@typescript/lib-dom/index.js ===
+module.exports = {}
+>module.exports : Symbol(exports, Decl(index.js, 0, 0))
+>module : Symbol(module, Decl(index.js, 0, 0))
+>exports : Symbol(exports, Decl(index.js, 0, 0))
+

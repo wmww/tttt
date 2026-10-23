@@ -1,0 +1,16 @@
+j.js(2,16): error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+j.js(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== j.js (2 errors) ====
+    exports.a = 1;
+    declare module "zz" { }
+                   ~~~~
+!!! error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

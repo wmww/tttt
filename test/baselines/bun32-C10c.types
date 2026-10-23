@@ -1,0 +1,12 @@
+//// [test/cases/bun32-C10c.ts] ////
+
+=== a.ts ===
+({ abstract e(): void });
+>({ abstract e(): void }) : { e(): void; }
+>{ abstract e(): void } : { e(): void; }
+>e : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

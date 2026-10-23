@@ -107,7 +107,8 @@ static_failable load_subdir(BaselineTestSuite* me, csview subdir) {
     return ok;
 }
 
-// tttt's own tests (BaselineTestSuite.own_dir): their names must not collide with tsgo's, so they all start with tttt
+// tttt's own tests (BaselineTestSuite.own_dir): their names must not collide with tsgo's, so they all start with their
+// origin, tttt (written here) or bun (bun's differential check cases, scripts/buncases.py --write-tests)
 static_failable load_own_tests(BaselineTestSuite* me) {
     cstr cases = cstr_d(my own_dir, "/cases");
     if (!fs_is_directory(fs, cstr_sv(&cases))) {
@@ -120,9 +121,9 @@ static_failable load_own_tests(BaselineTestSuite* me) {
     cstr_drop(&cases);
     for (intptr_t i = first; i < vec_baseline_test_result_size(&my results); i++) {
         csview name = cstr_sv(&vec_baseline_test_result_at(&my results, i)->name);
-        if (!csview_starts_with(name, "tttt")) {
+        if (!csview_starts_with(name, "tttt") && !csview_starts_with(name, "bun")) {
             return err_d(vec_baseline_test_result_at(&my results, i)->source_path,
-                ": tttt's own tests must be named tttt* (not to collide with tsgo's)");
+                ": own tests must be named tttt* or bun* (not to collide with tsgo's)");
         }
     }
     return ok;

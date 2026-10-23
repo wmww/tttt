@@ -1,0 +1,186 @@
+//// [test/cases/bun96-H2.ts] ////
+
+=== a.ts ===
+import { A } from "./d1";
+>A : any
+
+import { B } from "./d2";
+>B : 1
+
+import D from "./d3";
+>D : any
+
+import { C } from "./d4";
+>C : any
+
+import { F, G, I } from "./d5";
+>F : any
+>G : any
+>I : any
+
+import { H } from "./d6";
+>H : 1
+
+import { X } from "./d7";
+>X : 1
+
+import { Y } from "./d8";
+>Y : any
+
+import L, { N } from "./d9";
+>L : any
+>N : typeof N
+
+import { K } from "amb";
+>K : any
+
+import * as d4 from "./d4";
+>d4 : typeof d4
+
+const a: string = A;
+>a : string
+>A : any
+
+const b: string = B;
+>b : string
+>B : 1
+
+const d: string = D;
+>d : string
+>D : any
+
+const c: string = C;
+>c : string
+>C : any
+
+const f: string = F, g: string = G;
+>f : string
+>F : any
+>g : string
+>G : any
+
+let i: I;
+>i : I
+
+const h: string = H;
+>h : string
+>H : 1
+
+const x: string = X;
+>x : string
+>X : 1
+
+const y: string = Y;
+>y : string
+>Y : any
+
+const l: string = L, j: string = N.J, k: string = K;
+>l : string
+>L : any
+>j : string
+>N.J : any
+>N : typeof N
+>J : any
+>k : string
+>K : any
+
+d4.C;
+>d4.C : any
+>d4 : typeof d4
+>C : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== amb.d.ts ===
+declare module "amb" {
+>"amb" : typeof import("amb")
+
+  export { K } from 123;
+>K : any
+}
+=== d1.ts ===
+export { A } from 123;
+>A : any
+
+export { A } from 456;
+>A : any
+
+=== d2.ts ===
+export const B = 1;
+>B : 1
+>1 : 1
+
+export { B } from 123;
+>B : 1
+
+=== d3.ts ===
+export { default } from 123;
+>default : any
+
+export default 1;
+=== d4.ts ===
+const C = 1;
+>C : 1
+>1 : 1
+
+export { C } from 123;
+>C : any
+
+=== d5.ts ===
+declare const name: string;
+>name : string
+
+export { E as F } from name;
+>E : any
+>F : any
+>name : any
+
+export * as G from `./other`;
+>G : any
+
+export { type I } from (name);
+>I : any
+>(name) : string
+>name : string
+
+=== d6.ts ===
+export * as H from 123;
+>H : 1
+
+export const H = 1;
+>H : 1
+>1 : 1
+
+=== d7.ts ===
+export { X } from "./other";
+>X : 1
+
+export { X } from 123;
+>X : any
+
+=== d8.ts ===
+export * from "./other";
+export { Y } from 123;
+>Y : any
+
+=== d9.ts ===
+export { default } from 123;
+>default : any
+
+export namespace N {
+>N : typeof N
+
+  export { J } from 123;
+>J : any
+}
+=== other.ts ===
+export const X = 1;
+>X : 1
+>1 : 1
+
+export const Y = 1;
+>Y : 1
+>1 : 1
+

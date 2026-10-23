@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '{ [K["x-y"]]: number; }' is not assignable to type '1'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class K { static readonly "x-y": unique symbol = Symbol(); }
+    const o: 1 = { [K["x-y"]]: 1 };
+          ~
+!!! error TS2322: Type '{ [K["x-y"]]: number; }' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

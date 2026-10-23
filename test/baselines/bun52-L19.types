@@ -1,0 +1,29 @@
+//// [test/cases/bun52-L19.ts] ////
+
+=== a.ts ===
+type Unk = unknown; type Nev = never;
+>Unk : unknown
+>Nev : never
+
+function f1<T extends string & number & T>() {}
+>f1 : <T extends string & number & T>() => void
+
+function f2<T extends T | Unk>() {}
+>f2 : <T extends T | Unk>() => void
+
+function f3<T extends T & Nev>() {}
+>f3 : <T extends T & Nev>() => void
+
+function f4<T extends U | Unk, U extends T>() {}
+>f4 : <T extends U | Unk, U extends T>() => void
+
+function f5<T extends { [K in T & Nev]: 1 }>() {}
+>f5 : <T extends { [K in T & Nev]: 1; }>() => void
+
+function f6<T extends T & (string & number)>() {}
+>f6 : <T extends T & (string & number)>() => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

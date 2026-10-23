@@ -1,0 +1,17 @@
+a.ts(1,11): error TS2300: Duplicate identifier '[-0]'.
+a.ts(1,21): error TS2300: Duplicate identifier '[-0]'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class D { [-0] = 1; "-0" = 2 }
+              ~~~~
+!!! error TS2300: Duplicate identifier '[-0]'.
+                        ~~~~
+!!! error TS2300: Duplicate identifier '[-0]'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,22 @@
+//// [test/cases/bun86-R03b.ts] ////
+
+=== a.d.ts ===
+declare namespace C { interface x { j: 1 } }
+>j : 1
+
+=== b.js ===
+class C {}
+>C : C
+
+C.x = "s";
+>C.x = "s" : "s"
+>C.x : string
+>C : typeof C
+>x : string
+>"s" : "s"
+
+=== c.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

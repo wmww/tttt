@@ -1,0 +1,23 @@
+//// [test/cases/bun20-P7.ts] ////
+
+=== a.ts ===
+declare function isN(x: unknown): x is number;
+>isN : Symbol(isN, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+
+function b(x?: { a: number }) { if (isN((x?.a))) { x.a; } }
+>b : Symbol(b, Decl(a.ts, 0, 46))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 16))
+>isN : Symbol(isN, Decl(a.ts, 0, 0))
+>x?.a : Symbol(a, Decl(a.ts, 1, 16))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 16))
+>x.a : Symbol(a, Decl(a.ts, 1, 16))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

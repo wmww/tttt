@@ -1,0 +1,16 @@
+a.ts(2,12): error TS2698: Spread types may only be created from object types.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function f<T extends () => unknown>(y: ReturnType<T>) {
+      return { ...y };
+               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

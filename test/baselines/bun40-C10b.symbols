@@ -1,0 +1,31 @@
+//// [test/cases/bun40-C10b.ts] ////
+
+=== a.ts ===
+interface Order { f(x: "a"): 3 }
+>Order : Symbol(Order, Decl(index.d.ts, 0, 0), Decl(a.ts, 0, 0), Decl(extra.d.ts, 0, 0))
+>f : Symbol(Order.f, Decl(index.d.ts, 1, 17), Decl(a.ts, 0, 17), Decl(extra.d.ts, 0, 17))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+
+declare const o: Order; o.f(0);
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>Order : Symbol(Order, Decl(index.d.ts, 0, 0), Decl(a.ts, 0, 0), Decl(extra.d.ts, 0, 0))
+>o.f : Symbol(Order.f, Decl(index.d.ts, 1, 17), Decl(a.ts, 0, 17), Decl(extra.d.ts, 0, 17))
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>f : Symbol(Order.f, Decl(index.d.ts, 1, 17), Decl(a.ts, 0, 17), Decl(extra.d.ts, 0, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/@typescript/lib-dom/extra.d.ts ===
+interface Order { f(x: "extra"): 2 }
+>Order : Symbol(Order, Decl(index.d.ts, 0, 0), Decl(a.ts, 0, 0), Decl(extra.d.ts, 0, 0))
+>f : Symbol(Order.f, Decl(index.d.ts, 1, 17), Decl(a.ts, 0, 17), Decl(extra.d.ts, 0, 17))
+>x : Symbol(x, Decl(extra.d.ts, 0, 20))
+
+=== node_modules/@typescript/lib-dom/index.d.ts ===
+/// <reference path="./extra.d.ts" />
+interface Order { f(x: "dom"): 1 }
+>Order : Symbol(Order, Decl(index.d.ts, 0, 0), Decl(a.ts, 0, 0), Decl(extra.d.ts, 0, 0))
+>f : Symbol(Order.f, Decl(index.d.ts, 1, 17), Decl(a.ts, 0, 17), Decl(extra.d.ts, 0, 17))
+>x : Symbol(x, Decl(index.d.ts, 1, 20))
+

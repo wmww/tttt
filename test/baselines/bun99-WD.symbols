@@ -1,0 +1,82 @@
+//// [test/cases/bun99-WD.ts] ////
+
+=== index.ts ===
+import { css, Style } from './lib';
+>css : Symbol(css, Decl(index.ts, 0, 8))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+css({ ':hover': { notAProperty: '1' } });
+>css : Symbol(css, Decl(index.ts, 0, 8))
+>':hover' : Symbol(':hover', Decl(index.ts, 1, 5))
+>notAProperty : Symbol(notAProperty, Decl(index.ts, 1, 17))
+
+const p: Pick<Style, ':hover'> = {};
+>p : Symbol(p, Decl(index.ts, 2, 5))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+const q: Pick<Style, ':hover' | 'top'> = {};
+>q : Symbol(q, Decl(index.ts, 3, 5))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+const o: Omit<Style, 'top'> = {};
+>o : Symbol(o, Decl(index.ts, 4, 5))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+const r: Readonly<Style> = {};
+>r : Symbol(r, Decl(index.ts, 5, 5))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+const all: Required<Pick<Style, ':hover'>> = {};
+>all : Symbol(all, Decl(index.ts, 6, 5))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+declare const picked: Pick<Style, 'top'>;
+>picked : Symbol(picked, Decl(index.ts, 7, 13))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+picked.top = '';
+>picked.top : Symbol(top, Decl(lib.d.ts, --, --))
+>picked : Symbol(picked, Decl(index.ts, 7, 13))
+>top : Symbol(top, Decl(lib.d.ts, --, --))
+
+const hover: never = null! as Style[':hover'];
+>hover : Symbol(hover, Decl(index.ts, 9, 5))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+const keys: never = null! as keyof Pick<Style, ':hover' | 'top'>;
+>keys : Symbol(keys, Decl(index.ts, 10, 5))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+export const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(index.ts, 11, 12))
+
+=== lib.d.ts ===
+type Pseudos = ':hover';
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+
+export type CSSPseudos = { [P in Pseudos]?: Omit<Style, Pseudos> };
+>CSSPseudos : Symbol(CSSPseudos, Decl(lib.d.ts, --, --))
+>P : Symbol(P, Decl(lib.d.ts, --, --))
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+
+export type Style = CSSPseudos & { readonly top?: string };
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+>CSSPseudos : Symbol(CSSPseudos, Decl(lib.d.ts, --, --))
+>top : Symbol(top, Decl(lib.d.ts, --, --))
+
+export declare function css(style: Style): void;
+>css : Symbol(css, Decl(lib.d.ts, --, --))
+>style : Symbol(style, Decl(lib.d.ts, --, --))
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+

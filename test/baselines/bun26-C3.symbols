@@ -1,0 +1,16 @@
+//// [test/cases/bun26-C3.ts] ////
+
+=== a.ts ===
+function f({ a = 1 }) {}
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+
+const i: { [k: string]: number } = null! as Parameters<typeof f>[0];
+>i : Symbol(i, Decl(a.ts, 1, 5))
+>k : Symbol(k, Decl(a.ts, 1, 12))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,21 @@
+//// [test/cases/bun26-C6.ts] ////
+
+=== a.ts ===
+interface P { a: number }
+>a : number
+
+namespace P { export const z = 1; }
+>P : typeof P
+>z : 1
+>1 : 1
+
+const i: { [k: string]: number } = null! as P;
+>i : { [k: string]: number; }
+>k : string
+>null! as P : P
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

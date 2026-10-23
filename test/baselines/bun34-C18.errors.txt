@@ -1,0 +1,17 @@
+d.cjs(1,25): error TS1479: The current file is a CommonJS module whose imports will produce 'require' calls; however, the referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a dynamic 'import("./m.mjs")' call instead.
+s.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "node16", "allowJs": true, "checkJs": true } }
+==== d.cjs (1 errors) ====
+    /** @import * as M from "./m.mjs" */
+                            ~~~~~~~~~
+!!! error TS1479: The current file is a CommonJS module whose imports will produce 'require' calls; however, the referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a dynamic 'import("./m.mjs")' call instead.
+==== m.mts (0 errors) ====
+    export {};
+==== s.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

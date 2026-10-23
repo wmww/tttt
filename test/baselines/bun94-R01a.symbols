@@ -1,0 +1,32 @@
+//// [test/cases/bun94-R01a.ts] ////
+
+=== a.ts ===
+import * as ns from "./b";
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+
+export function fa() { return ns.foo; }
+>fa : Symbol(fa, Decl(a.ts, 0, 26))
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+
+ns.nope;
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== b.ts ===
+import A = require("./a");
+>A : Symbol(A, Decl(b.ts, 0, 0))
+
+const o = { foo: 1, get g() { return A.fa(); }, default: 1 };
+>o : Symbol(o, Decl(b.ts, 1, 5))
+>foo : Symbol(foo, Decl(b.ts, 1, 11))
+>g : Symbol(g, Decl(b.ts, 1, 19))
+>A.fa : Symbol(A.fa, Decl(a.ts, 0, 26))
+>A : Symbol(A, Decl(b.ts, 0, 0))
+>fa : Symbol(A.fa, Decl(a.ts, 0, 26))
+>default : Symbol(default, Decl(b.ts, 1, 47))
+
+export = o;
+>o : Symbol(o, Decl(b.ts, 1, 5))
+

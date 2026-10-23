@@ -1,0 +1,18 @@
+//// [test/cases/bun33-P8.ts] ////
+
+=== a.ts ===
+const k = "p";
+>k : "p"
+>"p" : "p"
+
+interface I { [k]: number }
+>[k] : number
+>k : "p"
+
+interface I { readonly p: number }
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

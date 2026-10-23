@@ -1,0 +1,16 @@
+a.ts(1,15): error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import a from "./dir.d.x\\foo.ts";
+                  ~~~~~~~~~~~~~~~~~~~
+!!! error TS5097: An import path can only end with a '.ts' extension when 'allowImportingTsExtensions' is enabled.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== dir.d.x/foo.ts (0 errors) ====
+    export default 1;
+    

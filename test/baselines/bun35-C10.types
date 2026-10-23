@@ -1,0 +1,10 @@
+//// [test/cases/bun35-C10.ts] ////
+
+=== b.cts ===
+import u1 = require("untyped");
+>u1 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

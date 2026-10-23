@@ -1,0 +1,53 @@
+//// [test/cases/bun96-SOLID1.ts] ////
+
+=== a.ts ===
+type JSXElement = 1;
+>JSXElement : 1
+
+type { JSXElement };
+>type : any
+>JSXElement : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+type { A } from "./a";
+>type : any
+>A : any
+>from : any
+>"./a" : "./a"
+
+type ) ;
+>type : any
+
+interface ] ;
+>interface : any
+
+namespace @ ;
+>namespace : any
+> : any
+
+module ~ 1;
+>module : any
+>~ 1 : number
+>1 : 1
+
+type { A };
+>type : any
+>A : any
+
+class C1 { type { } }
+>C1 : C1
+>type : any
+
+class C2 { interface? ) }
+>C2 : C2
+>interface : any
+
+function f() { throw type { A }; }
+>f : () => void
+>type : any
+>A : any
+

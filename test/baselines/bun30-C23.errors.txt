@@ -1,0 +1,21 @@
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(1,10): error TS2459: Module '"./a"' declares 'b' locally, but it is not exported.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (1 errors) ====
+    import { a, b } from "./m";
+    export { a as aa };
+    b;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    import { b } from "./a";
+             ~
+!!! error TS2459: Module '"./a"' declares 'b' locally, but it is not exported.
+!!! related TS2728 a.ts:1:13: 'b' is declared here.
+==== m.ts (0 errors) ====
+    const o = { a: 1, b: 2 }; export = o;
+    

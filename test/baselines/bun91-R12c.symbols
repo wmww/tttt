@@ -1,0 +1,25 @@
+//// [test/cases/bun91-R12c.ts] ////
+
+=== a.js ===
+var o = /** @type {any} */ (null);
+>o : Symbol(o, Decl(a.js, 0, 3))
+
+with (o) { var r1 = require("./nope1"); }
+>o : Symbol(o, Decl(a.js, 0, 3))
+
+r1;
+>r1 : Symbol(r1, Decl(a.js, 1, 14))
+
+with (o) { var { r2 } = require("./nope2"); }
+>o : Symbol(o, Decl(a.js, 0, 3))
+
+r2;
+>r2 : Symbol(r2, Decl(a.js, 3, 16))
+
+with (o) { var r3 = require("./nope3"); }
+>o : Symbol(o, Decl(a.js, 0, 3))
+
+/** @type {number} */
+var sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 7, 3))
+

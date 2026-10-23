@@ -1,0 +1,9 @@
+//// [test/cases/bun33-C10.ts] ////
+
+=== f1.tsx ===
+export const a = <div/>;
+>a : Symbol(a, Decl(f1.tsx, 0, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(f1.tsx, 1, 5))
+

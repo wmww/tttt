@@ -1,0 +1,19 @@
+//// [test/cases/bun61-L17b.ts] ////
+
+=== a.js ===
+function f() => 1
+>f : () => any
+>1 : 1
+
+=== b.js ===
+function 1() {}
+> : () => any
+>1() : any
+>1 : 1
+
+=== c.js ===
+class C { m() 1 }
+>C : C
+>m : () => any
+>1 : any
+

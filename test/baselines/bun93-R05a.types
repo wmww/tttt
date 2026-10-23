@@ -1,0 +1,25 @@
+//// [test/cases/bun93-R05a.ts] ////
+
+=== a.ts ===
+interface A1 { a: 1 }
+>a : 1
+
+function f<U extends object | string>() {
+>f : <U extends object | string>() => void
+
+  let p: U & A1 = null!;
+>p : U & A1
+>null! : never
+
+  type T = U & {} & A1;
+>T : U & A1
+
+  const n: never = null! as T | (U & string) | (U & object);
+>n : never
+>null! as T | (U & string) | (U & object) : U
+>null! : never
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

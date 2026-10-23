@@ -1,0 +1,12 @@
+//// [test/cases/bun04-C17.ts] ////
+
+=== a.ts ===
+export interface R3e { m({ a: b }): void }
+>m : ({ a: b }: { a: any; }) => void
+>a : any
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

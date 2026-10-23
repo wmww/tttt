@@ -1,0 +1,23 @@
+//// [test/cases/bun18-C4a.ts] ////
+
+=== a.ts ===
+type Tail<T> = T extends (a: any, ...args: infer P) => any ? P : never;
+>Tail : Tail<T>
+>a : any
+>args : P
+
+type X1 = Tail<(...args: readonly [number, ...string[]]) => void>;
+>X1 : string[]
+>args : readonly [number, ...string[]]
+
+declare const ro: readonly string[];
+>ro : readonly string[]
+
+const x1: X1 = ro;
+>x1 : string[]
+>ro : readonly string[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

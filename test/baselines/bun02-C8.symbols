@@ -1,0 +1,16 @@
+//// [test/cases/bun02-C8.ts] ////
+
+=== a.ts ===
+function s1(x: string): void; function s1(x: any) {} var q1; function s1(y: number, z: number): number { return 1 }
+>s1 : Symbol(s1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 29), Decl(a.ts, 0, 60))
+>x : Symbol(x, Decl(a.ts, 0, 12))
+>s1 : Symbol(s1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 29), Decl(a.ts, 0, 60))
+>x : Symbol(x, Decl(a.ts, 0, 42))
+>q1 : Symbol(q1, Decl(a.ts, 0, 56))
+>s1 : Symbol(s1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 29), Decl(a.ts, 0, 60))
+>y : Symbol(y, Decl(a.ts, 0, 73))
+>z : Symbol(z, Decl(a.ts, 0, 83))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

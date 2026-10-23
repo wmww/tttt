@@ -1,0 +1,22 @@
+//// [test/cases/bun23-C3d.ts] ////
+
+=== a.ts ===
+declare let x: import("./m1").A["w"]; const y: import("./m1").B["w"] = x;
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>A : Symbol(A, Decl(m1.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 0, 43))
+>B : Symbol(B, Decl(m1.ts, 0, 48))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== m1.ts ===
+export interface A { readonly w: unique symbol }
+>A : Symbol(A, Decl(m1.ts, 0, 0))
+>w : Symbol(A.w, Decl(m1.ts, 0, 20))
+
+export interface B { readonly w: unique symbol }
+>B : Symbol(B, Decl(m1.ts, 0, 48))
+>w : Symbol(B.w, Decl(m1.ts, 1, 20))
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun08-C13c.ts] ////
+
+=== a.ts ===
+type T = { a: "b"; [k]: number };
+>T : T
+>a : "b"
+>[k] : number
+>k : "b"
+
+declare const k: T["a"];
+>k : "b"
+
+declare let t: T; t.c;
+>t : T
+>t.c : any
+>t : T
+>c : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,50 @@
+//// [test/cases/bun55-L06b.ts] ////
+
+=== a.ts ===
+declare function g(a: unknown): number;
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 19))
+
+declare class K { constructor(a: unknown); v: number }
+>K : Symbol(K, Decl(a.ts, 0, 39))
+>a : Symbol(a, Decl(a.ts, 1, 30))
+>v : Symbol(K.v, Decl(a.ts, 1, 42))
+
+function h1({ a = 1, b = g(a) }) { return b; }
+>h1 : Symbol(h1, Decl(a.ts, 1, 54))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+>b : Symbol(b, Decl(a.ts, 2, 20))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+>b : Symbol(b, Decl(a.ts, 2, 20))
+
+const h2 = ([a = 1, b = Math.max(a, 2)]) => b;
+>h2 : Symbol(h2, Decl(a.ts, 3, 5))
+>a : Symbol(a, Decl(a.ts, 3, 13))
+>b : Symbol(b, Decl(a.ts, 3, 19))
+>Math.max : Symbol(Math.max, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>max : Symbol(Math.max, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 3, 13))
+>b : Symbol(b, Decl(a.ts, 3, 19))
+
+class C { m({ a = 1, b = new K(a) }) { return b; } }
+>C : Symbol(C, Decl(a.ts, 3, 46))
+>m : Symbol(C.m, Decl(a.ts, 4, 9))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>b : Symbol(b, Decl(a.ts, 4, 20))
+>K : Symbol(K, Decl(a.ts, 0, 39))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>b : Symbol(b, Decl(a.ts, 4, 20))
+
+// not quick: TS7022 in both
+function h3({ a = 1, b = a + 1 }) { return b; }
+>h3 : Symbol(h3, Decl(a.ts, 4, 52))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+>b : Symbol(b, Decl(a.ts, 6, 20))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+>b : Symbol(b, Decl(a.ts, 6, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

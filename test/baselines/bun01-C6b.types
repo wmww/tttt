@@ -1,0 +1,26 @@
+//// [test/cases/bun01-C6b.ts] ////
+
+=== a.ts ===
+import { X } from "./b";
+>X : any
+
+module "./b" { export interface X { y: number } }
+>"./b" : any
+>y : number
+
+declare const x: X;
+>x : X
+
+x.y;
+>x.y : any
+>x : X
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export interface X { x: number }
+>x : number
+

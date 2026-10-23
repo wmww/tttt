@@ -1,0 +1,20 @@
+a.ts(3,25): error TS2611: 'v' is defined as a property in class 'G<number> & G<string>', but is overridden here in 'D' as an accessor.
+a.ts(4,21): error TS2612: Property 'v' will overwrite the base property in 'G<number> & G<string>'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    abstract class G<T> { abstract v: T; }
+    declare const X: abstract new () => G<number> & G<string>;
+    class D extends X { get v(): never { throw 1 } }
+                            ~
+!!! error TS2611: 'v' is defined as a property in class 'G<number> & G<string>', but is overridden here in 'D' as an accessor.
+    class E extends X { v!: never }
+                        ~
+!!! error TS2612: Property 'v' will overwrite the base property in 'G<number> & G<string>'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

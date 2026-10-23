@@ -1,0 +1,17 @@
+a.ts(2,39): error TS2666: Exports and export assignments are not permitted in module augmentations.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    declare module "./t" { interface I {} export = I; }
+                                          ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== t.ts (0 errors) ====
+    export {};
+    

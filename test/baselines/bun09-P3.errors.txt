@@ -1,0 +1,23 @@
+a.js(1,5): error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(1,9): error TS2454: Variable 'r' is used before being assigned.
+a.js(2,5): error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "module": "commonjs", "types": [], "lib": ["es2022"] } }
+==== a.js (4 errors) ====
+    var p = r;
+        ~
+!!! error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+            ~
+!!! error TS2454: Variable 'r' is used before being assigned.
+    var r = [r, module];
+        ~
+!!! error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    module.exports = { p };
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

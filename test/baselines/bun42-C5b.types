@@ -1,0 +1,12 @@
+//// [test/cases/bun42-C5b.ts] ////
+
+=== a.ts ===
+/// <reference path="./upper.TS" />
+const a: 1 = upperGlobal;
+>a : 1
+>upperGlobal : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

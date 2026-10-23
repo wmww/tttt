@@ -1,0 +1,18 @@
+//// [test/cases/bun18-C8.ts] ////
+
+=== a.ts ===
+enum Status { Active = "active", Inactive = "inactive" }
+>Status : Status
+>Active : Status.Active
+>"active" : "active"
+>Inactive : Status.Inactive
+>"inactive" : "inactive"
+
+const s: Status = "active";
+>s : Status
+>"active" : "active"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun26-C1b.ts] ////
+
+=== a.ts ===
+type M<T, U> = { [K in keyof T]: M<U, { z: 1 }> };
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>U : Symbol(U, Decl(a.ts, 0, 9))
+>K : Symbol(K, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 9))
+>z : Symbol(z, Decl(a.ts, 0, 39))
+
+const x1: keyof M<{ a: 1 }, { b: 2 }>["a"] = "b";
+>x1 : Symbol(x1, Decl(a.ts, 1, 5))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+>b : Symbol(b, Decl(a.ts, 1, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

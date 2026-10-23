@@ -1,0 +1,8 @@
+//// [test/cases/bun43-P9e.ts] ////
+
+=== a.ts ===
+export { a as
+>a : any
+
+> : any
+

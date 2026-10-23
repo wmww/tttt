@@ -1,0 +1,32 @@
+//// [test/cases/bun39-C19b.ts] ////
+
+=== a.ts ===
+import { Base as B1 } from './m1';
+>Base : Symbol(B1, Decl(m1.ts, 0, 0))
+>B1 : Symbol(B1, Decl(a.ts, 0, 8))
+
+import { Base as B2 } from './m2';
+>Base : Symbol(B2, Decl(m2.ts, 0, 0))
+>B2 : Symbol(B2, Decl(a.ts, 1, 8))
+
+class C implements B1, B2 { x = { y: "" } }
+>C : Symbol(C, Decl(a.ts, 1, 34))
+>B1 : Symbol(B1, Decl(a.ts, 0, 8))
+>B2 : Symbol(B2, Decl(a.ts, 1, 8))
+>x : Symbol(C.x, Decl(a.ts, 2, 27))
+>y : Symbol(y, Decl(a.ts, 2, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== m1.ts ===
+export interface Base { x: number }
+>Base : Symbol(Base, Decl(m1.ts, 0, 0))
+>x : Symbol(Base.x, Decl(m1.ts, 0, 23))
+
+=== m2.ts ===
+export interface Base { x: { y: number } }
+>Base : Symbol(Base, Decl(m2.ts, 0, 0))
+>x : Symbol(Base.x, Decl(m2.ts, 0, 23))
+>y : Symbol(y, Decl(m2.ts, 0, 28))
+

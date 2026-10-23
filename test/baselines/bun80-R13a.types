@@ -1,0 +1,33 @@
+//// [test/cases/bun80-R13a.ts] ////
+
+=== a.ts ===
+import "./0";
+import y from "./a";
+>y : any
+
+export default Missing;
+>Missing : any
+
+=== b.ts ===
+import other from "./r";
+>other : any
+
+export default Missing;
+>Missing : any
+
+=== s.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== 0.ts ===
+import d from "./a";
+>d : any
+
+d;
+>d : any
+
+=== r.ts ===
+export { default } from "./b";
+>default : any
+

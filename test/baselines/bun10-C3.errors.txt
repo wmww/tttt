@@ -1,0 +1,18 @@
+a.ts(2,7): error TS7022: 's2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(2,18): error TS7023: 'h' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const o: { z: 1 };
+    const s2 = { get h() { return s2; }, ...o };
+          ~~
+!!! error TS7022: 's2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                     ~
+!!! error TS7023: 'h' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

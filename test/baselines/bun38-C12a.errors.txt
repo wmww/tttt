@@ -1,0 +1,12 @@
+a.tsx(3,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve", "jsxImportSource": "" } }
+==== a.tsx (1 errors) ====
+    declare global { namespace JSX { interface IntrinsicElements { div: {} } } }
+    export const el = <div />;
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

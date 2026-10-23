@@ -1,0 +1,23 @@
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react-jsx", "jsxImportSource": "starlib", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.tsx (1 errors) ====
+    function F(p: {}) { return null! as { e: 1 }; }
+    const b = <F />;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== node_modules/starlib/jsx-runtime.d.ts (0 errors) ====
+    export * as JSX from "./ns";
+==== node_modules/starlib/more.d.ts (0 errors) ====
+    export type LibraryManagedAttributes<C, P> = P & { extra: number };
+==== node_modules/starlib/ns.d.ts (0 errors) ====
+    export * from "./more";
+    export interface Element { e: 1 }
+    export interface IntrinsicElements {}
+==== node_modules/starlib/package.json (0 errors) ====
+    { "name": "starlib", "version": "1.0.0" }
+    

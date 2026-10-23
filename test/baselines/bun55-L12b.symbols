@@ -1,0 +1,35 @@
+//// [test/cases/bun55-L12b.ts] ////
+
+=== a.ts ===
+namespace NS { export let a = 1; }
+>NS : Symbol(NS, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 25))
+
+const k1 = c1({});
+>k1 : Symbol(k1, Decl(a.ts, 1, 5))
+>c1 : Symbol(c1, Decl(a.ts, 1, 18))
+
+function c1(p: any) { if (p?.[k1].b) {} return (NS satisfies {})["a"]; }
+>c1 : Symbol(c1, Decl(a.ts, 1, 18))
+>p : Symbol(p, Decl(a.ts, 2, 12))
+>p : Symbol(p, Decl(a.ts, 2, 12))
+>k1 : Symbol(k1, Decl(a.ts, 1, 5))
+>NS : Symbol(NS, Decl(a.ts, 0, 0))
+>"a" : Symbol(NS.a, Decl(a.ts, 0, 25))
+
+// without `satisfies`: TS7023 in both
+const k2 = c2({});
+>k2 : Symbol(k2, Decl(a.ts, 4, 5))
+>c2 : Symbol(c2, Decl(a.ts, 4, 18))
+
+function c2(p: any) { if (p?.[k2].b) {} return (NS)["a"]; }
+>c2 : Symbol(c2, Decl(a.ts, 4, 18))
+>p : Symbol(p, Decl(a.ts, 5, 12))
+>p : Symbol(p, Decl(a.ts, 5, 12))
+>k2 : Symbol(k2, Decl(a.ts, 4, 5))
+>NS : Symbol(NS, Decl(a.ts, 0, 0))
+>"a" : Symbol(NS.a, Decl(a.ts, 0, 25))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

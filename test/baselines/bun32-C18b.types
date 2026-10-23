@@ -1,0 +1,17 @@
+//// [test/cases/bun32-C18b.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.js ===
+module.exports = exports.a;
+>module.exports = exports.a : any
+>module.exports : any
+>module : { exports: any; }
+>exports : any
+>exports.a : any
+>exports : any
+>a : any
+

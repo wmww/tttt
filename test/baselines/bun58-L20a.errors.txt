@@ -1,0 +1,54 @@
+u.ts(5,7): error TS2322: Type 'number' is not assignable to type 'string'.
+u.ts(5,26): error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+u.ts(6,7): error TS2322: Type 'number' is not assignable to type 'string'.
+u.ts(6,28): error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+u.ts(7,7): error TS2322: Type 'number' is not assignable to type 'string'.
+u.ts(7,31): error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+u.ts(8,7): error TS2322: Type 'number' is not assignable to type 'string'.
+u.ts(8,28): error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+u.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "module": "commonjs", "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["m.ts", "mid.ts", "mid2.ts", "u.ts"] }
+==== m.ts (0 errors) ====
+    namespace obj { export interface p { t: 1 } }
+    const obj = { p: 1 };
+    export = obj;
+==== mid.ts (0 errors) ====
+    export { p } from "./m";
+==== mid2.ts (0 errors) ====
+    import { p } from "./m"; export { p as p3 };
+==== u.ts (9 errors) ====
+    import { p } from "./m";
+    import { p as p2 } from "./mid";
+    import * as mid from "./mid";
+    import { p3 } from "./mid2";
+    const v: string = p; let t: p = {};
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+                             ~
+!!! error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+!!! related TS2728 m.ts:1:38: 't' is declared here.
+    const v2: string = p2; let t2: p2 = {};
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+                               ~~
+!!! error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+!!! related TS2728 m.ts:1:38: 't' is declared here.
+    const v3: string = mid.p; let t3: mid.p = {};
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+                                  ~~
+!!! error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+!!! related TS2728 m.ts:1:38: 't' is declared here.
+    const v4: string = p3; let t4: p3 = {};
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+                               ~~
+!!! error TS2741: Property 't' is missing in type '{}' but required in type 'p'.
+!!! related TS2728 m.ts:1:38: 't' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

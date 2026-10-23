@@ -1,0 +1,16 @@
+//// [test/cases/bun33-C19c.ts] ////
+
+=== a.ts ===
+declare const o: {};
+>o : {}
+
+class P { #x = o[#x] }
+>P : P
+>#x : any
+>o[#x] : any
+>o : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,294 @@
+a.ts(6,74): error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '(index: number) => string'.
+  Type '{ a: number; }' is not assignable to type 'string'.
+a.ts(7,71): error TS2322: Type '(index: number) => () => number' is not assignable to type '(index: number) => string'.
+  Type '() => number' is not assignable to type 'string'.
+a.ts(8,67): error TS2322: Type '(index: number) => number[]' is not assignable to type '(index: number) => string'.
+  Type 'number[]' is not assignable to type 'string'.
+a.ts(11,89): error TS2322: Type '(index: number) => { a: number; b?: undefined; } | { a?: undefined; b: number; }' is not assignable to type '(index: number) => string'.
+  Type '{ a: number; b?: undefined; } | { a?: undefined; b: number; }' is not assignable to type 'string'.
+    Type '{ a: number; b?: undefined; }' is not assignable to type 'string'.
+a.ts(12,83): error TS2322: Type '(index: number) => { a: { b: number[]; }; }' is not assignable to type '(index: number) => string'.
+  Type '{ a: { b: number[]; }; }' is not assignable to type 'string'.
+a.ts(14,69): error TS2322: Type '(index: number) => number' is not assignable to type '(index: number) => string'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(15,83): error TS2322: Type '(index: number) => { readonly a: number; }' is not assignable to type '(index: number) => string'.
+  Type '{ readonly a: number; }' is not assignable to type 'string'.
+a.ts(16,91): error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '(index: number) => string'.
+  Type '{ a: number; }' is not assignable to type 'string'.
+a.ts(17,85): error TS2322: Type '(index: number) => Map<number, number>' is not assignable to type '(index: number) => string'.
+  Type 'Map<number, number>' is not assignable to type 'string'.
+a.ts(19,89): error TS2322: Type '(index: number) => Promise<{ a: number; }>' is not assignable to type '(index: number) => string'.
+  Type 'Promise<{ a: number; }>' is not assignable to type 'string'.
+a.ts(117,72): error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(118,74): error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(119,71): error TS2322: Type '(index: number) => () => number' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(120,67): error TS2322: Type '(index: number) => number[]' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(121,81): error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(122,81): error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(123,89): error TS2322: Type '(index: number) => { a: number; b?: undefined; } | { a?: undefined; b: number; }' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(124,83): error TS2322: Type '(index: number) => { a: { b: number[]; }; }' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(125,73): error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(126,69): error TS2322: Type '(index: number) => number' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(127,83): error TS2322: Type '(index: number) => { readonly a: number; }' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(128,91): error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(129,85): error TS2322: Type '(index: number) => Map<number, number>' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(130,82): error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(131,89): error TS2322: Type '(index: number) => Promise<{ a: number; }>' is not assignable to type '() => unknown'.
+  Target signature provides too few arguments. Expected 1 or more, but got 0.
+a.ts(132,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "skipLibCheck": true } }
+==== a.ts (26 errors) ====
+    declare function wrap<T extends Function>(callback: T, deps: readonly unknown[]): T;
+    declare const items: readonly string[];
+    declare const maybe: string | undefined;
+    declare function use1<T>(options: { items: readonly T[]; key?: (index: number) => string }): void;
+    { const key = wrap((index: number) => `k-${index}`, []); use1({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index }), []); use1({ items, key }); }
+                                                                             ~~~
+!!! error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type '{ a: number; }' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => () => index, []); use1({ items, key }); }
+                                                                          ~~~
+!!! error TS2322: Type '(index: number) => () => number' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type '() => number' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => [index], []); use1({ items, key }); }
+                                                                      ~~~
+!!! error TS2322: Type '(index: number) => number[]' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type 'number[]' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => maybe ?? `k-${index}`, []); use1({ items, key }); }
+    { const key = wrap((index: number) => maybe || `k-${index}`, []); use1({ items, key }); }
+    { const key = wrap((index: number) => (index ? { a: 1 } : { b: 2 }), []); use1({ items, key }); }
+                                                                                            ~~~
+!!! error TS2322: Type '(index: number) => { a: number; b?: undefined; } | { a?: undefined; b: number; }' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type '{ a: number; b?: undefined; } | { a?: undefined; b: number; }' is not assignable to type 'string'.
+!!! error TS2322:     Type '{ a: number; b?: undefined; }' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => ({ a: { b: [index] } }), []); use1({ items, key }); }
+                                                                                      ~~~
+!!! error TS2322: Type '(index: number) => { a: { b: number[]; }; }' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type '{ a: { b: number[]; }; }' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => String(index), []); use1({ items, key }); }
+    { const key = wrap((index: number) => index + 1, []); use1({ items, key }); }
+                                                                        ~~~
+!!! error TS2322: Type '(index: number) => number' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => ({ a: index } as const), []); use1({ items, key }); }
+                                                                                      ~~~
+!!! error TS2322: Type '(index: number) => { readonly a: number; }' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type '{ readonly a: number; }' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => ({ a: index } satisfies object), []); use1({ items, key }); }
+                                                                                              ~~~
+!!! error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type '{ a: number; }' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => new Map([[index, index]]), []); use1({ items, key }); }
+                                                                                        ~~~
+!!! error TS2322: Type '(index: number) => Map<number, number>' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type 'Map<number, number>' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    { const key = wrap((index: number) => String.raw`k-${index}`, []); use1({ items, key }); }
+    { const key = wrap((index: number) => Promise.resolve({ a: index }), []); use1({ items, key }); }
+                                                                                            ~~~
+!!! error TS2322: Type '(index: number) => Promise<{ a: number; }>' is not assignable to type '(index: number) => string'.
+!!! error TS2322:   Type 'Promise<{ a: number; }>' is not assignable to type 'string'.
+!!! related TS6500 a.ts:4:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: ((index: number) => string) | undefined; }'
+    declare function use2<T>(options: { items: readonly T[]; key?: (index: number) => unknown }): void;
+    { const key = wrap((index: number) => `k-${index}`, []); use2({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index }), []); use2({ items, key }); }
+    { const key = wrap((index: number) => () => index, []); use2({ items, key }); }
+    { const key = wrap((index: number) => [index], []); use2({ items, key }); }
+    { const key = wrap((index: number) => maybe ?? `k-${index}`, []); use2({ items, key }); }
+    { const key = wrap((index: number) => maybe || `k-${index}`, []); use2({ items, key }); }
+    { const key = wrap((index: number) => (index ? { a: 1 } : { b: 2 }), []); use2({ items, key }); }
+    { const key = wrap((index: number) => ({ a: { b: [index] } }), []); use2({ items, key }); }
+    { const key = wrap((index: number) => String(index), []); use2({ items, key }); }
+    { const key = wrap((index: number) => index + 1, []); use2({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } as const), []); use2({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } satisfies object), []); use2({ items, key }); }
+    { const key = wrap((index: number) => new Map([[index, index]]), []); use2({ items, key }); }
+    { const key = wrap((index: number) => String.raw`k-${index}`, []); use2({ items, key }); }
+    { const key = wrap((index: number) => Promise.resolve({ a: index }), []); use2({ items, key }); }
+    declare function use3<T>(options: { items: readonly T[]; key: ((index: number) => unknown) | undefined }): void;
+    { const key = wrap((index: number) => `k-${index}`, []); use3({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index }), []); use3({ items, key }); }
+    { const key = wrap((index: number) => () => index, []); use3({ items, key }); }
+    { const key = wrap((index: number) => [index], []); use3({ items, key }); }
+    { const key = wrap((index: number) => maybe ?? `k-${index}`, []); use3({ items, key }); }
+    { const key = wrap((index: number) => maybe || `k-${index}`, []); use3({ items, key }); }
+    { const key = wrap((index: number) => (index ? { a: 1 } : { b: 2 }), []); use3({ items, key }); }
+    { const key = wrap((index: number) => ({ a: { b: [index] } }), []); use3({ items, key }); }
+    { const key = wrap((index: number) => String(index), []); use3({ items, key }); }
+    { const key = wrap((index: number) => index + 1, []); use3({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } as const), []); use3({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } satisfies object), []); use3({ items, key }); }
+    { const key = wrap((index: number) => new Map([[index, index]]), []); use3({ items, key }); }
+    { const key = wrap((index: number) => String.raw`k-${index}`, []); use3({ items, key }); }
+    { const key = wrap((index: number) => Promise.resolve({ a: index }), []); use3({ items, key }); }
+    declare function use4<T>(options: { items: readonly T[]; key: ((index: number) => unknown) | null }): void;
+    { const key = wrap((index: number) => `k-${index}`, []); use4({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index }), []); use4({ items, key }); }
+    { const key = wrap((index: number) => () => index, []); use4({ items, key }); }
+    { const key = wrap((index: number) => [index], []); use4({ items, key }); }
+    { const key = wrap((index: number) => maybe ?? `k-${index}`, []); use4({ items, key }); }
+    { const key = wrap((index: number) => maybe || `k-${index}`, []); use4({ items, key }); }
+    { const key = wrap((index: number) => (index ? { a: 1 } : { b: 2 }), []); use4({ items, key }); }
+    { const key = wrap((index: number) => ({ a: { b: [index] } }), []); use4({ items, key }); }
+    { const key = wrap((index: number) => String(index), []); use4({ items, key }); }
+    { const key = wrap((index: number) => index + 1, []); use4({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } as const), []); use4({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } satisfies object), []); use4({ items, key }); }
+    { const key = wrap((index: number) => new Map([[index, index]]), []); use4({ items, key }); }
+    { const key = wrap((index: number) => String.raw`k-${index}`, []); use4({ items, key }); }
+    { const key = wrap((index: number) => Promise.resolve({ a: index }), []); use4({ items, key }); }
+    declare function use5<T>(options: { items: readonly T[]; key: ((index: number) => unknown) | string }): void;
+    { const key = wrap((index: number) => `k-${index}`, []); use5({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index }), []); use5({ items, key }); }
+    { const key = wrap((index: number) => () => index, []); use5({ items, key }); }
+    { const key = wrap((index: number) => [index], []); use5({ items, key }); }
+    { const key = wrap((index: number) => maybe ?? `k-${index}`, []); use5({ items, key }); }
+    { const key = wrap((index: number) => maybe || `k-${index}`, []); use5({ items, key }); }
+    { const key = wrap((index: number) => (index ? { a: 1 } : { b: 2 }), []); use5({ items, key }); }
+    { const key = wrap((index: number) => ({ a: { b: [index] } }), []); use5({ items, key }); }
+    { const key = wrap((index: number) => String(index), []); use5({ items, key }); }
+    { const key = wrap((index: number) => index + 1, []); use5({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } as const), []); use5({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } satisfies object), []); use5({ items, key }); }
+    { const key = wrap((index: number) => new Map([[index, index]]), []); use5({ items, key }); }
+    { const key = wrap((index: number) => String.raw`k-${index}`, []); use5({ items, key }); }
+    { const key = wrap((index: number) => Promise.resolve({ a: index }), []); use5({ items, key }); }
+    declare function use6<T>(options: { items: readonly T[]; key: (index: number) => unknown }): void;
+    { const key = wrap((index: number) => `k-${index}`, []); use6({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index }), []); use6({ items, key }); }
+    { const key = wrap((index: number) => () => index, []); use6({ items, key }); }
+    { const key = wrap((index: number) => [index], []); use6({ items, key }); }
+    { const key = wrap((index: number) => maybe ?? `k-${index}`, []); use6({ items, key }); }
+    { const key = wrap((index: number) => maybe || `k-${index}`, []); use6({ items, key }); }
+    { const key = wrap((index: number) => (index ? { a: 1 } : { b: 2 }), []); use6({ items, key }); }
+    { const key = wrap((index: number) => ({ a: { b: [index] } }), []); use6({ items, key }); }
+    { const key = wrap((index: number) => String(index), []); use6({ items, key }); }
+    { const key = wrap((index: number) => index + 1, []); use6({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } as const), []); use6({ items, key }); }
+    { const key = wrap((index: number) => ({ a: index } satisfies object), []); use6({ items, key }); }
+    { const key = wrap((index: number) => new Map([[index, index]]), []); use6({ items, key }); }
+    { const key = wrap((index: number) => String.raw`k-${index}`, []); use6({ items, key }); }
+    { const key = wrap((index: number) => Promise.resolve({ a: index }), []); use6({ items, key }); }
+    declare function use7<T>(options: { items: readonly T[]; key?: (index: number, other: string) => unknown }): void;
+    { const key = wrap((index: number, other: string) => `k-${index}`, []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => ({ a: index }), []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => () => index, []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => [index], []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => maybe ?? `k-${index}`, []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => maybe || `k-${index}`, []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => (index ? { a: 1 } : { b: 2 }), []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => ({ a: { b: [index] } }), []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => String(index), []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => index + 1, []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => ({ a: index } as const), []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => ({ a: index } satisfies object), []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => new Map([[index, index]]), []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => String.raw`k-${index}`, []); use7({ items, key }); }
+    { const key = wrap((index: number, other: string) => Promise.resolve({ a: index }), []); use7({ items, key }); }
+    declare function use8<T>(options: { items: readonly T[]; key?: () => unknown }): void;
+    { const key = wrap((index: number) => `k-${index}`, []); use8({ items, key }); }
+                                                                           ~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => ({ a: index }), []); use8({ items, key }); }
+                                                                             ~~~
+!!! error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => () => index, []); use8({ items, key }); }
+                                                                          ~~~
+!!! error TS2322: Type '(index: number) => () => number' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => [index], []); use8({ items, key }); }
+                                                                      ~~~
+!!! error TS2322: Type '(index: number) => number[]' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => maybe ?? `k-${index}`, []); use8({ items, key }); }
+                                                                                    ~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => maybe || `k-${index}`, []); use8({ items, key }); }
+                                                                                    ~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => (index ? { a: 1 } : { b: 2 }), []); use8({ items, key }); }
+                                                                                            ~~~
+!!! error TS2322: Type '(index: number) => { a: number; b?: undefined; } | { a?: undefined; b: number; }' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => ({ a: { b: [index] } }), []); use8({ items, key }); }
+                                                                                      ~~~
+!!! error TS2322: Type '(index: number) => { a: { b: number[]; }; }' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => String(index), []); use8({ items, key }); }
+                                                                            ~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => index + 1, []); use8({ items, key }); }
+                                                                        ~~~
+!!! error TS2322: Type '(index: number) => number' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => ({ a: index } as const), []); use8({ items, key }); }
+                                                                                      ~~~
+!!! error TS2322: Type '(index: number) => { readonly a: number; }' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => ({ a: index } satisfies object), []); use8({ items, key }); }
+                                                                                              ~~~
+!!! error TS2322: Type '(index: number) => { a: number; }' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => new Map([[index, index]]), []); use8({ items, key }); }
+                                                                                        ~~~
+!!! error TS2322: Type '(index: number) => Map<number, number>' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => String.raw`k-${index}`, []); use8({ items, key }); }
+                                                                                     ~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    { const key = wrap((index: number) => Promise.resolve({ a: index }), []); use8({ items, key }); }
+                                                                                            ~~~
+!!! error TS2322: Type '(index: number) => Promise<{ a: number; }>' is not assignable to type '() => unknown'.
+!!! error TS2322:   Target signature provides too few arguments. Expected 1 or more, but got 0.
+!!! related TS6500 a.ts:116:58: The expected type comes from property 'key' which is declared here on type '{ items: readonly string[]; key?: (() => unknown) | undefined; }'
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+    

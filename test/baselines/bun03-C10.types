@@ -1,0 +1,25 @@
+//// [test/cases/bun03-C10.ts] ////
+
+=== a.ts ===
+abstract class G<T> { abstract v: T; }
+>G : G<T>
+>v : T
+
+declare const X: abstract new () => G<number> & G<string>;
+>X : abstract new () => G<number> & G<string>
+
+class D extends X { get v(): never { throw 1 } }
+>D : D
+>X : G<number> & G<string>
+>v : never
+>1 : 1
+
+class E extends X { v!: never }
+>E : E
+>X : G<number> & G<string>
+>v : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+a.ts(2,1): error TS1206: Decorators are not valid here.
+a.ts(2,10): error TS1102: 'delete' cannot be called on an identifier in strict mode.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare var x: any;
+    @(delete x) function f() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+             ~
+!!! error TS1102: 'delete' cannot be called on an identifier in strict mode.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,7 @@
+//// [test/cases/bun40-C7a.ts] ////
+
+=== a.ts ===
+/// <reference lib="dom" />
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

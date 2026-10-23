@@ -1,0 +1,18 @@
+a.ts(1,12): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+a.ts(2,7): error TS7022: 'obj' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function g(x: typeof obj) { return x; }
+               ~~~~~~~~~~~~~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+    const obj = { a: g(1 as any) };
+          ~~~
+!!! error TS7022: 'obj' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

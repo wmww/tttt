@@ -1,0 +1,17 @@
+//// [test/cases/bun02-C12.ts] ////
+
+=== a.ts ===
+class C42 { declare m(): void; m() {} }
+>C42 : C42
+>m : () => void
+>m : () => void
+
+class D4 { export m(): void; m() {} }
+>D4 : D4
+>m : () => void
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

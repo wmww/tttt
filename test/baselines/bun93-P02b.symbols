@@ -1,0 +1,19 @@
+//// [test/cases/bun93-P02b.ts] ////
+
+=== a.ts ===
+declare function mk<A>(a: A): A[];
+>mk : Symbol(mk, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 20))
+>a : Symbol(a, Decl(a.ts, 0, 23))
+>A : Symbol(A, Decl(a.ts, 0, 20))
+>A : Symbol(A, Decl(a.ts, 0, 20))
+
+function g<T>() { return @null! as typeof mk<number>|; }
+>g : Symbol(g, Decl(a.ts, 0, 34))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>mk : Symbol(mk, Decl(a.ts, 0, 0))
+> : Symbol(unknown)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,24 @@
+//// [test/cases/bun12-C7a.ts] ////
+
+=== a.ts ===
+type Cn<T, U> = T extends string ? [T, U] : Cn<U | "x", "y">;
+>Cn : Symbol(Cn, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>U : Symbol(U, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>U : Symbol(U, Decl(a.ts, 0, 10))
+>Cn : Symbol(Cn, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 10))
+
+declare let cn: Cn<1, "z">;
+>cn : Symbol(cn, Decl(a.ts, 1, 11))
+>Cn : Symbol(Cn, Decl(a.ts, 0, 0))
+
+const okcn: ["x", "y"] | ["y", "y"] = cn;
+>okcn : Symbol(okcn, Decl(a.ts, 2, 5))
+>cn : Symbol(cn, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

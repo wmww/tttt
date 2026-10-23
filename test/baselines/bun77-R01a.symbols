@@ -1,0 +1,22 @@
+//// [test/cases/bun77-R01a.ts] ////
+
+=== a.ts ===
+const o1 = { set p({ a = null, b = undefined, c = [] }) { } };
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>p : Symbol(p, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+>b : Symbol(b, Decl(a.ts, 0, 30))
+>undefined : Symbol(undefined)
+>c : Symbol(c, Decl(a.ts, 0, 45))
+
+class C1 { set p({ a = null, b = undefined, c = [] }) { } }
+>C1 : Symbol(C1, Decl(a.ts, 0, 62))
+>p : Symbol(C1.p, Decl(a.ts, 1, 10))
+>a : Symbol(a, Decl(a.ts, 1, 18))
+>b : Symbol(b, Decl(a.ts, 1, 28))
+>undefined : Symbol(undefined)
+>c : Symbol(c, Decl(a.ts, 1, 43))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

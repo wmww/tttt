@@ -1,0 +1,31 @@
+//// [test/cases/bun84-R06b.ts] ////
+
+=== a.ts ===
+declare function f<T>(): void;
+>f : <T>() => void
+
+f<<>() => void>();
+>f<<>() => void>() : void
+>f : <T>() => void
+
+const q = f<<>() => void>;
+>q : () => void
+>f<<>() => void> : () => void
+>f : <T>() => void
+
+f<new <>() => void>();
+>f<new <>() => void>() : void
+>f : <T>() => void
+
+f<{ m<>(): void }>();
+>f<{ m<>(): void }>() : void
+>f : <T>() => void
+>m : () => void
+
+let ok: <>() => void;
+>ok : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

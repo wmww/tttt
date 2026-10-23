@@ -1,0 +1,36 @@
+//// [test/cases/bun15-P4.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : boolean
+
+((p = { f: 1, h: z => {} }) => {})(cond ? { f: 1, h: (z: number) => {} } : { g: 1, h: (z: string) => {} });
+>((p = { f: 1, h: z => {} }) => {})(cond ? { f: 1, h: (z: number) => {} } : { g: 1, h: (z: string) => {} }) : void
+>((p = { f: 1, h: z => {} }) => {}) : (p?: { f: number; h: (z: number) => void; g?: undefined; } | { f?: undefined; g: number; h: (z: string) => void; }) => void
+>(p = { f: 1, h: z => {} }) => {} : (p?: { f: number; h: (z: number) => void; g?: undefined; } | { f?: undefined; g: number; h: (z: string) => void; }) => void
+>p : { f: number; h: (z: number) => void; g?: undefined; } | { f?: undefined; g: number; h: (z: string) => void; }
+>{ f: 1, h: z => {} } : { f: number; h: (z: any) => void; }
+>f : number
+>1 : 1
+>h : (z: any) => void
+>z => {} : (z: any) => void
+>z : any
+>cond ? { f: 1, h: (z: number) => {} } : { g: 1, h: (z: string) => {} } : { f: number; h: (z: number) => void; } | { g: number; h: (z: string) => void; }
+>cond : boolean
+>{ f: 1, h: (z: number) => {} } : { f: number; h: (z: number) => void; }
+>f : number
+>1 : 1
+>h : (z: number) => void
+>(z: number) => {} : (z: number) => void
+>z : number
+>{ g: 1, h: (z: string) => {} } : { g: number; h: (z: string) => void; }
+>g : number
+>1 : 1
+>h : (z: string) => void
+>(z: string) => {} : (z: string) => void
+>z : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

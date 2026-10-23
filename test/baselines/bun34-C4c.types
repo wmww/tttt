@@ -1,0 +1,19 @@
+//// [test/cases/bun34-C4c.ts] ////
+
+=== a.ts ===
+export {};
+declare const enum CE { B = "b" }
+>CE : CE
+>B : CE.B
+>"b" : "b"
+
+type F = ({ [CE.B]: [] }: any) => void;
+>F : F
+>CE.B : CE
+>CE : typeof CE
+>B : CE
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

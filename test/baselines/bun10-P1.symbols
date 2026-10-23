@@ -1,0 +1,26 @@
+//// [test/cases/bun10-P1.ts] ////
+
+=== a.ts ===
+const a = [{ q: { u1: 1, r: { ...kk } } }, { q: { u2: 1, get r() { return a; } } }];
+>a : Symbol(a, Decl(a.ts, 0, 5))
+>q : Symbol(q, Decl(a.ts, 0, 12))
+>u1 : Symbol(u1, Decl(a.ts, 0, 17))
+>r : Symbol(r, Decl(a.ts, 0, 24))
+>kk : Symbol(kk, Decl(a.ts, 1, 13))
+>q : Symbol(q, Decl(a.ts, 0, 44))
+>u2 : Symbol(u2, Decl(a.ts, 0, 49))
+>r : Symbol(r, Decl(a.ts, 0, 56))
+>a : Symbol(a, Decl(a.ts, 0, 5))
+
+declare const kk: K;
+>kk : Symbol(kk, Decl(a.ts, 1, 13))
+>K : Symbol(K, Decl(a.ts, 1, 20))
+
+class K { v = a; }
+>K : Symbol(K, Decl(a.ts, 1, 20))
+>v : Symbol(K.v, Decl(a.ts, 2, 9))
+>a : Symbol(a, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

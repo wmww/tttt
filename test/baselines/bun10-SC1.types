@@ -1,0 +1,61 @@
+//// [test/cases/bun10-SC1.ts] ////
+
+=== a.ts ===
+export {};
+type B<T> = { k: "a"; p: 1 } & { k: T; q: 2 };
+>B : B<T>
+>k : "a"
+>p : 1
+>k : T
+>q : 2
+
+interface X<T> extends B<T> { own: 3 }
+>own : 3
+
+declare const xb: X<"b">;
+>xb : X<"b">
+
+xb.k; xb.p; xb.q;
+>xb.k : any
+>xb : X<"b">
+>k : any
+>xb.p : any
+>xb : X<"b">
+>p : any
+>xb.q : any
+>xb : X<"b">
+>q : any
+
+const lit: X<"b"> = { own: 3 };
+>lit : X<"b">
+>{ own: 3 } : { own: 3; }
+>own : 3
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export {};
+type V<T extends unknown[]> = [1, ...T];
+>V : [1, ...T]
+
+interface X<T extends unknown[]> extends V<T> { }
+declare const x: X<[2, 3]>;
+>x : X<[2, 3]>
+
+const y: [1, 2, 3] = x;
+>y : [1, 2, 3]
+>x : X<[2, 3]>
+
+const len: 3 = x.length;
+>len : 3
+>x.length : 3
+>x : X<[2, 3]>
+>length : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

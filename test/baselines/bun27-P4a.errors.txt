@@ -1,0 +1,20 @@
+a.tsx(1,79): error TS2304: Cannot find name 'Undefined'.
+a.tsx(3,12): error TS2741: Property 'a' is missing in type '{}' but required in type '{ a: number; }'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } type IntrinsicAttributes = Undefined; interface IntrinsicElements {} }
+                                                                                  ~~~~~~~~~
+!!! error TS2304: Cannot find name 'Undefined'.
+    declare function F(p: { a: number }): JSX.Element;
+    const a = <F />;
+               ~
+!!! error TS2741: Property 'a' is missing in type '{}' but required in type '{ a: number; }'.
+!!! related TS2728 a.tsx:2:25: 'a' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

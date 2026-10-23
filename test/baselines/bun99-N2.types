@@ -1,0 +1,65 @@
+//// [test/cases/bun99-N2.ts] ////
+
+=== a.ts ===
+class K { k = 1 }
+>K : K
+>k : number
+>1 : 1
+
+declare function id<T>(value: T): T;
+>id : <T>(value: T) => T
+>value : T
+
+declare function memo<T>(factory: () => T): T;
+>memo : <T>(factory: () => T) => T
+>factory : () => T
+
+declare const k: NoInfer<K | string | undefined> | undefined;
+>k : NoInfer<string | K | undefined> | undefined
+
+export const v1 = id(k instanceof K ? { s: 1, ...k } : undefined);
+>v1 : any
+>id(k instanceof K ? { s: 1, ...k } : undefined) : any
+>id : <T>(value: T) => T
+>k instanceof K ? { s: 1, ...k } : undefined : { k: number; s: number; } | undefined
+>k instanceof K : boolean
+>k : NoInfer<string | K | undefined> | undefined
+>K : typeof K
+>{ s: 1, ...k } : { k: number; s: number; }
+>s : number
+>1 : 1
+>k : K
+>undefined : undefined
+
+export const v2 = memo(() => (k instanceof K ? { ...k, s: 1 } : undefined));
+>v2 : any
+>memo(() => (k instanceof K ? { ...k, s: 1 } : undefined)) : any
+>memo : <T>(factory: () => T) => T
+>() => (k instanceof K ? { ...k, s: 1 } : undefined) : () => any
+>(k instanceof K ? { ...k, s: 1 } : undefined) : { k: number; s: number; } | undefined
+>k instanceof K ? { ...k, s: 1 } : undefined : { k: number; s: number; } | undefined
+>k instanceof K : boolean
+>k : NoInfer<string | K | undefined> | undefined
+>K : typeof K
+>{ ...k, s: 1 } : { k: number; s: number; }
+>k : K
+>s : number
+>1 : 1
+>undefined : undefined
+
+export const v3 = k instanceof K ? { s: 1, ...k } : undefined;
+>v3 : any
+>k instanceof K ? { s: 1, ...k } : undefined : any
+>k instanceof K : boolean
+>k : NoInfer<string | K | undefined> | undefined
+>K : typeof K
+>{ s: 1, ...k } : any
+>s : number
+>1 : 1
+>k : NoInfer<string | K | undefined> & K
+>undefined : undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

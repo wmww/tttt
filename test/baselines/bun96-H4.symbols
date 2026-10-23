@@ -1,0 +1,9 @@
+//// [test/cases/bun96-H4.ts] ////
+
+=== a.ts ===
+import { A } from 123 with { type: "json" };
+>A : Symbol(A, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

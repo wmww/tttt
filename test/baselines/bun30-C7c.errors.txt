@@ -1,0 +1,17 @@
+a.ts(1,38): error TS18012: '#constructor' is a reserved word.
+a.ts(1,38): error TS18064: Private identifiers cannot be used in destructuring patterns.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export class C { m(o: any) { const { #constructor: x } = o; } }
+                                         ~~~~~~~~~~~~
+!!! error TS18012: '#constructor' is a reserved word.
+                                         ~~~~~~~~~~~~
+!!! error TS18064: Private identifiers cannot be used in destructuring patterns.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

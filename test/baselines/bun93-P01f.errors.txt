@@ -1,0 +1,22 @@
+a.ts(3,4): error TS1136: Property assignment expected.
+a.ts(3,10): error TS1005: ',' expected.
+a.ts(3,10): error TS18004: No value exists in scope for the shorthand property 'await'. Either declare one or provide an initializer.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "target": "es2022" } }
+==== a.ts (4 errors) ====
+    export {};
+    declare const p: Promise<string>, q: Promise<number>, x: any;
+    ({ m() {}await  } = x);
+       ~
+!!! error TS1136: Property assignment expected.
+             ~~~~~
+!!! error TS1005: ',' expected.
+             ~~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'await'. Either declare one or provide an initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

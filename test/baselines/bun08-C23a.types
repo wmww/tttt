@@ -1,0 +1,24 @@
+//// [test/cases/bun08-C23a.ts] ////
+
+=== a.ts ===
+import { prop } from "./v";
+>prop : { inner: number; }
+
+let t: prop.X;
+>t : prop.X
+>prop : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== v.ts ===
+const v = { prop: { inner: 1 } }; export = v;
+>v : { prop: { inner: number; }; }
+>{ prop: { inner: 1 } } : { prop: { inner: number; }; }
+>prop : { inner: number; }
+>{ inner: 1 } : { inner: number; }
+>inner : number
+>1 : 1
+>v : { prop: { inner: number; }; }
+

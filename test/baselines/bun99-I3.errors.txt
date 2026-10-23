@@ -1,0 +1,2192 @@
+method__fnbranch_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__fnbranch_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+method__fnbranch_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__fnbranch_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__fnbranch_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__fnbranch_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__fnbranch_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+method__roarray_fnbranch_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__roarray_fnbranch_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+method__roarray_fnbranch_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__roarray_fnbranch_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__roarray_fnbranch_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__roarray_fnbranch_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__roarray_fnbranch_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+method__roarray_fnbranch_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__roarray_fnbranch_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+method__roarray_fnbranch_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__roarray_fnbranch_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__roarray_fnbranch_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__roarray_fnbranch_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__roarray_fnbranch_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+method__this_fnbranch_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_fnbranch_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_fnbranch_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_fnbranch_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_fnbranch_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_fnbranch_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_fnbranch_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+method__this_fnbranch_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_fnbranch_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_fnbranch_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_fnbranch_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_fnbranch_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_fnbranch_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_fnbranch_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+method__this_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+method__this_roarray_fnbranch_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_roarray_fnbranch_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_roarray_fnbranch_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_roarray_fnbranch_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_roarray_fnbranch_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_roarray_fnbranch_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_roarray_fnbranch_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+method__this_roarray_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_roarray_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_roarray_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_roarray_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_roarray_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_roarray_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_roarray_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+method__this_roarray_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+method__this_roarray_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+method__this_roarray_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+method__this_roarray_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+method__this_roarray_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+method__this_roarray_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+method__this_roarray_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__fnbranch_minusro_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__fnbranch_minusro_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__fnbranch_minusro_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+property__fnbranch_minusro_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__fnbranch_minusro_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__fnbranch_minusro_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__fnbranch_minusro_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__fnbranch_minusro_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+property__fnbranch_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__fnbranch_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__fnbranch_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+property__fnbranch_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__fnbranch_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__fnbranch_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__fnbranch_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__fnbranch_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__roarray_fnbranch_minusro_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__roarray_fnbranch_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+property__roarray_fnbranch_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__roarray_fnbranch_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__roarray_fnbranch_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+property__roarray_fnbranch_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__roarray_fnbranch_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__roarray_fnbranch_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__roarray_fnbranch_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__roarray_fnbranch_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+property__this_fnbranch_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_fnbranch_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__this_fnbranch_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_fnbranch_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_fnbranch_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_fnbranch_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_fnbranch_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_fnbranch_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+property__this_fnbranch_minusro_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_fnbranch_minusro_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__this_fnbranch_minusro_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_fnbranch_minusro_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_fnbranch_minusro_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_fnbranch_minusro_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_fnbranch_minusro_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_fnbranch_minusro_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+property__this_fnbranch_minusro_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_fnbranch_minusro_setreq_kind.ts(18,14): error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+  Types of property 'update' are incompatible.
+    Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+      Types of parameters 'state' and 'state' are incompatible.
+        Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+          Types of property 'update' are incompatible.
+            Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+              Types of parameters 'state' and 'state' are incompatible.
+                Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+                  Types of property 'kind' are incompatible.
+                    Type 'Kind' is not assignable to type '"a"'.
+                      Type '"b"' is not assignable to type '"a"'.
+property__this_fnbranch_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_fnbranch_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_fnbranch_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_fnbranch_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_fnbranch_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_fnbranch_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_fnbranch_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__this_fnbranch_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_fnbranch_setreq_kind.ts(18,14): error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+  Types of property 'update' are incompatible.
+    Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+      Types of parameters 'state' and 'state' are incompatible.
+        Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+          Types of property 'update' are incompatible.
+            Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+              Types of parameters 'state' and 'state' are incompatible.
+                Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+                  Types of property 'kind' are incompatible.
+                    Type 'Kind' is not assignable to type '"a"'.
+                      Type '"b"' is not assignable to type '"a"'.
+property__this_fnbranch_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_fnbranch_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_fnbranch_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_fnbranch_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_fnbranch_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_fnbranch_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_fnbranch_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__this_minusro_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_minusro_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__this_minusro_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_minusro_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_minusro_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_minusro_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_minusro_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_minusro_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_fnbranch_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_fnbranch_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_fnbranch_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_fnbranch_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_fnbranch_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_fnbranch_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_fnbranch_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(13,62): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_kind_overload.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(18,14): error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+  Types of property 'update' are incompatible.
+    Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+      Types of parameters 'state' and 'state' are incompatible.
+        Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+          Types of property 'update' are incompatible.
+            Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+              Types of parameters 'state' and 'state' are incompatible.
+                Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+                  Types of property 'kind' are incompatible.
+                    Type 'Kind' is not assignable to type '"a"'.
+                      Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(13,62): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(18,14): error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+  Types of property 'update' are incompatible.
+    Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+      Types of parameters 'state' and 'state' are incompatible.
+        Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+          Types of property 'update' are incompatible.
+            Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+              Types of parameters 'state' and 'state' are incompatible.
+                Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+                  Types of property 'kind' are incompatible.
+                    Type 'Kind' is not assignable to type '"a"'.
+                      Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_fnbranch_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_setreq_kind.ts(18,14): error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+  Types of property 'update' are incompatible.
+    Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+      Types of parameters 'state' and 'state' are incompatible.
+        Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+          Types of property 'update' are incompatible.
+            Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+              Types of parameters 'state' and 'state' are incompatible.
+                Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+                  Types of property 'kind' are incompatible.
+                    Type 'Kind' is not assignable to type '"a"'.
+                      Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_fnbranch_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_fnbranch_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_fnbranch_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_fnbranch_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_fnbranch_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_fnbranch_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_fnbranch_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_minusro_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_minusro_kind.ts(19,11): error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_minusro_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_minusro_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_minusro_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_minusro_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_minusro_kind.ts(25,11): error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_minusro_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_minusro_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_minusro_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_minusro_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_minusro_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_minusro_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_minusro_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_minusro_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_minusro_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__this_roarray_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_roarray_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_roarray_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_roarray_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_roarray_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_roarray_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_roarray_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_roarray_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+property__this_setreq_kind.ts(14,47): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ItemA' is not assignable to type 'Item<Kind>'.
+    Types of property 'update' are incompatible.
+      Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+        Types of parameters 'state' and 'state' are incompatible.
+          Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+            Types of property 'kind' are incompatible.
+              Type 'Kind' is not assignable to type '"a"'.
+                Type '"b"' is not assignable to type '"a"'.
+property__this_setreq_kind.ts(19,11): error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+property__this_setreq_kind.ts(20,11): error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+property__this_setreq_kind.ts(21,11): error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+property__this_setreq_kind.ts(22,11): error TS2322: Type 'number' is not assignable to type 'never'.
+property__this_setreq_kind.ts(24,11): error TS2322: Type '() => string' is not assignable to type 'never'.
+property__this_setreq_kind.ts(25,11): error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+  Type '"group"' is not assignable to type 'never'.
+property__this_setreq_kind.ts(26,11): error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+sentinel.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "lib": ["es2022"], "types": []}, "files": ["repro.ts", "method__fnbranch_minusro_setreq_kind.ts", "method__roarray_fnbranch_minusro_setreq_kind.ts", "method__roarray_fnbranch_setreq_kind.ts", "method__this_fnbranch_minusro_setreq_kind.ts", "method__this_fnbranch_setreq_kind.ts", "method__this_minusro_setreq_kind.ts", "method__this_roarray_fnbranch_minusro_setreq_kind.ts", "method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts", "method__this_roarray_fnbranch_setreq_kind.ts", "method__this_roarray_minusro_setreq_kind.ts", "method__this_roarray_setreq_kind.ts", "property__fnbranch_minusro_kind.ts", "property__fnbranch_setreq_kind.ts", "property__roarray_fnbranch_minusro_kind.ts", "property__roarray_fnbranch_minusro_setreq_kind.ts", "property__roarray_fnbranch_setreq_kind.ts", "property__this_fnbranch_kind.ts", "property__this_fnbranch_minusro_kind.ts", "property__this_fnbranch_minusro_setreq_kind.ts", "property__this_fnbranch_setreq_kind.ts", "property__this_minusro_kind.ts", "property__this_roarray_fnbranch_kind.ts", "property__this_roarray_fnbranch_minusro_kind.ts", "property__this_roarray_fnbranch_minusro_kind_overload.ts", "property__this_roarray_fnbranch_minusro_setreq_kind.ts", "property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts", "property__this_roarray_fnbranch_setreq_kind.ts", "property__this_roarray_minusro_kind.ts", "property__this_roarray_minusro_setreq_kind.ts", "property__this_roarray_setreq_kind.ts", "property__this_setreq_kind.ts", "sentinel.ts"]}
+==== method__fnbranch_minusro_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<Item<K>>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== method__roarray_fnbranch_minusro_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<Item<K>>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== method__roarray_fnbranch_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<Item<K>>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_fnbranch_minusro_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_fnbranch_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_minusro_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_roarray_fnbranch_minusro_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_roarray_fnbranch_minusro_setreq_kind_overload.ts (7 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    declare function isItemA(item: WritableDraft<Item>): item is WritableDraft<ItemA>
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_roarray_fnbranch_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_roarray_minusro_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== method__this_roarray_setreq_kind.ts (7 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__fnbranch_minusro_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<Item<K>>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== property__fnbranch_setreq_kind.ts (8 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<Item<K>>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== property__roarray_fnbranch_minusro_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<Item<K>>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== property__roarray_fnbranch_minusro_setreq_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<Item<K>>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== property__roarray_fnbranch_setreq_kind.ts (8 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<Item<K>>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Item<"a">>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Item<"a">>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_fnbranch_kind.ts (8 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_fnbranch_minusro_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_fnbranch_minusro_setreq_kind.ts (9 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+                 ~~~~
+!!! error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+!!! error TS2345:   Types of property 'update' are incompatible.
+!!! error TS2345:     Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+!!! error TS2345:       Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:         Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+!!! error TS2345:           Types of property 'update' are incompatible.
+!!! error TS2345:             Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2345:               Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:                 Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+!!! error TS2345:                   Types of property 'kind' are incompatible.
+!!! error TS2345:                     Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2345:                       Type '"b"' is not assignable to type '"a"'.
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_fnbranch_setreq_kind.ts (9 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+                 ~~~~
+!!! error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+!!! error TS2345:   Types of property 'update' are incompatible.
+!!! error TS2345:     Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+!!! error TS2345:       Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:         Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+!!! error TS2345:           Types of property 'update' are incompatible.
+!!! error TS2345:             Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2345:               Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:                 Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+!!! error TS2345:                   Types of property 'kind' are incompatible.
+!!! error TS2345:                     Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2345:                       Type '"b"' is not assignable to type '"a"'.
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_minusro_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_fnbranch_kind.ts (8 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_fnbranch_minusro_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_fnbranch_minusro_kind_overload.ts (9 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    declare function isItemA(item: WritableDraft<Item>): item is WritableDraft<ItemA>
+                                                                 ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_fnbranch_minusro_setreq_kind.ts (9 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+                 ~~~~
+!!! error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+!!! error TS2345:   Types of property 'update' are incompatible.
+!!! error TS2345:     Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+!!! error TS2345:       Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:         Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+!!! error TS2345:           Types of property 'update' are incompatible.
+!!! error TS2345:             Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2345:               Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:                 Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+!!! error TS2345:                   Types of property 'kind' are incompatible.
+!!! error TS2345:                     Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2345:                       Type '"b"' is not assignable to type '"a"'.
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_fnbranch_minusro_setreq_kind_overload.ts (10 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    declare function isItemA(item: WritableDraft<Item>): item is WritableDraft<ItemA>
+                                                                 ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+                 ~~~~
+!!! error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+!!! error TS2345:   Types of property 'update' are incompatible.
+!!! error TS2345:     Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+!!! error TS2345:       Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:         Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+!!! error TS2345:           Types of property 'update' are incompatible.
+!!! error TS2345:             Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2345:               Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:                 Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+!!! error TS2345:                   Types of property 'kind' are incompatible.
+!!! error TS2345:                     Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2345:                       Type '"b"' is not assignable to type '"a"'.
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_fnbranch_setreq_kind.ts (9 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+                 ~~~~
+!!! error TS2345: Argument of type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to parameter of type 'Simplify<Omit<ItemA, "group"> & Required<Pick<ItemA, "group">>>'.
+!!! error TS2345:   Types of property 'update' are incompatible.
+!!! error TS2345:     Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type '(state: WritableDraft<ItemA>) => void'.
+!!! error TS2345:       Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:         Type 'WritableDraft<ItemA>' is not assignable to type 'WritableDraft<Item<Kind>>'.
+!!! error TS2345:           Types of property 'update' are incompatible.
+!!! error TS2345:             Type '(state: WritableDraft<ItemA>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2345:               Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2345:                 Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<ItemA>'.
+!!! error TS2345:                   Types of property 'kind' are incompatible.
+!!! error TS2345:                     Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2345:                       Type '"b"' is not assignable to type '"a"'.
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_minusro_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<T>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Item<Kind>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Item<Kind>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type '"group" | "kind" | "update"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Item<Kind>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_minusro_setreq_kind.ts (8 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_roarray_setreq_kind.ts (8 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: ReadonlyArray<Item> }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== property__this_setreq_kind.ts (8 errors) ====
+    type WritableDraft<T> = { [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    interface Group { readonly items?: Item[] }
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update: (state: Draft<this>) => void
+      readonly group?: Group
+      readonly kind: K
+    }
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: Item): item is ItemA
+                                                  ~~~~~
+!!! error TS2677: A type predicate's type must be assignable to its parameter's type.
+!!! error TS2677:   Type 'ItemA' is not assignable to type 'Item<Kind>'.
+!!! error TS2677:     Types of property 'update' are incompatible.
+!!! error TS2677:       Type '(state: WritableDraft<Item<"a">>) => void' is not assignable to type '(state: WritableDraft<Item<Kind>>) => void'.
+!!! error TS2677:         Types of parameters 'state' and 'state' are incompatible.
+!!! error TS2677:           Type 'WritableDraft<Item<Kind>>' is not assignable to type 'WritableDraft<Item<"a">>'.
+!!! error TS2677:             Types of property 'kind' are incompatible.
+!!! error TS2677:               Type 'Kind' is not assignable to type '"a"'.
+!!! error TS2677:                 Type '"b"' is not assignable to type '"a"'.
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) {
+        useItemA(item)
+        const p1: never = item
+              ~~
+!!! error TS2322: Type 'Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA' is not assignable to type 'never'.
+        const p2: never = item.update
+              ~~
+!!! error TS2322: Type '((state: WritableDraft<Item<Kind>>) => void) & ((state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>) => void)' is not assignable to type 'never'.
+        const p3: never = item.update.call
+              ~~
+!!! error TS2322: Type '<T, A extends any[], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A) => R' is not assignable to type 'never'.
+        const p4: never = item.update.length
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const p5: never = null! as keyof typeof item.update
+        const p6: never = item.update.toString
+              ~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+        const p7: never = null! as keyof typeof item
+              ~~
+!!! error TS2322: Type 'keyof ItemA' is not assignable to type 'never'.
+!!! error TS2322:   Type '"group"' is not assignable to type 'never'.
+        const p8: never = null! as Parameters<typeof item.update>
+              ~~
+!!! error TS2322: Type '[state: WritableDraft<Simplify<Omit<Item<Kind>, "group"> & Required<Pick<Item<Kind>, "group">>> & ItemA>]' is not assignable to type 'never'.
+      }
+    }
+==== repro.ts (0 errors) ====
+    type WritableDraft<T> = { -readonly [P in keyof T]: Draft<T[P]> }
+    type Draft<T> = T extends Function ? T : T extends object ? WritableDraft<T> : T
+    type Simplify<T> = { [P in keyof T]: T[P] }
+    type SetRequired<T, P extends keyof T> = Simplify<Omit<T, P> & Required<Pick<T, P>>>
+    
+    interface Group {
+      readonly items?: ReadonlyArray<Item>
+    }
+    
+    type Kind = 'a' | 'b'
+    declare class Item<K extends Kind = Kind> {
+      update(state: Draft<this>): void
+      readonly group?: Group
+      readonly kind: K
+    }
+    
+    type ItemA = Item<'a'>
+    
+    declare function isItemA(item: WritableDraft<Item>): item is WritableDraft<ItemA>
+    declare function isItemA(item: Item): item is ItemA
+    
+    declare function useItemA(item: SetRequired<ItemA, 'group'>): void
+    
+    export function f(item: SetRequired<Item, 'group'>): void {
+      if (isItemA(item)) useItemA(item)
+    }
+==== sentinel.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

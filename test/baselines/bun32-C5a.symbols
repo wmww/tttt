@@ -1,0 +1,18 @@
+//// [test/cases/bun32-C5a.ts] ////
+
+=== a.ts ===
+function f(o?: { a?: 1 }) { if (o?.a! !== undefined) o.a; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 16))
+>o?.a : Symbol(a, Decl(a.ts, 0, 16))
+>o : Symbol(o, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 16))
+>undefined : Symbol(undefined)
+>o.a : Symbol(a, Decl(a.ts, 0, 16))
+>o : Symbol(o, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

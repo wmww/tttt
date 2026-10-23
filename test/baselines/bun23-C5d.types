@@ -1,0 +1,40 @@
+//// [test/cases/bun23-C5d.ts] ////
+
+=== a.ts ===
+namespace N1 { export function f<T>(x: T) { class C { a!: T } return new C(); } }
+>N1 : typeof N1
+>f : <T>(x: T) => C
+>x : T
+>C : C
+>a : T
+>new C() : C
+>C : typeof C
+
+namespace N2 { export function f<T>(x: T) { class C { b!: T } return new C(); } }
+>N2 : typeof N2
+>f : <T>(x: T) => C
+>x : T
+>C : C
+>b : T
+>new C() : C
+>C : typeof C
+
+let a1 = N1.f(1); a1 = N2.f(1);
+>a1 : N1.f.C
+>N1.f(1) : N1.f.C
+>N1.f : <T>(x: T) => C
+>N1 : typeof N1
+>f : <T>(x: T) => C
+>1 : 1
+>a1 = N2.f(1) : N2.f.C
+>a1 : N1.f.C
+>N2.f(1) : N2.f.C
+>N2.f : <T>(x: T) => C
+>N2 : typeof N2
+>f : <T>(x: T) => C
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

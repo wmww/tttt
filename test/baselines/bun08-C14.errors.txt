@@ -1,0 +1,16 @@
+a.ts(1,38): error TS2339: Property 'a' does not exist on type 'string'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (2 errors) ====
+    import d1 from "./e1"; d1.length; d1.a;
+                                         ~
+!!! error TS2339: Property 'a' does not exist on type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== e1.d.ts (0 errors) ====
+    declare const v: { default: string; __esModule: true; a: number }; export = v;
+    

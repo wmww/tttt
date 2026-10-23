@@ -1,0 +1,11 @@
+//// [test/cases/bun36-C12.ts] ////
+
+=== a.ts ===
+import {} from "n";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/n/index.d.ts ===
+
+export {};

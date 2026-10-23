@@ -1,0 +1,20 @@
+//// [test/cases/bun06-C9.ts] ////
+
+=== a.ts ===
+declare function tk(f: (a: number) => Generator<(x: number) => number>): void;
+>tk : Symbol(tk, Decl(a.ts, 0, 0))
+>f : Symbol(f, Decl(a.ts, 0, 20))
+>a : Symbol(a, Decl(a.ts, 0, 24))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 49))
+
+tk(function* <T>(a) { yield (x) => x; });
+>tk : Symbol(tk, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>a : Symbol(a, Decl(a.ts, 1, 17))
+>x : Symbol(x, Decl(a.ts, 1, 29))
+>x : Symbol(x, Decl(a.ts, 1, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

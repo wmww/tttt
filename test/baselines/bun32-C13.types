@@ -1,0 +1,39 @@
+//// [test/cases/bun32-C13.ts] ////
+
+=== a.ts ===
+function f(a: { b: { c: string | number } }) {
+>f : (a: { b: { c: string | number; }; }) => void
+>a : { b: { c: string | number; }; }
+>b : { c: string | number; }
+>c : string | number
+
+  if (typeof (a.b).c === "string") { a = { b: { c: 1 } }; (a.b).c.length; }
+>typeof (a.b).c === "string" : boolean
+>typeof (a.b).c : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>(a.b).c : string | number
+>(a.b) : { c: string | number; }
+>a.b : { c: string | number; }
+>a : { b: { c: string | number; }; }
+>b : { c: string | number; }
+>c : string | number
+>"string" : "string"
+>a = { b: { c: 1 } } : { b: { c: number; }; }
+>a : { b: { c: string | number; }; }
+>{ b: { c: 1 } } : { b: { c: number; }; }
+>b : { c: number; }
+>{ c: 1 } : { c: number; }
+>c : number
+>1 : 1
+>(a.b).c.length : number
+>(a.b).c : string
+>(a.b) : { c: string | number; }
+>a.b : { c: string | number; }
+>a : { b: { c: string | number; }; }
+>b : { c: string | number; }
+>c : string
+>length : number
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun89-R12e.ts] ////
+
+=== j.js ===
+class J { constructor() { this.a = /** @type {"b"} */ ("b"); this[jk] = 1; } }
+>J : Symbol(J, Decl(j.js, 0, 0))
+>this.a : Symbol(J.a, Decl(j.js, 0, 25))
+>this : Symbol(J, Decl(j.js, 0, 0))
+>a : Symbol(J.a, Decl(j.js, 0, 25))
+>this : Symbol(J, Decl(j.js, 0, 0))
+>jk : Symbol(jk, Decl(j.js, 2, 5))
+
+/** @type {J["a"]} */
+const jk = "b";
+>jk : Symbol(jk, Decl(j.js, 2, 5))
+
+new J().b;
+>J : Symbol(J, Decl(j.js, 0, 0))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(j.js, 5, 5))
+

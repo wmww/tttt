@@ -1,0 +1,32 @@
+//// [test/cases/bun57-L13c.ts] ////
+
+=== a.ts ===
+declare const i1: { a: 1 };
+>i1 : { a: 1; }
+>a : 1
+
+function* g1() { yield* i1; }
+>g1 : () => {}
+>yield* i1 : any
+>i1 : { a: 1; }
+
+function* g2() { yield* [1]; }
+>g2 : () => {}
+>yield* [1] : any
+>[1] : number[]
+>1 : 1
+
+function* g3() { yield* ""; }
+>g3 : () => {}
+>yield* "" : any
+>"" : ""
+
+async function* g4() { yield* i1; }
+>g4 : () => {}
+>yield* i1 : any
+>i1 : { a: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

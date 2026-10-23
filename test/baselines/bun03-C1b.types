@@ -1,0 +1,27 @@
+//// [test/cases/bun03-C1b.ts] ////
+
+=== a.ts ===
+abstract class A { abstract p: number; }
+>A : A
+>p : number
+
+function mix<T extends abstract new (...a: any[]) => A>(B: T) { abstract class M extends B {} return M; }
+>mix : <T extends abstract new (...a: any[]) => A>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mix.M; }) & T
+>a : any[]
+>B : T
+>M : M
+>B : A
+>M : ((abstract new (...a: any[]) => M) & { prototype: mix.M; }) & T
+
+class D extends mix(A) { get p() { return 1 } }
+>D : D
+>mix(A) : mix.M & A
+>mix : <T extends abstract new (...a: any[]) => A>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mix.M; }) & T
+>A : typeof A
+>p : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

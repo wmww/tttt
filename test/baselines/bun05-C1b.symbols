@@ -1,0 +1,19 @@
+//// [test/cases/bun05-C1b.ts] ////
+
+=== a.ts ===
+function f<T extends Record<string, number>>(o: Readonly<T>, k: string) {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(a.ts, 0, 45))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>k : Symbol(k, Decl(a.ts, 0, 60))
+
+  o[k] += 1;
+>o : Symbol(o, Decl(a.ts, 0, 45))
+>k : Symbol(k, Decl(a.ts, 0, 60))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

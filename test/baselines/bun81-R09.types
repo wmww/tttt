@@ -1,0 +1,60 @@
+//// [test/cases/bun81-R09.ts] ////
+
+=== a.ts ===
+const w1 = function (this: typeof w1, x = this) {};
+>w1 : any
+>function (this: typeof w1, x = this) {} : (this: typeof w1, x?: any) => void
+>this : any
+>w1 : any
+>x : any
+>this : any
+
+const w3 = function (this: typeof w3, x: number, y = this) {};
+>w3 : any
+>function (this: typeof w3, x: number, y = this) {} : (this: typeof w3, x: number, y?: any) => void
+>this : any
+>w3 : any
+>x : number
+>y : any
+>this : any
+
+const w7 = { m(this: typeof w7, x = this) {} };
+>w7 : any
+>{ m(this: typeof w7, x = this) {} } : { m(this: typeof w7, x?: any): void; }
+>m : (this: typeof w7, x?: any) => void
+>this : any
+>w7 : any
+>x : any
+>this : any
+
+const e2 = function (this: ReturnType<typeof e2>, x = this) { return x; };
+>e2 : any
+>function (this: ReturnType<typeof e2>, x = this) { return x; } : (this: ReturnType<typeof e2>, x?: any) => any
+>this : any
+>e2 : any
+>x : any
+>this : any
+>x : any
+
+// an ordinary first parameter, or a default that does not read `this` at once: the two agree
+const w4 = function (a: typeof w4, x = a) {};
+>w4 : any
+>function (a: typeof w4, x = a) {} : (a: typeof w4, x?: any) => void
+>a : any
+>w4 : any
+>x : any
+>a : any
+
+const w5 = function (this: typeof w5, x = () => this) {};
+>w5 : any
+>function (this: typeof w5, x = () => this) {} : (this: typeof w5, x?: () => any) => void
+>this : any
+>w5 : any
+>x : () => any
+>() => this : () => any
+>this : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

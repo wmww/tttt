@@ -1,0 +1,11 @@
+//// [test/cases/bun53-L17b.ts] ////
+
+=== a.js ===
+const dec = 0;
+>dec : 0
+>0 : 0
+
+export @dec default function f() {}
+>dec : 0
+>f : () => void
+

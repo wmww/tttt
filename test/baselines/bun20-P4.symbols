@@ -1,0 +1,17 @@
+//// [test/cases/bun20-P4.ts] ////
+
+=== a.ts ===
+declare let h: ReturnType<typeof k>;
+>h : Symbol(h, Decl(a.ts, 0, 11))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>k : Symbol(k, Decl(a.ts, 0, 36))
+
+function k(p: () => void) { h(); return p; }
+>k : Symbol(k, Decl(a.ts, 0, 36))
+>p : Symbol(p, Decl(a.ts, 1, 11))
+>h : Symbol(h, Decl(a.ts, 0, 11))
+>p : Symbol(p, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

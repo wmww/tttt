@@ -1,0 +1,16 @@
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    type S = (p: string) => string;
+    type T = (p: string | number) => string | number;
+    interface Foo<X> { m<U>(a: X, b: U): void; m<U>(a: X, b: U, c: U): void }
+    interface Bar { m<U>(a: T, b: U): void; m<U>(a: T, b: U, c: U): void }
+    declare let foo: Foo<S>;
+    let bar: Bar = foo;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

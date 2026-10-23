@@ -1,0 +1,7 @@
+//// [test/cases/bun43-C9.ts] ////
+
+=== a.ts ===
+function g4("\8") {}
+>g4 : (: any) => void
+> : any
+

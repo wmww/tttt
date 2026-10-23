@@ -1,0 +1,229 @@
+//// [test/cases/bun54-L19.ts] ////
+
+=== a.ts ===
+export {};
+declare function assert(c: unknown): asserts c;
+>assert : (c: unknown) => asserts c
+>c : unknown
+
+const r = h("a");
+>r : any
+>h("a") : any
+>h : (x: string) => any
+>"a" : "a"
+
+function h(x: string) {
+>h : (x: string) => any
+>x : string
+
+  if (typeof x !== "string") {
+>typeof x !== "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+
+    assert(x === k);
+>assert(x === k) : void
+>assert : (c: unknown) => asserts c
+>x === k : boolean
+>x : never
+>k : any
+
+    return x;
+>x : never
+  }
+  return 1;
+>1 : 1
+}
+const k = r;
+>k : any
+>r : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export {};
+declare function assert(c: unknown): asserts c;
+>assert : (c: unknown) => asserts c
+>c : unknown
+
+const r1 = h1("a");
+>r1 : any
+>h1("a") : any
+>h1 : (x: string) => any
+>"a" : "a"
+
+function h1(x: string) {
+>h1 : (x: string) => any
+>x : string
+
+  if (typeof x !== "string") { assert(x instanceof k1); return x; }
+>typeof x !== "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+>assert(x instanceof k1) : void
+>assert : (c: unknown) => asserts c
+>x instanceof k1 : boolean
+>x : never
+>k1 : any
+>x : never
+
+  return class {};
+>class {} : typeof (Anonymous class)
+}
+const k1 = r1;
+>k1 : any
+>r1 : any
+
+const r2 = h2("a");
+>r2 : any
+>h2("a") : any
+>h2 : (x: string) => any
+>"a" : "a"
+
+function h2(x: string) {
+>h2 : (x: string) => any
+>x : string
+
+  if (typeof x !== "string") { assert(k2 in x); return x; }
+>typeof x !== "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+>assert(k2 in x) : void
+>assert : (c: unknown) => asserts c
+>k2 in x : boolean
+>k2 : any
+>x : never
+>x : never
+
+  return "p";
+>"p" : "p"
+}
+const k2 = r2;
+>k2 : any
+>r2 : any
+
+const r3 = h3("a");
+>r3 : any
+>h3("a") : any
+>h3 : (x: string) => any
+>"a" : "a"
+
+function h3(x: string) {
+>h3 : (x: string) => any
+>x : string
+
+  if (typeof x !== "string") { assert(x !== k3); return x; }
+>typeof x !== "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+>assert(x !== k3) : void
+>assert : (c: unknown) => asserts c
+>x !== k3 : boolean
+>x : never
+>k3 : any
+>x : never
+
+  return 1;
+>1 : 1
+}
+const k3 = r3;
+>k3 : any
+>r3 : any
+
+const r4 = h4("a");
+>r4 : any
+>h4("a") : any
+>h4 : (x: string) => any
+>"a" : "a"
+
+function h4(x: string) {
+>h4 : (x: string) => any
+>x : string
+
+  if (typeof x !== "string") { assert(true && x === k4); return x; }
+>typeof x !== "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+>assert(true && x === k4) : void
+>assert : (c: unknown) => asserts c
+>true && x === k4 : boolean
+>true : true
+>x === k4 : boolean
+>x : never
+>k4 : any
+>x : never
+
+  return 1;
+>1 : 1
+}
+const k4 = r4;
+>k4 : any
+>r4 : any
+
+const r5 = h5(null!);
+>r5 : any
+>h5(null!) : any
+>h5 : (x: never) => any
+>null! : never
+
+function h5(x: never) {
+>h5 : (x: never) => any
+>x : never
+
+  assert(x === k5);
+>assert(x === k5) : void
+>assert : (c: unknown) => asserts c
+>x === k5 : boolean
+>x : never
+>k5 : any
+
+  return [x];
+>[x] : never[]
+>x : never
+}
+const k5 = r5;
+>k5 : any
+>r5 : any
+
+const r6 = h6("a");
+>r6 : any
+>h6("a") : any
+>h6 : (x: string) => any
+>"a" : "a"
+
+function h6(x: string) {
+>h6 : (x: string) => any
+>x : string
+
+  if (typeof x !== "string") { assert(!(x === k6)); return x; }
+>typeof x !== "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+>assert(!(x === k6)) : void
+>assert : (c: unknown) => asserts c
+>!(x === k6) : boolean
+>(x === k6) : boolean
+>x === k6 : boolean
+>x : never
+>k6 : any
+>x : never
+
+  return 1;
+>1 : 1
+}
+const k6 = r6;
+>k6 : any
+>r6 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

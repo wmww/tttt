@@ -1,0 +1,42 @@
+//// [test/cases/bun24-C3a.ts] ////
+
+=== a.ts ===
+class K1 { m<T>(x: T) { class L { v!: T } return new L(); } }
+>K1 : K1
+>m : <T>(x: T) => L
+>x : T
+>L : L
+>v : T
+>new L() : L
+>L : typeof L
+
+class K2 { m<T>(x: T) { class L { w!: T } return new L(); } }
+>K2 : K2
+>m : <T>(x: T) => L
+>x : T
+>L : L
+>w : T
+>new L() : L
+>L : typeof L
+
+let a = new K1().m(1); a = new K2().m(1);
+>a : K1.m.L
+>new K1().m(1) : K1.m.L
+>new K1().m : <T>(x: T) => K1.m.L
+>new K1() : K1
+>K1 : typeof K1
+>m : <T>(x: T) => K1.m.L
+>1 : 1
+>a = new K2().m(1) : K2.m.L
+>a : K1.m.L
+>new K2().m(1) : K2.m.L
+>new K2().m : <T>(x: T) => K2.m.L
+>new K2() : K2
+>K2 : typeof K2
+>m : <T>(x: T) => K2.m.L
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

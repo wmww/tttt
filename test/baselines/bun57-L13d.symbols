@@ -1,0 +1,59 @@
+//// [test/cases/bun57-L13d.ts] ////
+
+=== a.ts ===
+interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+>Boolean : Symbol(Boolean, Decl(a.ts, 0, 0))
+>CallableFunction : Symbol(CallableFunction, Decl(a.ts, 0, 20))
+>Function : Symbol(Function, Decl(a.ts, 0, 50))
+>IArguments : Symbol(IArguments, Decl(a.ts, 0, 72))
+>NewableFunction : Symbol(NewableFunction, Decl(a.ts, 0, 96))
+>Number : Symbol(Number, Decl(a.ts, 0, 125))
+>Object : Symbol(Object, Decl(a.ts, 0, 145))
+>RegExp : Symbol(RegExp, Decl(a.ts, 0, 165))
+>String : Symbol(String, Decl(a.ts, 0, 185))
+
+declare class Array<T> { filter<S extends T>(f: (x: T) => x is S): S[]; filter(f: (x: T) => unknown): T[] }
+>Array : Symbol(Array, Decl(a.ts, 0, 205))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>filter : Symbol(Array.filter, Decl(a.ts, 1, 24), Decl(a.ts, 1, 71))
+>S : Symbol(S, Decl(a.ts, 1, 32))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>f : Symbol(f, Decl(a.ts, 1, 45))
+>x : Symbol(x, Decl(a.ts, 1, 49))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>x : Symbol(x, Decl(a.ts, 1, 49))
+>S : Symbol(S, Decl(a.ts, 1, 32))
+>S : Symbol(S, Decl(a.ts, 1, 32))
+>filter : Symbol(Array.filter, Decl(a.ts, 1, 24), Decl(a.ts, 1, 71))
+>f : Symbol(f, Decl(a.ts, 1, 79))
+>x : Symbol(x, Decl(a.ts, 1, 83))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+declare const u: string[] | number[];
+>u : Symbol(u, Decl(a.ts, 2, 13))
+
+const r1 = u.filter(x => true); const t1: 1 = r1;
+>r1 : Symbol(r1, Decl(a.ts, 3, 5))
+>u.filter : Symbol(Array.filter, Decl(a.ts, 1, 24), Decl(a.ts, 1, 71))
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>filter : Symbol(Array.filter, Decl(a.ts, 1, 24), Decl(a.ts, 1, 71))
+>x : Symbol(x, Decl(a.ts, 3, 20))
+>t1 : Symbol(t1, Decl(a.ts, 3, 37))
+>r1 : Symbol(r1, Decl(a.ts, 3, 5))
+
+declare const v: readonly string[] | number[];
+>v : Symbol(v, Decl(a.ts, 4, 13))
+
+const r2 = v.filter(x => true); const t2: 1 = r2;
+>r2 : Symbol(r2, Decl(a.ts, 5, 5))
+>v.filter : Symbol(Array.filter, Decl(a.ts, 1, 24), Decl(a.ts, 1, 71))
+>v : Symbol(v, Decl(a.ts, 4, 13))
+>filter : Symbol(Array.filter, Decl(a.ts, 1, 24), Decl(a.ts, 1, 71))
+>x : Symbol(x, Decl(a.ts, 5, 20))
+>t2 : Symbol(t2, Decl(a.ts, 5, 37))
+>r2 : Symbol(r2, Decl(a.ts, 5, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

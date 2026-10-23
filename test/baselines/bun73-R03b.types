@@ -1,0 +1,108 @@
+//// [test/cases/bun73-R03b.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : () => boolean
+
+declare function s(): string;
+>s : () => string
+
+function valid() {
+>valid : () => void
+
+  let x = []; let y = [];
+>x : any[]
+>[] : never[]
+>y : any[]
+>[] : never[]
+
+  do {
+    while (c()) {
+>c() : boolean
+>c : () => boolean
+
+      try { x.push(y); if ((x = [])) continue; } finally { const p: never = x; y.push(x.pop()); }
+>x.push(y) : number
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+>y : (number | number[] | undefined)[]
+>(x = []) : never[]
+>x = [] : never[]
+>x : any[]
+>[] : never[]
+>p : never
+>x : number[][]
+>y.push(x.pop()) : number
+>y.push : (...items: any[]) => number
+>y : any[]
+>push : (...items: any[]) => number
+>x.pop() : number[] | undefined
+>x.pop : () => number[] | undefined
+>x : number[][]
+>pop : () => number[] | undefined
+    }
+    y = [];
+>y = [] : never[]
+>y : any[]
+>[] : never[]
+
+  } while (c() && y.push(1));
+>c() && y.push(1) : number | false
+>c() : boolean
+>c : () => boolean
+>y.push(1) : number
+>y.push : (...items: any[]) => number
+>y : any[]
+>push : (...items: any[]) => number
+>1 : 1
+}
+function besideImplicitAny() {
+>besideImplicitAny : () => void
+
+  let x = []; let y = [];
+>x : any[]
+>[] : never[]
+>y : any[]
+>[] : never[]
+
+  while (c()) {
+>c() : boolean
+>c : () => boolean
+
+    try { x.push(...y, {}); x.push(...y); const p: never = x; } catch { if (x === y || c()) break; }
+>x.push(...y, {}) : number
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+>...y : string
+>y : string[]
+>{} : {}
+>x.push(...y) : number
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+>...y : string
+>y : string[]
+>p : never
+>x : any[]
+>x === y || c() : boolean
+>x === y : boolean
+>x : any[]
+>y : string[]
+>c() : boolean
+>c : () => boolean
+
+    y.push(s());
+>y.push(s()) : number
+>y.push : (...items: any[]) => number
+>y : any[]
+>push : (...items: any[]) => number
+>s() : string
+>s : () => string
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

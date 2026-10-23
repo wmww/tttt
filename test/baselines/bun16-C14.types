@@ -1,0 +1,33 @@
+//// [test/cases/bun16-C14.ts] ////
+
+=== a.ts ===
+declare function f<T extends string>(x: { p: `a${T}` }): T;
+>f : <T extends string>(x: { p: `a${T}`; }) => T
+>x : { p: `a${T}`; }
+>p : `a${T}`
+
+const r1: never = f({ p: "ab" });
+>r1 : never
+>f({ p: "ab" }) : never
+>f : <T extends string>(x: { p: `a${T}`; }) => T
+>{ p: "ab" } : { p: string; }
+>p : string
+>"ab" : "ab"
+
+declare function f4<T extends string>(x: { p: `a${T}` | number }): T;
+>f4 : <T extends string>(x: { p: `a${T}` | number; }) => T
+>x : { p: `a${T}` | number; }
+>p : number | `a${T}`
+
+const r4: never = f4({ p: "ab" });
+>r4 : never
+>f4({ p: "ab" }) : never
+>f4 : <T extends string>(x: { p: `a${T}` | number; }) => T
+>{ p: "ab" } : { p: string; }
+>p : string
+>"ab" : "ab"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

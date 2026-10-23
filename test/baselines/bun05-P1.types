@@ -1,0 +1,16 @@
+//// [test/cases/bun05-P1.ts] ////
+
+=== a.ts ===
+const g = async () => 1;
+>g : () => unknown
+>async () => 1 : () => unknown
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+

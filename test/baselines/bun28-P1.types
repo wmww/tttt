@@ -1,0 +1,18 @@
+//// [test/cases/bun28-P1.ts] ////
+
+=== a.ts ===
+declare const f: (() => "a") | undefined;
+>f : (() => "a") | undefined
+
+const o = { [f()]: 1 };
+>o : { a: number; }
+>{ [f()]: 1 } : { a: number; }
+>[f()] : number
+>f() : "a"
+>f : (() => "a") | undefined
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

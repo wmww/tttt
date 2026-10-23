@@ -1,0 +1,16 @@
+c.ts(1,23): error TS7005: Variable 'x' implicitly has an 'any' type.
+c.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es5"] } }
+==== a.ts (0 errors) ====
+    let x;
+==== c.ts (2 errors) ====
+    function f() { return x; }
+                          ~
+!!! error TS7005: Variable 'x' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

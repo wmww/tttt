@@ -1,0 +1,83 @@
+//// [test/cases/bun91-R01.ts] ////
+
+=== a.ts ===
+declare let y: any;
+>y : any
+
+declare let s: string;
+>s : string
+
+(s = 1) = y;
+>(s = 1) = y : any
+>(s = 1) : 1
+>s = 1 : 1
+>s : string
+>1 : 1
+>y : any
+
+[(s = 1)] = y;
+>[(s = 1)] = y : any
+>[(s = 1)] : [number]
+>(s = 1) : 1
+>s = 1 : 1
+>s : string
+>1 : 1
+>y : any
+
+({ a: (s = 1) } = y);
+>({ a: (s = 1) } = y) : any
+>{ a: (s = 1) } = y : any
+>{ a: (s = 1) } : { a: number; }
+>a : number
+>(s = 1) : 1
+>s = 1 : 1
+>s : string
+>1 : 1
+>y : any
+
+for ((s = 1) of y) {}
+>(s = 1) : 1
+>s = 1 : 1
+>s : string
+>1 : 1
+>y : any
+
+({ a: ({ b: s } = { b: 1 }) } = y);
+>({ a: ({ b: s } = { b: 1 }) } = y) : any
+>{ a: ({ b: s } = { b: 1 }) } = y : any
+>{ a: ({ b: s } = { b: 1 }) } : { a: { b: number; }; }
+>a : { b: number; }
+>({ b: s } = { b: 1 }) : { b: number; }
+>{ b: s } = { b: 1 } : { b: number; }
+>{ b: s } : { b: string; }
+>b : string
+>s : string
+>{ b: 1 } : { b: number; }
+>b : number
+>1 : 1
+>y : any
+
+({ a: ({ k() {} } = y) } = y);
+>({ a: ({ k() {} } = y) } = y) : any
+>{ a: ({ k() {} } = y) } = y : any
+>{ a: ({ k() {} } = y) } : { a: any; }
+>a : any
+>({ k() {} } = y) : any
+>{ k() {} } = y : any
+>{ k() {} } : { k(): void; }
+>k : () => void
+>y : any
+>y : any
+
+[s = 1] = y;
+>[s = 1] = y : any
+>[s = 1] : [number]
+>s = 1 : 1
+>s : string
+>1 : 1
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

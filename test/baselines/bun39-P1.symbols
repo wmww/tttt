@@ -1,0 +1,32 @@
+//// [test/cases/bun39-P1.ts] ////
+
+=== a.ts ===
+export {};
+type P6<T> = Promise<Promise<Promise<Promise<Promise<Promise<T>>>>>>;
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+
+declare const p: P6<P6<P6<P6<P6<P6<P6<number>>>>>>>;
+>p : Symbol(p, Decl(a.ts, 2, 13))
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+>P6 : Symbol(P6, Decl(a.ts, 0, 10))
+
+// @ts-expect-error
+await p;
+>p : Symbol(p, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

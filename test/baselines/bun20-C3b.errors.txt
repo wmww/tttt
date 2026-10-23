@@ -1,0 +1,27 @@
+a.ts(8,30): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type '"a"'.
+  Type '"b"' is not assignable to type '"a"'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function cond(): boolean;
+    declare function id<T>(x: T): T;
+    declare const m: { a: "b"; b: "a" };
+    function f() {
+        let x: "a" | "b" = "a", y: "a" | "b" = "a";
+        do {
+            if (y === x) { }
+            if (cond()) { y = id(x); }
+                                 ~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type '"a"'.
+!!! error TS2345:   Type '"b"' is not assignable to type '"a"'.
+            if (cond()) continue;
+            x = m[y];
+        } while (cond());
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

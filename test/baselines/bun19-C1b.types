@@ -1,0 +1,16 @@
+//// [test/cases/bun19-C1b.ts] ////
+
+=== a.ts ===
+type C1<T> = T extends T[] ? number : number;
+>C1 : C1<T>
+
+function g<T>(x: number, y: C1<T> = x) {}
+>g : <T>(x: number, y?: C1<T>) => void
+>x : number
+>y : C1<T>
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

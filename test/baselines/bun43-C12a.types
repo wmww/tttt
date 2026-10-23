@@ -1,0 +1,25 @@
+//// [test/cases/bun43-C12a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements { div: {} } }
+>e : 1
+>children : {}
+>div : {}
+
+declare function Str(p: { children: string }): JSX.Element;
+>Str : (p: { children: string; }) => JSX.Element
+>p : { children: string; }
+>children : string
+>JSX : any
+
+<Str>​
+><Str>​</Str> : JSX.Element
+>Str : (p: { children: string; }) => JSX.Element
+
+</Str>;
+>Str : (p: { children: string; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

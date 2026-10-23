@@ -1,0 +1,32 @@
+//// [test/cases/bun12-C1b.ts] ////
+
+=== a.ts ===
+function f<T extends any[], U extends any[]>(t: T, u: U): { [K in keyof T]: [T[K], U] } {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+>t : Symbol(t, Decl(a.ts, 0, 45))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>u : Symbol(u, Decl(a.ts, 0, 50))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+>K : Symbol(K, Decl(a.ts, 0, 61))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>K : Symbol(K, Decl(a.ts, 0, 61))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+
+  const r = f([...u] as [...U], [1] as [number]);
+>r : Symbol(r, Decl(a.ts, 1, 7))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>u : Symbol(u, Decl(a.ts, 0, 50))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+
+  const bad: string = r;
+>bad : Symbol(bad, Decl(a.ts, 2, 7))
+>r : Symbol(r, Decl(a.ts, 1, 7))
+
+  return null!;
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

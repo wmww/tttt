@@ -1,0 +1,22 @@
+//// [test/cases/bun27-P4a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type IntrinsicAttributes = Undefined; interface IntrinsicElements {} }
+>e : 1
+>IntrinsicAttributes : Undefined
+
+declare function F(p: { a: number }): JSX.Element;
+>F : (p: { a: number; }) => JSX.Element
+>p : { a: number; }
+>a : number
+>JSX : any
+
+const a = <F />;
+>a : JSX.Element
+><F /> : JSX.Element
+>F : (p: { a: number; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,76 @@
+//// [test/cases/bun78-R03.ts] ////
+
+=== a.ts ===
+declare function inject<U>(): U;
+>inject : <U>() => U
+
+function g1<Q>(q: Q) { return inject() satisfies <T>(y: Q) => T[]; }
+>g1 : <Q>(q: Q) => (y: Q) => T[]
+>q : Q
+>inject() satisfies <T>(y: Q) => T[] : (y: Q) => T[]
+>inject() : (y: Q) => T[]
+>inject : <U>() => U
+>y : Q
+
+g1(1)(2);
+>g1(1)(2) : T[]
+>g1(1) : (y: number) => T[]
+>g1 : <Q>(q: Q) => (y: Q) => T[]
+>1 : 1
+>2 : 2
+
+const ok1: (y: number) => unknown = g1(1);
+>ok1 : (y: number) => unknown
+>y : number
+>g1(1) : (y: number) => T[]
+>g1 : <Q>(q: Q) => (y: Q) => T[]
+>1 : 1
+
+class Box<Q> { handlers = { on: inject() } satisfies { on<T>(y: Q): T | undefined }; }
+>Box : Box<Q>
+>handlers : { on: (y: Q) => T | undefined; }
+>{ on: inject() } satisfies { on<T>(y: Q): T | undefined } : { on: (y: Q) => T | undefined; }
+>{ on: inject() } : { on: (y: Q) => T | undefined; }
+>on : (y: Q) => T | undefined
+>inject() : (y: Q) => T | undefined
+>inject : <U>() => U
+>on : <T>(y: Q) => T | undefined
+>y : Q
+
+new Box<string>().handlers.on("s");
+>new Box<string>().handlers.on("s") : T | undefined
+>new Box<string>().handlers.on : (y: string) => T | undefined
+>new Box<string>().handlers : { on: (y: string) => T | undefined; }
+>new Box<string>() : Box<string>
+>Box : typeof Box
+>handlers : { on: (y: string) => T | undefined; }
+>on : (y: string) => T | undefined
+>"s" : "s"
+
+g1(1).zzz;
+>g1(1).zzz : any
+>g1(1) : (y: number) => T[]
+>g1 : <Q>(q: Q) => (y: Q) => T[]
+>1 : 1
+>zzz : any
+
+// a call signature is not instantiated in tsc either
+function g2<Q>(q: Q) { return inject() satisfies { <T>(y: Q): T[] }; }
+>g2 : <Q>(q: Q) => (y: Q) => T[]
+>q : Q
+>inject() satisfies { <T>(y: Q): T[] } : (y: Q) => T[]
+>inject() : (y: Q) => T[]
+>inject : <U>() => U
+>y : Q
+
+g2(1).zzz;
+>g2(1).zzz : any
+>g2(1) : (y: Q) => T[]
+>g2 : <Q>(q: Q) => (y: Q) => T[]
+>1 : 1
+>zzz : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

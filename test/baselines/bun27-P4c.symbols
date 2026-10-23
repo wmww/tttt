@@ -1,0 +1,23 @@
+//// [test/cases/bun27-P4c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type IntrinsicClassAttributes = Undefined; interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicClassAttributes : Symbol(IntrinsicClassAttributes, Decl(a.tsx, 0, 50))
+>Undefined : Symbol(Undefined)
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 93))
+
+class K { constructor(p: { c: number }) {} }
+>K : Symbol(K, Decl(a.tsx, 0, 126))
+>p : Symbol(p, Decl(a.tsx, 1, 22))
+>c : Symbol(c, Decl(a.tsx, 1, 26))
+
+const a = <K />;
+>a : Symbol(a, Decl(a.tsx, 2, 5))
+>K : Symbol(K, Decl(a.tsx, 0, 126))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

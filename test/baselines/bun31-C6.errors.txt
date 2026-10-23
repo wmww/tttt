@@ -1,0 +1,17 @@
+a.ts(1,31): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(1,44): error TS2454: Variable 'a' is used before being assigned.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function m() { let a: number; ([a]) = [1]; a; }
+                                  ~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+                                               ~
+!!! error TS2454: Variable 'a' is used before being assigned.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

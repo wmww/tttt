@@ -1,0 +1,72 @@
+//// [test/cases/bun59-L19b.ts] ////
+
+=== a.ts ===
+abstract class A<T> { abstract m(): void; abstract p: number; abstract h: T; abstract o: { a: 1 }; abstract arr: number[]; }
+>A : A<T>
+>m : () => void
+>p : number
+>h : T
+>o : { a: 1; }
+>a : 1
+>arr : number[]
+
+function mixN<T extends abstract new (...a: any[]) => A<number>>(B: T) { abstract class M extends B {} return M; }
+>mixN : <T extends abstract new (...a: any[]) => A<number>>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mixN.M; }) & T
+>a : any[]
+>B : T
+>M : M
+>B : A<number>
+>M : ((abstract new (...a: any[]) => M) & { prototype: mixN.M; }) & T
+
+function mixA<T extends abstract new (...a: any[]) => A<any>>(B: T) { abstract class M extends B {} return M; }
+>mixA : <T extends abstract new (...a: any[]) => A<any>>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mixA.M; }) & T
+>a : any[]
+>B : T
+>M : M
+>B : A<any>
+>M : ((abstract new (...a: any[]) => M) & { prototype: mixA.M; }) & T
+
+class N1 extends mixN(A<number>) {}
+>N1 : N1
+>mixN(A<number>) : mixN.M & A<number>
+>mixN : <T extends abstract new (...a: any[]) => A<number>>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mixN.M; }) & T
+>A<number> : (abstract new () => A<number>) & { prototype: A<any>; }
+>A : typeof A
+
+class A1 extends mixA(A<number>) {}
+>A1 : A1
+>mixA(A<number>) : mixA.M & A<number>
+>mixA : <T extends abstract new (...a: any[]) => A<any>>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mixA.M; }) & T
+>A<number> : (abstract new () => A<number>) & { prototype: A<any>; }
+>A : typeof A
+
+class AA extends mixA(A<any>) {}
+>AA : AA
+>mixA(A<any>) : mixA.M & A<any>
+>mixA : <T extends abstract new (...a: any[]) => A<any>>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mixA.M; }) & T
+>A<any> : (abstract new () => A<any>) & { prototype: A<any>; }
+>A : typeof A
+
+abstract class A2<T> { abstract m(): void; }
+>A2 : A2<T>
+>m : () => void
+
+function mix2<T extends abstract new (...a: any[]) => A2<any>>(B: T) { abstract class M extends B {} return M; }
+>mix2 : <T extends abstract new (...a: any[]) => A2<any>>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mix2.M; }) & T
+>a : any[]
+>B : T
+>M : M
+>B : A2<any>
+>M : ((abstract new (...a: any[]) => M) & { prototype: mix2.M; }) & T
+
+class E2 extends mix2(A2<number>) {}
+>E2 : E2
+>mix2(A2<number>) : mix2.M & A2<number>
+>mix2 : <T extends abstract new (...a: any[]) => A2<any>>(B: T) => ((abstract new (...a: any[]) => M) & { prototype: mix2.M; }) & T
+>A2<number> : (abstract new () => A2<number>) & { prototype: A2<any>; }
+>A2 : typeof A2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

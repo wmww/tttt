@@ -1,0 +1,18 @@
+//// [test/cases/bun02-C8.ts] ////
+
+=== a.ts ===
+function s1(x: string): void; function s1(x: any) {} var q1; function s1(y: number, z: number): number { return 1 }
+>s1 : { (x: string): void; (y: number, z: number): number; }
+>x : string
+>s1 : { (x: string): void; (y: number, z: number): number; }
+>x : any
+>q1 : any
+>s1 : { (x: string): void; (y: number, z: number): number; }
+>y : number
+>z : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

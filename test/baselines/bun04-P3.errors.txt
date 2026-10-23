@@ -1,0 +1,24 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.js(1,7): error TS2395: Individual declarations in merged declaration 'w' must be all exported or all local.
+b.js(1,7): error TS2440: Import declaration conflicts with local declaration of 'w'.
+b.js(2,14): error TS2395: Individual declarations in merged declaration 'w' must be all exported or all local.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.js (3 errors) ====
+    const w = require("./m");
+          ~
+!!! error TS2395: Individual declarations in merged declaration 'w' must be all exported or all local.
+          ~
+!!! error TS2440: Import declaration conflicts with local declaration of 'w'.
+    export class w {}
+                 ~
+!!! error TS2395: Individual declarations in merged declaration 'w' must be all exported or all local.
+==== m.ts (0 errors) ====
+    export const v = 1;
+    

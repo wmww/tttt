@@ -1,0 +1,9 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+// @filename: a.ts
+import "slash/foo";
+const sentinel: number = "";
+// @filename: b.d.ts
+export {};
+// @filename: package.json
+{ "name": "slash/", "exports": { "./foo": "./b.d.ts" } }

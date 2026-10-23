@@ -1,0 +1,47 @@
+f.js(1,48): error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+f.js(1,48): error TS2448: Block-scoped variable 'arguments' used before its declaration.
+f.js(2,47): error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+f.js(3,54): error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+f.js(3,54): error TS2448: Block-scoped variable 'arguments' used before its declaration.
+f.js(4,49): error TS6196: 'arguments' is declared but never used.
+f.js(5,12): error TS7006: Parameter 'z' implicitly has an 'any' type.
+f.js(5,23): error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+f.js(5,23): error TS6133: 'arguments' is declared but its value is never read.
+f.js(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "noUnusedLocals": true } }
+==== f.js (10 errors) ====
+    /** @param {number} z */ function j(z) { const arguments = 1; return z; }
+                                                   ~~~~~~~~~
+!!! error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+                                                   ~~~~~~~~~
+!!! error TS2448: Block-scoped variable 'arguments' used before its declaration.
+!!! related TS2728 f.js:1:48: 'arguments' is declared here.
+    /** @param {number} z */ function j3(z) { var arguments = 1; return z; }
+                                                  ~~~~~~~~~
+!!! error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+    /** @param {number} z */ function j8(z) { const { a: arguments } = { a: 1 }; return z; }
+                                                         ~~~~~~~~~
+!!! error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+                                                         ~~~~~~~~~
+!!! error TS2448: Block-scoped variable 'arguments' used before its declaration.
+!!! related TS2728 f.js:3:54: 'arguments' is declared here.
+    /** @param {number} z */ function j5(z) { class arguments {} return z; }
+                                                    ~~~~~~~~~
+!!! error TS6196: 'arguments' is declared but never used.
+    function k(z) { const arguments = 1; return z; }
+               ~
+!!! error TS7006: Parameter 'z' implicitly has an 'any' type.
+                          ~~~~~~~~~
+!!! error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+                          ~~~~~~~~~
+!!! error TS6133: 'arguments' is declared but its value is never read.
+    j(1); j3(1); j8(1); j5(1); k(1);
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export { sentinel };
+    

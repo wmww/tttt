@@ -1,0 +1,222 @@
+//// [test/cases/bun96-OPENAI1.ts] ////
+
+=== a.ts ===
+declare const c: boolean;
+>c : Symbol(c, Decl(a.ts, 0, 13))
+
+// The shape of openai-node, src/_vendor/zod-to-json-schema: `{} & Meta` is `Meta`, a supertype of the other members.
+type Meta = { title?: string };
+>Meta : Symbol(Meta, Decl(a.ts, 0, 25))
+>title : Symbol(title, Decl(a.ts, 2, 13))
+
+type Schema = ({ type: "string" } | { type: "number" } | {}) & Meta;
+>Schema : Symbol(Schema, Decl(a.ts, 2, 31))
+>type : Symbol(type, Decl(a.ts, 3, 16))
+>type : Symbol(type, Decl(a.ts, 3, 37))
+>Meta : Symbol(Meta, Decl(a.ts, 0, 25))
+
+type MapType = { maxItems: 125; items: [Schema, Schema] };
+>MapType : Symbol(MapType, Decl(a.ts, 3, 68))
+>maxItems : Symbol(maxItems, Decl(a.ts, 4, 16))
+>items : Symbol(items, Decl(a.ts, 4, 31))
+>Schema : Symbol(Schema, Decl(a.ts, 2, 31))
+>Schema : Symbol(Schema, Decl(a.ts, 2, 31))
+
+type RecordType = { type: "object"; additionalProperties: Schema };
+>RecordType : Symbol(RecordType, Decl(a.ts, 4, 58))
+>type : Symbol(type, Decl(a.ts, 5, 19))
+>additionalProperties : Symbol(additionalProperties, Decl(a.ts, 5, 35))
+>Schema : Symbol(Schema, Decl(a.ts, 2, 31))
+
+declare function parseDef(): Schema | undefined;
+>parseDef : Symbol(parseDef, Decl(a.ts, 5, 67))
+>Schema : Symbol(Schema, Decl(a.ts, 2, 31))
+
+function parseMapDef(): MapType | RecordType {
+>parseMapDef : Symbol(parseMapDef, Decl(a.ts, 6, 48))
+>MapType : Symbol(MapType, Decl(a.ts, 3, 68))
+>RecordType : Symbol(RecordType, Decl(a.ts, 4, 58))
+
+  const keys = parseDef() || {};
+>keys : Symbol(keys, Decl(a.ts, 8, 7))
+>parseDef : Symbol(parseDef, Decl(a.ts, 5, 67))
+
+  return { type: "array", maxItems: 125, items: [keys, keys] };
+>type : Symbol(type, Decl(a.ts, 9, 10))
+>maxItems : Symbol(maxItems, Decl(a.ts, 9, 25))
+>items : Symbol(items, Decl(a.ts, 9, 40))
+>keys : Symbol(keys, Decl(a.ts, 8, 7))
+>keys : Symbol(keys, Decl(a.ts, 8, 7))
+}
+// Ordinary code: a named union with a member that is a supertype of all the others.
+interface Animal { name: string }
+>Animal : Symbol(Animal, Decl(a.ts, 10, 1))
+>name : Symbol(Animal.name, Decl(a.ts, 12, 18))
+
+interface Dog extends Animal { bark(): void }
+>Dog : Symbol(Dog, Decl(a.ts, 12, 33))
+>Animal : Symbol(Animal, Decl(a.ts, 10, 1))
+>bark : Symbol(Dog.bark, Decl(a.ts, 13, 30))
+
+interface Cat extends Animal { meow(): void }
+>Cat : Symbol(Cat, Decl(a.ts, 13, 45))
+>Animal : Symbol(Animal, Decl(a.ts, 10, 1))
+>meow : Symbol(Cat.meow, Decl(a.ts, 14, 30))
+
+type Pet = Animal | Dog;
+>Pet : Symbol(Pet, Decl(a.ts, 14, 45))
+>Animal : Symbol(Animal, Decl(a.ts, 10, 1))
+>Dog : Symbol(Dog, Decl(a.ts, 12, 33))
+
+declare const a: Pet, b: Pet, u: Pet | undefined, dog: Dog, cat: Cat;
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>Pet : Symbol(Pet, Decl(a.ts, 14, 45))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+>Pet : Symbol(Pet, Decl(a.ts, 14, 45))
+>u : Symbol(u, Decl(a.ts, 16, 29))
+>Pet : Symbol(Pet, Decl(a.ts, 14, 45))
+>dog : Symbol(dog, Decl(a.ts, 16, 49))
+>Dog : Symbol(Dog, Decl(a.ts, 12, 33))
+>cat : Symbol(cat, Decl(a.ts, 16, 59))
+>Cat : Symbol(Cat, Decl(a.ts, 13, 45))
+
+const x = c ? a : b;
+>x : Symbol(x, Decl(a.ts, 17, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+
+if ("bark" in x) x.bark();
+>x : Symbol(x, Decl(a.ts, 17, 5))
+>x.bark : Symbol(Dog.bark, Decl(a.ts, 13, 30))
+>x : Symbol(x, Decl(a.ts, 17, 5))
+>bark : Symbol(Dog.bark, Decl(a.ts, 13, 30))
+
+for (const e of [a, b]) if ("bark" in e) e.bark();
+>e : Symbol(e, Decl(a.ts, 19, 10))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+>e : Symbol(e, Decl(a.ts, 19, 10))
+>e.bark : Symbol(Dog.bark, Decl(a.ts, 13, 30))
+>e : Symbol(e, Decl(a.ts, 19, 10))
+>bark : Symbol(Dog.bark, Decl(a.ts, 13, 30))
+
+let y = u ?? b;
+>y : Symbol(y, Decl(a.ts, 20, 3))
+>u : Symbol(u, Decl(a.ts, 16, 29))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+
+y = { name: "", bark() {} };
+>y : Symbol(y, Decl(a.ts, 20, 3))
+>name : Symbol(name, Decl(a.ts, 21, 5))
+>bark : Symbol(bark, Decl(a.ts, 21, 15))
+
+const t1: number = c ? a : b;
+>t1 : Symbol(t1, Decl(a.ts, 22, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+
+const t2: number = [a, b];
+>t2 : Symbol(t2, Decl(a.ts, 23, 5))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+
+const t3: number = u || b;
+>t3 : Symbol(t3, Decl(a.ts, 24, 5))
+>u : Symbol(u, Decl(a.ts, 16, 29))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+
+const t4: number = u ?? b;
+>t4 : Symbol(t4, Decl(a.ts, 25, 5))
+>u : Symbol(u, Decl(a.ts, 16, 29))
+>b : Symbol(b, Decl(a.ts, 16, 21))
+
+const t5: number = c ? a : dog;
+>t5 : Symbol(t5, Decl(a.ts, 26, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>dog : Symbol(dog, Decl(a.ts, 16, 49))
+
+const t6: number = c ? a : cat;
+>t6 : Symbol(t6, Decl(a.ts, 27, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>cat : Symbol(cat, Decl(a.ts, 16, 59))
+
+// Named by an origin, without an alias.
+declare const o: ({ type: "s" } | { type: "n" } | {}) & Meta;
+>o : Symbol(o, Decl(a.ts, 29, 13))
+>type : Symbol(type, Decl(a.ts, 29, 19))
+>type : Symbol(type, Decl(a.ts, 29, 35))
+>Meta : Symbol(Meta, Decl(a.ts, 0, 25))
+
+const t7: number = c ? o : o;
+>t7 : Symbol(t7, Decl(a.ts, 30, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>o : Symbol(o, Decl(a.ts, 29, 13))
+>o : Symbol(o, Decl(a.ts, 29, 13))
+
+// reduceVoidUndefined of removeRedundantLiteralTypes: one member is left, two are left.
+type VU = void | undefined;
+>VU : Symbol(VU, Decl(a.ts, 30, 29))
+
+type VUS = void | undefined | string;
+>VUS : Symbol(VUS, Decl(a.ts, 32, 27))
+
+declare const vu: VU, vus: VUS;
+>vu : Symbol(vu, Decl(a.ts, 34, 13))
+>VU : Symbol(VU, Decl(a.ts, 30, 29))
+>vus : Symbol(vus, Decl(a.ts, 34, 21))
+>VUS : Symbol(VUS, Decl(a.ts, 32, 27))
+
+const t8: number = c ? vu : vu;
+>t8 : Symbol(t8, Decl(a.ts, 35, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>vu : Symbol(vu, Decl(a.ts, 34, 13))
+>vu : Symbol(vu, Decl(a.ts, 34, 13))
+
+const t9: number = c ? vus : vus;
+>t9 : Symbol(t9, Decl(a.ts, 36, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>vus : Symbol(vus, Decl(a.ts, 34, 21))
+>vus : Symbol(vus, Decl(a.ts, 34, 21))
+
+// The two agree: two members are left, two named unions, a named union inside `Pet | undefined`.
+type Three = Animal | Dog | string;
+>Three : Symbol(Three, Decl(a.ts, 36, 33))
+>Animal : Symbol(Animal, Decl(a.ts, 10, 1))
+>Dog : Symbol(Dog, Decl(a.ts, 12, 33))
+
+type Pet2 = Animal | Cat;
+>Pet2 : Symbol(Pet2, Decl(a.ts, 38, 35))
+>Animal : Symbol(Animal, Decl(a.ts, 10, 1))
+>Cat : Symbol(Cat, Decl(a.ts, 13, 45))
+
+declare const three: Three, p2: Pet2;
+>three : Symbol(three, Decl(a.ts, 40, 13))
+>Three : Symbol(Three, Decl(a.ts, 36, 33))
+>p2 : Symbol(p2, Decl(a.ts, 40, 27))
+>Pet2 : Symbol(Pet2, Decl(a.ts, 38, 35))
+
+const s1: number = c ? three : three;
+>s1 : Symbol(s1, Decl(a.ts, 41, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>three : Symbol(three, Decl(a.ts, 40, 13))
+>three : Symbol(three, Decl(a.ts, 40, 13))
+
+const s2: number = c ? a : p2;
+>s2 : Symbol(s2, Decl(a.ts, 42, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>p2 : Symbol(p2, Decl(a.ts, 40, 27))
+
+const s3: number = c ? u : a;
+>s3 : Symbol(s3, Decl(a.ts, 43, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+>u : Symbol(u, Decl(a.ts, 16, 29))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 44, 5))
+

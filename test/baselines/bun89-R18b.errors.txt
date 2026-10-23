@@ -1,0 +1,24 @@
+a.ts(2,18): error TS2310: Type 'I1' recursively references itself as a base type.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+v.ts(4,14): error TS7022: 'a1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import { a1 } from "./v";
+    export interface I1 extends Array<typeof a1> {}
+                     ~~
+!!! error TS2310: Type 'I1' recursively references itself as a base type.
+    export declare class Base<T> { inherited: T }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== v.ts (1 errors) ====
+    // Before a.ts in program order: tsc types the variable first, as with the variable above the interface in one file. No TS2339.
+    import type { I1 } from "./a";
+    declare const i1: I1;
+    export const a1 = i1.length;
+                 ~~
+!!! error TS7022: 'a1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    

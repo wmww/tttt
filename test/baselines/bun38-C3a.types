@@ -1,0 +1,12 @@
+//// [test/cases/bun38-C3a.ts] ////
+
+=== a.ts ===
+/// <reference lib="es2022.full" />
+export const p = document;
+>p : any
+>document : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

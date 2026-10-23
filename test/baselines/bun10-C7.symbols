@@ -1,0 +1,14 @@
+//// [test/cases/bun10-C7.ts] ////
+
+=== a.ts ===
+function f1() { return g1(); }
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+>g1 : Symbol(g1, Decl(a.ts, 1, 5))
+
+const g1 = f1;
+>g1 : Symbol(g1, Decl(a.ts, 1, 5))
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

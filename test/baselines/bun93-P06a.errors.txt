@@ -1,0 +1,14 @@
+a.ts(1,15): error TS1211: A class declaration without the 'default' modifier must have a name.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace N { export class {} }
+                  ~~~~~~
+!!! error TS1211: A class declaration without the 'default' modifier must have a name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

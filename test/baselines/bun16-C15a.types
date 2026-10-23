@@ -1,0 +1,50 @@
+//// [test/cases/bun16-C15a.ts] ////
+
+=== b.js ===
+const x = [1];
+>x : number[]
+>[1] : number[]
+>1 : 1
+
+/** @param {string[]} rest */
+function f1() { return x[arguments.length]; }
+>f1 : () => number
+>x[arguments.length] : number
+>x : number[]
+>arguments.length : number
+>arguments : IArguments
+>length : number
+
+/** @param {string} n2 */
+function f2() { return x[arguments[0]]; }
+>f2 : () => number
+>x[arguments[0]] : number
+>x : number[]
+>arguments[0] : any
+>arguments : IArguments
+>0 : 0
+
+/** @param {string[]} rest */
+function f3(a = arguments[0]) { return a; }
+>f3 : (a?: any) => any
+>a : any
+>arguments[0] : any
+>arguments : IArguments
+>0 : 0
+>a : any
+
+/** @param {string[]} rest */
+function f4() { return { [arguments.length]: 1 }; }
+>f4 : () => { [x: number]: number; }
+>{ [arguments.length]: 1 } : { [x: number]: number; }
+>[arguments.length] : number
+>arguments.length : number
+>arguments : IArguments
+>length : number
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

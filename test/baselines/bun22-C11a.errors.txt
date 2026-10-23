@@ -1,0 +1,17 @@
+a.ts(4,13): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function f<T>(a: T, b: [x: T]): T;
+    declare const a2: { m(x: string | number): void };
+    declare const t2: [x: { m(x: string): void }];
+    f(a2, t2).m(1);
+                ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

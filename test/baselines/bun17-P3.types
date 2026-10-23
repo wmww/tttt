@@ -1,0 +1,16 @@
+//// [test/cases/bun17-P3.ts] ////
+
+=== a.ts ===
+interface Array<T> { 0: T }
+>0 : T
+
+const t: ArrayLike<string> = ["a", 1];
+>t : ArrayLike<string>
+>["a", 1] : (string | number)[]
+>"a" : "a"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

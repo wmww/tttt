@@ -1,0 +1,23 @@
+//// [test/cases/bun22-C5e.ts] ////
+
+=== a.ts ===
+function mk<X>() { return class<T = X> { y!: T } }
+>mk : <X>() => typeof (Anonymous class)
+>class<T = X> { y!: T } : typeof (Anonymous class)
+>y : T
+
+class E extends mk<string>() { m() { return this.y.length } }
+>E : E
+>mk<string>() : mk.(Anonymous class)<string>
+>mk : <X>() => typeof (Anonymous class)
+>m : () => number
+>this.y.length : number
+>this.y : string
+>this : this
+>y : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

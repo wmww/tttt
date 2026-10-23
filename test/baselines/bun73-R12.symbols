@@ -1,0 +1,106 @@
+//// [test/cases/bun73-R12.ts] ////
+
+=== a.ts ===
+declare function t0<T>(): T;
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+
+declare function box<T>(): { v: T };
+>box : Symbol(box, Decl(a.ts, 0, 28))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+>v : Symbol(v, Decl(a.ts, 1, 28))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+
+declare function prom<T>(): Promise<T>;
+>prom : Symbol(prom, Decl(a.ts, 1, 36))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+
+declare function dflt<T = { a: number }>(): T;
+>dflt : Symbol(dflt, Decl(a.ts, 2, 39))
+>T : Symbol(T, Decl(a.ts, 3, 22))
+>a : Symbol(a, Decl(a.ts, 3, 27))
+>T : Symbol(T, Decl(a.ts, 3, 22))
+
+let n: number, u: unknown;
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>u : Symbol(u, Decl(a.ts, 4, 14))
+
+declare let d: number | undefined;
+>d : Symbol(d, Decl(a.ts, 5, 11))
+
+declare const o: { p: number };
+>o : Symbol(o, Decl(a.ts, 6, 13))
+>p : Symbol(p, Decl(a.ts, 6, 18))
+
+({ a: n } = t0());
+>a : Symbol(a, Decl(a.ts, 7, 2))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+({ n } = t0());
+>n : Symbol(n, Decl(a.ts, 8, 2))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+({ a: u } = t0());
+>a : Symbol(a, Decl(a.ts, 9, 2))
+>u : Symbol(u, Decl(a.ts, 4, 14))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+({ a: n = 1 } = t0());
+>a : Symbol(a, Decl(a.ts, 10, 2))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+({ a: { b: n } } = t0());
+>a : Symbol(a, Decl(a.ts, 11, 2))
+>b : Symbol(b, Decl(a.ts, 11, 7))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+({ v: n } = box());
+>v : Symbol(v, Decl(a.ts, 12, 2))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>box : Symbol(box, Decl(a.ts, 0, 28))
+
+({ v: { w: n } } = box());
+>v : Symbol(v, Decl(a.ts, 13, 2))
+>w : Symbol(w, Decl(a.ts, 13, 7))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>box : Symbol(box, Decl(a.ts, 0, 28))
+
+async function f() { ({ a: n } = await prom()); }
+>f : Symbol(f, Decl(a.ts, 13, 26))
+>a : Symbol(a, Decl(a.ts, 14, 23))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>prom : Symbol(prom, Decl(a.ts, 1, 36))
+
+// no error in either: an array literal is a tuple (one identity), a default for every type parameter skips the test,
+// and a left side that needs flow analysis is cached by getTypeOfExpression
+[n] = t0();
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+({ a: n } = dflt());
+>a : Symbol(a, Decl(a.ts, 18, 2))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>dflt : Symbol(dflt, Decl(a.ts, 2, 39))
+
+({ a: o.p } = t0());
+>a : Symbol(a, Decl(a.ts, 19, 2))
+>o.p : Symbol(p, Decl(a.ts, 6, 18))
+>o : Symbol(o, Decl(a.ts, 6, 13))
+>p : Symbol(p, Decl(a.ts, 6, 18))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+({ a: n = d! } = t0());
+>a : Symbol(a, Decl(a.ts, 20, 2))
+>n : Symbol(n, Decl(a.ts, 4, 3))
+>d : Symbol(d, Decl(a.ts, 5, 11))
+>t0 : Symbol(t0, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 21, 5))
+

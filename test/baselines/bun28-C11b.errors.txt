@@ -1,0 +1,15 @@
+a.ts(2,7): error TS1358: Tagged template expressions are not permitted in an optional chain.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    declare const o: any;
+    o?.a<>`x`;
+          ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

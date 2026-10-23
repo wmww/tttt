@@ -1,0 +1,10 @@
+//// [test/cases/bun42-C10.ts] ////
+
+=== a.ts ===
+import a from ".json";
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

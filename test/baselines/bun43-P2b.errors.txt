@@ -1,0 +1,16 @@
+a.ts(1,9): error TS2304: Cannot find name 'async'.
+a.ts(1,16): error TS2304: Cannot find name 'x'.
+a.ts(1,20): error TS18026: '#!' can only be used at the start of a file.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    var s = async (x = #!);
+            ~~~~~
+!!! error TS2304: Cannot find name 'async'.
+                   ~
+!!! error TS2304: Cannot find name 'x'.
+                       ~~
+!!! error TS18026: '#!' can only be used at the start of a file.
+    

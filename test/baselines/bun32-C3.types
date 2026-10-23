@@ -1,0 +1,25 @@
+//// [test/cases/bun32-C3.ts] ////
+
+=== a.ts ===
+function f(o: { k: "a"; a: 1 } | { k: "b" } | undefined) { if ((o!).k === "a") o!.a; }
+>f : (o: { k: "a"; a: 1; } | { k: "b"; } | undefined) => void
+>o : { k: "a"; a: 1; } | { k: "b"; } | undefined
+>k : "a"
+>a : 1
+>k : "b"
+>(o!).k === "a" : boolean
+>(o!).k : "a" | "b"
+>(o!) : { k: "a"; a: 1; } | { k: "b"; }
+>o! : { k: "a"; a: 1; } | { k: "b"; }
+>o : { k: "a"; a: 1; } | { k: "b"; } | undefined
+>k : "a" | "b"
+>"a" : "a"
+>o!.a : any
+>o! : { k: "a"; a: 1; } | { k: "b"; }
+>o : { k: "a"; a: 1; } | { k: "b"; } | undefined
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

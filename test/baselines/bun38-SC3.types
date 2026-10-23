@@ -1,0 +1,23 @@
+//// [test/cases/bun38-SC3.ts] ////
+
+=== a.ts ===
+import { make } from "pkg"; export const x = make();
+>make : () => import("pkg/internal").Inner
+>x : import("pkg/internal").Inner
+>make() : import("pkg/internal").Inner
+>make : () => import("pkg/internal").Inner
+
+=== b.ts ===
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/pkg/index.d.ts ===
+import { Inner } from "./internal"; export declare function make(): Inner;
+>Inner : any
+>make : () => Inner
+
+=== node_modules/pkg/internal.d.ts ===
+export interface Inner { a: number }
+>a : number
+

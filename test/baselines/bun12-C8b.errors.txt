@@ -1,0 +1,17 @@
+a.ts(4,36): error TS2322: Type 'undefined' is not assignable to type 'boolean'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noUncheckedIndexedAccess": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const r: [string, ...number[]];
+    let f: string | number, g: number | boolean | undefined;
+    [f, g] = r;
+    if (typeof g !== "number") { const u: boolean = g; }
+                                       ~
+!!! error TS2322: Type 'undefined' is not assignable to type 'boolean'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

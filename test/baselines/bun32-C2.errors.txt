@@ -1,0 +1,15 @@
+a.ts(2,23): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const o: { x: any };
+    (o.x) = function () { this; };
+                          ~~~~
+!!! error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

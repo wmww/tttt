@@ -1,0 +1,47 @@
+b.js(1,27): error TS1247: A type literal property cannot have an initializer.
+b.js(1,28): error TS1109: Expression expected.
+b.js(2,27): error TS1247: A type literal property cannot have an initializer.
+b.js(2,27): error TS1109: Expression expected.
+b.js(3,27): error TS1247: A type literal property cannot have an initializer.
+b.js(3,31): error TS1109: Expression expected.
+b.js(4,24): error TS1247: A type literal property cannot have an initializer.
+b.js(4,25): error TS1109: Expression expected.
+b.js(6,17): error TS2322: Type 'number' is not assignable to type 'string'.
+b.js(6,28): error TS1247: A type literal property cannot have an initializer.
+b.js(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"] } }
+==== b.js (11 errors) ====
+    /** @typedef {{ q: string= }} T1 */
+                              
+!!! error TS1247: A type literal property cannot have an initializer.
+                               ~
+!!! error TS1109: Expression expected.
+    /** @typedef {{ q: string=}} T2 */
+                              
+!!! error TS1247: A type literal property cannot have an initializer.
+                              ~
+!!! error TS1109: Expression expected.
+    /** @typedef {{ q: string=    }} T3 */
+                              
+!!! error TS1247: A type literal property cannot have an initializer.
+                                  ~
+!!! error TS1109: Expression expected.
+    /** @type {{ q: string= , r: number }} */
+                           
+!!! error TS1247: A type literal property cannot have an initializer.
+                            ~
+!!! error TS1109: Expression expected.
+    let v4;
+    /** @typedef {{ q: string= 1 }} T5 */
+                    ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+                               ~
+!!! error TS1247: A type literal property cannot have an initializer.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

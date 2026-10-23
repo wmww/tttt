@@ -1,0 +1,19 @@
+a.ts(2,19): error TS1194: Export declarations are not permitted in a namespace.
+a.ts(2,28): error TS2303: Circular definition of import alias 'loc'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const loc = 1;
+    namespace Inner { export { loc }; }
+                      ~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                               ~~~
+!!! error TS2303: Circular definition of import alias 'loc'.
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

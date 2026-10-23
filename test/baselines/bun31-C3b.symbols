@@ -1,0 +1,23 @@
+//// [test/cases/bun31-C3b.ts] ////
+
+=== a.ts ===
+declare function isNum(x: unknown): x is number;
+>isNum : Symbol(isNum, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 23))
+>x : Symbol(x, Decl(a.ts, 0, 23))
+
+function n(a?: { b: unknown }) { if (isNum((a?.b))) a.b; }
+>n : Symbol(n, Decl(a.ts, 0, 48))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>b : Symbol(b, Decl(a.ts, 1, 16))
+>isNum : Symbol(isNum, Decl(a.ts, 0, 0))
+>a?.b : Symbol(b, Decl(a.ts, 1, 16))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>b : Symbol(b, Decl(a.ts, 1, 16))
+>a.b : Symbol(b, Decl(a.ts, 1, 16))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>b : Symbol(b, Decl(a.ts, 1, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

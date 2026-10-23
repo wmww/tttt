@@ -1,0 +1,24 @@
+a.ts(1,20): error TS2300: Duplicate identifier 'a'.
+a.ts(1,32): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(1,32): error TS2300: Duplicate identifier 'a'.
+a.ts(1,54): error TS2300: Duplicate identifier 'a'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    export const o = { a() {}, get a() { return 1 }, set a(v: number) {} };
+                       ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                   ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+                                   ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                         ~
+!!! error TS2300: Duplicate identifier 'a'.
+    o.a = 3;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

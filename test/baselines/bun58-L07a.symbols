@@ -1,0 +1,51 @@
+//// [test/cases/bun58-L07a.ts] ////
+
+=== a.ts ===
+import { S as S1 } from "pkg/sub";
+>S : Symbol(S1, Decl(index.d.ts, 0, 0))
+>S1 : Symbol(S1, Decl(a.ts, 0, 8))
+
+import { get } from "pkg";
+>get : Symbol(get, Decl(a.ts, 1, 8))
+
+import { S as S2 } from "other";
+>S : Symbol(S, Decl(index.d.ts, 0, 8))
+>S2 : Symbol(S2, Decl(a.ts, 2, 8))
+
+declare const s2: S2;
+>s2 : Symbol(s2, Decl(a.ts, 3, 13))
+>S2 : Symbol(S2, Decl(a.ts, 2, 8))
+
+const s1: S1 = s2;
+>s1 : Symbol(s1, Decl(a.ts, 4, 5))
+>S1 : Symbol(S1, Decl(a.ts, 0, 8))
+>s2 : Symbol(s2, Decl(a.ts, 3, 13))
+
+const s3: S2 = get();
+>s3 : Symbol(s3, Decl(a.ts, 5, 5))
+>S2 : Symbol(S2, Decl(a.ts, 2, 8))
+>get : Symbol(get, Decl(a.ts, 1, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+
+=== node_modules/other/index.d.ts ===
+export { S } from "pkg/sub";
+>S : Symbol(S, Decl(index.d.ts, 0, 8))
+
+=== node_modules/other/node_modules/pkg/sub/index.d.ts ===
+export declare class S { private p: number; }
+>S : Symbol(S, Decl(index.d.ts, 0, 0))
+>p : Symbol(S.p, Decl(index.d.ts, 0, 24))
+
+=== node_modules/pkg/index.d.ts ===
+import { S } from "./sub/index"; export declare function get(): S;
+>S : Symbol(S, Decl(index.d.ts, 0, 8))
+>get : Symbol(get, Decl(index.d.ts, 0, 32))
+>S : Symbol(S, Decl(index.d.ts, 0, 8))
+
+=== node_modules/pkg/sub/index.d.ts ===
+export declare class S { private p: number; }
+>S : Symbol(S, Decl(index.d.ts, 0, 0))
+>p : Symbol(S.p, Decl(index.d.ts, 0, 24))
+

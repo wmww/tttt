@@ -1,0 +1,13 @@
+//// [test/cases/bun43-P6a.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+<T, U>(x);
+>T : Symbol(T)
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

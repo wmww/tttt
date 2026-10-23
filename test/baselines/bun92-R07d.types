@@ -1,0 +1,14 @@
+//// [test/cases/bun92-R07d.ts] ////
+
+=== a.js ===
+/**
+ * @typedef {(
+ *   a,
+ *   b
+ * ) => 1} T
+ */
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

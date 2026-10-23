@@ -1,0 +1,13 @@
+//// [test/cases/bun44-C2.ts] ////
+
+=== a.ts ===
+declare const c: boolean;
+>c : Symbol(c, Decl(a.ts, 0, 13))
+
+const vs: string[] = ["a", ...(c ? [1] : []), "b"];
+>vs : Symbol(vs, Decl(a.ts, 1, 5))
+>c : Symbol(c, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

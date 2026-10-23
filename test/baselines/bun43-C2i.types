@@ -1,0 +1,6 @@
+//// [test/cases/bun43-C2i.ts] ////
+
+=== a.ts ===
+
+export d\u0065fault 1;
+

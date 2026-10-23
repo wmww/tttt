@@ -1,0 +1,70 @@
+//// [test/cases/bun82-R13.ts] ////
+
+=== a.ts ===
+function mk1() { return [new A1()]; }
+>mk1 : Symbol(mk1, Decl(a.ts, 0, 0))
+>A1 : Symbol(A1, Decl(a.ts, 1, 37))
+
+function mk2() { return [new A2()]; }
+>mk2 : Symbol(mk2, Decl(a.ts, 0, 37))
+>A2 : Symbol(A2, Decl(a.ts, 2, 134))
+
+class A1 { bs = [new B1()] } class B1 { cs = [new C1()] } class C1 { ds = [new D1()] } class D1 { es = [new E1()] } class E1 { x = 1 }
+>A1 : Symbol(A1, Decl(a.ts, 1, 37))
+>bs : Symbol(A1.bs, Decl(a.ts, 2, 10))
+>B1 : Symbol(B1, Decl(a.ts, 2, 28))
+>B1 : Symbol(B1, Decl(a.ts, 2, 28))
+>cs : Symbol(B1.cs, Decl(a.ts, 2, 39))
+>C1 : Symbol(C1, Decl(a.ts, 2, 57))
+>C1 : Symbol(C1, Decl(a.ts, 2, 57))
+>ds : Symbol(C1.ds, Decl(a.ts, 2, 68))
+>D1 : Symbol(D1, Decl(a.ts, 2, 86))
+>D1 : Symbol(D1, Decl(a.ts, 2, 86))
+>es : Symbol(D1.es, Decl(a.ts, 2, 97))
+>E1 : Symbol(E1, Decl(a.ts, 2, 115))
+>E1 : Symbol(E1, Decl(a.ts, 2, 115))
+>x : Symbol(E1.x, Decl(a.ts, 2, 126))
+
+class A2 { bs = [new B2()] } class B2 { cs = [new C2()] } class C2 { ds = [new D2()] } class D2 { es = [new E2()] } class E2 { x = "" }
+>A2 : Symbol(A2, Decl(a.ts, 2, 134))
+>bs : Symbol(A2.bs, Decl(a.ts, 3, 10))
+>B2 : Symbol(B2, Decl(a.ts, 3, 28))
+>B2 : Symbol(B2, Decl(a.ts, 3, 28))
+>cs : Symbol(B2.cs, Decl(a.ts, 3, 39))
+>C2 : Symbol(C2, Decl(a.ts, 3, 57))
+>C2 : Symbol(C2, Decl(a.ts, 3, 57))
+>ds : Symbol(C2.ds, Decl(a.ts, 3, 68))
+>D2 : Symbol(D2, Decl(a.ts, 3, 86))
+>D2 : Symbol(D2, Decl(a.ts, 3, 86))
+>es : Symbol(D2.es, Decl(a.ts, 3, 97))
+>E2 : Symbol(E2, Decl(a.ts, 3, 115))
+>E2 : Symbol(E2, Decl(a.ts, 3, 115))
+>x : Symbol(E2.x, Decl(a.ts, 3, 126))
+
+let a1 = mk1(); let a2 = mk2();
+>a1 : Symbol(a1, Decl(a.ts, 4, 3))
+>mk1 : Symbol(mk1, Decl(a.ts, 0, 0))
+>a2 : Symbol(a2, Decl(a.ts, 4, 19))
+>mk2 : Symbol(mk2, Decl(a.ts, 0, 37))
+
+a2 = a1;
+>a2 : Symbol(a2, Decl(a.ts, 4, 19))
+>a1 : Symbol(a1, Decl(a.ts, 4, 3))
+
+const c: C2[] = new B1().cs;
+>c : Symbol(c, Decl(a.ts, 6, 5))
+>C2 : Symbol(C2, Decl(a.ts, 3, 57))
+>new B1().cs : Symbol(B1.cs, Decl(a.ts, 2, 39))
+>B1 : Symbol(B1, Decl(a.ts, 2, 28))
+>cs : Symbol(B1.cs, Decl(a.ts, 2, 39))
+
+const d: D2[] = new C1().ds;
+>d : Symbol(d, Decl(a.ts, 7, 5))
+>D2 : Symbol(D2, Decl(a.ts, 3, 86))
+>new C1().ds : Symbol(C1.ds, Decl(a.ts, 2, 68))
+>C1 : Symbol(C1, Decl(a.ts, 2, 57))
+>ds : Symbol(C1.ds, Decl(a.ts, 2, 68))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

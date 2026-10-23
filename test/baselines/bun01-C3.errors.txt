@@ -1,0 +1,20 @@
+a.ts(6,36): error TS2322: Type 'T4' is not assignable to type 'string'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "esnext.decorators"], "target": "es2022" } }
+==== a.ts (2 errors) ====
+    export {};
+    declare function dec(...a: any[]): any;
+    type T4 = string;
+    const c1 = @dec(() => CE1) class CE1 {};
+    const c2 = @dec((x: T) => x) class<T> {};
+    const c4 = @dec((x: T4): string => x) class<T4> {};
+                                       ~
+!!! error TS2322: Type 'T4' is not assignable to type 'string'.
+!!! related TS2208 a.ts:6:45: This type parameter might need an `extends string` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

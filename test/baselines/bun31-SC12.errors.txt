@@ -1,0 +1,34 @@
+a.ts(1,16): error TS2378: A 'get' accessor must return a value.
+a.ts(1,63): error TS7027: Unreachable code detected.
+a.ts(2,58): error TS7027: Unreachable code detected.
+a.ts(3,58): error TS7027: Unreachable code detected.
+a.ts(3,68): error TS7027: Unreachable code detected.
+a.ts(3,72): error TS2300: Duplicate identifier 'a'.
+a.ts(3,84): error TS2300: Duplicate identifier 'a'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowUnreachableCode": false } }
+==== a.ts (8 errors) ====
+    class R7 { get g() { switch ((() => { throw 1 })()) { case 1: break } } }
+                   ~
+!!! error TS2378: A 'get' accessor must return a value.
+                                                                  ~~~~~
+!!! error TS7027: Unreachable code detected.
+    function r1() { switch ((() => { throw 1 })()) { case 1: break } class C { } }
+                                                             ~~~~~
+!!! error TS7027: Unreachable code detected.
+    function r3() { switch ((() => { throw 1 })()) { case 1: break } { let a; function a() { } } }
+                                                             ~~~~~
+!!! error TS7027: Unreachable code detected.
+                                                                       ~~~~~~
+!!! error TS7027: Unreachable code detected.
+                                                                           ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                                                       ~
+!!! error TS2300: Duplicate identifier 'a'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

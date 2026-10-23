@@ -1,0 +1,18 @@
+//// [test/cases/bun39-P5b.ts] ////
+
+=== a.ts ===
+export {};
+class C { m() { return g(); } }
+>C : Symbol(C, Decl(a.ts, 0, 10))
+>m : Symbol(C.m, Decl(a.ts, 1, 9))
+>g : Symbol(g, Decl(a.ts, 2, 5))
+
+const g = new C().m;
+>g : Symbol(g, Decl(a.ts, 2, 5))
+>new C().m : Symbol(C.m, Decl(a.ts, 1, 9))
+>C : Symbol(C, Decl(a.ts, 0, 10))
+>m : Symbol(C.m, Decl(a.ts, 1, 9))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

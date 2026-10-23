@@ -1,0 +1,17 @@
+//// [test/cases/bun08-C8.ts] ////
+
+=== a.mts ===
+import t1 from "./typed.json";
+>t1 : Symbol(t1, Decl(a.mts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.mts, 1, 5))
+
+=== typed.d.json.ts ===
+declare const v: { k: number };
+>v : Symbol(v, Decl(typed.d.json.ts, 0, 13))
+>k : Symbol(k, Decl(typed.d.json.ts, 0, 18))
+
+export default v;
+>v : Symbol(v, Decl(typed.d.json.ts, 0, 13))
+

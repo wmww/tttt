@@ -1,0 +1,15 @@
+//// [test/cases/bun28-C16e.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+interface I { m(@dec x: any): void }
+>I : Symbol(I, Decl(a.ts, 0, 23))
+>m : Symbol(I.m, Decl(a.ts, 1, 13))
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 1, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

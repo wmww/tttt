@@ -1,0 +1,25 @@
+a.ts(2,19): error TS2451: Cannot redeclare block-scoped variable '[k]'.
+a.ts(3,29): error TS2451: Cannot redeclare block-scoped variable '[k]'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'boolean'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    const k = "key";
+    class C3 { static [k] = 1 }
+                      ~~~
+!!! error TS2451: Cannot redeclare block-scoped variable '[k]'.
+!!! related TS6203 a.ts:3:29: '[k]' was also declared here.
+    namespace C3 { export const key = "s"; }
+                                ~~~
+!!! error TS2451: Cannot redeclare block-scoped variable '[k]'.
+!!! related TS6203 a.ts:2:19: '[k]' was also declared here.
+    const t: boolean = C3.key;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'boolean'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

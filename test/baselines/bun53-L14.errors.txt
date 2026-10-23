@@ -1,0 +1,33 @@
+a.ts(2,29): error TS1174: Classes can only extend a single class.
+a.ts(3,19): error TS1164: Computed property names are not allowed in enums.
+a.ts(3,27): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(4,43): error TS1172: 'extends' clause already seen.
+a.ts(5,41): error TS1164: Computed property names are not allowed in enums.
+a.ts(5,53): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    declare class B {}
+    declare class A2 extends B, (class { m() {} }) {}
+                                ~
+!!! error TS1174: Classes can only extend a single class.
+    declare enum E4 { [(() => { return 1; })()] = 1 }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1164: Computed property names are not allowed in enums.
+                              ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    declare namespace N11 { class K extends B extends (class { m() {} }) {} }
+                                              ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    declare namespace N12 { enum E { A = 1, [`x${(() => { return 1; })()}`] = 2 } }
+                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1164: Computed property names are not allowed in enums.
+                                                        ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

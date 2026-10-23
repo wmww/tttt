@@ -1,0 +1,18 @@
+a.ts(1,8): error TS2882: Cannot find module or type declarations for side-effect import of 'pkg/p/..\b'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (2 errors) ====
+    import "pkg/p/..\\b";
+           ~~~~~~~~~~~~~
+!!! error TS2882: Cannot find module or type declarations for side-effect import of 'pkg/p/..\b'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/pkg/b.d.ts (0 errors) ====
+    export {};
+==== node_modules/pkg/package.json (0 errors) ====
+    { "exports": { "./p/*": "./p/*.d.ts" } }
+    

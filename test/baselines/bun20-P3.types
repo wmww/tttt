@@ -1,0 +1,21 @@
+//// [test/cases/bun20-P3.ts] ////
+
+=== a.ts ===
+function b(x?: { a: number }) { if (x?.a! === 1) { x.a; } }
+>b : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>x?.a! === 1 : boolean
+>x?.a! : number
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>1 : 1
+>x.a : 1
+>x : { a: number; } | undefined
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

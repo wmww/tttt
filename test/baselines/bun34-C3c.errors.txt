@@ -1,0 +1,15 @@
+a.ts(2,8): error TS18046: 'x' is of type 'unknown'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function o<T>(cb1: (x: T) => void, ob: { m(this: any): T }): void;
+    o(x => x.toFixed(), { m(this) { return 1 } });
+           ~
+!!! error TS18046: 'x' is of type 'unknown'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,11 @@
+//// [test/cases/bun02-C15.ts] ////
+
+=== a.ts ===
+declare class D34 { static prototype: any; static prototype: any }
+>D34 : Symbol(D34, Decl(a.ts, 0, 0))
+>prototype : Symbol(D34.prototype, Decl(a.ts, 0, 19), Decl(a.ts, 0, 42))
+>prototype : Symbol(D34.prototype, Decl(a.ts, 0, 19), Decl(a.ts, 0, 42))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

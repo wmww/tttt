@@ -1,0 +1,20 @@
+//// [test/cases/bun03-C5.ts] ////
+
+=== a.ts ===
+class B { foo = () => {}; }
+>B : B
+>foo : () => void
+>() => {} : () => void
+
+class D extends B {}
+>D : D
+>B : B
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+interface D { foo(): void }
+>foo : () => void
+

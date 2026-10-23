@@ -1,0 +1,26 @@
+//// [test/cases/bun30-P4.ts] ////
+
+=== a.ts ===
+declare function check<T>(x: T): asserts x;
+>check : <T>(x: T) => asserts x
+>x : T
+
+export function h(p: {}) { check(k()); return p; }
+>h : (p: {}) => any
+>p : {}
+>check(k()) : void
+>check : <T>(x: T) => asserts x
+>k() : any
+>k : () => any
+>p : {}
+
+export function k() { return h({}); }
+>k : () => any
+>h({}) : any
+>h : (p: {}) => any
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

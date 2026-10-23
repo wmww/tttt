@@ -1,0 +1,32 @@
+//// [test/cases/bun27-C6.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+
+declare namespace React { function createElement(type: (props: any, ctx?: any) => any, props?: any): JSX.Element; }
+>React : Symbol(React, Decl(a.tsx, 0, 83))
+>createElement : Symbol(createElement, Decl(a.tsx, 1, 25))
+>type : Symbol(type, Decl(a.tsx, 1, 49))
+>props : Symbol(props, Decl(a.tsx, 1, 56))
+>ctx : Symbol(ctx, Decl(a.tsx, 1, 67))
+>props : Symbol(props, Decl(a.tsx, 1, 86))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+function g<T extends (p: {}, c: {}, u: {}) => null>(X: T) { return <X />; }
+>g : Symbol(g, Decl(a.tsx, 1, 115))
+>T : Symbol(T, Decl(a.tsx, 2, 11))
+>p : Symbol(p, Decl(a.tsx, 2, 22))
+>c : Symbol(c, Decl(a.tsx, 2, 28))
+>u : Symbol(u, Decl(a.tsx, 2, 35))
+>X : Symbol(X, Decl(a.tsx, 2, 52))
+>T : Symbol(T, Decl(a.tsx, 2, 11))
+>X : Symbol(X, Decl(a.tsx, 2, 52))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

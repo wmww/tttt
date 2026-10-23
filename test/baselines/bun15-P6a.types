@@ -1,0 +1,15 @@
+//// [test/cases/bun15-P6a.ts] ////
+
+=== a.ts ===
+function f({ cb = () => {} } = { cb: () => {} }) {}
+>f : ({ cb }?: { cb?: () => void; }) => void
+>cb : () => void
+>() => {} : () => void
+>{ cb: () => {} } : { cb?: () => void; }
+>cb : () => void
+>() => {} : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

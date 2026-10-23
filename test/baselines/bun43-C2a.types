@@ -1,0 +1,6 @@
+//// [test/cases/bun43-C2a.ts] ////
+
+=== a.ts ===
+var x: \u0073tring;
+>x : string
+

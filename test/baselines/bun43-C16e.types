@@ -1,0 +1,12 @@
+//// [test/cases/bun43-C16e.ts] ////
+
+=== a.ts ===
+class C { set 1n(v) {} }
+>C : C
+>1n : any
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

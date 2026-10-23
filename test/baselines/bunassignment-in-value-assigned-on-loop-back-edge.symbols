@@ -1,0 +1,386 @@
+//// [test/cases/bunassignment-in-value-assigned-on-loop-back-edge.ts] ////
+
+=== a.ts ===
+interface Item { value: number; next: Item | null; items: Item[] }
+>Item : Symbol(Item, Decl(a.ts, 0, 0))
+>value : Symbol(Item.value, Decl(a.ts, 0, 16))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>Item : Symbol(Item, Decl(a.ts, 0, 0))
+>items : Symbol(Item.items, Decl(a.ts, 0, 50))
+>Item : Symbol(Item, Decl(a.ts, 0, 0))
+
+declare const item: Item;
+>item : Symbol(item, Decl(a.ts, 1, 13))
+>Item : Symbol(Item, Decl(a.ts, 0, 0))
+
+declare const more: boolean;
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+declare function id<T>(x: T): T;
+>id : Symbol(id, Decl(a.ts, 2, 28))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+>x : Symbol(x, Decl(a.ts, 3, 23))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+
+export function copy(first: Item | null) {
+>copy : Symbol(copy, Decl(a.ts, 3, 32))
+>first : Symbol(first, Decl(a.ts, 4, 21))
+>Item : Symbol(Item, Decl(a.ts, 0, 0))
+
+  var newFirst = null, newLast = null;
+>newFirst : Symbol(newFirst, Decl(a.ts, 5, 5))
+>newLast : Symbol(newLast, Decl(a.ts, 5, 22))
+
+  var at = first;
+>at : Symbol(at, Decl(a.ts, 6, 5))
+>first : Symbol(first, Decl(a.ts, 4, 21))
+
+  if (null !== at) {
+>at : Symbol(at, Decl(a.ts, 6, 5))
+
+    do {
+      var clone: Item = { value: at.value, next: null, items: [] };
+>clone : Symbol(clone, Decl(a.ts, 9, 9))
+>Item : Symbol(Item, Decl(a.ts, 0, 0))
+>value : Symbol(value, Decl(a.ts, 9, 25))
+>at.value : Symbol(Item.value, Decl(a.ts, 0, 16))
+>at : Symbol(at, Decl(a.ts, 6, 5))
+>value : Symbol(Item.value, Decl(a.ts, 0, 16))
+>next : Symbol(next, Decl(a.ts, 9, 42))
+>items : Symbol(items, Decl(a.ts, 9, 54))
+
+      null === newLast ? (newFirst = newLast = clone) : (newLast = newLast.next = clone);
+>newLast : Symbol(newLast, Decl(a.ts, 5, 22))
+>newFirst : Symbol(newFirst, Decl(a.ts, 5, 5))
+>newLast : Symbol(newLast, Decl(a.ts, 5, 22))
+>clone : Symbol(clone, Decl(a.ts, 9, 9))
+>newLast : Symbol(newLast, Decl(a.ts, 5, 22))
+>newLast.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>newLast : Symbol(newLast, Decl(a.ts, 5, 22))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>clone : Symbol(clone, Decl(a.ts, 9, 9))
+
+      at = at.next;
+>at : Symbol(at, Decl(a.ts, 6, 5))
+>at.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>at : Symbol(at, Decl(a.ts, 6, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+
+    } while (null !== at);
+>at : Symbol(at, Decl(a.ts, 6, 5))
+  }
+  return newFirst;
+>newFirst : Symbol(newFirst, Decl(a.ts, 5, 5))
+}
+export function declared() {
+>declared : Symbol(declared, Decl(a.ts, 15, 1))
+
+  let last: Item | null = null;
+>last : Symbol(last, Decl(a.ts, 17, 5))
+>Item : Symbol(Item, Decl(a.ts, 0, 0))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 17, 5))
+>last : Symbol(last, Decl(a.ts, 17, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = last.next = item;
+>last : Symbol(last, Decl(a.ts, 17, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 17, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function conditional() {
+>conditional : Symbol(conditional, Decl(a.ts, 22, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 24, 5))
+
+  while (more) null === last ? (last = item) : (last = last.next = item);
+>more : Symbol(more, Decl(a.ts, 2, 13))
+>last : Symbol(last, Decl(a.ts, 24, 5))
+>last : Symbol(last, Decl(a.ts, 24, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+>last : Symbol(last, Decl(a.ts, 24, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 24, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+}
+export function forever() {
+>forever : Symbol(forever, Decl(a.ts, 26, 1))
+
+  let last = null;
+>last : Symbol(last, Decl(a.ts, 28, 5))
+
+  for (;;) {
+    if (last !== null) last = last.next = item;
+>last : Symbol(last, Decl(a.ts, 28, 5))
+>last : Symbol(last, Decl(a.ts, 28, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 28, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = item;
+>last : Symbol(last, Decl(a.ts, 28, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function comma() {
+>comma : Symbol(comma, Decl(a.ts, 33, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 35, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 35, 5))
+>last : Symbol(last, Decl(a.ts, 35, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = (last.next = item, item);
+>last : Symbol(last, Decl(a.ts, 35, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 35, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function argument() {
+>argument : Symbol(argument, Decl(a.ts, 40, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 42, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 42, 5))
+>last : Symbol(last, Decl(a.ts, 42, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = id(last.next = item);
+>last : Symbol(last, Decl(a.ts, 42, 5))
+>id : Symbol(id, Decl(a.ts, 2, 28))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 42, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function elementAccess() {
+>elementAccess : Symbol(elementAccess, Decl(a.ts, 47, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 49, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 49, 5))
+>last : Symbol(last, Decl(a.ts, 49, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = last["next"] = item;
+>last : Symbol(last, Decl(a.ts, 49, 5))
+>last : Symbol(last, Decl(a.ts, 49, 5))
+>"next" : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function destructuring() {
+>destructuring : Symbol(destructuring, Decl(a.ts, 54, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 56, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 56, 5))
+>last : Symbol(last, Decl(a.ts, 56, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = ([last.next] = [item])[0];
+>last : Symbol(last, Decl(a.ts, 56, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 56, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+>0 : Symbol(0)
+  }
+}
+export function fromUndefined() {
+>fromUndefined : Symbol(fromUndefined, Decl(a.ts, 61, 1))
+
+  var last;
+>last : Symbol(last, Decl(a.ts, 63, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === undefined) last = item;
+>last : Symbol(last, Decl(a.ts, 63, 5))
+>undefined : Symbol(undefined)
+>last : Symbol(last, Decl(a.ts, 63, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = last.next = item;
+>last : Symbol(last, Decl(a.ts, 63, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 63, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function truthiness() {
+>truthiness : Symbol(truthiness, Decl(a.ts, 68, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 70, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (!last) last = item;
+>last : Symbol(last, Decl(a.ts, 70, 5))
+>last : Symbol(last, Decl(a.ts, 70, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = last.next = item;
+>last : Symbol(last, Decl(a.ts, 70, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 70, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+// No error in these.
+export function twoStatements() {
+>twoStatements : Symbol(twoStatements, Decl(a.ts, 75, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 78, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 78, 5))
+>last : Symbol(last, Decl(a.ts, 78, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else { last.next = item; last = item; }
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 78, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+>last : Symbol(last, Decl(a.ts, 78, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function compound() {
+>compound : Symbol(compound, Decl(a.ts, 83, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 85, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 85, 5))
+>last : Symbol(last, Decl(a.ts, 85, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = (last.value += 1, item);
+>last : Symbol(last, Decl(a.ts, 85, 5))
+>last.value : Symbol(Item.value, Decl(a.ts, 0, 16))
+>last : Symbol(last, Decl(a.ts, 85, 5))
+>value : Symbol(Item.value, Decl(a.ts, 0, 16))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function read() {
+>read : Symbol(read, Decl(a.ts, 90, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 92, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 92, 5))
+>last : Symbol(last, Decl(a.ts, 92, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = last.next;
+>last : Symbol(last, Decl(a.ts, 92, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 92, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+  }
+}
+export function call() {
+>call : Symbol(call, Decl(a.ts, 97, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 99, 5))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 2, 13))
+
+    if (last === null) last = item;
+>last : Symbol(last, Decl(a.ts, 99, 5))
+>last : Symbol(last, Decl(a.ts, 99, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+    else last = id(last.items.push(item) ? item : item);
+>last : Symbol(last, Decl(a.ts, 99, 5))
+>id : Symbol(id, Decl(a.ts, 2, 28))
+>last.items.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>last.items : Symbol(Item.items, Decl(a.ts, 0, 50))
+>last : Symbol(last, Decl(a.ts, 99, 5))
+>items : Symbol(Item.items, Decl(a.ts, 0, 50))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+  }
+}
+export function noLoop() {
+>noLoop : Symbol(noLoop, Decl(a.ts, 104, 1))
+
+  var last = null;
+>last : Symbol(last, Decl(a.ts, 106, 5))
+
+  if (more) last = item;
+>more : Symbol(more, Decl(a.ts, 2, 13))
+>last : Symbol(last, Decl(a.ts, 106, 5))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+
+  if (last !== null) last = last.next = item;
+>last : Symbol(last, Decl(a.ts, 106, 5))
+>last : Symbol(last, Decl(a.ts, 106, 5))
+>last.next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>last : Symbol(last, Decl(a.ts, 106, 5))
+>next : Symbol(Item.next, Decl(a.ts, 0, 31))
+>item : Symbol(item, Decl(a.ts, 1, 13))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 110, 5))
+

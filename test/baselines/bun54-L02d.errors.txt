@@ -1,0 +1,27 @@
+a.mts(1,16): error TS1543: Importing a JSON file into an ECMAScript module requires a 'type: "json"' import attribute when 'module' is set to 'NodeNext'.
+a.mts(2,31): error TS1543: Importing a JSON file into an ECMAScript module requires a 'type: "json"' import attribute when 'module' is set to 'NodeNext'.
+a.mts(3,4): error TS2339: Property 'amb' does not exist on type 'typeof import("z")'.
+a.mts(3,12): error TS2339: Property 'amb' does not exist on type 'typeof import("z")'.
+a.mts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext" } }
+==== a.mts (5 errors) ====
+    import t1 from "z";
+                   ~~~
+!!! error TS1543: Importing a JSON file into an ECMAScript module requires a 'type: "json"' import attribute when 'module' is set to 'NodeNext'.
+    import { default as t2 } from "z";
+                                  ~~~
+!!! error TS1543: Importing a JSON file into an ECMAScript module requires a 'type: "json"' import attribute when 'module' is set to 'NodeNext'.
+    t1.amb; t2.amb;
+       ~~~
+!!! error TS2339: Property 'amb' does not exist on type 'typeof import("z")'.
+               ~~~
+!!! error TS2339: Property 'amb' does not exist on type 'typeof import("z")'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== amb.d.json.ts (0 errors) ====
+    declare module "z" { const v: { amb: number }; export default v; }
+    

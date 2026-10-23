@@ -1,0 +1,22 @@
+//// [test/cases/bun12-C15.ts] ////
+
+=== a.ts ===
+type Id<T> = { [K in keyof T]: T[K] };
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 16))
+
+function g<T>() { const n: { never: 1 } = null! as Id<T & 1[]>; }
+>g : Symbol(g, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>n : Symbol(n, Decl(a.ts, 1, 23))
+>never : Symbol(never, Decl(a.ts, 1, 28))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

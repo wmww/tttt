@@ -1,0 +1,19 @@
+//// [test/cases/bun56-L14c.ts] ////
+
+=== a.ts ===
+let x: ([...a,]: any);
+>x : Symbol(x, Decl(a.ts, 0, 3))
+>a : Symbol(a, Decl(a.ts, 0, 9))
+> : Symbol(unknown)
+
+let y: ({...a,}: any);
+>y : Symbol(y, Decl(a.ts, 1, 3))
+>a : Symbol(a, Decl(a.ts, 1, 9))
+> : Symbol(unknown)
+
+let z: ([...a,], b);
+>z : Symbol(z, Decl(a.ts, 2, 3))
+>a : Symbol(a, Decl(a.ts, 2, 9))
+>b : Symbol(b, Decl(a.ts, 2, 16))
+> : Symbol(unknown)
+

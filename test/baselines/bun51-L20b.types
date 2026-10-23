@@ -1,0 +1,31 @@
+//// [test/cases/bun51-L20b.ts] ////
+
+=== a.ts ===
+export class C { private a = 1; m(c: C) { const { ...a: x } = c; return x; } }
+>C : C
+>a : number
+>1 : 1
+>m : (c: C) => {}
+>c : C
+>a : any
+>x : {}
+>c : C
+>x : {}
+
+export class D { private a = 1; private x = 2; m(c: D) { const { ...a: x } = c; return x; } }
+>D : D
+>a : number
+>1 : 1
+>x : number
+>2 : 2
+>m : (c: D) => {}
+>c : D
+>a : any
+>x : {}
+>c : D
+>x : {}
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

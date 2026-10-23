@@ -1,0 +1,112 @@
+//// [test/cases/bun99-L1.ts] ////
+
+=== a.ts ===
+interface Matcher<T> { match(other: T): boolean }
+>match : (other: T) => boolean
+>other : T
+
+type With<T> = T | Matcher<unknown>;
+>With : With<T>
+
+type Deep<T> = T extends Array<infer E> ? With<T> | Deep<E>[] : T extends object ? With<T> | { [K in keyof T]: Deep<T[K]> } : With<T>;
+>Deep : Deep<T>
+
+declare function containing<T = any>(expected: Deep<T>): any;
+>containing : <T = any>(expected: Deep<T>) => any
+>expected : Deep<T>
+
+declare function strict<T>(expected: Deep<T>): T;
+>strict : <T>(expected: Deep<T>) => T
+>expected : Deep<T>
+
+declare const four: { a: string; b?: undefined; c?: undefined } | { b: string; a?: undefined; c?: undefined } | { c: string; a?: undefined; b?: undefined } | { a?: undefined; b?: undefined; c?: undefined };
+>four : { a: string; b?: undefined; c?: undefined; } | { b: string; a?: undefined; c?: undefined; } | { c: string; a?: undefined; b?: undefined; } | { a?: undefined; b?: undefined; c?: undefined; }
+>a : string
+>b : undefined
+>c : undefined
+>b : string
+>a : undefined
+>c : undefined
+>c : string
+>a : undefined
+>b : undefined
+>a : undefined
+>b : undefined
+>c : undefined
+
+declare const two: { a: string } | { a?: undefined };
+>two : { a: string; } | { a?: undefined; }
+>a : string
+>a : undefined
+
+containing({ id: "x", empty: {}, ...four });
+>containing({ id: "x", empty: {}, ...four }) : any
+>containing : <T = any>(expected: Deep<T>) => any
+>{ id: "x", empty: {}, ...four } : { a: string; b?: undefined; c?: undefined; id: string; empty: {}; } | { b: string; a?: undefined; c?: undefined; id: string; empty: {}; } | { c: string; a?: undefined; b?: undefined; id: string; empty: {}; } | { a?: undefined; b?: undefined; c?: undefined; id: string; empty: {}; }
+>id : string
+>"x" : "x"
+>empty : {}
+>{} : {}
+>four : { a: string; b?: undefined; c?: undefined; } | { b: string; a?: undefined; c?: undefined; } | { c: string; a?: undefined; b?: undefined; } | { a?: undefined; b?: undefined; c?: undefined; }
+
+containing({ empty: {}, ...two });
+>containing({ empty: {}, ...two }) : any
+>containing : <T = any>(expected: Deep<T>) => any
+>{ empty: {}, ...two } : { a: string; empty: {}; } | { a?: undefined; empty: {}; }
+>empty : {}
+>{} : {}
+>two : { a: string; } | { a?: undefined; }
+
+containing({ ...two, empty: {} });
+>containing({ ...two, empty: {} }) : any
+>containing : <T = any>(expected: Deep<T>) => any
+>{ ...two, empty: {} } : { a: string; empty: {}; } | { a?: undefined; empty: {}; }
+>two : { a: string; } | { a?: undefined; }
+>empty : {}
+>{} : {}
+
+containing({ nested: { empty: {} }, ...two });
+>containing({ nested: { empty: {} }, ...two }) : any
+>containing : <T = any>(expected: Deep<T>) => any
+>{ nested: { empty: {} }, ...two } : { a: string; nested: { empty: {}; }; } | { a?: undefined; nested: { empty: {}; }; }
+>nested : { empty: {}; }
+>{ empty: {} } : { empty: {}; }
+>empty : {}
+>{} : {}
+>two : { a: string; } | { a?: undefined; }
+
+containing({ list: [{}], ...two });
+>containing({ list: [{}], ...two }) : any
+>containing : <T = any>(expected: Deep<T>) => any
+>{ list: [{}], ...two } : { a: string; list: {}[]; } | { a?: undefined; list: {}[]; }
+>list : {}[]
+>[{}] : {}[]
+>{} : {}
+>two : { a: string; } | { a?: undefined; }
+
+export const v1: never = strict({ empty: {}, ...two });
+>v1 : never
+>strict({ empty: {}, ...two }) : { a: string; empty: {}; } | { a?: undefined; empty: {}; }
+>strict : <T>(expected: Deep<T>) => T
+>{ empty: {}, ...two } : { a: string; empty: {}; } | { a?: undefined; empty: {}; }
+>empty : {}
+>{} : {}
+>two : { a: string; } | { a?: undefined; }
+
+export const v2: never = strict({ id: "x", empty: {}, other: {}, ...four });
+>v2 : never
+>strict({ id: "x", empty: {}, other: {}, ...four }) : { a: string; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { b: string; a?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { c: string; a?: undefined; b?: undefined; id: string; empty: {}; other: {}; } | { a?: undefined; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; }
+>strict : <T>(expected: Deep<T>) => T
+>{ id: "x", empty: {}, other: {}, ...four } : { a: string; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { b: string; a?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { c: string; a?: undefined; b?: undefined; id: string; empty: {}; other: {}; } | { a?: undefined; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; }
+>id : string
+>"x" : "x"
+>empty : {}
+>{} : {}
+>other : {}
+>{} : {}
+>four : { a: string; b?: undefined; c?: undefined; } | { b: string; a?: undefined; c?: undefined; } | { c: string; a?: undefined; b?: undefined; } | { a?: undefined; b?: undefined; c?: undefined; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

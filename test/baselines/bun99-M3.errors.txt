@@ -1,0 +1,2700 @@
+as_clause__rest.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+as_clause__rest.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__rest.ts(13,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+as_clause__reverse.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__reverse.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__reverse_readonly.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+as_clause__reverse_readonly.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__reverse_readonly.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__reverse_spread.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+as_clause__reverse_spread.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__reverse_spread.ts(14,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+as_clause__spread_before.ts(9,7): error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+as_clause__spread_before.ts(10,7): error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+  Type '"extra"' is not assignable to type 'K'.
+as_clause__spread_before.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+as_clause__spread_before.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+as_clause__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+as_clause__spread_const.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+as_clause__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+class__rest.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+class__rest.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+class__rest.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+class__reverse.ts(11,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+class__reverse.ts(14,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+class__reverse.ts(15,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+class__reverse_readonly.ts(11,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+class__reverse_readonly.ts(14,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+class__reverse_readonly.ts(15,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+class__reverse_spread.ts(11,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+class__reverse_spread.ts(14,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+class__reverse_spread.ts(15,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; }' is not assignable to type 'never'.
+class__spread_before.ts(10,7): error TS2322: Type '"extra" | K.ID | K.N' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+class__spread_before.ts(11,7): error TS2322: Type '"extra" | K.ID | K.N' is not assignable to type 'K'.
+  Type '"extra"' is not assignable to type 'K'.
+class__spread_before.ts(13,7): error TS2322: Type '{ "0": number; extra: number; }' is not assignable to type 'never'.
+class__spread_before.ts(14,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; extra: number; }' is not assignable to type 'never'.
+class__spread_const.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+class__spread_const.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+class__spread_const.ts(14,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; }' is not assignable to type 'never'.
+declared__function_rest.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__function_rest.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__function_rest.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__rest.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__rest.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__rest.ts(13,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__rest_direct.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__rest_direct.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__rest_direct.ts(13,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__reverse.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_boxed.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__reverse_boxed.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_boxed.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_limited.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__reverse_limited.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+declared__reverse_limited.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+declared__reverse_optional.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__reverse_optional.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_optional.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_readonly.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__reverse_readonly.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_readonly.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_spread.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__reverse_spread.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_spread.ts(14,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+declared__reverse_twice.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__reverse_twice.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__reverse_twice.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__spread.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__spread.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__spread.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+declared__spread_before.ts(9,7): error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+declared__spread_before.ts(10,7): error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+  Type '"extra"' is not assignable to type 'K'.
+declared__spread_before.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+declared__spread_before.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+declared__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__spread_const.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+declared__spread_extra.ts(9,7): error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+declared__spread_extra.ts(10,7): error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+  Type '"extra"' is not assignable to type 'K'.
+declared__spread_extra.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+declared__spread_extra.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+declared__spread_of_spread.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__spread_of_spread.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__spread_of_spread.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+declared__spread_optional.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__spread_optional.ts(12,7): error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+declared__spread_optional.ts(13,7): error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+declared__spread_twice.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+declared__spread_twice.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+declared__spread_twice.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+declared_num__rest.ts(9,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+declared_num__rest.ts(12,7): error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+declared_num__rest.ts(13,7): error TS2322: Type '{ 0: string; 1: number; }' is not assignable to type 'never'.
+declared_num__reverse.ts(10,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+declared_num__reverse.ts(13,7): error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+declared_num__reverse.ts(14,7): error TS2322: Type '{ 0: string; 1: number; }' is not assignable to type 'never'.
+declared_num__reverse_readonly.ts(10,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+declared_num__reverse_readonly.ts(13,7): error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+declared_num__reverse_readonly.ts(14,7): error TS2322: Type '{ 0: string; 1: number; }' is not assignable to type 'never'.
+declared_num__reverse_spread.ts(10,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+declared_num__reverse_spread.ts(13,7): error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+declared_num__reverse_spread.ts(14,7): error TS2322: Type '{ [M.Z]: string; [M.O]: number; }' is not assignable to type 'never'.
+declared_num__spread_before.ts(9,7): error TS2322: Type '"extra" | M' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+declared_num__spread_before.ts(10,7): error TS2322: Type '"extra" | M' is not assignable to type 'M'.
+  Type '"extra"' is not assignable to type 'M'.
+declared_num__spread_before.ts(12,7): error TS2322: Type '{ 1: number; extra: number; }' is not assignable to type 'never'.
+declared_num__spread_before.ts(13,7): error TS2322: Type '{ [M.Z]: string; [M.O]: number; extra: number; }' is not assignable to type 'never'.
+declared_num__spread_const.ts(9,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+declared_num__spread_const.ts(12,7): error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+declared_num__spread_const.ts(13,7): error TS2322: Type '{ readonly [M.Z]: string; readonly [M.O]: number; }' is not assignable to type 'never'.
+index.ts(7,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+index.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+index.ts(11,7): error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+index.ts(12,72): error TS2322: Type 'keyof T' is not assignable to type 'never'.
+  Type 'string | number | symbol' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
+index.ts(14,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__rest_direct.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+interface__rest_direct.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__rest_direct.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+interface__reverse.ts(11,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+interface__reverse.ts(14,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__reverse.ts(15,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+interface__reverse_optional.ts(11,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+interface__reverse_optional.ts(14,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__reverse_optional.ts(15,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+interface__reverse_twice.ts(11,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+interface__reverse_twice.ts(14,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__reverse_twice.ts(15,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+interface__spread.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+interface__spread.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__spread.ts(14,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; }' is not assignable to type 'never'.
+interface__spread_const.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+interface__spread_const.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__spread_const.ts(14,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; }' is not assignable to type 'never'.
+interface__spread_twice.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+interface__spread_twice.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+interface__spread_twice.ts(14,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; }' is not assignable to type 'never'.
+intersected__reverse.ts(10,7): error TS2322: Type '"plain" | K' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+intersected__reverse.ts(11,7): error TS2322: Type '"plain" | K' is not assignable to type 'K'.
+  Type '"plain"' is not assignable to type 'K'.
+intersected__reverse.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+intersected__reverse.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+intersected__reverse_limited.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+intersected__reverse_limited.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+intersected__reverse_limited.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+intersected__spread_const.ts(9,7): error TS2322: Type '"plain" | K' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+intersected__spread_const.ts(10,7): error TS2322: Type '"plain" | K' is not assignable to type 'K'.
+  Type '"plain"' is not assignable to type 'K'.
+intersected__spread_const.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+intersected__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; readonly plain: 1; }' is not assignable to type 'never'.
+intersected__spread_extra.ts(9,7): error TS2322: Type '"extra" | "plain" | K' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+intersected__spread_extra.ts(10,7): error TS2322: Type '"extra" | "plain" | K' is not assignable to type 'K'.
+  Type '"extra"' is not assignable to type 'K'.
+intersected__spread_extra.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; extra: number; }' is not assignable to type 'never'.
+intersected__spread_extra.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; plain: 1; extra: number; }' is not assignable to type 'never'.
+intersected__spread_of_spread.ts(9,7): error TS2322: Type '"plain" | K' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+intersected__spread_of_spread.ts(10,7): error TS2322: Type '"plain" | K' is not assignable to type 'K'.
+  Type '"plain"' is not assignable to type 'K'.
+intersected__spread_of_spread.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+intersected__spread_of_spread.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; plain: 1; }' is not assignable to type 'never'.
+own__rest_direct.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+own__rest_direct.ts(12,7): error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+own__rest_direct.ts(13,7): error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+own__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+own__reverse.ts(13,7): error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+own__reverse.ts(14,7): error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+own__reverse_optional.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+own__reverse_optional.ts(13,7): error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+own__reverse_optional.ts(14,7): error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+own__reverse_twice.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+own__reverse_twice.ts(13,7): error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+own__reverse_twice.ts(14,7): error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+own__spread.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+own__spread.ts(12,7): error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+own__spread.ts(13,7): error TS2322: Type '{ [K.N]: K.N; [K.ID]: K.ID; [K.X]: K.X; }' is not assignable to type 'never'.
+own__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+own__spread_const.ts(12,7): error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+own__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.N]: K.N; readonly [K.ID]: K.ID; readonly [K.X]: K.X; }' is not assignable to type 'never'.
+own__spread_twice.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+own__spread_twice.ts(12,7): error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+own__spread_twice.ts(13,7): error TS2322: Type '{ [K.N]: K.N; [K.ID]: K.ID; [K.X]: K.X; }' is not assignable to type 'never'.
+partial__function_rest.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+partial__function_rest.ts(13,7): error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__function_rest.ts(14,7): error TS2322: Type '{ id?: string | undefined; "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+partial__reverse.ts(13,7): error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__reverse.ts(14,7): error TS2322: Type '{ id?: string | undefined; "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__reverse_boxed.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+partial__reverse_boxed.ts(13,7): error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__reverse_boxed.ts(14,7): error TS2322: Type '{ id?: string | undefined; "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+partial__spread_const.ts(12,7): error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]?: string | undefined; readonly [K.N]?: number | undefined; readonly [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+partial__spread_optional.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+partial__spread_optional.ts(12,7): error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+partial__spread_optional.ts(13,7): error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+pick__function_rest.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+pick__function_rest.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+pick__function_rest.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+pick__reverse.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+pick__reverse.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+pick__reverse.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+pick__reverse_boxed.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+pick__reverse_boxed.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+pick__reverse_boxed.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+pick__spread_const.ts(9,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+pick__spread_const.ts(12,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+pick__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; }' is not assignable to type 'never'.
+pick__spread_optional.ts(9,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+pick__spread_optional.ts(12,7): error TS2322: Type '{ "0"?: number | undefined; }' is not assignable to type 'never'.
+pick__spread_optional.ts(13,7): error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; }' is not assignable to type 'never'.
+plain__reverse.ts(10,7): error TS2322: Type '"0" | "1" | "b" | "x y"' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+plain__reverse.ts(13,7): error TS2322: Type '{ 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+plain__reverse.ts(14,7): error TS2322: Type '{ "0": 1; 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+plain__reverse_limited.ts(10,7): error TS2322: Type '"0" | "b"' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+plain__reverse_limited.ts(13,7): error TS2322: Type '{ b: 3; }' is not assignable to type 'never'.
+plain__reverse_limited.ts(14,7): error TS2322: Type '{ "0": 1; b: 3; }' is not assignable to type 'never'.
+plain__spread_const.ts(9,7): error TS2322: Type '"0" | "1" | "b" | "x y"' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+plain__spread_const.ts(12,7): error TS2322: Type '{ 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+plain__spread_const.ts(13,7): error TS2322: Type '{ readonly "0": 1; readonly 1: 2; readonly b: 3; readonly "x y": 4; }' is not assignable to type 'never'.
+plain__spread_extra.ts(9,7): error TS2322: Type '"0" | "b" | "extra" | "x y" | 1' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+plain__spread_extra.ts(10,7): error TS2322: Type 'string | number' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+plain__spread_extra.ts(12,7): error TS2322: Type '{ 1: 2; b: 3; "x y": 4; extra: number; }' is not assignable to type 'never'.
+plain__spread_extra.ts(13,7): error TS2322: Type '{ "0": 1; 1: 2; b: 3; "x y": 4; extra: number; }' is not assignable to type 'never'.
+plain__spread_of_spread.ts(9,7): error TS2322: Type '"0" | "b" | "x y" | 1' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+plain__spread_of_spread.ts(10,7): error TS2322: Type 'string | number' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+plain__spread_of_spread.ts(12,7): error TS2322: Type '{ 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+plain__spread_of_spread.ts(13,7): error TS2322: Type '{ "0": 1; 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+readonly__rest_direct.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+readonly__rest_direct.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__rest_direct.ts(13,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+readonly__reverse.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__reverse.ts(14,7): error TS2322: Type '{ readonly id: string; readonly "0": number; readonly "x y": boolean; }' is not assignable to type 'never'.
+readonly__reverse_optional.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+readonly__reverse_optional.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__reverse_optional.ts(14,7): error TS2322: Type '{ readonly id: string; readonly "0": number; readonly "x y": boolean; }' is not assignable to type 'never'.
+readonly__reverse_twice.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+readonly__reverse_twice.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__reverse_twice.ts(14,7): error TS2322: Type '{ readonly id: string; readonly "0": number; readonly "x y": boolean; }' is not assignable to type 'never'.
+readonly__spread.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+readonly__spread.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__spread.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+readonly__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+readonly__spread_const.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+readonly__spread_twice.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+readonly__spread_twice.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+readonly__spread_twice.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+record__rest.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+record__rest.ts(12,7): error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+record__rest.ts(13,7): error TS2322: Type '{ 0: 1; id: 1; "x y": 1; }' is not assignable to type 'never'.
+record__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+record__reverse.ts(13,7): error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+record__reverse.ts(14,7): error TS2322: Type '{ 0: 1; id: 1; "x y": 1; }' is not assignable to type 'never'.
+record__reverse_readonly.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+record__reverse_readonly.ts(13,7): error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+record__reverse_readonly.ts(14,7): error TS2322: Type '{ 0: 1; id: 1; "x y": 1; }' is not assignable to type 'never'.
+record__reverse_spread.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+record__reverse_spread.ts(13,7): error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+record__reverse_spread.ts(14,7): error TS2322: Type '{ [K.N]: 1; [K.ID]: 1; [K.X]: 1; }' is not assignable to type 'never'.
+record__spread_before.ts(9,7): error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+record__spread_before.ts(10,7): error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+  Type '"extra"' is not assignable to type 'K'.
+record__spread_before.ts(12,7): error TS2322: Type '{ extra: number; 0: 1; "x y": 1; }' is not assignable to type 'never'.
+record__spread_before.ts(13,7): error TS2322: Type '{ extra: number; [K.N]: 1; [K.ID]: 1; [K.X]: 1; }' is not assignable to type 'never'.
+record__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+record__spread_const.ts(12,7): error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+record__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.N]: 1; readonly [K.ID]: 1; readonly [K.X]: 1; }' is not assignable to type 'never'.
+record_num__reverse.ts(10,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+record_num__reverse.ts(13,7): error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+record_num__reverse.ts(14,7): error TS2322: Type '{ 0: 1; 1: 1; }' is not assignable to type 'never'.
+record_num__reverse_limited.ts(10,7): error TS2322: Type 'M.Z' is not assignable to type 'never'.
+record_num__reverse_limited.ts(13,7): error TS2322: Type '{}' is not assignable to type 'never'.
+record_num__reverse_limited.ts(14,7): error TS2322: Type '{ 0: 1; }' is not assignable to type 'never'.
+record_num__spread_const.ts(9,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+record_num__spread_const.ts(12,7): error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+record_num__spread_const.ts(13,7): error TS2322: Type '{ readonly [M.Z]: 1; readonly [M.O]: 1; }' is not assignable to type 'never'.
+record_num__spread_extra.ts(9,7): error TS2322: Type '"extra" | M' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+record_num__spread_extra.ts(10,7): error TS2322: Type '"extra" | M' is not assignable to type 'M'.
+  Type '"extra"' is not assignable to type 'M'.
+record_num__spread_extra.ts(12,7): error TS2322: Type '{ extra: number; 1: 1; }' is not assignable to type 'never'.
+record_num__spread_extra.ts(13,7): error TS2322: Type '{ extra: number; [M.Z]: 1; [M.O]: 1; }' is not assignable to type 'never'.
+record_num__spread_of_spread.ts(9,7): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'M.Z' is not assignable to type 'never'.
+record_num__spread_of_spread.ts(12,7): error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+record_num__spread_of_spread.ts(13,7): error TS2322: Type '{ [M.Z]: 1; [M.O]: 1; }' is not assignable to type 'never'.
+required__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+required__reverse.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+required__reverse.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+required__reverse_limited.ts(10,7): error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+required__reverse_limited.ts(13,7): error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+required__reverse_limited.ts(14,7): error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+required__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+required__spread_const.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+required__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+required__spread_extra.ts(9,7): error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+  Type '"extra"' is not assignable to type 'never'.
+required__spread_extra.ts(10,7): error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+  Type '"extra"' is not assignable to type 'K'.
+required__spread_extra.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+required__spread_extra.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+required__spread_of_spread.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+required__spread_of_spread.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+required__spread_of_spread.ts(13,7): error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+sentinel.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+twice__function_rest.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+twice__function_rest.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+twice__function_rest.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+twice__reverse.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+twice__reverse.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+twice__reverse.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+twice__reverse_boxed.ts(10,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+twice__reverse_boxed.ts(13,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+twice__reverse_boxed.ts(14,7): error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+twice__spread_const.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+twice__spread_const.ts(12,7): error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+twice__spread_const.ts(13,7): error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+twice__spread_optional.ts(9,7): error TS2322: Type 'K' is not assignable to type 'never'.
+  Type 'K.ID' is not assignable to type 'never'.
+twice__spread_optional.ts(12,7): error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+twice__spread_optional.ts(13,7): error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "module": "esnext", "moduleResolution": "bundler", "types": [], "skipLibCheck": true}, "files": ["index.ts", "declared__spread.ts", "declared__spread_const.ts", "declared__spread_extra.ts", "declared__spread_before.ts", "declared__spread_twice.ts", "declared__spread_optional.ts", "declared__spread_of_spread.ts", "declared__rest.ts", "declared__rest_direct.ts", "declared__function_rest.ts", "declared__reverse.ts", "declared__reverse_readonly.ts", "declared__reverse_optional.ts", "declared__reverse_boxed.ts", "declared__reverse_limited.ts", "declared__reverse_spread.ts", "declared__reverse_twice.ts", "declared_num__spread_const.ts", "declared_num__spread_before.ts", "declared_num__rest.ts", "declared_num__reverse.ts", "declared_num__reverse_readonly.ts", "declared_num__reverse_spread.ts", "required__spread_const.ts", "required__spread_extra.ts", "required__spread_of_spread.ts", "required__reverse.ts", "required__reverse_limited.ts", "partial__spread_const.ts", "partial__spread_optional.ts", "partial__function_rest.ts", "partial__reverse.ts", "partial__reverse_boxed.ts", "readonly__spread.ts", "readonly__spread_const.ts", "readonly__spread_twice.ts", "readonly__rest_direct.ts", "readonly__reverse.ts", "readonly__reverse_optional.ts", "readonly__reverse_twice.ts", "record__spread_const.ts", "record__spread_before.ts", "record__rest.ts", "record__reverse.ts", "record__reverse_readonly.ts", "record__reverse_spread.ts", "record_num__spread_const.ts", "record_num__spread_extra.ts", "record_num__spread_of_spread.ts", "record_num__reverse.ts", "record_num__reverse_limited.ts", "pick__spread_const.ts", "pick__spread_optional.ts", "pick__function_rest.ts", "pick__reverse.ts", "pick__reverse_boxed.ts", "own__spread.ts", "own__spread_const.ts", "own__spread_twice.ts", "own__rest_direct.ts", "own__reverse.ts", "own__reverse_optional.ts", "own__reverse_twice.ts", "as_clause__spread_const.ts", "as_clause__spread_before.ts", "as_clause__rest.ts", "as_clause__reverse.ts", "as_clause__reverse_readonly.ts", "as_clause__reverse_spread.ts", "intersected__spread_const.ts", "intersected__spread_extra.ts", "intersected__spread_of_spread.ts", "intersected__reverse.ts", "intersected__reverse_limited.ts", "twice__spread_const.ts", "twice__spread_optional.ts", "twice__function_rest.ts", "twice__reverse.ts", "twice__reverse_boxed.ts", "interface__spread.ts", "interface__spread_const.ts", "interface__spread_twice.ts", "interface__rest_direct.ts", "interface__reverse.ts", "interface__reverse_optional.ts", "interface__reverse_twice.ts", "class__spread_const.ts", "class__spread_before.ts", "class__rest.ts", "class__reverse.ts", "class__reverse_readonly.ts", "class__reverse_spread.ts", "plain__spread_const.ts", "plain__spread_extra.ts", "plain__spread_of_spread.ts", "plain__reverse.ts", "plain__reverse_limited.ts", "sentinel.ts"]}
+==== as_clause__rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in keyof Item as P]: Item[P] };
+    declare const x2: { [P in keyof Item as P]: Item[P] };
+    const { extra, ...y } = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== as_clause__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in keyof Item as P]: Item[P] };
+    declare const x2: { [P in keyof Item as P]: Item[P] };
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== as_clause__reverse_readonly.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in keyof Item as P]: Item[P] };
+    declare const x2: { [P in keyof Item as P]: Item[P] };
+    declare function f<T>(x: { readonly [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== as_clause__reverse_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in keyof Item as P]: Item[P] };
+    declare const x2: { [P in keyof Item as P]: Item[P] };
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = { ...f(x) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== as_clause__spread_before.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in keyof Item as P]: Item[P] };
+    declare const x2: { [P in keyof Item as P]: Item[P] };
+    const y = { extra: 1, ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== as_clause__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in keyof Item as P]: Item[P] };
+    declare const x2: { [P in keyof Item as P]: Item[P] };
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== class__rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare class C { [K.ID]: string; [K.N]: number }
+    declare const x: C;
+    declare const x2: C;
+    const { extra, ...y } = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== class__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare class C { [K.ID]: string; [K.N]: number }
+    declare const x: C;
+    declare const x2: C;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== class__reverse_readonly.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare class C { [K.ID]: string; [K.N]: number }
+    declare const x: C;
+    declare const x2: C;
+    declare function f<T>(x: { readonly [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== class__reverse_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare class C { [K.ID]: string; [K.N]: number }
+    declare const x: C;
+    declare const x2: C;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = { ...f(x) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; }' is not assignable to type 'never'.
+    export {};
+==== class__spread_before.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare class C { [K.ID]: string; [K.N]: number }
+    declare const x: C;
+    declare const x2: C;
+    const y = { extra: 1, ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K.ID | K.N' is not assignable to type 'K'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== class__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare class C { [K.ID]: string; [K.N]: number }
+    declare const x: C;
+    declare const x2: C;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; }' is not assignable to type 'never'.
+    export {};
+==== declared__function_rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    function f({ ...y }: typeof x) { return y; }
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const { extra, ...y } = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__rest_direct.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const { ...y } = x;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__reverse_boxed.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    declare function f<T>(x: { [P in keyof T]: T[P] | null }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__reverse_limited.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    declare function f<T>(x: { [P in keyof T & (K.ID | K.N | M.Z | "0" | "b")]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== declared__reverse_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    declare function f<T>(x: { [P in keyof T]?: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__reverse_readonly.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    declare function f<T>(x: { readonly [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__reverse_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = { ...f(x) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__reverse_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(f(x));
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const y = { ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__spread_before.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const y = { extra: 1, ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== declared__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__spread_extra.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const y = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== declared__spread_of_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const y = { ...{ ...x } };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared__spread_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const y = { ...(c ? x : undefined) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+    export {};
+==== declared__spread_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item;
+    declare const x2: Item;
+    const y = { ...x, ...x2 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== declared_num__rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Num;
+    declare const x2: Num;
+    const { extra, ...y } = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: string; 1: number; }' is not assignable to type 'never'.
+    export {};
+==== declared_num__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Num;
+    declare const x2: Num;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: string; 1: number; }' is not assignable to type 'never'.
+    export {};
+==== declared_num__reverse_readonly.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Num;
+    declare const x2: Num;
+    declare function f<T>(x: { readonly [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: string; 1: number; }' is not assignable to type 'never'.
+    export {};
+==== declared_num__reverse_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Num;
+    declare const x2: Num;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = { ...f(x) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [M.Z]: string; [M.O]: number; }' is not assignable to type 'never'.
+    export {};
+==== declared_num__spread_before.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Num;
+    declare const x2: Num;
+    const y = { extra: 1, ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | M' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | M' is not assignable to type 'M'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'M'.
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: number; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [M.Z]: string; [M.O]: number; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== declared_num__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Num;
+    declare const x2: Num;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [M.Z]: string; readonly [M.O]: number; }' is not assignable to type 'never'.
+    export {};
+==== index.ts (5 errors) ====
+    enum K { ID = "id", N = "0" }
+    type Item = { [K.ID]: string; [K.N]: number };
+    declare const x: Required<Item>;
+    declare const r: Readonly<Item>;
+    const y = { ...x } as const;
+    const k: K = null! as keyof typeof y;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const z = { ...r };
+    const p2: never = null! as keyof typeof z;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const w = { ...x, extra: 1 };
+    const p3: never = null! as keyof typeof w;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    function g<T extends Required<Item>>(t: T) { const s = { ...t }; const p4: never = null! as keyof typeof s; }
+                                                                           ~~
+!!! error TS2322: Type 'keyof T' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:     Type 'string' is not assignable to type 'never'.
+    const { [K.ID]: id, ...rest } = { ...x } as const;
+    const p5: never = rest;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    export {};
+==== interface__rest_direct.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    interface I { [K.ID]: string; [K.N]: number }
+    declare const x: I;
+    declare const x2: I;
+    const { ...y } = x;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== interface__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    interface I { [K.ID]: string; [K.N]: number }
+    declare const x: I;
+    declare const x2: I;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== interface__reverse_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    interface I { [K.ID]: string; [K.N]: number }
+    declare const x: I;
+    declare const x2: I;
+    declare function f<T>(x: { [P in keyof T]?: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== interface__reverse_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    interface I { [K.ID]: string; [K.N]: number }
+    declare const x: I;
+    declare const x2: I;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(f(x));
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== interface__spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    interface I { [K.ID]: string; [K.N]: number }
+    declare const x: I;
+    declare const x2: I;
+    const y = { ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; }' is not assignable to type 'never'.
+    export {};
+==== interface__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    interface I { [K.ID]: string; [K.N]: number }
+    declare const x: I;
+    declare const x2: I;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; }' is not assignable to type 'never'.
+    export {};
+==== interface__spread_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    interface I { [K.ID]: string; [K.N]: number }
+    declare const x: I;
+    declare const x2: I;
+    const y = { ...x, ...x2 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; }' is not assignable to type 'never'.
+    export {};
+==== intersected__reverse.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item & { plain: 1 };
+    declare const x2: Item & { plain: 1 };
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"plain" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"plain" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+    export {};
+==== intersected__reverse_limited.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item & { plain: 1 };
+    declare const x2: Item & { plain: 1 };
+    declare function f<T>(x: { [P in keyof T & (K.ID | K.N | M.Z | "0" | "b")]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== intersected__spread_const.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item & { plain: 1 };
+    declare const x2: Item & { plain: 1 };
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"plain" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"plain" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; readonly plain: 1; }' is not assignable to type 'never'.
+    export {};
+==== intersected__spread_extra.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item & { plain: 1 };
+    declare const x2: Item & { plain: 1 };
+    const y = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | "plain" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | "plain" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; plain: 1; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== intersected__spread_of_spread.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Item & { plain: 1 };
+    declare const x2: Item & { plain: 1 };
+    const y = { ...{ ...x } };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"plain" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"plain" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; plain: 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; plain: 1; }' is not assignable to type 'never'.
+    export {};
+==== own__rest_direct.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in K]: P };
+    declare const x2: { [P in K]: P };
+    const { ...y } = x;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+    export {};
+==== own__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in K]: P };
+    declare const x2: { [P in K]: P };
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+    export {};
+==== own__reverse_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in K]: P };
+    declare const x2: { [P in K]: P };
+    declare function f<T>(x: { [P in keyof T]?: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+    export {};
+==== own__reverse_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in K]: P };
+    declare const x2: { [P in K]: P };
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(f(x));
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; id: K.ID; "x y": K.X; }' is not assignable to type 'never'.
+    export {};
+==== own__spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in K]: P };
+    declare const x2: { [P in K]: P };
+    const y = { ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.N]: K.N; [K.ID]: K.ID; [K.X]: K.X; }' is not assignable to type 'never'.
+    export {};
+==== own__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in K]: P };
+    declare const x2: { [P in K]: P };
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.N]: K.N; readonly [K.ID]: K.ID; readonly [K.X]: K.X; }' is not assignable to type 'never'.
+    export {};
+==== own__spread_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { [P in K]: P };
+    declare const x2: { [P in K]: P };
+    const y = { ...x, ...x2 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: K.N; "x y": K.X; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.N]: K.N; [K.ID]: K.ID; [K.X]: K.X; }' is not assignable to type 'never'.
+    export {};
+==== partial__function_rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Partial<Item>;
+    declare const x2: Partial<Item>;
+    function f({ ...y }: typeof x) { return y; }
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id?: string | undefined; "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    export {};
+==== partial__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Partial<Item>;
+    declare const x2: Partial<Item>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id?: string | undefined; "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    export {};
+==== partial__reverse_boxed.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Partial<Item>;
+    declare const x2: Partial<Item>;
+    declare function f<T>(x: { [P in keyof T]: T[P] | null }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id?: string | undefined; "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    export {};
+==== partial__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Partial<Item>;
+    declare const x2: Partial<Item>;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]?: string | undefined; readonly [K.N]?: number | undefined; readonly [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+    export {};
+==== partial__spread_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Partial<Item>;
+    declare const x2: Partial<Item>;
+    const y = { ...(c ? x : undefined) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+    export {};
+==== pick__function_rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Pick<Item, K.ID | K.N>;
+    declare const x2: Pick<Item, K.ID | K.N>;
+    function f({ ...y }: typeof x) { return y; }
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== pick__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Pick<Item, K.ID | K.N>;
+    declare const x2: Pick<Item, K.ID | K.N>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== pick__reverse_boxed.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Pick<Item, K.ID | K.N>;
+    declare const x2: Pick<Item, K.ID | K.N>;
+    declare function f<T>(x: { [P in keyof T]: T[P] | null }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== pick__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Pick<Item, K.ID | K.N>;
+    declare const x2: Pick<Item, K.ID | K.N>;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; }' is not assignable to type 'never'.
+    export {};
+==== pick__spread_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Pick<Item, K.ID | K.N>;
+    declare const x2: Pick<Item, K.ID | K.N>;
+    const y = { ...(c ? x : undefined) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; }' is not assignable to type 'never'.
+    export {};
+==== plain__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    declare const x2: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"0" | "1" | "b" | "x y"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    const p2: string = null! as keyof typeof y;
+    const { ["0"]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ "0": 1; 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+    export {};
+==== plain__reverse_limited.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    declare const x2: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    declare function f<T>(x: { [P in keyof T & (K.ID | K.N | M.Z | "0" | "b")]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"0" | "b"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    const p2: string = null! as keyof typeof y;
+    const { ["0"]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ b: 3; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ "0": 1; b: 3; }' is not assignable to type 'never'.
+    export {};
+==== plain__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    declare const x2: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"0" | "1" | "b" | "x y"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    const p2: string = null! as keyof typeof y;
+    const { ["0"]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly "0": 1; readonly 1: 2; readonly b: 3; readonly "x y": 4; }' is not assignable to type 'never'.
+    export {};
+==== plain__spread_extra.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    declare const x2: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    const y = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"0" | "b" | "extra" | "x y" | 1' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    const p2: string = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+    const { ["0"]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: 2; b: 3; "x y": 4; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ "0": 1; 1: 2; b: 3; "x y": 4; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== plain__spread_of_spread.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    declare const x2: { "0": 1; 1: 2; b: 3; "x y": 4 };
+    const y = { ...{ ...x } };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"0" | "b" | "x y" | 1' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    const p2: string = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+    const { ["0"]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ "0": 1; 1: 2; b: 3; "x y": 4; }' is not assignable to type 'never'.
+    export {};
+==== readonly__rest_direct.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Readonly<Item>;
+    declare const x2: Readonly<Item>;
+    const { ...y } = x;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== readonly__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Readonly<Item>;
+    declare const x2: Readonly<Item>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly id: string; readonly "0": number; readonly "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== readonly__reverse_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Readonly<Item>;
+    declare const x2: Readonly<Item>;
+    declare function f<T>(x: { [P in keyof T]?: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly id: string; readonly "0": number; readonly "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== readonly__reverse_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Readonly<Item>;
+    declare const x2: Readonly<Item>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(f(x));
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly id: string; readonly "0": number; readonly "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== readonly__spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Readonly<Item>;
+    declare const x2: Readonly<Item>;
+    const y = { ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== readonly__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Readonly<Item>;
+    declare const x2: Readonly<Item>;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== readonly__spread_twice.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Readonly<Item>;
+    declare const x2: Readonly<Item>;
+    const y = { ...x, ...x2 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== record__rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<K, 1>;
+    declare const x2: Record<K, 1>;
+    const { extra, ...y } = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: 1; id: 1; "x y": 1; }' is not assignable to type 'never'.
+    export {};
+==== record__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<K, 1>;
+    declare const x2: Record<K, 1>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: 1; id: 1; "x y": 1; }' is not assignable to type 'never'.
+    export {};
+==== record__reverse_readonly.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<K, 1>;
+    declare const x2: Record<K, 1>;
+    declare function f<T>(x: { readonly [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: 1; id: 1; "x y": 1; }' is not assignable to type 'never'.
+    export {};
+==== record__reverse_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<K, 1>;
+    declare const x2: Record<K, 1>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = { ...f(x) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.N]: 1; [K.ID]: 1; [K.X]: 1; }' is not assignable to type 'never'.
+    export {};
+==== record__spread_before.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<K, 1>;
+    declare const x2: Record<K, 1>;
+    const y = { extra: 1, ...x };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ extra: number; 0: 1; "x y": 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ extra: number; [K.N]: 1; [K.ID]: 1; [K.X]: 1; }' is not assignable to type 'never'.
+    export {};
+==== record__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<K, 1>;
+    declare const x2: Record<K, 1>;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 0: 1; "x y": 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.N]: 1; readonly [K.ID]: 1; readonly [K.X]: 1; }' is not assignable to type 'never'.
+    export {};
+==== record_num__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<M, 1>;
+    declare const x2: Record<M, 1>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: 1; 1: 1; }' is not assignable to type 'never'.
+    export {};
+==== record_num__reverse_limited.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<M, 1>;
+    declare const x2: Record<M, 1>;
+    declare function f<T>(x: { [P in keyof T & (K.ID | K.N | M.Z | "0" | "b")]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{}' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ 0: 1; }' is not assignable to type 'never'.
+    export {};
+==== record_num__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<M, 1>;
+    declare const x2: Record<M, 1>;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [M.Z]: 1; readonly [M.O]: 1; }' is not assignable to type 'never'.
+    export {};
+==== record_num__spread_extra.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<M, 1>;
+    declare const x2: Record<M, 1>;
+    const y = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | M' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | M' is not assignable to type 'M'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'M'.
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ extra: number; 1: 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ extra: number; [M.Z]: 1; [M.O]: 1; }' is not assignable to type 'never'.
+    export {};
+==== record_num__spread_of_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Record<M, 1>;
+    declare const x2: Record<M, 1>;
+    const y = { ...{ ...x } };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M.Z' is not assignable to type 'never'.
+    const p2: M = null! as keyof typeof y;
+    const { [M.Z]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [M.Z]: 1; [M.O]: 1; }' is not assignable to type 'never'.
+    export {};
+==== required__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Item>;
+    declare const x2: Required<Item>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== required__reverse_limited.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Item>;
+    declare const x2: Required<Item>;
+    declare function f<T>(x: { [P in keyof T & (K.ID | K.N | M.Z | "0" | "b")]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K.ID | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; }' is not assignable to type 'never'.
+    export {};
+==== required__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Item>;
+    declare const x2: Required<Item>;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== required__spread_extra.ts (4 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Item>;
+    declare const x2: Required<Item>;
+    const y = { ...x, extra: 1 };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'never'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type '"extra" | K' is not assignable to type 'K'.
+!!! error TS2322:   Type '"extra"' is not assignable to type 'K'.
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; extra: number; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; extra: number; }' is not assignable to type 'never'.
+    export {};
+==== required__spread_of_spread.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Item>;
+    declare const x2: Required<Item>;
+    const y = { ...{ ...x } };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]: string; [K.N]: number; [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== sentinel.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== twice__function_rest.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Partial<Item>>;
+    declare const x2: Required<Partial<Item>>;
+    function f({ ...y }: typeof x) { return y; }
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== twice__reverse.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Partial<Item>>;
+    declare const x2: Required<Partial<Item>>;
+    declare function f<T>(x: { [P in keyof T]: T[P] }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== twice__reverse_boxed.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Partial<Item>>;
+    declare const x2: Required<Partial<Item>>;
+    declare function f<T>(x: { [P in keyof T]: T[P] | null }): T;
+    const y = f(x);
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ id: string; "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    export {};
+==== twice__spread_const.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Partial<Item>>;
+    declare const x2: Required<Partial<Item>>;
+    const y = { ...x } as const;
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0": number; "x y": boolean; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ readonly [K.ID]: string; readonly [K.N]: number; readonly [K.X]: boolean; }' is not assignable to type 'never'.
+    export {};
+==== twice__spread_optional.ts (3 errors) ====
+    enum K { ID = "id", N = "0", X = "x y" }
+    enum M { Z = 0, O = 1 }
+    type Item = { [K.ID]: string; [K.N]: number; [K.X]: boolean };
+    type Num = { [M.Z]: string; [M.O]: number };
+    declare const c: boolean;
+    declare const x: Required<Partial<Item>>;
+    declare const x2: Required<Partial<Item>>;
+    const y = { ...(c ? x : undefined) };
+    const p1: never = null! as keyof typeof y;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.ID' is not assignable to type 'never'.
+    const p2: K = null! as keyof typeof y;
+    const { [K.ID]: taken, ...left } = y;
+    const p3: never = left;
+          ~~
+!!! error TS2322: Type '{ "0"?: number | undefined; "x y"?: boolean | undefined; }' is not assignable to type 'never'.
+    const p4: never = y;
+          ~~
+!!! error TS2322: Type '{ [K.ID]?: string | undefined; [K.N]?: number | undefined; [K.X]?: boolean | undefined; }' is not assignable to type 'never'.
+    export {};
+    

@@ -1,0 +1,28 @@
+//// [test/cases/bun08-C13b.ts] ////
+
+=== a.ts ===
+function f() {}
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+f.a = "b" as const;
+>f.a : Symbol(f.a, Decl(a.ts, 0, 15))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>a : Symbol(f.a, Decl(a.ts, 0, 15))
+>const : Symbol(const)
+
+f[k] = 1;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 3, 13))
+
+declare const k: (typeof f)["a"];
+>k : Symbol(k, Decl(a.ts, 3, 13))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+f.b;
+>f.b : Symbol(f[f[k]], Decl(a.ts, 1, 19))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>b : Symbol(f[f[k]], Decl(a.ts, 1, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

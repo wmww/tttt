@@ -1,0 +1,27 @@
+//// [test/cases/bun29-C2a.ts] ////
+
+=== a.ts ===
+namespace O { export const v = 1; }
+>O : Symbol(O, Decl(a.ts, 0, 0))
+>v : Symbol(v, Decl(a.ts, 0, 26))
+
+interface X { o: 1 }
+>X : Symbol(X, Decl(a.ts, 0, 35))
+>o : Symbol(X.o, Decl(a.ts, 1, 13))
+
+declare function mk(): X;
+>mk : Symbol(mk, Decl(a.ts, 1, 20))
+>X : Symbol(X, Decl(a.ts, 0, 35))
+
+export namespace I { import X = O.v; type X = 1; export const v = mk(); }
+>I : Symbol(I, Decl(a.ts, 2, 25))
+>X : Symbol(X, Decl(a.ts, 3, 20), Decl(a.ts, 3, 36))
+>O : Symbol(O, Decl(a.ts, 0, 0))
+>v : Symbol(X, Decl(a.ts, 0, 26))
+>X : Symbol(X, Decl(a.ts, 3, 20), Decl(a.ts, 3, 36))
+>v : Symbol(v, Decl(a.ts, 3, 61))
+>mk : Symbol(mk, Decl(a.ts, 1, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

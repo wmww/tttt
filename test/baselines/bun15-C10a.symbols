@@ -1,0 +1,18 @@
+//// [test/cases/bun15-C10a.ts] ////
+
+=== a.ts ===
+function f1<T extends undefined>(r: Required<{ a?: T }>) { const n: never = r.a; }
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>r : Symbol(r, Decl(a.ts, 0, 33))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 0, 46))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>n : Symbol(n, Decl(a.ts, 0, 64))
+>r.a : Symbol(a, Decl(a.ts, 0, 46))
+>r : Symbol(r, Decl(a.ts, 0, 33))
+>a : Symbol(a, Decl(a.ts, 0, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

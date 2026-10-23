@@ -1,0 +1,22 @@
+//// [test/cases/bun03-P2.ts] ////
+
+=== a.ts ===
+const abcdefgh: unique symbol = Symbol();
+>abcdefgh : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+class B { abcdefgh() {} }
+>B : B
+>abcdefgh : () => void
+
+class D extends B { override [abcdefgh]() {} }
+>D : D
+>B : B
+>[abcdefgh] : () => void
+>abcdefgh : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

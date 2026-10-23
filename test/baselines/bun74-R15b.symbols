@@ -1,0 +1,32 @@
+//// [test/cases/bun74-R15b.ts] ////
+
+=== a.ts ===
+declare const cond: boolean, x: unknown; type Fn = (n: number) => number;
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 0, 28))
+>Fn : Symbol(Fn, Decl(a.ts, 0, 40))
+>n : Symbol(n, Decl(a.ts, 0, 52))
+
+export const f = cond ? <Fn>(x) : n => n + 1;
+>f : Symbol(f, Decl(a.ts, 1, 12))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>Fn : Symbol(Fn, Decl(a.ts, 0, 40))
+>x : Symbol(x, Decl(a.ts, 0, 28))
+>n : Symbol(n, Decl(a.ts, 1, 33))
+>n : Symbol(n, Decl(a.ts, 1, 33))
+
+export const g = [cond ? <any>(x) : (n: number) => n, cond ? <Fn>(x) : n => n ? 1 : 2];
+>g : Symbol(g, Decl(a.ts, 2, 12))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 0, 28))
+>n : Symbol(n, Decl(a.ts, 2, 37))
+>n : Symbol(n, Decl(a.ts, 2, 37))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>Fn : Symbol(Fn, Decl(a.ts, 0, 40))
+>x : Symbol(x, Decl(a.ts, 0, 28))
+>n : Symbol(n, Decl(a.ts, 2, 70))
+>n : Symbol(n, Decl(a.ts, 2, 70))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

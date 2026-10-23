@@ -1,0 +1,28 @@
+a.ts(5,18): error TS2675: Cannot extend a class 'C'. Class constructor is marked as private.
+a.ts(8,18): error TS2675: Cannot extend a class 'C'. Class constructor is marked as private.
+a.ts(9,18): error TS2675: Cannot extend a class 'C'. Class constructor is marked as private.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    class C { private constructor() {} x = 1; }
+    type CT = typeof C;
+    interface IC extends CT {}
+    declare const B1: IC;
+    class D1 extends B1 {}
+                     ~~
+!!! error TS2675: Cannot extend a class 'C'. Class constructor is marked as private.
+    interface IC6 extends IC { y: 1 }
+    declare const B6: IC6;
+    class D6 extends B6 {}
+                     ~~
+!!! error TS2675: Cannot extend a class 'C'. Class constructor is marked as private.
+    class D2 extends C {}
+                     ~
+!!! error TS2675: Cannot extend a class 'C'. Class constructor is marked as private.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,13 @@
+//// [test/cases/bun09-C16a.ts] ////
+
+=== a.ts ===
+function c3<T extends T["a"]>(t: T) { const n: {} = t; }
+>c3 : <T>(t: T) => void
+>t : T
+>n : {}
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

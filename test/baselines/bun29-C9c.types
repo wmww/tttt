@@ -1,0 +1,23 @@
+//// [test/cases/bun29-C9c.ts] ////
+
+=== a.ts ===
+declare let x: { a: typeof Symbol.iterator } & { a: typeof Symbol.asyncIterator };
+>x : never
+>a : unique symbol
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>a : unique symbol
+>Symbol.asyncIterator : unique symbol
+>Symbol : SymbolConstructor
+>asyncIterator : unique symbol
+
+x.b;
+>x.b : any
+>x : never
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

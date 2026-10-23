@@ -1,0 +1,15 @@
+//// [test/cases/bun34-C1.ts] ////
+
+=== a.ts ===
+class E {}
+>E : E
+
+/** @throws {@link E} */
+export function f() {}
+>f : () => void
+
+const sentinel: number = ""; sentinel;
+>sentinel : number
+>"" : ""
+>sentinel : number
+

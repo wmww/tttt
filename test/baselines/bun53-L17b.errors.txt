@@ -1,0 +1,14 @@
+a.js(2,8): error TS1206: Decorators are not valid here.
+a.js(2,8): error TS1206: Decorators are not valid here.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    const dec = 0;
+    export @dec default function f() {}
+           ~
+!!! error TS1206: Decorators are not valid here.
+           ~~~~
+!!! error TS1206: Decorators are not valid here.
+    

@@ -1,0 +1,25 @@
+src/a.ts(3,7): error TS2322: Type '1' is not assignable to type '0'.
+src/a.ts(4,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "maxNodeModuleJsDepth": 1, "types": [], "lib": ["es2022"] }, "files": ["src/a.ts"] }
+==== src/a.ts (2 errors) ====
+    /// <reference path="./b.ts" />
+    import { p } from "p";
+    const q: 0 = p;
+          ~
+!!! error TS2322: Type '1' is not assignable to type '0'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/p/index.js (0 errors) ====
+    const u = require("./util");
+    exports.p = u.u;
+==== node_modules/p/package.json (0 errors) ====
+    {"name":"p","version":"1.0.0","main":"index.js"}
+==== node_modules/p/util.js (0 errors) ====
+    exports.u = 1;
+==== src/b.ts (0 errors) ====
+    /// <reference path="../node_modules/p/index.js" />
+    

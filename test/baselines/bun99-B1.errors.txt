@@ -1,0 +1,958 @@
+a.ts(9,9): error TS2322: Type 'O' is not assignable to type 'never'.
+a.ts(9,9): error TS6133: 'v1' is declared but its value is never read.
+a.ts(10,9): error TS2322: Type 'O' is not assignable to type 'never'.
+a.ts(10,9): error TS6133: 'v2' is declared but its value is never read.
+a.ts(11,9): error TS2322: Type 'O' is not assignable to type 'never'.
+a.ts(11,9): error TS6133: 'v3' is declared but its value is never read.
+a.ts(12,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(12,9): error TS6133: 'v4' is declared but its value is never read.
+a.ts(13,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(13,9): error TS6133: 'v5' is declared but its value is never read.
+a.ts(14,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(14,9): error TS6133: 'v6' is declared but its value is never read.
+a.ts(15,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(15,9): error TS6133: 'v7' is declared but its value is never read.
+a.ts(16,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(16,9): error TS6133: 'v8' is declared but its value is never read.
+a.ts(17,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(17,9): error TS6133: 'v9' is declared but its value is never read.
+a.ts(18,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(18,9): error TS6133: 'v10' is declared but its value is never read.
+a.ts(19,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(19,9): error TS6133: 'v11' is declared but its value is never read.
+a.ts(20,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(20,9): error TS6133: 'v12' is declared but its value is never read.
+a.ts(21,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(21,9): error TS6133: 'v13' is declared but its value is never read.
+a.ts(22,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(22,9): error TS6133: 'v14' is declared but its value is never read.
+a.ts(23,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(23,9): error TS6133: 'v15' is declared but its value is never read.
+a.ts(24,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(24,9): error TS6133: 'v16' is declared but its value is never read.
+a.ts(25,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(25,9): error TS6133: 'v17' is declared but its value is never read.
+a.ts(26,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(26,9): error TS6133: 'v18' is declared but its value is never read.
+a.ts(27,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(27,9): error TS6133: 'v19' is declared but its value is never read.
+a.ts(28,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(28,9): error TS6133: 'v20' is declared but its value is never read.
+a.ts(29,9): error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(29,9): error TS6133: 'v21' is declared but its value is never read.
+a.ts(30,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(30,9): error TS6133: 'v22' is declared but its value is never read.
+a.ts(31,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(31,9): error TS6133: 'v23' is declared but its value is never read.
+a.ts(32,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(32,9): error TS6133: 'v24' is declared but its value is never read.
+a.ts(33,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+a.ts(33,9): error TS6133: 'v25' is declared but its value is never read.
+a.ts(34,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+a.ts(34,9): error TS6133: 'v26' is declared but its value is never read.
+a.ts(35,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+a.ts(35,9): error TS6133: 'v27' is declared but its value is never read.
+a.ts(36,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(36,9): error TS6133: 'v28' is declared but its value is never read.
+a.ts(37,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(37,9): error TS6133: 'v29' is declared but its value is never read.
+a.ts(38,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(38,9): error TS6133: 'v30' is declared but its value is never read.
+a.ts(45,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(45,9): error TS6133: 'v37' is declared but its value is never read.
+a.ts(46,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(46,9): error TS6133: 'v38' is declared but its value is never read.
+a.ts(47,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(47,9): error TS6133: 'v39' is declared but its value is never read.
+a.ts(48,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+a.ts(48,9): error TS6133: 'v40' is declared but its value is never read.
+a.ts(49,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+a.ts(49,9): error TS6133: 'v41' is declared but its value is never read.
+a.ts(50,9): error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+a.ts(50,9): error TS6133: 'v42' is declared but its value is never read.
+a.ts(51,9): error TS2322: Type 'number[]' is not assignable to type 'never'.
+a.ts(51,9): error TS6133: 'v43' is declared but its value is never read.
+a.ts(52,9): error TS2322: Type 'number[]' is not assignable to type 'never'.
+a.ts(52,9): error TS6133: 'v44' is declared but its value is never read.
+a.ts(53,9): error TS2322: Type 'number[]' is not assignable to type 'never'.
+a.ts(53,9): error TS6133: 'v45' is declared but its value is never read.
+a.ts(54,9): error TS2322: Type '{ a?: { b?: number; f?(): O | undefined; list?: string[]; } | null; n: number | undefined; s?: string; x: number; }' is not assignable to type 'never'.
+a.ts(54,9): error TS6133: 'v46' is declared but its value is never read.
+a.ts(55,9): error TS2322: Type '{ a?: { b?: number; f?(): O | undefined; list?: string[]; } | null; n: number | undefined; s?: string; x: number; }' is not assignable to type 'never'.
+a.ts(55,9): error TS6133: 'v47' is declared but its value is never read.
+a.ts(56,9): error TS2322: Type '{ a?: { b?: number; f?(): O | undefined; list?: string[]; } | null; n: number | undefined; s?: string; x: number; }' is not assignable to type 'never'.
+a.ts(56,9): error TS6133: 'v48' is declared but its value is never read.
+a.ts(57,9): error TS2322: Type '"bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"' is not assignable to type 'never'.
+  Type '"bigint"' is not assignable to type 'never'.
+a.ts(57,9): error TS6133: 'v49' is declared but its value is never read.
+a.ts(58,9): error TS2322: Type '"bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"' is not assignable to type 'never'.
+  Type '"bigint"' is not assignable to type 'never'.
+a.ts(58,9): error TS6133: 'v50' is declared but its value is never read.
+a.ts(59,9): error TS2322: Type '"bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"' is not assignable to type 'never'.
+  Type '"bigint"' is not assignable to type 'never'.
+a.ts(59,9): error TS6133: 'v51' is declared but its value is never read.
+a.ts(60,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(60,9): error TS6133: 'v52' is declared but its value is never read.
+a.ts(61,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(61,9): error TS6133: 'v53' is declared but its value is never read.
+a.ts(62,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(62,9): error TS6133: 'v54' is declared but its value is never read.
+a.ts(63,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(63,9): error TS6133: 'v55' is declared but its value is never read.
+a.ts(64,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(64,9): error TS6133: 'v56' is declared but its value is never read.
+a.ts(65,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(65,9): error TS6133: 'v57' is declared but its value is never read.
+a.ts(66,9): error TS2322: Type 'string' is not assignable to type 'never'.
+a.ts(66,9): error TS6133: 'v58' is declared but its value is never read.
+a.ts(67,9): error TS2322: Type 'string' is not assignable to type 'never'.
+a.ts(67,9): error TS6133: 'v59' is declared but its value is never read.
+a.ts(68,9): error TS2322: Type 'string' is not assignable to type 'never'.
+a.ts(68,9): error TS6133: 'v60' is declared but its value is never read.
+a.ts(87,8): error TS2703: The operand of a 'delete' operator must be a property reference.
+a.ts(88,8): error TS2703: The operand of a 'delete' operator must be a property reference.
+a.ts(89,8): error TS2703: The operand of a 'delete' operator must be a property reference.
+a.ts(105,18): error TS18049: 'o' is possibly 'null' or 'undefined'.
+a.ts(106,19): error TS18049: 'o' is possibly 'null' or 'undefined'.
+a.ts(107,20): error TS18049: 'o' is possibly 'null' or 'undefined'.
+a.ts(108,21): error TS18049: 'o' is possibly 'null' or 'undefined'.
+a.ts(108,21): error TS18049: 'o.a' is possibly 'null' or 'undefined'.
+a.ts(109,23): error TS18049: 'o' is possibly 'null' or 'undefined'.
+a.ts(109,23): error TS18049: 'o.a' is possibly 'null' or 'undefined'.
+a.ts(110,25): error TS18049: 'o' is possibly 'null' or 'undefined'.
+a.ts(110,25): error TS18049: 'o.a' is possibly 'null' or 'undefined'.
+a.ts(123,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(123,9): error TS6133: 'v115' is declared but its value is never read.
+a.ts(124,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(124,9): error TS6133: 'v116' is declared but its value is never read.
+a.ts(125,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(125,9): error TS6133: 'v117' is declared but its value is never read.
+a.ts(126,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(126,9): error TS6133: 'v118' is declared but its value is never read.
+a.ts(127,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(127,9): error TS6133: 'v119' is declared but its value is never read.
+a.ts(128,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(128,9): error TS6133: 'v120' is declared but its value is never read.
+a.ts(129,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(129,9): error TS6133: 'v121' is declared but its value is never read.
+a.ts(130,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(130,9): error TS6133: 'v122' is declared but its value is never read.
+a.ts(131,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(131,9): error TS6133: 'v123' is declared but its value is never read.
+a.ts(132,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(132,9): error TS6133: 'v124' is declared but its value is never read.
+a.ts(133,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(133,9): error TS6133: 'v125' is declared but its value is never read.
+a.ts(134,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(134,9): error TS6133: 'v126' is declared but its value is never read.
+a.ts(135,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(135,9): error TS6133: 'v127' is declared but its value is never read.
+a.ts(136,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(136,9): error TS6133: 'v128' is declared but its value is never read.
+a.ts(137,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(137,9): error TS6133: 'v129' is declared but its value is never read.
+a.ts(138,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(138,9): error TS6133: 'v130' is declared but its value is never read.
+a.ts(139,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(139,9): error TS6133: 'v131' is declared but its value is never read.
+a.ts(140,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(140,9): error TS6133: 'v132' is declared but its value is never read.
+a.ts(141,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(141,9): error TS6133: 'v133' is declared but its value is never read.
+a.ts(142,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(142,9): error TS6133: 'v134' is declared but its value is never read.
+a.ts(143,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(143,9): error TS6133: 'v135' is declared but its value is never read.
+a.ts(144,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(144,9): error TS6133: 'v136' is declared but its value is never read.
+a.ts(145,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(145,9): error TS6133: 'v137' is declared but its value is never read.
+a.ts(146,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(146,9): error TS6133: 'v138' is declared but its value is never read.
+a.ts(147,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(147,9): error TS6133: 'v139' is declared but its value is never read.
+a.ts(148,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(148,9): error TS6133: 'v140' is declared but its value is never read.
+a.ts(149,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(149,9): error TS6133: 'v141' is declared but its value is never read.
+a.ts(150,9): error TS2322: Type 'number[]' is not assignable to type 'never'.
+a.ts(150,9): error TS6133: 'v142' is declared but its value is never read.
+a.ts(151,9): error TS2322: Type 'number[]' is not assignable to type 'never'.
+a.ts(151,9): error TS6133: 'v143' is declared but its value is never read.
+a.ts(152,9): error TS2322: Type 'number[]' is not assignable to type 'never'.
+a.ts(152,9): error TS6133: 'v144' is declared but its value is never read.
+a.ts(153,12): error TS6133: 'f145' is declared but its value is never read.
+a.ts(154,12): error TS6133: 'f146' is declared but its value is never read.
+a.ts(155,12): error TS6133: 'f147' is declared but its value is never read.
+a.ts(156,12): error TS6133: 'g148' is declared but its value is never read.
+a.ts(156,43): error TS18048: 'x' is possibly 'undefined'.
+a.ts(157,12): error TS6133: 'g149' is declared but its value is never read.
+a.ts(157,44): error TS18048: 'x' is possibly 'undefined'.
+a.ts(158,12): error TS6133: 'g150' is declared but its value is never read.
+a.ts(158,45): error TS18048: 'x' is possibly 'undefined'.
+a.ts(159,9): error TS6133: 'v151' is declared but its value is never read.
+a.ts(160,9): error TS6133: 'v152' is declared but its value is never read.
+a.ts(161,9): error TS6133: 'v153' is declared but its value is never read.
+a.ts(162,9): error TS6133: 'v154' is declared but its value is never read.
+a.ts(163,9): error TS6133: 'v155' is declared but its value is never read.
+a.ts(164,9): error TS6133: 'v156' is declared but its value is never read.
+a.ts(165,9): error TS6133: 'v157' is declared but its value is never read.
+a.ts(166,9): error TS6133: 'v158' is declared but its value is never read.
+a.ts(167,9): error TS6133: 'v159' is declared but its value is never read.
+a.ts(168,9): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(168,9): error TS6133: 'v160' is declared but its value is never read.
+a.ts(169,9): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(169,9): error TS6133: 'v161' is declared but its value is never read.
+a.ts(170,9): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(170,9): error TS6133: 'v162' is declared but its value is never read.
+a.ts(171,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(171,9): error TS6133: 'v163' is declared but its value is never read.
+a.ts(172,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(172,9): error TS6133: 'v164' is declared but its value is never read.
+a.ts(173,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(173,9): error TS6133: 'v165' is declared but its value is never read.
+a.ts(174,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(174,9): error TS6133: 'v166' is declared but its value is never read.
+a.ts(175,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(175,9): error TS6133: 'v167' is declared but its value is never read.
+a.ts(176,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(176,9): error TS6133: 'v168' is declared but its value is never read.
+a.ts(177,9): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(177,9): error TS6133: 'v169' is declared but its value is never read.
+a.ts(178,9): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(178,9): error TS6133: 'v170' is declared but its value is never read.
+a.ts(179,9): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(179,9): error TS6133: 'v171' is declared but its value is never read.
+a.ts(180,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(180,9): error TS6133: 'v172' is declared but its value is never read.
+a.ts(181,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(181,9): error TS6133: 'v173' is declared but its value is never read.
+a.ts(182,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(182,9): error TS6133: 'v174' is declared but its value is never read.
+a.ts(183,9): error TS2322: Type 'O' is not assignable to type 'never'.
+a.ts(183,9): error TS6133: 'v175' is declared but its value is never read.
+a.ts(184,9): error TS2322: Type 'O' is not assignable to type 'never'.
+a.ts(184,9): error TS6133: 'v176' is declared but its value is never read.
+a.ts(185,9): error TS2322: Type 'O' is not assignable to type 'never'.
+a.ts(185,9): error TS6133: 'v177' is declared but its value is never read.
+a.ts(186,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(186,9): error TS6133: 'v178' is declared but its value is never read.
+a.ts(187,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(187,9): error TS6133: 'v179' is declared but its value is never read.
+a.ts(188,9): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(188,9): error TS6133: 'v180' is declared but its value is never read.
+a.ts(189,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(189,7): error TS6133: 'sentinel' is declared but its value is never read.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions":{"strict":true,"noEmit":true,"types":[],"lib":["es2022"],"noUnusedLocals":true,"exactOptionalPropertyTypes":true}}
+==== a.ts (242 errors) ====
+    type O = { a?: { b?: number; f?(): O | undefined; list?: string[] } | null; n: number | undefined; s?: string };
+    declare let o: O | undefined | null;
+    declare let u: number | undefined;
+    declare let arr: (number | undefined)[] | undefined;
+    declare function take(n: number): void;
+    declare function gen<T>(t: T): T;
+    declare const k: "a" | undefined;
+    class C { p?: number; m() { return this.p!; } static s?: C; }
+    { const v1: never = o!; }
+            ~~
+!!! error TS2322: Type 'O' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v1' is declared but its value is never read.
+    { const v2: never = o!!; }
+            ~~
+!!! error TS2322: Type 'O' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v2' is declared but its value is never read.
+    { const v3: never = o!!!; }
+            ~~
+!!! error TS2322: Type 'O' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v3' is declared but its value is never read.
+    { const v4: never = o!.a; }
+            ~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v4' is declared but its value is never read.
+    { const v5: never = o!!.a; }
+            ~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v5' is declared but its value is never read.
+    { const v6: never = o!!!.a; }
+            ~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v6' is declared but its value is never read.
+    { const v7: never = o!.a!.b; }
+            ~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v7' is declared but its value is never read.
+    { const v8: never = o!!.a!!.b; }
+            ~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v8' is declared but its value is never read.
+    { const v9: never = o!!!.a!!!.b; }
+            ~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~
+!!! error TS6133: 'v9' is declared but its value is never read.
+    { const v10: never = o!.a!.b!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v10' is declared but its value is never read.
+    { const v11: never = o!!.a!!.b!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v11' is declared but its value is never read.
+    { const v12: never = o!!!.a!!!.b!!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v12' is declared but its value is never read.
+    { const v13: never = o?.a!.b; }
+            ~~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v13' is declared but its value is never read.
+    { const v14: never = o?.a!!.b; }
+            ~~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v14' is declared but its value is never read.
+    { const v15: never = o?.a!!!.b; }
+            ~~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v15' is declared but its value is never read.
+    { const v16: never = o?.a!?.b!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v16' is declared but its value is never read.
+    { const v17: never = o?.a!!?.b!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v17' is declared but its value is never read.
+    { const v18: never = o?.a!!!?.b!!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v18' is declared but its value is never read.
+    { const v19: never = o?.a!.f!()!.n; }
+            ~~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v19' is declared but its value is never read.
+    { const v20: never = o?.a!!.f!!()!!.n; }
+            ~~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v20' is declared but its value is never read.
+    { const v21: never = o?.a!!!.f!!!()!!!.n; }
+            ~~~
+!!! error TS2322: Type 'number | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v21' is declared but its value is never read.
+    { const v22: never = (o!).n!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v22' is declared but its value is never read.
+    { const v23: never = (o!!).n!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v23' is declared but its value is never read.
+    { const v24: never = (o!!!).n!!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v24' is declared but its value is never read.
+    { const v25: never = o!["a"]!; }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v25' is declared but its value is never read.
+    { const v26: never = o!!["a"]!!; }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v26' is declared but its value is never read.
+    { const v27: never = o!!!["a"]!!!; }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v27' is declared but its value is never read.
+    { const v28: never = o![k!]; }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v28' is declared but its value is never read.
+    { const v29: never = o!![k!!]; }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v29' is declared but its value is never read.
+    { const v30: never = o!!![k!!!]; }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; } | null | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v30' is declared but its value is never read.
+    take(u!);
+    take(u!!);
+    take(u!!!);
+    take(o!.n!);
+    take(o!!.n!!);
+    take(o!!!.n!!!);
+    { const v37: never = gen(u!); }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v37' is declared but its value is never read.
+    { const v38: never = gen(u!!); }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v38' is declared but its value is never read.
+    { const v39: never = gen(u!!!); }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v39' is declared but its value is never read.
+    { const v40: never = gen(o!.a!); }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v40' is declared but its value is never read.
+    { const v41: never = gen(o!!.a!!); }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v41' is declared but its value is never read.
+    { const v42: never = gen(o!!!.a!!!); }
+            ~~~
+!!! error TS2322: Type '{ b?: number; f?(): O | undefined; list?: string[]; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v42' is declared but its value is never read.
+    { const v43: never = [u!, o!.n!]; }
+            ~~~
+!!! error TS2322: Type 'number[]' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v43' is declared but its value is never read.
+    { const v44: never = [u!!, o!!.n!!]; }
+            ~~~
+!!! error TS2322: Type 'number[]' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v44' is declared but its value is never read.
+    { const v45: never = [u!!!, o!!!.n!!!]; }
+            ~~~
+!!! error TS2322: Type 'number[]' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v45' is declared but its value is never read.
+    { const v46: never = { x: u!, ...o! }; }
+            ~~~
+!!! error TS2322: Type '{ a?: { b?: number; f?(): O | undefined; list?: string[]; } | null; n: number | undefined; s?: string; x: number; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v46' is declared but its value is never read.
+    { const v47: never = { x: u!!, ...o!! }; }
+            ~~~
+!!! error TS2322: Type '{ a?: { b?: number; f?(): O | undefined; list?: string[]; } | null; n: number | undefined; s?: string; x: number; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v47' is declared but its value is never read.
+    { const v48: never = { x: u!!!, ...o!!! }; }
+            ~~~
+!!! error TS2322: Type '{ a?: { b?: number; f?(): O | undefined; list?: string[]; } | null; n: number | undefined; s?: string; x: number; }' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v48' is declared but its value is never read.
+    { const v49: never = typeof u!; }
+            ~~~
+!!! error TS2322: Type '"bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"bigint"' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v49' is declared but its value is never read.
+    { const v50: never = typeof u!!; }
+            ~~~
+!!! error TS2322: Type '"bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"bigint"' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v50' is declared but its value is never read.
+    { const v51: never = typeof u!!!; }
+            ~~~
+!!! error TS2322: Type '"bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"bigint"' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v51' is declared but its value is never read.
+    { const v52: never = u! + 1; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v52' is declared but its value is never read.
+    { const v53: never = u!! + 1; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v53' is declared but its value is never read.
+    { const v54: never = u!!! + 1; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v54' is declared but its value is never read.
+    { const v55: never = -u!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v55' is declared but its value is never read.
+    { const v56: never = -u!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v56' is declared but its value is never read.
+    { const v57: never = -u!!!; }
+            ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v57' is declared but its value is never read.
+    { const v58: never = `${u!}`; }
+            ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v58' is declared but its value is never read.
+    { const v59: never = `${u!!}`; }
+            ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v59' is declared but its value is never read.
+    { const v60: never = `${u!!!}`; }
+            ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+            ~~~
+!!! error TS6133: 'v60' is declared but its value is never read.
+    u! = 1;
+    u!! = 1;
+    u!!! = 1;
+    o!.n = 1;
+    o!!.n = 1;
+    o!!!.n = 1;
+    o!.a!.b = 1;
+    o!!.a!!.b = 1;
+    o!!!.a!!!.b = 1;
+    u!++;
+    u!!++;
+    u!!!++;
+    o!.n! += 1;
+    o!!.n!! += 1;
+    o!!!.n!!! += 1;
+    delete o!.a!.b;
+    delete o!!.a!!.b;
+    delete o!!!.a!!!.b;
+    delete o!.s!;
+           ~~~~~
+!!! error TS2703: The operand of a 'delete' operator must be a property reference.
+    delete o!!.s!!;
+           ~~~~~~~
+!!! error TS2703: The operand of a 'delete' operator must be a property reference.
+    delete o!!!.s!!!;
+           ~~~~~~~~~
+!!! error TS2703: The operand of a 'delete' operator must be a property reference.
+    [u!] = [1];
+    [u!!] = [1];
+    [u!!!] = [1];
+    ({ n: u! } = { n: 1 });
+    ({ n: u!! } = { n: 1 });
+    ({ n: u!!! } = { n: 1 });
+    for (u! of [1]) {}
+    for (u!! of [1]) {}
+    for (u!!! of [1]) {}
+    for (const x91 of arr!) { take(x91!); }
+    for (const x92 of arr!!) { take(x92!!); }
+    for (const x93 of arr!!!) { take(x93!!!); }
+    if (u!) { take(u); }
+    if (u!!) { take(u); }
+    if (u!!!) { take(u); }
+    if (o!.a) { take(o.a.b!); }
+                     ~
+!!! error TS18049: 'o' is possibly 'null' or 'undefined'.
+    if (o!!.a) { take(o.a.b!!); }
+                      ~
+!!! error TS18049: 'o' is possibly 'null' or 'undefined'.
+    if (o!!!.a) { take(o.a.b!!!); }
+                       ~
+!!! error TS18049: 'o' is possibly 'null' or 'undefined'.
+    if (o!.a!.b) { take(o.a.b); }
+                        ~
+!!! error TS18049: 'o' is possibly 'null' or 'undefined'.
+                        ~~~
+!!! error TS18049: 'o.a' is possibly 'null' or 'undefined'.
+    if (o!!.a!!.b) { take(o.a.b); }
+                          ~
+!!! error TS18049: 'o' is possibly 'null' or 'undefined'.
+                          ~~~
+!!! error TS18049: 'o.a' is possibly 'null' or 'undefined'.
+    if (o!!!.a!!!.b) { take(o.a.b); }
+                            ~
+!!! error TS18049: 'o' is possibly 'null' or 'undefined'.
+                            ~~~
+!!! error TS18049: 'o.a' is possibly 'null' or 'undefined'.
+    if (o?.a!.b) { take(o.a.b); }
+    if (o?.a!!.b) { take(o.a.b); }
+    if (o?.a!!!.b) { take(o.a.b); }
+    if (u! !== undefined) { take(u); }
+    if (u!! !== undefined) { take(u); }
+    if (u!!! !== undefined) { take(u); }
+    if (typeof u! === "number") { take(u); }
+    if (typeof u!! === "number") { take(u); }
+    if (typeof u!!! === "number") { take(u); }
+    while (u!) { take(u); break; }
+    while (u!!) { take(u); break; }
+    while (u!!!) { take(u); break; }
+    { const v115: never = u! ? u : 0; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v115' is declared but its value is never read.
+    { const v116: never = u!! ? u : 0; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v116' is declared but its value is never read.
+    { const v117: never = u!!! ? u : 0; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v117' is declared but its value is never read.
+    { const v118: never = u! ?? 0; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v118' is declared but its value is never read.
+    { const v119: never = u!! ?? 0; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v119' is declared but its value is never read.
+    { const v120: never = u!!! ?? 0; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v120' is declared but its value is never read.
+    { const v121: never = u! && u; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v121' is declared but its value is never read.
+    { const v122: never = u!! && u; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v122' is declared but its value is never read.
+    { const v123: never = u!!! && u; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v123' is declared but its value is never read.
+    { const v124: never = (u! as number); }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v124' is declared but its value is never read.
+    { const v125: never = (u!! as number); }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v125' is declared but its value is never read.
+    { const v126: never = (u!!! as number); }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v126' is declared but its value is never read.
+    { const v127: never = <number>u!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v127' is declared but its value is never read.
+    { const v128: never = <number>u!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v128' is declared but its value is never read.
+    { const v129: never = <number>u!!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v129' is declared but its value is never read.
+    { const v130: never = u! satisfies number; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v130' is declared but its value is never read.
+    { const v131: never = u!! satisfies number; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v131' is declared but its value is never read.
+    { const v132: never = u!!! satisfies number; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v132' is declared but its value is never read.
+    { const v133: never = C.s!.p!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v133' is declared but its value is never read.
+    { const v134: never = C.s!!.p!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v134' is declared but its value is never read.
+    { const v135: never = C.s!!!.p!!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v135' is declared but its value is never read.
+    { const v136: never = new C().m()!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v136' is declared but its value is never read.
+    { const v137: never = new C().m()!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v137' is declared but its value is never read.
+    { const v138: never = new C().m()!!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v138' is declared but its value is never read.
+    { const v139: never = arr![0]!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v139' is declared but its value is never read.
+    { const v140: never = arr!![0]!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v140' is declared but its value is never read.
+    { const v141: never = arr!!![0]!!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v141' is declared but its value is never read.
+    { const v142: never = arr!.map(x => x!); }
+            ~~~~
+!!! error TS2322: Type 'number[]' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v142' is declared but its value is never read.
+    { const v143: never = arr!!.map(x => x!!); }
+            ~~~~
+!!! error TS2322: Type 'number[]' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v143' is declared but its value is never read.
+    { const v144: never = arr!!!.map(x => x!!!); }
+            ~~~~
+!!! error TS2322: Type 'number[]' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v144' is declared but its value is never read.
+    { function f145(x: number | undefined) { return x!; } }
+               ~~~~
+!!! error TS6133: 'f145' is declared but its value is never read.
+    { function f146(x: number | undefined) { return x!!; } }
+               ~~~~
+!!! error TS6133: 'f146' is declared but its value is never read.
+    { function f147(x: number | undefined) { return x!!!; } }
+               ~~~~
+!!! error TS6133: 'f147' is declared but its value is never read.
+    { function g148(x?: O) { if (x!.a) return x.a; return x; } }
+               ~~~~
+!!! error TS6133: 'g148' is declared but its value is never read.
+                                              ~
+!!! error TS18048: 'x' is possibly 'undefined'.
+    { function g149(x?: O) { if (x!!.a) return x.a; return x; } }
+               ~~~~
+!!! error TS6133: 'g149' is declared but its value is never read.
+                                               ~
+!!! error TS18048: 'x' is possibly 'undefined'.
+    { function g150(x?: O) { if (x!!!.a) return x.a; return x; } }
+               ~~~~
+!!! error TS6133: 'g150' is declared but its value is never read.
+                                                ~
+!!! error TS18048: 'x' is possibly 'undefined'.
+    { const v151: never = null!; }
+            ~~~~
+!!! error TS6133: 'v151' is declared but its value is never read.
+    { const v152: never = null!!; }
+            ~~~~
+!!! error TS6133: 'v152' is declared but its value is never read.
+    { const v153: never = null!!!; }
+            ~~~~
+!!! error TS6133: 'v153' is declared but its value is never read.
+    { const v154: never = undefined!; }
+            ~~~~
+!!! error TS6133: 'v154' is declared but its value is never read.
+    { const v155: never = undefined!!; }
+            ~~~~
+!!! error TS6133: 'v155' is declared but its value is never read.
+    { const v156: never = undefined!!!; }
+            ~~~~
+!!! error TS6133: 'v156' is declared but its value is never read.
+    { const v157: never = (void 0)!; }
+            ~~~~
+!!! error TS6133: 'v157' is declared but its value is never read.
+    { const v158: never = (void 0)!!; }
+            ~~~~
+!!! error TS6133: 'v158' is declared but its value is never read.
+    { const v159: never = (void 0)!!!; }
+            ~~~~
+!!! error TS6133: 'v159' is declared but its value is never read.
+    { const v160: never = 1!; }
+            ~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v160' is declared but its value is never read.
+    { const v161: never = 1!!; }
+            ~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v161' is declared but its value is never read.
+    { const v162: never = 1!!!; }
+            ~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v162' is declared but its value is never read.
+    { const v163: never = "s"!.length; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v163' is declared but its value is never read.
+    { const v164: never = "s"!!.length; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v164' is declared but its value is never read.
+    { const v165: never = "s"!!!.length; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v165' is declared but its value is never read.
+    { const v166: never = (() => u)()!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v166' is declared but its value is never read.
+    { const v167: never = (() => u)()!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v167' is declared but its value is never read.
+    { const v168: never = (() => u)()!!!; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v168' is declared but its value is never read.
+    { const v169: never = gen!(1); }
+            ~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v169' is declared but its value is never read.
+    { const v170: never = gen!!(1); }
+            ~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v170' is declared but its value is never read.
+    { const v171: never = gen!!!(1); }
+            ~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v171' is declared but its value is never read.
+    { const v172: never = gen!<number>(1); }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v172' is declared but its value is never read.
+    { const v173: never = gen!!<number>(1); }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v173' is declared but its value is never read.
+    { const v174: never = gen!!!<number>(1); }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v174' is declared but its value is never read.
+    { const v175: never = o!.a!.f!?.()!; }
+            ~~~~
+!!! error TS2322: Type 'O' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v175' is declared but its value is never read.
+    { const v176: never = o!!.a!!.f!!?.()!!; }
+            ~~~~
+!!! error TS2322: Type 'O' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v176' is declared but its value is never read.
+    { const v177: never = o!!!.a!!!.f!!!?.()!!!; }
+            ~~~~
+!!! error TS2322: Type 'O' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v177' is declared but its value is never read.
+    { const v178: never = o!.a!.list!.length; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v178' is declared but its value is never read.
+    { const v179: never = o!!.a!!.list!!.length; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v179' is declared but its value is never read.
+    { const v180: never = o!!!.a!!!.list!!!.length; }
+            ~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+            ~~~~
+!!! error TS6133: 'v180' is declared but its value is never read.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+          ~~~~~~~~
+!!! error TS6133: 'sentinel' is declared but its value is never read.
+    export {};
+    

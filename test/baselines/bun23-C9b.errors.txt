@@ -1,0 +1,18 @@
+a.ts(1,5): error TS2322: Type '(b: any) => b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9; }' is not assignable to type '(x: any) => x is string'.
+  Type predicate 'b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; ... 4 more ...; i: 9; }' is not assignable to 'x is string'.
+    Type '{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9; }' is not assignable to type 'string'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "noErrorTruncation": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    let p1: (x: any) => x is string = null! as (b: any) => b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9 };
+        ~~
+!!! error TS2322: Type '(b: any) => b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9; }' is not assignable to type '(x: any) => x is string'.
+!!! error TS2322:   Type predicate 'b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; ... 4 more ...; i: 9; }' is not assignable to 'x is string'.
+!!! error TS2322:     Type '{ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9; }' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

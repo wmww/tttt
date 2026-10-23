@@ -1,0 +1,69 @@
+//// [test/cases/bun60-L16a.ts] ////
+
+=== a.ts ===
+interface Asserts { str(x: unknown): asserts x is string; num: (x: unknown) => asserts x is number }
+>str : (x: unknown) => asserts x is string
+>x : unknown
+>num : (x: unknown) => asserts x is number
+>x : unknown
+
+type Prefixed<T> = { [K in keyof T as `assert${Capitalize<K & string>}`]: T[K] };
+>Prefixed : Prefixed<T>
+
+declare const p: Prefixed<Asserts>;
+>p : Prefixed<Asserts>
+
+function f(v: unknown, w: unknown) {
+>f : (v: unknown, w: unknown) => void
+>v : unknown
+>w : unknown
+
+  p.assertStr(v);
+>p.assertStr(v) : void
+>p.assertStr : (x: unknown) => asserts x is string
+>p : Prefixed<Asserts>
+>assertStr : (x: unknown) => asserts x is string
+>v : unknown
+
+  v.length;
+>v.length : number
+>v : string
+>length : number
+
+  p.assertNum(w);
+>p.assertNum(w) : void
+>p.assertNum : (x: unknown) => asserts x is number
+>p : Prefixed<Asserts>
+>assertNum : (x: unknown) => asserts x is number
+>w : unknown
+
+  w.toFixed();
+>w.toFixed() : string
+>w.toFixed : (fractionDigits?: number) => string
+>w : number
+>toFixed : (fractionDigits?: number) => string
+}
+const inferred = { bad: (x: unknown): asserts x is string => {} };
+>inferred : { bad: (x: unknown) => asserts x is string; }
+>{ bad: (x: unknown): asserts x is string => {} } : { bad: (x: unknown) => asserts x is string; }
+>bad : (x: unknown) => asserts x is string
+>(x: unknown): asserts x is string => {} : (x: unknown) => asserts x is string
+>x : unknown
+
+declare const q: Prefixed<typeof inferred>;
+>q : Prefixed<{ bad: (x: unknown) => asserts x is string; }>
+>inferred : { bad: (x: unknown) => asserts x is string; }
+
+function g(v: unknown) { q.assertBad(v); }
+>g : (v: unknown) => void
+>v : unknown
+>q.assertBad(v) : void
+>q.assertBad : (x: unknown) => asserts x is string
+>q : Prefixed<{ bad: (x: unknown) => asserts x is string; }>
+>assertBad : (x: unknown) => asserts x is string
+>v : unknown
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

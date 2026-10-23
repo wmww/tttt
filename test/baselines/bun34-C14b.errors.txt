@@ -1,0 +1,14 @@
+a.ts(1,24): error TS2842: 'a' is an unused renaming of '[missing]'. Did you intend to use it as a type annotation?
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type H = ({ [missing]: a }: any) => void;
+                           ~
+!!! error TS2842: 'a' is an unused renaming of '[missing]'. Did you intend to use it as a type annotation?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

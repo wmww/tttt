@@ -1,0 +1,30 @@
+//// [test/cases/bun06-C10.ts] ////
+
+=== a.ts ===
+declare function g3<T>(g: (t: T) => void, f: () => Generator<(x: number) => void, T>): T;
+>g3 : <T>(g: (t: T) => void, f: () => Generator<(x: number) => void, T>) => T
+>g : (t: T) => void
+>t : T
+>f : () => Generator<(x: number) => void, T>
+>x : number
+
+g3(t => { t.toFixed(); }, function* <U>() { yield (x) => x; return 1; });
+>g3(t => { t.toFixed(); }, function* <U>() { yield (x) => x; return 1; }) : number
+>g3 : <T>(g: (t: T) => void, f: () => Generator<(x: number) => void, T>) => T
+>t => { t.toFixed(); } : (t: number) => void
+>t : number
+>t.toFixed() : string
+>t.toFixed : (fractionDigits?: number) => string
+>t : number
+>toFixed : (fractionDigits?: number) => string
+>function* <U>() { yield (x) => x; return 1; } : <U>() => Generator<(x: number) => number, number, any>
+>yield (x) => x : any
+>(x) => x : (x: number) => number
+>x : number
+>x : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

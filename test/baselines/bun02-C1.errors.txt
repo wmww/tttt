@@ -1,0 +1,29 @@
+a.ts(1,36): error TS1228: A type predicate is only allowed in return type position for functions and methods.
+a.ts(3,9): error TS18046: 'u' is of type 'unknown'.
+a.ts(4,25): error TS1228: A type predicate is only allowed in return type position for functions and methods.
+a.ts(7,16): error TS2339: Property 'q' does not exist on type 'P'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare function isS(x: unknown): (asserts x is string);
+                                       ~~~~~~~~~~~~~~~~~~~
+!!! error TS1228: A type predicate is only allowed in return type position for functions and methods.
+    declare const u: unknown;
+    isS(u); u.length;
+            ~
+!!! error TS18046: 'u' is of type 'unknown'.
+    declare class P { m(): (this is Q); }
+                            ~~~~~~~~~
+!!! error TS1228: A type predicate is only allowed in return type position for functions and methods.
+    declare class Q extends P { q: number }
+    declare const p: P;
+    if (p.m()) { p.q; }
+                   ~
+!!! error TS2339: Property 'q' does not exist on type 'P'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

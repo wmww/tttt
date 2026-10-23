@@ -1,0 +1,77 @@
+//// [test/cases/bun53-L04b.ts] ////
+
+=== a.ts ===
+declare const o: { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2 };
+>o : { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2; }
+>"0x10n" : number
+>"16n" : string
+>"0xffn" : 1
+>"255n" : 2
+
+const { 0x10n: a } = o; const a1: never = a;
+>a : number
+>o : { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2; }
+>a1 : never
+>a : number
+
+const { 0XFFn: c } = o; const c1: never = c;
+>c : 1
+>o : { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2; }
+>c1 : never
+>c : 1
+
+const o1 = { 0b11n: 1, 3n: 2 };
+>o1 : {}
+>{ 0b11n: 1, 3n: 2 } : {}
+>0b11n : number
+>1 : 1
+>3n : number
+>2 : 2
+
+const o2 = { 0XFFn: 1, 0xffn: 2 };
+>o2 : {}
+>{ 0XFFn: 1, 0xffn: 2 } : {}
+>0XFFn : number
+>1 : 1
+>0xffn : number
+>2 : 2
+
+const o4 = { 0o7n: 1, "7n": 2 };
+>o4 : { "7n": number; }
+>{ 0o7n: 1, "7n": 2 } : { "7n": number; }
+>0o7n : number
+>1 : 1
+>"7n" : number
+>2 : 2
+
+const o6 = { 0b11n: 1, "0b11n": 2 };
+>o6 : { "0b11n": number; }
+>{ 0b11n: 1, "0b11n": 2 } : { "0b11n": number; }
+>0b11n : number
+>1 : 1
+>"0b11n" : number
+>2 : 2
+
+declare function dec(t: any, c: { name: "0xffn" }): void;
+>dec : (t: any, c: { name: "0xffn"; }) => void
+>t : any
+>c : { name: "0xffn"; }
+>name : "0xffn"
+
+declare function dec2(t: any, c: { name: "3n" }): void;
+>dec2 : (t: any, c: { name: "3n"; }) => void
+>t : any
+>c : { name: "3n"; }
+>name : "3n"
+
+class C { @dec 0XFFn() {} @dec2 0b11n() {} }
+>C : C
+>dec : (t: any, c: { name: "0xffn"; }) => void
+>0XFFn : () => void
+>dec2 : (t: any, c: { name: "3n"; }) => void
+>0b11n : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

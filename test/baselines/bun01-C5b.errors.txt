@@ -1,0 +1,37 @@
+error TS2318: Cannot find global type 'ImportCallOptions'.
+error TS2318: Cannot find global type 'PromiseLike'.
+error TS2468: Cannot find global value 'Promise'.
+a.ts(16,1): error TS2712: A dynamic import call in ES5 requires the 'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in your '--lib' option.
+a.ts(17,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2318: Cannot find global type 'ImportCallOptions'.
+!!! error TS2318: Cannot find global type 'PromiseLike'.
+!!! error TS2468: Cannot find global value 'Promise'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2022", "module": "esnext" } }
+==== a.ts (2 errors) ====
+    export {};
+    declare global {
+    interface Array<T> {}
+    interface Object {}
+    interface Function {}
+    interface String {}
+    interface Number {}
+    interface Boolean {}
+    interface RegExp {}
+    interface IArguments {}
+    interface CallableFunction {}
+    interface NewableFunction {}
+    interface Promise<T> {}
+    }
+    async function f(): Promise<{ a: number }> { return { a: 1 }; }
+    import("./b", { with: {} });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2712: A dynamic import call in ES5 requires the 'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in your '--lib' option.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    export default 1;
+    

@@ -1,0 +1,17 @@
+//// [test/cases/bun34-C4c.ts] ////
+
+=== a.ts ===
+export {};
+declare const enum CE { B = "b" }
+>CE : Symbol(CE, Decl(a.ts, 0, 10))
+>B : Symbol(CE.B, Decl(a.ts, 1, 23))
+
+type F = ({ [CE.B]: [] }: any) => void;
+>F : Symbol(F, Decl(a.ts, 1, 33))
+>CE.B : Symbol(CE.B, Decl(a.ts, 1, 23))
+>CE : Symbol(CE, Decl(a.ts, 0, 10))
+>B : Symbol(CE.B, Decl(a.ts, 1, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

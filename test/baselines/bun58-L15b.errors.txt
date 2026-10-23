@@ -1,0 +1,31 @@
+error TS6054: File 'm.MJS' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+error TS6054: File 'y.JS' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS6054: File 'm.MJS' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:193: File is matched by 'files' list specified here.
+!!! error TS6054: File 'y.JS' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:185: File is matched by 'files' list specified here.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "esnext", "moduleResolution": "bundler" }, "files": ["y.JS", "m.MJS", "a.ts"] }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.MJS (0 errors) ====
+    /** @type {number} */
+    export const mm = "";
+==== y.JS (0 errors) ====
+    /** @type {number} */
+    const yy = "";
+    function f(a) { return a; }
+    

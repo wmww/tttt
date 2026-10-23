@@ -1,0 +1,23 @@
+//// [test/cases/bun27-C20c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+function W<P extends { children: number[] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{"b"}</C>; }
+>W : <P extends { children: number[]; }>(C: (p: P) => JSX.Element) => JSX.Element
+>children : number[]
+>C : (p: P) => JSX.Element
+>p : P
+>JSX : any
+><C>{"a"}{"b"}</C> : JSX.Element
+>C : (p: P) => JSX.Element
+>"a" : "a"
+>"b" : "b"
+>C : (p: P) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,163 @@
+//// [test/cases/bun97-M2.ts] ////
+
+=== a.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : Symbol(FieldPath, Decl(a.ts, 0, 8))
+>Values : Symbol(Values, Decl(a.ts, 0, 19))
+>get : Symbol(get, Decl(a.ts, 0, 27))
+
+// Used as it is written: the alias of the import.
+export function f<V extends Values>(b: FieldPath<V>) {
+>f : Symbol(f, Decl(a.ts, 0, 47))
+>V : Symbol(V, Decl(a.ts, 2, 18))
+>Values : Symbol(Values, Decl(a.ts, 0, 19))
+>b : Symbol(b, Decl(a.ts, 2, 36))
+>FieldPath : Symbol(FieldPath, Decl(a.ts, 0, 8))
+>V : Symbol(V, Decl(a.ts, 2, 18))
+
+  const n: number = b;
+>n : Symbol(n, Decl(a.ts, 3, 7))
+>b : Symbol(b, Decl(a.ts, 2, 36))
+}
+=== b.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : Symbol(FieldPath, Decl(b.ts, 0, 8))
+>Values : Symbol(Values, Decl(b.ts, 0, 19))
+>get : Symbol(get, Decl(b.ts, 0, 27))
+
+// Instantiated, by a mapper that does not map V: the alias of the conditional type itself.
+export function f<V extends Values>(bs: ReadonlyArray<FieldPath<V>>) {
+>f : Symbol(f, Decl(b.ts, 0, 47))
+>V : Symbol(V, Decl(b.ts, 2, 18))
+>Values : Symbol(Values, Decl(b.ts, 0, 19))
+>bs : Symbol(bs, Decl(b.ts, 2, 36))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>FieldPath : Symbol(FieldPath, Decl(b.ts, 0, 8))
+>V : Symbol(V, Decl(b.ts, 2, 18))
+
+  bs.map(name => get({}, name));
+>bs.map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>bs : Symbol(bs, Decl(b.ts, 2, 36))
+>map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(b.ts, 3, 9))
+>get : Symbol(get, Decl(b.ts, 0, 27))
+>name : Symbol(name, Decl(b.ts, 3, 9))
+}
+=== c.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : Symbol(FieldPath, Decl(c.ts, 0, 8))
+>Values : Symbol(Values, Decl(c.ts, 0, 19))
+>get : Symbol(get, Decl(c.ts, 0, 27))
+
+declare function isString(v: unknown): v is string;
+>isString : Symbol(isString, Decl(c.ts, 0, 47))
+>v : Symbol(v, Decl(c.ts, 1, 26))
+>v : Symbol(v, Decl(c.ts, 1, 26))
+
+export function f<V extends Values>() {
+>f : Symbol(f, Decl(c.ts, 1, 51))
+>V : Symbol(V, Decl(c.ts, 2, 18))
+>Values : Symbol(Values, Decl(c.ts, 0, 19))
+
+  return (names?: FieldPath<V> | ReadonlyArray<FieldPath<V>>) =>
+>names : Symbol(names, Decl(c.ts, 3, 10))
+>FieldPath : Symbol(FieldPath, Decl(c.ts, 0, 8))
+>V : Symbol(V, Decl(c.ts, 2, 18))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>FieldPath : Symbol(FieldPath, Decl(c.ts, 0, 8))
+>V : Symbol(V, Decl(c.ts, 2, 18))
+
+    names === undefined ? 1 : isString(names) ? get({}, names) : names.map(name => get({}, name));
+>names : Symbol(names, Decl(c.ts, 3, 10))
+>undefined : Symbol(undefined)
+>isString : Symbol(isString, Decl(c.ts, 0, 47))
+>names : Symbol(names, Decl(c.ts, 3, 10))
+>get : Symbol(get, Decl(c.ts, 0, 27))
+>names : Symbol(names, Decl(c.ts, 3, 10))
+>names.map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>names : Symbol(names, Decl(c.ts, 3, 10))
+>map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(c.ts, 4, 75))
+>get : Symbol(get, Decl(c.ts, 0, 27))
+>name : Symbol(name, Decl(c.ts, 4, 75))
+}
+=== f.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : Symbol(FieldPath, Decl(f.ts, 0, 8))
+>Values : Symbol(Values, Decl(f.ts, 0, 19))
+>get : Symbol(get, Decl(f.ts, 0, 27))
+
+export function f<V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) {
+>f : Symbol(f, Decl(f.ts, 0, 47))
+>V : Symbol(V, Decl(f.ts, 1, 18))
+>Values : Symbol(Values, Decl(f.ts, 0, 19))
+>names : Symbol(names, Decl(f.ts, 1, 36))
+>FieldPath : Symbol(FieldPath, Decl(f.ts, 0, 8))
+>V : Symbol(V, Decl(f.ts, 1, 18))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>FieldPath : Symbol(FieldPath, Decl(f.ts, 0, 8))
+>V : Symbol(V, Decl(f.ts, 1, 18))
+
+  return typeof names === "string" ? 1 : names.map(name => get({}, name));
+>names : Symbol(names, Decl(f.ts, 1, 36))
+>names.map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>names : Symbol(names, Decl(f.ts, 1, 36))
+>map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>name : Symbol(name, Decl(f.ts, 2, 51))
+>get : Symbol(get, Decl(f.ts, 0, 27))
+>name : Symbol(name, Decl(f.ts, 2, 51))
+}
+=== g.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : Symbol(FieldPath, Decl(g.ts, 0, 8))
+>Values : Symbol(Values, Decl(g.ts, 0, 19))
+>get : Symbol(get, Decl(g.ts, 0, 27))
+
+export function f<V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) {
+>f : Symbol(f, Decl(g.ts, 0, 47))
+>V : Symbol(V, Decl(g.ts, 1, 18))
+>Values : Symbol(Values, Decl(g.ts, 0, 19))
+>names : Symbol(names, Decl(g.ts, 1, 36))
+>FieldPath : Symbol(FieldPath, Decl(g.ts, 0, 8))
+>V : Symbol(V, Decl(g.ts, 1, 18))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>FieldPath : Symbol(FieldPath, Decl(g.ts, 0, 8))
+>V : Symbol(V, Decl(g.ts, 1, 18))
+
+  get({}, names);
+>get : Symbol(get, Decl(g.ts, 0, 27))
+>names : Symbol(names, Decl(g.ts, 1, 36))
+}
+=== lib.ts ===
+type Inner<T> = keyof T & string;
+>Inner : Symbol(Inner, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 0, 11))
+>T : Symbol(T, Decl(lib.ts, 0, 11))
+
+export type Values = Record<string, any>;
+>Values : Symbol(Values, Decl(lib.ts, 0, 33))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+export type Path<T> = T extends any ? Inner<T> : never;
+>Path : Symbol(Path, Decl(lib.ts, 1, 41))
+>T : Symbol(T, Decl(lib.ts, 2, 17))
+>T : Symbol(T, Decl(lib.ts, 2, 17))
+>Inner : Symbol(Inner, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 2, 17))
+
+export type FieldPath<T extends Values> = Path<T>;
+>FieldPath : Symbol(FieldPath, Decl(lib.ts, 2, 55))
+>T : Symbol(T, Decl(lib.ts, 3, 22))
+>Values : Symbol(Values, Decl(lib.ts, 0, 33))
+>Path : Symbol(Path, Decl(lib.ts, 1, 41))
+>T : Symbol(T, Decl(lib.ts, 3, 22))
+
+export declare function get(o: unknown, p?: number | null): unknown;
+>get : Symbol(get, Decl(lib.ts, 3, 50))
+>o : Symbol(o, Decl(lib.ts, 4, 28))
+>p : Symbol(p, Decl(lib.ts, 4, 39))
+
+=== z.ts ===
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(z.ts, 0, 12))
+

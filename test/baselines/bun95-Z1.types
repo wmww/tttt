@@ -1,0 +1,139 @@
+//// [test/cases/bun95-Z1.ts] ////
+
+=== a.ts ===
+// `ReturnType<typeof f>` is `any` in tsc: `f`, instantiated in the context of `(...args: any) => R` (O = any), returns `M<any>`,
+// which is not assignable to R = `M<'a' | 'b'>`, so `T extends (...args: any) => infer R` is definitely false.
+type U = { [k: string]: unknown };
+>U : U
+>k : string
+
+type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+>M : M<S>
+
+type K = 'a' | 'b';
+>K : K
+
+declare function f<O extends K>(op: O): M<O>;
+>f : <O extends K>(op: O) => M<O>
+>op : O
+
+const p1: ReturnType<typeof f> = 0;
+>p1 : any
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+
+declare function g<O extends K>(op: O): <Z>(o: Z) => M<O>;
+>g : <O extends K>(op: O) => <Z>(o: Z) => M<O>
+>op : O
+>o : Z
+
+const p2: ReturnType<typeof g> = 0;
+>p2 : any
+>g : <O extends K>(op: O) => <Z>(o: Z) => M<O>
+>0 : 0
+
+declare const o: { m<O extends K>(op: O): M<O>; a: <O extends K>(op: O) => M<O> };
+>o : { m<O extends K>(op: O): M<O>; a: <O extends K>(op: O) => M<O>; }
+>m : <O extends K>(op: O) => M<O>
+>op : O
+>a : <O extends K>(op: O) => M<O>
+>op : O
+
+const p3: ReturnType<typeof o.m> = 0;
+>p3 : any
+>o.m : <O extends K>(op: O) => M<O>
+>o : { m<O extends K>(op: O): M<O>; a: <O extends K>(op: O) => M<O>; }
+>m : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const p4: ReturnType<typeof o.a> = 0;
+>p4 : any
+>o.a : <O extends K>(op: O) => M<O>
+>o : { m<O extends K>(op: O): M<O>; a: <O extends K>(op: O) => M<O>; }
+>a : <O extends K>(op: O) => M<O>
+>0 : 0
+
+const p5: M<any> = null;
+>p5 : (U | {})[] | U
+
+// The shape it was found in: the header that graphql-zeus generates.
+type SD = Record<string, { decode?: (s: unknown) => unknown }>;
+>SD : SD
+>decode : ((s: unknown) => unknown) | undefined
+>s : unknown
+
+type DeepAnify<T> = { [P in keyof T]?: any };
+>DeepAnify : DeepAnify<T>
+
+type IsArray<T, V, SCLR extends SD> = T extends Array<infer R> ? MapType<R, V, SCLR>[] : MapType<T, V, SCLR>;
+>IsArray : IsArray<T, V, SCLR>
+
+type FlattenArray<T> = T extends Array<infer R> ? R : T;
+>FlattenArray : FlattenArray<T>
+
+type IsInterfaced<SRC extends DeepAnify<DST>, DST, SCLR extends SD> = FlattenArray<SRC> extends never
+>IsInterfaced : IsInterfaced<SRC, DST, SCLR>
+
+  ? { [P in keyof SRC]: SRC[P] extends '__union' & infer R
+        ? P extends keyof DST ? IsArray<R, '__typename' extends keyof DST ? DST[P] & { __typename: true } : DST[P], SCLR>
+>__typename : true
+>true : true
+
+                              : IsArray<R, '__typename' extends keyof DST ? { __typename: true } : Record<string, never>, SCLR>
+>__typename : true
+>true : true
+
+        : never }[keyof SRC] &
+    { [P in keyof Omit<Pick<SRC, { [P in keyof DST]: SRC[P] extends '__union' & infer R ? never : P }[keyof DST]>, '__typename'>]:
+        DST[P] extends boolean ? SRC[P] : IsArray<SRC[P], DST[P], SCLR> }
+  : { [P in keyof Pick<SRC, keyof DST>]: DST[P] extends boolean ? SRC[P] : IsArray<SRC[P], DST[P], SCLR> };
+type MapType<SRC, DST, SCLR extends SD> = SRC extends DeepAnify<DST> ? IsInterfaced<SRC, DST, SCLR> : never;
+>MapType : MapType<SRC, DST, SCLR>
+
+type Q = {
+>Q : Q
+
+  ['Query']: { __typename: 'Query'; viewer: Q['User'] };
+>['Query'] : { __typename: 'Query'; viewer: Q['User']; }
+>'Query' : "Query"
+>__typename : "Query"
+>viewer : { __typename: 'User'; login: string; }
+
+  ['Mutation']: { __typename: 'Mutation'; addReview?: Q['User'] | undefined };
+>['Mutation'] : { __typename: 'Mutation'; addReview?: Q['User'] | undefined; }
+>'Mutation' : "Mutation"
+>__typename : "Mutation"
+>addReview : { __typename: 'User'; login: string; } | undefined
+
+  ['User']: { __typename: 'User'; login: string };
+>['User'] : { __typename: 'User'; login: string; }
+>'User' : "User"
+>__typename : "User"
+>login : string
+
+};
+type Ops = { query: 'Query', mutation: 'Mutation' };
+>Ops : Ops
+>query : "Query"
+>mutation : "Mutation"
+
+type G<O> = O extends keyof Ops ? Ops[O] : never;
+>G : G<O>
+
+declare function c6<O extends keyof Ops>(op: O): <Z>(o: Z) => MapType<Q[G<O>], Z, {}>;
+>c6 : <O extends keyof Ops>(op: O) => <Z>(o: Z) => MapType<Q[G<O>], Z, {}>
+>op : O
+>o : Z
+
+const p6: ReturnType<typeof c6> = 0;
+>p6 : any
+>c6 : <O extends keyof Ops>(op: O) => <Z>(o: Z) => MapType<Q[G<O>], Z, {}>
+>0 : 0
+
+const p7: MapType<any, any, {}> = null;
+>p7 : { [x: string]: any; [x: number]: any; [x: symbol]: any; } | ((never[] | {} | { [x: string]: any; [x: number]: any; [x: symbol]: any; }) & {})
+
+const sentinel: number = '';
+>sentinel : number
+>'' : ""
+

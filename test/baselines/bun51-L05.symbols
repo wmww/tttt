@@ -1,0 +1,57 @@
+//// [test/cases/bun51-L05.ts] ////
+
+=== a.ts ===
+interface Call { name: string; arguments: string }
+>Call : Symbol(Call, Decl(a.ts, 0, 0))
+>name : Symbol(Call.name, Decl(a.ts, 0, 16))
+>arguments : Symbol(Call.arguments, Decl(a.ts, 0, 30))
+
+/**
+ * Runs a tool call.
+ * @param call the call
+ */
+export const handle = (call: Call) => {
+>handle : Symbol(handle, Decl(a.ts, 5, 12))
+>call : Symbol(call, Decl(a.ts, 5, 23))
+>Call : Symbol(Call, Decl(a.ts, 0, 0))
+
+  const { name, arguments: args } = call;
+>name : Symbol(name, Decl(a.ts, 6, 9))
+>arguments : Symbol(Call.arguments, Decl(a.ts, 0, 30))
+>args : Symbol(args, Decl(a.ts, 6, 15))
+>call : Symbol(call, Decl(a.ts, 5, 23))
+
+  return [name, args];
+>name : Symbol(name, Decl(a.ts, 6, 9))
+>args : Symbol(args, Decl(a.ts, 6, 15))
+
+};
+export class K {
+>K : Symbol(K, Decl(a.ts, 8, 2))
+
+  /** @param call the call */
+  handle = (call: Call) => {
+>handle : Symbol(K.handle, Decl(a.ts, 9, 16))
+>call : Symbol(call, Decl(a.ts, 11, 12))
+>Call : Symbol(Call, Decl(a.ts, 0, 0))
+
+    const { arguments: args } = call;
+>arguments : Symbol(Call.arguments, Decl(a.ts, 0, 30))
+>args : Symbol(args, Decl(a.ts, 12, 11))
+>call : Symbol(call, Decl(a.ts, 11, 12))
+
+    return args;
+>args : Symbol(args, Decl(a.ts, 12, 11))
+
+  };
+}
+/** @param z */
+export function j(z: number) { const arguments = 1; return z; }
+>j : Symbol(j, Decl(a.ts, 15, 1))
+>z : Symbol(z, Decl(a.ts, 17, 18))
+>arguments : Symbol(arguments, Decl(a.ts, 17, 36))
+>z : Symbol(z, Decl(a.ts, 17, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

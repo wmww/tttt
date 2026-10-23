@@ -1,0 +1,23 @@
+a.ts(2,7): error TS2322: Type '1' is not assignable to type '0'.
+a.ts(3,14): error TS2304: Cannot find name 'c'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": ["foo"], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (3 errors) ====
+    /// <reference path="__inferred type names__.ts" />
+    const f: 0 = foo;
+          ~
+!!! error TS2322: Type '1' is not assignable to type '0'.
+    const g: 0 = c;
+                 ~
+!!! error TS2304: Cannot find name 'c'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== __inferred type names__.ts (0 errors) ====
+    declare const c: 1; const inner: number = "";
+==== node_modules/@types/foo/index.d.ts (0 errors) ====
+    declare const foo: 1;
+    

@@ -1,0 +1,55 @@
+a.ts(7,9): error TS2322: Type 'String' is not assignable to type 'D'.
+  'D' could be instantiated with an arbitrary type which could be unrelated to 'String'.
+a.ts(8,9): error TS2322: Type 'String' is not assignable to type 'string'.
+  'string' is a primitive, but 'String' is a wrapper object. Prefer using 'string' when possible.
+a.ts(9,9): error TS2322: Type 'Number' is not assignable to type 'N'.
+  'N' could be instantiated with an arbitrary type which could be unrelated to 'Number'.
+a.ts(10,9): error TS2322: Type 'Number' is not assignable to type 'number'.
+  'number' is a primitive, but 'Number' is a wrapper object. Prefer using 'number' when possible.
+a.ts(11,30): error TS2322: Type 'string & String' is not assignable to type 'D'.
+  'string & String' is assignable to the constraint of type 'D', but 'D' could be instantiated with a different subtype of constraint 'string'.
+a.ts(12,9): error TS2322: Type '(string & String)[]' is not assignable to type 'D[]'.
+  Type 'string & String' is not assignable to type 'D'.
+    'string & String' is assignable to the constraint of type 'D', but 'D' could be instantiated with a different subtype of constraint 'string'.
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    export {};
+    declare global {
+      interface String { me(): this; [Symbol.iterator](): IterableIterator<this>; }
+      interface Number { me(): this }
+    }
+    function f<D extends string, N extends number>(d: D, n: N) {
+      const a: D = d.me();
+            ~
+!!! error TS2322: Type 'String' is not assignable to type 'D'.
+!!! error TS2322:   'D' could be instantiated with an arbitrary type which could be unrelated to 'String'.
+      const b: string = d.me();
+            ~
+!!! error TS2322: Type 'String' is not assignable to type 'string'.
+!!! error TS2322:   'string' is a primitive, but 'String' is a wrapper object. Prefer using 'string' when possible.
+      const c: N = n.me();
+            ~
+!!! error TS2322: Type 'Number' is not assignable to type 'N'.
+!!! error TS2322:   'N' could be instantiated with an arbitrary type which could be unrelated to 'Number'.
+      const e: number = n.me();
+            ~
+!!! error TS2322: Type 'Number' is not assignable to type 'number'.
+!!! error TS2322:   'number' is a primitive, but 'Number' is a wrapper object. Prefer using 'number' when possible.
+      for (const z of d) { const g: D = z; }
+                                 ~
+!!! error TS2322: Type 'string & String' is not assignable to type 'D'.
+!!! error TS2322:   'string & String' is assignable to the constraint of type 'D', but 'D' could be instantiated with a different subtype of constraint 'string'.
+      const [h]: D[] = [...d];
+            ~~~
+!!! error TS2322: Type '(string & String)[]' is not assignable to type 'D[]'.
+!!! error TS2322:   Type 'string & String' is not assignable to type 'D'.
+!!! error TS2322:     'string & String' is assignable to the constraint of type 'D', but 'D' could be instantiated with a different subtype of constraint 'string'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

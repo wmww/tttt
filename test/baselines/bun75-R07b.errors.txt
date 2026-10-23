@@ -1,0 +1,417 @@
+main.ts(2,1): error TS2303: Circular definition of import alias 'a1'.
+main.ts(3,1): error TS2303: Circular definition of import alias 'a2'.
+main.ts(4,1): error TS2303: Circular definition of import alias 'a3'.
+main.ts(5,1): error TS2303: Circular definition of import alias 'a4'.
+main.ts(6,1): error TS2303: Circular definition of import alias 'a5'.
+main.ts(7,1): error TS2303: Circular definition of import alias 'a6'.
+main.ts(8,1): error TS2303: Circular definition of import alias 'a7'.
+main.ts(9,1): error TS2303: Circular definition of import alias 'a8'.
+main.ts(10,1): error TS2303: Circular definition of import alias 'a9'.
+main.ts(11,1): error TS2303: Circular definition of import alias 'a10'.
+main.ts(12,1): error TS2303: Circular definition of import alias 'a11'.
+main.ts(13,1): error TS2303: Circular definition of import alias 'a12'.
+main.ts(14,1): error TS2303: Circular definition of import alias 'a13'.
+main.ts(15,1): error TS2303: Circular definition of import alias 'a14'.
+main.ts(16,1): error TS2303: Circular definition of import alias 'a15'.
+main.ts(17,1): error TS2303: Circular definition of import alias 'a16'.
+main.ts(18,1): error TS2303: Circular definition of import alias 'a17'.
+main.ts(19,1): error TS2303: Circular definition of import alias 'a18'.
+main.ts(20,1): error TS2303: Circular definition of import alias 'a19'.
+main.ts(21,1): error TS2303: Circular definition of import alias 'a20'.
+main.ts(22,1): error TS2303: Circular definition of import alias 'a21'.
+main.ts(23,1): error TS2303: Circular definition of import alias 'a22'.
+main.ts(24,1): error TS2303: Circular definition of import alias 'a23'.
+main.ts(25,1): error TS2303: Circular definition of import alias 'a24'.
+main.ts(26,1): error TS2303: Circular definition of import alias 'a25'.
+main.ts(27,1): error TS2303: Circular definition of import alias 'a26'.
+main.ts(28,1): error TS2303: Circular definition of import alias 'a27'.
+main.ts(29,1): error TS2303: Circular definition of import alias 'a28'.
+main.ts(30,1): error TS2303: Circular definition of import alias 'a29'.
+main.ts(31,1): error TS2303: Circular definition of import alias 'a30'.
+main.ts(32,1): error TS2303: Circular definition of import alias 'a31'.
+main.ts(33,1): error TS2303: Circular definition of import alias 'a32'.
+main.ts(34,1): error TS2303: Circular definition of import alias 'a33'.
+main.ts(35,1): error TS2303: Circular definition of import alias 'a34'.
+main.ts(36,1): error TS2303: Circular definition of import alias 'a35'.
+main.ts(37,1): error TS2303: Circular definition of import alias 'a36'.
+main.ts(38,1): error TS2303: Circular definition of import alias 'a37'.
+main.ts(39,1): error TS2303: Circular definition of import alias 'a38'.
+main.ts(40,1): error TS2303: Circular definition of import alias 'a39'.
+main.ts(41,1): error TS2303: Circular definition of import alias 'a40'.
+main.ts(42,1): error TS2303: Circular definition of import alias 'a41'.
+main.ts(43,1): error TS2303: Circular definition of import alias 'a42'.
+main.ts(44,1): error TS2303: Circular definition of import alias 'a43'.
+main.ts(45,1): error TS2303: Circular definition of import alias 'a44'.
+main.ts(46,1): error TS2303: Circular definition of import alias 'a45'.
+main.ts(47,1): error TS2303: Circular definition of import alias 'a46'.
+main.ts(48,1): error TS2303: Circular definition of import alias 'a47'.
+main.ts(49,1): error TS2303: Circular definition of import alias 'a48'.
+main.ts(50,1): error TS2303: Circular definition of import alias 'a49'.
+main.ts(51,1): error TS2303: Circular definition of import alias 'a50'.
+main.ts(52,1): error TS2303: Circular definition of import alias 'a51'.
+main.ts(53,1): error TS2303: Circular definition of import alias 'a52'.
+main.ts(54,1): error TS2303: Circular definition of import alias 'a53'.
+main.ts(55,1): error TS2303: Circular definition of import alias 'a54'.
+main.ts(56,1): error TS2303: Circular definition of import alias 'a55'.
+main.ts(57,1): error TS2303: Circular definition of import alias 'a56'.
+main.ts(58,1): error TS2303: Circular definition of import alias 'a57'.
+main.ts(59,1): error TS2303: Circular definition of import alias 'a58'.
+main.ts(60,1): error TS2303: Circular definition of import alias 'a59'.
+main.ts(61,1): error TS2303: Circular definition of import alias 'a60'.
+main.ts(62,1): error TS2303: Circular definition of import alias 'a61'.
+main.ts(63,1): error TS2303: Circular definition of import alias 'a62'.
+main.ts(64,1): error TS2303: Circular definition of import alias 'a63'.
+main.ts(65,1): error TS2303: Circular definition of import alias 'a64'.
+main.ts(66,1): error TS2303: Circular definition of import alias 'a65'.
+main.ts(67,1): error TS2303: Circular definition of import alias 'a66'.
+main.ts(68,1): error TS2303: Circular definition of import alias 'a67'.
+main.ts(69,1): error TS2303: Circular definition of import alias 'a68'.
+main.ts(70,1): error TS2303: Circular definition of import alias 'a69'.
+main.ts(71,1): error TS2303: Circular definition of import alias 'a70'.
+main.ts(72,1): error TS2303: Circular definition of import alias 'a71'.
+main.ts(73,1): error TS2303: Circular definition of import alias 'a72'.
+main.ts(74,1): error TS2303: Circular definition of import alias 'a73'.
+main.ts(75,1): error TS2303: Circular definition of import alias 'a74'.
+main.ts(76,1): error TS2303: Circular definition of import alias 'a75'.
+main.ts(77,1): error TS2303: Circular definition of import alias 'a76'.
+main.ts(78,1): error TS2303: Circular definition of import alias 'a77'.
+main.ts(79,1): error TS2303: Circular definition of import alias 'a78'.
+main.ts(80,1): error TS2303: Circular definition of import alias 'a79'.
+main.ts(81,1): error TS2303: Circular definition of import alias 'a80'.
+main.ts(82,1): error TS2303: Circular definition of import alias 'a81'.
+main.ts(83,1): error TS2303: Circular definition of import alias 'a82'.
+main.ts(84,1): error TS2303: Circular definition of import alias 'a83'.
+main.ts(85,1): error TS2303: Circular definition of import alias 'a84'.
+main.ts(86,1): error TS2303: Circular definition of import alias 'a85'.
+main.ts(87,1): error TS2303: Circular definition of import alias 'a86'.
+main.ts(88,1): error TS2303: Circular definition of import alias 'a87'.
+main.ts(89,1): error TS2303: Circular definition of import alias 'a88'.
+main.ts(90,1): error TS2303: Circular definition of import alias 'a89'.
+main.ts(91,1): error TS2303: Circular definition of import alias 'a90'.
+main.ts(92,1): error TS2303: Circular definition of import alias 'a91'.
+main.ts(93,1): error TS2303: Circular definition of import alias 'a92'.
+main.ts(94,1): error TS2303: Circular definition of import alias 'a93'.
+main.ts(95,1): error TS2303: Circular definition of import alias 'a94'.
+main.ts(96,1): error TS2303: Circular definition of import alias 'a95'.
+main.ts(97,1): error TS2303: Circular definition of import alias 'a96'.
+main.ts(98,1): error TS2303: Circular definition of import alias 'a97'.
+main.ts(99,1): error TS2303: Circular definition of import alias 'a98'.
+main.ts(100,1): error TS2303: Circular definition of import alias 'a99'.
+main.ts(101,1): error TS2303: Circular definition of import alias 'a100'.
+main.ts(102,1): error TS2303: Circular definition of import alias 'a101'.
+main.ts(105,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler"}, "files": ["main.ts"]}
+==== main.ts (102 errors) ====
+    namespace M { export const v = 1; }
+    import a1 = a2;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a1'.
+    import a2 = a3;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a2'.
+    import a3 = a4;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a3'.
+    import a4 = a5;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a4'.
+    import a5 = a6;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a5'.
+    import a6 = a7;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a6'.
+    import a7 = a8;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a7'.
+    import a8 = a9;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a8'.
+    import a9 = a10;
+    ~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a9'.
+    import a10 = a11;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a10'.
+    import a11 = a12;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a11'.
+    import a12 = a13;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a12'.
+    import a13 = a14;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a13'.
+    import a14 = a15;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a14'.
+    import a15 = a16;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a15'.
+    import a16 = a17;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a16'.
+    import a17 = a18;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a17'.
+    import a18 = a19;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a18'.
+    import a19 = a20;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a19'.
+    import a20 = a21;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a20'.
+    import a21 = a22;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a21'.
+    import a22 = a23;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a22'.
+    import a23 = a24;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a23'.
+    import a24 = a25;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a24'.
+    import a25 = a26;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a25'.
+    import a26 = a27;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a26'.
+    import a27 = a28;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a27'.
+    import a28 = a29;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a28'.
+    import a29 = a30;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a29'.
+    import a30 = a31;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a30'.
+    import a31 = a32;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a31'.
+    import a32 = a33;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a32'.
+    import a33 = a34;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a33'.
+    import a34 = a35;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a34'.
+    import a35 = a36;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a35'.
+    import a36 = a37;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a36'.
+    import a37 = a38;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a37'.
+    import a38 = a39;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a38'.
+    import a39 = a40;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a39'.
+    import a40 = a41;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a40'.
+    import a41 = a42;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a41'.
+    import a42 = a43;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a42'.
+    import a43 = a44;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a43'.
+    import a44 = a45;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a44'.
+    import a45 = a46;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a45'.
+    import a46 = a47;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a46'.
+    import a47 = a48;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a47'.
+    import a48 = a49;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a48'.
+    import a49 = a50;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a49'.
+    import a50 = a51;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a50'.
+    import a51 = a52;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a51'.
+    import a52 = a53;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a52'.
+    import a53 = a54;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a53'.
+    import a54 = a55;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a54'.
+    import a55 = a56;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a55'.
+    import a56 = a57;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a56'.
+    import a57 = a58;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a57'.
+    import a58 = a59;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a58'.
+    import a59 = a60;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a59'.
+    import a60 = a61;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a60'.
+    import a61 = a62;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a61'.
+    import a62 = a63;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a62'.
+    import a63 = a64;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a63'.
+    import a64 = a65;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a64'.
+    import a65 = a66;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a65'.
+    import a66 = a67;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a66'.
+    import a67 = a68;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a67'.
+    import a68 = a69;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a68'.
+    import a69 = a70;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a69'.
+    import a70 = a71;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a70'.
+    import a71 = a72;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a71'.
+    import a72 = a73;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a72'.
+    import a73 = a74;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a73'.
+    import a74 = a75;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a74'.
+    import a75 = a76;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a75'.
+    import a76 = a77;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a76'.
+    import a77 = a78;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a77'.
+    import a78 = a79;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a78'.
+    import a79 = a80;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a79'.
+    import a80 = a81;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a80'.
+    import a81 = a82;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a81'.
+    import a82 = a83;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a82'.
+    import a83 = a84;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a83'.
+    import a84 = a85;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a84'.
+    import a85 = a86;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a85'.
+    import a86 = a87;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a86'.
+    import a87 = a88;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a87'.
+    import a88 = a89;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a88'.
+    import a89 = a90;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a89'.
+    import a90 = a91;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a90'.
+    import a91 = a92;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a91'.
+    import a92 = a93;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a92'.
+    import a93 = a94;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a93'.
+    import a94 = a95;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a94'.
+    import a95 = a96;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a95'.
+    import a96 = a97;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a96'.
+    import a97 = a98;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a97'.
+    import a98 = a99;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a98'.
+    import a99 = a100;
+    ~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a99'.
+    import a100 = a101;
+    ~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a100'.
+    import a101 = a1;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a101'.
+    a1.nope;
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

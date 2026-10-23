@@ -1,0 +1,24 @@
+a.ts(1,3): error TS1184: Modifiers cannot appear here.
+a.ts(1,3): error TS1211: A class declaration without the 'default' modifier must have a name.
+a.ts(2,16): error TS1184: Modifiers cannot appear here.
+a.ts(2,16): error TS1211: A class declaration without the 'default' modifier must have a name.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    { export class {} }
+      ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+      ~~~~~~
+!!! error TS1211: A class declaration without the 'default' modifier must have a name.
+    function f() { export class {} }
+                   ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+                   ~~~~~~
+!!! error TS1211: A class declaration without the 'default' modifier must have a name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

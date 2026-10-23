@@ -1,0 +1,14 @@
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+    declare const ctor: new () => Cond<C7>;
+    class C7 extends ctor { x = 1 }
+    new C7().z;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

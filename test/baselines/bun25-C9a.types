@@ -1,0 +1,18 @@
+//// [test/cases/bun25-C9a.ts] ////
+
+=== a.ts ===
+function f(x: "a" | "b", s: string) { [x] = s + s; }
+>f : (x: "a" | "b", s: string) => void
+>x : "a" | "b"
+>s : string
+>[x] = s + s : string
+>[x] : [string]
+>x : string
+>s + s : string
+>s : string
+>s : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

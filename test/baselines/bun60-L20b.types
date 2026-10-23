@@ -1,0 +1,67 @@
+//// [test/cases/bun60-L20b.ts] ////
+
+=== a.ts ===
+function f() { const s = Symbol(); return { [s]: 1 }; }
+>f : () => { [s]: number; }
+>s : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>{ [s]: 1 } : { [s]: number; }
+>[s] : number
+>s : unique symbol
+>1 : 1
+
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+export class H1 { get foo() { return f(); } set [k](v) {} }
+>H1 : H1
+>foo : { [s]: number; }
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+>[k] : { [s]: number; }
+>k : "foo"
+>v : { [s]: number; }
+
+export class H2 { get [k]() { return f(); } set foo(v) {} }
+>H2 : H2
+>[k] : { [s]: number; }
+>k : "foo"
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+>foo : { [s]: number; }
+>v : { [s]: number; }
+
+export class H3 { get [k]() { return f(); } set [k](v) {} }
+>H3 : H3
+>[k] : { [s]: number; }
+>k : "foo"
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+>[k] : { [s]: number; }
+>k : "foo"
+>v : { [s]: number; }
+
+export class H4 { set [k](v) {} get foo() { return f(); } }
+>H4 : H4
+>[k] : { [s]: number; }
+>k : "foo"
+>v : { [s]: number; }
+>foo : { [s]: number; }
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+export class H5 { static get foo() { return f(); } static set [k](v) {} }
+>H5 : H5
+>foo : { [s]: number; }
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+>[k] : { [s]: number; }
+>k : "foo"
+>v : { [s]: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

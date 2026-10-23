@@ -1,0 +1,6 @@
+//// [test/cases/bun43-P8c.ts] ////
+
+=== a.ts ===
+import x = #a.b;
+>x : Symbol(x, Decl(a.ts, 0, 0))
+

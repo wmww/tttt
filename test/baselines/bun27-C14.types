@@ -1,0 +1,25 @@
+//// [test/cases/bun27-C14.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type IntrinsicElements = { a: { v: 1 } } | { a: { v: 2 } }; }
+>e : 1
+>IntrinsicElements : IntrinsicElements
+>a : { v: 1; }
+>v : 1
+>a : { v: 2; }
+>v : 2
+
+declare const La: "a";
+>La : "a"
+
+const u = <La v={3} />;
+>u : JSX.Element
+><La v={3} /> : JSX.Element
+>La : "a"
+>v : 3
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

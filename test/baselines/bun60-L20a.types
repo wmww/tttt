@@ -1,0 +1,128 @@
+//// [test/cases/bun60-L20a.ts] ////
+
+=== a.ts ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+class C1 { get foo() { return 1; } set [k](v: number) {} }
+>C1 : C1
+>foo : number
+>1 : 1
+>[k] : number
+>k : "foo"
+>v : number
+
+new C1().foo = 2;
+>new C1().foo = 2 : 2
+>new C1().foo : number
+>new C1() : C1
+>C1 : typeof C1
+>foo : number
+>2 : 2
+
+class C3 { static get foo() { return 1; } static set [k](v: number) {} }
+>C3 : C3
+>foo : number
+>1 : 1
+>[k] : number
+>k : "foo"
+>v : number
+
+C3.foo = 2;
+>C3.foo = 2 : 2
+>C3.foo : number
+>C3 : typeof C3
+>foo : number
+>2 : 2
+
+class C6 { set [k](v: number) {} get foo() { return 1; } }
+>C6 : C6
+>[k] : number
+>k : "foo"
+>v : number
+>foo : number
+>1 : 1
+
+new C6().foo = 2;
+>new C6().foo = 2 : 2
+>new C6().foo : number
+>new C6() : C6
+>C6 : typeof C6
+>foo : number
+>2 : 2
+
+declare const v5: { get foo(): 1; set [k](v: 2) }; v5.foo = 2;
+>v5 : { get foo(): 1; set foo(v: 2); }
+>foo : 1
+>[k] : 1
+>k : "foo"
+>v : 2
+>v5.foo = 2 : 2
+>v5.foo : 2
+>v5 : { get foo(): 1; set foo(v: 2); }
+>foo : 2
+>2 : 2
+
+interface I7 { get foo(): 1; set [k](v: 2) } declare const i7: I7; i7.foo = 2;
+>foo : 1
+>[k] : 1
+>k : "foo"
+>v : 2
+>i7 : I7
+>i7.foo = 2 : 2
+>i7.foo : 2
+>i7 : I7
+>foo : 2
+>2 : 2
+
+declare const v7: { foo: number; get [k](): string }; const n7: null = v7; v7.foo = "";
+>v7 : { readonly foo: string; }
+>foo : string
+>[k] : string
+>k : "foo"
+>n7 : null
+>v7 : { readonly foo: string; }
+>v7.foo = "" : ""
+>v7.foo : any
+>v7 : { readonly foo: string; }
+>foo : any
+>"" : ""
+
+class C2 { get [k]() { return 1; } set foo(v: number) {} }
+>C2 : C2
+>[k] : number
+>k : "foo"
+>1 : 1
+>foo : number
+>v : number
+
+new C2().foo = 2;
+>new C2().foo = 2 : 2
+>new C2().foo : number
+>new C2() : C2
+>C2 : typeof C2
+>foo : number
+>2 : 2
+
+class C8 { get [k]() { return 1; } set [k](v: number) {} }
+>C8 : C8
+>[k] : number
+>k : "foo"
+>1 : 1
+>[k] : number
+>k : "foo"
+>v : number
+
+new C8().foo = 2;
+>new C8().foo = 2 : 2
+>new C8().foo : number
+>new C8() : C8
+>C8 : typeof C8
+>foo : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

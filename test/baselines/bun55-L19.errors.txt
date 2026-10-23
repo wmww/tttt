@@ -1,0 +1,29 @@
+a.ts(7,1): error TS2322: Type 'boolean' is not assignable to type '([[a, b]]: [((string | number)[] | undefined)?]) => void'.
+a.ts(10,6): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(10,11): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare let n: null;
+    function f1({ range: [lo, hi] = n || [0, 1] }) {}
+    f1({ range: [1, 2, 3] });
+    function f2([[a, b] = n ?? [1, "x"]]) {}
+    f2([["x", 1]]);
+    let z = f2;
+    z = true;
+    ~
+!!! error TS2322: Type 'boolean' is not assignable to type '([[a, b]]: [((string | number)[] | undefined)?]) => void'.
+    // without `??` the default is a tuple in both
+    function f3([[a, b] = [1, "x"]]) {}
+    f3([["x", 1]]);
+         ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+              ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

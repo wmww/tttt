@@ -1,0 +1,35 @@
+//// [test/cases/bun20-P11.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+declare const m: { a: "b"; b: "a" };
+>m : Symbol(m, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 1, 18))
+>b : Symbol(b, Decl(a.ts, 1, 26))
+
+function f() {
+>f : Symbol(f, Decl(a.ts, 1, 36))
+
+    let x: "a" | "b" = "a", y: "a" | "b" = "a";
+>x : Symbol(x, Decl(a.ts, 3, 7))
+>y : Symbol(y, Decl(a.ts, 3, 27))
+
+    while (cond()) {
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+        if (x !== y) { x = m[y]; }
+>x : Symbol(x, Decl(a.ts, 3, 7))
+>y : Symbol(y, Decl(a.ts, 3, 27))
+>x : Symbol(x, Decl(a.ts, 3, 7))
+>m : Symbol(m, Decl(a.ts, 1, 13))
+>y : Symbol(y, Decl(a.ts, 3, 27))
+
+        switch (x) { case "b": break; }
+>x : Symbol(x, Decl(a.ts, 3, 7))
+    }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

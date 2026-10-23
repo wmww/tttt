@@ -1,0 +1,20 @@
+//// [test/cases/bun29-C7a.ts] ////
+
+=== a.ts ===
+namespace NS { namespace P { export interface J { j: 1 } } export declare function mk(): P.J; }
+>NS : typeof NS
+>j : 1
+>mk : () => P.J
+>P : any
+
+export const e = NS.mk();
+>e : P.J
+>NS.mk() : P.J
+>NS.mk : () => P.J
+>NS : typeof NS
+>mk : () => P.J
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

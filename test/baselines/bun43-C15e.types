@@ -1,0 +1,8 @@
+//// [test/cases/bun43-C15e.ts] ////
+
+=== a.ts ===
+var x = 1.5n\u0061
+>x : number
+>1.5 : 1.5
+>n\u0061 : any
+

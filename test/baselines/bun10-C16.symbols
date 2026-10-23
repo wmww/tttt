@@ -1,0 +1,22 @@
+//// [test/cases/bun10-C16.ts] ////
+
+=== a.ts ===
+class G<T> { x!: T; constructor(...args: any[]) {} }
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>x : Symbol(G.x, Decl(a.ts, 0, 12))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>args : Symbol(args, Decl(a.ts, 0, 32))
+
+function f1<T extends typeof G>(base: T) { class D extends base { } }
+>f1 : Symbol(f1, Decl(a.ts, 0, 52))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>base : Symbol(base, Decl(a.ts, 1, 32))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>D : Symbol(D, Decl(a.ts, 1, 42))
+>base : Symbol(base, Decl(a.ts, 1, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

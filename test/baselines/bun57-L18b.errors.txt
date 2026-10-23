@@ -1,0 +1,15 @@
+a.ts(2,14): error TS1009: Trailing comma not allowed.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function async<T>(x: T): T;
+    async <number,>(1);
+                 ~
+!!! error TS1009: Trailing comma not allowed.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

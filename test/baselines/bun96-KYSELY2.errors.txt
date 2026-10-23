@@ -1,0 +1,22 @@
+a.ts(5,7): error TS2322: Type 'S<number>' is not assignable to type 'K<number>'.
+  The types returned by 'e().e().x()' are incompatible between these types.
+    Type 'number' is not assignable to type 'string'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare class K<D> { d: D; e(): K<[D]>; x(): string }
+    declare class S<D> { d: D; e(): S<[D]>; x(): D extends [[any]] ? number : string }
+    declare class R extends K<number> {}
+    declare function mk<X>(): S<X>
+    const k: K<number> = mk<number>()
+          ~
+!!! error TS2322: Type 'S<number>' is not assignable to type 'K<number>'.
+!!! error TS2322:   The types returned by 'e().e().x()' are incompatible between these types.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

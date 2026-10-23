@@ -1,0 +1,13 @@
+a.ts(1,9): error TS1003: Identifier expected.
+a.ts(2,1): error TS1005: '=' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import P
+            
+!!! error TS1003: Identifier expected.
+    
+    
+!!! error TS1005: '=' expected.

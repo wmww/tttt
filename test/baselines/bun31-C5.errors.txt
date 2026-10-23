@@ -1,0 +1,18 @@
+a.ts(2,1): error TS7053: Element implicitly has an 'any' type because expression of type '2' can't be used to index type 'H'.
+  Property '2' does not exist on type 'H'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class H { [+2] = 1; }
+    new H()[2];
+    ~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '2' can't be used to index type 'H'.
+!!! error TS7053:   Property '2' does not exist on type 'H'.
+    new H()["+2"];
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

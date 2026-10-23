@@ -1,0 +1,15 @@
+//// [test/cases/bun05-C7.ts] ////
+
+=== a.ts ===
+const i5 = import(...[1]);
+>i5 : Promise<any>
+>import(...[1]) : Promise<any>
+>...[1] : number
+>[1] : [number]
+>1 : 1
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

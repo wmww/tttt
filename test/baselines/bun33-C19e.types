@@ -1,0 +1,14 @@
+//// [test/cases/bun33-C19e.ts] ////
+
+=== a.ts ===
+class P { #x = 1; m() { #x as const; } }
+>P : P
+>#x : number
+>1 : 1
+>m : () => void
+>#x as const : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

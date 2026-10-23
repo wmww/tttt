@@ -1,0 +1,17 @@
+error TS2468: Cannot find global value 'Promise'.
+a.ts(1,17): error TS2705: An async function or method in ES5 requires the 'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in your '--lib' option.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2468: Cannot find global value 'Promise'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es5"] } }
+==== a.ts (2 errors) ====
+    class K { async n() {} }
+                    ~
+!!! error TS2705: An async function or method in ES5 requires the 'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in your '--lib' option.
+    new K().n();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

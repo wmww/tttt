@@ -5,8 +5,8 @@
   ref(name, ext)   tsc's baseline of a test: ref('foo(target=es2015)', '.types'). Baselines are per suite
                    (reference/compiler/, reference/conformance/), found from the test file's directory
   test_files()     every test file (path), compiler and conformance, then tttt's own (OWN_CASES, own=False: not those)
-  OWN_CASES, OWN_REF   tttt's own regression tests (test/cases/tttt*.ts) and their tsgo baselines (test/baselines,
-                   scripts/owntests.sh): kind 'tttt'
+  OWN_CASES, OWN_REF   tttt's own regression tests (test/cases/tttt*.ts; bun*.ts are bun's differential cases) and
+                   their tsgo baselines (test/baselines, scripts/owntests.sh): kind 'tttt' (or 'bun')
 """
 import os
 
@@ -37,11 +37,12 @@ def test_kind(name):
         _kinds = {}
         for path in test_files():
             rel = os.path.relpath(path, CASES)
-            _kinds[os.path.basename(path).rsplit('.', 1)[0]] = 'tttt' if path.startswith(OWN_CASES + os.sep) else \
+            name = os.path.basename(path).rsplit('.', 1)[0]
+            _kinds[name] = ('bun' if name.startswith('bun') else 'tttt') if path.startswith(OWN_CASES + os.sep) else \
                 rel.split(os.sep)[0]
     return _kinds.get(name.split('(')[0], 'compiler')
 
 
 def ref(name, ext=''):
     kind = test_kind(name)
-    return os.path.join(OWN_REF, name + ext) if kind == 'tttt' else os.path.join(REF_ROOT, kind, name + ext)
+    return os.path.join(OWN_REF, name + ext) if kind in ('tttt', 'bun') else os.path.join(REF_ROOT, kind, name + ext)

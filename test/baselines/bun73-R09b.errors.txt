@@ -1,0 +1,25 @@
+a.ts(3,9): error TS2322: Type '[never, never]' is not assignable to type 'never'.
+a.ts(4,9): error TS2322: Type '["a", 1]' is not assignable to type 'never'.
+a.ts(5,9): error TS2322: Type '["b", 1]' is not assignable to type 'never'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "strictNullChecks": false, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare function f2<K extends string, X>(x: { [P in K]: X }): [K, X];
+    function g<T, S extends unknown, W extends { a: 1 }>(ts: T & S, tw: T & W, to: T & { b: 1 }) {
+      const k1: never = f2(ts);
+            ~~
+!!! error TS2322: Type '[never, never]' is not assignable to type 'never'.
+      const k4: never = f2(tw);
+            ~~
+!!! error TS2322: Type '["a", 1]' is not assignable to type 'never'.
+      const k5: never = f2(to);
+            ~~
+!!! error TS2322: Type '["b", 1]' is not assignable to type 'never'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

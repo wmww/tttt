@@ -1,0 +1,89 @@
+//// [test/cases/bun60-L20c.ts] ////
+
+=== a.js ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+class D3 { static [k] = 1; static { this.foo = 2; } }
+>D3 : D3
+>[k] : number
+>k : "foo"
+>1 : 1
+>this.foo = 2 : 2
+>this.foo : number
+>this : typeof D3
+>foo : number
+>2 : 2
+
+class D4 { static [k] = 1; static m() { this.foo = 2; } }
+>D4 : D4
+>[k] : number
+>k : "foo"
+>1 : 1
+>m : () => void
+>this.foo = 2 : 2
+>this.foo : number
+>this : typeof D4
+>foo : number
+>2 : 2
+
+class D5 { [k] = 1; constructor() { this.foo = 2; } }
+>D5 : D5
+>[k] : number
+>k : "foo"
+>1 : 1
+>this.foo = 2 : 2
+>this.foo : number
+>this : this
+>foo : number
+>2 : 2
+
+class D6 { [k] = 1; m() { this.foo = 2; } }
+>D6 : D6
+>[k] : number
+>k : "foo"
+>1 : 1
+>m : () => void
+>this.foo = 2 : 2
+>this.foo : number
+>this : this
+>foo : number
+>2 : 2
+
+class D7 { static foo = 1; static { this.foo = 2; } }
+>D7 : D7
+>foo : number
+>1 : 1
+>this.foo = 2 : 2
+>this.foo : number
+>this : typeof D7
+>foo : number
+>2 : 2
+
+class D8 { static [k]; static { this.foo = 2; } }
+>D8 : D8
+>[k] : any
+>k : "foo"
+>this.foo = 2 : 2
+>this.foo : any
+>this : typeof D8
+>foo : any
+>2 : 2
+
+class D9 { static { this.foo = 2; } static [k] = 1; }
+>D9 : D9
+>this.foo = 2 : 2
+>this.foo : number
+>this : typeof D9
+>foo : number
+>2 : 2
+>[k] : number
+>k : "foo"
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun10-C19.ts] ////
+
+=== a.ts ===
+class A5 { get x() { return 1; } set x(this: { a: 1 }) { } }
+>A5 : A5
+>x : { a: 1; }
+>1 : 1
+>x : { a: 1; }
+>this : { a: 1; }
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

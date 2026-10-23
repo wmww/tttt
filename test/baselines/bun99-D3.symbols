@@ -1,0 +1,143 @@
+//// [test/cases/bun99-D3.ts] ////
+
+=== a.ts ===
+const id = <T>(x: T) => x;
+>id : Symbol(id, Decl(a.ts, 0, 5))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 15))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 15))
+
+const nest = <T>(x: T) => id({ nested: { tag: 0, ...x } });
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>x : Symbol(x, Decl(a.ts, 1, 17))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>id : Symbol(id, Decl(a.ts, 0, 5))
+>nested : Symbol(nested, Decl(a.ts, 1, 30))
+>tag : Symbol(tag, Decl(a.ts, 1, 40))
+>x : Symbol(x, Decl(a.ts, 1, 17))
+
+const eight = <T>(x: T) => nest(nest(nest(nest(nest(nest(nest(nest(x))))))));
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>T : Symbol(T, Decl(a.ts, 2, 15))
+>x : Symbol(x, Decl(a.ts, 2, 18))
+>T : Symbol(T, Decl(a.ts, 2, 15))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>x : Symbol(x, Decl(a.ts, 2, 18))
+
+const forty = eight(eight(eight(eight(eight({ value: 0 })))));
+>forty : Symbol(forty, Decl(a.ts, 3, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>value : Symbol(value, Decl(a.ts, 3, 45))
+
+declare function consume<T>(x: typeof forty): T;
+>consume : Symbol(consume, Decl(a.ts, 3, 62))
+>T : Symbol(T, Decl(a.ts, 4, 25))
+>x : Symbol(x, Decl(a.ts, 4, 28))
+>forty : Symbol(forty, Decl(a.ts, 3, 5))
+>T : Symbol(T, Decl(a.ts, 4, 25))
+
+consume(forty);
+>consume : Symbol(consume, Decl(a.ts, 3, 62))
+>forty : Symbol(forty, Decl(a.ts, 3, 5))
+
+consume<number>(forty);
+>consume : Symbol(consume, Decl(a.ts, 3, 62))
+>forty : Symbol(forty, Decl(a.ts, 3, 5))
+
+const ninety = eight(eight(eight(eight(eight(eight(eight(eight(eight(eight(eight(nest(nest({ value: 0 })))))))))))));
+>ninety : Symbol(ninety, Decl(a.ts, 7, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>eight : Symbol(eight, Decl(a.ts, 2, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>value : Symbol(value, Decl(a.ts, 7, 92))
+
+declare function consumeNinety<T>(x: typeof ninety): T;
+>consumeNinety : Symbol(consumeNinety, Decl(a.ts, 7, 117))
+>T : Symbol(T, Decl(a.ts, 8, 31))
+>x : Symbol(x, Decl(a.ts, 8, 34))
+>ninety : Symbol(ninety, Decl(a.ts, 7, 5))
+>T : Symbol(T, Decl(a.ts, 8, 31))
+
+consumeNinety(ninety);
+>consumeNinety : Symbol(consumeNinety, Decl(a.ts, 7, 117))
+>ninety : Symbol(ninety, Decl(a.ts, 7, 5))
+
+const flat = <T>(x: T) => id({ tag: 0, ...x });
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>T : Symbol(T, Decl(a.ts, 10, 14))
+>x : Symbol(x, Decl(a.ts, 10, 17))
+>T : Symbol(T, Decl(a.ts, 10, 14))
+>id : Symbol(id, Decl(a.ts, 0, 5))
+>tag : Symbol(tag, Decl(a.ts, 10, 30))
+>x : Symbol(x, Decl(a.ts, 10, 17))
+
+const flatEight = <T>(x: T) => flat(flat(flat(flat(flat(flat(flat(flat(x))))))));
+>flatEight : Symbol(flatEight, Decl(a.ts, 11, 5))
+>T : Symbol(T, Decl(a.ts, 11, 19))
+>x : Symbol(x, Decl(a.ts, 11, 22))
+>T : Symbol(T, Decl(a.ts, 11, 19))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>flat : Symbol(flat, Decl(a.ts, 10, 5))
+>x : Symbol(x, Decl(a.ts, 11, 22))
+
+const fortyFlat = flatEight(flatEight(flatEight(flatEight(flatEight({ value: 0 })))));
+>fortyFlat : Symbol(fortyFlat, Decl(a.ts, 12, 5))
+>flatEight : Symbol(flatEight, Decl(a.ts, 11, 5))
+>flatEight : Symbol(flatEight, Decl(a.ts, 11, 5))
+>flatEight : Symbol(flatEight, Decl(a.ts, 11, 5))
+>flatEight : Symbol(flatEight, Decl(a.ts, 11, 5))
+>flatEight : Symbol(flatEight, Decl(a.ts, 11, 5))
+>value : Symbol(value, Decl(a.ts, 12, 69))
+
+declare function consumeFlat<T>(x: typeof fortyFlat): T;
+>consumeFlat : Symbol(consumeFlat, Decl(a.ts, 12, 86))
+>T : Symbol(T, Decl(a.ts, 13, 29))
+>x : Symbol(x, Decl(a.ts, 13, 32))
+>fortyFlat : Symbol(fortyFlat, Decl(a.ts, 12, 5))
+>T : Symbol(T, Decl(a.ts, 13, 29))
+
+consumeFlat(fortyFlat);
+>consumeFlat : Symbol(consumeFlat, Decl(a.ts, 12, 86))
+>fortyFlat : Symbol(fortyFlat, Decl(a.ts, 12, 5))
+
+const wrong: { nested: { tag: string } } = nest({ value: 0 });
+>wrong : Symbol(wrong, Decl(a.ts, 15, 5))
+>nested : Symbol(nested, Decl(a.ts, 15, 14))
+>tag : Symbol(tag, Decl(a.ts, 15, 24))
+>nest : Symbol(nest, Decl(a.ts, 1, 5))
+>value : Symbol(value, Decl(a.ts, 15, 49))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 16, 5))
+
+export {};
+

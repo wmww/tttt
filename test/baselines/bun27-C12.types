@@ -1,0 +1,35 @@
+//// [test/cases/bun27-C12.ts] ////
+
+=== a.tsx ===
+function F(p: {}) { return null! as { e: 1 }; }
+>F : (p: {}) => { e: 1; }
+>p : {}
+>null! as { e: 1 } : { e: 1; }
+>null! : never
+>e : 1
+
+const b = <F />;
+>b : import("starlib/ns").Element
+><F /> : import("starlib/ns").Element
+>F : (p: {}) => { e: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export {};
+=== node_modules/starlib/jsx-runtime.d.ts ===
+export * as JSX from "./ns";
+>JSX : typeof import("./ns")
+
+=== node_modules/starlib/more.d.ts ===
+export type LibraryManagedAttributes<C, P> = P & { extra: number };
+>LibraryManagedAttributes : LibraryManagedAttributes<C, P>
+>extra : number
+
+=== node_modules/starlib/ns.d.ts ===
+export * from "./more";
+export interface Element { e: 1 }
+>e : 1
+
+export interface IntrinsicElements {}

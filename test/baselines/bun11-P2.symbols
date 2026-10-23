@@ -1,0 +1,17 @@
+//// [test/cases/bun11-P2.ts] ////
+
+=== a.ts ===
+declare function g(x: keyof typeof obj): number;
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 19))
+>obj : Symbol(obj, Decl(a.ts, 1, 5))
+
+const obj = { a: 1, b: g("a") };
+>obj : Symbol(obj, Decl(a.ts, 1, 5))
+>a : Symbol(a, Decl(a.ts, 1, 13))
+>b : Symbol(b, Decl(a.ts, 1, 19))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

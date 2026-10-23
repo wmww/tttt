@@ -1,0 +1,19 @@
+//// [test/cases/bun18-C4c.ts] ////
+
+=== a.ts ===
+const k1: (...args: readonly [number, ...string[]]) => void = (a, ...r) => { r.push(""); };
+>k1 : (args_0: number, ...args: string[]) => void
+>args : readonly [number, ...string[]]
+>(a, ...r) => { r.push(""); } : (a: number, ...r: string[]) => void
+>a : number
+>r : string[]
+>r.push("") : number
+>r.push : (...items: string[]) => number
+>r : string[]
+>push : (...items: string[]) => number
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

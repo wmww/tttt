@@ -1,0 +1,17 @@
+//// [test/cases/bun07-C9.ts] ////
+
+=== a.ts ===
+export {};
+declare const eo: { x?: number };
+>eo : Symbol(eo, Decl(a.ts, 1, 13))
+>x : Symbol(x, Decl(a.ts, 1, 19))
+
+[eo.x = undefined] = [1];
+>eo.x : Symbol(x, Decl(a.ts, 1, 19))
+>eo : Symbol(eo, Decl(a.ts, 1, 13))
+>x : Symbol(x, Decl(a.ts, 1, 19))
+>undefined : Symbol(undefined)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,44 @@
+//// [test/cases/bun75-R18.ts] ////
+
+=== a.ts ===
+declare function cb<T>(f: () => T): T;
+>cb : Symbol(cb, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+>f : Symbol(f, Decl(a.ts, 0, 23))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+
+const [a1, b1 = () => a1] = [1, () => 2];
+>a1 : Symbol(a1, Decl(a.ts, 1, 7))
+>b1 : Symbol(b1, Decl(a.ts, 1, 10))
+>a1 : Symbol(a1, Decl(a.ts, 1, 7))
+
+const { a2, b2 = () => a2 } = { a2: 1, b2: () => 2 };
+>a2 : Symbol(a2, Decl(a.ts, 2, 7))
+>b2 : Symbol(b2, Decl(a.ts, 2, 11))
+>a2 : Symbol(a2, Decl(a.ts, 2, 7))
+>a2 : Symbol(a2, Decl(a.ts, 2, 31))
+>b2 : Symbol(b2, Decl(a.ts, 2, 38))
+
+const [a3, b3 = () => a3] = cb(() => [1, () => 2]);
+>a3 : Symbol(a3, Decl(a.ts, 3, 7))
+>b3 : Symbol(b3, Decl(a.ts, 3, 10))
+>a3 : Symbol(a3, Decl(a.ts, 3, 7))
+>cb : Symbol(cb, Decl(a.ts, 0, 0))
+
+function f4([a4, b4 = () => a4] = [1, () => 2]) {}
+>f4 : Symbol(f4, Decl(a.ts, 3, 51))
+>a4 : Symbol(a4, Decl(a.ts, 4, 13))
+>b4 : Symbol(b4, Decl(a.ts, 4, 16))
+>a4 : Symbol(a4, Decl(a.ts, 4, 13))
+
+const [a5, b5 = { m: () => a5 }] = [1, { m: () => 2 }];
+>a5 : Symbol(a5, Decl(a.ts, 5, 7))
+>b5 : Symbol(b5, Decl(a.ts, 5, 10))
+>m : Symbol(m, Decl(a.ts, 5, 17))
+>a5 : Symbol(a5, Decl(a.ts, 5, 7))
+>m : Symbol(m, Decl(a.ts, 5, 40))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

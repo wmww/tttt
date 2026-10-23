@@ -1,0 +1,46 @@
+//// [test/cases/bun55-L12c.ts] ////
+
+=== a.ts ===
+const K: string = compute({ a: "" });
+>K : Symbol(K, Decl(a.ts, 0, 5))
+>compute : Symbol(compute, Decl(a.ts, 0, 37))
+>a : Symbol(a, Decl(a.ts, 0, 27))
+
+function compute(o: Record<string, string>) { return o[K]; }
+>compute : Symbol(compute, Decl(a.ts, 0, 37))
+>o : Symbol(o, Decl(a.ts, 1, 17))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(a.ts, 1, 17))
+>K : Symbol(K, Decl(a.ts, 0, 5))
+
+const K3: string = compute3({ a: "" });
+>K3 : Symbol(K3, Decl(a.ts, 2, 5))
+>compute3 : Symbol(compute3, Decl(a.ts, 2, 39))
+>a : Symbol(a, Decl(a.ts, 2, 29))
+
+function compute3(o: Record<string, string>) { return o[K3].length + ""; }
+>compute3 : Symbol(compute3, Decl(a.ts, 2, 39))
+>o : Symbol(o, Decl(a.ts, 3, 18))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>o[K3].length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(a.ts, 3, 18))
+>K3 : Symbol(K3, Decl(a.ts, 2, 5))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+// an access on the way is compared with it: TS7023 in both
+const K2: string = compute2({ a: "" });
+>K2 : Symbol(K2, Decl(a.ts, 5, 5))
+>compute2 : Symbol(compute2, Decl(a.ts, 5, 39))
+>a : Symbol(a, Decl(a.ts, 5, 29))
+
+function compute2(o: Record<string, string>) { o.x = ""; return o[K2]; }
+>compute2 : Symbol(compute2, Decl(a.ts, 5, 39))
+>o : Symbol(o, Decl(a.ts, 6, 18))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(a.ts, 6, 18))
+>o : Symbol(o, Decl(a.ts, 6, 18))
+>K2 : Symbol(K2, Decl(a.ts, 5, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

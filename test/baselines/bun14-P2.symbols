@@ -1,0 +1,19 @@
+//// [test/cases/bun14-P2.ts] ////
+
+=== a.ts ===
+type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>y : Symbol(y, Decl(a.ts, 0, 44))
+>z : Symbol(z, Decl(a.ts, 0, 55))
+
+interface A extends Cond<A> { x: number }
+>A : Symbol(A, Decl(a.ts, 0, 63))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 63))
+>x : Symbol(A.x, Decl(a.ts, 1, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

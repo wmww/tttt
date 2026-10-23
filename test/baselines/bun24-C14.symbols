@@ -1,0 +1,31 @@
+//// [test/cases/bun24-C14.ts] ////
+
+=== a.ts ===
+declare const tlv: { a: 1 };
+>tlv : Symbol(tlv, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+
+class Klass { meth<T>(x: T) { class L { v!: T } return new L(); } }
+>Klass : Symbol(Klass, Decl(a.ts, 0, 28))
+>meth : Symbol(Klass.meth, Decl(a.ts, 1, 13))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>L : Symbol(L, Decl(a.ts, 1, 29))
+>v : Symbol(L.v, Decl(a.ts, 1, 39))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>L : Symbol(L, Decl(a.ts, 1, 29))
+
+const v: 1 = { z: null! as "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", q: new Klass().meth(1), last: tlv };
+>v : Symbol(v, Decl(a.ts, 2, 5))
+>z : Symbol(z, Decl(a.ts, 2, 14))
+>q : Symbol(q, Decl(a.ts, 2, 133))
+>new Klass().meth : Symbol(Klass.meth, Decl(a.ts, 1, 13))
+>Klass : Symbol(Klass, Decl(a.ts, 0, 28))
+>meth : Symbol(Klass.meth, Decl(a.ts, 1, 13))
+>last : Symbol(last, Decl(a.ts, 2, 157))
+>tlv : Symbol(tlv, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

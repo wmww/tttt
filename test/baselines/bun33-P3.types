@@ -1,0 +1,12 @@
+//// [test/cases/bun33-P3.ts] ////
+
+=== a.js ===
+/** @type {nope.} */ let b1 = 1;
+>b1 : any
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

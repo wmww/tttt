@@ -1,0 +1,62 @@
+//// [test/cases/bun57-L05.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : any
+
+interface G<T extends string> {}
+declare function g<T extends string>(): void;
+>g : <T extends string>() => void
+
+declare class K<T extends string> {}
+>K : K<T>
+
+type X1 = G<(number | boolean)>;
+>X1 : X1
+
+type X2 = G<(() => void)>;
+>X2 : X2
+
+g<(number)>();
+>g<(number)>() : void
+>g : <T extends string>() => void
+
+new K<(number)>();
+>new K<(number)>() : K<number>
+>K : typeof K
+
+class L extends K<(number)> {}
+>L : L
+>K : K<number>
+
+interface M extends G<(number)> {}
+type Y1 = { a: 1 }[("b" | "c")];
+>Y1 : any
+>a : 1
+
+type Y2 = { a: 1 }[(number)];
+>Y2 : any
+>a : 1
+
+type Y3 = { a: 1 }[(boolean)];
+>Y3 : any
+>a : 1
+
+type Y4 = [1, 2][(5)];
+>Y4 : undefined
+
+type M1 = { [K in (boolean)]: 1 };
+>M1 : M1
+
+type M2 = { [K in "a" as (boolean)]: 1 };
+>M2 : M2
+
+function f1(): (ReturnType<typeof f1>) { return o }
+>f1 : () => (ReturnType<typeof f1>)
+>f1 : () => (ReturnType<typeof f1>)
+>o : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

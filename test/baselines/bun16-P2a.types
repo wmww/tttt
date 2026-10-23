@@ -1,0 +1,18 @@
+//// [test/cases/bun16-P2a.ts] ////
+
+=== a.ts ===
+declare function d2(target: any, context: { name: "1n" }): any;
+>d2 : (target: any, context: { name: "1n"; }) => any
+>target : any
+>context : { name: "1n"; }
+>name : "1n"
+
+class C { @d2 1n() {} }
+>C : C
+>d2 : (target: any, context: { name: "1n"; }) => any
+>1n : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

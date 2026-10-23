@@ -1,0 +1,17 @@
+//// [test/cases/bun09-C8.ts] ////
+
+=== a.ts ===
+function f4([g = null] = []) {}
+>f4 : ([g]?: [any?]) => void
+>g : any
+>[] : []
+
+f4([]);
+>f4([]) : void
+>f4 : ([g]?: [any?]) => void
+>[] : []
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

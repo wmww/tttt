@@ -1,0 +1,21 @@
+//// [test/cases/bun22-C4c.ts] ////
+
+=== a.ts ===
+declare function f<U>(x: { me: U }): U;
+>f : <U>(x: { me: U; }) => U
+>x : { me: U; }
+>me : U
+
+class D { me = this; m(): this { return f(this); } }
+>D : D
+>me : this
+>this : this
+>m : () => this
+>f(this) : this
+>f : <U>(x: { me: U; }) => U
+>this : this
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

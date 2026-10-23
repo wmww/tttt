@@ -1,0 +1,18 @@
+a.ts(2,24): error TS2794: Expected 1 arguments, but got 0. Did you forget to include 'void' in your type argument to 'Promise'?
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import type { Promise } from "./ty";
+    new Promise(resolve => resolve());
+                           ~~~~~~~
+!!! error TS2794: Expected 1 arguments, but got 0. Did you forget to include 'void' in your type argument to 'Promise'?
+!!! related TS6210 lib.es2015.promise.d.ts:--:--: An argument for 'value' was not provided.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== ty.ts (0 errors) ====
+    export interface Promise<T> { q: T }
+    

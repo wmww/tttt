@@ -1,0 +1,13 @@
+a.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,90): error TS6114: Unknown option 'excludes'. Did you mean 'exclude'?
+
+
+==== tsconfig.json (1 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "excludes": ["x"] }
+                                                                                             ~~~~~~~~~~
+!!! error TS6114: Unknown option 'excludes'. Did you mean 'exclude'?
+==== a.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

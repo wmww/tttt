@@ -1,0 +1,14 @@
+a.ts(1,8): error TS18058: Default imports are not allowed in a deferred import.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import defer D from "./missing";
+           ~~~~~~~
+!!! error TS18058: Default imports are not allowed in a deferred import.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

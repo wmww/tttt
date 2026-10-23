@@ -1,0 +1,17 @@
+a.ts(3,16): error TS1058: The return type of an async function must either be a valid promise or must not contain a callable 'then' member.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface Bad { then(): void }
+    declare const u: string | Bad;
+    async function h() { return u; }
+                   ~
+!!! error TS1058: The return type of an async function must either be a valid promise or must not contain a callable 'then' member.
+    async function h2() { return u; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

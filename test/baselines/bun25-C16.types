@@ -1,0 +1,21 @@
+//// [test/cases/bun25-C16.ts] ////
+
+=== a.ts ===
+namespace A { export class K { a = 1 } } namespace B { export type K = [1] }
+>A : typeof A
+>K : K
+>a : number
+>1 : 1
+>K : K
+
+declare let v: A.K | B.K; const n: number = v;
+>v : A.K | B.K
+>A : any
+>B : any
+>n : number
+>v : A.K | B.K
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

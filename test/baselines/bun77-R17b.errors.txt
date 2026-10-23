@@ -1,0 +1,36 @@
+a.ts(1,30): error TS2300: Duplicate identifier 'a'.
+a.ts(1,48): error TS2300: Duplicate identifier 'a'.
+a.ts(1,48): error TS2403: Subsequent variable declarations must have the same type.  Variable 'a' must be of type 'number', but here has type 'string'.
+a.ts(2,10): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(3,23): error TS2300: Duplicate identifier 'a'.
+a.ts(3,34): error TS2300: Duplicate identifier 'a'.
+a.ts(4,24): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    class C { constructor(public a: number, public a: string) {} }
+                                 ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                   ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                   ~
+!!! error TS2403: Subsequent variable declarations must have the same type.  Variable 'a' must be of type 'number', but here has type 'string'.
+!!! related TS6203 a.ts:1:23: 'a' was also declared here.
+    new C(1, ""); new C(1, 2);
+             ~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    class D { constructor(a: number, a: string) {} }
+                          ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                     ~
+!!! error TS2300: Duplicate identifier 'a'.
+    new D(1, ""); new D(1, 2);
+                           ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

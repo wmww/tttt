@@ -1,0 +1,13 @@
+a.ts(1,12): error TS2503: Cannot find namespace '#a'.
+a.ts(1,12): error TS18016: Private identifiers are not allowed outside class bodies.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import x = #a.b;
+               ~~
+!!! error TS2503: Cannot find namespace '#a'.
+               ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    

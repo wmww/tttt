@@ -1,0 +1,41 @@
+//// [test/cases/bun42-C14b.ts] ////
+
+=== a.ts ===
+import { a, b } from "outer";
+>a : () => import("outer/node_modules/inner/zz/deep.js").A
+>b : () => import("outer/node_modules/inner").B
+
+export default { x: b(), y: a() };
+>{ x: b(), y: a() } : { x: import("outer/node_modules/inner").B; y: import("outer/node_modules/inner/zz/deep").A; }
+>x : import("outer/node_modules/inner").B
+>b() : import("outer/node_modules/inner").B
+>b : () => import("outer/node_modules/inner").B
+>y : import("outer/node_modules/inner/zz/deep").A
+>a() : import("outer/node_modules/inner/zz/deep").A
+>a : () => import("outer/node_modules/inner/zz/deep").A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/outer/index.d.ts ===
+import { B } from "inner";
+>B : any
+
+import { A } from "inner/zz/deep";
+>A : any
+
+export declare function b(): B;
+>b : () => B
+
+export declare function a(): A;
+>a : () => A
+
+=== node_modules/outer/node_modules/inner/index.d.ts ===
+export interface B { b: 1 }
+>b : 1
+
+=== node_modules/outer/node_modules/inner/zz/deep.d.ts ===
+export interface A { a: 1 }
+>a : 1
+

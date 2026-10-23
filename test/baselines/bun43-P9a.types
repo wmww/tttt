@@ -1,0 +1,10 @@
+//// [test/cases/bun43-P9a.ts] ////
+
+=== a.ts ===
+var f = (x: number)
+>f : (x: number) => any
+>(x: number) : (x: number) => any
+>x : number
+
+> : any
+

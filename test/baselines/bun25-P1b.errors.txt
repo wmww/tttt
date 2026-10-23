@@ -1,0 +1,15 @@
+a.ts(2,61): error TS2322: Type '[(Z extends string ? 1 : 2) | (A extends string ? 1 : 2) | (B extends string ? 1 : 2)]' is not assignable to type 'never'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface J<T> { m: T extends string ? 1 : 2 }
+    function f<A, B, Z>(a: [J<A | B>["m"] | J<Z>["m"]]) { const n: never = a; }
+                                                                ~
+!!! error TS2322: Type '[(Z extends string ? 1 : 2) | (A extends string ? 1 : 2) | (B extends string ? 1 : 2)]' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

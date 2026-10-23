@@ -1,0 +1,15 @@
+//// [test/cases/bun07-C4.ts] ////
+
+=== a.ts ===
+export {};
+function f10<T extends {}, U>(x: T & U) { "a" in x; }
+>f10 : <T extends {}, U>(x: T & U) => void
+>x : T & U
+>"a" in x : boolean
+>"a" : "a"
+>x : T & U
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

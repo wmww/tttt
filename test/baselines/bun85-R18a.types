@@ -1,0 +1,62 @@
+//// [test/cases/bun85-R18a.ts] ////
+
+=== a.ts ===
+import { Event, Response, Request, URL } from "./t";
+>Event : any
+>Response : any
+>Request : any
+>URL : any
+
+import type { Headers } from "./t";
+>Headers : Headers
+
+export const e = new Event("x");
+>e : globalThis.Event
+>new Event("x") : globalThis.Event
+>Event : { new (type: string, eventInitDict?: EventInit): globalThis.Event; prototype: globalThis.Event; readonly NONE: 0; readonly CAPTURING_PHASE: 1; readonly AT_TARGET: 2; readonly BUBBLING_PHASE: 3; }
+>"x" : "x"
+
+export const r = new Response();
+>r : globalThis.Response
+>new Response() : globalThis.Response
+>Response : { new (body?: BodyInit | null, init?: ResponseInit): globalThis.Response; prototype: globalThis.Response; error(): globalThis.Response; json(data: any, init?: ResponseInit): globalThis.Response; redirect(url: string | URL, status?: number): globalThis.Response; }
+
+export const h = new Headers();
+>h : globalThis.Headers
+>new Headers() : globalThis.Headers
+>Headers : { new (init?: HeadersInit): globalThis.Headers; prototype: globalThis.Headers; }
+
+export const u = new URL("http://x");
+>u : URL
+>new URL("http://x") : URL
+>URL : { new (url: string | URL, base?: string | URL): URL; prototype: URL; canParse(url: string | URL, base?: string | URL): boolean; createObjectURL(obj: Blob | MediaSource): string; parse(url: string | URL, base?: string | URL): URL | null; revokeObjectURL(url: string): void; }
+>"http://x" : "http://x"
+
+export function f(q: Request) { return new Request("http://x"); }
+>f : (q: Request) => globalThis.Request
+>q : Request
+>new Request("http://x") : globalThis.Request
+>Request : { new (input: RequestInfo | URL, init?: RequestInit): globalThis.Request; prototype: globalThis.Request; }
+>"http://x" : "http://x"
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== t.ts ===
+export interface Event { mine: 1 }
+>mine : 1
+
+export type Response = { r: 1 };
+>Response : Response
+>r : 1
+
+export interface Request { q: 1 }
+>q : 1
+
+export interface Headers { h: 1 }
+>h : 1
+
+export namespace URL { export type Part = string }
+>Part : string
+

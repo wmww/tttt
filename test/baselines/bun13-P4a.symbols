@@ -1,0 +1,27 @@
+//// [test/cases/bun13-P4a.ts] ////
+
+=== a.ts ===
+declare const xs: number[];
+>xs : Symbol(xs, Decl(a.ts, 0, 13))
+
+declare function f<T>(x: { a: T, b: T, c: unknown }): T;
+>f : Symbol(f, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+>a : Symbol(a, Decl(a.ts, 1, 26))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>b : Symbol(b, Decl(a.ts, 1, 32))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>c : Symbol(c, Decl(a.ts, 1, 38))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+
+f({ a: xs, b: ["s"], c: [1] });
+>f : Symbol(f, Decl(a.ts, 0, 27))
+>a : Symbol(a, Decl(a.ts, 2, 3))
+>xs : Symbol(xs, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 2, 10))
+>c : Symbol(c, Decl(a.ts, 2, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,18 @@
+//// [test/cases/bun25-C3.ts] ////
+
+=== a.ts ===
+class B { static "#x" = 1; }
+>B : B
+>"#x" : number
+>1 : 1
+
+class D extends B { static "#x" = ""; }
+>D : D
+>B : B
+>"#x" : string
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,45 @@
+//// [test/cases/bun78-R20b.ts] ////
+
+=== a.ts ===
+function o1(a: {}): void; function o1({ x = null }) {}
+>o1 : (a: {}) => void
+>a : {}
+>o1 : (a: {}) => void
+>x : any
+
+function o2(a: {}): void; function o2({ x = undefined, y = [], z = { w: null } }) {}
+>o2 : (a: {}) => void
+>a : {}
+>o2 : (a: {}) => void
+>x : any
+>undefined : undefined
+>y : any[]
+>[] : undefined[]
+>z : { w: any; }
+>{ w: null } : { w: null; }
+>w : null
+
+class O3 { m(a: {}): void; m({ x = null }) {} constructor(a: {}); constructor({ x = null }) {} }
+>O3 : O3
+>m : (a: {}) => void
+>a : {}
+>m : (a: {}) => void
+>x : any
+>a : {}
+>x : any
+
+export function o4(): void; export function o4({ x = null } = {}) {}
+>o4 : () => void
+>o4 : () => void
+>x : any
+>{} : {}
+
+// both report: no overloads
+function p1({ x = null }) {}
+>p1 : ({ x }: { x?: any; }) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

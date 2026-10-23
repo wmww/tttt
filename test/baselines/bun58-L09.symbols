@@ -1,0 +1,60 @@
+//// [test/cases/bun58-L09.ts] ////
+
+=== a.ts ===
+import { N } from "./m";
+>N : Symbol(N, Decl(a.ts, 0, 8))
+
+let x1: N.Inner.Nope;
+>x1 : Symbol(x1, Decl(a.ts, 1, 3))
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>Inner : Symbol(N.Inner, Decl(aug1.ts, 1, 36), Decl(aug2.ts, 1, 36))
+>Nope : Symbol(N.Inner.Nope)
+
+let x2: N.Nope;
+>x2 : Symbol(x2, Decl(a.ts, 2, 3))
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>Nope : Symbol(N.Nope)
+
+let x3: N.Only1.Nope;
+>x3 : Symbol(x3, Decl(a.ts, 3, 3))
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>Only1 : Symbol(N.Only1, Decl(aug1.ts, 1, 105))
+>Nope : Symbol(N.Only1.Nope)
+
+let x4: N.Inner.Deep.Nope;
+>x4 : Symbol(x4, Decl(a.ts, 4, 3))
+>N : Symbol(N, Decl(a.ts, 0, 8))
+>Inner : Symbol(N.Inner, Decl(aug1.ts, 1, 36), Decl(aug2.ts, 1, 36))
+>Deep : Symbol(N.Inner.Deep, Decl(aug1.ts, 1, 69), Decl(aug2.ts, 1, 69))
+>Nope : Symbol(N.Inner.Deep.Nope)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+
+=== aug1.ts ===
+export {};
+declare module "./m" { namespace N { namespace Inner { interface A {} namespace Deep { interface A {} } } namespace Only1 { interface A {} } } }
+>"./m" : Symbol("./m", Decl(m.ts, 0, 0), Decl(aug1.ts, 0, 10), Decl(aug2.ts, 0, 10))
+>N : Symbol(N, Decl(m.ts, 0, 0), Decl(aug1.ts, 1, 22), Decl(aug2.ts, 1, 22))
+>Inner : Symbol(Inner, Decl(aug1.ts, 1, 36), Decl(aug2.ts, 1, 36))
+>A : Symbol(A, Decl(aug1.ts, 1, 54))
+>Deep : Symbol(Deep, Decl(aug1.ts, 1, 69), Decl(aug2.ts, 1, 69))
+>A : Symbol(A, Decl(aug1.ts, 1, 86))
+>Only1 : Symbol(Only1, Decl(aug1.ts, 1, 105))
+>A : Symbol(A, Decl(aug1.ts, 1, 123))
+
+=== aug2.ts ===
+export {};
+declare module "./m" { namespace N { namespace Inner { interface B {} namespace Deep { interface B {} } } } }
+>"./m" : Symbol("./m", Decl(m.ts, 0, 0), Decl(aug1.ts, 0, 10), Decl(aug2.ts, 0, 10))
+>N : Symbol(N, Decl(m.ts, 0, 0), Decl(aug1.ts, 1, 22), Decl(aug2.ts, 1, 22))
+>Inner : Symbol(Inner, Decl(aug1.ts, 1, 36), Decl(aug2.ts, 1, 36))
+>B : Symbol(B, Decl(aug2.ts, 1, 54))
+>Deep : Symbol(Deep, Decl(aug1.ts, 1, 69), Decl(aug2.ts, 1, 69))
+>B : Symbol(B, Decl(aug2.ts, 1, 86))
+
+=== m.ts ===
+export namespace N { export const a = 1 }
+>N : Symbol(N, Decl(m.ts, 0, 0), Decl(aug1.ts, 1, 22), Decl(aug2.ts, 1, 22))
+>a : Symbol(a, Decl(m.ts, 0, 33))
+

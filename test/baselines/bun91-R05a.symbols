@@ -1,0 +1,30 @@
+//// [test/cases/bun91-R05a.ts] ////
+
+=== a.ts ===
+type as = number;
+>as : Symbol(as, Decl(a.ts, 0, 0))
+
+type satisfies<T> = T;
+>satisfies : Symbol(satisfies, Decl(a.ts, 0, 17), Decl(a.ts, 1, 22))
+>T : Symbol(T, Decl(a.ts, 1, 15))
+>T : Symbol(T, Decl(a.ts, 1, 15))
+
+namespace satisfies { export const y = 1; }
+>satisfies : Symbol(satisfies, Decl(a.ts, 0, 17), Decl(a.ts, 1, 22))
+>y : Symbol(y, Decl(a.ts, 2, 34))
+
+namespace N { interface as { a: number } }
+>N : Symbol(N, Decl(a.ts, 2, 43))
+>as : Symbol(as, Decl(a.ts, 3, 13))
+>a : Symbol(as.a, Decl(a.ts, 3, 28))
+
+function f() { type as = 1; let x: as = 1; return x; }
+>f : Symbol(f, Decl(a.ts, 3, 42))
+>as : Symbol(as, Decl(a.ts, 4, 14))
+>x : Symbol(x, Decl(a.ts, 4, 31))
+>as : Symbol(as, Decl(a.ts, 4, 14))
+>x : Symbol(x, Decl(a.ts, 4, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

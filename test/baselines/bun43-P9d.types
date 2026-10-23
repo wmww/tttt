@@ -1,0 +1,8 @@
+//// [test/cases/bun43-P9d.ts] ////
+
+=== a.ts ===
+export * as
+
+> : any
+> : any
+

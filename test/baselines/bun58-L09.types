@@ -1,0 +1,46 @@
+//// [test/cases/bun58-L09.ts] ////
+
+=== a.ts ===
+import { N } from "./m";
+>N : typeof N
+
+let x1: N.Inner.Nope;
+>x1 : N.Inner.Nope
+>N : any
+>Inner : any
+
+let x2: N.Nope;
+>x2 : N.Nope
+>N : any
+
+let x3: N.Only1.Nope;
+>x3 : N.Only1.Nope
+>N : any
+>Only1 : any
+
+let x4: N.Inner.Deep.Nope;
+>x4 : N.Inner.Deep.Nope
+>N : any
+>Inner : any
+>Deep : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== aug1.ts ===
+export {};
+declare module "./m" { namespace N { namespace Inner { interface A {} namespace Deep { interface A {} } } namespace Only1 { interface A {} } } }
+>"./m" : typeof import("./m")
+
+=== aug2.ts ===
+export {};
+declare module "./m" { namespace N { namespace Inner { interface B {} namespace Deep { interface B {} } } } }
+>"./m" : typeof import("./m")
+
+=== m.ts ===
+export namespace N { export const a = 1 }
+>N : typeof N
+>a : 1
+>1 : 1
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun34-P2a.ts] ////
+
+=== a.ts ===
+class K { [+1] = ""; [-0] = "" }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>[+1] : Symbol(K[+1], Decl(a.ts, 0, 9))
+>[-0] : Symbol(K[-0], Decl(a.ts, 0, 20))
+
+new K()[1];
+>K : Symbol(K, Decl(a.ts, 0, 0))
+
+new K()[0];
+>K : Symbol(K, Decl(a.ts, 0, 0))
+
+new K()["+1"];
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>"+1" : Symbol(K[+1], Decl(a.ts, 0, 9))
+
+new K()["-0"];
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>"-0" : Symbol(K[-0], Decl(a.ts, 0, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

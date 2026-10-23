@@ -1,0 +1,13 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true }, "include": ["*.mİn.*", "a.ts"] }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== a.mİn.min.js (0 errors) ====
+    const y = 1;
+    y.foo;

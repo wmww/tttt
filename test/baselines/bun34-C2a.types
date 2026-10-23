@@ -1,0 +1,23 @@
+//// [test/cases/bun34-C2a.ts] ////
+
+=== a.tsx ===
+import type * as React from "./react";
+>React : typeof React
+
+declare global { namespace JSX { interface IntrinsicElements { div: any } } }
+>global : any
+>div : any
+
+<div />;
+><div /> : any
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== react.ts ===
+export function createElement(...a: any[]): any {}
+>createElement : (...a: any[]) => any
+>a : any[]
+

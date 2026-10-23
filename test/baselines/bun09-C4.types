@@ -1,0 +1,21 @@
+//// [test/cases/bun09-C4.ts] ////
+
+=== a.ts ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+class C2 { [k]; constructor() { this[k] = 1; } }
+>C2 : C2
+>[k] : any
+>k : "foo"
+>this[k] = 1 : 1
+>this[k] : any
+>this : this
+>k : "foo"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

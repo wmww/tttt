@@ -1,0 +1,47 @@
+//// [test/cases/bun53-L14.ts] ////
+
+=== a.ts ===
+declare class B {}
+>B : B
+
+declare class A2 extends B, (class { m() {} }) {}
+>A2 : A2
+>B : B
+>(class { m() {} }) : B
+>class { m() {} } : typeof (Anonymous class)
+>m : () => void
+
+declare enum E4 { [(() => { return 1; })()] = 1 }
+>E4 : E4
+>[(() => { return 1; })()] : E4
+>(() => { return 1; })() : number
+>(() => { return 1; }) : () => number
+>() => { return 1; } : () => number
+>1 : 1
+>1 : 1
+
+declare namespace N11 { class K extends B extends (class { m() {} }) {} }
+>N11 : typeof N11
+>K : K
+>B : B
+>(class { m() {} }) : B
+>class { m() {} } : typeof (Anonymous class)
+>m : () => void
+
+declare namespace N12 { enum E { A = 1, [`x${(() => { return 1; })()}`] = 2 } }
+>N12 : typeof N12
+>E : E
+>A : E.A
+>1 : 1
+>[`x${(() => { return 1; })()}`] : E
+>`x${(() => { return 1; })()}` : string
+>(() => { return 1; })() : number
+>(() => { return 1; }) : () => number
+>() => { return 1; } : () => number
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

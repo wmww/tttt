@@ -1,0 +1,52 @@
+//// [test/cases/bun01-P3.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : Symbol(global, Decl(a.ts, 0, 10))
+
+interface Array<T> {}
+>Array : Symbol(Array, Decl(a.ts, 1, 16))
+>T : Symbol(T, Decl(a.ts, 2, 16))
+
+interface Object {}
+>Object : Symbol(Object, Decl(a.ts, 2, 21))
+
+interface Function {}
+>Function : Symbol(Function, Decl(a.ts, 3, 19))
+
+interface String {}
+>String : Symbol(String, Decl(a.ts, 4, 21))
+
+interface Number {}
+>Number : Symbol(Number, Decl(a.ts, 5, 19))
+
+interface Boolean {}
+>Boolean : Symbol(Boolean, Decl(a.ts, 6, 19))
+
+interface RegExp {}
+>RegExp : Symbol(RegExp, Decl(a.ts, 7, 20))
+
+interface IArguments {}
+>IArguments : Symbol(IArguments, Decl(a.ts, 8, 19))
+
+interface CallableFunction {}
+>CallableFunction : Symbol(CallableFunction, Decl(a.ts, 9, 23))
+
+interface NewableFunction {}
+>NewableFunction : Symbol(NewableFunction, Decl(a.ts, 10, 29))
+}
+import("./b");
+>"./b" : Symbol("./b", Decl(b.ts, 0, 0))
+
+async function f1() {} f1();
+>f1 : Symbol(f1, Decl(a.ts, 13, 14))
+>f1 : Symbol(f1, Decl(a.ts, 13, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 15, 5))
+
+=== b.ts ===
+
+export default 1;
+

@@ -1,0 +1,30 @@
+a.ts(1,23): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(1,39): error TS2313: Type parameter 'U' has a circular constraint.
+a.ts(1,81): error TS2322: Type 'T' is not assignable to type 'U[K]'.
+  'U[K]' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+a.ts(1,100): error TS2322: Type 'U' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'U'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    function g4<T extends U[K], U extends T, K extends keyof U>(t: T, u: U) { const a: U[K] = t; const b: T = u; }
+                          ~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+                                          ~
+!!! error TS2313: Type parameter 'U' has a circular constraint.
+!!! related TS2751 a.ts:1:23: Circularity originates in type at this location.
+                                                                                    ~
+!!! error TS2322: Type 'T' is not assignable to type 'U[K]'.
+!!! error TS2322:   'U[K]' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+!!! related TS2208 a.ts:1:13: This type parameter might need an `extends U[K]` constraint.
+                                                                                                       ~
+!!! error TS2322: Type 'U' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to 'U'.
+!!! related TS2208 a.ts:1:29: This type parameter might need an `extends T` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

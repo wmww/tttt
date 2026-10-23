@@ -1,0 +1,27 @@
+//// [test/cases/bun33-C6a.ts] ////
+
+=== a.js ===
+const m = (require("./m"));
+>m : typeof import("./m")
+>(require("./m")) : typeof import("./m")
+>require("./m") : typeof import("./m")
+>require : any
+>"./m" : "./m"
+
+/** @type {m.T} */ let t;
+>t : m.T
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export interface T { a: number }
+>a : number
+
+export class C { x = 1 }
+>C : C
+>x : number
+>1 : 1
+

@@ -1,0 +1,66 @@
+//// [test/cases/bun53-L18.ts] ////
+
+=== a.ts ===
+const o1 = { readonly m() {} };
+>o1 : { readonly m: () => void; }
+>{ readonly m() {} } : { readonly m: () => void; }
+>m : () => void
+
+o1.m = () => {};
+>o1.m = () => {} : () => void
+>o1.m : any
+>o1 : { readonly m: () => void; }
+>m : any
+>() => {} : () => void
+
+const p1: number = o1;
+>p1 : number
+>o1 : { readonly m: () => void; }
+
+type M1 = { [K in keyof typeof o1]: (typeof o1)[K] };
+>M1 : M1
+>o1 : { readonly m: () => void; }
+>o1 : { readonly m: () => void; }
+
+declare const m1: M1; m1.m = () => {};
+>m1 : M1
+>m1.m = () => {} : () => void
+>m1.m : any
+>m1 : M1
+>m : any
+>() => {} : () => void
+
+const o4 = { readonly ["m"]() {} }; o4.m = null!;
+>o4 : { readonly m: () => void; }
+>{ readonly ["m"]() {} } : { readonly m: () => void; }
+>["m"] : () => void
+>"m" : "m"
+>o4.m = null! : never
+>o4.m : any
+>o4 : { readonly m: () => void; }
+>m : any
+>null! : never
+
+const o7 = { readonly a: 1 }; o7.a = 2; const p7: string = o7;
+>o7 : { readonly a: number; }
+>{ readonly a: 1 } : { readonly a: number; }
+>a : number
+>1 : 1
+>o7.a = 2 : 2
+>o7.a : any
+>o7 : { readonly a: number; }
+>a : any
+>2 : 2
+>p7 : string
+>o7 : { readonly a: number; }
+
+delete o1.m;
+>delete o1.m : boolean
+>o1.m : () => void
+>o1 : { readonly m: () => void; }
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

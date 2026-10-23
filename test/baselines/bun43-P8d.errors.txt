@@ -1,0 +1,16 @@
+a.ts(1,24): error TS2694: Namespace '"m"' has no exported member '#a'.
+a.ts(2,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type T = import("./m").#a;
+                           ~~
+!!! error TS2694: Namespace '"m"' has no exported member '#a'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export const a = 1;
+    

@@ -1,0 +1,28 @@
+//// [test/cases/bun06-C8.ts] ////
+
+=== a.ts ===
+declare function apply<A, B>(f: (a: A) => B, a: A): B;
+>apply : <A, B>(f: (a: A) => B, a: A) => B
+>f : (a: A) => B
+>a : A
+>a : A
+
+declare const args: [<T>(x: T) => T[], number];
+>args : [<T>(x: T) => T[], number]
+>x : T
+
+apply(...args)[0].toFixed();
+>apply(...args)[0].toFixed() : string
+>apply(...args)[0].toFixed : (fractionDigits?: number) => string
+>apply(...args)[0] : number
+>apply(...args) : number[]
+>apply : <A, B>(f: (a: A) => B, a: A) => B
+>...args : number | (<T>(x: T) => T[])
+>args : [<T>(x: T) => T[], number]
+>0 : 0
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

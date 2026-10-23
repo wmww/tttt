@@ -1,0 +1,28 @@
+//// [test/cases/bun24-SC10.ts] ////
+
+=== a.ts ===
+declare const o: { get a(): 1; set a(v: 2) };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18), Decl(a.ts, 0, 30))
+>a : Symbol(a, Decl(a.ts, 0, 18), Decl(a.ts, 0, 30))
+>v : Symbol(v, Decl(a.ts, 0, 37))
+
+const v: string = null! as { k: typeof o; fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: 1; p0: 1; p1: 1; p2: 1; p3: 1; p4: 1; p5: 1; p6: 1; p7: 1; p8: 1; p9: 1 };
+>v : Symbol(v, Decl(a.ts, 1, 5))
+>k : Symbol(k, Decl(a.ts, 1, 28))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx : Symbol(fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, Decl(a.ts, 1, 41))
+>p0 : Symbol(p0, Decl(a.ts, 1, 163))
+>p1 : Symbol(p1, Decl(a.ts, 1, 170))
+>p2 : Symbol(p2, Decl(a.ts, 1, 177))
+>p3 : Symbol(p3, Decl(a.ts, 1, 184))
+>p4 : Symbol(p4, Decl(a.ts, 1, 191))
+>p5 : Symbol(p5, Decl(a.ts, 1, 198))
+>p6 : Symbol(p6, Decl(a.ts, 1, 205))
+>p7 : Symbol(p7, Decl(a.ts, 1, 212))
+>p8 : Symbol(p8, Decl(a.ts, 1, 219))
+>p9 : Symbol(p9, Decl(a.ts, 1, 226))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

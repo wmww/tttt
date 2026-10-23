@@ -1,0 +1,22 @@
+b5.ts(3,49): error TS2343: This syntax requires an imported helper named '__setFunctionName' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+b5.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "esnext.decorators"], "importHelpers": true, "target": "es2022", "useDefineForClassFields": false, "module": "esnext", "moduleResolution": "bundler" }, "files": ["b5.ts"] }
+==== b5.ts (2 errors) ====
+    import { u } from "./a5"; u;
+    const zero = class { static x = 0 };
+    export function mk() { const k = class { static x = 1 }; return new k(); }
+                                                    ~
+!!! error TS2343: This syntax requires an imported helper named '__setFunctionName' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a5.ts (0 errors) ====
+    import { mk } from "./b5"; export const u = mk();
+==== node_modules/tslib/index.d.ts (0 errors) ====
+    export declare function __nothing(): void;
+==== node_modules/tslib/package.json (0 errors) ====
+    { "name": "tslib", "version": "2.0.0", "types": "index.d.ts" }
+    

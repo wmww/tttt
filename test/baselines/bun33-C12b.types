@@ -1,0 +1,11 @@
+//// [test/cases/bun33-C12b.ts] ////
+
+=== a.ts ===
+1 as const<1>;
+>1 as const<1> : const<1>
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,33 @@
+//// [test/cases/bun41-C10c.ts] ////
+
+=== a.ts ===
+function f() { interface A { a: number } return null! as A; }
+>f : () => A
+>a : number
+>null! as A : A
+>null! : never
+
+function g() { interface A { x: { y: number } } return null! as A; }
+>g : () => A
+>x : { y: number; }
+>y : number
+>null! as A : A
+>null! : never
+
+type A1 = ReturnType<typeof f>;
+>A1 : A
+>f : () => A
+
+type A2 = ReturnType<typeof g>;
+>A2 : A
+>g : () => A
+
+interface I extends A1, A2 { a: string; x: { y: string } }
+>a : string
+>x : { y: string; }
+>y : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

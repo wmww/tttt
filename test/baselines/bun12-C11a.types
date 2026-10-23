@@ -1,0 +1,14 @@
+//// [test/cases/bun12-C11a.ts] ////
+
+=== a.ts ===
+declare const r2: unique symbol[];
+>r2 : any
+
+let s2: string = r2;
+>s2 : string
+>r2 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

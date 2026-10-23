@@ -1,0 +1,12 @@
+//// [test/cases/bun31-C14.ts] ////
+
+=== a.ts ===
+class M<ClassParam> { static b: ClassPara; }
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>ClassParam : Symbol(ClassParam, Decl(a.ts, 0, 8))
+>b : Symbol(M.b, Decl(a.ts, 0, 21))
+>ClassPara : Symbol(ClassPara)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

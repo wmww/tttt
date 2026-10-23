@@ -1,0 +1,12 @@
+//// [test/cases/bun03-C11b.ts] ////
+
+=== a.ts ===
+declare function fe({ [undeclared]: z }: any): void;
+>fe : ({ [undeclared]: z }: any) => void
+>undeclared : any
+>z : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

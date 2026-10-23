@@ -1,0 +1,14 @@
+//// [test/cases/bun25-C12b.ts] ////
+
+=== a.ts ===
+let w: number; const o = { w = 1 }; w.toFixed();
+>w : Symbol(w, Decl(a.ts, 0, 3))
+>o : Symbol(o, Decl(a.ts, 0, 20))
+>w : Symbol(w, Decl(a.ts, 0, 26))
+>w.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>w : Symbol(w, Decl(a.ts, 0, 3))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun23-C7.ts] ////
+
+=== a.ts ===
+declare function E<T>(): T;
+>E : <T>() => T
+
+declare function f<U>(x: U): (y: typeof E<U>) => void;
+>f : <U>(x: U) => (y: typeof E<U>) => void
+>x : U
+>y : typeof E<U>
+>E : <T>() => T
+
+const v1: 1 = f(1);
+>v1 : 1
+>f(1) : (y: () => number) => void
+>f : <U>(x: U) => (y: typeof E<U>) => void
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

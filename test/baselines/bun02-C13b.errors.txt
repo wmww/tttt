@@ -1,0 +1,61 @@
+a.ts(1,14): error TS1042: 'abstract' modifier cannot be used here.
+a.ts(1,14): error TS1244: Abstract methods can only appear within an abstract class.
+a.ts(2,14): error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+a.ts(2,14): error TS1042: 'readonly' modifier cannot be used here.
+a.ts(3,14): error TS1042: 'accessor' modifier cannot be used here.
+a.ts(3,14): error TS1275: 'accessor' modifier can only appear on a property declaration.
+a.ts(4,14): error TS1042: 'public' modifier cannot be used here.
+a.ts(4,21): error TS1028: Accessibility modifier already seen.
+a.ts(4,21): error TS1042: 'public' modifier cannot be used here.
+a.ts(5,14): error TS1042: 'public' modifier cannot be used here.
+a.ts(5,14): error TS1184: Modifiers cannot appear here.
+a.ts(5,21): error TS1042: 'static' modifier cannot be used here.
+a.ts(6,14): error TS1042: 'static' modifier cannot be used here.
+a.ts(6,21): error TS1029: 'public' modifier must precede 'static' modifier.
+a.ts(6,21): error TS1042: 'public' modifier cannot be used here.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (16 errors) ====
+    const a1 = { abstract m() {} };
+                 ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                 ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+    const a2 = { readonly m() {} };
+                 ~~~~~~~~
+!!! error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+                 ~~~~~~~~
+!!! error TS1042: 'readonly' modifier cannot be used here.
+    const a3 = { accessor m() {} };
+                 ~~~~~~~~
+!!! error TS1042: 'accessor' modifier cannot be used here.
+                 ~~~~~~~~
+!!! error TS1275: 'accessor' modifier can only appear on a property declaration.
+    const a4 = { public public m() {} };
+                 ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+                        ~~~~~~
+!!! error TS1028: Accessibility modifier already seen.
+                        ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    const a5 = { public static m() {} };
+                 ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+                 ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+                        ~~~~~~
+!!! error TS1042: 'static' modifier cannot be used here.
+    const a6 = { static public m() {} };
+                 ~~~~~~
+!!! error TS1042: 'static' modifier cannot be used here.
+                        ~~~~~~
+!!! error TS1029: 'public' modifier must precede 'static' modifier.
+                        ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

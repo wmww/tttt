@@ -1,0 +1,9 @@
+//// [test/cases/bun43-C13i.ts] ////
+
+=== a.tsx ===
+var x = 1;
+>x : Symbol(x, Decl(a.tsx, 0, 3))
+
+x <// c
+>x : Symbol(x, Decl(a.tsx, 0, 3))
+

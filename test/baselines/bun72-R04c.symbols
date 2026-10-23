@@ -1,0 +1,35 @@
+//// [test/cases/bun72-R04c.ts] ////
+
+=== a.ts ===
+import { C } from "old";
+>C : Symbol(C, Decl(a.ts, 0, 8))
+
+import { take } from "dep";
+>take : Symbol(take, Decl(a.ts, 1, 8))
+
+take(new C());
+>take : Symbol(take, Decl(a.ts, 1, 8))
+>C : Symbol(C, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== node_modules/dep/index.d.ts ===
+import { C } from "old";
+>C : Symbol(C, Decl(index.d.ts, 0, 8))
+
+export declare function take(c: C): void;
+>take : Symbol(take, Decl(index.d.ts, 0, 24))
+>c : Symbol(c, Decl(index.d.ts, 1, 29))
+>C : Symbol(C, Decl(index.d.ts, 0, 8))
+
+=== node_modules/dep/node_modules/old/index.d.ts ===
+export declare class C { private p; }
+>C : Symbol(C, Decl(index.d.ts, 0, 0))
+>p : Symbol(C.p, Decl(index.d.ts, 0, 24))
+
+=== node_modules/old/index.d.ts ===
+export declare class C { private p; }
+>C : Symbol(C, Decl(index.d.ts, 0, 0))
+>p : Symbol(C.p, Decl(index.d.ts, 0, 24))
+

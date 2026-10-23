@@ -1,0 +1,46 @@
+//// [test/cases/bun60-L04b.ts] ////
+
+=== a.ts ===
+function f() { const s = Symbol(); return { [s]: 1 }; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>s : Symbol(s, Decl(a.ts, 0, 20))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>[s] : Symbol([s], Decl(a.ts, 0, 43))
+>s : Symbol(s, Decl(a.ts, 0, 20))
+
+export function g() {}
+>g : Symbol(g, Decl(a.ts, 0, 55))
+
+g["ab"] = f();
+>g : Symbol(g, Decl(a.ts, 0, 55))
+>"ab" : Symbol(g["ab"], Decl(a.ts, 1, 22))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+g.cd = f();
+>g.cd : Symbol(g.cd, Decl(a.ts, 2, 14))
+>g : Symbol(g, Decl(a.ts, 0, 55))
+>cd : Symbol(g.cd, Decl(a.ts, 2, 14))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+g[1] = f();
+>g : Symbol(g, Decl(a.ts, 0, 55))
+>1 : Symbol(g[1], Decl(a.ts, 3, 11))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+export const h = () => {};
+>h : Symbol(h, Decl(a.ts, 5, 12))
+
+h["ab"] = f();
+>h : Symbol(h, Decl(a.ts, 5, 12))
+>"ab" : Symbol(h["ab"], Decl(a.ts, 5, 26))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+h.cd = f();
+>h.cd : Symbol(h.cd, Decl(a.ts, 6, 14))
+>h : Symbol(h, Decl(a.ts, 5, 12))
+>cd : Symbol(h.cd, Decl(a.ts, 6, 14))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

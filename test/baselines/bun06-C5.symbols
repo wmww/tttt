@@ -1,0 +1,16 @@
+//// [test/cases/bun06-C5.ts] ////
+
+=== a.ts ===
+function* g5() { const f = (a = yield "x") => { }; }
+>g5 : Symbol(g5, Decl(a.ts, 0, 0))
+>f : Symbol(f, Decl(a.ts, 0, 22))
+>a : Symbol(a, Decl(a.ts, 0, 28))
+
+function* g6() { const f = (a = yield) => { }; }
+>g6 : Symbol(g6, Decl(a.ts, 0, 52))
+>f : Symbol(f, Decl(a.ts, 1, 22))
+>a : Symbol(a, Decl(a.ts, 1, 28))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

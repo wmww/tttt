@@ -1,0 +1,15 @@
+//// [test/cases/bun42-C7a.ts] ////
+
+=== src/a.ts ===
+/// <reference types="./foo" />
+const a: 1 = fooGlobal;
+>a : Symbol(a, Decl(a.ts, 1, 5))
+>fooGlobal : Symbol(fooGlobal, Decl(index.d.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/@types/foo/index.d.ts ===
+declare const fooGlobal: 1;
+>fooGlobal : Symbol(fooGlobal, Decl(index.d.ts, 0, 13))
+

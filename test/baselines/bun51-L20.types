@@ -1,0 +1,35 @@
+//// [test/cases/bun51-L20.ts] ////
+
+=== a.ts ===
+class C { private a = 1; b = 2; }
+>C : C
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+
+class D { a = 1; private b = 2; }
+>D : D
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+
+declare const c: C, d: D;
+>c : C
+>d : D
+
+export const { ...a: x } = c;
+>a : any
+>x : { b: number; }
+>c : C
+
+export const { ...a: b } = d;
+>a : any
+>b : { a: number; }
+>d : D
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun26-C1a.ts] ////
+
+=== a.ts ===
+type F<T, U> = T extends string ? T : { next: F<U | "x", 1> };
+>F : F<T, U>
+>next : "x" | { next: F<U | "x", 1>; }
+
+const r: F<0, string>["next"] = "abc";
+>r : "x" | { next: F<U | "x", 1>; }
+>"abc" : "abc"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

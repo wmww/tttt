@@ -1,0 +1,14 @@
+//// [test/cases/bun28-P1.ts] ////
+
+=== a.ts ===
+declare const f: (() => "a") | undefined;
+>f : Symbol(f, Decl(a.ts, 0, 13))
+
+const o = { [f()]: 1 };
+>o : Symbol(o, Decl(a.ts, 1, 5))
+>[f()] : Symbol([f()], Decl(a.ts, 1, 11))
+>f : Symbol(f, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

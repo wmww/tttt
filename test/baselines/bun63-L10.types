@@ -1,0 +1,16 @@
+//// [test/cases/bun63-L10.ts] ////
+
+=== a.ts ===
+const v: 1 = null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { get g(): string; set g(v: number) }, { a: 1 }];
+>v : 1
+>null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { get g(): string; set g(v: number) }, { a: 1 }] : ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { get g(): string; set g(v: number); }, { a: 1; }]
+>null! : never
+>g : string
+>g : string
+>v : number
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,59 @@
+a.ts(1,1): error TS1435: Unknown keyword or identifier. Did you mean 'export'?
+a.ts(1,1): error TS2304: Cannot find name 'xport'.
+a.ts(1,7): error TS1435: Unknown keyword or identifier. Did you mean 'typeof'?
+a.ts(1,7): error TS2304: Cannot find name 'clatypeof'.
+a.ts(1,17): error TS1434: Unexpected keyword or identifier.
+a.ts(1,17): error TS2304: Cannot find name 'ss'.
+a.ts(1,20): error TS1434: Unexpected keyword or identifier.
+a.ts(1,20): error TS2304: Cannot find name 'B'.
+a.ts(1,24): error TS2304: Cannot find name 'm'.
+a.ts(1,33): error TS1109: Expression expected.
+a.ts(1,34): error TS1005: ',' expected.
+a.ts(1,34): error TS2304: Cannot find name 'x'.
+a.ts(1,35): error TS1005: ',' expected.
+a.ts(1,37): error TS2693: 'number' only refers to a type, but is being used as a value here.
+a.ts(1,45): error TS1005: ';' expected.
+a.ts(1,54): error TS2304: Cannot find name 'x'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "target": "es2022" } }
+==== a.ts (17 errors) ====
+    xport clatypeof ss B { m(@dec(a) x: number) { return x; } }
+    ~~~~~
+!!! error TS1435: Unknown keyword or identifier. Did you mean 'export'?
+    ~~~~~
+!!! error TS2304: Cannot find name 'xport'.
+          ~~~~~~~~~
+!!! error TS1435: Unknown keyword or identifier. Did you mean 'typeof'?
+          ~~~~~~~~~
+!!! error TS2304: Cannot find name 'clatypeof'.
+                    ~~
+!!! error TS1434: Unexpected keyword or identifier.
+                    ~~
+!!! error TS2304: Cannot find name 'ss'.
+                       ~
+!!! error TS1434: Unexpected keyword or identifier.
+                       ~
+!!! error TS2304: Cannot find name 'B'.
+                           ~
+!!! error TS2304: Cannot find name 'm'.
+                                    
+!!! error TS1109: Expression expected.
+                                     ~
+!!! error TS1005: ',' expected.
+                                     ~
+!!! error TS2304: Cannot find name 'x'.
+                                      ~
+!!! error TS1005: ',' expected.
+                                        ~~~~~~
+!!! error TS2693: 'number' only refers to a type, but is being used as a value here.
+                                                ~
+!!! error TS1005: ';' expected.
+                                                         ~
+!!! error TS2304: Cannot find name 'x'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

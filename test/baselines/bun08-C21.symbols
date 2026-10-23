@@ -1,0 +1,11 @@
+//// [test/cases/bun08-C21.ts] ////
+
+=== d.js ===
+/** @import { T } from "./esm.mjs" */
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(d.js, 1, 27))
+
+=== esm.mts ===
+export type T = number;
+>T : Symbol(T, Decl(esm.mts, 0, 0))
+

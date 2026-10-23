@@ -1,0 +1,77 @@
+//// [test/cases/bun63-L03b.ts] ////
+
+=== a.ts ===
+export class B { set x(this, v: number) {} }
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>x : Symbol(B.x, Decl(a.ts, 0, 16))
+>this : Symbol(this, Decl(a.ts, 0, 23))
+>v : Symbol(v, Decl(a.ts, 0, 28))
+
+export class H { get x(this): number { return 1; } }
+>H : Symbol(H, Decl(a.ts, 0, 44))
+>x : Symbol(H.x, Decl(a.ts, 1, 16))
+>this : Symbol(this, Decl(a.ts, 1, 23))
+
+export class I { get x(this): number { return 1; } set x(this, v: number) {} }
+>I : Symbol(I, Decl(a.ts, 1, 52))
+>x : Symbol(I.x, Decl(a.ts, 2, 16), Decl(a.ts, 2, 50))
+>this : Symbol(this, Decl(a.ts, 2, 23))
+>x : Symbol(I.x, Decl(a.ts, 2, 16), Decl(a.ts, 2, 50))
+>this : Symbol(this, Decl(a.ts, 2, 57))
+>v : Symbol(v, Decl(a.ts, 2, 62))
+
+export class J { static set x(this, v: number) {} }
+>J : Symbol(J, Decl(a.ts, 2, 78))
+>x : Symbol(J.x, Decl(a.ts, 3, 16))
+>this : Symbol(this, Decl(a.ts, 3, 30))
+>v : Symbol(v, Decl(a.ts, 3, 35))
+
+export class K { private set x(this, v: number) {} }
+>K : Symbol(K, Decl(a.ts, 3, 51))
+>x : Symbol(K.x, Decl(a.ts, 4, 16))
+>this : Symbol(this, Decl(a.ts, 4, 31))
+>v : Symbol(v, Decl(a.ts, 4, 36))
+
+export class M { get x(): number { return 1; } set x(this, v: number) {} }
+>M : Symbol(M, Decl(a.ts, 4, 52))
+>x : Symbol(M.x, Decl(a.ts, 5, 16), Decl(a.ts, 5, 46))
+>x : Symbol(M.x, Decl(a.ts, 5, 16), Decl(a.ts, 5, 46))
+>this : Symbol(this, Decl(a.ts, 5, 53))
+>v : Symbol(v, Decl(a.ts, 5, 58))
+
+export class N { get x(this) { return 1; } }
+>N : Symbol(N, Decl(a.ts, 5, 74))
+>x : Symbol(N.x, Decl(a.ts, 6, 16))
+>this : Symbol(this, Decl(a.ts, 6, 23))
+
+export abstract class O { abstract set x(this, v: number); }
+>O : Symbol(O, Decl(a.ts, 6, 44))
+>x : Symbol(O.x, Decl(a.ts, 7, 25))
+>this : Symbol(this, Decl(a.ts, 7, 41))
+>v : Symbol(v, Decl(a.ts, 7, 46))
+
+export declare class P { set x(this, v: number); }
+>P : Symbol(P, Decl(a.ts, 7, 60))
+>x : Symbol(P.x, Decl(a.ts, 8, 24))
+>this : Symbol(this, Decl(a.ts, 8, 31))
+>v : Symbol(v, Decl(a.ts, 8, 36))
+
+export interface Q { set x(this, v: number); get y(this): number }
+>Q : Symbol(Q, Decl(a.ts, 8, 50))
+>x : Symbol(Q.x, Decl(a.ts, 9, 20))
+>this : Symbol(this, Decl(a.ts, 9, 27))
+>v : Symbol(v, Decl(a.ts, 9, 32))
+>y : Symbol(Q.y, Decl(a.ts, 9, 44))
+>this : Symbol(this, Decl(a.ts, 9, 51))
+
+export type R = { set x(this, v: number); get y(this): number }
+>R : Symbol(R, Decl(a.ts, 9, 66))
+>x : Symbol(x, Decl(a.ts, 10, 17))
+>this : Symbol(this, Decl(a.ts, 10, 24))
+>v : Symbol(v, Decl(a.ts, 10, 29))
+>y : Symbol(y, Decl(a.ts, 10, 41))
+>this : Symbol(this, Decl(a.ts, 10, 48))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

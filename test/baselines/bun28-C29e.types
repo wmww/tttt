@@ -1,0 +1,16 @@
+//// [test/cases/bun28-C29e.ts] ////
+
+=== a.ts ===
+import.defer("./zz",);
+>import.defer("./zz",) : Promise<typeof import("./zz")>
+>defer : any
+>"./zz" : "./zz"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== zz.ts ===
+
+export {};
+

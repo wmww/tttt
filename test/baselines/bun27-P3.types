@@ -1,0 +1,38 @@
+//// [test/cases/bun27-P3.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+declare function G<T>(p: { a: (n: number) => T; f: (x: T) => void }): JSX.Element;
+>G : <T>(p: { a: (n: number) => T; f: (x: T) => void; }) => JSX.Element
+>p : { a: (n: number) => T; f: (x: T) => void; }
+>a : (n: number) => T
+>n : number
+>f : (x: T) => void
+>x : T
+>JSX : any
+
+declare const anyV: any;
+>anyV : any
+
+const g = <G {...anyV} a={n => "s"} f={x => x.length} />;
+>g : JSX.Element
+><G {...anyV} a={n => "s"} f={x => x.length} /> : JSX.Element
+>G : <T>(p: { a: (n: number) => T; f: (x: T) => void; }) => JSX.Element
+>anyV : any
+>a : (n: number) => string
+>n => "s" : (n: number) => string
+>n : number
+>"s" : "s"
+>f : (x: string) => number
+>x => x.length : (x: string) => number
+>x : string
+>x.length : number
+>x : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

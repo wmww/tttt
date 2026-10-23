@@ -1,0 +1,21 @@
+//// [test/cases/bun13-C3.ts] ////
+
+=== a.ts ===
+declare function isObj(x: unknown): x is {};
+>isObj : (x: unknown) => x is {}
+>x : unknown
+
+function f1(x: unknown) { if (!isObj(x)) { const y: string = x; } }
+>f1 : (x: unknown) => void
+>x : unknown
+>!isObj(x) : boolean
+>isObj(x) : boolean
+>isObj : (x: unknown) => x is {}
+>x : unknown
+>y : string
+>x : unknown
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

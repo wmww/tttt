@@ -1,0 +1,18 @@
+b.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "module": "node16", "declaration": true, "resolvePackageJsonExports": false } }
+==== a.ts (0 errors) ====
+    import { make } from "pkg"; export const x = make();
+==== b.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/pkg/index.d.ts (0 errors) ====
+    import { Inner } from "./internal"; export declare function make(): Inner;
+==== node_modules/pkg/internal.d.ts (0 errors) ====
+    export interface Inner { a: number }
+==== node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "exports": { ".": { "types": "./index.d.ts" } } }
+    

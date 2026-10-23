@@ -1,0 +1,26 @@
+//// [test/cases/bun21-C1b.ts] ////
+
+=== a.ts ===
+declare const helper: (n: number) => typeof k;
+>helper : (n: number) => typeof k
+>n : number
+>k : any
+
+const k = compute(1);
+>k : any
+>compute(1) : any
+>compute : (v: number) => any
+>1 : 1
+
+function compute(v: number) { helper(1); return v; }
+>compute : (v: number) => any
+>v : number
+>helper(1) : any
+>helper : (n: number) => typeof k
+>1 : 1
+>v : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

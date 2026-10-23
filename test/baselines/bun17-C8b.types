@@ -1,0 +1,18 @@
+//// [test/cases/bun17-C8b.ts] ////
+
+=== a.ts ===
+enum En { A, B }
+>En : En
+>A : En.A
+>B : En.B
+
+const e: En = { toFixed: 1 };
+>e : En
+>{ toFixed: 1 } : { toFixed: number; }
+>toFixed : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

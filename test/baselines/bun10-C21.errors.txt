@@ -1,0 +1,147 @@
+a.ts(1,11): error TS2310: Type 'L0' recursively references itself as a base type.
+a.ts(2,11): error TS2310: Type 'L1' recursively references itself as a base type.
+a.ts(3,11): error TS2310: Type 'L2' recursively references itself as a base type.
+a.ts(4,11): error TS2310: Type 'L3' recursively references itself as a base type.
+a.ts(5,11): error TS2310: Type 'L4' recursively references itself as a base type.
+a.ts(6,11): error TS2310: Type 'L5' recursively references itself as a base type.
+a.ts(7,11): error TS2310: Type 'L6' recursively references itself as a base type.
+a.ts(8,11): error TS2310: Type 'L7' recursively references itself as a base type.
+a.ts(9,11): error TS2310: Type 'L8' recursively references itself as a base type.
+a.ts(10,11): error TS2310: Type 'L9' recursively references itself as a base type.
+a.ts(11,11): error TS2310: Type 'L10' recursively references itself as a base type.
+a.ts(12,11): error TS2310: Type 'L11' recursively references itself as a base type.
+a.ts(13,11): error TS2310: Type 'L12' recursively references itself as a base type.
+a.ts(14,11): error TS2310: Type 'L13' recursively references itself as a base type.
+a.ts(15,11): error TS2310: Type 'L14' recursively references itself as a base type.
+a.ts(16,11): error TS2310: Type 'L15' recursively references itself as a base type.
+a.ts(17,11): error TS2310: Type 'L16' recursively references itself as a base type.
+a.ts(18,11): error TS2310: Type 'L17' recursively references itself as a base type.
+a.ts(19,11): error TS2310: Type 'L18' recursively references itself as a base type.
+a.ts(20,11): error TS2310: Type 'L19' recursively references itself as a base type.
+a.ts(21,11): error TS2310: Type 'L20' recursively references itself as a base type.
+a.ts(22,11): error TS2310: Type 'L21' recursively references itself as a base type.
+a.ts(23,11): error TS2310: Type 'L22' recursively references itself as a base type.
+a.ts(24,11): error TS2310: Type 'L23' recursively references itself as a base type.
+a.ts(25,11): error TS2310: Type 'L24' recursively references itself as a base type.
+a.ts(26,11): error TS2310: Type 'L25' recursively references itself as a base type.
+a.ts(27,11): error TS2310: Type 'L26' recursively references itself as a base type.
+a.ts(28,11): error TS2310: Type 'L27' recursively references itself as a base type.
+a.ts(29,11): error TS2310: Type 'L28' recursively references itself as a base type.
+a.ts(30,11): error TS2310: Type 'L29' recursively references itself as a base type.
+a.ts(31,11): error TS2310: Type 'L30' recursively references itself as a base type.
+a.ts(32,11): error TS2310: Type 'L31' recursively references itself as a base type.
+a.ts(33,11): error TS2310: Type 'L32' recursively references itself as a base type.
+a.ts(34,11): error TS2310: Type 'L33' recursively references itself as a base type.
+a.ts(36,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (35 errors) ====
+    interface L0 extends L1 { q0: 1 }
+              ~~
+!!! error TS2310: Type 'L0' recursively references itself as a base type.
+    interface L1 extends L2 { q1: 1 }
+              ~~
+!!! error TS2310: Type 'L1' recursively references itself as a base type.
+    interface L2 extends L3 { q2: 1 }
+              ~~
+!!! error TS2310: Type 'L2' recursively references itself as a base type.
+    interface L3 extends L4 { q3: 1 }
+              ~~
+!!! error TS2310: Type 'L3' recursively references itself as a base type.
+    interface L4 extends L5 { q4: 1 }
+              ~~
+!!! error TS2310: Type 'L4' recursively references itself as a base type.
+    interface L5 extends L6 { q5: 1 }
+              ~~
+!!! error TS2310: Type 'L5' recursively references itself as a base type.
+    interface L6 extends L7 { q6: 1 }
+              ~~
+!!! error TS2310: Type 'L6' recursively references itself as a base type.
+    interface L7 extends L8 { q7: 1 }
+              ~~
+!!! error TS2310: Type 'L7' recursively references itself as a base type.
+    interface L8 extends L9 { q8: 1 }
+              ~~
+!!! error TS2310: Type 'L8' recursively references itself as a base type.
+    interface L9 extends L10 { q9: 1 }
+              ~~
+!!! error TS2310: Type 'L9' recursively references itself as a base type.
+    interface L10 extends L11 { q10: 1 }
+              ~~~
+!!! error TS2310: Type 'L10' recursively references itself as a base type.
+    interface L11 extends L12 { q11: 1 }
+              ~~~
+!!! error TS2310: Type 'L11' recursively references itself as a base type.
+    interface L12 extends L13 { q12: 1 }
+              ~~~
+!!! error TS2310: Type 'L12' recursively references itself as a base type.
+    interface L13 extends L14 { q13: 1 }
+              ~~~
+!!! error TS2310: Type 'L13' recursively references itself as a base type.
+    interface L14 extends L15 { q14: 1 }
+              ~~~
+!!! error TS2310: Type 'L14' recursively references itself as a base type.
+    interface L15 extends L16 { q15: 1 }
+              ~~~
+!!! error TS2310: Type 'L15' recursively references itself as a base type.
+    interface L16 extends L17 { q16: 1 }
+              ~~~
+!!! error TS2310: Type 'L16' recursively references itself as a base type.
+    interface L17 extends L18 { q17: 1 }
+              ~~~
+!!! error TS2310: Type 'L17' recursively references itself as a base type.
+    interface L18 extends L19 { q18: 1 }
+              ~~~
+!!! error TS2310: Type 'L18' recursively references itself as a base type.
+    interface L19 extends L20 { q19: 1 }
+              ~~~
+!!! error TS2310: Type 'L19' recursively references itself as a base type.
+    interface L20 extends L21 { q20: 1 }
+              ~~~
+!!! error TS2310: Type 'L20' recursively references itself as a base type.
+    interface L21 extends L22 { q21: 1 }
+              ~~~
+!!! error TS2310: Type 'L21' recursively references itself as a base type.
+    interface L22 extends L23 { q22: 1 }
+              ~~~
+!!! error TS2310: Type 'L22' recursively references itself as a base type.
+    interface L23 extends L24 { q23: 1 }
+              ~~~
+!!! error TS2310: Type 'L23' recursively references itself as a base type.
+    interface L24 extends L25 { q24: 1 }
+              ~~~
+!!! error TS2310: Type 'L24' recursively references itself as a base type.
+    interface L25 extends L26 { q25: 1 }
+              ~~~
+!!! error TS2310: Type 'L25' recursively references itself as a base type.
+    interface L26 extends L27 { q26: 1 }
+              ~~~
+!!! error TS2310: Type 'L26' recursively references itself as a base type.
+    interface L27 extends L28 { q27: 1 }
+              ~~~
+!!! error TS2310: Type 'L27' recursively references itself as a base type.
+    interface L28 extends L29 { q28: 1 }
+              ~~~
+!!! error TS2310: Type 'L28' recursively references itself as a base type.
+    interface L29 extends L30 { q29: 1 }
+              ~~~
+!!! error TS2310: Type 'L29' recursively references itself as a base type.
+    interface L30 extends L31 { q30: 1 }
+              ~~~
+!!! error TS2310: Type 'L30' recursively references itself as a base type.
+    interface L31 extends L32 { q31: 1 }
+              ~~~
+!!! error TS2310: Type 'L31' recursively references itself as a base type.
+    interface L32 extends L33 { q32: 1 }
+              ~~~
+!!! error TS2310: Type 'L32' recursively references itself as a base type.
+    interface L33 extends M { }
+              ~~~
+!!! error TS2310: Type 'L33' recursively references itself as a base type.
+    type M = L0 & { z: 1 };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

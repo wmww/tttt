@@ -1,0 +1,4 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] }, "a": await }
+// @filename: a.ts
+const sentinel: number = "";

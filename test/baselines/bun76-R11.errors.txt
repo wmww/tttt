@@ -1,0 +1,52 @@
+a.ts(6,4): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+a.ts(11,4): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+a.ts(14,4): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+a.ts(15,56): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+a.ts(18,18): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    export {};
+    declare const anyV: any;
+    declare function pair<A>(a: A, b: A): [A, A];
+    // an omitted element is a plain `any`: a candidate for A beside `[any, any]`, so A is `any` in the return mapper and the literals are arrays
+    const [, [p1, q1]] = pair([1, "a"], [2, "b"]);
+    p1.toFixed();
+       ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+    let [, [p2, q2]] = pair([1, "a"], [2, "b"]);
+    q2 = 5;
+    // a default of type `any`
+    const [a3 = anyV, [p3, q3]] = pair([1, "a"], [2, "b"]);
+    p3.toFixed();
+       ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+    declare function both<A>(a: A): { p: A; q: A };
+    const { p: p4 = anyV, q: [r4, s4] } = both([1, "a"]);
+    r4.toFixed();
+       ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+    function f5([, [r, s]] = pair([1, "a"], [2, "b"])) { r.toFixed(); }
+                                                           ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+    // only names: the two agree, the literals are tuples
+    const [a6, [p6, q6]] = pair([1, "a"], [2, "b"]);
+    p6.toFixed(); q6.toFixed();
+                     ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

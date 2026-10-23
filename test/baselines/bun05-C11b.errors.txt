@@ -1,0 +1,24 @@
+a.ts(3,4): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'boolean' is not assignable to parameter of type 'string'.
+a.ts(3,14): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function q9(a: number, ...r: [number] | [string, (x: number) => void]): void;
+    declare function q9(a: string, ...r: ((x: string) => void)[]): void;
+    q9(true, "", x => { const z: 0 = x; });
+       ~~~~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type 'boolean' is not assignable to parameter of type 'string'.
+!!! related TS2771 a.ts:2:18: The last overload is declared here.
+                 ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

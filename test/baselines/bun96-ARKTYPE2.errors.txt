@@ -1,0 +1,42 @@
+a.ts(8,10): error TS2339: Property 'foo' does not exist on type 'never'.
+a.ts(22,14): error TS2345: Argument of type '2' is not assignable to parameter of type 'never'.
+a.ts(27,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type In<t> = t extends string ? string : never
+    
+    // arktype's `attest(actual).satisfies(def)`: an error in `actual` makes `expected` the error type
+    type overlaps<l, r> = l & r extends never ? false : true
+    type Assertions<expected> = { satisfies: <def>(def: overlaps<expected, In<def>> extends true ? unknown : "no overlap") => void }
+    declare function attest<expected>(actual: expected): Assertions<expected>
+    declare const n: never
+    attest(n.foo).satisfies(1)
+             ~~~
+!!! error TS2339: Property 'foo' does not exist on type 'never'.
+    
+    // the same with a plain `any`
+    interface C<T> {
+    	m<U>(x: T & In<U>): void
+    	p1<U>(y: T & In<U>, x: U): void
+    	p2<U>(y: T & In<U>, x: U): void
+    }
+    declare const c: C<any>
+    c.m(1)
+    c.m<number>(1)
+    c.p1(2, 1)
+    c.p1<number>(2, 1)
+    // nothing has asked for the type of `y` of `C<any>.p2` before it is instantiated: 'never' in both
+    c.p2<number>(2, 1)
+                 ~
+!!! error TS2345: Argument of type '2' is not assignable to parameter of type 'never'.
+    class K<T> { m<U>(x: T & In<U>): void {} }
+    new K<any>().m(1)
+    declare function f<T>(): <U>(x: T & In<U>) => void
+    f<any>()(1)
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

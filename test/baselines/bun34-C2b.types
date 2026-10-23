@@ -1,0 +1,20 @@
+//// [test/cases/bun34-C2b.ts] ////
+
+=== a.tsx ===
+export {};
+declare global { namespace JSX { interface IntrinsicElements { div: any } } }
+>global : any
+>div : any
+
+<div />;
+><div /> : any
+>div : any
+
+const React: any = 0;
+>React : any
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

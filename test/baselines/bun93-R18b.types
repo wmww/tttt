@@ -1,0 +1,151 @@
+//// [test/cases/bun93-R18b.ts] ////
+
+=== a.ts ===
+declare function gen<T>(a: T[]): T;
+>gen : <T>(a: T[]) => T
+>a : T[]
+
+declare function over(a: number[], b: string): 1; declare function over(a: number[], b: number): 2;
+>over : { (a: number[], b: string): 1; (a: number[], b: number): 2; }
+>a : number[]
+>b : string
+>over : { (a: number[], b: string): 1; (a: number[], b: number): 2; }
+>a : number[]
+>b : number
+
+declare function wrap<T>(a: T): T;
+>wrap : <T>(a: T) => T
+>a : T
+
+declare function call<T>(a: () => T): T;
+>call : <T>(a: () => T) => T
+>a : () => T
+
+declare const b1: { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+>b1 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : number
+
+gen([...b1]);
+>gen([...b1]) : number
+>gen : <T>(a: T[]) => T
+>[...b1] : number[]
+>...b1 : number
+>b1 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+
+declare const b2: { [Symbol.iterator](): { next(): IteratorResult<number>; return: string } };
+>b2 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: string; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: string; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : string
+
+over([...b2], 1);
+>over([...b2], 1) : 2
+>over : { (a: number[], b: string): 1; (a: number[], b: number): 2; }
+>[...b2] : number[]
+>...b2 : number
+>b2 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: string; }; }
+>1 : 1
+
+declare const b3: { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean } };
+>b3 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: boolean; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : boolean
+
+[1].concat([...b3]);
+>[1].concat([...b3]) : number[]
+>[1].concat : { (...items: ConcatArray<number>[]): number[]; (...items: (number | ConcatArray<number>)[]): number[]; }
+>[1] : number[]
+>1 : 1
+>concat : { (...items: ConcatArray<number>[]): number[]; (...items: (number | ConcatArray<number>)[]): number[]; }
+>[...b3] : number[]
+>...b3 : number
+>b3 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }
+
+declare const b4: { [Symbol.iterator](): { next(): { done: boolean } } };
+>b4 : { [Symbol.iterator](): { next(): { done: boolean; }; }; }
+>[Symbol.iterator] : () => { next(): { done: boolean; }; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => { done: boolean; }
+>done : boolean
+
+gen([...b4]);
+>gen([...b4]) : any
+>gen : <T>(a: T[]) => T
+>[...b4] : any[]
+>...b4 : any
+>b4 : { [Symbol.iterator](): { next(): { done: boolean; }; }; }
+
+declare const b5: { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number } };
+>b5 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; throw: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>throw : number
+
+wrap({ a: [...b5] });
+>wrap({ a: [...b5] }) : { a: number[]; }
+>wrap : <T>(a: T) => T
+>{ a: [...b5] } : { a: number[]; }
+>a : number[]
+>[...b5] : number[]
+>...b5 : number
+>b5 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number; }; }
+
+declare const b6: { [Symbol.iterator](): { next(): IteratorResult<number>; throw: string } };
+>b6 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: string; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; throw: string; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>throw : string
+
+call(() => [...b6]);
+>call(() => [...b6]) : number[]
+>call : <T>(a: () => T) => T
+>() => [...b6] : () => number[]
+>[...b6] : number[]
+>...b6 : number
+>b6 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: string; }; }
+
+// one signature that is not generic: both tools report
+declare function one(a: number[]): void;
+>one : (a: number[]) => void
+>a : number[]
+
+declare const b7: { [Symbol.iterator](): { next(): IteratorResult<number>; throw: boolean } };
+>b7 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: boolean; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; throw: boolean; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>throw : boolean
+
+one([...b7]);
+>one([...b7]) : void
+>one : (a: number[]) => void
+>[...b7] : number[]
+>...b7 : number
+>b7 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: boolean; }; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

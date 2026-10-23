@@ -1,0 +1,43 @@
+a.ts(2,8): error TS2303: Circular definition of import alias 'y'.
+a.ts(3,1): error TS2303: Circular definition of import alias 'Missing'.
+a.ts(3,16): error TS2304: Cannot find name 'Missing'.
+b.ts(1,8): error TS2303: Circular definition of import alias 'other'.
+b.ts(2,1): error TS2303: Circular definition of import alias 'Missing'.
+b.ts(2,16): error TS2304: Cannot find name 'Missing'.
+r.ts(1,10): error TS2303: Circular definition of import alias 'default'.
+s.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "commonjs", "esModuleInterop": true }, "files": ["a.ts", "b.ts", "s.ts"] }
+==== a.ts (3 errors) ====
+    import "./0";
+    import y from "./a";
+           ~
+!!! error TS2303: Circular definition of import alias 'y'.
+    export default Missing;
+    ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'Missing'.
+                   ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+==== b.ts (3 errors) ====
+    import other from "./r";
+           ~~~~~
+!!! error TS2303: Circular definition of import alias 'other'.
+    export default Missing;
+    ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'Missing'.
+                   ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+==== s.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== 0.ts (0 errors) ====
+    import d from "./a";
+    d;
+==== r.ts (1 errors) ====
+    export { default } from "./b";
+             ~~~~~~~
+!!! error TS2303: Circular definition of import alias 'default'.

@@ -1,0 +1,61 @@
+//// [test/cases/bun83-R02a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface ElementChildrenAttribute { children: {} } interface IntrinsicElements { div: { children?: unknown } } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(a.tsx, 0, 44))
+>children : Symbol(ElementChildrenAttribute.children, Decl(a.tsx, 0, 81))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 96))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 0, 126))
+>children : Symbol(children, Decl(a.tsx, 0, 133))
+
+declare function A<T>(props: { children?: unknown }): JSX.Element;
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>T : Symbol(T, Decl(a.tsx, 1, 19))
+>props : Symbol(props, Decl(a.tsx, 1, 22))
+>children : Symbol(children, Decl(a.tsx, 1, 30))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+type G<T> = T;
+>G : Symbol(G, Decl(a.tsx, 1, 66))
+>T : Symbol(T, Decl(a.tsx, 2, 7))
+>T : Symbol(T, Decl(a.tsx, 2, 7))
+
+var v1 = <A<number>>=1</A>;
+>v1 : Symbol(v1, Decl(a.tsx, 3, 3))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+
+var v2 = <A<number>>= </A>;
+>v2 : Symbol(v2, Decl(a.tsx, 4, 3))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+
+var v3 = <A<G<number>>>=1</A>;
+>v3 : Symbol(v3, Decl(a.tsx, 5, 3))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>G : Symbol(G, Decl(a.tsx, 1, 66))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+
+var v4 = <A<number>>==1</A>;
+>v4 : Symbol(v4, Decl(a.tsx, 6, 3))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+
+var v5 = <div><A<number>>=1</A></div>;
+>v5 : Symbol(v5, Decl(a.tsx, 7, 3))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 126))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 126))
+
+var v6 = <A<number> >=1</A>;
+>v6 : Symbol(v6, Decl(a.tsx, 8, 3))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+>A : Symbol(A, Decl(a.tsx, 0, 158))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 9, 5))
+

@@ -1,0 +1,24 @@
+a.ts(1,1): error TS2303: Circular definition of import alias 'b4'.
+a.ts(1,13): error TS2304: Cannot find name 'Missing4'.
+a.ts(1,13): error TS2503: Cannot find namespace 'Missing4'.
+a.ts(2,1): error TS2303: Circular definition of import alias 'c'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    import b4 = Missing4;
+    ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'b4'.
+                ~~~~~~~~
+!!! error TS2304: Cannot find name 'Missing4'.
+                ~~~~~~~~
+!!! error TS2503: Cannot find namespace 'Missing4'.
+    export import c = b4;
+    ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'c'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

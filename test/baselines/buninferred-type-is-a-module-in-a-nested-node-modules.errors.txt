@@ -1,0 +1,38 @@
+a.ts(2,14): error TS2883: The inferred type of 'a' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+a.ts(3,14): error TS2883: The inferred type of 'b' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+a.ts(4,14): error TS2883: The inferred type of 'c' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+a.ts(4,14): error TS2883: The inferred type of 'c' cannot be named without a reference to 'Inner' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+a.ts(5,18): error TS2883: The inferred type of 'm' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "declaration": true, "noEmit": true, "module": "esnext", "moduleResolution": "bundler", "types": [], "lib": ["es2022"] }, "files": ["a.ts"] }
+==== a.ts (5 errors) ====
+    import { K, viaImportType, viaNamespace } from "outer";
+    export const a = viaImportType();
+                 ~
+!!! error TS2883: The inferred type of 'a' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+    export const b = viaNamespace();
+                 ~
+!!! error TS2883: The inferred type of 'b' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+    export const c = new K().m;
+                 ~
+!!! error TS2883: The inferred type of 'c' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+                 ~
+!!! error TS2883: The inferred type of 'c' cannot be named without a reference to 'Inner' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+    export class D { m(x: typeof import("outer/node_modules/inner")) { return x; } }
+                     ~
+!!! error TS2883: The inferred type of 'm' cannot be named without a reference to '"node_modules/outer/node_modules/inner/index"' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+==== node_modules/outer/package.json (0 errors) ====
+    { "name": "outer", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/outer/index.d.ts (0 errors) ====
+    import * as inner from "inner";
+    export declare function viaImportType(): typeof import("inner");
+    export declare function viaNamespace(): typeof inner;
+    export declare class K { m(x: import("inner").Inner): typeof import("inner"); }
+==== node_modules/outer/node_modules/inner/package.json (0 errors) ====
+    { "name": "inner", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/outer/node_modules/inner/index.d.ts (0 errors) ====
+    export interface Inner { a: number }
+    export declare const value: number;
+    

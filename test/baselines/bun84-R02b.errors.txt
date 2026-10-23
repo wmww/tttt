@@ -1,0 +1,31 @@
+a.ts(1,15): error TS18064: Private identifiers cannot be used in destructuring patterns.
+a.ts(1,19): error TS2842: 'a' is an unused renaming of '#x'. Did you intend to use it as a type annotation?
+a.ts(2,18): error TS18064: Private identifiers cannot be used in destructuring patterns.
+a.ts(2,22): error TS2842: 'b' is an unused renaming of '#x'. Did you intend to use it as a type annotation?
+a.ts(3,21): error TS18064: Private identifiers cannot be used in destructuring patterns.
+a.ts(3,25): error TS2842: 'c' is an unused renaming of '#x'. Did you intend to use it as a type annotation?
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    type A = <T>({#x: a}: any) => void;
+                  ~~
+!!! error TS18064: Private identifiers cannot be used in destructuring patterns.
+                      ~
+!!! error TS2842: 'a' is an unused renaming of '#x'. Did you intend to use it as a type annotation?
+    interface I { m({#x: b}: any): void }
+                     ~~
+!!! error TS18064: Private identifiers cannot be used in destructuring patterns.
+                         ~
+!!! error TS2842: 'b' is an unused renaming of '#x'. Did you intend to use it as a type annotation?
+    declare function f({#x: c}: any): void;
+                        ~~
+!!! error TS18064: Private identifiers cannot be used in destructuring patterns.
+                            ~
+!!! error TS2842: 'c' is an unused renaming of '#x'. Did you intend to use it as a type annotation?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

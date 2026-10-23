@@ -1,0 +1,96 @@
+//// [test/cases/bun82-R13.ts] ////
+
+=== a.ts ===
+function mk1() { return [new A1()]; }
+>mk1 : () => A1[]
+>[new A1()] : A1[]
+>new A1() : A1
+>A1 : typeof A1
+
+function mk2() { return [new A2()]; }
+>mk2 : () => A2[]
+>[new A2()] : A2[]
+>new A2() : A2
+>A2 : typeof A2
+
+class A1 { bs = [new B1()] } class B1 { cs = [new C1()] } class C1 { ds = [new D1()] } class D1 { es = [new E1()] } class E1 { x = 1 }
+>A1 : A1
+>bs : B1[]
+>[new B1()] : B1[]
+>new B1() : B1
+>B1 : typeof B1
+>B1 : B1
+>cs : C1[]
+>[new C1()] : C1[]
+>new C1() : C1
+>C1 : typeof C1
+>C1 : C1
+>ds : D1[]
+>[new D1()] : D1[]
+>new D1() : D1
+>D1 : typeof D1
+>D1 : D1
+>es : E1[]
+>[new E1()] : E1[]
+>new E1() : E1
+>E1 : typeof E1
+>E1 : E1
+>x : number
+>1 : 1
+
+class A2 { bs = [new B2()] } class B2 { cs = [new C2()] } class C2 { ds = [new D2()] } class D2 { es = [new E2()] } class E2 { x = "" }
+>A2 : A2
+>bs : B2[]
+>[new B2()] : B2[]
+>new B2() : B2
+>B2 : typeof B2
+>B2 : B2
+>cs : C2[]
+>[new C2()] : C2[]
+>new C2() : C2
+>C2 : typeof C2
+>C2 : C2
+>ds : D2[]
+>[new D2()] : D2[]
+>new D2() : D2
+>D2 : typeof D2
+>D2 : D2
+>es : E2[]
+>[new E2()] : E2[]
+>new E2() : E2
+>E2 : typeof E2
+>E2 : E2
+>x : string
+>"" : ""
+
+let a1 = mk1(); let a2 = mk2();
+>a1 : A1[]
+>mk1() : A1[]
+>mk1 : () => A1[]
+>a2 : A2[]
+>mk2() : A2[]
+>mk2 : () => A2[]
+
+a2 = a1;
+>a2 = a1 : A1[]
+>a2 : A2[]
+>a1 : A1[]
+
+const c: C2[] = new B1().cs;
+>c : C2[]
+>new B1().cs : C1[]
+>new B1() : B1
+>B1 : typeof B1
+>cs : C1[]
+
+const d: D2[] = new C1().ds;
+>d : D2[]
+>new C1().ds : D1[]
+>new C1() : C1
+>C1 : typeof C1
+>ds : D1[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

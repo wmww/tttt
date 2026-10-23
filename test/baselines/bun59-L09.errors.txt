@@ -1,0 +1,56 @@
+b.mts(1,16): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '.\x.js'?
+b.mts(2,16): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean './a.b\c.js'?
+sub/a.mts(1,16): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '..\x.js'?
+sub/a.mts(2,16): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../a.b\c.js'?
+sub/a.mts(3,16): error TS2834: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.
+sub/a.mts(4,16): error TS2834: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.
+sub/a.mts(5,16): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../x.js'?
+sub/a.mts(6,16): error TS2307: Cannot find module '..' or its corresponding type declarations.
+sub/a.mts(7,16): error TS2307: Cannot find module '.' or its corresponding type declarations.
+sub/a.mts(8,16): error TS2834: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.
+sub/a.mts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "node16" } }
+==== a.b/c.ts (0 errors) ====
+    export const c = 1;
+==== b.mts (2 errors) ====
+    import {} from ".\\x";
+                   ~~~~~~
+!!! error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '.\x.js'?
+    import {} from "./a.b\\c";
+                   ~~~~~~~~~~
+!!! error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean './a.b\c.js'?
+    export {};
+==== sub/a.mts (9 errors) ====
+    import {} from "..\\x";
+                   ~~~~~~~
+!!! error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '..\x.js'?
+    import {} from "../a.b\\c";
+                   ~~~~~~~~~~~
+!!! error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../a.b\c.js'?
+    import {} from "..\\nothing";
+                   ~~~~~~~~~~~~~
+!!! error TS2834: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.
+    import {} from "../x\\";
+                   ~~~~~~~~
+!!! error TS2834: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.
+    import {} from "../x";
+                   ~~~~~~
+!!! error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../x.js'?
+    import {} from "..";
+                   ~~~~
+!!! error TS2307: Cannot find module '..' or its corresponding type declarations.
+    import {} from ".";
+                   ~~~
+!!! error TS2307: Cannot find module '.' or its corresponding type declarations.
+    import {} from "../x/";
+                   ~~~~~~~
+!!! error TS2834: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== x.ts (0 errors) ====
+    export const x = 1;
+    

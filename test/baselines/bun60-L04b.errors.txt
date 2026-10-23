@@ -1,0 +1,30 @@
+a.ts(3,1): error TS4033: Property '"ab"' of exported interface has or is using private name 's'.
+a.ts(4,1): error TS4033: Property 'cd' of exported interface has or is using private name 's'.
+a.ts(7,1): error TS4033: Property '"ab"' of exported interface has or is using private name 's'.
+a.ts(8,1): error TS4033: Property 'cd' of exported interface has or is using private name 's'.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    function f() { const s = Symbol(); return { [s]: 1 }; }
+    export function g() {}
+    g["ab"] = f();
+    ~~~~~~~~~~~~~
+!!! error TS4033: Property '"ab"' of exported interface has or is using private name 's'.
+    g.cd = f();
+    ~~~~~~~~~~
+!!! error TS4033: Property 'cd' of exported interface has or is using private name 's'.
+    g[1] = f();
+    export const h = () => {};
+    h["ab"] = f();
+    ~~~~~~~~~~~~~
+!!! error TS4033: Property '"ab"' of exported interface has or is using private name 's'.
+    h.cd = f();
+    ~~~~~~~~~~
+!!! error TS4033: Property 'cd' of exported interface has or is using private name 's'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

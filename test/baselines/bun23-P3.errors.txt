@@ -1,0 +1,20 @@
+a.ts(3,7): error TS2719: Type '{ readonly [k]: unique symbol; }' is not assignable to type '{ readonly [k]: unique symbol; }'. Two different types with this name exist, but they are unrelated.
+  Types of property '[k]' are incompatible.
+    Type '(typeof a)[typeof k]' is not assignable to type '(typeof b)[typeof k]'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const k: unique symbol;
+    declare const a: { readonly [k]: unique symbol };
+    const b: { readonly [k]: unique symbol } = a;
+          ~
+!!! error TS2719: Type '{ readonly [k]: unique symbol; }' is not assignable to type '{ readonly [k]: unique symbol; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Types of property '[k]' are incompatible.
+!!! error TS2719:     Type '(typeof a)[typeof k]' is not assignable to type '(typeof b)[typeof k]'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,21 @@
+a.ts(2,7): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(4,37): error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function f<T>(u: U, t: T): number;
+    const x = f({ k: 5 }, 1);
+          ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    type U =
+      | { k: 1 | 2 } | { k: 3 | 4 } | { z?: typeof x; k: 5 | 6 } | { k: 7 | 8 } | { k: 9 | 10 }
+                                        ~
+!!! error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+      | { k: 11 | 12 } | { k: 13 | 14 } | { k: 15 | 16 } | { k: 17 | 18 } | { k: 19 | 20 };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

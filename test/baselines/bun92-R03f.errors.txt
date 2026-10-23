@@ -1,0 +1,17 @@
+a.js(1,13): error TS1109: Expression expected.
+a.js(2,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"],"allowJs":true,"checkJs":true } }
+==== a.js (2 errors) ====
+    /** @import #a from "./b" */
+                ~
+!!! error TS1109: Expression expected.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    export default interface D { d: 1 }
+    export interface A { a: 1 }
+    

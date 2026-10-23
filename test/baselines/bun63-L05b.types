@@ -1,0 +1,57 @@
+//// [test/cases/bun63-L05b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { } }
+>e : 1
+
+declare const cond: boolean;
+>cond : boolean
+
+const o1 = { q: 1 }, o2 = { r: 2 };
+>o1 : { q: number; }
+>{ q: 1 } : { q: number; }
+>q : number
+>1 : 1
+>o2 : { r: number; }
+>{ r: 2 } : { r: number; }
+>r : number
+>2 : 2
+
+declare function Gen<T>(props: T & { pick?: keyof T }): JSX.Element;
+>Gen : <T>(props: T & { pick?: keyof T; }) => JSX.Element
+>props : T & { pick?: keyof T; }
+>pick : keyof T | undefined
+>JSX : any
+
+const x1 = <Gen {...(cond ? o2 : o1)} pick="q" />;
+>x1 : JSX.Element
+><Gen {...(cond ? o2 : o1)} pick="q" /> : JSX.Element
+>Gen : <T>(props: T & { pick?: keyof T; }) => JSX.Element
+>(cond ? o2 : o1) : { q: number; } | { r: number; }
+>cond ? o2 : o1 : { q: number; } | { r: number; }
+>cond : boolean
+>o2 : { r: number; }
+>o1 : { q: number; }
+>pick : string
+
+declare function Req<T>(props: T & { z: 1 }): JSX.Element;
+>Req : <T>(props: T & { z: 1; }) => JSX.Element
+>props : T & { z: 1; }
+>z : 1
+>JSX : any
+
+const x2 = <Req {...(cond ? o2 : o1)} k="" />;
+>x2 : JSX.Element
+><Req {...(cond ? o2 : o1)} k="" /> : JSX.Element
+>Req : <T>(props: T & { z: 1; }) => JSX.Element
+>(cond ? o2 : o1) : { q: number; } | { r: number; }
+>cond ? o2 : o1 : { q: number; } | { r: number; }
+>cond : boolean
+>o2 : { r: number; }
+>o1 : { q: number; }
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

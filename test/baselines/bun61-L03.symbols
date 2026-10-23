@@ -1,0 +1,32 @@
+//// [test/cases/bun61-L03.ts] ////
+
+=== a.ts ===
+export {};
+declare let on: { n: number; m(): void };
+>on : Symbol(on, Decl(a.ts, 1, 11))
+>n : Symbol(n, Decl(a.ts, 1, 17))
+>m : Symbol(m, Decl(a.ts, 1, 28))
+
+declare function f(): "m";
+>f : Symbol(f, Decl(a.ts, 1, 41))
+
+({ [r1]() {} } = on);
+>[r1] : Symbol([r1], Decl(a.ts, 3, 2))
+>on : Symbol(on, Decl(a.ts, 1, 11))
+
+({ get [r2]() { return 1; } } = on);
+>[r2] : Symbol([r2], Decl(a.ts, 4, 2))
+>on : Symbol(on, Decl(a.ts, 1, 11))
+
+({ [f(1)]() {} } = on);
+>[f(1)] : Symbol([f(1)], Decl(a.ts, 5, 2))
+>f : Symbol(f, Decl(a.ts, 1, 41))
+>on : Symbol(on, Decl(a.ts, 1, 11))
+
+({ [r3]() {} } = { m() {} });
+>[r3] : Symbol([r3], Decl(a.ts, 6, 2))
+>m : Symbol(m, Decl(a.ts, 6, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

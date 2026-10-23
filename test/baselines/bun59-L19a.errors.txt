@@ -1,0 +1,24 @@
+a.ts(11,41): error TS2612: Property 'value' will overwrite the base property in 'MixAny.(Anonymous class) & Base<number>'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022" } }
+==== a.ts (2 errors) ====
+    class Base<T> { value?: T; other!: T; n?: number; init: T | undefined = undefined; }
+    type Ctor<T> = new (...a: any[]) => T;
+    function MixAny<TB extends Ctor<Base<any>>>(B: TB) { return class extends B { extra = 1 }; }
+    function MixUnknown<TB extends Ctor<Base<unknown>>>(B: TB) { return class extends B {}; }
+    function MixSame<TB extends Ctor<Base<number>>>(B: TB) { return class extends B {}; }
+    class D1 extends MixAny(Base<number>) {}
+    class Num extends Base<number> {}
+    class D2 extends MixAny(Num) {}
+    class D3 extends MixUnknown(Base<number>) {}
+    class D4 extends MixSame(Base<number>) {}
+    class D5 extends MixAny(Base<number>) { value?: number }
+                                            ~~~~~
+!!! error TS2612: Property 'value' will overwrite the base property in 'MixAny.(Anonymous class) & Base<number>'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

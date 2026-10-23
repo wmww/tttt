@@ -1,0 +1,22 @@
+a.ts(1,42): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(1,42): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(1,85): error TS2339: Property 'length' does not exist on type 'string | number'.
+  Property 'length' does not exist on type 'number'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    function f(o: any, x: string | number) { with (o) { x = "a"; var g = () => x; } g().length; }
+                                             ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                                             ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                                                                        ~~~~~~
+!!! error TS2339: Property 'length' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'length' does not exist on type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

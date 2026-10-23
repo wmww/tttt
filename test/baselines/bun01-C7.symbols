@@ -1,0 +1,12 @@
+//// [test/cases/bun01-C7.ts] ////
+
+=== a.ts ===
+export {};
+class A1 { constructor(public a: number = a) {} }
+>A1 : Symbol(A1, Decl(a.ts, 0, 10))
+>a : Symbol(A1.a, Decl(a.ts, 1, 23))
+>a : Symbol(a, Decl(a.ts, 1, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

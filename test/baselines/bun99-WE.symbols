@@ -1,0 +1,196 @@
+//// [test/cases/bun99-WE.ts] ////
+
+=== a.ts ===
+interface Box<X> {
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 14))
+
+  m<T, U extends T>(t: T, u: U): [X, T, U];
+>m : Symbol(Box.m, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 1, 4))
+>U : Symbol(U, Decl(a.ts, 1, 6))
+>T : Symbol(T, Decl(a.ts, 1, 4))
+>t : Symbol(t, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 4))
+>u : Symbol(u, Decl(a.ts, 1, 25))
+>U : Symbol(U, Decl(a.ts, 1, 6))
+>X : Symbol(X, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 1, 4))
+>U : Symbol(U, Decl(a.ts, 1, 6))
+
+  n<T extends X, U extends T[]>(t: T, u: U): U;
+>n : Symbol(Box.n, Decl(a.ts, 1, 43))
+>T : Symbol(T, Decl(a.ts, 2, 4))
+>X : Symbol(X, Decl(a.ts, 0, 14))
+>U : Symbol(U, Decl(a.ts, 2, 16))
+>T : Symbol(T, Decl(a.ts, 2, 4))
+>t : Symbol(t, Decl(a.ts, 2, 32))
+>T : Symbol(T, Decl(a.ts, 2, 4))
+>u : Symbol(u, Decl(a.ts, 2, 37))
+>U : Symbol(U, Decl(a.ts, 2, 16))
+>U : Symbol(U, Decl(a.ts, 2, 16))
+}
+declare const b: Box<number>;
+>b : Symbol(b, Decl(a.ts, 4, 13))
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+
+declare function apply<U, R>(f: (x: U, y: U) => R): R;
+>apply : Symbol(apply, Decl(a.ts, 4, 29))
+>U : Symbol(U, Decl(a.ts, 5, 23))
+>R : Symbol(R, Decl(a.ts, 5, 25))
+>f : Symbol(f, Decl(a.ts, 5, 29))
+>x : Symbol(x, Decl(a.ts, 5, 33))
+>U : Symbol(U, Decl(a.ts, 5, 23))
+>y : Symbol(y, Decl(a.ts, 5, 38))
+>U : Symbol(U, Decl(a.ts, 5, 23))
+>R : Symbol(R, Decl(a.ts, 5, 25))
+>R : Symbol(R, Decl(a.ts, 5, 25))
+
+declare function compose<U, B, C>(f: (x: U, y: U) => B, g: (b: B) => C): (x: U, y: U) => C;
+>compose : Symbol(compose, Decl(a.ts, 5, 54))
+>U : Symbol(U, Decl(a.ts, 6, 25))
+>B : Symbol(B, Decl(a.ts, 6, 27))
+>C : Symbol(C, Decl(a.ts, 6, 30))
+>f : Symbol(f, Decl(a.ts, 6, 34))
+>x : Symbol(x, Decl(a.ts, 6, 38))
+>U : Symbol(U, Decl(a.ts, 6, 25))
+>y : Symbol(y, Decl(a.ts, 6, 43))
+>U : Symbol(U, Decl(a.ts, 6, 25))
+>B : Symbol(B, Decl(a.ts, 6, 27))
+>g : Symbol(g, Decl(a.ts, 6, 55))
+>b : Symbol(b, Decl(a.ts, 6, 60))
+>B : Symbol(B, Decl(a.ts, 6, 27))
+>C : Symbol(C, Decl(a.ts, 6, 30))
+>x : Symbol(x, Decl(a.ts, 6, 74))
+>U : Symbol(U, Decl(a.ts, 6, 25))
+>y : Symbol(y, Decl(a.ts, 6, 79))
+>U : Symbol(U, Decl(a.ts, 6, 25))
+>C : Symbol(C, Decl(a.ts, 6, 30))
+
+declare function pipe2<T, U, R>(f: (t: T, u: U) => R): (t: T, u: U) => R;
+>pipe2 : Symbol(pipe2, Decl(a.ts, 6, 91))
+>T : Symbol(T, Decl(a.ts, 7, 23))
+>U : Symbol(U, Decl(a.ts, 7, 25))
+>R : Symbol(R, Decl(a.ts, 7, 28))
+>f : Symbol(f, Decl(a.ts, 7, 32))
+>t : Symbol(t, Decl(a.ts, 7, 36))
+>T : Symbol(T, Decl(a.ts, 7, 23))
+>u : Symbol(u, Decl(a.ts, 7, 41))
+>U : Symbol(U, Decl(a.ts, 7, 25))
+>R : Symbol(R, Decl(a.ts, 7, 28))
+>t : Symbol(t, Decl(a.ts, 7, 56))
+>T : Symbol(T, Decl(a.ts, 7, 23))
+>u : Symbol(u, Decl(a.ts, 7, 61))
+>U : Symbol(U, Decl(a.ts, 7, 25))
+>R : Symbol(R, Decl(a.ts, 7, 28))
+
+export const r1 = apply(b.m);
+>r1 : Symbol(r1, Decl(a.ts, 8, 12))
+>apply : Symbol(apply, Decl(a.ts, 4, 29))
+>b.m : Symbol(Box.m, Decl(a.ts, 0, 18))
+>b : Symbol(b, Decl(a.ts, 4, 13))
+>m : Symbol(Box.m, Decl(a.ts, 0, 18))
+
+export const r2 = compose(b.m, x => x);
+>r2 : Symbol(r2, Decl(a.ts, 9, 12))
+>compose : Symbol(compose, Decl(a.ts, 5, 54))
+>b.m : Symbol(Box.m, Decl(a.ts, 0, 18))
+>b : Symbol(b, Decl(a.ts, 4, 13))
+>m : Symbol(Box.m, Decl(a.ts, 0, 18))
+>x : Symbol(x, Decl(a.ts, 9, 30))
+>x : Symbol(x, Decl(a.ts, 9, 30))
+
+export const r3 = pipe2(b.m);
+>r3 : Symbol(r3, Decl(a.ts, 10, 12))
+>pipe2 : Symbol(pipe2, Decl(a.ts, 6, 91))
+>b.m : Symbol(Box.m, Decl(a.ts, 0, 18))
+>b : Symbol(b, Decl(a.ts, 4, 13))
+>m : Symbol(Box.m, Decl(a.ts, 0, 18))
+
+export const r4 = pipe2(b.n);
+>r4 : Symbol(r4, Decl(a.ts, 11, 12))
+>pipe2 : Symbol(pipe2, Decl(a.ts, 6, 91))
+>b.n : Symbol(Box.n, Decl(a.ts, 1, 43))
+>b : Symbol(b, Decl(a.ts, 4, 13))
+>n : Symbol(Box.n, Decl(a.ts, 1, 43))
+
+export const r5 = apply(b.n);
+>r5 : Symbol(r5, Decl(a.ts, 12, 12))
+>apply : Symbol(apply, Decl(a.ts, 4, 29))
+>b.n : Symbol(Box.n, Decl(a.ts, 1, 43))
+>b : Symbol(b, Decl(a.ts, 4, 13))
+>n : Symbol(Box.n, Decl(a.ts, 1, 43))
+
+const c1: never = r1;
+>c1 : Symbol(c1, Decl(a.ts, 13, 5))
+>r1 : Symbol(r1, Decl(a.ts, 8, 12))
+
+const c2: never = r2;
+>c2 : Symbol(c2, Decl(a.ts, 14, 5))
+>r2 : Symbol(r2, Decl(a.ts, 9, 12))
+
+const c3: never = r3;
+>c3 : Symbol(c3, Decl(a.ts, 15, 5))
+>r3 : Symbol(r3, Decl(a.ts, 10, 12))
+
+const c4: never = r4;
+>c4 : Symbol(c4, Decl(a.ts, 16, 5))
+>r4 : Symbol(r4, Decl(a.ts, 11, 12))
+
+const c5: never = r5;
+>c5 : Symbol(c5, Decl(a.ts, 17, 5))
+>r5 : Symbol(r5, Decl(a.ts, 12, 12))
+
+r3(1, 2);
+>r3 : Symbol(r3, Decl(a.ts, 10, 12))
+
+r3('a', 'b');
+>r3 : Symbol(r3, Decl(a.ts, 10, 12))
+
+r4(1, [1]);
+>r4 : Symbol(r4, Decl(a.ts, 11, 12))
+
+r4(1, ['']);
+>r4 : Symbol(r4, Decl(a.ts, 11, 12))
+
+class K<X> {
+>K : Symbol(K, Decl(a.ts, 21, 12))
+>X : Symbol(X, Decl(a.ts, 22, 8))
+
+  m<T extends X, U extends T>(t: T, u: U): U { return u; }
+>m : Symbol(K.m, Decl(a.ts, 22, 12))
+>T : Symbol(T, Decl(a.ts, 23, 4))
+>X : Symbol(X, Decl(a.ts, 22, 8))
+>U : Symbol(U, Decl(a.ts, 23, 16))
+>T : Symbol(T, Decl(a.ts, 23, 4))
+>t : Symbol(t, Decl(a.ts, 23, 30))
+>T : Symbol(T, Decl(a.ts, 23, 4))
+>u : Symbol(u, Decl(a.ts, 23, 35))
+>U : Symbol(U, Decl(a.ts, 23, 16))
+>U : Symbol(U, Decl(a.ts, 23, 16))
+>u : Symbol(u, Decl(a.ts, 23, 35))
+}
+declare const k: K<string | number>;
+>k : Symbol(k, Decl(a.ts, 25, 13))
+>K : Symbol(K, Decl(a.ts, 21, 12))
+
+export const r6 = pipe2(k.m);
+>r6 : Symbol(r6, Decl(a.ts, 26, 12))
+>pipe2 : Symbol(pipe2, Decl(a.ts, 6, 91))
+>k.m : Symbol(K.m, Decl(a.ts, 22, 12))
+>k : Symbol(k, Decl(a.ts, 25, 13))
+>m : Symbol(K.m, Decl(a.ts, 22, 12))
+
+const c6: never = r6;
+>c6 : Symbol(c6, Decl(a.ts, 27, 5))
+>r6 : Symbol(r6, Decl(a.ts, 26, 12))
+
+r6('a', 'a');
+>r6 : Symbol(r6, Decl(a.ts, 26, 12))
+
+r6('a', 1);
+>r6 : Symbol(r6, Decl(a.ts, 26, 12))
+
+export const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(a.ts, 30, 12))
+

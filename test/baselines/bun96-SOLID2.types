@@ -1,0 +1,39 @@
+//// [test/cases/bun96-SOLID2.ts] ////
+
+=== a.ts ===
+type 0x10n = 2;
+>type : any
+>0x10n = 2 : 2
+>0x10n : 16n
+>2 : 2
+
+interface 0XABn {}
+>interface : any
+>0XABn : 171n
+
+namespace 0x1_0n {}
+>namespace : any
+>0x1_0n : 16n
+
+type 0b11n = 2;
+>type : any
+>0b11n = 2 : 2
+>0b11n : 3n
+>2 : 2
+
+type 0o17n = 2;
+>type : any
+>0o17n = 2 : 2
+>0o17n : 15n
+>2 : 2
+
+type 0x10 = 2;
+>type : any
+>0x10 = 2 : 2
+>0x10 : 16
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

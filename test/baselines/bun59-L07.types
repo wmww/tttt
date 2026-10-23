@@ -1,0 +1,30 @@
+//// [test/cases/bun59-L07.ts] ////
+
+=== a.ts ===
+import css from "sub/./x.css";
+>css : any
+
+import { j } from "sub/./j";
+>j : any
+
+import { t } from "sub/./t";
+>t : any
+
+import { d } from "sub/./d";
+>d : 1
+
+import { d as d2 } from "sub/d";
+>d : 1
+>d2 : 1
+
+import css2 from "sub/x.css";
+>css2 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== modroot/sub/d.d.ts ===
+export const d: 1;
+>d : 1
+

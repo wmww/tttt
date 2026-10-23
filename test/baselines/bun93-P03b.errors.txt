@@ -1,0 +1,24 @@
+a.ts(1,2): error TS2349: This expression is not callable.
+  Type '{ e(): voi; }' has no call signatures.
+a.ts(1,18): error TS2304: Cannot find name 'voi'.
+a.ts(1,21): error TS1005: '{' expected.
+a.ts(3,1): error TS1160: Unterminated template literal.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "target": "es2022" } }
+==== a.ts (4 errors) ====
+    ({ abstract e(): voi`);
+     ~~~~~~~~~~~~~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type '{ e(): voi; }' has no call signatures.
+                     ~~~
+!!! error TS2304: Cannot find name 'voi'.
+                        ~~~
+    const sentinel: number = "";
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    
+!!! error TS1005: '{' expected.
+    
+!!! error TS1160: Unterminated template literal.

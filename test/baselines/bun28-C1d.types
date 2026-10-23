@@ -1,0 +1,14 @@
+//// [test/cases/bun28-C1d.ts] ////
+
+=== a.ts ===
+type T = { in p: number };
+>T : T
+>p : number
+
+declare const t: T;
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

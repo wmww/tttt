@@ -1,0 +1,23 @@
+//// [test/cases/bun53-L20b.ts] ////
+
+=== a.js ===
+class B {} class C {}
+>B : B
+>C : C
+
+/** @augments B */
+class A1 extends C extends B {}
+>A1 : A1
+>C : C
+>B : C
+
+/** @augments B */
+class A2 extends C, B {}
+>A2 : A2
+>C : C
+>B : C
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+

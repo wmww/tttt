@@ -1,0 +1,58 @@
+//// [test/cases/bun81-R09b.ts] ////
+
+=== a.ts ===
+function h1(this: ReturnType<typeof h1>, x = this) { return 1; }
+>h1 : Symbol(h1, Decl(a.ts, 0, 0))
+>this : Symbol(this, Decl(a.ts, 0, 12))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>h1 : Symbol(h1, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 40))
+>this : Symbol(this, Decl(a.ts, 0, 12))
+
+function h2(this: Parameters<typeof h2>[0], x = this) {}
+>h2 : Symbol(h2, Decl(a.ts, 0, 64))
+>this : Symbol(this, Decl(a.ts, 1, 12))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>h2 : Symbol(h2, Decl(a.ts, 0, 64))
+>x : Symbol(x, Decl(a.ts, 1, 43))
+>this : Symbol(this, Decl(a.ts, 1, 12))
+
+function h3(this: ThisParameterType<typeof h3>, x = [this]) {}
+>h3 : Symbol(h3, Decl(a.ts, 1, 56))
+>this : Symbol(this, Decl(a.ts, 2, 12))
+>ThisParameterType : Symbol(ThisParameterType, Decl(lib.es5.d.ts, --, --))
+>h3 : Symbol(h3, Decl(a.ts, 1, 56))
+>x : Symbol(x, Decl(a.ts, 2, 47))
+>this : Symbol(this, Decl(a.ts, 2, 12))
+
+function h8(this: ReturnType<typeof h8>, x: typeof this) { return 1; }
+>h8 : Symbol(h8, Decl(a.ts, 2, 62))
+>this : Symbol(this, Decl(a.ts, 3, 12))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>h8 : Symbol(h8, Decl(a.ts, 2, 62))
+>x : Symbol(x, Decl(a.ts, 3, 40))
+>this : Symbol(this, Decl(a.ts, 3, 12))
+
+class K1 { m(this: ReturnType<K1["m"]>, x = this) { return x; } }
+>K1 : Symbol(K1, Decl(a.ts, 3, 70))
+>m : Symbol(K1.m, Decl(a.ts, 4, 10))
+>this : Symbol(this, Decl(a.ts, 4, 13))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>K1 : Symbol(K1, Decl(a.ts, 3, 70))
+>x : Symbol(x, Decl(a.ts, 4, 39))
+>this : Symbol(this, Decl(a.ts, 4, 13))
+>x : Symbol(x, Decl(a.ts, 4, 39))
+
+// an ordinary first parameter: the two agree
+function p1(a: ReturnType<typeof p1>, x = a) { return x; }
+>p1 : Symbol(p1, Decl(a.ts, 4, 65))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>p1 : Symbol(p1, Decl(a.ts, 4, 65))
+>x : Symbol(x, Decl(a.ts, 6, 37))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>x : Symbol(x, Decl(a.ts, 6, 37))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

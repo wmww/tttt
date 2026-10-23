@@ -1,0 +1,16 @@
+a.ts(3,39): error TS2339: Property 'foo' does not exist on type 'K'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class K { isFoo(): this is Foo { return true; } }
+    class Foo extends K { foo = 1; }
+    function m(a: K) { if ((a.isFoo)()) a.foo; }
+                                          ~~~
+!!! error TS2339: Property 'foo' does not exist on type 'K'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

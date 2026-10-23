@@ -1,0 +1,20 @@
+//// [test/cases/bun23-C3b.ts] ////
+
+=== a.ts ===
+declare const s: unique symbol;
+>s : Symbol(s, Decl(a.ts, 0, 13))
+
+type TL = { readonly w: unique symbol };
+>TL : Symbol(TL, Decl(a.ts, 0, 31))
+>w : Symbol(w, Decl(a.ts, 1, 11))
+
+declare let x: TL["w"]; const y: typeof s = x;
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>TL : Symbol(TL, Decl(a.ts, 0, 31))
+>y : Symbol(y, Decl(a.ts, 2, 29))
+>s : Symbol(s, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

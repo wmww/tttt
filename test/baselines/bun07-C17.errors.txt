@@ -1,0 +1,20 @@
+a.ts(3,6): error TS2405: The left-hand side of a 'for...in' statement must be of type 'string' or 'any'.
+a.ts(4,6): error TS2405: The left-hand side of a 'for...in' statement must be of type 'string' or 'any'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    declare let n: number;
+    for (({ n }) in {}) {}
+         ~~~~~~~
+!!! error TS2405: The left-hand side of a 'for...in' statement must be of type 'string' or 'any'.
+    for (([n]) in {}) {}
+         ~~~~~
+!!! error TS2405: The left-hand side of a 'for...in' statement must be of type 'string' or 'any'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,17 @@
+a.tsx(3,6): error TS2322: Type '"&#97;"' is not assignable to type '"a"'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element {} }
+    declare function Foo(p: { x: "a" }): JSX.Element;
+    <Foo x="&#97;" />;
+         ~
+!!! error TS2322: Type '"&#97;"' is not assignable to type '"a"'.
+!!! related TS6500 a.tsx:2:27: The expected type comes from property 'x' which is declared here on type '{ x: "a"; }'
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

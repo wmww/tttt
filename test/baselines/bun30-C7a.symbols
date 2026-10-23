@@ -1,0 +1,10 @@
+//// [test/cases/bun30-C7a.ts] ////
+
+=== a.ts ===
+export const o = { #constructor: 1 };
+>o : Symbol(o, Decl(a.ts, 0, 12))
+>#constructor : Symbol(#constructor, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

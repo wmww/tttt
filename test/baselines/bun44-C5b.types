@@ -1,0 +1,37 @@
+//// [test/cases/bun44-C5b.ts] ////
+
+=== a.ts ===
+type A = { kind: "a"; v: number };
+>A : A
+>kind : "a"
+>v : number
+
+type B = { kind: "b"; v: string };
+>B : B
+>kind : "b"
+>v : string
+
+function f<T extends A | B>({ kind, v }: T & { x: 1 }) {
+>f : <T extends A | B>({ kind, v }: T & { x: 1; }) => void
+>kind : "a" | "b"
+>v : string | number
+>x : 1
+
+  if (kind === "a") v.toFixed();
+>kind === "a" : boolean
+>kind : "a" | "b"
+>"a" : "a"
+>v.toFixed() : string
+>v.toFixed : (fractionDigits?: number) => string
+>v : number
+>toFixed : (fractionDigits?: number) => string
+
+  else v.length;
+>v.length : number
+>v : string
+>length : number
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

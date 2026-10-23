@@ -1,0 +1,18 @@
+//// [test/cases/bun39-C11d.ts] ////
+
+=== node_modules/x/index.ts ===
+export const c = [1].map(x => x);
+>c : number[]
+>[1].map(x => x) : number[]
+>[1].map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>[1] : number[]
+>1 : 1
+>map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>x => x : (x: number) => number
+>x : number
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

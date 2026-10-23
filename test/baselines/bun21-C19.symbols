@@ -1,0 +1,28 @@
+//// [test/cases/bun21-C19.ts] ////
+
+=== a.ts ===
+class A { isB(_?: unknown): this is B { return false; } }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>isB : Symbol(A.isB, Decl(a.ts, 0, 9))
+>_ : Symbol(_, Decl(a.ts, 0, 14))
+>B : Symbol(B, Decl(a.ts, 0, 57))
+
+class B extends A { b = 1; }
+>B : Symbol(B, Decl(a.ts, 0, 57))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>b : Symbol(B.b, Decl(a.ts, 1, 19))
+
+function f(x: A) { if (x["isB"](x)) x.b; }
+>f : Symbol(f, Decl(a.ts, 1, 28))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>"isB" : Symbol(A.isB, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>x.b : Symbol(B.b, Decl(a.ts, 1, 19))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>b : Symbol(B.b, Decl(a.ts, 1, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

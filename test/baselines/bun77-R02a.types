@@ -1,0 +1,138 @@
+//// [test/cases/bun77-R02a.ts] ////
+
+=== a.ts ===
+declare function call<T>(f: (x: T) => void, v: T): T;
+>call : <T>(f: (x: T) => void, v: T) => T
+>f : (x: T) => void
+>x : T
+>v : T
+
+call(({ a } = { a: 1 }) => {}, { a: 2 });
+>call(({ a } = { a: 1 }) => {}, { a: 2 }) : { a: number; }
+>call : <T>(f: (x: T) => void, v: T) => T
+>({ a } = { a: 1 }) => {} : ({ a }?: { a: number; }) => void
+>a : number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ a: 2 } : { a: number; }
+>a : number
+>2 : 2
+
+call(([a] = [1]) => {}, [2]);
+>call(([a] = [1]) => {}, [2]) : number[]
+>call : <T>(f: (x: T) => void, v: T) => T
+>([a] = [1]) => {} : ([a]?: number[]) => void
+>a : number
+>[1] : number[]
+>1 : 1
+>[2] : number[]
+>2 : 2
+
+call(({ a } = { a: 1, z: 1 }) => {}, { a: 2, y: 3 });
+>call(({ a } = { a: 1, z: 1 }) => {}, { a: 2, y: 3 }) : { a: number; y: number; }
+>call : <T>(f: (x: T) => void, v: T) => T
+>({ a } = { a: 1, z: 1 }) => {} : ({ a }?: { a: number; y: number; }) => void
+>a : number
+>{ a: 1, z: 1 } : { a: number; z: number; }
+>a : number
+>1 : 1
+>z : number
+>1 : 1
+>{ a: 2, y: 3 } : { a: number; y: number; }
+>a : number
+>2 : 2
+>y : number
+>3 : 3
+
+call((x = { a: 1 }) => {}, { a: 2 });
+>call((x = { a: 1 }) => {}, { a: 2 }) : { a: number; }
+>call : <T>(f: (x: T) => void, v: T) => T
+>(x = { a: 1 }) => {} : (x?: { a: number; }) => void
+>x : { a: number; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{ a: 2 } : { a: number; }
+>a : number
+>2 : 2
+
+declare function call3<T>(o: { f: (x: T) => void, v: T }): T;
+>call3 : <T>(o: { f: (x: T) => void; v: T; }) => T
+>o : { f: (x: T) => void; v: T; }
+>f : (x: T) => void
+>x : T
+>v : T
+
+call3({ f({ a } = { a: 1 }) {}, v: { a: 2 } });
+>call3({ f({ a } = { a: 1 }) {}, v: { a: 2 } }) : { a: number; }
+>call3 : <T>(o: { f: (x: T) => void; v: T; }) => T
+>{ f({ a } = { a: 1 }) {}, v: { a: 2 } } : { f({ a }?: { a: number; }): void; v: { a: number; }; }
+>f : ({ a }?: { a: number; }) => void
+>a : number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>v : { a: number; }
+>{ a: 2 } : { a: number; }
+>a : number
+>2 : 2
+
+declare function call6<T>(f: (x: { p: T }) => void, v: T): T;
+>call6 : <T>(f: (x: { p: T; }) => void, v: T) => T
+>f : (x: { p: T; }) => void
+>x : { p: T; }
+>p : T
+>v : T
+
+call6(({ p } = { p: 1 }) => {}, 2);
+>call6(({ p } = { p: 1 }) => {}, 2) : number
+>call6 : <T>(f: (x: { p: T; }) => void, v: T) => T
+>({ p } = { p: 1 }) => {} : ({ p }?: { p: number; }) => void
+>p : number
+>{ p: 1 } : { p: number; }
+>p : number
+>1 : 1
+>2 : 2
+
+[{ a: 1 }].map(({ a } = { a: 1 }) => a);
+>[{ a: 1 }].map(({ a } = { a: 1 }) => a) : number[]
+>[{ a: 1 }].map : <U>(callbackfn: (value: { a: number; }, index: number, array: { a: number; }[]) => U, thisArg?: any) => U[]
+>[{ a: 1 }] : { a: number; }[]
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>map : <U>(callbackfn: (value: { a: number; }, index: number, array: { a: number; }[]) => U, thisArg?: any) => U[]
+>({ a } = { a: 1 }) => a : ({ a }?: { a: number; }) => number
+>a : number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>a : number
+
+[1].reduce(({ n } = { n: 0 }, x) => ({ n: n + x }), { n: 0 });
+>[1].reduce(({ n } = { n: 0 }, x) => ({ n: n + x }), { n: 0 }) : { n: number; }
+>[1].reduce : { (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number): number; (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number, initialValue: number): number; <U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: number[]) => U, initialValue: U): U; }
+>[1] : number[]
+>1 : 1
+>reduce : { (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number): number; (callbackfn: (previousValue: number, currentValue: number, currentIndex: number, array: number[]) => number, initialValue: number): number; <U>(callbackfn: (previousValue: U, currentValue: number, currentIndex: number, array: number[]) => U, initialValue: U): U; }
+>({ n } = { n: 0 }, x) => ({ n: n + x }) : ({ n }: { n: number; } | undefined, x: number) => { n: number; }
+>n : number
+>{ n: 0 } : { n: number; }
+>n : number
+>0 : 0
+>x : number
+>({ n: n + x }) : { n: number; }
+>{ n: n + x } : { n: number; }
+>n : number
+>n + x : number
+>n : number
+>x : number
+>{ n: 0 } : { n: number; }
+>n : number
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

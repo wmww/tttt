@@ -1,0 +1,11 @@
+//// [test/cases/bun40-C10a.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== node_modules/@typescript/lib-dom/index.d.ts ===
+declare const wrong: Nope;
+>wrong : Symbol(wrong, Decl(index.d.ts, 0, 13))
+>Nope : Symbol(Nope)
+

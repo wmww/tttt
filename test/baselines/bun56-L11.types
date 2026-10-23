@@ -1,0 +1,28 @@
+//// [test/cases/bun56-L11.ts] ////
+
+=== a.ts ===
+export {};
+declare const x: any;
+>x : any
+
+const { [await]: a } = x;
+>await : any
+>a : any
+>x : any
+
+interface I { [await]: 1 }
+>[await] : 1
+>await : any
+
+interface J { [await](): void; [await.x]: 1 }
+>[await] : () => void
+>await : any
+>[await.x] : 1
+>await.x : any
+>await : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

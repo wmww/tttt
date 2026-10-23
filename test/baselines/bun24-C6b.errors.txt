@@ -1,0 +1,14 @@
+a.ts(1,59): error TS2322: Type '() => any' is not assignable to type '1'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C { static #p() { return C.#p; } static t() { const z: 1 = C.#p; } }
+                                                              ~
+!!! error TS2322: Type '() => any' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

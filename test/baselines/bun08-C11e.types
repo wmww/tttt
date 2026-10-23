@@ -1,0 +1,17 @@
+//// [test/cases/bun08-C11e.ts] ////
+
+=== a.ts ===
+import r = require("./a"); const v = { n: 1, m: r }; export = v;
+>r : any
+>v : any
+>{ n: 1, m: r } : { n: number; m: any; }
+>n : number
+>1 : 1
+>m : any
+>r : any
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

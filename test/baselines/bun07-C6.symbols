@@ -1,0 +1,25 @@
+//// [test/cases/bun07-C6.ts] ////
+
+=== a.ts ===
+export {};
+type Action = { kind: 'A', payload: number } | { kind: 'B', payload: string };
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+>kind : Symbol(kind, Decl(a.ts, 1, 15))
+>payload : Symbol(payload, Decl(a.ts, 1, 26))
+>kind : Symbol(kind, Decl(a.ts, 1, 48))
+>payload : Symbol(payload, Decl(a.ts, 1, 59))
+
+function f2({ kind, payload }: Action) { var payload: number | string; if (kind === 'A') { payload.toFixed(); } }
+>f2 : Symbol(f2, Decl(a.ts, 1, 78))
+>kind : Symbol(kind, Decl(a.ts, 2, 13))
+>payload : Symbol(payload, Decl(a.ts, 2, 19), Decl(a.ts, 2, 44))
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+>payload : Symbol(payload, Decl(a.ts, 2, 19), Decl(a.ts, 2, 44))
+>kind : Symbol(kind, Decl(a.ts, 2, 13))
+>payload.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>payload : Symbol(payload, Decl(a.ts, 2, 19), Decl(a.ts, 2, 44))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

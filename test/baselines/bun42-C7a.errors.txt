@@ -1,0 +1,14 @@
+src/a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== src/a.ts (1 errors) ====
+    /// <reference types="./foo" />
+    const a: 1 = fooGlobal;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== node_modules/@types/foo/index.d.ts (0 errors) ====
+    declare const fooGlobal: 1;

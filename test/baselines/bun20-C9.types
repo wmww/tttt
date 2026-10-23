@@ -1,0 +1,27 @@
+//// [test/cases/bun20-C9.ts] ////
+
+=== a.ts ===
+type U5 = { kind: any; a: 1 } | { kind: 5; b: 2 };
+>U5 : U5
+>kind : any
+>a : 1
+>kind : 5
+>b : 2
+
+function t5(x: U5) { if (typeof x.kind === "string") { x.a; } }
+>t5 : (x: U5) => void
+>x : U5
+>typeof x.kind === "string" : boolean
+>typeof x.kind : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x.kind : any
+>x : U5
+>kind : any
+>"string" : "string"
+>x.a : 1
+>x : { kind: any; a: 1; }
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

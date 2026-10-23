@@ -1,0 +1,14 @@
+//// [test/cases/bun05-C10b.ts] ////
+
+=== a.ts ===
+const i3 = import(("./nope"));
+>i3 : Promise<any>
+>import(("./nope")) : Promise<any>
+>("./nope") : "./nope"
+>"./nope" : "./nope"
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

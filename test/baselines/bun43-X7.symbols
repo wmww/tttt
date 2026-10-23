@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X7.ts] ////
+
+=== a.ts ===
+import j from "./j.json";
+>j : Symbol(j, Decl(a.ts, 0, 6))
+
+=== j.json ===
+{"a": }
+>"a" : Symbol("a", Decl(j.json, 0, 1))
+

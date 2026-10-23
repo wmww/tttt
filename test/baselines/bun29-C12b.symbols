@@ -1,0 +1,28 @@
+//// [test/cases/bun29-C12b.ts] ////
+
+=== a.ts ===
+import * as ns from "./m";
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+
+let n: number = () => ns.mk();
+>n : Symbol(n, Decl(a.ts, 1, 3))
+>ns.mk : Symbol(ns.mk, Decl(m.ts, 1, 22))
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+>mk : Symbol(ns.mk, Decl(m.ts, 1, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+class C { c = 1 }
+>C : Symbol(C, Decl(m.ts, 0, 0))
+>c : Symbol(C.c, Decl(m.ts, 0, 9))
+
+export { C as "a-b" };
+>C : Symbol(C, Decl(m.ts, 0, 0))
+>"a-b" : Symbol("a-b", Decl(m.ts, 1, 8))
+
+export declare function mk(): C;
+>mk : Symbol(mk, Decl(m.ts, 1, 22))
+>C : Symbol(C, Decl(m.ts, 0, 0))
+

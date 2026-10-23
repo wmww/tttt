@@ -1,0 +1,16 @@
+//// [test/cases/bun18-C6a.ts] ////
+
+=== a.ts ===
+function f<T>(s: T & {}) {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>s : Symbol(s, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+  s as { a: 1 };
+>s : Symbol(s, Decl(a.ts, 0, 14))
+>a : Symbol(a, Decl(a.ts, 1, 8))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

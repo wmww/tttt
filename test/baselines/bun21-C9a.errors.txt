@@ -1,0 +1,17 @@
+a.ts(2,99): error TS2339: Property 'a' does not exist on type '{ [sy]: "a"; a: string; } | { [sy]: "b"; }'.
+  Property 'a' does not exist on type '{ [sy]: "b"; }'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const sy: unique symbol;
+    function f(u: { [sy]: "a"; a: string } | { [sy]: "b" }) { const { [sy]: k } = u; if (k === "a") u.a; }
+                                                                                                      ~
+!!! error TS2339: Property 'a' does not exist on type '{ [sy]: "a"; a: string; } | { [sy]: "b"; }'.
+!!! error TS2339:   Property 'a' does not exist on type '{ [sy]: "b"; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

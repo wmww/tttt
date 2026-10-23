@@ -1,0 +1,21 @@
+//// [test/cases/bun15-C14.ts] ////
+
+=== a.ts ===
+const kn = 1;
+>kn : Symbol(kn, Decl(a.ts, 0, 5))
+
+const o = { a: 1, 1: 2, s: 3, [kn]: 4 };
+>o : Symbol(o, Decl(a.ts, 1, 5))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>1 : Symbol(1, Decl(a.ts, 1, 17), Decl(a.ts, 1, 29))
+>s : Symbol(s, Decl(a.ts, 1, 23))
+>[kn] : Symbol(1, Decl(a.ts, 1, 17), Decl(a.ts, 1, 29))
+>kn : Symbol(kn, Decl(a.ts, 0, 5))
+
+const n: never = o;
+>n : Symbol(n, Decl(a.ts, 2, 5))
+>o : Symbol(o, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

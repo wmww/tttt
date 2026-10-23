@@ -1,0 +1,15 @@
+node_modules/x/index.ts(1,14): error TS9010: Variable must have an explicit type annotation with --isolatedDeclarations.
+node_modules/x/index.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "declaration": true, "isolatedDeclarations": true }, "files": ["node_modules/x/index.ts"] }
+==== node_modules/x/index.ts (2 errors) ====
+    export const c = [1].map(x => x);
+                 ~
+!!! error TS9010: Variable must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9027 node_modules/x/index.ts:1:14: Add a type annotation to the variable c.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

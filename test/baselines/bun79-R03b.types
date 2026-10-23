@@ -1,0 +1,32 @@
+//// [test/cases/bun79-R03b.ts] ////
+
+=== a.ts ===
+type F4<X> = X extends [infer A extends F4<A>] ? A : never;
+>F4 : any
+
+type F6<X> = X extends [infer A extends F6<string>] ? A : never;
+>F6 : any
+
+type W3<X> = X extends [infer A extends typeof w3] ? A : never; declare const w3: W3<[1]>;
+>W3 : any
+>w3 : any
+>w3 : any
+
+type W6<X> = X extends [infer A extends W7["p"]] ? A : never; interface W7 { p: W6<[1]> }
+>W6 : any
+>p : any
+
+function fn<X>(x: X extends [infer A extends ReturnType<typeof fn>] ? A : never) { return x; }
+>fn : <X>(x: X extends [infer A extends ReturnType<typeof fn>] ? A : never) => any
+>x : any
+>fn : <X>(x: X extends [infer A extends ReturnType<typeof fn>] ? A : never) => any
+>x : any
+
+class Cl<X> { p!: X extends [infer A extends Cl<A>["p"]] ? A : never; }
+>Cl : Cl<X>
+>p : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

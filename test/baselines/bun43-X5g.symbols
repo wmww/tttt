@@ -1,0 +1,11 @@
+//// [test/cases/bun43-X5g.ts] ////
+
+=== a.js ===
+/** @type {a.} */
+var x = 1;
+>x : Symbol(x, Decl(a.js, 1, 3))
+
+=== b.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 0, 5))
+

@@ -1,0 +1,58 @@
+a.ts(3,7): error TS2322: Type 'typeof f<string>' is not assignable to type 'number'.
+a.ts(5,7): error TS2322: Type '{ a: typeof f<string>; }' is not assignable to type 'number'.
+a.ts(8,7): error TS2322: Type 'Q' is not assignable to type 'number'.
+  Type 'null' is not assignable to type 'number'.
+a.ts(10,7): error TS2322: Type 'typeof f<string> | null' is not assignable to type 'number'.
+  Type 'null' is not assignable to type 'number'.
+a.ts(12,7): error TS2322: Type '(typeof f<string>)[]' is not assignable to type 'number'.
+a.ts(14,7): error TS2322: Type 'typeof f<string>' is not assignable to type 'number'.
+a.ts(15,55): error TS2322: Type 'typeof f<string> | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+a.ts(17,20): error TS2322: Type 'typeof f<number>' is not assignable to type 'number'.
+a.ts(18,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (9 errors) ====
+    declare function f<T>(x: T): T;
+    declare const v1: (typeof f<string>);
+    const n1: number = v1;
+          ~~
+!!! error TS2322: Type 'typeof f<string>' is not assignable to type 'number'.
+    declare const v2: { a: (typeof f<string>) };
+    const n2: number = v2;
+          ~~
+!!! error TS2322: Type '{ a: typeof f<string>; }' is not assignable to type 'number'.
+    type Q = (typeof f<string>) | null;
+    declare const v3: Q;
+    const n3: number = v3;
+          ~~
+!!! error TS2322: Type 'Q' is not assignable to type 'number'.
+!!! error TS2322:   Type 'null' is not assignable to type 'number'.
+    declare const v4: (typeof f<string>) | null;
+    const n4: number = v4;
+          ~~
+!!! error TS2322: Type 'typeof f<string> | null' is not assignable to type 'number'.
+!!! error TS2322:   Type 'null' is not assignable to type 'number'.
+    declare const v5: (typeof f<string>)[];
+    const n5: number = v5;
+          ~~
+!!! error TS2322: Type '(typeof f<string>)[]' is not assignable to type 'number'.
+    declare const v6: ( /* c */ typeof f<string> );
+    const n6: number = v6;
+          ~~
+!!! error TS2322: Type 'typeof f<string>' is not assignable to type 'number'.
+    function g(p: (typeof f<string>) | undefined) { const n7: number = p; }
+                                                          ~~
+!!! error TS2322: Type 'typeof f<string> | undefined' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    let v8 = null! as (typeof f<number>);
+    const n8: number = v8;
+                       ~~
+!!! error TS2322: Type 'typeof f<number>' is not assignable to type 'number'.
+!!! related TS6212 a.ts:17:20: Did you mean to call this expression?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

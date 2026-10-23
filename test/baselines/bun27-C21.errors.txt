@@ -1,0 +1,22 @@
+a.tsx(3,12): error TS2322: Type '{ "data-o": { alpha: number; b: number; }; }' is not assignable to type '{ "data-o"?: { alpha: number; } | undefined; }'.
+  Types of property '"data-o"' are incompatible.
+    Type '{ alpha: number; b: number; }' is not assignable to type '{ alpha: number; }'.
+      Property 'b' does not exist on type '{ alpha: number; }'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    declare function F(p: { "data-o"?: { alpha: number } }): JSX.Element;
+    const a = <F data-o={{ alpha: 1, b: 2 }} />;
+               ~
+!!! error TS2322: Type '{ "data-o": { alpha: number; b: number; }; }' is not assignable to type '{ "data-o"?: { alpha: number; } | undefined; }'.
+!!! error TS2322:   Types of property '"data-o"' are incompatible.
+!!! error TS2322:     Type '{ alpha: number; b: number; }' is not assignable to type '{ alpha: number; }'.
+!!! error TS2322:       Property 'b' does not exist on type '{ alpha: number; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

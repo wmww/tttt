@@ -1,0 +1,18 @@
+//// [test/cases/bun42-C13.ts] ////
+
+=== a.ts ===
+import * as p from "./p.json" with { type: "json" };
+>p : typeof p
+>type : any
+
+const t: 0 = p;
+>t : 0
+>p : typeof p
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== p.d.json.ts ===
+
+export {};

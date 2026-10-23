@@ -1,0 +1,16 @@
+a.ts(3,1): error TS2515: Non-abstract class 'default' does not implement inherited abstract member m from class 'A'.
+a.ts(4,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    abstract class A { abstract m(): void; }
+    declare function dec(...a: any[]): any;
+    @dec export default class extends A {}
+    ~
+!!! error TS2515: Non-abstract class 'default' does not implement inherited abstract member m from class 'A'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,74 @@
+//// [test/cases/bun57-L13a.ts] ////
+
+=== a.tsx ===
+interface Iterable<T> {}
+declare namespace JSX { interface Element {} interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>children : {}
+
+declare function C(props: { children: number }): JSX.Element;
+>C : (props: { children: number; }) => JSX.Element
+>props : { children: number; }
+>children : number
+>JSX : any
+
+declare function D(props: { children: number[] }): JSX.Element;
+>D : (props: { children: number[]; }) => JSX.Element
+>props : { children: number[]; }
+>children : number[]
+>JSX : any
+
+declare function E(props: { children: number | string[] }): JSX.Element;
+>E : (props: { children: number | string[]; }) => JSX.Element
+>props : { children: number | string[]; }
+>children : number | string[]
+>JSX : any
+
+const a1 = <C>{"x"}{"y"}</C>;
+>a1 : JSX.Element
+><C>{"x"}{"y"}</C> : JSX.Element
+>C : (props: { children: number; }) => JSX.Element
+>"x" : "x"
+>"y" : "y"
+>C : (props: { children: number; }) => JSX.Element
+
+const a2 = <C>{"x"}</C>;
+>a2 : JSX.Element
+><C>{"x"}</C> : JSX.Element
+>C : (props: { children: number; }) => JSX.Element
+>"x" : "x"
+>C : (props: { children: number; }) => JSX.Element
+
+const a3 = <D>{"x"}{"y"}</D>;
+>a3 : JSX.Element
+><D>{"x"}{"y"}</D> : JSX.Element
+>D : (props: { children: number[]; }) => JSX.Element
+>"x" : "x"
+>"y" : "y"
+>D : (props: { children: number[]; }) => JSX.Element
+
+const a4 = <D>{"x"}</D>;
+>a4 : JSX.Element
+><D>{"x"}</D> : JSX.Element
+>D : (props: { children: number[]; }) => JSX.Element
+>"x" : "x"
+>D : (props: { children: number[]; }) => JSX.Element
+
+const a5 = <E>{true}{"y"}</E>;
+>a5 : JSX.Element
+><E>{true}{"y"}</E> : JSX.Element
+>E : (props: { children: number | string[]; }) => JSX.Element
+>true : true
+>"y" : "y"
+>E : (props: { children: number | string[]; }) => JSX.Element
+
+const a6 = <E>{true}</E>;
+>a6 : JSX.Element
+><E>{true}</E> : JSX.Element
+>E : (props: { children: number | string[]; }) => JSX.Element
+>true : true
+>E : (props: { children: number | string[]; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,28 @@
+//// [test/cases/bun22-C4a.ts] ////
+
+=== a.ts ===
+interface I { me: this }
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>me : Symbol(I.me, Decl(a.ts, 0, 13))
+
+declare function f<U>(x: { me: U }): U;
+>f : Symbol(f, Decl(a.ts, 0, 24))
+>U : Symbol(U, Decl(a.ts, 1, 19))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+>me : Symbol(me, Decl(a.ts, 1, 26))
+>U : Symbol(U, Decl(a.ts, 1, 19))
+>U : Symbol(U, Decl(a.ts, 1, 19))
+
+function g<T extends I>(t: T): T { return f(t); }
+>g : Symbol(g, Decl(a.ts, 1, 39))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 2, 24))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>f : Symbol(f, Decl(a.ts, 0, 24))
+>t : Symbol(t, Decl(a.ts, 2, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

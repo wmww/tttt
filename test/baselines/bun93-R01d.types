@@ -1,0 +1,22 @@
+//// [test/cases/bun93-R01d.ts] ////
+
+=== a.ts ===
+type M = { [K in keyof N as A["a"] & string]: M["a"] };
+>M : M
+
+type A = { a: N["a"]; b: 1 };
+>A : A
+>a : any
+>b : 1
+
+type N = { [P in "a" | "b"]: M["b"] };
+>N : N
+
+let m: M = 1;
+>m : M
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

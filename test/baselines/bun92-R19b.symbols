@@ -1,0 +1,69 @@
+//// [test/cases/bun92-R19b.ts] ////
+
+=== a.ts ===
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+
+declare const g3: { readonly 7: 1; readonly "8": 1; 9: 1; 10: 1 };
+>g3 : Symbol(g3, Decl(a.ts, 1, 13))
+>7 : Symbol(7, Decl(a.ts, 1, 19))
+>"8" : Symbol("8", Decl(a.ts, 1, 34))
+>9 : Symbol(9, Decl(a.ts, 1, 51))
+>10 : Symbol(10, Decl(a.ts, 1, 57))
+
+const { 9: _c, ...r3 } = g3;
+>_c : Symbol(_c, Decl(a.ts, 2, 7))
+>r3 : Symbol(r3, Decl(a.ts, 2, 14))
+>g3 : Symbol(g3, Decl(a.ts, 1, 13))
+
+const g1 = { get 7() { return 1 }, set 8(v: number) {}, 9: 1, 10: 1 };
+>g1 : Symbol(g1, Decl(a.ts, 3, 5))
+>7 : Symbol(7, Decl(a.ts, 3, 12))
+>8 : Symbol(8, Decl(a.ts, 3, 34))
+>v : Symbol(v, Decl(a.ts, 3, 41))
+>9 : Symbol(9, Decl(a.ts, 3, 55))
+>10 : Symbol(10, Decl(a.ts, 3, 61))
+
+const { 9: _a, ...r1 } = g1;
+>_a : Symbol(_a, Decl(a.ts, 4, 7))
+>r1 : Symbol(r1, Decl(a.ts, 4, 14))
+>g1 : Symbol(g1, Decl(a.ts, 3, 5))
+
+class G2 { readonly 7 = 1; 9 = 1; 10 = 1 }
+>G2 : Symbol(G2, Decl(a.ts, 4, 28))
+>7 : Symbol(G2[7], Decl(a.ts, 5, 10))
+>9 : Symbol(G2[9], Decl(a.ts, 5, 26))
+>10 : Symbol(G2[10], Decl(a.ts, 5, 33))
+
+const { 9: _b, ...r2 } = new G2();
+>_b : Symbol(_b, Decl(a.ts, 6, 7))
+>r2 : Symbol(r2, Decl(a.ts, 6, 14))
+>G2 : Symbol(G2, Decl(a.ts, 4, 28))
+
+const t1: S<typeof r1> = ["?", -99], t2: S<typeof r2> = ["?", -99], t3: S<typeof r3> = ["?", -99];
+>t1 : Symbol(t1, Decl(a.ts, 7, 5))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>r1 : Symbol(r1, Decl(a.ts, 4, 14))
+>t2 : Symbol(t2, Decl(a.ts, 7, 36))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>r2 : Symbol(r2, Decl(a.ts, 6, 14))
+>t3 : Symbol(t3, Decl(a.ts, 7, 67))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>r3 : Symbol(r3, Decl(a.ts, 2, 14))
+
+type M = { [K in keyof typeof r3]: K }; const m: M = 0;
+>M : Symbol(M, Decl(a.ts, 7, 98))
+>K : Symbol(K, Decl(a.ts, 8, 12))
+>r3 : Symbol(r3, Decl(a.ts, 2, 14))
+>K : Symbol(K, Decl(a.ts, 8, 12))
+>m : Symbol(m, Decl(a.ts, 8, 45))
+>M : Symbol(M, Decl(a.ts, 7, 98))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

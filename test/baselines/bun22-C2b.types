@@ -1,0 +1,21 @@
+//// [test/cases/bun22-C2b.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: { [k: string]: any }, y: T): T;
+>f : <T>(x: { [k: string]: any; }, y: T) => T
+>x : { [k: string]: any; }
+>k : string
+>y : T
+
+namespace N { export const b = f(N, 1); }
+>N : typeof N
+>b : any
+>f(N, 1) : 1
+>f : <T>(x: { [k: string]: any; }, y: T) => T
+>N : typeof N
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

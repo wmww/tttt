@@ -1,0 +1,21 @@
+a.ts(6,7): error TS2322: Type '"no" | "yes"' is not assignable to type 'never'.
+  Type '"no"' is not assignable to type 'never'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface I { m(): this extends { a: 1 } ? "yes" : "no"; }
+    interface A extends I { a: 1 }
+    interface B extends I { b: 1 }
+    function f<T extends I>(x: T) { return x.m(); }
+    const r = f({} as A | B);
+    const r1: never = r;
+          ~~
+!!! error TS2322: Type '"no" | "yes"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"no"' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

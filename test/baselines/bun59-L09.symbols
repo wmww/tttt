@@ -1,0 +1,27 @@
+//// [test/cases/bun59-L09.ts] ////
+
+=== a.b/c.ts ===
+export const c = 1;
+>c : Symbol(c, Decl(c.ts, 0, 12))
+
+=== b.mts ===
+
+import {} from ".\\x";
+import {} from "./a.b\\c";
+export {};
+=== sub/a.mts ===
+import {} from "..\\x";
+import {} from "../a.b\\c";
+import {} from "..\\nothing";
+import {} from "../x\\";
+import {} from "../x";
+import {} from "..";
+import {} from ".";
+import {} from "../x/";
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.mts, 8, 5))
+
+=== x.ts ===
+export const x = 1;
+>x : Symbol(x, Decl(x.ts, 0, 12))
+

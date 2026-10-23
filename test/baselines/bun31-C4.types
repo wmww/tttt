@@ -1,0 +1,14 @@
+//// [test/cases/bun31-C4.ts] ////
+
+=== a.ts ===
+export default function f() {}
+>f : () => void
+
+export default interface I {}
+let v: I;
+>v : I
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

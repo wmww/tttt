@@ -1,0 +1,15 @@
+a.ts(2,1): error TS7052: Element implicitly has an 'any' type because type '{ get(k: string): number; }' has no index signature. Did you mean to call 'get'?
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const n: { b: { get(k: string): number } }, k: string;
+    n[`b`][k];
+    ~~~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type '{ get(k: string): number; }' has no index signature. Did you mean to call 'get'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

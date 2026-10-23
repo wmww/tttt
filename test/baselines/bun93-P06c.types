@@ -1,0 +1,16 @@
+//// [test/cases/bun93-P06c.ts] ////
+
+=== a.ts ===
+namespace N { export abstract class { m() {} } export class {} }
+>N : typeof N
+>m : () => void
+
+N.x;
+>N.x : any
+>N : typeof N
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

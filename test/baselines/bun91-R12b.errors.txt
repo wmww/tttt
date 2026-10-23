@@ -1,0 +1,52 @@
+a.ts(2,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(2,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(2,16): error TS6133: 'a1' is declared but its value is never read.
+a.ts(3,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(3,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(3,16): error TS6198: All destructured elements are unused.
+a.ts(4,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(4,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(4,22): error TS6133: 'a4' is declared but its value is never read.
+a.ts(5,16): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(5,16): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(5,31): error TS6133: 'b1' is declared but its value is never read.
+a.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "noUnusedLocals": true, "noUnusedParameters": true } }
+==== a.ts (13 errors) ====
+    declare const o: any;
+    with (o) { var a1 = 1; }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                   ~~
+!!! error TS6133: 'a1' is declared but its value is never read.
+    with (o) { var [a2, ...a3] = o; }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                   ~~~~~~~~~~~
+!!! error TS6198: All destructured elements are unused.
+    with (o) { namespace a4 {} }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                         ~~
+!!! error TS6133: 'a4' is declared but its value is never read.
+    function f() { with (o) { var b1 = 1; let b2 = 2; } }
+                   ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                   ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                  ~~
+!!! error TS6133: 'b1' is declared but its value is never read.
+    f();
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

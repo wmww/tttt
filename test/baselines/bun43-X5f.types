@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X5f.ts] ////
+
+=== a.ts ===
+var x: #a;
+>x : #a
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

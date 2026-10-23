@@ -1,0 +1,72 @@
+//// [test/cases/bun57-L05.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+interface G<T extends string> {}
+>G : Symbol(G, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+
+declare function g<T extends string>(): void;
+>g : Symbol(g, Decl(a.ts, 1, 32))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+
+declare class K<T extends string> {}
+>K : Symbol(K, Decl(a.ts, 2, 45))
+>T : Symbol(T, Decl(a.ts, 3, 16))
+
+type X1 = G<(number | boolean)>;
+>X1 : Symbol(X1, Decl(a.ts, 3, 36))
+>G : Symbol(G, Decl(a.ts, 0, 21))
+
+type X2 = G<(() => void)>;
+>X2 : Symbol(X2, Decl(a.ts, 4, 32))
+>G : Symbol(G, Decl(a.ts, 0, 21))
+
+g<(number)>();
+>g : Symbol(g, Decl(a.ts, 1, 32))
+
+new K<(number)>();
+>K : Symbol(K, Decl(a.ts, 2, 45))
+
+class L extends K<(number)> {}
+>L : Symbol(L, Decl(a.ts, 7, 18))
+>K : Symbol(K, Decl(a.ts, 2, 45))
+
+interface M extends G<(number)> {}
+>M : Symbol(M, Decl(a.ts, 8, 30))
+>G : Symbol(G, Decl(a.ts, 0, 21))
+
+type Y1 = { a: 1 }[("b" | "c")];
+>Y1 : Symbol(Y1, Decl(a.ts, 9, 34))
+>a : Symbol(a, Decl(a.ts, 10, 11))
+
+type Y2 = { a: 1 }[(number)];
+>Y2 : Symbol(Y2, Decl(a.ts, 10, 32))
+>a : Symbol(a, Decl(a.ts, 11, 11))
+
+type Y3 = { a: 1 }[(boolean)];
+>Y3 : Symbol(Y3, Decl(a.ts, 11, 29))
+>a : Symbol(a, Decl(a.ts, 12, 11))
+
+type Y4 = [1, 2][(5)];
+>Y4 : Symbol(Y4, Decl(a.ts, 12, 30))
+
+type M1 = { [K in (boolean)]: 1 };
+>M1 : Symbol(M1, Decl(a.ts, 13, 22))
+>K : Symbol(K, Decl(a.ts, 14, 13))
+
+type M2 = { [K in "a" as (boolean)]: 1 };
+>M2 : Symbol(M2, Decl(a.ts, 14, 34))
+>K : Symbol(K, Decl(a.ts, 15, 13))
+
+function f1(): (ReturnType<typeof f1>) { return o }
+>f1 : Symbol(f1, Decl(a.ts, 15, 41))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>f1 : Symbol(f1, Decl(a.ts, 15, 41))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 17, 5))
+

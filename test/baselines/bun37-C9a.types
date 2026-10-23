@@ -1,0 +1,19 @@
+//// [test/cases/bun37-C9a.ts] ////
+
+=== src/a.ts ===
+import { b } from "./b";
+>b : 1
+
+export const y: number = b;
+>y : number
+>b : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== gen/src/b.ts ===
+export const b = 1;
+>b : 1
+>1 : 1
+

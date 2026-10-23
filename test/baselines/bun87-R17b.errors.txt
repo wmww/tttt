@@ -1,0 +1,29 @@
+a.ts(2,33): error TS2432: In an enum with multiple declarations, only one declaration can omit an initializer for its first enum element.
+a.ts(2,42): error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+a.ts(2,65): error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "skipLibCheck": true, "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (4 errors) ====
+    import "pkg";
+    declare module "pkg" { enum E { B } enum F { B = 2 } const enum G { B = 2 } }
+                                    ~
+!!! error TS2432: In an enum with multiple declarations, only one declaration can omit an initializer for its first enum element.
+                                             ~
+!!! error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+!!! related TS6203 node_modules/pkg/index.d.ts:2:27: 'F' was also declared here.
+                                                                    ~
+!!! error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+!!! related TS6203 node_modules/pkg/index.d.ts:3:21: 'G' was also declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/pkg/index.d.ts (0 errors) ====
+    export declare enum E { A }
+    export declare const enum F { A = 1 }
+    export declare enum G { A = 1 }
+==== node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "types": "index.d.ts" }
+    

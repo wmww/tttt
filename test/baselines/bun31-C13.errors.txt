@@ -1,0 +1,13 @@
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noImplicitThis": false, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    declare function dec(...x: any[]): any;
+    declare function pick<T>(other: (t: T) => void, cb: () => T): void;
+    pick(t => { t.toFixed(); }, function () { class C { @dec(this) m() {} } return 1; });
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

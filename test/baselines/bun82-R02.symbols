@@ -1,0 +1,60 @@
+//// [test/cases/bun82-R02.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+function f1() {
+>f1 : Symbol(f1, Decl(a.ts, 0, 33))
+
+  let mode: "r" | "w" = "r";
+>mode : Symbol(mode, Decl(a.ts, 2, 5))
+
+  while (cond()) {
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+    const [m, n] = [mode, 1];
+>m : Symbol(m, Decl(a.ts, 4, 11))
+>n : Symbol(n, Decl(a.ts, 4, 13))
+>mode : Symbol(mode, Decl(a.ts, 2, 5))
+
+    switch (m) {
+>m : Symbol(m, Decl(a.ts, 4, 11))
+
+      case "r":
+        mode = "w";
+>mode : Symbol(mode, Decl(a.ts, 2, 5))
+
+        break;
+    }
+  }
+}
+function f2() {
+>f2 : Symbol(f2, Decl(a.ts, 11, 1))
+
+  let mode: "r" | "w" = "r";
+>mode : Symbol(mode, Decl(a.ts, 13, 5))
+
+  while (cond()) {
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+    const { m } = { m: mode };
+>m : Symbol(m, Decl(a.ts, 15, 11))
+>m : Symbol(m, Decl(a.ts, 15, 19))
+>mode : Symbol(mode, Decl(a.ts, 13, 5))
+
+    switch (m) {
+>m : Symbol(m, Decl(a.ts, 15, 11))
+
+      case "r":
+        mode = "w";
+>mode : Symbol(mode, Decl(a.ts, 13, 5))
+    }
+    const t: "r" | "w" = m;
+>t : Symbol(t, Decl(a.ts, 20, 9))
+>m : Symbol(m, Decl(a.ts, 15, 11))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 23, 5))
+

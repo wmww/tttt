@@ -1,0 +1,16 @@
+//// [test/cases/bun25-P1b.ts] ////
+
+=== a.ts ===
+interface J<T> { m: T extends string ? 1 : 2 }
+>m : T extends string ? 1 : 2
+
+function f<A, B, Z>(a: [J<A | B>["m"] | J<Z>["m"]]) { const n: never = a; }
+>f : <A, B, Z>(a: [J<A | B>["m"] | J<Z>["m"]]) => void
+>a : [(Z extends string ? 1 : 2) | (A extends string ? 1 : 2) | (B extends string ? 1 : 2)]
+>n : never
+>a : [(Z extends string ? 1 : 2) | (A extends string ? 1 : 2) | (B extends string ? 1 : 2)]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

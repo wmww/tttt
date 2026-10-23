@@ -1,0 +1,16 @@
+//// [test/cases/bun09-C17.ts] ////
+
+=== a.ts ===
+function m14<B extends new (...args: Missing[]) => {}>(b: B) { return class extends b { x = 1 }; }
+>m14 : <B extends new (...args: Missing[]) => {}>(b: B) => { new (...args: Missing[]): (Anonymous class); prototype: m14.(Anonymous class); } & B
+>args : Missing[]
+>b : B
+>class extends b { x = 1 } : { new (...args: Missing[]): (Anonymous class); prototype: m14.(Anonymous class); } & B
+>b : {}
+>x : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

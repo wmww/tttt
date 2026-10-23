@@ -1,0 +1,28 @@
+//// [test/cases/bun05-C11a.ts] ////
+
+=== a.ts ===
+declare function q1(a: number, ...r: [number, ...((x: number) => void)[][]]): void;
+>q1 : { (a: number, r_0: number, ...r: ((x: number) => void)[][]): void; (a: string, r_0: string): void; }
+>a : number
+>r : [number, ...((x: number) => void)[][]]
+>x : number
+
+declare function q1(a: string, ...r: [string]): void;
+>q1 : { (a: number, r_0: number, ...r: ((x: number) => void)[][]): void; (a: string, r_0: string): void; }
+>a : string
+>r : [string]
+
+q1(true, 1, x => { const z: 0 = x; });
+>q1(true, 1, x => { const z: 0 = x; }) : void
+>q1 : { (a: number, r_0: number, ...r: ((x: number) => void)[][]): void; (a: string, r_0: string): void; }
+>true : true
+>1 : 1
+>x => { const z: 0 = x; } : (x: number) => void
+>x : number
+>z : 0
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

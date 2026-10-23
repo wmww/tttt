@@ -1,0 +1,27 @@
+//// [test/cases/bun02-C5.ts] ////
+
+=== a.ts ===
+import { E1, E2 } from "./b";
+>E1 : typeof E1
+>E2 : typeof E2
+
+/**
+ * @throws {@link E1} when it fails
+ * @returns {@link E2}
+ */
+export function f1() {}
+>f1 : () => void
+
+const sentinel: number = ""; sentinel;
+>sentinel : number
+>"" : ""
+>sentinel : number
+
+=== b.ts ===
+export class E1 extends Error {}
+>E1 : E1
+>Error : Error
+
+export class E2 {}
+>E2 : E2
+

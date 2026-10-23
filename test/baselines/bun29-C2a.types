@@ -1,0 +1,28 @@
+//// [test/cases/bun29-C2a.ts] ////
+
+=== a.ts ===
+namespace O { export const v = 1; }
+>O : typeof O
+>v : 1
+>1 : 1
+
+interface X { o: 1 }
+>o : 1
+
+declare function mk(): X;
+>mk : () => X
+
+export namespace I { import X = O.v; type X = 1; export const v = mk(); }
+>I : typeof I
+>X : 1
+>O : typeof O
+>v : 1
+>X : 1
+>v : X
+>mk() : X
+>mk : () => X
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,8 @@
+//// [test/cases/bun80-R09c.ts] ////
+
+=== a.js ===
+function g(a: ) {}
+>g : Symbol(g, Decl(a.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 0, 11))
+> : Symbol(unknown)
+

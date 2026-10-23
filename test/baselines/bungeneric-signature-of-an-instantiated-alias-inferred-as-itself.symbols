@@ -1,0 +1,156 @@
+//// [test/cases/bungeneric-signature-of-an-instantiated-alias-inferred-as-itself.ts] ////
+
+=== a.ts ===
+type Id<A> = <T extends A>(a: T) => T;
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 8))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>A : Symbol(A, Decl(a.ts, 0, 8))
+>a : Symbol(a, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+
+type IdS = <T extends string>(a: T) => T;
+>IdS : Symbol(IdS, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>a : Symbol(a, Decl(a.ts, 1, 30))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+
+type Id0<A> = <T>(a: T, b: A) => T;
+>Id0 : Symbol(Id0, Decl(a.ts, 1, 41))
+>A : Symbol(A, Decl(a.ts, 2, 9))
+>T : Symbol(T, Decl(a.ts, 2, 15))
+>a : Symbol(a, Decl(a.ts, 2, 18))
+>T : Symbol(T, Decl(a.ts, 2, 15))
+>b : Symbol(b, Decl(a.ts, 2, 23))
+>A : Symbol(A, Decl(a.ts, 2, 9))
+>T : Symbol(T, Decl(a.ts, 2, 15))
+
+interface IdI<A> { <T extends A>(a: T): T }
+>IdI : Symbol(IdI, Decl(a.ts, 2, 35))
+>A : Symbol(A, Decl(a.ts, 3, 14))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+>A : Symbol(A, Decl(a.ts, 3, 14))
+>a : Symbol(a, Decl(a.ts, 3, 33))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+
+declare function wrap<R, P extends any[]>(f: (...a: P) => R): (...a: P) => R;
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>R : Symbol(R, Decl(a.ts, 4, 22))
+>P : Symbol(P, Decl(a.ts, 4, 24))
+>f : Symbol(f, Decl(a.ts, 4, 42))
+>a : Symbol(a, Decl(a.ts, 4, 46))
+>P : Symbol(P, Decl(a.ts, 4, 24))
+>R : Symbol(R, Decl(a.ts, 4, 22))
+>a : Symbol(a, Decl(a.ts, 4, 63))
+>P : Symbol(P, Decl(a.ts, 4, 24))
+>R : Symbol(R, Decl(a.ts, 4, 22))
+
+declare function wrap1<R, X>(f: (a: X) => R): (a: X) => R;
+>wrap1 : Symbol(wrap1, Decl(a.ts, 4, 77))
+>R : Symbol(R, Decl(a.ts, 5, 23))
+>X : Symbol(X, Decl(a.ts, 5, 25))
+>f : Symbol(f, Decl(a.ts, 5, 29))
+>a : Symbol(a, Decl(a.ts, 5, 33))
+>X : Symbol(X, Decl(a.ts, 5, 25))
+>R : Symbol(R, Decl(a.ts, 5, 23))
+>a : Symbol(a, Decl(a.ts, 5, 47))
+>X : Symbol(X, Decl(a.ts, 5, 25))
+>R : Symbol(R, Decl(a.ts, 5, 23))
+
+declare const id: Id<string>;
+>id : Symbol(id, Decl(a.ts, 6, 13))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+
+declare const ids: IdS;
+>ids : Symbol(ids, Decl(a.ts, 7, 13))
+>IdS : Symbol(IdS, Decl(a.ts, 0, 38))
+
+declare const id0: Id0<string>;
+>id0 : Symbol(id0, Decl(a.ts, 8, 13))
+>Id0 : Symbol(Id0, Decl(a.ts, 1, 41))
+
+declare const idi: IdI<string>;
+>idi : Symbol(idi, Decl(a.ts, 9, 13))
+>IdI : Symbol(IdI, Decl(a.ts, 2, 35))
+
+export const a1: Id<string> = wrap(id);
+>a1 : Symbol(a1, Decl(a.ts, 10, 12))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>id : Symbol(id, Decl(a.ts, 6, 13))
+
+export const a2: IdS = wrap(ids);
+>a2 : Symbol(a2, Decl(a.ts, 11, 12))
+>IdS : Symbol(IdS, Decl(a.ts, 0, 38))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>ids : Symbol(ids, Decl(a.ts, 7, 13))
+
+export const a3: Id<string> = wrap(ids);
+>a3 : Symbol(a3, Decl(a.ts, 12, 12))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>ids : Symbol(ids, Decl(a.ts, 7, 13))
+
+export const a4: IdS = wrap(id);
+>a4 : Symbol(a4, Decl(a.ts, 13, 12))
+>IdS : Symbol(IdS, Decl(a.ts, 0, 38))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>id : Symbol(id, Decl(a.ts, 6, 13))
+
+export const a5: Id0<string> = wrap(id0);
+>a5 : Symbol(a5, Decl(a.ts, 14, 12))
+>Id0 : Symbol(Id0, Decl(a.ts, 1, 41))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>id0 : Symbol(id0, Decl(a.ts, 8, 13))
+
+export const a6: IdI<string> = wrap(idi);
+>a6 : Symbol(a6, Decl(a.ts, 15, 12))
+>IdI : Symbol(IdI, Decl(a.ts, 2, 35))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>idi : Symbol(idi, Decl(a.ts, 9, 13))
+
+export const a7: Id<string> = wrap1(id);
+>a7 : Symbol(a7, Decl(a.ts, 16, 12))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>wrap1 : Symbol(wrap1, Decl(a.ts, 4, 77))
+>id : Symbol(id, Decl(a.ts, 6, 13))
+
+export const a8 = wrap(id);
+>a8 : Symbol(a8, Decl(a.ts, 17, 12))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>id : Symbol(id, Decl(a.ts, 6, 13))
+
+export const a9: 0 = wrap(id);
+>a9 : Symbol(a9, Decl(a.ts, 18, 12))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>id : Symbol(id, Decl(a.ts, 6, 13))
+
+export const b1: Id<number> = wrap(id);
+>b1 : Symbol(b1, Decl(a.ts, 19, 12))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>id : Symbol(id, Decl(a.ts, 6, 13))
+
+export const b2: Id<"a"> = wrap(id);
+>b2 : Symbol(b2, Decl(a.ts, 20, 12))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>id : Symbol(id, Decl(a.ts, 6, 13))
+
+export function g<B extends string>(f: Id<B>): Id<B> { return wrap(f); }
+>g : Symbol(g, Decl(a.ts, 20, 36))
+>B : Symbol(B, Decl(a.ts, 21, 18))
+>f : Symbol(f, Decl(a.ts, 21, 36))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 21, 18))
+>Id : Symbol(Id, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 21, 18))
+>wrap : Symbol(wrap, Decl(a.ts, 3, 43))
+>f : Symbol(f, Decl(a.ts, 21, 36))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 22, 5))
+

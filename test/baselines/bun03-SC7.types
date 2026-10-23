@@ -1,0 +1,21 @@
+//// [test/cases/bun03-SC7.ts] ////
+
+=== a.ts ===
+class B { x: number = 1; }
+>B : B
+>x : number
+>1 : 1
+
+class D extends B { x: number; }
+>D : D
+>B : B
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+interface D { x: number }
+>x : number
+

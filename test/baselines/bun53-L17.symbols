@@ -1,0 +1,27 @@
+//// [test/cases/bun53-L17.ts] ////
+
+=== a.js ===
+const dec = 0, dec2 = 0;
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+
+@dec export @dec2 function f1() {}
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+>f1 : Symbol(f1, Decl(a.js, 0, 24))
+
+@dec export @dec2 const x2 = 1;
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+>x2 : Symbol(x2, Decl(a.js, 2, 23))
+
+@dec export @dec2 async function f3() {}
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+>f3 : Symbol(f3, Decl(a.js, 2, 31))
+
+@dec export @dec2 class C4 {}
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>dec2 : Symbol(dec2, Decl(a.js, 0, 14))
+>C4 : Symbol(C4, Decl(a.js, 3, 40))
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C18b.ts] ////
+
+=== a.ts ===
+declare const x: any = async () => { };
+>x : any
+>async () => { } : () => Promise<void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

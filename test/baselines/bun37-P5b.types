@@ -1,0 +1,21 @@
+//// [test/cases/bun37-P5b.ts] ////
+
+=== a.ts ===
+import x from "./x.json";
+>x : { a: any; }
+
+export { x };
+>x : { a: any; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== x.json ===
+{ "a": <div></div> }
+>{ "a": <div></div> } : { a: any; }
+>"a" : any
+><div></div> : any
+>div : any
+>div : any
+

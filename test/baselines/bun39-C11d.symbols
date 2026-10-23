@@ -1,0 +1,13 @@
+//// [test/cases/bun39-C11d.ts] ////
+
+=== node_modules/x/index.ts ===
+export const c = [1].map(x => x);
+>c : Symbol(c, Decl(index.ts, 0, 12))
+>[1].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(index.ts, 0, 25))
+>x : Symbol(x, Decl(index.ts, 0, 25))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(index.ts, 1, 5))
+

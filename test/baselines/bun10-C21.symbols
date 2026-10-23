@@ -1,0 +1,180 @@
+//// [test/cases/bun10-C21.ts] ////
+
+=== a.ts ===
+interface L0 extends L1 { q0: 1 }
+>L0 : Symbol(L0, Decl(a.ts, 0, 0))
+>L1 : Symbol(L1, Decl(a.ts, 0, 33))
+>q0 : Symbol(L0.q0, Decl(a.ts, 0, 25))
+
+interface L1 extends L2 { q1: 1 }
+>L1 : Symbol(L1, Decl(a.ts, 0, 33))
+>L2 : Symbol(L2, Decl(a.ts, 1, 33))
+>q1 : Symbol(L1.q1, Decl(a.ts, 1, 25))
+
+interface L2 extends L3 { q2: 1 }
+>L2 : Symbol(L2, Decl(a.ts, 1, 33))
+>L3 : Symbol(L3, Decl(a.ts, 2, 33))
+>q2 : Symbol(L2.q2, Decl(a.ts, 2, 25))
+
+interface L3 extends L4 { q3: 1 }
+>L3 : Symbol(L3, Decl(a.ts, 2, 33))
+>L4 : Symbol(L4, Decl(a.ts, 3, 33))
+>q3 : Symbol(L3.q3, Decl(a.ts, 3, 25))
+
+interface L4 extends L5 { q4: 1 }
+>L4 : Symbol(L4, Decl(a.ts, 3, 33))
+>L5 : Symbol(L5, Decl(a.ts, 4, 33))
+>q4 : Symbol(L4.q4, Decl(a.ts, 4, 25))
+
+interface L5 extends L6 { q5: 1 }
+>L5 : Symbol(L5, Decl(a.ts, 4, 33))
+>L6 : Symbol(L6, Decl(a.ts, 5, 33))
+>q5 : Symbol(L5.q5, Decl(a.ts, 5, 25))
+
+interface L6 extends L7 { q6: 1 }
+>L6 : Symbol(L6, Decl(a.ts, 5, 33))
+>L7 : Symbol(L7, Decl(a.ts, 6, 33))
+>q6 : Symbol(L6.q6, Decl(a.ts, 6, 25))
+
+interface L7 extends L8 { q7: 1 }
+>L7 : Symbol(L7, Decl(a.ts, 6, 33))
+>L8 : Symbol(L8, Decl(a.ts, 7, 33))
+>q7 : Symbol(L7.q7, Decl(a.ts, 7, 25))
+
+interface L8 extends L9 { q8: 1 }
+>L8 : Symbol(L8, Decl(a.ts, 7, 33))
+>L9 : Symbol(L9, Decl(a.ts, 8, 33))
+>q8 : Symbol(L8.q8, Decl(a.ts, 8, 25))
+
+interface L9 extends L10 { q9: 1 }
+>L9 : Symbol(L9, Decl(a.ts, 8, 33))
+>L10 : Symbol(L10, Decl(a.ts, 9, 34))
+>q9 : Symbol(L9.q9, Decl(a.ts, 9, 26))
+
+interface L10 extends L11 { q10: 1 }
+>L10 : Symbol(L10, Decl(a.ts, 9, 34))
+>L11 : Symbol(L11, Decl(a.ts, 10, 36))
+>q10 : Symbol(L10.q10, Decl(a.ts, 10, 27))
+
+interface L11 extends L12 { q11: 1 }
+>L11 : Symbol(L11, Decl(a.ts, 10, 36))
+>L12 : Symbol(L12, Decl(a.ts, 11, 36))
+>q11 : Symbol(L11.q11, Decl(a.ts, 11, 27))
+
+interface L12 extends L13 { q12: 1 }
+>L12 : Symbol(L12, Decl(a.ts, 11, 36))
+>L13 : Symbol(L13, Decl(a.ts, 12, 36))
+>q12 : Symbol(L12.q12, Decl(a.ts, 12, 27))
+
+interface L13 extends L14 { q13: 1 }
+>L13 : Symbol(L13, Decl(a.ts, 12, 36))
+>L14 : Symbol(L14, Decl(a.ts, 13, 36))
+>q13 : Symbol(L13.q13, Decl(a.ts, 13, 27))
+
+interface L14 extends L15 { q14: 1 }
+>L14 : Symbol(L14, Decl(a.ts, 13, 36))
+>L15 : Symbol(L15, Decl(a.ts, 14, 36))
+>q14 : Symbol(L14.q14, Decl(a.ts, 14, 27))
+
+interface L15 extends L16 { q15: 1 }
+>L15 : Symbol(L15, Decl(a.ts, 14, 36))
+>L16 : Symbol(L16, Decl(a.ts, 15, 36))
+>q15 : Symbol(L15.q15, Decl(a.ts, 15, 27))
+
+interface L16 extends L17 { q16: 1 }
+>L16 : Symbol(L16, Decl(a.ts, 15, 36))
+>L17 : Symbol(L17, Decl(a.ts, 16, 36))
+>q16 : Symbol(L16.q16, Decl(a.ts, 16, 27))
+
+interface L17 extends L18 { q17: 1 }
+>L17 : Symbol(L17, Decl(a.ts, 16, 36))
+>L18 : Symbol(L18, Decl(a.ts, 17, 36))
+>q17 : Symbol(L17.q17, Decl(a.ts, 17, 27))
+
+interface L18 extends L19 { q18: 1 }
+>L18 : Symbol(L18, Decl(a.ts, 17, 36))
+>L19 : Symbol(L19, Decl(a.ts, 18, 36))
+>q18 : Symbol(L18.q18, Decl(a.ts, 18, 27))
+
+interface L19 extends L20 { q19: 1 }
+>L19 : Symbol(L19, Decl(a.ts, 18, 36))
+>L20 : Symbol(L20, Decl(a.ts, 19, 36))
+>q19 : Symbol(L19.q19, Decl(a.ts, 19, 27))
+
+interface L20 extends L21 { q20: 1 }
+>L20 : Symbol(L20, Decl(a.ts, 19, 36))
+>L21 : Symbol(L21, Decl(a.ts, 20, 36))
+>q20 : Symbol(L20.q20, Decl(a.ts, 20, 27))
+
+interface L21 extends L22 { q21: 1 }
+>L21 : Symbol(L21, Decl(a.ts, 20, 36))
+>L22 : Symbol(L22, Decl(a.ts, 21, 36))
+>q21 : Symbol(L21.q21, Decl(a.ts, 21, 27))
+
+interface L22 extends L23 { q22: 1 }
+>L22 : Symbol(L22, Decl(a.ts, 21, 36))
+>L23 : Symbol(L23, Decl(a.ts, 22, 36))
+>q22 : Symbol(L22.q22, Decl(a.ts, 22, 27))
+
+interface L23 extends L24 { q23: 1 }
+>L23 : Symbol(L23, Decl(a.ts, 22, 36))
+>L24 : Symbol(L24, Decl(a.ts, 23, 36))
+>q23 : Symbol(L23.q23, Decl(a.ts, 23, 27))
+
+interface L24 extends L25 { q24: 1 }
+>L24 : Symbol(L24, Decl(a.ts, 23, 36))
+>L25 : Symbol(L25, Decl(a.ts, 24, 36))
+>q24 : Symbol(L24.q24, Decl(a.ts, 24, 27))
+
+interface L25 extends L26 { q25: 1 }
+>L25 : Symbol(L25, Decl(a.ts, 24, 36))
+>L26 : Symbol(L26, Decl(a.ts, 25, 36))
+>q25 : Symbol(L25.q25, Decl(a.ts, 25, 27))
+
+interface L26 extends L27 { q26: 1 }
+>L26 : Symbol(L26, Decl(a.ts, 25, 36))
+>L27 : Symbol(L27, Decl(a.ts, 26, 36))
+>q26 : Symbol(L26.q26, Decl(a.ts, 26, 27))
+
+interface L27 extends L28 { q27: 1 }
+>L27 : Symbol(L27, Decl(a.ts, 26, 36))
+>L28 : Symbol(L28, Decl(a.ts, 27, 36))
+>q27 : Symbol(L27.q27, Decl(a.ts, 27, 27))
+
+interface L28 extends L29 { q28: 1 }
+>L28 : Symbol(L28, Decl(a.ts, 27, 36))
+>L29 : Symbol(L29, Decl(a.ts, 28, 36))
+>q28 : Symbol(L28.q28, Decl(a.ts, 28, 27))
+
+interface L29 extends L30 { q29: 1 }
+>L29 : Symbol(L29, Decl(a.ts, 28, 36))
+>L30 : Symbol(L30, Decl(a.ts, 29, 36))
+>q29 : Symbol(L29.q29, Decl(a.ts, 29, 27))
+
+interface L30 extends L31 { q30: 1 }
+>L30 : Symbol(L30, Decl(a.ts, 29, 36))
+>L31 : Symbol(L31, Decl(a.ts, 30, 36))
+>q30 : Symbol(L30.q30, Decl(a.ts, 30, 27))
+
+interface L31 extends L32 { q31: 1 }
+>L31 : Symbol(L31, Decl(a.ts, 30, 36))
+>L32 : Symbol(L32, Decl(a.ts, 31, 36))
+>q31 : Symbol(L31.q31, Decl(a.ts, 31, 27))
+
+interface L32 extends L33 { q32: 1 }
+>L32 : Symbol(L32, Decl(a.ts, 31, 36))
+>L33 : Symbol(L33, Decl(a.ts, 32, 36))
+>q32 : Symbol(L32.q32, Decl(a.ts, 32, 27))
+
+interface L33 extends M { }
+>L33 : Symbol(L33, Decl(a.ts, 32, 36))
+>M : Symbol(M, Decl(a.ts, 33, 27))
+
+type M = L0 & { z: 1 };
+>M : Symbol(M, Decl(a.ts, 33, 27))
+>L0 : Symbol(L0, Decl(a.ts, 0, 0))
+>z : Symbol(z, Decl(a.ts, 34, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 35, 5))
+

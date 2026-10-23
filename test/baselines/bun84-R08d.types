@@ -1,0 +1,13 @@
+//// [test/cases/bun84-R08d.ts] ////
+
+=== a.ts ===
+declare function dec2(...x: any[]): any;
+>dec2 : (...x: any[]) => any
+>x : any[]
+
+@dec2 import.meta;
+>dec2 : (...x: any[]) => any
+>.meta : any
+> : any
+>meta : any
+

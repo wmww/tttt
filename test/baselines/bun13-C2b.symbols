@@ -1,0 +1,12 @@
+//// [test/cases/bun13-C2b.ts] ////
+
+=== a.ts ===
+enum E2 { A = 1, H = E2["Z"] }
+>E2 : Symbol(E2, Decl(a.ts, 0, 0))
+>A : Symbol(E2.A, Decl(a.ts, 0, 9))
+>H : Symbol(E2.H, Decl(a.ts, 0, 16))
+>E2 : Symbol(E2, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

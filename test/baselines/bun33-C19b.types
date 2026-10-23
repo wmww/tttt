@@ -1,0 +1,12 @@
+//// [test/cases/bun33-C19b.ts] ////
+
+=== a.ts ===
+class P { #x = import(#x) }
+>P : P
+>#x : Promise<any>
+>import(#x) : Promise<any>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

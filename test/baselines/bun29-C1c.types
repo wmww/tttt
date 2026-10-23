@@ -1,0 +1,19 @@
+//// [test/cases/bun29-C1c.ts] ////
+
+=== a.ts ===
+declare var K: KCtor;
+>K : KCtor
+
+interface KCtor { readonly k: unique symbol }
+>k : unique symbol
+
+let n: number = K.k;
+>n : number
+>K.k : unique symbol
+>K : KCtor
+>k : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,43 @@
+a1.js(1,11): error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a1.js(1,21): error TS2729: Property 'p' is used before its initialization.
+a2.js(1,18): error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a2.js(1,25): error TS2729: Property 'p' is used before its initialization.
+a3.js(2,1): error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a4.js(1,1): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+zz.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "module": "commonjs", "types": [], "lib": ["es2022"] } }
+==== a1.js (2 errors) ====
+    class C { p = [this.p, module]; }
+              ~
+!!! error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                        ~
+!!! error TS2729: Property 'p' is used before its initialization.
+!!! related TS2728 a1.js:1:11: 'p' is declared here.
+    module.exports = C;
+==== a2.js (2 errors) ====
+    class C { static p = [C.p, exports]; }
+                     ~
+!!! error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                            ~
+!!! error TS2729: Property 'p' is used before its initialization.
+!!! related TS2728 a2.js:1:18: 'p' is declared here.
+    exports.C = C;
+==== a3.js (1 errors) ====
+    function f() {}
+    f.p = [f.p, module];
+    ~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: 'p' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    module.exports = f;
+==== a4.js (1 errors) ====
+    exports.a = [exports.a, module];
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+==== zz.ts (1 errors) ====
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

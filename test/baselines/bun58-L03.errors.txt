@@ -1,0 +1,47 @@
+a.ts(10,7): error TS2322: Type '({ [1 + 2]: a }: any) => void' is not assignable to type 'number'.
+a.ts(11,7): error TS2322: Type '({ [fn()]: a }: any) => void' is not assignable to type 'number'.
+a.ts(12,7): error TS2322: Type '({ [`a${k}b`]: a }: any) => void' is not assignable to type 'number'.
+a.ts(13,7): error TS2322: Type '({ [o["p"]]: a }: any) => void' is not assignable to type 'number'.
+a.ts(14,7): error TS2322: Type '({ [k + "x"]: a }: any) => void' is not assignable to type 'number'.
+a.ts(15,7): error TS2322: Type '({ [16 + 1]: a }: any) => void' is not assignable to type 'number'.
+a.ts(16,7): error TS2322: Type '({ [1 + 2]: a }: any) => void' is not assignable to type 'number'.
+a.ts(17,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    declare const k: string; declare function fn(): string; declare const o: { p: string };
+    function f1({ [1   +  2]: a }: any) {}
+    function f2({ [fn( )]: a }: any) {}
+    function f3({ [`a${ k }b`]: a }: any) {}
+    function f4({ [o [ "p" ]]: a }: any) {}
+    function f5({ [ /*c*/ k   + /*d*/ "x" ]: a }: any) {}
+    function f6({ [0x10 + 1]: a }: any) {}
+    function f7({ [1
+      + 2]: a }: any) {}
+    const n1: number = f1;
+          ~~
+!!! error TS2322: Type '({ [1 + 2]: a }: any) => void' is not assignable to type 'number'.
+    const n2: number = f2;
+          ~~
+!!! error TS2322: Type '({ [fn()]: a }: any) => void' is not assignable to type 'number'.
+    const n3: number = f3;
+          ~~
+!!! error TS2322: Type '({ [`a${k}b`]: a }: any) => void' is not assignable to type 'number'.
+    const n4: number = f4;
+          ~~
+!!! error TS2322: Type '({ [o["p"]]: a }: any) => void' is not assignable to type 'number'.
+    const n5: number = f5;
+          ~~
+!!! error TS2322: Type '({ [k + "x"]: a }: any) => void' is not assignable to type 'number'.
+    const n6: number = f6;
+          ~~
+!!! error TS2322: Type '({ [16 + 1]: a }: any) => void' is not assignable to type 'number'.
+    const n7: number = f7;
+          ~~
+!!! error TS2322: Type '({ [1 + 2]: a }: any) => void' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

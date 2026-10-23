@@ -1,0 +1,6 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+// @filename: a.tsx
+var v = (<a><c<=T>()=>void>/></a>);
+// @filename: b.tsx
+var w = (<a><c<<=T>()=>void>/></a>);

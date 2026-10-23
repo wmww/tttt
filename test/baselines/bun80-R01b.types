@@ -1,0 +1,23 @@
+//// [test/cases/bun80-R01b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }
+>div : any
+
+const j1 = <div #constructor="x" />;
+>j1 : JSX.Element
+><div #constructor="x" /> : JSX.Element
+>div : any
+>#constructor : string
+
+const j2 = <div a="1" #constructor />;
+>j2 : JSX.Element
+><div a="1" #constructor /> : JSX.Element
+>div : any
+>a : string
+>#constructor : true
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

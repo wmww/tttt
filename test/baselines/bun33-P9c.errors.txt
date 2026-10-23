@@ -1,0 +1,19 @@
+a.ts(2,1): error TS2694: Namespace '"m"' has no exported member 'const'.
+a.ts(2,7): error TS1005: ';' expected.
+a.ts(2,17): error TS2693: 'number' only refers to a type, but is being used as a value here.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type T = import("./m").
+    const sentinel: number = "";
+    ~~~~~
+!!! error TS2694: Namespace '"m"' has no exported member 'const'.
+          ~~~~~~~~
+!!! error TS1005: ';' expected.
+                    ~~~~~~
+!!! error TS2693: 'number' only refers to a type, but is being used as a value here.
+==== m.ts (0 errors) ====
+    export {};
+    

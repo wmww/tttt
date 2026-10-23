@@ -1,0 +1,18 @@
+g.ts(1,11): error TS2310: Type 'Array<T>' recursively references itself as a base type.
+g.ts(2,11): error TS2310: Type 'ReadonlyArray<T>' recursively references itself as a base type.
+g.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== g.ts (3 errors) ====
+    interface Array<T> extends Array<T> {}
+              ~~~~~
+!!! error TS2310: Type 'Array<T>' recursively references itself as a base type.
+    interface ReadonlyArray<T> extends ReadonlyArray<T> {}
+              ~~~~~~~~~~~~~
+!!! error TS2310: Type 'ReadonlyArray<T>' recursively references itself as a base type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

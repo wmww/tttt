@@ -1,0 +1,22 @@
+//// [test/cases/bun16-C13b.ts] ////
+
+=== a.ts ===
+interface Bad { then(): void }
+>Bad : Symbol(Bad, Decl(a.ts, 0, 0))
+>then : Symbol(Bad.then, Decl(a.ts, 0, 15))
+
+declare const u: string | Bad;
+>u : Symbol(u, Decl(a.ts, 1, 13))
+>Bad : Symbol(Bad, Decl(a.ts, 0, 0))
+
+async function h() { return u; }
+>h : Symbol(h, Decl(a.ts, 1, 30))
+>u : Symbol(u, Decl(a.ts, 1, 13))
+
+async function h2() { return u; }
+>h2 : Symbol(h2, Decl(a.ts, 2, 32))
+>u : Symbol(u, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

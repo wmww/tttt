@@ -1,0 +1,25 @@
+//// [test/cases/bun11-P6c.ts] ////
+
+=== a.ts ===
+function h(v: string | number) { if (p(v)) { return v; } return 0; }
+>h : (v: string | number) => any
+>v : string | number
+>p(v) : boolean
+>p : (x: string | number, ...y: ReturnType<typeof h>[]) => boolean
+>v : string | number
+>v : string | number
+>0 : 0
+
+function p(x: string | number, ...y: ReturnType<typeof h>[]) { return !!x; }
+>p : (x: string | number, ...y: ReturnType<typeof h>[]) => boolean
+>x : string | number
+>y : any
+>h : (v: string | number) => any
+>!!x : boolean
+>!x : boolean
+>x : string | number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

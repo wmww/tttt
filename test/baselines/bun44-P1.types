@@ -1,0 +1,10 @@
+//// [test/cases/bun44-P1.ts] ////
+
+=== a.ts ===
+type N<T extends never, K> = T[K];
+>N : N<T, K>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

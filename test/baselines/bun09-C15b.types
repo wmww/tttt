@@ -1,0 +1,21 @@
+//// [test/cases/bun09-C15b.ts] ////
+
+=== a.ts ===
+type G<A extends B[], B> = [A, B];
+>G : G<A, B>
+
+type E2<T> = T extends G<infer X, infer Y> ? X : never;
+>E2 : E2<T>
+
+function fe<T>(y: E2<T>) { return { ...y[0] }; }
+>fe : <T>(y: E2<T>) => any
+>y : E2<T>
+>{ ...y[0] } : any
+>y[0] : unknown
+>y : E2<T>
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'boolean'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface G<T> { (x: T): void }
+    interface A4 extends G<string>, G<number>, G<string> {}
+    declare const a4: A4;
+    declare function call<T>(f: (x: T) => void): T;
+    const t: boolean = call(a4);
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'boolean'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

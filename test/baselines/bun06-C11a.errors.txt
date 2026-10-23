@@ -1,0 +1,14 @@
+z.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" } }
+==== b.js (0 errors) ====
+    NS = { x: 1 };
+==== g.d.ts (0 errors) ====
+    declare namespace NS { const x: number }
+==== z.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

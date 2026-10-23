@@ -1,0 +1,35 @@
+//// [test/cases/bun01-P3.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : any
+
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+}
+import("./b");
+>import("./b") : any
+>"./b" : "./b"
+
+async function f1() {} f1();
+>f1 : () => any
+>f1() : any
+>f1 : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+
+export default 1;
+

@@ -1,0 +1,74 @@
+//// [test/cases/bun88-R02a.ts] ////
+
+=== index.ts ===
+/// <reference lib="dom" />
+const a: ABC = { abc: 1 };
+>a : Symbol(a, Decl(index.ts, 1, 5))
+>ABC : Symbol(ABC, Decl(index.ts, 0, 0))
+>abc : Symbol(abc, Decl(index.ts, 1, 16))
+
+const b: string = libValue;
+>b : Symbol(b, Decl(index.ts, 2, 5))
+>libValue : Symbol(libValue, Decl(index.ts, 1, 3))
+
+const c: number = libBad;
+>c : Symbol(c, Decl(index.ts, 3, 5))
+>libBad : Symbol(libBad, Decl(index.ts, 2, 3))
+
+const d: string = libFn(1, 2);
+>d : Symbol(d, Decl(index.ts, 4, 5))
+>libFn : Symbol(libFn, Decl(index.ts, 2, 23))
+
+const e: string = new LibClass().m();
+>e : Symbol(e, Decl(index.ts, 5, 5))
+>new LibClass().m : Symbol(LibClass.m, Decl(index.ts, 4, 23))
+>LibClass : Symbol(LibClass, Decl(index.ts, 3, 52))
+>m : Symbol(LibClass.m, Decl(index.ts, 4, 23))
+
+const f: string = new LibClass().p;
+>f : Symbol(f, Decl(index.ts, 6, 5))
+>new LibClass().p : Symbol(LibClass.p, Decl(index.ts, 4, 16))
+>LibClass : Symbol(LibClass, Decl(index.ts, 3, 52))
+>p : Symbol(LibClass.p, Decl(index.ts, 4, 16))
+
+window.localStorage;
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(index.ts, 8, 5))
+
+=== node_modules/@typescript/lib-dom/index.ts ===
+interface ABC { abc: string }
+>ABC : Symbol(ABC, Decl(index.ts, 0, 0))
+>abc : Symbol(ABC.abc, Decl(index.ts, 0, 15))
+
+var libValue = 1;
+>libValue : Symbol(libValue, Decl(index.ts, 1, 3))
+
+var libBad: string = 2;
+>libBad : Symbol(libBad, Decl(index.ts, 2, 3))
+
+function libFn(a, b) { return a + b + missingName; }
+>libFn : Symbol(libFn, Decl(index.ts, 2, 23))
+>a : Symbol(a, Decl(index.ts, 3, 15))
+>b : Symbol(b, Decl(index.ts, 3, 17))
+>a : Symbol(a, Decl(index.ts, 3, 15))
+>b : Symbol(b, Decl(index.ts, 3, 17))
+
+class LibClass { p = 1; m() { return this.p.nope; } }
+>LibClass : Symbol(LibClass, Decl(index.ts, 3, 52))
+>p : Symbol(LibClass.p, Decl(index.ts, 4, 16))
+>m : Symbol(LibClass.m, Decl(index.ts, 4, 23))
+>this.p : Symbol(LibClass.p, Decl(index.ts, 4, 16))
+>this : Symbol(LibClass, Decl(index.ts, 3, 52))
+>p : Symbol(LibClass.p, Decl(index.ts, 4, 16))
+
+async function libAsync() {}
+>libAsync : Symbol(libAsync, Decl(index.ts, 4, 53))
+
+function libRec1() { return [libRec2()]; }
+>libRec1 : Symbol(libRec1, Decl(index.ts, 5, 28))
+>libRec2 : Symbol(libRec2, Decl(index.ts, 6, 42))
+
+function libRec2() { return [libRec1()]; }
+>libRec2 : Symbol(libRec2, Decl(index.ts, 6, 42))
+>libRec1 : Symbol(libRec1, Decl(index.ts, 5, 28))
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun05-C4.ts] ////
+
+=== a.ts ===
+declare const sy: symbol;
+>sy : Symbol(sy, Decl(a.ts, 0, 13))
+
+declare function tag2(s: TemplateStringsArray, x: number): void;
+>tag2 : Symbol(tag2, Decl(a.ts, 0, 25))
+>s : Symbol(s, Decl(a.ts, 1, 22))
+>TemplateStringsArray : Symbol(TemplateStringsArray, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 46))
+
+tag2`${sy}`;
+>tag2 : Symbol(tag2, Decl(a.ts, 0, 25))
+>sy : Symbol(sy, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

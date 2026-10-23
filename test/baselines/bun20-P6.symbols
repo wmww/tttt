@@ -1,0 +1,19 @@
+//// [test/cases/bun20-P6.ts] ////
+
+=== a.ts ===
+function c(x: { a?: number }) { if (x.hasOwnProperty(("a"))) { x.a.toFixed(); } }
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 15))
+>x.hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x.a.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x.a : Symbol(a, Decl(a.ts, 0, 15))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 15))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,43 @@
+//// [test/cases/bun14-C3.ts] ////
+
+=== a.ts ===
+type Dg = 0|1|2|3|4|5|6|7|8|9;
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+
+type K = `${Dg}${Dg}${Dg}`;
+>K : Symbol(K, Decl(a.ts, 0, 30))
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+>Dg : Symbol(Dg, Decl(a.ts, 0, 0))
+
+type U<T> = T extends any ? {u: T} : never;
+>U : Symbol(U, Decl(a.ts, 1, 27))
+>T : Symbol(T, Decl(a.ts, 2, 7))
+>T : Symbol(T, Decl(a.ts, 2, 7))
+>u : Symbol(u, Decl(a.ts, 2, 29))
+>T : Symbol(T, Decl(a.ts, 2, 7))
+
+type V<T> = T extends any ? {v: T} : never;
+>V : Symbol(V, Decl(a.ts, 2, 43))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+>v : Symbol(v, Decl(a.ts, 3, 29))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+
+type A1 = U<K> & V<K>;
+>A1 : Symbol(A1, Decl(a.ts, 3, 43))
+>U : Symbol(U, Decl(a.ts, 1, 27))
+>K : Symbol(K, Decl(a.ts, 0, 30))
+>V : Symbol(V, Decl(a.ts, 2, 43))
+>K : Symbol(K, Decl(a.ts, 0, 30))
+
+type A2 = U<K> & V<K>;
+>A2 : Symbol(A2, Decl(a.ts, 4, 22))
+>U : Symbol(U, Decl(a.ts, 1, 27))
+>K : Symbol(K, Decl(a.ts, 0, 30))
+>V : Symbol(V, Decl(a.ts, 2, 43))
+>K : Symbol(K, Decl(a.ts, 0, 30))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

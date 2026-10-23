@@ -1,0 +1,67 @@
+//// [test/cases/bun60-L20c.ts] ////
+
+=== a.js ===
+const k = "foo";
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+class D3 { static [k] = 1; static { this.foo = 2; } }
+>D3 : Symbol(D3, Decl(a.js, 0, 16))
+>[k] : Symbol(D3.foo, Decl(a.js, 1, 35), Decl(a.js, 1, 10))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>this.foo : Symbol(D3.foo, Decl(a.js, 1, 35), Decl(a.js, 1, 10))
+>this : Symbol(D3, Decl(a.js, 0, 16))
+>foo : Symbol(D3.foo, Decl(a.js, 1, 35), Decl(a.js, 1, 10))
+
+class D4 { static [k] = 1; static m() { this.foo = 2; } }
+>D4 : Symbol(D4, Decl(a.js, 1, 53))
+>[k] : Symbol(D4.foo, Decl(a.js, 2, 39), Decl(a.js, 2, 10))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>m : Symbol(D4.m, Decl(a.js, 2, 26))
+>this.foo : Symbol(D4.foo, Decl(a.js, 2, 39), Decl(a.js, 2, 10))
+>this : Symbol(D4, Decl(a.js, 1, 53))
+>foo : Symbol(D4.foo, Decl(a.js, 2, 39), Decl(a.js, 2, 10))
+
+class D5 { [k] = 1; constructor() { this.foo = 2; } }
+>D5 : Symbol(D5, Decl(a.js, 2, 57))
+>[k] : Symbol(D5.foo, Decl(a.js, 3, 35), Decl(a.js, 3, 10))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>this.foo : Symbol(D5.foo, Decl(a.js, 3, 35), Decl(a.js, 3, 10))
+>this : Symbol(D5, Decl(a.js, 2, 57))
+>foo : Symbol(D5.foo, Decl(a.js, 3, 35), Decl(a.js, 3, 10))
+
+class D6 { [k] = 1; m() { this.foo = 2; } }
+>D6 : Symbol(D6, Decl(a.js, 3, 53))
+>[k] : Symbol(D6.foo, Decl(a.js, 4, 25), Decl(a.js, 4, 10))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>m : Symbol(D6.m, Decl(a.js, 4, 19))
+>this.foo : Symbol(D6.foo, Decl(a.js, 4, 25), Decl(a.js, 4, 10))
+>this : Symbol(D6, Decl(a.js, 3, 53))
+>foo : Symbol(D6.foo, Decl(a.js, 4, 25), Decl(a.js, 4, 10))
+
+class D7 { static foo = 1; static { this.foo = 2; } }
+>D7 : Symbol(D7, Decl(a.js, 4, 43))
+>foo : Symbol(D7.foo, Decl(a.js, 5, 10))
+>this.foo : Symbol(D7.foo, Decl(a.js, 5, 10))
+>this : Symbol(D7, Decl(a.js, 4, 43))
+>foo : Symbol(D7.foo, Decl(a.js, 5, 10))
+
+class D8 { static [k]; static { this.foo = 2; } }
+>D8 : Symbol(D8, Decl(a.js, 5, 53))
+>[k] : Symbol(D8.foo, Decl(a.js, 6, 31), Decl(a.js, 6, 10))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>this.foo : Symbol(D8.foo, Decl(a.js, 6, 31), Decl(a.js, 6, 10))
+>this : Symbol(D8, Decl(a.js, 5, 53))
+>foo : Symbol(D8.foo, Decl(a.js, 6, 31), Decl(a.js, 6, 10))
+
+class D9 { static { this.foo = 2; } static [k] = 1; }
+>D9 : Symbol(D9, Decl(a.js, 6, 49))
+>this.foo : Symbol(D9.foo, Decl(a.js, 7, 19), Decl(a.js, 7, 35))
+>this : Symbol(D9, Decl(a.js, 6, 49))
+>foo : Symbol(D9.foo, Decl(a.js, 7, 19), Decl(a.js, 7, 35))
+>[k] : Symbol(D9.foo, Decl(a.js, 7, 19), Decl(a.js, 7, 35))
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 9, 5))
+

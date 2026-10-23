@@ -1,0 +1,69 @@
+aug.ts(3,16): error TS2451: Cannot redeclare block-scoped variable 'c'.
+aug.ts(4,20): error TS2300: Duplicate identifier 'd'.
+aug.ts(5,19): error TS2300: Duplicate identifier 'f'.
+aug.ts(6,16): error TS2300: Duplicate identifier 'g'.
+aug.ts(8,15): error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+aug.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+m.js(1,9): error TS2451: Cannot redeclare block-scoped variable 'c'.
+m.js(2,9): error TS2300: Duplicate identifier 'd'.
+m.js(3,9): error TS2300: Duplicate identifier 'f'.
+m.js(4,9): error TS2300: Duplicate identifier 'g'.
+m.js(5,1): error TS2323: Cannot redeclare exported variable 'h'.
+m.js(6,9): error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" }, "files": ["m.js", "aug.ts"] }
+==== aug.ts (6 errors) ====
+    export {};
+    declare module "./m" {
+      export const c: number;
+                   ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'c'.
+!!! related TS6203 m.js:1:9: 'c' was also declared here.
+      export namespace d { const nd: number }
+                       ~
+!!! error TS2300: Duplicate identifier 'd'.
+!!! related TS6203 m.js:2:9: 'd' was also declared here.
+      export function f(): void;
+                      ~
+!!! error TS2300: Duplicate identifier 'f'.
+!!! related TS6203 m.js:3:9: 'f' was also declared here.
+      export class g {}
+                   ~
+!!! error TS2300: Duplicate identifier 'g'.
+!!! related TS6203 m.js:4:9: 'g' was also declared here.
+      export var h: number;
+      export enum i { A }
+                  ~
+!!! error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+!!! related TS6203 m.js:6:9: 'i' was also declared here.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.js (6 errors) ====
+    exports.c = 1;
+            ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'c'.
+!!! related TS6203 aug.ts:3:16: 'c' was also declared here.
+    exports.d = 1;
+            ~
+!!! error TS2300: Duplicate identifier 'd'.
+!!! related TS6203 aug.ts:4:20: 'd' was also declared here.
+    exports.f = 1;
+            ~
+!!! error TS2300: Duplicate identifier 'f'.
+!!! related TS6203 aug.ts:5:19: 'f' was also declared here.
+    exports.g = 1;
+            ~
+!!! error TS2300: Duplicate identifier 'g'.
+!!! related TS6203 aug.ts:6:16: 'g' was also declared here.
+    exports.h = 1;
+    ~~~~~~~~~~~~~
+!!! error TS2323: Cannot redeclare exported variable 'h'.
+    exports.i = 1;
+            ~
+!!! error TS2567: Enum declarations can only merge with namespace or other enum declarations.
+!!! related TS6203 aug.ts:8:15: 'i' was also declared here.
+    

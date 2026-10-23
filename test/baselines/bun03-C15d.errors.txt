@@ -1,0 +1,24 @@
+a.ts(1,16): error TS1232: An import declaration can only be used at the top level of a namespace or module.
+a.ts(1,25): error TS2300: Duplicate identifier 'c'.
+a.ts(1,47): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(1,56): error TS2300: Duplicate identifier 'c'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext" } }
+==== a.ts (5 errors) ====
+    function f() { import { c } from "./missing"; export { c }; }
+                   ~~~~~~
+!!! error TS1232: An import declaration can only be used at the top level of a namespace or module.
+                            ~
+!!! error TS2300: Duplicate identifier 'c'.
+                                                  ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                                                           ~
+!!! error TS2300: Duplicate identifier 'c'.
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

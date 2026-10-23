@@ -1,0 +1,15 @@
+//// [test/cases/bun39-P5a.ts] ////
+
+=== a.ts ===
+export {};
+const h = f;
+>h : Symbol(h, Decl(a.ts, 1, 5))
+>f : Symbol(f, Decl(a.ts, 1, 12))
+
+function f() { return h(); }
+>f : Symbol(f, Decl(a.ts, 1, 12))
+>h : Symbol(h, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

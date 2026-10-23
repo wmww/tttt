@@ -1,0 +1,30 @@
+//// [test/cases/bun13-C12.ts] ////
+
+=== a.ts ===
+interface Array<T> { length: number; [n: number]: T }
+>length : number
+>n : number
+
+interface Boolean {}
+interface CallableFunction {}
+interface Function {}
+interface IArguments {}
+interface NewableFunction {}
+interface Number {}
+interface Object {}
+interface RegExp {}
+interface String {}
+type R = readonly string[];
+>R : R
+
+declare let rr: R;
+>rr : R
+
+const n1: never = rr;
+>n1 : never
+>rr : R
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

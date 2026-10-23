@@ -1,0 +1,47 @@
+//// [test/cases/bun62-L13a.ts] ////
+
+=== a.ts ===
+import D from "./a";
+>D : typeof D
+
+declare const dec: any;
+>dec : any
+
+declare class Base { }
+>Base : Base
+
+interface Base extends D {}
+@dec export default class extends Base {}
+>dec : any
+>Base : Base
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import D from "./b";
+>D : typeof D
+
+declare const dec: any;
+>dec : any
+
+@dec export default class extends D {}
+>dec : any
+>D : typeof D
+
+=== c.ts ===
+declare const dec: any;
+>dec : any
+
+@dec export default class { a = 1 }
+>dec : any
+>a : number
+>1 : 1
+
+=== d.ts ===
+import "./c";
+declare module "./c" { export default class { b: number } }
+>"./c" : typeof import("./c")
+>b : number
+

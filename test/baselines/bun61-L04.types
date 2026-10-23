@@ -1,0 +1,42 @@
+//// [test/cases/bun61-L04.ts] ////
+
+=== a.ts ===
+export const o1 = { m(this, a: number): void {} };
+>o1 : { m(this: { m(this: any, a: number): void; }, a: number): void; }
+>{ m(this, a: number): void {} } : { m(this: { m(this: any, a: number): void; }, a: number): void; }
+>m : (this: { m(this: any, a: number): void; }, a: number) => void
+>this : { m(this: any, a: number): void; }
+>a : number
+
+export const f1 = function (this, a: number): void {};
+>f1 : (this: any, a: number) => void
+>function (this, a: number): void {} : (this: any, a: number) => void
+>this : any
+>a : number
+
+export function g1(this, a: number): void {}
+>g1 : (this: any, a: number) => void
+>this : any
+>a : number
+
+export class C { m(this, a: number): void {} }
+>C : C
+>m : (this: any, a: number) => void
+>this : any
+>a : number
+
+export interface I { m(this, a: number): void }
+>m : (this: any, a: number) => void
+>this : any
+>a : number
+
+export const f2 = function (this: string, a: number): void {};
+>f2 : (this: string, a: number) => void
+>function (this: string, a: number): void {} : (this: string, a: number) => void
+>this : string
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

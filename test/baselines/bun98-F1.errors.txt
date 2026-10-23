@@ -1,0 +1,33 @@
+a.ts(4,3): error TS2564: Property '["\0\0\u007f\u007f\u007f\u007f"]' has no initializer and is not definitely assigned in the constructor.
+a.ts(5,3): error TS2564: Property '["\0\u0001\u007f\u007f\u007f\u007f"]' has no initializer and is not definitely assigned in the constructor.
+a.ts(7,3): error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+a.ts(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare const k: unique symbol;
+    const c = "x";
+    export class C {
+      ["\0\0\u007f\u007f\u007f\u007f"]: number;
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2564: Property '["\0\0\u007f\u007f\u007f\u007f"]' has no initializer and is not definitely assigned in the constructor.
+      ["\0\u0001\u007f\u007f\u007f\u007f"]: number;
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2564: Property '["\0\u0001\u007f\u007f\u007f\u007f"]' has no initializer and is not definitely assigned in the constructor.
+      [c]: number;
+      [k]: number;
+      ~~~
+!!! error TS2564: Property '[k]' has no initializer and is not definitely assigned in the constructor.
+      constructor() {
+        for (;;) {
+          if (Math.random()) break;
+        }
+        this[c] = 1;
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

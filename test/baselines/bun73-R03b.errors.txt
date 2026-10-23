@@ -1,0 +1,43 @@
+a.ts(7,66): error TS2322: Type 'number[][]' is not assignable to type 'never'.
+a.ts(13,19): error TS7034: Variable 'y' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(15,21): error TS7005: Variable 'y' implicitly has an 'any[]' type.
+a.ts(15,39): error TS7005: Variable 'y' implicitly has an 'any[]' type.
+a.ts(15,49): error TS2322: Type 'any[]' is not assignable to type 'never'.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    declare function c(): boolean;
+    declare function s(): string;
+    function valid() {
+      let x = []; let y = [];
+      do {
+        while (c()) {
+          try { x.push(y); if ((x = [])) continue; } finally { const p: never = x; y.push(x.pop()); }
+                                                                     ~
+!!! error TS2322: Type 'number[][]' is not assignable to type 'never'.
+        }
+        y = [];
+      } while (c() && y.push(1));
+    }
+    function besideImplicitAny() {
+      let x = []; let y = [];
+                      ~
+!!! error TS7034: Variable 'y' implicitly has type 'any[]' in some locations where its type cannot be determined.
+      while (c()) {
+        try { x.push(...y, {}); x.push(...y); const p: never = x; } catch { if (x === y || c()) break; }
+                        ~
+!!! error TS7005: Variable 'y' implicitly has an 'any[]' type.
+                                          ~
+!!! error TS7005: Variable 'y' implicitly has an 'any[]' type.
+                                                    ~
+!!! error TS2322: Type 'any[]' is not assignable to type 'never'.
+        y.push(s());
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

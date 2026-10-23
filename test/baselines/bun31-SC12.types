@@ -1,0 +1,35 @@
+//// [test/cases/bun31-SC12.ts] ////
+
+=== a.ts ===
+class R7 { get g() { switch ((() => { throw 1 })()) { case 1: break } } }
+>R7 : R7
+>g : void
+>(() => { throw 1 })() : never
+>(() => { throw 1 }) : () => never
+>() => { throw 1 } : () => never
+>1 : 1
+>1 : 1
+
+function r1() { switch ((() => { throw 1 })()) { case 1: break } class C { } }
+>r1 : () => void
+>(() => { throw 1 })() : never
+>(() => { throw 1 }) : () => never
+>() => { throw 1 } : () => never
+>1 : 1
+>1 : 1
+>C : C
+
+function r3() { switch ((() => { throw 1 })()) { case 1: break } { let a; function a() { } } }
+>r3 : () => void
+>(() => { throw 1 })() : never
+>(() => { throw 1 }) : () => never
+>() => { throw 1 } : () => never
+>1 : 1
+>1 : 1
+>a : any
+>a : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

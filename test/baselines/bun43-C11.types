@@ -1,0 +1,10 @@
+//// [test/cases/bun43-C11.ts] ////
+
+=== a.ts ===
+type T = `\8`;
+>T : "\\8"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

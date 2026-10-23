@@ -1,0 +1,17 @@
+//// [test/cases/bun12-C7a.ts] ////
+
+=== a.ts ===
+type Cn<T, U> = T extends string ? [T, U] : Cn<U | "x", "y">;
+>Cn : Cn<T, U>
+
+declare let cn: Cn<1, "z">;
+>cn : ["x", "y"] | ["y", "y"]
+
+const okcn: ["x", "y"] | ["y", "y"] = cn;
+>okcn : ["x", "y"] | ["y", "y"]
+>cn : ["x", "y"] | ["y", "y"]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun07-C16.ts] ////
+
+=== a.ts ===
+export {};
+declare let onu: { n: number } | undefined;
+>onu : Symbol(onu, Decl(a.ts, 1, 11))
+>n : Symbol(n, Decl(a.ts, 1, 18))
+
+const r5: null = (({}) = onu);
+>r5 : Symbol(r5, Decl(a.ts, 2, 5))
+>onu : Symbol(onu, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun09-C12.ts] ////
+
+=== a.ts ===
+function p1({ toString = 1 } = {}) {}
+>p1 : ({ toString }?: {}) => void
+>toString : number | (() => string)
+>1 : 1
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

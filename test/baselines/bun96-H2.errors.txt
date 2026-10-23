@@ -1,0 +1,153 @@
+a.ts(13,7): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(18,7): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(19,7): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(23,7): error TS2322: Type 'string' is not assignable to type 'number'.
+amb.d.ts(2,21): error TS1141: String literal expected.
+d1.ts(1,10): error TS2300: Duplicate identifier 'A'.
+d1.ts(1,19): error TS1141: String literal expected.
+d1.ts(2,10): error TS2300: Duplicate identifier 'A'.
+d1.ts(2,19): error TS1141: String literal expected.
+d2.ts(1,14): error TS2323: Cannot redeclare exported variable 'B'.
+d2.ts(2,10): error TS2323: Cannot redeclare exported variable 'B'.
+d2.ts(2,19): error TS1141: String literal expected.
+d3.ts(1,10): error TS2528: A module cannot have multiple default exports.
+d3.ts(1,25): error TS1141: String literal expected.
+d3.ts(2,1): error TS2528: A module cannot have multiple default exports.
+d4.ts(2,19): error TS1141: String literal expected.
+d5.ts(2,24): error TS1141: String literal expected.
+d5.ts(3,20): error TS1141: String literal expected.
+d5.ts(4,24): error TS1141: String literal expected.
+d6.ts(1,8): error TS2323: Cannot redeclare exported variable 'H'.
+d6.ts(1,20): error TS1141: String literal expected.
+d6.ts(2,14): error TS2323: Cannot redeclare exported variable 'H'.
+d7.ts(1,10): error TS2300: Duplicate identifier 'X'.
+d7.ts(2,10): error TS2300: Duplicate identifier 'X'.
+d7.ts(2,19): error TS1141: String literal expected.
+d8.ts(2,19): error TS1141: String literal expected.
+d9.ts(1,25): error TS1141: String literal expected.
+d9.ts(3,21): error TS1141: String literal expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    import { A } from "./d1";
+    import { B } from "./d2";
+    import D from "./d3";
+    import { C } from "./d4";
+    import { F, G, I } from "./d5";
+    import { H } from "./d6";
+    import { X } from "./d7";
+    import { Y } from "./d8";
+    import L, { N } from "./d9";
+    import { K } from "amb";
+    import * as d4 from "./d4";
+    const a: string = A;
+    const b: string = B;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const d: string = D;
+    const c: string = C;
+    const f: string = F, g: string = G;
+    let i: I;
+    const h: string = H;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const x: string = X;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const y: string = Y;
+    const l: string = L, j: string = N.J, k: string = K;
+    d4.C;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== amb.d.ts (1 errors) ====
+    declare module "amb" {
+      export { K } from 123;
+                        ~~~
+!!! error TS1141: String literal expected.
+    }
+==== d1.ts (4 errors) ====
+    export { A } from 123;
+             ~
+!!! error TS2300: Duplicate identifier 'A'.
+                      ~~~
+!!! error TS1141: String literal expected.
+    export { A } from 456;
+             ~
+!!! error TS2300: Duplicate identifier 'A'.
+                      ~~~
+!!! error TS1141: String literal expected.
+==== d2.ts (3 errors) ====
+    export const B = 1;
+                 ~
+!!! error TS2323: Cannot redeclare exported variable 'B'.
+    export { B } from 123;
+             ~
+!!! error TS2323: Cannot redeclare exported variable 'B'.
+                      ~~~
+!!! error TS1141: String literal expected.
+==== d3.ts (3 errors) ====
+    export { default } from 123;
+             ~~~~~~~
+!!! error TS2528: A module cannot have multiple default exports.
+!!! related TS2753 d3.ts:2:1: Another export default is here.
+                            ~~~
+!!! error TS1141: String literal expected.
+    export default 1;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2528: A module cannot have multiple default exports.
+!!! related TS2752 d3.ts:1:10: The first export default is here.
+==== d4.ts (1 errors) ====
+    const C = 1;
+    export { C } from 123;
+                      ~~~
+!!! error TS1141: String literal expected.
+==== d5.ts (3 errors) ====
+    declare const name: string;
+    export { E as F } from name;
+                           ~~~~
+!!! error TS1141: String literal expected.
+    export * as G from `./other`;
+                       ~~~~~~~~~
+!!! error TS1141: String literal expected.
+    export { type I } from (name);
+                           ~~~~~~
+!!! error TS1141: String literal expected.
+==== d6.ts (3 errors) ====
+    export * as H from 123;
+           ~~~~~~
+!!! error TS2323: Cannot redeclare exported variable 'H'.
+                       ~~~
+!!! error TS1141: String literal expected.
+    export const H = 1;
+                 ~
+!!! error TS2323: Cannot redeclare exported variable 'H'.
+==== d7.ts (3 errors) ====
+    export { X } from "./other";
+             ~
+!!! error TS2300: Duplicate identifier 'X'.
+    export { X } from 123;
+             ~
+!!! error TS2300: Duplicate identifier 'X'.
+                      ~~~
+!!! error TS1141: String literal expected.
+==== d8.ts (1 errors) ====
+    export * from "./other";
+    export { Y } from 123;
+                      ~~~
+!!! error TS1141: String literal expected.
+==== d9.ts (2 errors) ====
+    export { default } from 123;
+                            ~~~
+!!! error TS1141: String literal expected.
+    export namespace N {
+      export { J } from 123;
+                        ~~~
+!!! error TS1141: String literal expected.
+    }
+==== other.ts (0 errors) ====
+    export const X = 1;
+    export const Y = 1;
+    

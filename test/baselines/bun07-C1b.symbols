@@ -1,0 +1,35 @@
+//// [test/cases/bun07-C1b.ts] ////
+
+=== a.ts ===
+export {};
+declare function make<D, M>(o: { data: D; methods: M & ThisType<D & M> }): D & M;
+>make : Symbol(make, Decl(a.ts, 0, 10))
+>D : Symbol(D, Decl(a.ts, 1, 22))
+>M : Symbol(M, Decl(a.ts, 1, 24))
+>o : Symbol(o, Decl(a.ts, 1, 28))
+>data : Symbol(data, Decl(a.ts, 1, 32))
+>D : Symbol(D, Decl(a.ts, 1, 22))
+>methods : Symbol(methods, Decl(a.ts, 1, 41))
+>M : Symbol(M, Decl(a.ts, 1, 24))
+>ThisType : Symbol(ThisType, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(a.ts, 1, 22))
+>M : Symbol(M, Decl(a.ts, 1, 24))
+>D : Symbol(D, Decl(a.ts, 1, 22))
+>M : Symbol(M, Decl(a.ts, 1, 24))
+
+const m = make({ data: { x: 1 }, methods: { get i() { return this.x; }, f() { return this.i; } } });
+>m : Symbol(m, Decl(a.ts, 2, 5))
+>make : Symbol(make, Decl(a.ts, 0, 10))
+>data : Symbol(data, Decl(a.ts, 2, 16))
+>x : Symbol(x, Decl(a.ts, 2, 24))
+>methods : Symbol(methods, Decl(a.ts, 2, 32))
+>i : Symbol(i, Decl(a.ts, 2, 43))
+>this.x : Symbol(x, Decl(a.ts, 2, 24))
+>x : Symbol(x, Decl(a.ts, 2, 24))
+>f : Symbol(f, Decl(a.ts, 2, 71))
+>this.i : Symbol(i, Decl(a.ts, 2, 43))
+>i : Symbol(i, Decl(a.ts, 2, 43))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

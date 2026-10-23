@@ -1,0 +1,16 @@
+a.cts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext" } }
+==== a.cts (1 errors) ====
+    import m1 from "./esm.mjs";
+    import { default as m2 } from "./esm.mjs";
+    export { default as m3 } from "./esm.mjs";
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== esm.mts (0 errors) ====
+    const me = { q: 1 };
+    export { me as "module.exports" };
+    

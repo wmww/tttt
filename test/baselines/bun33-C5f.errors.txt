@@ -1,0 +1,18 @@
+a.ts(2,21): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+a.ts(2,22): error TS1477: An instantiation expression cannot be followed by a property access.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    interface G<T> {}
+    interface X extends G<number>.x {}
+                        ~~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+                         ~~~~~~~~
+!!! error TS1477: An instantiation expression cannot be followed by a property access.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

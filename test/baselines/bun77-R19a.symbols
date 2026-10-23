@@ -1,0 +1,36 @@
+//// [test/cases/bun77-R19a.ts] ////
+
+=== a.ts ===
+interface Array<T> { 0: string; }
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>0 : Symbol(Array[0], Decl(a.ts, 0, 20))
+
+declare function f(...a: number[]): void;
+>f : Symbol(f, Decl(a.ts, 0, 33))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+
+f("s"); f(1); f("s", 1);
+>f : Symbol(f, Decl(a.ts, 0, 33))
+>f : Symbol(f, Decl(a.ts, 0, 33))
+>f : Symbol(f, Decl(a.ts, 0, 33))
+
+declare function g(...cbs: ((x: number) => void)[]): void;
+>g : Symbol(g, Decl(a.ts, 2, 24))
+>cbs : Symbol(cbs, Decl(a.ts, 3, 19))
+>x : Symbol(x, Decl(a.ts, 3, 29))
+
+g("s", y => { const t: never = y; });
+>g : Symbol(g, Decl(a.ts, 2, 24))
+>y : Symbol(y, Decl(a.ts, 4, 6))
+>t : Symbol(t, Decl(a.ts, 4, 19))
+>y : Symbol(y, Decl(a.ts, 4, 6))
+
+const fn: (a: number) => void = f;
+>fn : Symbol(fn, Decl(a.ts, 5, 5))
+>a : Symbol(a, Decl(a.ts, 5, 11))
+>f : Symbol(f, Decl(a.ts, 0, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

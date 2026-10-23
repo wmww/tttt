@@ -1,0 +1,38 @@
+//// [test/cases/bun04-P4.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : any
+
+  interface Array<T> { [Symbol.asyncIterator](): AsyncIterator<"async">; }
+>[Symbol.asyncIterator] : () => AsyncIterator<"async">
+>Symbol.asyncIterator : unique symbol
+>Symbol : SymbolConstructor
+>asyncIterator : unique symbol
+
+  interface String { [Symbol.iterator](): Iterator<"aug">; }
+>[Symbol.iterator] : { (): StringIterator<string>; (): Iterator<"aug">; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+}
+declare const a: number[];
+>a : number[]
+
+for await (const x of a) { const n: never = x; }
+>x : "async"
+>a : number[]
+>n : never
+>x : "async"
+
+for (const x of "abc") { const n: never = x; }
+>x : "aug"
+>"abc" : "abc"
+>n : never
+>x : "aug"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

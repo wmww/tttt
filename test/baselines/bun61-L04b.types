@@ -1,0 +1,24 @@
+//// [test/cases/bun61-L04b.ts] ////
+
+=== a.ts ===
+export const o3 = { get y(): number { return 1; }, set y(this: any) {} };
+>o3 : { get y(): number; set y(this: any); }
+>{ get y(): number { return 1; }, set y(this: any) {} } : { get y(): number; set y(this: any); }
+>y : number
+>1 : 1
+>y : number
+>this : any
+
+export const o2 = { get x(): number { return 1; }, set x(this: any, v: number) {} };
+>o2 : { x: number; }
+>{ get x(): number { return 1; }, set x(this: any, v: number) {} } : { x: number; }
+>x : number
+>1 : 1
+>x : number
+>this : any
+>v : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

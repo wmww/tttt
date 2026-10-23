@@ -1,0 +1,252 @@
+//// [test/cases/bun83-R03c.ts] ////
+
+=== new_inter.ts ===
+let x: 1 & n\u0065w () => Z;
+>x : 1 & (new () => Z)
+
+=== new_keyof.ts ===
+let x: keyof n\u0065w () => Z;
+>x : string | number | symbol
+>() => Z : () => any
+>Z : any
+
+=== new_ro.ts ===
+let x: readonly n\u0065w () => Z[];
+>x : new
+>() => Z[] : () => any
+>Z[] : any
+>Z : any
+> : any
+
+=== new_union.ts ===
+let x: 1 | n\u0065w () => Z;
+>x : 1 | (new () => Z)
+
+=== new_union0.ts ===
+let x: | n\u0065w () => Z;
+>x : new () => Z
+
+=== null_call.ts ===
+f<n\u0075ll>();
+>f<n\u0075ll>() : any
+>f : any
+
+=== null_call2.ts ===
+f<1, n\u0075ll>();
+>f<1, n\u0075ll>() : any
+>f : any
+
+=== null_exts.ts ===
+class C extends A<n\u0075ll> {}
+>C : C
+>A : any
+
+=== null_idx.ts ===
+type X = Y[n\u0075ll];
+>X : any
+
+=== null_iext.ts ===
+
+interface I extends A<n\u0075ll> {}
+=== null_impl.ts ===
+class C implements A<n\u0075ll> {}
+>C : C
+
+=== null_jsx.ts ===
+x = y as A<[n\u0075ll]>;
+>x = y as A<[n\u0075ll]> : A<[null]>
+>x : 1 & (new () => Z)
+>y as A<[n\u0075ll]> : A<[null]>
+>y : any
+
+=== null_targ.ts ===
+let x: A<n\u0075ll>;
+>x : A<null>
+
+=== null_targ2.ts ===
+let x: A<1, n\u0075ll>;
+>x : A<1, null>
+
+=== null_tru.ts ===
+type X = 1 extends 1 ? n\u0075ll : 3;
+>X : null
+
+=== null_tuple.ts ===
+let x: [n\u0075ll];
+>x : [null]
+
+=== null_tuple2.ts ===
+let x: [1, n\u0075ll];
+>x : [1, null]
+
+=== this_call.ts ===
+f<t\u0068is>();
+>f<t\u0068is>() : any
+>f : any
+
+=== this_call2.ts ===
+f<1, t\u0068is>();
+>f<1, t\u0068is>() : any
+>f : any
+
+=== this_exts.ts ===
+class C extends A<t\u0068is> {}
+>C : C
+>A : any
+
+=== this_idx.ts ===
+type X = Y[t\u0068is];
+>X : Y
+
+=== this_iext.ts ===
+
+interface I extends A<t\u0068is> {}
+=== this_impl.ts ===
+class C implements A<t\u0068is> {}
+>C : C
+
+=== this_jsx.ts ===
+x = y as A<[t\u0068is]>;
+>x = y as A<[t\u0068is]> : A<[any]>
+>x : 1 & (new () => Z)
+>y as A<[t\u0068is]> : A<[any]>
+>y : any
+
+=== this_targ.ts ===
+let x: A<t\u0068is>;
+>x : A<any>
+
+=== this_targ2.ts ===
+let x: A<1, t\u0068is>;
+>x : A<1, any>
+
+=== this_tru.ts ===
+type X = 1 extends 1 ? t\u0068is : 3;
+>X : any
+
+=== this_tuple.ts ===
+let x: [t\u0068is];
+>x : [any]
+
+=== this_tuple2.ts ===
+let x: [1, t\u0068is];
+>x : [1, any]
+
+=== typeof_call.ts ===
+f<t\u0079peof y>();
+>f<t\u0079peof y>() : any
+>f : any
+>y : any
+
+=== typeof_call2.ts ===
+f<1, t\u0079peof y>();
+>f<1, t\u0079peof y>() : any
+>f : any
+>y : any
+
+=== typeof_exts.ts ===
+class C extends A<t\u0079peof y> {}
+>C : C
+>A : any
+>y : any
+
+=== typeof_idx.ts ===
+type X = Y[t\u0079peof y];
+>X : Y
+>y : any
+
+=== typeof_iext.ts ===
+interface I extends A<t\u0079peof y> {}
+>y : any
+
+=== typeof_impl.ts ===
+class C implements A<t\u0079peof y> {}
+>C : C
+>y : any
+
+=== typeof_jsx.ts ===
+x = y as A<[t\u0079peof y]>;
+>x = y as A<[t\u0079peof y]> : A<[any]>
+>x : 1 & (new () => Z)
+>y as A<[t\u0079peof y]> : A<[any]>
+>y : any
+>y : any
+
+=== typeof_targ.ts ===
+let x: A<t\u0079peof y>;
+>x : A<any>
+>y : any
+
+=== typeof_targ2.ts ===
+let x: A<1, t\u0079peof y>;
+>x : A<1, any>
+>y : any
+
+=== typeof_tru.ts ===
+type X = 1 extends 1 ? t\u0079peof y : 3;
+>X : any
+>y : any
+
+=== typeof_tuple.ts ===
+let x: [t\u0079peof y];
+>x : [any]
+>y : any
+
+=== typeof_tuple2.ts ===
+let x: [1, t\u0079peof y];
+>x : [1, any]
+>y : any
+
+=== void_call.ts ===
+f<v\u006fid>();
+>f<v\u006fid>() : any
+>f : any
+
+=== void_call2.ts ===
+f<1, v\u006fid>();
+>f<1, v\u006fid>() : any
+>f : any
+
+=== void_exts.ts ===
+class C extends A<v\u006fid> {}
+>C : C
+>A : any
+
+=== void_idx.ts ===
+type X = Y[v\u006fid];
+>X : any
+
+=== void_iext.ts ===
+
+interface I extends A<v\u006fid> {}
+=== void_impl.ts ===
+class C implements A<v\u006fid> {}
+>C : C
+
+=== void_jsx.ts ===
+x = y as A<[v\u006fid]>;
+>x = y as A<[v\u006fid]> : A<[void]>
+>x : 1 & (new () => Z)
+>y as A<[v\u006fid]> : A<[void]>
+>y : any
+
+=== void_targ.ts ===
+let x: A<v\u006fid>;
+>x : A<void>
+
+=== void_targ2.ts ===
+let x: A<1, v\u006fid>;
+>x : A<1, void>
+
+=== void_tru.ts ===
+type X = 1 extends 1 ? v\u006fid : 3;
+>X : void
+
+=== void_tuple.ts ===
+let x: [v\u006fid];
+>x : [void]
+
+=== void_tuple2.ts ===
+let x: [1, v\u006fid];
+>x : [1, void]
+

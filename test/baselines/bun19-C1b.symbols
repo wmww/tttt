@@ -1,0 +1,21 @@
+//// [test/cases/bun19-C1b.ts] ////
+
+=== a.ts ===
+type C1<T> = T extends T[] ? number : number;
+>C1 : Symbol(C1, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+function g<T>(x: number, y: C1<T> = x) {}
+>g : Symbol(g, Decl(a.ts, 0, 45))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 14))
+>y : Symbol(y, Decl(a.ts, 1, 24))
+>C1 : Symbol(C1, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

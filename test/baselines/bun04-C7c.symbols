@@ -1,0 +1,17 @@
+//// [test/cases/bun04-C7c.ts] ////
+
+=== a.ts ===
+declare const o: { f?: (n: number) => number };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+>n : Symbol(n, Decl(a.ts, 0, 24))
+
+const p = (o?.f)(1);
+>p : Symbol(p, Decl(a.ts, 1, 5))
+>o?.f : Symbol(f, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

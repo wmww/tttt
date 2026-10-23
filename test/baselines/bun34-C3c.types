@@ -1,0 +1,29 @@
+//// [test/cases/bun34-C3c.ts] ////
+
+=== a.ts ===
+declare function o<T>(cb1: (x: T) => void, ob: { m(this: any): T }): void;
+>o : <T>(cb1: (x: T) => void, ob: { m(this: any): T; }) => void
+>cb1 : (x: T) => void
+>x : T
+>ob : { m(this: any): T; }
+>m : (this: any) => T
+>this : any
+
+o(x => x.toFixed(), { m(this) { return 1 } });
+>o(x => x.toFixed(), { m(this) { return 1 } }) : void
+>o : <T>(cb1: (x: T) => void, ob: { m(this: any): T; }) => void
+>x => x.toFixed() : (x: unknown) => any
+>x : unknown
+>x.toFixed() : any
+>x.toFixed : any
+>x : unknown
+>toFixed : any
+>{ m(this) { return 1 } } : { m(this: any): number; }
+>m : (this: any) => number
+>this : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

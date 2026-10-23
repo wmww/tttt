@@ -1,0 +1,28 @@
+a.ts(1,35): error TS2301: Initializer of instance member variable 'p' cannot reference identifier 'arguments' declared in the constructor.
+a.ts(1,58): error TS1210: Code contained in a class is evaluated in JavaScript's strict mode which does not allow this use of 'arguments'. For more information, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.
+a.ts(2,35): error TS2815: 'arguments' cannot be referenced in property initializers or class static initialization blocks.
+a.ts(3,16): error TS2662: Cannot find name 'arguments'. Did you mean the static member 'C1.arguments'?
+a.ts(3,39): error TS1210: Code contained in a class is evaluated in JavaScript's strict mode which does not allow this use of 'arguments'. For more information, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "useDefineForClassFields": false, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    function f() { return class { p = arguments; constructor(arguments: any) {} }; }
+                                      ~~~~~~~~~
+!!! error TS2301: Initializer of instance member variable 'p' cannot reference identifier 'arguments' declared in the constructor.
+                                                             ~~~~~~~~~
+!!! error TS1210: Code contained in a class is evaluated in JavaScript's strict mode which does not allow this use of 'arguments'. For more information, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.
+    function g() { return class { p = arguments; }; }
+                                      ~~~~~~~~~
+!!! error TS2815: 'arguments' cannot be referenced in property initializers or class static initialization blocks.
+    class C1 { p = arguments; constructor(arguments: any) {} }
+                   ~~~~~~~~~
+!!! error TS2662: Cannot find name 'arguments'. Did you mean the static member 'C1.arguments'?
+                                          ~~~~~~~~~
+!!! error TS1210: Code contained in a class is evaluated in JavaScript's strict mode which does not allow this use of 'arguments'. For more information, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

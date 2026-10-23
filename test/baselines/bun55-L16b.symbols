@@ -1,0 +1,44 @@
+//// [test/cases/bun55-L16b.ts] ////
+
+=== a.ts ===
+import * as ns from "./m";
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+
+import fn = require("./m");
+>fn : Symbol(fn, Decl(a.ts, 0, 26))
+
+declare function f<T>(p: typeof fn | T, q: T): T;
+>f : Symbol(f, Decl(a.ts, 1, 27))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>p : Symbol(p, Decl(a.ts, 2, 22))
+>fn : Symbol(fn, Decl(a.ts, 0, 26))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>q : Symbol(q, Decl(a.ts, 2, 39))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+
+declare const c: typeof ns & { more: 1 };
+>c : Symbol(c, Decl(a.ts, 3, 13))
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+>more : Symbol(more, Decl(a.ts, 3, 30))
+
+f(ns, c);
+>f : Symbol(f, Decl(a.ts, 1, 27))
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+>c : Symbol(c, Decl(a.ts, 3, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+
+=== m.d.ts ===
+declare function fn(x: number): string;
+>fn : Symbol(fn, Decl(m.d.ts, 0, 0), Decl(m.d.ts, 0, 39))
+>x : Symbol(x, Decl(m.d.ts, 0, 20))
+
+declare namespace fn { const extra: number }
+>fn : Symbol(fn, Decl(m.d.ts, 0, 0), Decl(m.d.ts, 0, 39))
+>extra : Symbol(extra, Decl(m.d.ts, 1, 28))
+
+export = fn;
+>fn : Symbol(fn, Decl(m.d.ts, 0, 0), Decl(m.d.ts, 0, 39))
+

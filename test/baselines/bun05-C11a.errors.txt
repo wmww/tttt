@@ -1,0 +1,19 @@
+a.ts(3,4): error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'number'.
+a.ts(3,26): error TS2322: Type 'number' is not assignable to type '0'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function q1(a: number, ...r: [number, ...((x: number) => void)[][]]): void;
+    declare function q1(a: string, ...r: [string]): void;
+    q1(true, 1, x => { const z: 0 = x; });
+       ~~~~
+!!! error TS2345: Argument of type 'boolean' is not assignable to parameter of type 'number'.
+                             ~
+!!! error TS2322: Type 'number' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

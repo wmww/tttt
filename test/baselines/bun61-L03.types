@@ -1,0 +1,52 @@
+//// [test/cases/bun61-L03.ts] ////
+
+=== a.ts ===
+export {};
+declare let on: { n: number; m(): void };
+>on : { n: number; m(): void; }
+>n : number
+>m : () => void
+
+declare function f(): "m";
+>f : () => "m"
+
+({ [r1]() {} } = on);
+>({ [r1]() {} } = on) : { n: number; m(): void; }
+>{ [r1]() {} } = on : { n: number; m(): void; }
+>{ [r1]() {} } : { [x: number]: () => void; }
+>[r1] : () => void
+>r1 : any
+>on : { n: number; m(): void; }
+
+({ get [r2]() { return 1; } } = on);
+>({ get [r2]() { return 1; } } = on) : { n: number; m(): void; }
+>{ get [r2]() { return 1; } } = on : { n: number; m(): void; }
+>{ get [r2]() { return 1; } } : { [x: number]: number; }
+>[r2] : number
+>r2 : any
+>1 : 1
+>on : { n: number; m(): void; }
+
+({ [f(1)]() {} } = on);
+>({ [f(1)]() {} } = on) : { n: number; m(): void; }
+>{ [f(1)]() {} } = on : { n: number; m(): void; }
+>{ [f(1)]() {} } : { m(): void; }
+>[f(1)] : () => void
+>f(1) : "m"
+>f : () => "m"
+>1 : 1
+>on : { n: number; m(): void; }
+
+({ [r3]() {} } = { m() {} });
+>({ [r3]() {} } = { m() {} }) : { m(): void; }
+>{ [r3]() {} } = { m() {} } : { m(): void; }
+>{ [r3]() {} } : { [x: number]: () => void; }
+>[r3] : () => void
+>r3 : any
+>{ m() {} } : { m(): void; }
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

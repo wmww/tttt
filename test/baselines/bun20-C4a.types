@@ -1,0 +1,23 @@
+//// [test/cases/bun20-C4a.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+function t8b() { if (cond()) { var a = []; } a.push(1); return a; }
+>t8b : () => any[] | undefined
+>cond() : boolean
+>cond : () => boolean
+>a : any[]
+>[] : never[]
+>a.push(1) : number
+>a.push : (...items: any[]) => number
+>a : any[]
+>push : (...items: any[]) => number
+>1 : 1
+>a : any[] | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

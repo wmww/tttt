@@ -1,0 +1,25 @@
+//// [test/cases/bun34-C2d.ts] ////
+
+=== a.tsx ===
+import { React } from "./m";
+>React : Symbol(React, Decl(a.tsx, 0, 8))
+
+<div />;
+>div : Symbol(JSX.IntrinsicElements.div, Decl(g.d.ts, 1, 53))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+
+=== g.d.ts ===
+declare const React: any;
+>React : Symbol(React, Decl(g.d.ts, 0, 13))
+
+declare namespace JSX { interface IntrinsicElements { div: any } }
+>JSX : Symbol(JSX, Decl(g.d.ts, 0, 25))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(g.d.ts, 1, 23))
+>div : Symbol(IntrinsicElements.div, Decl(g.d.ts, 1, 53))
+
+=== m.ts ===
+export interface React {}
+>React : Symbol(React, Decl(m.ts, 0, 0))
+

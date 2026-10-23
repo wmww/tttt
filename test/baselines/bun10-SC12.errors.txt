@@ -1,0 +1,17 @@
+a.ts(1,12): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(1,18): error TS7051: Parameter has a name but no type. Did you mean 'arg1: string'?
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type F1 = (this, string) => void;
+               ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+                     ~~~~~~
+!!! error TS7051: Parameter has a name but no type. Did you mean 'arg1: string'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

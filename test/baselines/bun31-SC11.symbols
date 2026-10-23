@@ -1,0 +1,16 @@
+//// [test/cases/bun31-SC11.ts] ////
+
+=== a.ts ===
+class S25 { [valu]() { let value = 1 } }
+>S25 : Symbol(S25, Decl(a.ts, 0, 0))
+>[valu] : Symbol(S25[valu], Decl(a.ts, 0, 11))
+>value : Symbol(value, Decl(a.ts, 0, 26))
+
+const s26 = { [valu]() { let value = 1 } };
+>s26 : Symbol(s26, Decl(a.ts, 1, 5))
+>[valu] : Symbol([valu], Decl(a.ts, 1, 13))
+>value : Symbol(value, Decl(a.ts, 1, 28))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

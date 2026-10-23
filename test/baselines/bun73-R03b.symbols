@@ -1,0 +1,79 @@
+//// [test/cases/bun73-R03b.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+declare function s(): string;
+>s : Symbol(s, Decl(a.ts, 0, 30))
+
+function valid() {
+>valid : Symbol(valid, Decl(a.ts, 1, 29))
+
+  let x = []; let y = [];
+>x : Symbol(x, Decl(a.ts, 3, 5))
+>y : Symbol(y, Decl(a.ts, 3, 17))
+
+  do {
+    while (c()) {
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+      try { x.push(y); if ((x = [])) continue; } finally { const p: never = x; y.push(x.pop()); }
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 3, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 3, 17))
+>x : Symbol(x, Decl(a.ts, 3, 5))
+>p : Symbol(p, Decl(a.ts, 6, 64))
+>x : Symbol(x, Decl(a.ts, 3, 5))
+>y.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 3, 17))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x.pop : Symbol(Array.pop, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 3, 5))
+>pop : Symbol(Array.pop, Decl(lib.es5.d.ts, --, --))
+    }
+    y = [];
+>y : Symbol(y, Decl(a.ts, 3, 17))
+
+  } while (c() && y.push(1));
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>y.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 3, 17))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+}
+function besideImplicitAny() {
+>besideImplicitAny : Symbol(besideImplicitAny, Decl(a.ts, 10, 1))
+
+  let x = []; let y = [];
+>x : Symbol(x, Decl(a.ts, 12, 5))
+>y : Symbol(y, Decl(a.ts, 12, 17))
+
+  while (c()) {
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+    try { x.push(...y, {}); x.push(...y); const p: never = x; } catch { if (x === y || c()) break; }
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 12, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 12, 17))
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 12, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 12, 17))
+>p : Symbol(p, Decl(a.ts, 14, 47))
+>x : Symbol(x, Decl(a.ts, 12, 5))
+>x : Symbol(x, Decl(a.ts, 12, 5))
+>y : Symbol(y, Decl(a.ts, 12, 17))
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+    y.push(s());
+>y.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 12, 17))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(a.ts, 0, 30))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

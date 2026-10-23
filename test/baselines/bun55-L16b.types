@@ -1,0 +1,42 @@
+//// [test/cases/bun55-L16b.ts] ////
+
+=== a.ts ===
+import * as ns from "./m";
+>ns : typeof ns
+
+import fn = require("./m");
+>fn : typeof fn
+
+declare function f<T>(p: typeof fn | T, q: T): T;
+>f : <T>(p: typeof fn | T, q: T) => T
+>p : T | typeof fn
+>fn : typeof fn
+>q : T
+
+declare const c: typeof ns & { more: 1 };
+>c : typeof ns & { more: 1; }
+>ns : typeof ns
+>more : 1
+
+f(ns, c);
+>f(ns, c) : typeof ns
+>f : <T>(p: typeof fn | T, q: T) => T
+>ns : typeof ns
+>c : typeof ns & { more: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.d.ts ===
+declare function fn(x: number): string;
+>fn : typeof fn
+>x : number
+
+declare namespace fn { const extra: number }
+>fn : typeof fn
+>extra : number
+
+export = fn;
+>fn : typeof fn
+

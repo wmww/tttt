@@ -1,0 +1,7 @@
+//// [test/cases/bun43-P9c.ts] ////
+
+=== a.ts ===
+import { a as
+
+> : Symbol((Missing), Decl(a.ts, 0, 8))
+

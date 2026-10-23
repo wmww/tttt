@@ -1,0 +1,24 @@
+//// [test/cases/bun22-C6.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: ({ a: 1 } & { b: 1 }) | T): T;
+>f : <T>(x: ({ a: 1; } & { b: 1; }) | T) => T
+>x : T | ({ a: 1; } & { b: 1; })
+>a : 1
+>b : 1
+
+declare const s: ({ a: 1 } & { b: 1 }) | boolean;
+>s : boolean | ({ a: 1; } & { b: 1; })
+>a : 1
+>b : 1
+
+const p: boolean = f(s);
+>p : boolean
+>f(s) : boolean
+>f : <T>(x: ({ a: 1; } & { b: 1; }) | T) => T
+>s : boolean | ({ a: 1; } & { b: 1; })
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

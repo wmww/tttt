@@ -1,0 +1,21 @@
+//// [test/cases/bun24-C4.ts] ////
+
+=== a.ts ===
+type Z = number;
+>Z : Symbol(Z, Decl(a.ts, 0, 0))
+
+type Y = [Iterable<Z, any, any>];
+>Y : Symbol(Y, Decl(a.ts, 0, 16))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>Z : Symbol(Z, Decl(a.ts, 0, 0))
+
+declare let y: Y; const v: 1 = y[0];
+>y : Symbol(y, Decl(a.ts, 2, 11))
+>Y : Symbol(Y, Decl(a.ts, 0, 16))
+>v : Symbol(v, Decl(a.ts, 2, 23))
+>y : Symbol(y, Decl(a.ts, 2, 11))
+>0 : Symbol(0)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

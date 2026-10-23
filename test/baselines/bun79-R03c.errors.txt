@@ -1,0 +1,29 @@
+a.ts(1,24): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(1,37): error TS2313: Type parameter 'U' has a circular constraint.
+a.ts(2,24): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(3,20): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(4,25): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    interface M3<T extends U, U extends T> { a: T } interface M3<T extends U, U extends T> { b: U }
+                           ~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+                                        ~
+!!! error TS2313: Type parameter 'U' has a circular constraint.
+    interface M6<T extends T> { a: T } interface M6<T extends T> { b: T }
+                           ~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+    class M9<T extends T> { a!: T } interface M9<T extends T> { b: T }
+                       ~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+    interface M11<T extends M11<T>["a"]> { a: T } interface M11<T extends M11<T>["a"]> { b: T }
+                            ~~~~~~~~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

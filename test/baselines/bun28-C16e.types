@@ -1,0 +1,15 @@
+//// [test/cases/bun28-C16e.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+interface I { m(@dec x: any): void }
+>m : (x: any) => void
+>dec : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

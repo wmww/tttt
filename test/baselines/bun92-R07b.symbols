@@ -1,0 +1,20 @@
+//// [test/cases/bun92-R07b.ts] ////
+
+=== a.js ===
+/**
+ * @param {{ a: 1; static
+ * {}; b: 2 }} o
+ */
+function f(o) { o.a; o.b; o.nope; }
+>f : Symbol(f, Decl(a.js, 0, 0))
+>o : Symbol(o, Decl(a.js, 4, 11))
+>o.a : Symbol(a, Decl(a.js, 1, 12))
+>o : Symbol(o, Decl(a.js, 4, 11))
+>a : Symbol(a, Decl(a.js, 1, 12))
+>o : Symbol(o, Decl(a.js, 4, 11))
+>o : Symbol(o, Decl(a.js, 4, 11))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 6, 5))
+

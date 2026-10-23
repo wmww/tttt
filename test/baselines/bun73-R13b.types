@@ -1,0 +1,88 @@
+//// [test/cases/bun73-R13b.ts] ////
+
+=== a.ts ===
+// valid programs: tsc reports nothing but the sentinel
+function method({ o = { m() {} } } = { o: { m() {} } }) {}
+>method : ({ o }?: { o?: { m(): void; }; }) => void
+>o : { m(): void; }
+>{ m() {} } : { m(): void; }
+>m : () => void
+>{ o: { m() {} } } : { o?: { m(): void; }; }
+>o : { m(): void; }
+>{ m() {} } : { m(): void; }
+>m : () => void
+
+function inArray({ a = [() => {}] } = { a: [() => {}] }) {}
+>inArray : ({ a }?: { a?: (() => void)[]; }) => void
+>a : (() => void)[]
+>[() => {}] : (() => void)[]
+>() => {} : () => void
+>{ a: [() => {}] } : { a?: (() => void)[]; }
+>a : (() => void)[]
+>[() => {}] : (() => void)[]
+>() => {} : () => void
+
+function inObject({ a = { f: () => {} } } = { a: { f: () => {} } }) {}
+>inObject : ({ a }?: { a?: { f: () => void; }; }) => void
+>a : { f: () => void; }
+>{ f: () => {} } : { f: () => void; }
+>f : () => void
+>() => {} : () => void
+>{ a: { f: () => {} } } : { a?: { f: () => void; }; }
+>a : { f: () => void; }
+>{ f: () => {} } : { f: () => void; }
+>f : () => void
+>() => {} : () => void
+
+function sibling({ a = () => {}, b = () => a } = { a: () => {}, b: () => () => {} }) {}
+>sibling : ({ a, b }?: { a?: () => void; b?: () => () => void; }) => void
+>a : () => void
+>() => {} : () => void
+>b : () => () => void
+>() => a : () => () => void
+>a : () => void
+>{ a: () => {}, b: () => () => {} } : { a?: () => void; b?: () => () => void; }
+>a : () => void
+>() => {} : () => void
+>b : () => () => void
+>() => () => {} : () => () => void
+>() => {} : () => void
+
+const { s1 = () => s2, s2 = () => s1 } = { s1: () => 1, s2: () => 2 };
+>s1 : () => (() => any) | (() => number)
+>() => s2 : () => (() => any) | (() => number)
+>s2 : (() => () => any | (() => number)) | (() => number)
+>s2 : (() => () => any | (() => number)) | (() => number)
+>() => s1 : () => () => any | (() => number)
+>s1 : () => (() => any) | (() => number)
+>{ s1: () => 1, s2: () => 2 } : { s1?: () => number; s2?: () => number; }
+>s1 : () => number
+>() => 1 : () => number
+>1 : 1
+>s2 : () => number
+>() => 2 : () => number
+>2 : 2
+
+const { v = { f: () => {} } } = { v: { f: () => {} } };
+>v : { f: () => void; }
+>{ f: () => {} } : { f: () => void; }
+>f : () => void
+>() => {} : () => void
+>{ v: { f: () => {} } } : { v?: { f: () => void; }; }
+>v : { f: () => void; }
+>{ f: () => {} } : { f: () => void; }
+>f : () => void
+>() => {} : () => void
+
+const [w = [() => {}]] = [[() => {}]];
+>w : (() => void)[]
+>[() => {}] : (() => void)[]
+>() => {} : () => void
+>[[() => {}]] : [(() => void)[]]
+>[() => {}] : (() => void)[]
+>() => {} : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

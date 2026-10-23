@@ -1,0 +1,18 @@
+a.ts(1,13): error TS7006: Parameter '[g = null]' implicitly has an '[any?]' type.
+a.ts(1,14): error TS7031: Binding element 'g' implicitly has an 'any' type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": false, "noImplicitAny": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function f4([g = null] = []) {}
+                ~~~~~~~~~~~~~~~
+!!! error TS7006: Parameter '[g = null]' implicitly has an '[any?]' type.
+                 ~
+!!! error TS7031: Binding element 'g' implicitly has an 'any' type.
+    f4([]);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

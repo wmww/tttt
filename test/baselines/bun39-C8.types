@@ -1,0 +1,8 @@
+//// [test/cases/bun39-C8.ts] ////
+
+=== a.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,65 @@
+//// [test/cases/bun51-L01.ts] ////
+
+=== f.js ===
+/** @param {number} z */ function j(z) { const arguments = 1; return z; }
+>j : (z: number) => number
+>z : number
+>arguments : 1
+>1 : 1
+>z : number
+
+/** @param {number} z */ function j3(z) { var arguments = 1; return z; }
+>j3 : (z: number) => number
+>z : number
+>arguments : number
+>1 : 1
+>z : number
+
+/** @param {number} z */ function j8(z) { const { a: arguments } = { a: 1 }; return z; }
+>j8 : (z: number) => number
+>z : number
+>a : any
+>arguments : number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>z : number
+
+/** @param {number} z */ function j5(z) { class arguments {} return z; }
+>j5 : (z: number) => number
+>z : number
+>arguments : arguments
+>z : number
+
+function k(z) { const arguments = 1; return z; }
+>k : (z: any) => any
+>z : any
+>arguments : 1
+>1 : 1
+>z : any
+
+j(1); j3(1); j8(1); j5(1); k(1);
+>j(1) : number
+>j : (z: number) => number
+>1 : 1
+>j3(1) : number
+>j3 : (z: number) => number
+>1 : 1
+>j8(1) : number
+>j8 : (z: number) => number
+>1 : 1
+>j5(1) : number
+>j5 : (z: number) => number
+>1 : 1
+>k(1) : any
+>k : (z: any) => any
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+
+export { sentinel };
+>sentinel : number
+

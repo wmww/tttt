@@ -1,0 +1,11 @@
+//// [test/cases/bun96-H4.ts] ////
+
+=== a.ts ===
+import { A } from 123 with { type: "json" };
+>A : any
+>type : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

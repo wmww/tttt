@@ -1,0 +1,17 @@
+//// [test/cases/bun28-C24e.ts] ////
+
+=== a.ts ===
+const a = 1;
+>a : 1
+>1 : 1
+
+const p = { a = 1 };
+>p : { a: number; }
+>{ a = 1 } : { a: number; }
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,29 @@
+a.js(2,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.js(2,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.js(2,25): error TS2304: Cannot find name 'missing8'.
+a.js(2,55): error TS2304: Cannot find name 'missing9'.
+a.js(3,1): error TS2304: Cannot find name 'zzzzzzzzzzzz'.
+a.js(5,5): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" } }
+==== a.js (6 errors) ====
+    var o = /** @type {any} */ (null);
+    with (o) { exports.z8 = missing8; module.exports.z9 = missing9; exports.z10 = missing10 + 1; }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                            ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing8'.
+                                                          ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing9'.
+    zzzzzzzzzzzz;
+    ~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'zzzzzzzzzzzz'.
+    /** @type {number} */
+    var sentinel = "";
+        ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

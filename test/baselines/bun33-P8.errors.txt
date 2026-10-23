@@ -1,0 +1,19 @@
+a.ts(2,15): error TS2687: All declarations of '[k]' must have identical modifiers.
+a.ts(3,24): error TS2687: All declarations of 'p' must have identical modifiers.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const k = "p";
+    interface I { [k]: number }
+                  ~~~
+!!! error TS2687: All declarations of '[k]' must have identical modifiers.
+    interface I { readonly p: number }
+                           ~
+!!! error TS2687: All declarations of 'p' must have identical modifiers.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

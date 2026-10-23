@@ -1,0 +1,19 @@
+a.js(1,23): error TS8024: JSDoc '@param' tag has name 'q', but there is no parameter with that name.
+a.js(2,27): error TS2352: Conversion of type 'number' to type 'IArguments' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+a.js(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (3 errors) ====
+    /** @param {number[]} q */
+                          ~
+!!! error TS8024: JSDoc '@param' tag has name 'q', but there is no parameter with that name.
+    function f() { /** @type {typeof arguments} */ (0); }
+                              ~~~~~~~~~~~~~~~~
+!!! error TS2352: Conversion of type 'number' to type 'IArguments' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

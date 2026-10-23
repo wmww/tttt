@@ -1,0 +1,18 @@
+//// [test/cases/bun61-L06.ts] ////
+
+=== a.ts ===
+declare function f1({ a: \u0062 }: any): void;
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+>\u0062 : Symbol(\u0062, Decl(a.ts, 0, 21))
+
+type T7 = ({ a: \u{62}c }: any) => void;
+>T7 : Symbol(T7, Decl(a.ts, 0, 46))
+>\u{62}c : Symbol(\u{62}c, Decl(a.ts, 1, 12))
+
+type T8 = ({ \u0061: b }: any) => void;
+>T8 : Symbol(T8, Decl(a.ts, 1, 40))
+>b : Symbol(b, Decl(a.ts, 2, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

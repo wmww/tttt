@@ -1,0 +1,24 @@
+//// [test/cases/bun28-C24d.ts] ////
+
+=== a.ts ===
+declare function g(): any;
+>g : () => any
+
+const o = { get a() { return 1 }, get a() { return 1 }, [g(), "b"]: 1 };
+>o : { readonly a: number; b: number; }
+>{ get a() { return 1 }, get a() { return 1 }, [g(), "b"]: 1 } : { readonly a: number; b: number; }
+>a : number
+>1 : 1
+>a : number
+>1 : 1
+>[g(), "b"] : number
+>g(), "b" : "b"
+>g() : any
+>g : () => any
+>"b" : "b"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,21 @@
+a.tsx(2,2): error TS2322: Type '{ a: { b: number; }; }' is not assignable to type '{ a?: { c?: 1 | undefined; } | undefined; }'.
+  Types of property 'a' are incompatible.
+    Type '{ b: number; }' is not assignable to type '{ c?: 1 | undefined; }'.
+      Property 'b' does not exist on type '{ c?: 1 | undefined; }'.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface IntrinsicElements { div: { a?: { c?: 1 } } } }
+    <div {...{ a: { b: 1 } }} />;
+     ~~~
+!!! error TS2322: Type '{ a: { b: number; }; }' is not assignable to type '{ a?: { c?: 1 | undefined; } | undefined; }'.
+!!! error TS2322:   Types of property 'a' are incompatible.
+!!! error TS2322:     Type '{ b: number; }' is not assignable to type '{ c?: 1 | undefined; }'.
+!!! error TS2322:       Property 'b' does not exist on type '{ c?: 1 | undefined; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

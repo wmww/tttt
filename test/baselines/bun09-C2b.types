@@ -1,0 +1,14 @@
+//// [test/cases/bun09-C2b.ts] ////
+
+=== a.ts ===
+declare const u7: [a: 1] & [a: 1];
+>u7 : [a: 1] & [a: 1]
+
+const n7: never = u7;
+>n7 : never
+>u7 : [a: 1] & [a: 1]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,10 @@
+//// [test/cases/bun08-C1a.ts] ////
+
+=== a.ts ===
+import * as ns from "./a"; export { ns };
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+>ns : Symbol(ns, Decl(a.ts, 0, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

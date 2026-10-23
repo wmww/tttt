@@ -1,0 +1,16 @@
+a.ts(2,42): error TS2344: Type 'X' does not satisfy the constraint 'string'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export type Bar<A extends string> = A;
+    type Z4<T> = T extends import("./a").Bar<infer X> ? 1 : never;
+                                             ~~~~~~~
+!!! error TS2344: Type 'X' does not satisfy the constraint 'string'.
+!!! related TS2208 a.ts:2:48: This type parameter might need an `extends string` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

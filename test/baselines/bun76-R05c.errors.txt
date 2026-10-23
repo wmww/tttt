@@ -1,0 +1,38 @@
+a.ts(1,30): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+a.ts(3,30): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+a.ts(5,30): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+a.ts(7,29): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+a.ts(12,30): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    declare const w1: { readonly p: keyof W1 };
+                                 ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+    interface W1 { x(): void; [w1.p](): void }
+    declare const w2: { readonly p: keyof W2 };
+                                 ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+    interface W2 { x: 1; [w2.p]: number }
+    declare const w3: { readonly p: W3 extends { x: 1 } ? "a" : "b" };
+                                 ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+    interface W3 { x: 1; [w3.p]: number }
+    declare class H4 { readonly p: keyof W4 }
+                                ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+    declare const h4: H4;
+    interface W4 { x(): void; [h4.p](): void }
+    // `p` is asked for before its declaration is checked: the two agree
+    w5.p;
+    declare const w5: { readonly p: keyof W5 };
+                                 ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+    interface W5 { x(): void; [w5.p](): void }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,14 @@
+//// [test/cases/bun28-C10b.ts] ////
+
+=== a.ts ===
+export function fn<T>() {}
+>fn : <T>() => void
+
+type R = typeof import("./a").fn<>;
+>R : () => void
+>fn : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

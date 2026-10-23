@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C29b.ts] ////
+
+=== a.ts ===
+import.foo<string>("./zz");
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== zz.ts ===
+
+export {};
+

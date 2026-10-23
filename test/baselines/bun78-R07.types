@@ -1,0 +1,69 @@
+//// [test/cases/bun78-R07.ts] ////
+
+=== a.ts ===
+function q1(a = await 1): void; function q1(a: any) {}
+>q1 : (a?: number) => void
+>a : number
+>await 1 : 1
+>1 : 1
+>q1 : (a?: number) => void
+>a : any
+
+function q2(a = (await "s")): void; function q2(a: any) {}
+>q2 : (a?: string) => void
+>a : string
+>(await "s") : "s"
+>await "s" : "s"
+>"s" : "s"
+>q2 : (a?: string) => void
+>a : any
+
+function q3(a = await await true): void; function q3(a: any) {}
+>q3 : (a?: boolean) => void
+>a : boolean
+>await await true : true
+>await true : true
+>true : true
+>q3 : (a?: boolean) => void
+>a : any
+
+declare function q4(a = await 1): void; q4();
+>q4 : (a?: number) => void
+>a : number
+>await 1 : 1
+>1 : 1
+>q4() : void
+>q4 : (a?: number) => void
+
+class K { m(a = await 1): void; m(a: any) {} }
+>K : K
+>m : (a?: number) => void
+>a : number
+>await 1 : 1
+>1 : 1
+>m : (a?: number) => void
+>a : any
+
+// tsc reports these: the operand is not a literal, or the initializer is not the `await` itself
+function r1(a = await -1): void; function r1(a: any) {}
+>r1 : (a?: number) => void
+>a : number
+>await -1 : number
+>await : any
+>1 : 1
+>r1 : (a?: number) => void
+>a : any
+
+function r2(a = [await 1]): void; function r2(a: any) {}
+>r2 : (a?: number[]) => void
+>a : number[]
+>[await 1] : number[]
+>await 1 : 1
+>1 : 1
+>r2 : (a?: number[]) => void
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

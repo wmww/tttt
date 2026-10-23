@@ -1,0 +1,13 @@
+//// [test/cases/bun01-C7.ts] ////
+
+=== a.ts ===
+export {};
+class A1 { constructor(public a: number = a) {} }
+>A1 : A1
+>a : number
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

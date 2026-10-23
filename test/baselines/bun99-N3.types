@@ -1,0 +1,125 @@
+//// [test/cases/bun99-N3.ts] ////
+
+=== a.ts ===
+type A = { kind: "a"; x: 1 };
+>A : A
+>kind : "a"
+>x : 1
+
+type B = { kind: "b"; y: 2 };
+>B : B
+>kind : "b"
+>y : 2
+
+declare function id<T>(value: T): T;
+>id : <T>(value: T) => T
+>value : T
+
+declare function use<T>(select: () => T): { data: NoInfer<T> };
+>use : <T>(select: () => T) => { data: NoInfer<T>; }
+>select : () => T
+>data : NoInfer<T>
+
+declare function both(): A & B;
+>both : () => A & B
+
+declare const n: NoInfer<A & B>;
+>n : NoInfer<never>
+
+declare const m: NoInfer<A & B> | undefined;
+>m : NoInfer<never> | undefined
+
+const { data } = use(both);
+>data : NoInfer<never>
+>use(both) : { data: NoInfer<never>; }
+>use : <T>(select: () => T) => { data: NoInfer<T>; }
+>both : () => A & B
+
+type Cond<T> = T extends unknown ? A & B : never;
+>Cond : Cond<T>
+
+declare const c: NoInfer<Cond<1>>;
+>c : NoInfer<never>
+
+export const v1: never = { id: 1, ...n };
+>v1 : never
+>{ id: 1, ...n } : any
+>id : number
+>1 : 1
+>n : never
+
+export const v2: never = id({ id: 1, ...n });
+>v2 : never
+>id({ id: 1, ...n }) : any
+>id : <T>(value: T) => T
+>{ id: 1, ...n } : any
+>id : number
+>1 : 1
+>n : never
+
+export const v3: never = { ...n, id: 1 };
+>v3 : never
+>{ ...n, id: 1 } : any
+>n : never
+>id : number
+>1 : 1
+
+export const v4: never = id(m ? { id: 1, ...m } : undefined);
+>v4 : never
+>id(m ? { id: 1, ...m } : undefined) : { id: number; } | undefined
+>id : <T>(value: T) => T
+>m ? { id: 1, ...m } : undefined : { id: number; } | undefined
+>m : NoInfer<never> | undefined
+>{ id: 1, ...m } : { id: number; }
+>id : number
+>1 : 1
+>m : NoInfer<never>
+>undefined : undefined
+
+export const v5: never = id({ id: 1, ...data });
+>v5 : never
+>id({ id: 1, ...data }) : any
+>id : <T>(value: T) => T
+>{ id: 1, ...data } : any
+>id : number
+>1 : 1
+>data : never
+
+export const v6: never = { id: 1, ...c };
+>v6 : never
+>{ id: 1, ...c } : any
+>id : number
+>1 : 1
+>c : never
+
+export const v7: { id: string } = { id: 1, ...n };
+>v7 : { id: string; }
+>id : string
+>{ id: 1, ...n } : any
+>id : number
+>1 : 1
+>n : never
+
+export const v8: { id: string } = id({ id: 1, ...n });
+>v8 : { id: string; }
+>id : string
+>id({ id: 1, ...n }) : any
+>id : <T>(value: T) => T
+>{ id: 1, ...n } : any
+>id : number
+>1 : 1
+>n : never
+
+export const v9 = { id: 1, ...n }.nope;
+>v9 : any
+>{ id: 1, ...n }.nope : any
+>{ id: 1, ...n } : any
+>id : number
+>1 : 1
+>n : never
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

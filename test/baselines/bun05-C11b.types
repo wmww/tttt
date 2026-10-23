@@ -1,0 +1,29 @@
+//// [test/cases/bun05-C11b.ts] ////
+
+=== a.ts ===
+declare function q9(a: number, ...r: [number] | [string, (x: number) => void]): void;
+>q9 : { (a: number, ...r: [number] | [string, (x: number) => void]): void; (a: string, ...r: ((x: string) => void)[]): void; }
+>a : number
+>r : [number] | [string, (x: number) => void]
+>x : number
+
+declare function q9(a: string, ...r: ((x: string) => void)[]): void;
+>q9 : { (a: number, ...r: [number] | [string, (x: number) => void]): void; (a: string, ...r: ((x: string) => void)[]): void; }
+>a : string
+>r : ((x: string) => void)[]
+>x : string
+
+q9(true, "", x => { const z: 0 = x; });
+>q9(true, "", x => { const z: 0 = x; }) : void
+>q9 : { (a: number, ...r: [number] | [string, (x: number) => void]): void; (a: string, ...r: ((x: string) => void)[]): void; }
+>true : true
+>"" : ""
+>x => { const z: 0 = x; } : (x: any) => void
+>x : any
+>z : 0
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

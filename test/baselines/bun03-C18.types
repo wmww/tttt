@@ -1,0 +1,10 @@
+//// [test/cases/bun03-C18.ts] ////
+
+=== a.ts ===
+public module "x" { }
+>"x" : typeof import("x")
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

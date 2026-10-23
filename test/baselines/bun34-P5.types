@@ -1,0 +1,8 @@
+//// [test/cases/bun34-P5.ts] ////
+
+=== a.ts ===
+class K { @dec }
+>K : K
+>dec : any
+> : any
+

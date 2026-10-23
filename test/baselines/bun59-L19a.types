@@ -1,0 +1,78 @@
+//// [test/cases/bun59-L19a.ts] ////
+
+=== a.ts ===
+class Base<T> { value?: T; other!: T; n?: number; init: T | undefined = undefined; }
+>Base : Base<T>
+>value : T | undefined
+>other : T
+>n : number | undefined
+>init : T | undefined
+>undefined : undefined
+
+type Ctor<T> = new (...a: any[]) => T;
+>Ctor : Ctor<T>
+>a : any[]
+
+function MixAny<TB extends Ctor<Base<any>>>(B: TB) { return class extends B { extra = 1 }; }
+>MixAny : <TB extends Ctor<Base<any>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixAny.(Anonymous class); } & TB
+>B : TB
+>class extends B { extra = 1 } : { new (...a: any[]): (Anonymous class); prototype: MixAny.(Anonymous class); } & TB
+>B : Base<any>
+>extra : number
+>1 : 1
+
+function MixUnknown<TB extends Ctor<Base<unknown>>>(B: TB) { return class extends B {}; }
+>MixUnknown : <TB extends Ctor<Base<unknown>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixUnknown.(Anonymous class); } & TB
+>B : TB
+>class extends B {} : { new (...a: any[]): (Anonymous class); prototype: MixUnknown.(Anonymous class); } & TB
+>B : Base<unknown>
+
+function MixSame<TB extends Ctor<Base<number>>>(B: TB) { return class extends B {}; }
+>MixSame : <TB extends Ctor<Base<number>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixSame.(Anonymous class); } & TB
+>B : TB
+>class extends B {} : { new (...a: any[]): (Anonymous class); prototype: MixSame.(Anonymous class); } & TB
+>B : Base<number>
+
+class D1 extends MixAny(Base<number>) {}
+>D1 : D1
+>MixAny(Base<number>) : MixAny.(Anonymous class) & Base<number>
+>MixAny : <TB extends Ctor<Base<any>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixAny.(Anonymous class); } & TB
+>Base<number> : { new (): Base<number>; prototype: Base<any>; }
+>Base : typeof Base
+
+class Num extends Base<number> {}
+>Num : Num
+>Base : Base<number>
+
+class D2 extends MixAny(Num) {}
+>D2 : D2
+>MixAny(Num) : MixAny.(Anonymous class) & Num
+>MixAny : <TB extends Ctor<Base<any>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixAny.(Anonymous class); } & TB
+>Num : typeof Num
+
+class D3 extends MixUnknown(Base<number>) {}
+>D3 : D3
+>MixUnknown(Base<number>) : MixUnknown.(Anonymous class) & Base<number>
+>MixUnknown : <TB extends Ctor<Base<unknown>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixUnknown.(Anonymous class); } & TB
+>Base<number> : { new (): Base<number>; prototype: Base<any>; }
+>Base : typeof Base
+
+class D4 extends MixSame(Base<number>) {}
+>D4 : D4
+>MixSame(Base<number>) : MixSame.(Anonymous class) & Base<number>
+>MixSame : <TB extends Ctor<Base<number>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixSame.(Anonymous class); } & TB
+>Base<number> : { new (): Base<number>; prototype: Base<any>; }
+>Base : typeof Base
+
+class D5 extends MixAny(Base<number>) { value?: number }
+>D5 : D5
+>MixAny(Base<number>) : MixAny.(Anonymous class) & Base<number>
+>MixAny : <TB extends Ctor<Base<any>>>(B: TB) => { new (...a: any[]): (Anonymous class); prototype: MixAny.(Anonymous class); } & TB
+>Base<number> : { new (): Base<number>; prototype: Base<any>; }
+>Base : typeof Base
+>value : number | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+b.js(1,1): error TS2540: Cannot assign to 'globalThis' because it is a read-only property.
+z.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" } }
+==== b.js (1 errors) ====
+    globalThis = 1;
+    ~~~~~~~~~~
+!!! error TS2540: Cannot assign to 'globalThis' because it is a read-only property.
+==== z.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

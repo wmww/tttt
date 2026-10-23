@@ -1,0 +1,15 @@
+//// [test/cases/bun05-P4.ts] ////
+
+=== a.ts ===
+class K { static readonly #i = Symbol(); static t() { const n: number = K.#i; } }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>#i : Symbol(K.#i, Decl(a.ts, 0, 9))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>t : Symbol(K.t, Decl(a.ts, 0, 40))
+>n : Symbol(n, Decl(a.ts, 0, 59))
+>K.#i : Symbol(K.#i, Decl(a.ts, 0, 9))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

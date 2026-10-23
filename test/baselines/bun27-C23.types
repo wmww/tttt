@@ -1,0 +1,18 @@
+//// [test/cases/bun27-C23.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+enum Frag { A }
+>Frag : Frag
+>A : Frag.A
+
+const f = <></>;
+>f : JSX.Element
+><></> : JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

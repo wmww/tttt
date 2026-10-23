@@ -1,0 +1,32 @@
+//// [test/cases/bun31-P5.ts] ////
+
+=== a.ts ===
+declare const o: { y: boolean };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>y : Symbol(y, Decl(a.ts, 0, 18))
+
+declare const a: Record<string, number>;
+>a : Symbol(a, Decl(a.ts, 1, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+function g() { return q; }
+>g : Symbol(g, Decl(a.ts, 1, 40))
+>q : Symbol(q, Decl(a.ts, 5, 5))
+
+const k = g() ? "a" : "b";
+>k : Symbol(k, Decl(a.ts, 3, 5))
+>g : Symbol(g, Decl(a.ts, 1, 40))
+
+a[k] = 1;
+>a : Symbol(a, Decl(a.ts, 1, 13))
+>k : Symbol(k, Decl(a.ts, 3, 5))
+
+const q = o.y;
+>q : Symbol(q, Decl(a.ts, 5, 5))
+>o.y : Symbol(y, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>y : Symbol(y, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

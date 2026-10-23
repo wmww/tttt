@@ -1,0 +1,39 @@
+sentinel.ts(5,14): error TS2322: Type 'any' is not assignable to type 'never'.
+sentinel.ts(6,14): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    {
+      "compilerOptions": {
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "types": []
+      },
+      "include": ["index.ts", "sentinel.ts"]
+    }
+==== index.ts (0 errors) ====
+    import type { Fn } from "lib";
+    
+    export const f: Fn = (method: number) => {};
+==== sentinel.ts (2 errors) ====
+    import type { Fn, Method } from "lib";
+    import { Method as Value } from "lib";
+    
+    export const g: Fn = (method: string) => {};
+    export const asType: never = null! as Method;
+                 ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const asValue: never = Value;
+                 ~~~~~~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+    
+==== node_modules/lib/index.d.ts (0 errors) ====
+    export type Method = typeof Method;
+    export declare const Method: { a: number };
+    export type Method = "get" | "post";
+    export type Fn = (method: Method) => void;
+==== node_modules/lib/package.json (0 errors) ====
+    { "name": "lib", "version": "1.0.0", "types": "index.d.ts" }

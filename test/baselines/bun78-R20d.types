@@ -1,0 +1,44 @@
+//// [test/cases/bun78-R20d.ts] ////
+
+=== a.ts ===
+declare const key: string;
+>key : string
+
+function o1(a: {}): void; function o1({ [key]: a = 1 }) {}
+>o1 : (a: {}) => void
+>a : {}
+>o1 : (a: {}) => void
+>key : string
+>a : any
+>1 : 1
+
+class O2 { m(a: {}): void; m({ [key]: a = 1 }) {} }
+>O2 : O2
+>m : (a: {}) => void
+>a : {}
+>m : (a: {}) => void
+>key : string
+>a : any
+>1 : 1
+
+// both report TS2537: a call before the declaration
+e3({}); function e3({ [key]: a = 1 }) {}
+>e3({}) : void
+>e3 : ({ [key]: a }: {}) => void
+>{} : {}
+>e3 : ({ [key]: a }: {}) => void
+>key : string
+>a : any
+>1 : 1
+
+// both are silent
+function e4({ [key]: a = 1 }) {}
+>e4 : ({ [key]: a }: {}) => void
+>key : string
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

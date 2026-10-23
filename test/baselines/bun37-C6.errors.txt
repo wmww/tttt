@@ -1,0 +1,11 @@
+tsconfig.json(1,12): error TS18002: The 'files' list in config file 'tsconfig.json' is empty.
+tsconfig.json(1,27): error TS5024: Compiler option 'extends' requires a value of type string or Array.
+
+
+==== tsconfig.json (2 errors) ====
+    { "files": [], "extends": null }
+               ~~
+!!! error TS18002: The 'files' list in config file 'tsconfig.json' is empty.
+                              ~~~~
+!!! error TS5024: Compiler option 'extends' requires a value of type string or Array.
+    

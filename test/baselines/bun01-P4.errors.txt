@@ -1,0 +1,19 @@
+a.tsx(4,13): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.tsx (2 errors) ====
+    export {};
+    declare global { namespace JSX { interface IntrinsicElements { div: any } interface Element {} } }
+    function unrelated(React: number) {}
+    const x1 = <div />;
+                ~~~
+!!! error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== react.d.ts (0 errors) ====
+    export function createElement(...a: any[]): any; export as namespace React;
+    

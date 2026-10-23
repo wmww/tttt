@@ -1,0 +1,13 @@
+//// [test/cases/bun33-C15.ts] ////
+
+=== a.ts ===
+namespace M { export import "x"; }
+>M : typeof M
+
+M;
+>M : typeof M
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,31 @@
+//// [test/cases/bun15-C9c.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : boolean
+
+declare function g3<T extends unknown[]>(x: number, ...args: [...T, number]): T;
+>g3 : <T extends unknown[]>(x: number, ...args: [...T, number]) => T
+>x : number
+>args : [...T, number]
+
+const r3: never = g3(0, ...(cond ? ["a", 1] : [true, 2]));
+>r3 : never
+>g3(0, ...(cond ? ["a", 1] : [true, 2])) : [string]
+>g3 : <T extends unknown[]>(x: number, ...args: [...T, number]) => T
+>0 : 0
+>...(cond ? ["a", 1] : [true, 2]) : string | number | boolean
+>(cond ? ["a", 1] : [true, 2]) : (string | number)[] | (number | boolean)[]
+>cond ? ["a", 1] : [true, 2] : (string | number)[] | (number | boolean)[]
+>cond : boolean
+>["a", 1] : (string | number)[]
+>"a" : "a"
+>1 : 1
+>[true, 2] : (number | boolean)[]
+>true : true
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

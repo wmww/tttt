@@ -1,0 +1,12 @@
+//// [test/cases/bun25-C23.ts] ////
+
+=== a.ts ===
+declare let a: any;
+>a : Symbol(a, Decl(a.ts, 0, 11))
+
+a!: 1;
+>a : Symbol(a, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

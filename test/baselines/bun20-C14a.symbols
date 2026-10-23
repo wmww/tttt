@@ -1,0 +1,25 @@
+//// [test/cases/bun20-C14a.ts] ////
+
+=== a.ts ===
+class A { a = 1 } class C { c = 3 } declare const AorC: typeof A | typeof C;
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(A.a, Decl(a.ts, 0, 9))
+>C : Symbol(C, Decl(a.ts, 0, 17))
+>c : Symbol(C.c, Decl(a.ts, 0, 27))
+>AorC : Symbol(AorC, Decl(a.ts, 0, 49))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 17))
+
+function f<TU extends unknown>(x: TU) { if (x instanceof AorC) { const a: null = x; } }
+>f : Symbol(f, Decl(a.ts, 0, 76))
+>TU : Symbol(TU, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 31))
+>TU : Symbol(TU, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 31))
+>AorC : Symbol(AorC, Decl(a.ts, 0, 49))
+>a : Symbol(a, Decl(a.ts, 1, 70))
+>x : Symbol(x, Decl(a.ts, 1, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

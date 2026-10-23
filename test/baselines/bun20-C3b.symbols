@@ -1,0 +1,50 @@
+//// [test/cases/bun20-C3b.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+declare function id<T>(x: T): T;
+>id : Symbol(id, Decl(a.ts, 0, 33))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>x : Symbol(x, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+declare const m: { a: "b"; b: "a" };
+>m : Symbol(m, Decl(a.ts, 2, 13))
+>a : Symbol(a, Decl(a.ts, 2, 18))
+>b : Symbol(b, Decl(a.ts, 2, 26))
+
+function f() {
+>f : Symbol(f, Decl(a.ts, 2, 36))
+
+    let x: "a" | "b" = "a", y: "a" | "b" = "a";
+>x : Symbol(x, Decl(a.ts, 4, 7))
+>y : Symbol(y, Decl(a.ts, 4, 27))
+
+    do {
+        if (y === x) { }
+>y : Symbol(y, Decl(a.ts, 4, 27))
+>x : Symbol(x, Decl(a.ts, 4, 7))
+
+        if (cond()) { y = id(x); }
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 4, 27))
+>id : Symbol(id, Decl(a.ts, 0, 33))
+>x : Symbol(x, Decl(a.ts, 4, 7))
+
+        if (cond()) continue;
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+        x = m[y];
+>x : Symbol(x, Decl(a.ts, 4, 7))
+>m : Symbol(m, Decl(a.ts, 2, 13))
+>y : Symbol(y, Decl(a.ts, 4, 27))
+
+    } while (cond());
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

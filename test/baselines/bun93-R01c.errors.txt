@@ -1,0 +1,19 @@
+a.ts(2,6): error TS2456: Type alias 'A' circularly references itself.
+a.ts(3,20): error TS2339: Property 'b' does not exist on type 'M'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type M = { [K in "a" | "b" as A]: N["a"] };
+    type A = M["a"] & string;
+         ~
+!!! error TS2456: Type alias 'A' circularly references itself.
+    interface N { a: M["b"] }
+                       ~~~
+!!! error TS2339: Property 'b' does not exist on type 'M'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

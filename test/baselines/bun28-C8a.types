@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C8a.ts] ////
+
+=== a.ts ===
+class B extends import<string> {}
+>B : B
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

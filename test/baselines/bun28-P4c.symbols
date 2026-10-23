@@ -1,0 +1,13 @@
+//// [test/cases/bun28-P4c.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+@dec override function f() {}
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

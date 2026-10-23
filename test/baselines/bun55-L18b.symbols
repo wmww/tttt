@@ -1,0 +1,43 @@
+//// [test/cases/bun55-L18b.ts] ////
+
+=== a.ts ===
+declare function one<T>(v: T): { a: T; b: T };
+>one : Symbol(one, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>v : Symbol(v, Decl(a.ts, 0, 24))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>a : Symbol(a, Decl(a.ts, 0, 32))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>b : Symbol(b, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+
+const { a: [n, s], b = JSON.parse("[]") } = one([1, "hi"]);
+>a : Symbol(a, Decl(a.ts, 0, 32))
+>n : Symbol(n, Decl(a.ts, 1, 12))
+>s : Symbol(s, Decl(a.ts, 1, 14))
+>b : Symbol(b, Decl(a.ts, 1, 18))
+>JSON.parse : Symbol(JSON.parse, Decl(lib.es5.d.ts, --, --))
+>JSON : Symbol(JSON, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>parse : Symbol(JSON.parse, Decl(lib.es5.d.ts, --, --))
+>one : Symbol(one, Decl(a.ts, 0, 0))
+
+s.length;
+>s : Symbol(s, Decl(a.ts, 1, 14))
+
+// without the default of type `any` the pattern makes the argument a tuple in both
+const { a: [n2, s2], b: b2 } = one([1, "hi"]);
+>a : Symbol(a, Decl(a.ts, 0, 32))
+>n2 : Symbol(n2, Decl(a.ts, 4, 12))
+>s2 : Symbol(s2, Decl(a.ts, 4, 15))
+>b : Symbol(b, Decl(a.ts, 0, 38))
+>b2 : Symbol(b2, Decl(a.ts, 4, 20))
+>one : Symbol(one, Decl(a.ts, 0, 0))
+
+s2.length;
+>s2.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>s2 : Symbol(s2, Decl(a.ts, 4, 15))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

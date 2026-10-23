@@ -1,0 +1,11 @@
+//// [test/cases/bun40-C11a.ts] ////
+
+=== a.ts ===
+/// <reference path="./b.TS" />
+b;
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

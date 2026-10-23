@@ -1,0 +1,122 @@
+//// [test/cases/bun96-REDUX1.ts] ////
+
+=== a.ts ===
+interface Store<S, T> { getState(): S & T }
+>getState : () => S & T
+
+// redux, src/createStore.ts: X has no inference site but the contextual return type
+declare function createStore<S, E, X>(reducer: S, enhancer: E): Store<S, X> & E
+>createStore : <S, E, X>(reducer: S, enhancer: E) => Store<S, X> & E
+>reducer : S
+>enhancer : E
+
+function legacy_createStore<S, E extends {}, X>(reducer: S, enhancer: E): Store<S, X> & E {
+>legacy_createStore : <S, E extends {}, X>(reducer: S, enhancer: E) => Store<S, X> & E
+>reducer : S
+>enhancer : E
+
+  return createStore(reducer, enhancer)
+>createStore(reducer, enhancer) : Store<S, X> & E
+>createStore : <S_1, E_1, X_1>(reducer: S_1, enhancer: E_1) => Store<S_1, X_1> & E_1
+>reducer : S
+>enhancer : E
+}
+// with redux's conditional type, defaults and NoInfer: the words of the project's error
+type UnknownIfNonSpecific<T> = {} extends T ? unknown : T
+>UnknownIfNonSpecific : UnknownIfNonSpecific<T>
+
+declare function createStore2<S, Ext extends {} = {}, StateExt extends {} = {}>(reducer: S, enhancer?: Ext): Store<S, UnknownIfNonSpecific<StateExt>> & NoInfer<Ext>
+>createStore2 : <S, Ext extends {} = {}, StateExt extends {} = {}>(reducer: S, enhancer?: Ext) => Store<S, UnknownIfNonSpecific<StateExt>> & NoInfer<Ext>
+>reducer : S
+>enhancer : Ext | undefined
+
+function legacy_createStore2<S, Ext extends {} = {}, StateExt extends {} = {}>(reducer: S, enhancer?: Ext): Store<S, UnknownIfNonSpecific<StateExt>> & Ext {
+>legacy_createStore2 : <S, Ext extends {} = {}, StateExt extends {} = {}>(reducer: S, enhancer?: Ext) => Store<S, UnknownIfNonSpecific<StateExt>> & Ext
+>reducer : S
+>enhancer : Ext | undefined
+
+  return createStore2(reducer, enhancer)
+>createStore2(reducer, enhancer) : Store<S, UnknownIfNonSpecific<StateExt>> & NoInfer<Ext>
+>createStore2 : <S_1, Ext_1 extends {} = {}, StateExt_1 extends {} = {}>(reducer: S_1, enhancer?: Ext_1) => Store<S_1, UnknownIfNonSpecific<StateExt_1>> & NoInfer<Ext_1>
+>reducer : S
+>enhancer : Ext | undefined
+}
+
+// the same from an argument; `object`; what is inferred
+declare function stateOf<S, X>(store: Store<S, X>): [S, X]
+>stateOf : <S, X>(store: Store<S, X>) => [S, X]
+>store : Store<S, X>
+
+function f1<E extends {}>(store: Store<string, { a: 1 }> & E) { return stateOf(store)[0].length }
+>f1 : <E extends {}>(store: Store<string, { a: 1; }> & E) => number
+>store : Store<string, { a: 1; }> & E
+>a : 1
+>stateOf(store)[0].length : number
+>stateOf(store)[0] : string
+>stateOf(store) : [string, { a: 1; }]
+>stateOf : <S, X>(store: Store<S, X>) => [S, X]
+>store : Store<string, { a: 1; }> & E
+>0 : 0
+>length : number
+
+function f2<E extends object>(store: Store<string, { a: 1 }> & E) { const v: null = stateOf(store) }
+>f2 : <E extends object>(store: Store<string, { a: 1; }> & E) => void
+>store : Store<string, { a: 1; }> & E
+>a : 1
+>v : null
+>stateOf(store) : [string, { a: 1; }]
+>stateOf : <S, X>(store: Store<S, X>) => [S, X]
+>store : Store<string, { a: 1; }> & E
+
+// both tools agree on these two: `Store & unknown` is a reference in both, `Store & { c: 3 }` in neither
+function f3<E>(store: Store<string, { a: 1 }> & E) { const v: null = stateOf(store) }
+>f3 : <E>(store: Store<string, { a: 1; }> & E) => void
+>store : Store<string, { a: 1; }> & E
+>a : 1
+>v : null
+>stateOf(store) : [string, { a: 1; }]
+>stateOf : <S, X>(store: Store<S, X>) => [S, X]
+>store : Store<string, { a: 1; }> & E
+
+function f4<E extends { c: 3 }>(store: Store<string, { a: 1 }> & E) { const v: null = stateOf(store) }
+>f4 : <E extends { c: 3; }>(store: Store<string, { a: 1; }> & E) => void
+>c : 3
+>store : Store<string, { a: 1; }> & E
+>a : 1
+>v : null
+>stateOf(store) : [unknown, unknown]
+>stateOf : <S, X>(store: Store<S, X>) => [S, X]
+>store : Store<string, { a: 1; }> & E
+
+// other generic types whose type arguments cannot be read off the members
+interface Pair<A, B> { either: A | B }
+>either : A | B
+
+declare function pair<A, B>(p: Pair<A, B>): [A, B]
+>pair : <A, B>(p: Pair<A, B>) => [A, B]
+>p : Pair<A, B>
+
+declare function tuple<T extends unknown[]>(t: [...T]): T
+>tuple : <T extends unknown[]>(t: [...T]) => T
+>t : [...T]
+
+function f5<E extends {}>(p: Pair<1, 2> & E) { const v: null = pair(p) }
+>f5 : <E extends {}>(p: Pair<1, 2> & E) => void
+>p : Pair<1, 2> & E
+>v : null
+>pair(p) : [1, 2]
+>pair : <A, B>(p: Pair<A, B>) => [A, B]
+>p : Pair<1, 2> & E
+
+function f6<E extends {}>(t: [1, 2] & E) { const v: null = tuple(t) }
+>f6 : <E extends {}>(t: [1, 2] & E) => void
+>t : [1, 2] & E
+>v : null
+>tuple(t) : [1, 2]
+>tuple : <T extends unknown[]>(t: [...T]) => T
+>t : [1, 2] & E
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

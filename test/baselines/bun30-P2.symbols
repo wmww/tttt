@@ -1,0 +1,23 @@
+//// [test/cases/bun30-P2.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+const k = "foo";
+>k : Symbol(k, Decl(f.js, 0, 5))
+
+export class C { static m() { this[k] = 1; } }
+>C : Symbol(C, Decl(f.js, 0, 16))
+>m : Symbol(C.m, Decl(f.js, 1, 16))
+>this : Symbol(C, Decl(f.js, 0, 16))
+>k : Symbol(k, Decl(f.js, 0, 5))
+
+C.foo.toFixed();
+>C.foo.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>C.foo : Symbol(C[this[k]], Decl(f.js, 1, 29))
+>C : Symbol(C, Decl(f.js, 0, 16))
+>foo : Symbol(C[this[k]], Decl(f.js, 1, 29))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+

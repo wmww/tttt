@@ -1,0 +1,21 @@
+//// [test/cases/bun12-C7c.ts] ////
+
+=== a.ts ===
+type Sw<T, U> = T extends string ? [T, U] : Sw<U | "k", T>;
+>Sw : Symbol(Sw, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>U : Symbol(U, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>U : Symbol(U, Decl(a.ts, 0, 10))
+>Sw : Symbol(Sw, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+const r: ["a", 1] | ["k", 1] = null! as Sw<1, "a">;
+>r : Symbol(r, Decl(a.ts, 1, 5))
+>Sw : Symbol(Sw, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

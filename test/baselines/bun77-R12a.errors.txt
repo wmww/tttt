@@ -1,0 +1,43 @@
+a.jsx(1,39): error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+a.jsx(2,25): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.jsx(3,39): error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+a.jsx(4,25): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.jsx(5,39): error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+a.jsx(6,25): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.jsx(7,39): error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+a.jsx(8,25): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.jsx(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "jsx": "preserve", "types": [], "lib": ["es2022"] } }
+==== a.jsx (9 errors) ====
+    /** @param {number} a @param {number} extra */
+                                          ~~~~~
+!!! error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+    function h1(a) { return <a:arguments />; }
+                            ~~~~~~~~~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    /** @param {number} a @param {number} extra */
+                                          ~~~~~
+!!! error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+    function h4(a) { return <div a:arguments={1} />; }
+                            ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    /** @param {number} a @param {number} extra */
+                                          ~~~~~
+!!! error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+    function h7(a) { return <arguments:a />; }
+                            ~~~~~~~~~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    /** @param {number} a @param {number} extra */
+                                          ~~~~~
+!!! error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+    function h3(a) { return <div arguments={1} />; }
+                            ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

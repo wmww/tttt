@@ -1,0 +1,19 @@
+//// [test/cases/bun10-C16.ts] ////
+
+=== a.ts ===
+class G<T> { x!: T; constructor(...args: any[]) {} }
+>G : G<T>
+>x : T
+>args : any[]
+
+function f1<T extends typeof G>(base: T) { class D extends base { } }
+>f1 : <T extends typeof G>(base: T) => void
+>G : typeof G
+>base : T
+>D : D
+>base : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

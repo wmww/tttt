@@ -1,0 +1,25 @@
+//// [test/cases/bun52-L13b.ts] ////
+
+=== a.ts ===
+const k = "kk";
+>k : "kk"
+>"kk" : "kk"
+
+function F() {}
+>F : { (): void; kk: any; }
+
+F[k] = { a: F.kk };
+>F[k] = { a: F.kk } : { a: any; }
+>F[k] : any
+>F : { (): void; kk: any; }
+>k : "kk"
+>{ a: F.kk } : { a: any; }
+>a : any
+>F.kk : any
+>F : { (): void; kk: any; }
+>kk : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

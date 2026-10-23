@@ -1,0 +1,16 @@
+a.tsx(3,57): error TS2322: Type '{ children: number[]; }' is not assignable to type 'Cond<T>'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    type Cond<T> = T extends string ? { children: number } : { children: string };
+    function f<T>(C: (p: Cond<T>) => JSX.Element) { return <C>{1}{2}</C>; }
+                                                            ~
+!!! error TS2322: Type '{ children: number[]; }' is not assignable to type 'Cond<T>'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

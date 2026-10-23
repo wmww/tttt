@@ -1,0 +1,96 @@
+//// [test/cases/bun55-L16a.ts] ////
+
+=== a.ts ===
+function mk<U>(u: U, x: { k: 1 }) { return { u, ...x }; }
+>mk : <U>(u: U, x: { k: 1; }) => { k: 1; u: U; }
+>u : U
+>x : { k: 1; }
+>k : 1
+>{ u, ...x } : { k: 1; u: U; }
+>u : U
+>x : { k: 1; }
+
+const a = mk(1, { k: 1 });
+>a : { k: 1; u: number; }
+>mk(1, { k: 1 }) : { k: 1; u: number; }
+>mk : <U>(u: U, x: { k: 1; }) => { k: 1; u: U; }
+>1 : 1
+>{ k: 1 } : { k: 1; }
+>k : 1
+>1 : 1
+
+const b = mk("", { k: 1 });
+>b : { k: 1; u: string; }
+>mk("", { k: 1 }) : { k: 1; u: string; }
+>mk : <U>(u: U, x: { k: 1; }) => { k: 1; u: U; }
+>"" : ""
+>{ k: 1 } : { k: 1; }
+>k : 1
+>1 : 1
+
+declare function f<T>(p: typeof b | T, q: T): T;
+>f : <T>(p: typeof b | T, q: T) => T
+>p : T | { k: 1; u: string; }
+>b : { k: 1; u: string; }
+>q : T
+
+declare const c: { u: number; k: 1; more: 1 };
+>c : { u: number; k: 1; more: 1; }
+>u : number
+>k : 1
+>more : 1
+
+f(a, c);
+>f(a, c) : { u: number; k: 1; more: 1; }
+>f : <T>(p: typeof b | T, q: T) => T
+>a : { k: 1; u: number; }
+>c : { u: number; k: 1; more: 1; }
+
+f(a, { z: 1 });
+>f(a, { z: 1 }) : { z: number; }
+>f : <T>(p: typeof b | T, q: T) => T
+>a : { k: 1; u: number; }
+>{ z: 1 } : { z: number; }
+>z : number
+>1 : 1
+
+// without the spread both agree
+function mk2<U>(u: U) { return { u }; }
+>mk2 : <U>(u: U) => { u: U; }
+>u : U
+>{ u } : { u: U; }
+>u : U
+
+const a2 = mk2(1);
+>a2 : { u: number; }
+>mk2(1) : { u: number; }
+>mk2 : <U>(u: U) => { u: U; }
+>1 : 1
+
+const b2 = mk2("");
+>b2 : { u: string; }
+>mk2("") : { u: string; }
+>mk2 : <U>(u: U) => { u: U; }
+>"" : ""
+
+declare function f2<T>(p: typeof b2 | T, q: T): T;
+>f2 : <T>(p: typeof b2 | T, q: T) => T
+>p : T | { u: string; }
+>b2 : { u: string; }
+>q : T
+
+declare const c2: { u: number; more: 1 };
+>c2 : { u: number; more: 1; }
+>u : number
+>more : 1
+
+f2(a2, c2);
+>f2(a2, c2) : { u: number; more: 1; }
+>f2 : <T>(p: typeof b2 | T, q: T) => T
+>a2 : { u: number; }
+>c2 : { u: number; more: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

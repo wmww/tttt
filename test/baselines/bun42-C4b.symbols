@@ -1,0 +1,25 @@
+//// [test/cases/bun42-C4b.ts] ////
+
+=== a.ts ===
+namespace A { export enum E { z = 0, o = 1 } }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>E : Symbol(E, Decl(a.ts, 0, 13))
+>z : Symbol(E.z, Decl(a.ts, 0, 29))
+>o : Symbol(E.o, Decl(a.ts, 0, 36))
+
+namespace B { export enum E { z = -0, o = 1 } }
+>B : Symbol(B, Decl(a.ts, 0, 46))
+>E : Symbol(E, Decl(a.ts, 1, 13))
+>z : Symbol(E.z, Decl(a.ts, 1, 29))
+>o : Symbol(E.o, Decl(a.ts, 1, 37))
+
+let x: A.E = null! as B.E;
+>x : Symbol(x, Decl(a.ts, 2, 3))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>E : Symbol(A.E, Decl(a.ts, 0, 13))
+>B : Symbol(B, Decl(a.ts, 0, 46))
+>E : Symbol(B.E, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

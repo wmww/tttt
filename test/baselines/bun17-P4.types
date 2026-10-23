@@ -1,0 +1,19 @@
+//// [test/cases/bun17-P4.ts] ////
+
+=== a.ts ===
+declare const o: { a?: number | undefined };
+>o : { a?: number | undefined; }
+>a : number | undefined
+
+const t: { a?: string } = { a: "x", ...o };
+>t : { a?: string; }
+>a : string | undefined
+>{ a: "x", ...o } : { a: string | number | undefined; }
+>a : string
+>"x" : "x"
+>o : { a?: number | undefined; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun16-C6.ts] ////
+
+=== a.ts ===
+const t1: { a: never } & ThisType<{ x: 1 }> = { a: { m() { this.x; } } };
+>t1 : Symbol(t1, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>ThisType : Symbol(ThisType, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 35))
+>a : Symbol(a, Decl(a.ts, 0, 47))
+>m : Symbol(m, Decl(a.ts, 0, 52))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

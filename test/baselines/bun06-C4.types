@@ -1,0 +1,24 @@
+//// [test/cases/bun06-C4.ts] ////
+
+=== c.js ===
+/** @type {number} */
+let x;
+>x : number
+
+function f() { return x; }
+>f : () => number
+>x : number
+
+module.exports = { f };
+>module.exports = { f } : { f: () => number; }
+>module.exports : { f: () => number; }
+>module : { exports: { f: () => number; }; }
+>exports : { f: () => number; }
+>{ f } : { f: () => number; }
+>f : () => number
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

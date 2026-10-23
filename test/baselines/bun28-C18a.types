@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C18a.ts] ////
+
+=== a.ts ===
+const o = { abstract p() { } };
+>o : { p(): void; }
+>{ abstract p() { } } : { p(): void; }
+>p : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

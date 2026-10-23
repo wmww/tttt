@@ -1,0 +1,20 @@
+a.ts(3,4): error TS2783: 'a' is specified more than once, so this usage will be overwritten.
+a.ts(3,10): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    declare const oa: { a: number; b: string };
+    ({ a: 1, a: 2, ...oa });
+       ~~~~
+!!! error TS2783: 'a' is specified more than once, so this usage will be overwritten.
+!!! related TS2785 a.ts:3:16: This spread always overwrites this property.
+             ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

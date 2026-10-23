@@ -1,0 +1,12 @@
+//// [test/cases/bun33-C8a.ts] ////
+
+=== a.ts ===
+import(("./nope"));
+>import(("./nope")) : Promise<any>
+>("./nope") : "./nope"
+>"./nope" : "./nope"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

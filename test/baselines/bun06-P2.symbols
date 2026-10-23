@@ -1,0 +1,51 @@
+//// [test/cases/bun06-P2.ts] ////
+
+=== a.ts ===
+declare function mdec<A extends any[], R>(m: (...a: A) => R, ctx: ClassMethodDecoratorContext): (...a: A) => R;
+>mdec : Symbol(mdec, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+>R : Symbol(R, Decl(a.ts, 0, 38))
+>m : Symbol(m, Decl(a.ts, 0, 42))
+>a : Symbol(a, Decl(a.ts, 0, 46))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+>R : Symbol(R, Decl(a.ts, 0, 38))
+>ctx : Symbol(ctx, Decl(a.ts, 0, 60))
+>ClassMethodDecoratorContext : Symbol(ClassMethodDecoratorContext, Decl(lib.decorators.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 0, 97))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+>R : Symbol(R, Decl(a.ts, 0, 38))
+
+class D { @mdec m<T>(x: T): T[] { return [x]; } }
+>D : Symbol(D, Decl(a.ts, 0, 111))
+>mdec : Symbol(mdec, Decl(a.ts, 0, 0))
+>m : Symbol(D.m, Decl(a.ts, 1, 9))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>x : Symbol(x, Decl(a.ts, 1, 21))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>x : Symbol(x, Decl(a.ts, 1, 21))
+
+declare function cdec<A extends any[], R>(c: new (...a: A) => R, ctx: ClassDecoratorContext): new (...a: A) => R;
+>cdec : Symbol(cdec, Decl(a.ts, 1, 49))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>R : Symbol(R, Decl(a.ts, 2, 38))
+>c : Symbol(c, Decl(a.ts, 2, 42))
+>a : Symbol(a, Decl(a.ts, 2, 50))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>R : Symbol(R, Decl(a.ts, 2, 38))
+>ctx : Symbol(ctx, Decl(a.ts, 2, 64))
+>ClassDecoratorContext : Symbol(ClassDecoratorContext, Decl(lib.decorators.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 2, 99))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>R : Symbol(R, Decl(a.ts, 2, 38))
+
+@cdec class C<T> { constructor(public x: T) {} }
+>cdec : Symbol(cdec, Decl(a.ts, 1, 49))
+>C : Symbol(C, Decl(a.ts, 2, 113))
+>T : Symbol(T, Decl(a.ts, 3, 14))
+>x : Symbol(C.x, Decl(a.ts, 3, 31))
+>T : Symbol(T, Decl(a.ts, 3, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

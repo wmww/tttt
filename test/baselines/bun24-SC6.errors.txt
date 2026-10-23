@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '{ x: number; m(a: typeof this): number; n(a: typeof this.x): number; }' is not assignable to type 'number'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const o = { x: 1, m(a: typeof this) { return a.x }, n(a: typeof this.x) { return a } };
+    const q1: number = o;
+          ~~
+!!! error TS2322: Type '{ x: number; m(a: typeof this): number; n(a: typeof this.x): number; }' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

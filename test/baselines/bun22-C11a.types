@@ -1,0 +1,32 @@
+//// [test/cases/bun22-C11a.ts] ////
+
+=== a.ts ===
+declare function f<T>(a: T, b: [x: T]): T;
+>f : <T>(a: T, b: [x: T]) => T
+>a : T
+>b : [x: T]
+
+declare const a2: { m(x: string | number): void };
+>a2 : { m(x: string | number): void; }
+>m : (x: string | number) => void
+>x : string | number
+
+declare const t2: [x: { m(x: string): void }];
+>t2 : [x: { m(x: string): void; }]
+>m : (x: string) => void
+>x : string
+
+f(a2, t2).m(1);
+>f(a2, t2).m(1) : void
+>f(a2, t2).m : (x: string) => void
+>f(a2, t2) : { m(x: string): void; }
+>f : <T>(a: T, b: [x: T]) => T
+>a2 : { m(x: string | number): void; }
+>t2 : [x: { m(x: string): void; }]
+>m : (x: string) => void
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

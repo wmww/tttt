@@ -1,0 +1,17 @@
+//// [test/cases/bun05-C20.ts] ////
+
+=== a.ts ===
+function set<T extends Record<string, unknown>, K extends keyof T>(o: T, k: K) { o[k] = 1; }
+>set : <T extends Record<string, unknown>, K extends keyof T>(o: T, k: K) => void
+>o : T
+>k : K
+>o[k] = 1 : 1
+>o[k] : T[K]
+>o : T
+>k : K
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,26 @@
+a.ts(2,16): error TS2300: Duplicate identifier '[k]'.
+a.ts(3,16): error TS2300: Duplicate identifier '[k]'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'never'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    const k = "foo";
+    interface I6 { [k](): number }
+                   ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 a.ts:3:16: '[k]' was also declared here.
+    interface I6 { foo: string }
+                   ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 a.ts:2:16: '[k]' was also declared here.
+    declare const i6: I6;
+    const a6: never = i6.foo;
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

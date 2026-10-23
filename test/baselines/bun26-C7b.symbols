@@ -1,0 +1,19 @@
+//// [test/cases/bun26-C7b.ts] ////
+
+=== a.ts ===
+type I<T> = (({ k: T | "b"; z: 1 } & { k: "a" }) | { z: 3 })["z"];
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>k : Symbol(k, Decl(a.ts, 0, 15))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>z : Symbol(z, Decl(a.ts, 0, 27))
+>k : Symbol(k, Decl(a.ts, 0, 38))
+>z : Symbol(z, Decl(a.ts, 0, 52))
+
+const i1: I<"c"> = 1;
+>i1 : Symbol(i1, Decl(a.ts, 1, 5))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

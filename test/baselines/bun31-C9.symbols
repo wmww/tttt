@@ -1,0 +1,34 @@
+//// [test/cases/bun31-C9.ts] ////
+
+=== a.ts ===
+function m(a?: { b?: { c?: string } }) { if (a?.b!.c) { const s: string = a.b!.c; } }
+>m : Symbol(m, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 16))
+>c : Symbol(c, Decl(a.ts, 0, 22))
+>a?.b!.c : Symbol(c, Decl(a.ts, 0, 22))
+>a?.b : Symbol(b, Decl(a.ts, 0, 16))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 16))
+>c : Symbol(c, Decl(a.ts, 0, 22))
+>s : Symbol(s, Decl(a.ts, 0, 61))
+>a.b!.c : Symbol(c, Decl(a.ts, 0, 22))
+>a.b : Symbol(b, Decl(a.ts, 0, 16))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 16))
+>c : Symbol(c, Decl(a.ts, 0, 22))
+
+function n(a?: { g?(): string }) { if (a?.g!()) a.g; }
+>n : Symbol(n, Decl(a.ts, 0, 85))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>g : Symbol(g, Decl(a.ts, 1, 16))
+>a?.g : Symbol(g, Decl(a.ts, 1, 16))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>g : Symbol(g, Decl(a.ts, 1, 16))
+>a.g : Symbol(g, Decl(a.ts, 1, 16))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>g : Symbol(g, Decl(a.ts, 1, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

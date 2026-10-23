@@ -1,0 +1,22 @@
+a.ts(1,10): error TS2304: Cannot find name 'A'.
+a.ts(1,28): error TS1260: Keywords cannot contain escape characters.
+a.ts(1,41): error TS2304: Cannot find name 'B'.
+a.ts(1,45): error TS2304: Cannot find name 'C'.
+a.ts(1,49): error TS2304: Cannot find name 'D'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    type T = A extends infer U \u0065xtends B ? C : D;
+             ~
+!!! error TS2304: Cannot find name 'A'.
+                               ~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                                            ~
+!!! error TS2304: Cannot find name 'B'.
+                                                ~
+!!! error TS2304: Cannot find name 'C'.
+                                                    ~
+!!! error TS2304: Cannot find name 'D'.
+    

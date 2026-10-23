@@ -1,0 +1,37 @@
+a.ts(6,23): error TS2339: Property 'late' does not exist on type 'X2'.
+a.ts(7,43): error TS2353: Object literal may only specify known properties, and 'late' does not exist in type 'X2'.
+a.ts(18,23): error TS2339: Property 'late' does not exist on type 'C4'.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    interface A { a: number }
+    interface B { b: number }
+    interface X2 extends A, B { own: "late"; [k2]: number }
+    declare const k2: X2["own"];
+    declare const x2: X2;
+    const y2: number = x2.late;
+                          ~~~~
+!!! error TS2339: Property 'late' does not exist on type 'X2'.
+    const o2: X2 = { a: 1, b: 2, own: "late", late: 3 };
+                                              ~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'late' does not exist in type 'X2'.
+    // one base: the two agree, `late` is a member
+    interface X3 extends A { own: "late"; [k3]: number }
+    declare const k3: X3["own"];
+    declare const x3: X3;
+    const y3: number = x3.late;
+    // a class merged with the interface
+    class C4 { own!: "late"; [k4]!: number }
+    interface C4 extends A, B {}
+    declare const k4: C4["own"];
+    declare const x4: C4;
+    const y4: number = x4.late;
+                          ~~~~
+!!! error TS2339: Property 'late' does not exist on type 'C4'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,31 @@
+//// [test/cases/bun01-C14.ts] ////
+
+=== a.ts ===
+export {};
+class A {
+>A : A
+
+  inst = 1;
+>inst : number
+>1 : 1
+
+  static stat = 1;
+>stat : number
+>1 : 1
+
+  m1() { interface J extends inst {} }
+>m1 : () => void
+
+  m2() { class B implements stat {} }
+>m2 : () => void
+>B : B
+
+  m3() { class B implements inst.X {} }
+>m3 : () => void
+>B : B
+>inst : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

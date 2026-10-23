@@ -1,0 +1,13 @@
+//// [test/cases/bun09-C1a.ts] ////
+
+=== a.ts ===
+interface Baz<A extends string> { a: A }
+>a : A
+
+type W1<T> = T extends Baz<infer X extends number> ? 1 : 0;
+>W1 : W1<T>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

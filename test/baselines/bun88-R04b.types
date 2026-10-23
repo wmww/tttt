@@ -1,0 +1,82 @@
+//// [test/cases/bun88-R04b.ts] ////
+
+=== a.ts ===
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+interface Symbol {}
+interface SymbolConstructor { readonly iterator: unique symbol; }
+>iterator : unique symbol
+
+declare var Symbol: SymbolConstructor;
+>Symbol : SymbolConstructor
+
+interface Iterator<T, TReturn = any, TNext = any> { next(): { done: boolean; value: T }; }
+>next : () => { done: boolean; value: T; }
+>done : boolean
+>value : T
+
+interface Iterable<T, TReturn = any, TNext = any> { [Symbol.iterator](): Iterator<T, TReturn, TNext>; }
+>[Symbol.iterator] : () => Iterator<T, TReturn, TNext>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+interface ReadonlyArray<T> {}
+declare const arr: number[]; declare const ro: readonly number[]; declare const tup: [number, number];
+>arr : number[]
+>ro : readonly number[]
+>tup : [number, number]
+
+const [e1] = arr;
+>e1 : any
+>arr : number[]
+
+const [e2, ...r2] = ro;
+>e2 : any
+>r2 : any[]
+>ro : readonly number[]
+
+const [e3] = tup;
+>e3 : number
+>tup : [number, number]
+
+const [] = arr;
+>arr : number[]
+
+let e4: number; [e4] = arr;
+>e4 : number
+>[e4] = arr : number[]
+>[e4] : [number]
+>e4 : number
+>arr : number[]
+
+function f5([a, b]: number[], [c]: [number]) {}
+>f5 : ([a, b]: number[], [c]: [number]) => void
+>a : any
+>b : any
+>c : number
+
+const { p: [q] } = { p: arr };
+>p : any
+>q : any
+>{ p: arr } : { p: number[]; }
+>p : number[]
+>arr : number[]
+
+const [d1 = 1] = arr;
+>d1 : any
+>1 : 1
+>arr : number[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

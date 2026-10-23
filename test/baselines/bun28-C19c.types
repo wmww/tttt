@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C19c.ts] ////
+
+=== a.ts ===
+declare const o = { *g() {} };
+>o : { g(): Generator<never, void, unknown>; }
+>{ *g() {} } : { g(): Generator<never, void, unknown>; }
+>g : () => Generator<never, void, unknown>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

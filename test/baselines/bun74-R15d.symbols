@@ -1,0 +1,19 @@
+//// [test/cases/bun74-R15d.ts] ////
+
+=== a.ts ===
+export {};
+const q = <await>(x: await) => x;
+>q : Symbol(q, Decl(a.ts, 1, 5))
+>await : Symbol(await)
+>await : Symbol(await, Decl(a.ts, 1, 20))
+
+=== b.ts ===
+export {};
+const q = <T, await>(x: T) => x;
+>q : Symbol(q, Decl(b.ts, 1, 5))
+>T : Symbol(T)
+>await : Symbol(await, Decl(b.ts, 1, 13))
+>x : Symbol(x, Decl(b.ts, 1, 21))
+>T : Symbol(T)
+>x : Symbol(x, Decl(b.ts, 1, 21))
+

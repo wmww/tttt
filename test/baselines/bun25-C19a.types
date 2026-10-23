@@ -1,0 +1,11 @@
+//// [test/cases/bun25-C19a.ts] ////
+
+=== a.ts ===
+interface I { [k: string]: number; "#a@1": string }
+>k : string
+>"#a@1" : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

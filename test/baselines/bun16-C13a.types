@@ -1,0 +1,24 @@
+//// [test/cases/bun16-C13a.ts] ////
+
+=== a.ts ===
+interface Bad { then(): void }
+>then : () => void
+
+declare const u: string | Bad;
+>u : string | Bad
+
+async function f() {
+>f : () => Promise<void>
+
+  await u;
+>await u : string
+>u : string | Bad
+
+  await u;
+>await u : string
+>u : string | Bad
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

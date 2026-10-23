@@ -1,0 +1,16 @@
+//// [test/cases/bun24-SC9.ts] ////
+
+=== a.ts ===
+declare function f1(...a: number[], ...b: [string, number]): void;
+>f1 : (...a: number[], b_0: string, b_1: number) => void
+>a : number[]
+>b : [string, number]
+
+const s1: string = f1;
+>s1 : string
+>f1 : (...a: number[], b_0: string, b_1: number) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

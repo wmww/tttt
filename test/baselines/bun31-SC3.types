@@ -1,0 +1,46 @@
+//// [test/cases/bun31-SC3.ts] ////
+
+=== a.ts ===
+import { i1 } from "./b";
+>i1 : 1
+
+export function k1(
+>k1 : (a: number) => number
+
+  /** {@link v} */
+  a: number) { let v = 1; return a }
+>a : number
+>v : number
+>1 : 1
+>a : number
+
+export function k2(
+>k2 : (a: number) => number
+
+  /** {@link L} */
+  a: number) { type L = 1; return a }
+>a : number
+>L : 1
+>a : number
+
+export function k3(
+>k3 : (a: number) => number
+
+  /** {@link i1} */
+  a: number) { let i1 = 1; return a + i1 }
+>a : number
+>i1 : number
+>1 : 1
+>a + i1 : number
+>a : number
+>i1 : number
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export const i1 = 1;
+>i1 : 1
+>1 : 1
+

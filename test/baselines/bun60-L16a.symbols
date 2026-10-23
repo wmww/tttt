@@ -1,0 +1,76 @@
+//// [test/cases/bun60-L16a.ts] ////
+
+=== a.ts ===
+interface Asserts { str(x: unknown): asserts x is string; num: (x: unknown) => asserts x is number }
+>Asserts : Symbol(Asserts, Decl(a.ts, 0, 0))
+>str : Symbol(Asserts.str, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+>num : Symbol(Asserts.num, Decl(a.ts, 0, 57))
+>x : Symbol(x, Decl(a.ts, 0, 64))
+>x : Symbol(x, Decl(a.ts, 0, 64))
+
+type Prefixed<T> = { [K in keyof T as `assert${Capitalize<K & string>}`]: T[K] };
+>Prefixed : Symbol(Prefixed, Decl(a.ts, 0, 100))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>K : Symbol(K, Decl(a.ts, 1, 22))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>Capitalize : Symbol(Capitalize, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(a.ts, 1, 22))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>K : Symbol(K, Decl(a.ts, 1, 22))
+
+declare const p: Prefixed<Asserts>;
+>p : Symbol(p, Decl(a.ts, 2, 13))
+>Prefixed : Symbol(Prefixed, Decl(a.ts, 0, 100))
+>Asserts : Symbol(Asserts, Decl(a.ts, 0, 0))
+
+function f(v: unknown, w: unknown) {
+>f : Symbol(f, Decl(a.ts, 2, 35))
+>v : Symbol(v, Decl(a.ts, 3, 11))
+>w : Symbol(w, Decl(a.ts, 3, 22))
+
+  p.assertStr(v);
+>p.assertStr : Symbol(assertStr)
+>p : Symbol(p, Decl(a.ts, 2, 13))
+>assertStr : Symbol(assertStr)
+>v : Symbol(v, Decl(a.ts, 3, 11))
+
+  v.length;
+>v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 3, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+  p.assertNum(w);
+>p.assertNum : Symbol(assertNum)
+>p : Symbol(p, Decl(a.ts, 2, 13))
+>assertNum : Symbol(assertNum)
+>w : Symbol(w, Decl(a.ts, 3, 22))
+
+  w.toFixed();
+>w.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>w : Symbol(w, Decl(a.ts, 3, 22))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+}
+const inferred = { bad: (x: unknown): asserts x is string => {} };
+>inferred : Symbol(inferred, Decl(a.ts, 9, 5))
+>bad : Symbol(bad, Decl(a.ts, 9, 18))
+>x : Symbol(x, Decl(a.ts, 9, 25))
+>x : Symbol(x, Decl(a.ts, 9, 25))
+
+declare const q: Prefixed<typeof inferred>;
+>q : Symbol(q, Decl(a.ts, 10, 13))
+>Prefixed : Symbol(Prefixed, Decl(a.ts, 0, 100))
+>inferred : Symbol(inferred, Decl(a.ts, 9, 5))
+
+function g(v: unknown) { q.assertBad(v); }
+>g : Symbol(g, Decl(a.ts, 10, 43))
+>v : Symbol(v, Decl(a.ts, 11, 11))
+>q.assertBad : Symbol(assertBad)
+>q : Symbol(q, Decl(a.ts, 10, 13))
+>assertBad : Symbol(assertBad)
+>v : Symbol(v, Decl(a.ts, 11, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

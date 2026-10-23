@@ -1,0 +1,176 @@
+//// [test/cases/bun99-L2.ts] ////
+
+=== a.ts ===
+type Args<T extends ReadonlyArray<any>> = {
+>Args : Symbol(Args, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+
+  1: [T[0]];
+>1 : Symbol(1, Decl(a.ts, 0, 43))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+
+  2: [T[0], T[1]];
+>2 : Symbol(2, Decl(a.ts, 1, 12))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+
+  3: [T[0], T[1], T[2]];
+>3 : Symbol(3, Decl(a.ts, 2, 18))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+
+  fallback: Array<T extends ReadonlyArray<infer U> ? U : any>;
+>fallback : Symbol(fallback, Decl(a.ts, 3, 24))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>U : Symbol(U, Decl(a.ts, 4, 47))
+>U : Symbol(U, Decl(a.ts, 4, 47))
+
+}[T extends Readonly<[any]> ? 1 : T extends Readonly<[any, any]> ? 2 : T extends Readonly<[any, any, any]> ? 3 : "fallback"];
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+
+interface Run<T extends any[]> {
+>Run : Symbol(Run, Decl(a.ts, 5, 125))
+>T : Symbol(T, Decl(a.ts, 6, 14))
+
+  (name: string, fn: (...args: T) => void | Promise<void>): void;
+>name : Symbol(name, Decl(a.ts, 7, 3))
+>fn : Symbol(fn, Decl(a.ts, 7, 16))
+>args : Symbol(args, Decl(a.ts, 7, 22))
+>T : Symbol(T, Decl(a.ts, 6, 14))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+}
+interface Each {
+>Each : Symbol(Each, Decl(a.ts, 8, 1))
+
+  <T extends any[] | [any]>(cases: ReadonlyArray<T>): Run<T>;
+>T : Symbol(T, Decl(a.ts, 10, 3))
+>cases : Symbol(cases, Decl(a.ts, 10, 28))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>T : Symbol(T, Decl(a.ts, 10, 3))
+>Run : Symbol(Run, Decl(a.ts, 5, 125))
+>T : Symbol(T, Decl(a.ts, 10, 3))
+
+  <T extends ReadonlyArray<any>>(cases: ReadonlyArray<T>): Run<Args<T>>;
+>T : Symbol(T, Decl(a.ts, 11, 3))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>cases : Symbol(cases, Decl(a.ts, 11, 33))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>T : Symbol(T, Decl(a.ts, 11, 3))
+>Run : Symbol(Run, Decl(a.ts, 5, 125))
+>Args : Symbol(Args, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 11, 3))
+
+  <T>(cases: ReadonlyArray<T>): Run<T[]>;
+>T : Symbol(T, Decl(a.ts, 12, 3))
+>cases : Symbol(cases, Decl(a.ts, 12, 6))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>T : Symbol(T, Decl(a.ts, 12, 3))
+>Run : Symbol(Run, Decl(a.ts, 5, 125))
+>T : Symbol(T, Decl(a.ts, 12, 3))
+}
+declare const each: Each;
+>each : Symbol(each, Decl(a.ts, 14, 13))
+>Each : Symbol(Each, Decl(a.ts, 8, 1))
+
+let handler: (a: { id: string }, b: number) => { n: number } = () => ({ n: 1 });
+>handler : Symbol(handler, Decl(a.ts, 15, 3))
+>a : Symbol(a, Decl(a.ts, 15, 14))
+>id : Symbol(id, Decl(a.ts, 15, 18))
+>b : Symbol(b, Decl(a.ts, 15, 32))
+>n : Symbol(n, Decl(a.ts, 15, 48))
+>n : Symbol(n, Decl(a.ts, 15, 71))
+
+const TWO = 2;
+>TWO : Symbol(TWO, Decl(a.ts, 16, 5))
+
+each([
+>each : Symbol(each, Decl(a.ts, 14, 13))
+
+  ["two", () => ({ n: TWO }), "x"],
+>n : Symbol(n, Decl(a.ts, 19, 18))
+>TWO : Symbol(TWO, Decl(a.ts, 16, 5))
+
+  ["zero", () => ({ n: 0 }), "y"],
+>n : Symbol(n, Decl(a.ts, 20, 19))
+
+  [
+    "throws",
+    () => {
+      throw new Error("no");
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --))
+
+    },
+    "z",
+  ],
+] as const)("reads %s as %s", async (_name, answer, expected) => {
+>const : Symbol(const)
+>_name : Symbol(_name, Decl(a.ts, 28, 37))
+>answer : Symbol(answer, Decl(a.ts, 28, 43))
+>expected : Symbol(expected, Decl(a.ts, 28, 51))
+
+  handler = answer;
+>handler : Symbol(handler, Decl(a.ts, 15, 3))
+>answer : Symbol(answer, Decl(a.ts, 28, 43))
+
+  const text: "x" | "y" | "z" = expected;
+>text : Symbol(text, Decl(a.ts, 30, 7))
+>expected : Symbol(expected, Decl(a.ts, 28, 51))
+
+  void text;
+>text : Symbol(text, Decl(a.ts, 30, 7))
+
+});
+each([
+>each : Symbol(each, Decl(a.ts, 14, 13))
+
+  ["a", { make: () => ({ n: TWO }) }],
+>make : Symbol(make, Decl(a.ts, 34, 9))
+>n : Symbol(n, Decl(a.ts, 34, 24))
+>TWO : Symbol(TWO, Decl(a.ts, 16, 5))
+
+  ["b", { make: () => ({ n: 0 }) }],
+>make : Symbol(make, Decl(a.ts, 35, 9))
+>n : Symbol(n, Decl(a.ts, 35, 24))
+
+] as const)("%s", (_name, row) => {
+>const : Symbol(const)
+>_name : Symbol(_name, Decl(a.ts, 36, 19))
+>row : Symbol(row, Decl(a.ts, 36, 25))
+
+  handler = row.make;
+>handler : Symbol(handler, Decl(a.ts, 15, 3))
+>row.make : Symbol(make, Decl(a.ts, 34, 9), Decl(a.ts, 35, 9))
+>row : Symbol(row, Decl(a.ts, 36, 25))
+>make : Symbol(make, Decl(a.ts, 34, 9), Decl(a.ts, 35, 9))
+
+});
+each([
+>each : Symbol(each, Decl(a.ts, 14, 13))
+
+  [() => ({ n: TWO })],
+>n : Symbol(n, Decl(a.ts, 40, 11))
+>TWO : Symbol(TWO, Decl(a.ts, 16, 5))
+
+  [() => ({ n: 0 })],
+>n : Symbol(n, Decl(a.ts, 41, 11))
+
+])("%s", answer => {
+>answer : Symbol(answer, Decl(a.ts, 42, 8))
+
+  handler = answer;
+>handler : Symbol(handler, Decl(a.ts, 15, 3))
+>answer : Symbol(answer, Decl(a.ts, 42, 8))
+
+});
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 45, 5))
+

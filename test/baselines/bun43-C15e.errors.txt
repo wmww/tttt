@@ -1,0 +1,10 @@
+a.ts(1,12): error TS1351: An identifier or keyword cannot immediately follow a numeric literal.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    var x = 1.5n\u0061
+               ~~~~~~~
+!!! error TS1351: An identifier or keyword cannot immediately follow a numeric literal.
+    

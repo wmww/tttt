@@ -1,0 +1,19 @@
+a.ts(1,30): error TS1321: Type of 'yield' operand in an async generator must either be a valid promise or must not contain a callable 'then' member.
+a.ts(3,31): error TS1322: Type of iterated elements of a 'yield*' operand must either be a valid promise or must not contain a callable 'then' member.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    async function* a1() { yield { then(x: number) { } }; }
+                                 ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1321: Type of 'yield' operand in an async generator must either be a valid promise or must not contain a callable 'then' member.
+    declare const abad: AsyncIterable<{ then(x: number): void }>;
+    async function* a2() { yield* abad; }
+                                  ~~~~
+!!! error TS1322: Type of iterated elements of a 'yield*' operand must either be a valid promise or must not contain a callable 'then' member.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

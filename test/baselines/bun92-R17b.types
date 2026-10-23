@@ -1,0 +1,18 @@
+//// [test/cases/bun92-R17b.ts] ////
+
+=== a.ts ===
+type M<T> = { [K in keyof T]: 1 };
+>M : M<T>
+
+type Cond<T> = T extends M<A> ? { y: 1 } : { z: 1 };
+>Cond : Cond<T>
+>y : 1
+>z : 1
+
+interface A extends Cond<A> { x: number }
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

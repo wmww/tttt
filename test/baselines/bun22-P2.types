@@ -1,0 +1,27 @@
+//// [test/cases/bun22-P2.ts] ////
+
+=== a.ts ===
+declare function f<T extends { b: number }>(x: T): T;
+>f : <T extends { b: number; }>(x: T) => T
+>b : number
+>x : T
+
+declare const v: any;
+>v : any
+
+namespace N { export const b = (f(v) satisfies typeof N, 1); }
+>N : typeof N
+>b : 1
+>(f(v) satisfies typeof N, 1) : 1
+>f(v) satisfies typeof N, 1 : 1
+>f(v) satisfies typeof N : any
+>f(v) : any
+>f : <T extends { b: number; }>(x: T) => T
+>v : any
+>N : typeof N
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

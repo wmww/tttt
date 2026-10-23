@@ -1,0 +1,15 @@
+//// [test/cases/bun18-C4c.ts] ////
+
+=== a.ts ===
+const k1: (...args: readonly [number, ...string[]]) => void = (a, ...r) => { r.push(""); };
+>k1 : Symbol(k1, Decl(a.ts, 0, 5))
+>args : Symbol(args, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 63))
+>r : Symbol(r, Decl(a.ts, 0, 65))
+>r.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>r : Symbol(r, Decl(a.ts, 0, 65))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

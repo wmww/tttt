@@ -1,0 +1,22 @@
+//// [test/cases/bun29-C6.ts] ////
+
+=== b.js ===
+import { mkH } from "./m";
+>mkH : Symbol(mkH, Decl(b.js, 0, 8))
+
+export function f() { return mkH(); }
+>f : Symbol(f, Decl(b.js, 0, 26))
+>mkH : Symbol(mkH, Decl(b.js, 0, 8))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 2, 27))
+
+=== m.ts ===
+interface Hidden { h: 1 }
+>Hidden : Symbol(Hidden, Decl(m.ts, 0, 0))
+>h : Symbol(Hidden.h, Decl(m.ts, 0, 18))
+
+export declare function mkH(): Hidden;
+>mkH : Symbol(mkH, Decl(m.ts, 0, 25))
+>Hidden : Symbol(Hidden, Decl(m.ts, 0, 0))
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun39-C5a.ts] ////
+
+=== a.ts ===
+import { A as A2 } from './a';
+>A : Symbol(A2, Decl(a.ts, 0, 30))
+>A2 : Symbol(A2, Decl(a.ts, 0, 8))
+
+export class A extends A2 {}
+>A : Symbol(A2, Decl(a.ts, 0, 30))
+>A2 : Symbol(A2, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C21c.ts] ////
+
+=== a.ts ===
+import defer d from "./nope";
+>d : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

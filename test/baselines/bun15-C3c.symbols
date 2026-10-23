@@ -1,0 +1,24 @@
+//// [test/cases/bun15-C3c.ts] ////
+
+=== a.tsx ===
+export function f(a = <div />, React: any) {}
+>f : Symbol(f, Decl(a.tsx, 0, 0))
+>a : Symbol(a, Decl(a.tsx, 0, 18))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(jsx.d.ts, 0, 74))
+>React : Symbol(React, Decl(a.tsx, 0, 30))
+
+export function g(React = <div />) {}
+>g : Symbol(g, Decl(a.tsx, 0, 45))
+>React : Symbol(React, Decl(a.tsx, 1, 18))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(jsx.d.ts, 0, 74))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+
+=== jsx.d.ts ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } }
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 0, 0))
+>Element : Symbol(Element, Decl(jsx.d.ts, 0, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(jsx.d.ts, 0, 44))
+>div : Symbol(IntrinsicElements.div, Decl(jsx.d.ts, 0, 74))
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun02-C9a.ts] ////
+
+=== a.ts ===
+class A19 { static get constructor() { return 1 } }
+>A19 : Symbol(A19, Decl(a.ts, 0, 0))
+>constructor : Symbol(A19.constructor, Decl(a.ts, 0, 11))
+
+class A25 { static *constructor() {} }
+>A25 : Symbol(A25, Decl(a.ts, 0, 51))
+>constructor : Symbol(A25.constructor, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

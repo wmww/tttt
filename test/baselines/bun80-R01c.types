@@ -1,0 +1,25 @@
+//// [test/cases/bun80-R01c.ts] ////
+
+=== a.ts ===
+const m1 = import.#constructor;
+>m1 : any
+>import.#constructor : any
+>#constructor : any
+
+const m2 = import.#meta;
+>m2 : any
+>import.#meta : any
+>#meta : any
+
+class K { #a = 1; m() { return import.#a; } }
+>K : K
+>#a : number
+>1 : 1
+>m : () => any
+>import.#a : any
+>#a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,216 @@
+//// [test/cases/bun96-TSPATTERN1.ts] ////
+
+=== a.ts ===
+// As in ts-pattern: the typo makes `matcher` an `any`, so `[matcher]` is a name that cannot be bound.
+const matcher = Symbol.forX("m");
+>matcher : Symbol(matcher, Decl(a.ts, 1, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+interface Matcher { [matcher](): { match: (value: string) => boolean } }
+>Matcher : Symbol(Matcher, Decl(a.ts, 1, 33))
+>[matcher] : Symbol(Matcher[matcher], Decl(a.ts, 2, 19))
+>matcher : Symbol(matcher, Decl(a.ts, 1, 5))
+>match : Symbol(match, Decl(a.ts, 2, 34))
+>value : Symbol(value, Decl(a.ts, 2, 43))
+
+declare function chainable<P extends Matcher>(p: P): P;
+>chainable : Symbol(chainable, Decl(a.ts, 2, 72))
+>P : Symbol(P, Decl(a.ts, 3, 27))
+>Matcher : Symbol(Matcher, Decl(a.ts, 1, 33))
+>p : Symbol(p, Decl(a.ts, 3, 46))
+>P : Symbol(P, Decl(a.ts, 3, 27))
+>P : Symbol(P, Decl(a.ts, 3, 27))
+
+chainable({ [matcher]: () => ({ match: (value) => true }) });
+>chainable : Symbol(chainable, Decl(a.ts, 2, 72))
+>[matcher] : Symbol([matcher], Decl(a.ts, 4, 11))
+>matcher : Symbol(matcher, Decl(a.ts, 1, 5))
+>match : Symbol(match, Decl(a.ts, 4, 31))
+>value : Symbol(value, Decl(a.ts, 4, 40))
+
+chainable({ [matcher]() { return { match: (value) => true } } });
+>chainable : Symbol(chainable, Decl(a.ts, 2, 72))
+>[matcher] : Symbol([matcher], Decl(a.ts, 5, 11))
+>matcher : Symbol(matcher, Decl(a.ts, 1, 5))
+>match : Symbol(match, Decl(a.ts, 5, 34))
+>value : Symbol(value, Decl(a.ts, 5, 43))
+
+// The same without any mistake.
+declare const key: string;
+>key : Symbol(key, Decl(a.ts, 8, 13))
+
+declare function handlers<P extends Record<string, (value: string) => unknown>>(p: P): P;
+>handlers : Symbol(handlers, Decl(a.ts, 8, 26))
+>P : Symbol(P, Decl(a.ts, 9, 26))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>value : Symbol(value, Decl(a.ts, 9, 52))
+>p : Symbol(p, Decl(a.ts, 9, 80))
+>P : Symbol(P, Decl(a.ts, 9, 26))
+>P : Symbol(P, Decl(a.ts, 9, 26))
+
+handlers({ [key]: (value) => value.nope });
+>handlers : Symbol(handlers, Decl(a.ts, 8, 26))
+>[key] : Symbol([key], Decl(a.ts, 10, 10))
+>key : Symbol(key, Decl(a.ts, 8, 13))
+>value : Symbol(value, Decl(a.ts, 10, 19))
+>value : Symbol(value, Decl(a.ts, 10, 19))
+
+handlers({ [`on${key}`]: (value) => value.nope });
+>handlers : Symbol(handlers, Decl(a.ts, 8, 26))
+>[`on${key}`] : Symbol([`on${key}`], Decl(a.ts, 11, 10))
+>key : Symbol(key, Decl(a.ts, 8, 13))
+>value : Symbol(value, Decl(a.ts, 11, 26))
+>value : Symbol(value, Decl(a.ts, 11, 26))
+
+// A context sensitive member with an ordinary name beside it hides the difference.
+handlers({ [key]: (value) => value.nope, a: (value) => value.nope });
+>handlers : Symbol(handlers, Decl(a.ts, 8, 26))
+>[key] : Symbol([key], Decl(a.ts, 13, 10))
+>key : Symbol(key, Decl(a.ts, 8, 13))
+>value : Symbol(value, Decl(a.ts, 13, 19))
+>value : Symbol(value, Decl(a.ts, 13, 19))
+>a : Symbol(a, Decl(a.ts, 13, 40))
+>value : Symbol(value, Decl(a.ts, 13, 45))
+>value : Symbol(value, Decl(a.ts, 13, 45))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+
+=== b.ts ===
+// Neighbours: EVERY member propagates its flags in `checkObjectLiteral`, also one that leaves no property in the type.
+export {};
+declare const key: string;
+>key : Symbol(key, Decl(b.ts, 2, 13))
+
+declare const num: number;
+>num : Symbol(num, Decl(b.ts, 3, 13))
+
+declare const sym: symbol;
+>sym : Symbol(sym, Decl(b.ts, 4, 13))
+
+declare const obj: {};
+>obj : Symbol(obj, Decl(b.ts, 5, 13))
+
+type Fn = (value: string) => unknown;
+>Fn : Symbol(Fn, Decl(b.ts, 5, 22))
+>value : Symbol(value, Decl(b.ts, 6, 11))
+
+declare function f<P extends Record<string | symbol, Fn>>(p: P): P;
+>f : Symbol(f, Decl(b.ts, 6, 37))
+>P : Symbol(P, Decl(b.ts, 7, 19))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Fn : Symbol(Fn, Decl(b.ts, 5, 22))
+>p : Symbol(p, Decl(b.ts, 7, 58))
+>P : Symbol(P, Decl(b.ts, 7, 19))
+>P : Symbol(P, Decl(b.ts, 7, 19))
+
+f({ [num]: (value) => value.nope });
+>f : Symbol(f, Decl(b.ts, 6, 37))
+>[num] : Symbol([num], Decl(b.ts, 8, 3))
+>num : Symbol(num, Decl(b.ts, 3, 13))
+>value : Symbol(value, Decl(b.ts, 8, 12))
+>value : Symbol(value, Decl(b.ts, 8, 12))
+
+f({ [sym]: (value) => value.nope });
+>f : Symbol(f, Decl(b.ts, 6, 37))
+>[sym] : Symbol([sym], Decl(b.ts, 9, 3))
+>sym : Symbol(sym, Decl(b.ts, 4, 13))
+>value : Symbol(value, Decl(b.ts, 9, 12))
+>value : Symbol(value, Decl(b.ts, 9, 12))
+
+f({ [key](value) { return value.nope } });
+>f : Symbol(f, Decl(b.ts, 6, 37))
+>[key] : Symbol([key], Decl(b.ts, 10, 3))
+>key : Symbol(key, Decl(b.ts, 2, 13))
+>value : Symbol(value, Decl(b.ts, 10, 10))
+>value : Symbol(value, Decl(b.ts, 10, 10))
+
+f({ ...{}, [key]: (value) => value.nope });
+>f : Symbol(f, Decl(b.ts, 6, 37))
+>[key] : Symbol([key], Decl(b.ts, 11, 10))
+>key : Symbol(key, Decl(b.ts, 2, 13))
+>value : Symbol(value, Decl(b.ts, 11, 19))
+>value : Symbol(value, Decl(b.ts, 11, 19))
+
+declare function nested<P extends { a: Record<string, Fn> }>(p: P): P;
+>nested : Symbol(nested, Decl(b.ts, 11, 43))
+>P : Symbol(P, Decl(b.ts, 12, 24))
+>a : Symbol(a, Decl(b.ts, 12, 35))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Fn : Symbol(Fn, Decl(b.ts, 5, 22))
+>p : Symbol(p, Decl(b.ts, 12, 61))
+>P : Symbol(P, Decl(b.ts, 12, 24))
+>P : Symbol(P, Decl(b.ts, 12, 24))
+
+nested({ a: { [key]: (value) => value.nope } });
+>nested : Symbol(nested, Decl(b.ts, 11, 43))
+>a : Symbol(a, Decl(b.ts, 13, 8))
+>[key] : Symbol([key], Decl(b.ts, 13, 13))
+>key : Symbol(key, Decl(b.ts, 2, 13))
+>value : Symbol(value, Decl(b.ts, 13, 22))
+>value : Symbol(value, Decl(b.ts, 13, 22))
+
+declare function list<P extends Record<string, Fn>>(...p: P[]): P;
+>list : Symbol(list, Decl(b.ts, 13, 48))
+>P : Symbol(P, Decl(b.ts, 14, 22))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Fn : Symbol(Fn, Decl(b.ts, 5, 22))
+>p : Symbol(p, Decl(b.ts, 14, 52))
+>P : Symbol(P, Decl(b.ts, 14, 22))
+>P : Symbol(P, Decl(b.ts, 14, 22))
+
+list({ [key]: (value) => value.nope });
+>list : Symbol(list, Decl(b.ts, 13, 48))
+>[key] : Symbol([key], Decl(b.ts, 15, 6))
+>key : Symbol(key, Decl(b.ts, 2, 13))
+>value : Symbol(value, Decl(b.ts, 15, 15))
+>value : Symbol(value, Decl(b.ts, 15, 15))
+
+// What is inferred: nothing in the first pass, so `P` comes from the return type.
+declare function g<P>(p: P, q: (p: P) => void): P;
+>g : Symbol(g, Decl(b.ts, 15, 39))
+>P : Symbol(P, Decl(b.ts, 17, 19))
+>p : Symbol(p, Decl(b.ts, 17, 22))
+>P : Symbol(P, Decl(b.ts, 17, 19))
+>q : Symbol(q, Decl(b.ts, 17, 27))
+>p : Symbol(p, Decl(b.ts, 17, 32))
+>P : Symbol(P, Decl(b.ts, 17, 19))
+>P : Symbol(P, Decl(b.ts, 17, 19))
+
+const r1: number = g({ [key]: (value: any) => true, b: () => 1 }, (p) => {});
+>r1 : Symbol(r1, Decl(b.ts, 18, 5))
+>g : Symbol(g, Decl(b.ts, 15, 39))
+>[key] : Symbol([key], Decl(b.ts, 18, 22))
+>key : Symbol(key, Decl(b.ts, 2, 13))
+>value : Symbol(value, Decl(b.ts, 18, 31))
+>b : Symbol(b, Decl(b.ts, 18, 51))
+>p : Symbol(p, Decl(b.ts, 18, 67))
+
+const r2: number = g({ [key]: (value) => true }, (p) => {});
+>r2 : Symbol(r2, Decl(b.ts, 19, 5))
+>g : Symbol(g, Decl(b.ts, 15, 39))
+>[key] : Symbol([key], Decl(b.ts, 19, 22))
+>key : Symbol(key, Decl(b.ts, 2, 13))
+>value : Symbol(value, Decl(b.ts, 19, 31))
+>p : Symbol(p, Decl(b.ts, 19, 50))
+
+const r3: number = g({ a: (value) => true, a: 1 }, (p) => {});
+>r3 : Symbol(r3, Decl(b.ts, 20, 5))
+>g : Symbol(g, Decl(b.ts, 15, 39))
+>a : Symbol(a, Decl(b.ts, 20, 22), Decl(b.ts, 20, 42))
+>value : Symbol(value, Decl(b.ts, 20, 27))
+>a : Symbol(a, Decl(b.ts, 20, 22), Decl(b.ts, 20, 42))
+>p : Symbol(p, Decl(b.ts, 20, 52))
+
+const r4: number = g({ [obj]: (value) => true, b: 1 }, (p) => {});
+>r4 : Symbol(r4, Decl(b.ts, 21, 5))
+>g : Symbol(g, Decl(b.ts, 15, 39))
+>[obj] : Symbol([obj], Decl(b.ts, 21, 22))
+>obj : Symbol(obj, Decl(b.ts, 5, 13))
+>value : Symbol(value, Decl(b.ts, 21, 31))
+>b : Symbol(b, Decl(b.ts, 21, 46))
+>p : Symbol(p, Decl(b.ts, 21, 56))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 22, 5))
+

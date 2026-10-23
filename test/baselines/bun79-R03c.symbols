@@ -1,0 +1,60 @@
+//// [test/cases/bun79-R03c.ts] ////
+
+=== a.ts ===
+interface M3<T extends U, U extends T> { a: T } interface M3<T extends U, U extends T> { b: U }
+>M3 : Symbol(M3, Decl(a.ts, 0, 0), Decl(a.ts, 0, 47))
+>T : Symbol(T, Decl(a.ts, 0, 13), Decl(a.ts, 0, 61))
+>U : Symbol(U, Decl(a.ts, 0, 25), Decl(a.ts, 0, 73))
+>U : Symbol(U, Decl(a.ts, 0, 25), Decl(a.ts, 0, 73))
+>T : Symbol(T, Decl(a.ts, 0, 13), Decl(a.ts, 0, 61))
+>a : Symbol(M3.a, Decl(a.ts, 0, 40))
+>T : Symbol(T, Decl(a.ts, 0, 13), Decl(a.ts, 0, 61))
+>M3 : Symbol(M3, Decl(a.ts, 0, 0), Decl(a.ts, 0, 47))
+>T : Symbol(T, Decl(a.ts, 0, 13), Decl(a.ts, 0, 61))
+>U : Symbol(U, Decl(a.ts, 0, 25), Decl(a.ts, 0, 73))
+>U : Symbol(U, Decl(a.ts, 0, 25), Decl(a.ts, 0, 73))
+>T : Symbol(T, Decl(a.ts, 0, 13), Decl(a.ts, 0, 61))
+>b : Symbol(M3.b, Decl(a.ts, 0, 88))
+>U : Symbol(U, Decl(a.ts, 0, 25), Decl(a.ts, 0, 73))
+
+interface M6<T extends T> { a: T } interface M6<T extends T> { b: T }
+>M6 : Symbol(M6, Decl(a.ts, 0, 95), Decl(a.ts, 1, 34))
+>T : Symbol(T, Decl(a.ts, 1, 13), Decl(a.ts, 1, 48))
+>T : Symbol(T, Decl(a.ts, 1, 13), Decl(a.ts, 1, 48))
+>a : Symbol(M6.a, Decl(a.ts, 1, 27))
+>T : Symbol(T, Decl(a.ts, 1, 13), Decl(a.ts, 1, 48))
+>M6 : Symbol(M6, Decl(a.ts, 0, 95), Decl(a.ts, 1, 34))
+>T : Symbol(T, Decl(a.ts, 1, 13), Decl(a.ts, 1, 48))
+>T : Symbol(T, Decl(a.ts, 1, 13), Decl(a.ts, 1, 48))
+>b : Symbol(M6.b, Decl(a.ts, 1, 62))
+>T : Symbol(T, Decl(a.ts, 1, 13), Decl(a.ts, 1, 48))
+
+class M9<T extends T> { a!: T } interface M9<T extends T> { b: T }
+>M9 : Symbol(M9, Decl(a.ts, 1, 69), Decl(a.ts, 2, 31))
+>T : Symbol(T, Decl(a.ts, 2, 9), Decl(a.ts, 2, 45))
+>T : Symbol(T, Decl(a.ts, 2, 9), Decl(a.ts, 2, 45))
+>a : Symbol(M9.a, Decl(a.ts, 2, 23))
+>T : Symbol(T, Decl(a.ts, 2, 9), Decl(a.ts, 2, 45))
+>M9 : Symbol(M9, Decl(a.ts, 1, 69), Decl(a.ts, 2, 31))
+>T : Symbol(T, Decl(a.ts, 2, 9), Decl(a.ts, 2, 45))
+>T : Symbol(T, Decl(a.ts, 2, 9), Decl(a.ts, 2, 45))
+>b : Symbol(M9.b, Decl(a.ts, 2, 59))
+>T : Symbol(T, Decl(a.ts, 2, 9), Decl(a.ts, 2, 45))
+
+interface M11<T extends M11<T>["a"]> { a: T } interface M11<T extends M11<T>["a"]> { b: T }
+>M11 : Symbol(M11, Decl(a.ts, 2, 66), Decl(a.ts, 3, 45))
+>T : Symbol(T, Decl(a.ts, 3, 14), Decl(a.ts, 3, 60))
+>M11 : Symbol(M11, Decl(a.ts, 2, 66), Decl(a.ts, 3, 45))
+>T : Symbol(T, Decl(a.ts, 3, 14), Decl(a.ts, 3, 60))
+>a : Symbol(M11.a, Decl(a.ts, 3, 38))
+>T : Symbol(T, Decl(a.ts, 3, 14), Decl(a.ts, 3, 60))
+>M11 : Symbol(M11, Decl(a.ts, 2, 66), Decl(a.ts, 3, 45))
+>T : Symbol(T, Decl(a.ts, 3, 14), Decl(a.ts, 3, 60))
+>M11 : Symbol(M11, Decl(a.ts, 2, 66), Decl(a.ts, 3, 45))
+>T : Symbol(T, Decl(a.ts, 3, 14), Decl(a.ts, 3, 60))
+>b : Symbol(M11.b, Decl(a.ts, 3, 84))
+>T : Symbol(T, Decl(a.ts, 3, 14), Decl(a.ts, 3, 60))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

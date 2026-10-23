@@ -1,0 +1,40 @@
+//// [test/cases/bun40-C15b.ts] ////
+
+=== a.mts ===
+import { kind as k1 } from "dual";
+>kind : Symbol(k1, Decl(esm.d.mts, 0, 20))
+>k1 : Symbol(k1, Decl(a.mts, 0, 8))
+
+type K = typeof import("dual", { with: { "resolution-mode": "require" } });
+>K : Symbol(K, Decl(a.mts, 0, 34))
+
+declare const o: Order; o.f(0);
+>o : Symbol(o, Decl(a.mts, 2, 13))
+>Order : Symbol(Order, Decl(esm.d.mts, 1, 16), Decl(cjs.d.cts, 1, 16))
+>o.f : Symbol(Order.f, Decl(esm.d.mts, 1, 34), Decl(cjs.d.cts, 1, 34))
+>o : Symbol(o, Decl(a.mts, 2, 13))
+>f : Symbol(Order.f, Decl(esm.d.mts, 1, 34), Decl(cjs.d.cts, 1, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.mts, 3, 5))
+
+=== node_modules/dual/cjs.d.cts ===
+export declare const kind: "cjs";
+>kind : Symbol(kind, Decl(cjs.d.cts, 0, 20))
+
+declare global { interface Order { f(x: "cjs"): 2 } }
+>global : Symbol(global, Decl(cjs.d.cts, 0, 33))
+>Order : Symbol(Order, Decl(esm.d.mts, 1, 16), Decl(cjs.d.cts, 1, 16))
+>f : Symbol(Order.f, Decl(esm.d.mts, 1, 34), Decl(cjs.d.cts, 1, 34))
+>x : Symbol(x, Decl(cjs.d.cts, 1, 37))
+
+=== node_modules/dual/esm.d.mts ===
+export declare const kind: "esm";
+>kind : Symbol(kind, Decl(esm.d.mts, 0, 20))
+
+declare global { interface Order { f(x: "esm"): 1 } }
+>global : Symbol(global, Decl(esm.d.mts, 0, 33))
+>Order : Symbol(Order, Decl(esm.d.mts, 1, 16), Decl(cjs.d.cts, 1, 16))
+>f : Symbol(Order.f, Decl(esm.d.mts, 1, 34), Decl(cjs.d.cts, 1, 34))
+>x : Symbol(x, Decl(esm.d.mts, 1, 37))
+

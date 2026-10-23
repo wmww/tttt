@@ -1,0 +1,26 @@
+//// [test/cases/bun59-L06.ts] ////
+
+=== w*d/a.ts ===
+import { x } from "pkg/x";
+>x : 1
+
+import { x as x2 } from "pkg/dir/x.d.ts";
+>x : 1
+>x2 : 1
+
+import { y } from "#i/y";
+>y : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== w*d/node_modules/pkg/lib/x.d.ts ===
+export const x: 1;
+>x : 1
+
+=== w*d/src/y.ts ===
+export const y = 1;
+>y : 1
+>1 : 1
+

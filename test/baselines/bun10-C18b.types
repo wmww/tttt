@@ -1,0 +1,25 @@
+//// [test/cases/bun10-C18b.ts] ////
+
+=== a.ts ===
+interface SymbolConstructor { readonly ["m7"]: symbol; readonly "m8": symbol }
+>["m7"] : unique symbol
+>"m7" : "m7"
+>"m8" : unique symbol
+
+let t: boolean = Symbol.m7;
+>t : boolean
+>Symbol.m7 : unique symbol
+>Symbol : SymbolConstructor
+>m7 : unique symbol
+
+t = Symbol.m8;
+>t = Symbol.m8 : unique symbol
+>t : boolean
+>Symbol.m8 : unique symbol
+>Symbol : SymbolConstructor
+>m8 : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

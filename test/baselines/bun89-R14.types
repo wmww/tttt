@@ -1,0 +1,114 @@
+//// [test/cases/bun89-R14.ts] ////
+
+=== a.ts ===
+declare function base<T>(x: T): new () => { v: T };
+>base : <T>(x: T) => new () => { v: T; }
+>x : T
+>v : T
+
+// checkConditionalExpression tests the condition for TS2774 / TS2801 at once: it asks for the call signatures of its type.
+declare const x1: C1;
+>x1 : C1
+
+const k1 = x1 ? "a" : "b";
+>k1 : any
+>x1 ? "a" : "b" : "a" | "b"
+>x1 : C1
+>"a" : "a"
+>"b" : "b"
+
+class C1 extends base(k1) {}
+>C1 : C1
+>base(k1) : new () => { v: any; }
+>base : <T>(x: T) => new () => { v: T; }
+>k1 : any
+
+// nested in the condition, nullable, in an arrow function
+declare const x2: C2 | undefined, y2: boolean;
+>x2 : C2 | undefined
+>y2 : boolean
+
+const k2 = (y2 && x2) ? "a" : "b";
+>k2 : any
+>(y2 && x2) ? "a" : "b" : "a" | "b"
+>(y2 && x2) : false | C2 | undefined
+>y2 && x2 : false | C2 | undefined
+>y2 : boolean
+>x2 : C2 | undefined
+>"a" : "a"
+>"b" : "b"
+
+class C2 extends base(k2) {}
+>C2 : C2
+>base(k2) : new () => { v: any; }
+>base : <T>(x: T) => new () => { v: T; }
+>k2 : any
+
+declare const x3: C3;
+>x3 : C3
+
+const k3 = (() => x3 ? "a" : "b")();
+>k3 : any
+>(() => x3 ? "a" : "b")() : any
+>(() => x3 ? "a" : "b") : () => any
+>() => x3 ? "a" : "b" : () => any
+>x3 ? "a" : "b" : "a" | "b"
+>x3 : C3
+>"a" : "a"
+>"b" : "b"
+
+class C3 extends base(k3) {}
+>C3 : C3
+>base(k3) : new () => { v: any; }
+>base : <T>(x: T) => new () => { v: T; }
+>k3 : any
+
+// an interface
+declare const x4: I4;
+>x4 : I4
+
+const k4 = x4 ? "a" : "b";
+>k4 : any
+>x4 ? "a" : "b" : "a" | "b"
+>x4 : I4
+>"a" : "a"
+>"b" : "b"
+
+interface I4 extends Array<typeof k4> {}
+>k4 : any
+
+// a late-bound name
+declare const x5: I5;
+>x5 : I5
+
+const k5 = x5 ? "a" : "a";
+>k5 : any
+>x5 ? "a" : "a" : "a"
+>x5 : I5
+>"a" : "a"
+>"a" : "a"
+
+interface I5 { [k5]: number }
+>[k5] : number
+>k5 : any
+
+// `&&`, `||`, `!`: the two agree
+declare const x6: C6;
+>x6 : C6
+
+const k6 = x6 && "a";
+>k6 : any
+>x6 && "a" : "a"
+>x6 : C6
+>"a" : "a"
+
+class C6 extends base(k6) {}
+>C6 : C6
+>base(k6) : new () => { v: any; }
+>base : <T>(x: T) => new () => { v: T; }
+>k6 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

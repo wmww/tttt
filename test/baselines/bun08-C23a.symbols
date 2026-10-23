@@ -1,0 +1,21 @@
+//// [test/cases/bun08-C23a.ts] ////
+
+=== a.ts ===
+import { prop } from "./v";
+>prop : Symbol(prop, Decl(a.ts, 0, 8))
+
+let t: prop.X;
+>t : Symbol(t, Decl(a.ts, 1, 3))
+>prop : Symbol(prop)
+>X : Symbol(prop.X)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== v.ts ===
+const v = { prop: { inner: 1 } }; export = v;
+>v : Symbol(v, Decl(v.ts, 0, 5))
+>prop : Symbol(prop, Decl(v.ts, 0, 11))
+>inner : Symbol(inner, Decl(v.ts, 0, 19))
+>v : Symbol(v, Decl(v.ts, 0, 5))
+

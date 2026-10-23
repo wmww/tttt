@@ -1,0 +1,18 @@
+//// [test/cases/bun33-C2a.ts] ////
+
+=== a.js ===
+/** @type {number} */ let x;
+>x : Symbol(x, Decl(a.js, 0, 25))
+
+() => x;
+>x : Symbol(x, Decl(a.js, 0, 25))
+
+exports.a = 1;
+>exports.a : Symbol(a, Decl(a.js, 1, 8))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 1, 8))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 4, 5))
+

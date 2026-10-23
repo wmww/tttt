@@ -1,0 +1,18 @@
+//// [test/cases/bun30-C15.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+export class J { constructor() { this.a = 1; } get a() { return 1 } }
+>J : J
+>this.a = 1 : 1
+>this.a : number
+>this : this
+>a : number
+>1 : 1
+>a : number
+>1 : 1
+

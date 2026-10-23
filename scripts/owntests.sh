@@ -14,7 +14,7 @@ if test $# -eq 0; then set -- test/cases/*.ts test/cases/*.tsx; fi
 for f in "$@"; do
     test -e "$f" || continue
     name=$(basename "$f"); name=${name%.*}
-    case "$name" in tttt*) ;; *) echo "$f: tttt's own tests must be named tttt*" >&2; exit 1;; esac
+    case "$name" in tttt*|bun*) ;; *) echo "$f: own tests must be named tttt* (or bun*: bun's differential cases)" >&2; exit 1;; esac
     cp "$f" "$TEST_DIR/tests/cases/conformance/"
     rm -f test/baselines/"$name".* test/baselines/"$name"\(*
 done

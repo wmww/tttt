@@ -1,0 +1,21 @@
+a.ts(3,3): error TS2339: Property 'length' does not exist on type 'string | number'.
+  Property 'length' does not exist on type 'number'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function one<T>(v: T): { a: T; b: T };
+    const { a: [n, s], b = JSON.parse("[]") } = one([1, "hi"]);
+    s.length;
+      ~~~~~~
+!!! error TS2339: Property 'length' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'length' does not exist on type 'number'.
+    // without the default of type `any` the pattern makes the argument a tuple in both
+    const { a: [n2, s2], b: b2 } = one([1, "hi"]);
+    s2.length;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

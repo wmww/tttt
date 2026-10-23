@@ -1,0 +1,23 @@
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext" } }
+==== a.ts (1 errors) ====
+    class B {} class C {}
+    /** @augments B */
+    class A0 extends C {}
+    /** @augments B {@link C} */
+    class A1 extends C {}
+    /**
+     * @see C
+     * @extends B
+     */
+    export class A2 extends C {}
+    /** {@link C} */
+    /** @augments B */
+    class A3 extends C {}
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,21 @@
+//// [test/cases/bun27-P4c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type IntrinsicClassAttributes = Undefined; interface IntrinsicElements {} }
+>e : 1
+>IntrinsicClassAttributes : Undefined
+
+class K { constructor(p: { c: number }) {} }
+>K : K
+>p : { c: number; }
+>c : number
+
+const a = <K />;
+>a : JSX.Element
+><K /> : JSX.Element
+>K : typeof K
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

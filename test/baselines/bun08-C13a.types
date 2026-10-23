@@ -1,0 +1,21 @@
+//// [test/cases/bun08-C13a.ts] ////
+
+=== a.ts ===
+interface I1 { a: "b"; [k1]: number }
+>a : "b"
+>[k1] : number
+>k1 : "b"
+
+declare const k1: I1["a"];
+>k1 : "b"
+
+declare let i1: I1; i1.b;
+>i1 : I1
+>i1.b : number
+>i1 : I1
+>b : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

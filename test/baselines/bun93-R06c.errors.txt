@@ -1,0 +1,20 @@
+a.ts(4,7): error TS7022: 'arr' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(4,13): error TS2615: Type of property 'p' circularly references itself in mapped type 'M'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type M = { [K in "x" | "p"]: K extends "p" ? typeof arr : number };
+    interface C { x: number; p: any }
+    declare let m: M; declare let c: C;
+    const arr = [m, c];
+          ~~~
+!!! error TS7022: 'arr' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                ~~~~~~
+!!! error TS2615: Type of property 'p' circularly references itself in mapped type 'M'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

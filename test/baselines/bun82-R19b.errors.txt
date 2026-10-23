@@ -1,0 +1,14 @@
+a.ts(1,1): error TS1161: Unterminated regular expression literal.
+a.ts(2,1): error TS1121: Octal literals are not allowed. Use the syntax '0o17'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    /a-
+    ~~~
+!!! error TS1161: Unterminated regular expression literal.
+    017;
+    ~~~
+!!! error TS1121: Octal literals are not allowed. Use the syntax '0o17'.
+    

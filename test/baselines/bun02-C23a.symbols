@@ -1,0 +1,8 @@
+//// [test/cases/bun02-C23a.ts] ////
+
+=== a.ts ===
+type W12 = { [in K in string]: 1 };
+>W12 : Symbol(W12, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 14))
+>string : Symbol(string, Decl(a.ts, 0, 18))
+

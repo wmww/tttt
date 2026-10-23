@@ -1,0 +1,34 @@
+a.js(2,19): error TS2304: Cannot find name 'nope'.
+a.js(2,24): error TS1003: Identifier expected.
+a.js(3,21): error TS2339: Property 'nope' does not exist on type '{ b: { c: number; }; }'.
+a.js(3,26): error TS1003: Identifier expected.
+a.js(4,22): error TS1003: Identifier expected.
+a.js(4,33): error TS2322: Type '2' is not assignable to type '1'.
+a.js(5,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (7 errors) ====
+    const a = { b: { c: 1 } };
+    /** @type {typeof nope..b} */ let x1 = 1;
+                      ~~~~
+!!! error TS2304: Cannot find name 'nope'.
+                           ~
+!!! error TS1003: Identifier expected.
+    /** @type {typeof a.nope..b} */ let x2 = 1;
+                        ~~~~
+!!! error TS2339: Property 'nope' does not exist on type '{ b: { c: number; }; }'.
+                             ~
+!!! error TS1003: Identifier expected.
+    /** @type {typeof em..z} */ let x3 = 2;
+                         ~
+!!! error TS1003: Identifier expected.
+                                    ~~
+!!! error TS2322: Type '2' is not assignable to type '1'.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== n.d.ts (0 errors) ====
+    declare const em: { "": { z: 1 } };
+    

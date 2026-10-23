@@ -1,0 +1,22 @@
+//// [test/cases/bun31-C1.ts] ////
+
+=== a.ts ===
+function m(a?: { f(): boolean }) { let t; if (t = a?.f()) a.f; }
+>m : (a?: { f(): boolean; }) => void
+>a : { f(): boolean; } | undefined
+>f : () => boolean
+>t : any
+>t = a?.f() : boolean | undefined
+>t : any
+>a?.f() : boolean | undefined
+>a?.f : (() => boolean) | undefined
+>a : { f(): boolean; } | undefined
+>f : (() => boolean) | undefined
+>a.f : () => boolean
+>a : { f(): boolean; } | undefined
+>f : () => boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

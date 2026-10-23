@@ -1,0 +1,9 @@
+//// [test/cases/bun88-R08a.ts] ////
+
+=== a.js ===
+/** @type {typeof globalThis.} */ var v8 = "x";
+>v8 : Symbol(v8, Decl(a.js, 0, 37))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 1, 27))
+

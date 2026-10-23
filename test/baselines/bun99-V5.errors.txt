@@ -1,0 +1,141 @@
+neighbours.ts(4,14): error TS2322: Type 'string[]' is not assignable to type 'never'.
+neighbours.ts(6,14): error TS2322: Type 'void' is not assignable to type 'never'.
+neighbours.ts(8,14): error TS2322: Type 'Promise<string | number> | PromiseLike<string | number>' is not assignable to type 'never'.
+  Type 'Promise<string | number>' is not assignable to type 'never'.
+neighbours.ts(10,14): error TS2322: Type 'Promise<number> | PromiseLike<number>' is not assignable to type 'never'.
+  Type 'Promise<number>' is not assignable to type 'never'.
+neighbours.ts(12,14): error TS2322: Type 'string[] | readonly string[]' is not assignable to type 'never'.
+  Type 'string[]' is not assignable to type 'never'.
+neighbours.ts(14,14): error TS2322: Type 'Promise<1> | PromiseLike<number>' is not assignable to type 'never'.
+  Type 'Promise<1>' is not assignable to type 'never'.
+neighbours.ts(18,14): error TS2322: Type '{ a: number; } | { a: number; b: number; }' is not assignable to type 'never'.
+  Type '{ a: number; }' is not assignable to type 'never'.
+neighbours.ts(20,14): error TS2322: Type '{ a: number; } | { a: number; b: number; }' is not assignable to type 'never'.
+  Type '{ a: number; }' is not assignable to type 'never'.
+neighbours.ts(22,14): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+neighbours.ts(25,9): error TS2322: Type 'Promise<number | "failed"> | PromiseLike<number | "failed">' is not assignable to type 'never'.
+  Type 'Promise<number | "failed">' is not assignable to type 'never'.
+neighbours.ts(29,14): error TS2322: Type 'Promise<number | "failed">' is not assignable to type 'never'.
+neighbours.ts(30,14): error TS2322: Type 'string' is not assignable to type 'number'.
+then_on_a_union.ts(4,14): error TS2322: Type 'Promise<void> | PromiseLike<void>' is not assignable to type 'never'.
+  Type 'Promise<void>' is not assignable to type 'never'.
+then_on_a_union.ts(6,9): error TS2322: Type 'Promise<void>' is not assignable to type 'never'.
+then_on_a_union.ts(14,11): error TS2322: Type 'Promise<void> | PromiseLike<void>' is not assignable to type 'never'.
+  Type 'Promise<void>' is not assignable to type 'never'.
+then_on_a_union.ts(16,13): error TS2322: Type 'Promise<void>' is not assignable to type 'never'.
+then_on_a_union.ts(22,27): error TS2322: Type 'Promise<void>' is not assignable to type 'never'.
+then_on_a_union.ts(25,14): error TS2322: Type 'Promise<number> | PromiseLike<number>' is not assignable to type 'never'.
+  Type 'Promise<number>' is not assignable to type 'never'.
+then_on_a_union.ts(27,14): error TS2322: Type 'PromiseLike<void>' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "module": "esnext", "lib": ["esnext"], "types": [], "moduleDetection": "force"}, "files": ["neighbours.ts", "then_on_a_union.ts"]}
+==== neighbours.ts (12 errors) ====
+    export {}
+    // A call through a union of two generic signatures: the return types are united first.
+    declare const lists: number[] | ReadonlyArray<number>
+    export const mapped: never = lists.map(n => String(n))
+                 ~~~~~~
+!!! error TS2322: Type 'string[]' is not assignable to type 'never'.
+    declare const sets: Set<number> | Map<number, number>
+    export const each: never = sets.forEach(v => v)
+                 ~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare const thenables: Promise<number> | PromiseLike<number> | Promise<string>
+    export const three: never = thenables.then(v => v)
+                 ~~~~~
+!!! error TS2322: Type 'Promise<string | number> | PromiseLike<string | number>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Promise<string | number>' is not assignable to type 'never'.
+    declare const fns: (<T>(value: T) => Promise<T>) | (<U>(value: U) => PromiseLike<U>)
+    export const called: never = fns(1)
+                 ~~~~~~
+!!! error TS2322: Type 'Promise<number> | PromiseLike<number>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Promise<number>' is not assignable to type 'never'.
+    declare const fns2: (<T>(value: T) => T[]) | (<U>(value: U) => ReadonlyArray<U>)
+    export const called2: never = fns2('a')
+                 ~~~~~~~
+!!! error TS2322: Type 'string[] | readonly string[]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string[]' is not assignable to type 'never'.
+    declare const one: (<T>(value: T) => Promise<T>) | ((value: number) => PromiseLike<number>)
+    export const mixed: never = one(1)
+                 ~~~~~
+!!! error TS2322: Type 'Promise<1> | PromiseLike<number>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Promise<1>' is not assignable to type 'never'.
+    interface A { run<T>(value: T): { a: T } }
+    interface B { run<U>(value: U): { a: U; b: U } }
+    declare const ab: A | B
+    export const shapes: never = ab.run(1)
+                 ~~~~~~
+!!! error TS2322: Type '{ a: number; } | { a: number; b: number; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ a: number; }' is not assignable to type 'never'.
+    declare const ba: B | A
+    export const shapes2: never = ba.run(1)
+                 ~~~~~~~
+!!! error TS2322: Type '{ a: number; } | { a: number; b: number; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ a: number; }' is not assignable to type 'never'.
+    declare const both: A & B
+    export const overloads: never = both.run(1)
+                 ~~~~~~~~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+    async function settle(p: Promise<number> | PromiseLike<number>) {
+      const r = p.then(v => v + 1, () => 'failed' as const)
+      const probe: never = r
+            ~~~~~
+!!! error TS2322: Type 'Promise<number | "failed"> | PromiseLike<number | "failed">' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Promise<number | "failed">' is not assignable to type 'never'.
+      if ('finally' in r) r.finally(() => {})
+      return await r
+    }
+    export const settled: never = settle(Promise.resolve(1))
+                 ~~~~~~~
+!!! error TS2322: Type 'Promise<number | "failed">' is not assignable to type 'never'.
+    export const sentinel: number = ''
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== then_on_a_union.ts (7 errors) ====
+    export {}
+    declare const p: Promise<number> | PromiseLike<number>
+    const r = p.then(v => {})
+    export const probe_r: never = r
+                 ~~~~~~~
+!!! error TS2322: Type 'Promise<void> | PromiseLike<void>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Promise<void>' is not assignable to type 'never'.
+    if ('catch' in r) {
+      const narrowed: never = r
+            ~~~~~~~~
+!!! error TS2322: Type 'Promise<void>' is not assignable to type 'never'.
+      r.catch(reason => {})
+    }
+    class Holder<T> {
+      promise: Promise<T> | PromiseLike<T>
+      constructor(arg: Promise<T> | PromiseLike<T>) {
+        this.promise = arg
+        const thenReturn = this.promise.then(value => {})
+        const probe: never = thenReturn
+              ~~~~~
+!!! error TS2322: Type 'Promise<void> | PromiseLike<void>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Promise<void>' is not assignable to type 'never'.
+        if ('catch' in thenReturn) {
+          const narrowed: never = thenReturn
+                ~~~~~~~~
+!!! error TS2322: Type 'Promise<void>' is not assignable to type 'never'.
+          thenReturn.catch(reason => {})
+        }
+      }
+    }
+    declare const q: Promise<void> | PromiseLike<void>
+    if ('catch' in q) { const narrowed: never = q }
+                              ~~~~~~~~
+!!! error TS2322: Type 'Promise<void>' is not assignable to type 'never'.
+    declare const u: PromiseLike<void> | Promise<void>
+    const r2 = u.then(() => 1)
+    export const probe_r2: never = r2
+                 ~~~~~~~~
+!!! error TS2322: Type 'Promise<number> | PromiseLike<number>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Promise<number>' is not assignable to type 'never'.
+    declare const both: { then(cb: () => void): Promise<void> } | { then(cb: () => void): PromiseLike<void> }
+    export const probe_both: never = both.then(() => {})
+                 ~~~~~~~~~~
+!!! error TS2322: Type 'PromiseLike<void>' is not assignable to type 'never'.
+    

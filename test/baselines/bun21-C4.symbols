@@ -1,0 +1,20 @@
+//// [test/cases/bun21-C4.ts] ////
+
+=== a.ts ===
+declare const n: number;
+>n : Symbol(n, Decl(a.ts, 0, 13))
+
+const k = compute(1);
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>compute : Symbol(compute, Decl(a.ts, 1, 21))
+
+function compute(e: 1 | 2) { switch (e) { case n: return 1; case k: return 2; } }
+>compute : Symbol(compute, Decl(a.ts, 1, 21))
+>e : Symbol(e, Decl(a.ts, 2, 17))
+>e : Symbol(e, Decl(a.ts, 2, 17))
+>n : Symbol(n, Decl(a.ts, 0, 13))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,24 @@
+a.ts(6,4): error TS2349: This expression is not callable.
+  Each member of the union type '{ <S extends string>(predicate: (value: string, index: number, array: string[]) => value is S, thisArg?: any): S[]; (predicate: (value: string, index: number, array: string[]) => unknown, thisArg?: any): string[]; } | { (cb: (x: number, i: number, a: number[]) => unknown, thisArg?: any): AL<number>; <S extends number>(cb: (x: number, i: number, a: number[]) => x is S, thisArg?: any): AL<S>; }' has signatures, but none of those signatures are compatible with each other.
+a.ts(6,11): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    interface AL<T> extends Array<T> {
+      filter(cb: (x: T, i: number, a: T[]) => unknown, thisArg?: any): AL<T>;
+      filter<S extends T>(cb: (x: T, i: number, a: T[]) => x is S, thisArg?: any): AL<S>;
+    }
+    declare const u8: AL<number> | string[];
+    u8.filter(x => true);
+       ~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Each member of the union type '{ <S extends string>(predicate: (value: string, index: number, array: string[]) => value is S, thisArg?: any): S[]; (predicate: (value: string, index: number, array: string[]) => unknown, thisArg?: any): string[]; } | { (cb: (x: number, i: number, a: number[]) => unknown, thisArg?: any): AL<number>; <S extends number>(cb: (x: number, i: number, a: number[]) => x is S, thisArg?: any): AL<S>; }' has signatures, but none of those signatures are compatible with each other.
+              ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

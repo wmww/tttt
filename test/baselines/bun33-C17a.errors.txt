@@ -1,0 +1,24 @@
+a.ts(1,17): error TS2300: Duplicate identifier 'x'.
+a.ts(1,39): error TS1118: An object literal cannot have multiple get/set accessors with the same name.
+a.ts(1,39): error TS2300: Duplicate identifier 'x'.
+a.ts(2,7): error TS2322: Type 'number' is not assignable to type 'bigint'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    const o = { get x() { return 1 }, get x() { return "" }, set x(v) {} };
+                    ~
+!!! error TS2300: Duplicate identifier 'x'.
+                                          ~
+!!! error TS1118: An object literal cannot have multiple get/set accessors with the same name.
+                                          ~
+!!! error TS2300: Duplicate identifier 'x'.
+    const r: bigint = o.x;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'bigint'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

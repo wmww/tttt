@@ -1,0 +1,28 @@
+//// [test/cases/bun10-P3.ts] ////
+
+=== a.ts ===
+declare const other: Foo<string>;
+>other : Foo<string>
+
+class Foo<T> {
+>Foo : Foo<T>
+
+  m<U>(b: U, t: T): void {
+>m : <U>(b: U, t: T) => void
+>b : U
+>t : T
+
+    other.m = <V>(b: U, t: string): void => {};
+>other.m = <V>(b: U, t: string): void => {} : <V>(b: U, t: string) => void
+>other.m : <U>(b: U, t: string) => void
+>other : Foo<string>
+>m : <U>(b: U, t: string) => void
+><V>(b: U, t: string): void => {} : <V>(b: U, t: string) => void
+>b : U
+>t : string
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

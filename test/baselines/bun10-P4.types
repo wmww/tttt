@@ -1,0 +1,27 @@
+//// [test/cases/bun10-P4.ts] ////
+
+=== a.ts ===
+class C { get x(): number { return 1; } set x(v: typeof w) {} }
+>C : C
+>x : number
+>1 : 1
+>x : number
+>v : any
+>w : any
+
+declare const c: C;
+>c : C
+
+const w = (c.x = 2);
+>w : any
+>(c.x = 2) : 2
+>c.x = 2 : 2
+>c.x : any
+>c : C
+>x : any
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

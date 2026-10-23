@@ -1,0 +1,11 @@
+//// [test/cases/bun43-C16a.ts] ////
+
+=== a.ts ===
+function fa(a\u0062) { }
+>fa : (ab: any) => void
+>a\u0062 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

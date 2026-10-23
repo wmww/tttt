@@ -1,0 +1,15 @@
+//// [test/cases/bun33-C4c.ts] ////
+
+=== a.ts ===
+declare const v: any;
+>v : any
+
+interface B { [v as this]: number }
+>[v as this] : number
+>v as this : any
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

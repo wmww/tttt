@@ -1,0 +1,69 @@
+//// [test/cases/bun98-J1.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { [name: string]: any } interface Element {} }
+>name : string
+
+declare const isLogin: boolean;
+>isLogin : boolean
+
+declare const DEFAULT_NULL_VALUE: string;
+>DEFAULT_NULL_VALUE : string
+
+declare const HoverCardText: (p: { label: any }) => null;
+>HoverCardText : (p: { label: any; }) => null
+>p : { label: any; }
+>label : any
+
+// `(DEFAULT_NULL_VALUE): (<HoverCardText label=..` is tried as an arrow function with a return type. The type is a function type without
+// a parameter list, so the trial fails (typeHasArrowFunctionBlockingParseError) and its errors are dropped.
+export const x = (
+>x : any
+>(  <div>    {isLogin ? (DEFAULT_NULL_VALUE) : (<HoverCardText      label={<div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div>}></HoverCardText>)}  </div>) : any
+
+  <div>
+><div>    {isLogin ? (DEFAULT_NULL_VALUE) : (<HoverCardText      label={<div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div>}></HoverCardText>)}  </div> : any
+>div : any
+
+    {isLogin ? (DEFAULT_NULL_VALUE) : (<HoverCardText
+>isLogin ? (DEFAULT_NULL_VALUE) : (<HoverCardText      label={<div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div>}></HoverCardText>) : any
+>isLogin : boolean
+>(DEFAULT_NULL_VALUE) : string
+>DEFAULT_NULL_VALUE : string
+>(<HoverCardText      label={<div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div>}></HoverCardText>) : any
+><HoverCardText      label={<div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div>}></HoverCardText> : any
+>HoverCardText : (p: { label: any; }) => null
+
+      label={<div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div>}></HoverCardText>)}
+>label : any
+><div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div> : any
+>div : any
+>('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) }) : { s1: { precision: string; }; s2: { precision: string; }; }
+>'', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) } : { s1: { precision: string; }; s2: { precision: string; }; }
+>'' : ""
+>{ s1: (1, { precision: '' }), s2: (2, { precision: '' }) } : { s1: { precision: string; }; s2: { precision: string; }; }
+>s1 : { precision: string; }
+>(1, { precision: '' }) : { precision: string; }
+>1, { precision: '' } : { precision: string; }
+>1 : 1
+>{ precision: '' } : { precision: string; }
+>precision : string
+>'' : ""
+>s2 : { precision: string; }
+>(2, { precision: '' }) : { precision: string; }
+>2, { precision: '' } : { precision: string; }
+>2 : 2
+>{ precision: '' } : { precision: string; }
+>precision : string
+>'' : ""
+>div : any
+>HoverCardText : (p: { label: any; }) => null
+
+  </div>
+>div : any
+
+);
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

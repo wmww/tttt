@@ -1,0 +1,213 @@
+//// [test/cases/bun63-L14b.ts] ////
+
+=== a.ts ===
+let r: 1; let x: any;
+>r : 1
+>x : any
+
+class P { a = 1; b = 2; }
+>P : P
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+
+declare const p: P;
+>p : P
+
+({ a: x, ...r } = p);
+>({ a: x, ...r } = p) : P
+>{ a: x, ...r } = p : P
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>p : P
+
+({ ...r } = p);
+>({ ...r } = p) : P
+>{ ...r } = p : P
+>{ ...r } : any
+>r : 1
+>p : P
+
+enum E { A, B }
+>E : E
+>A : E.A
+>B : E.B
+
+({ A: x, ...r } = E);
+>({ A: x, ...r } = E) : typeof E
+>{ A: x, ...r } = E : typeof E
+>{ A: x, ...r } : any
+>A : any
+>x : any
+>r : 1
+>E : typeof E
+
+namespace NS { export const a = 1, b = 2; }
+>NS : typeof NS
+>a : 1
+>1 : 1
+>b : 2
+>2 : 2
+
+({ a: x, ...r } = NS);
+>({ a: x, ...r } = NS) : typeof NS
+>{ a: x, ...r } = NS : typeof NS
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>NS : typeof NS
+
+function f() {} f.a = 1; f.b = 2;
+>f : { (): void; a: number; b: number; }
+>f.a = 1 : 1
+>f.a : number
+>f : { (): void; a: number; b: number; }
+>a : number
+>1 : 1
+>f.b = 2 : 2
+>f.b : number
+>f : { (): void; a: number; b: number; }
+>b : number
+>2 : 2
+
+({ a: x, ...r } = f);
+>({ a: x, ...r } = f) : { (): void; a: number; b: number; }
+>{ a: x, ...r } = f : { (): void; a: number; b: number; }
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>f : { (): void; a: number; b: number; }
+
+interface I { a: number; b: number }
+>a : number
+>b : number
+
+declare const i: I;
+>i : I
+
+({ a: x, ...r } = i);
+>({ a: x, ...r } = i) : I
+>{ a: x, ...r } = i : I
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>i : I
+
+class Box<T> { a!: T; b!: T[]; }
+>Box : Box<T>
+>a : T
+>b : T[]
+
+declare const bx: Box<string>;
+>bx : Box<string>
+
+({ a: x, ...r } = bx);
+>({ a: x, ...r } = bx) : Box<string>
+>{ a: x, ...r } = bx : Box<string>
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>bx : Box<string>
+
+({ a: x, ...r } = P);
+>({ a: x, ...r } = P) : typeof P
+>{ a: x, ...r } = P : typeof P
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>P : typeof P
+
+declare const u: P | I;
+>u : I | P
+
+({ a: x, ...r } = u);
+>({ a: x, ...r } = u) : I | P
+>{ a: x, ...r } = u : I | P
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>u : I | P
+
+const ce = class { a = 1; b = 2 };
+>ce : typeof ce
+>class { a = 1; b = 2 } : typeof ce
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+
+({ a: x, ...r } = new ce());
+>({ a: x, ...r } = new ce()) : ce
+>{ a: x, ...r } = new ce() : ce
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>new ce() : ce
+>ce : typeof ce
+
+type TL = { a: number; b: number };
+>TL : TL
+>a : number
+>b : number
+
+declare const tl: TL;
+>tl : TL
+
+({ a: x, ...r } = tl);
+>({ a: x, ...r } = tl) : TL
+>{ a: x, ...r } = tl : TL
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>tl : TL
+
+({ a: x, ...r } = { a: 1, b: 2 });
+>({ a: x, ...r } = { a: 1, b: 2 }) : { a: number; b: number; }
+>{ a: x, ...r } = { a: 1, b: 2 } : { a: number; b: number; }
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>{ a: 1, b: 2 } : { a: number; b: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+
+let need: { b: number; c: number };
+>need : { b: number; c: number; }
+>b : number
+>c : number
+
+({ a: x, ...need } = p);
+>({ a: x, ...need } = p) : P
+>{ a: x, ...need } = p : P
+>{ a: x, ...need } : { b: number; c: number; a: any; }
+>a : any
+>x : any
+>need : { b: number; c: number; }
+>p : P
+
+for ({ a: x, ...r } of [p]) {}
+>{ a: x, ...r } : any
+>a : any
+>x : any
+>r : 1
+>[p] : P[]
+>p : P
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

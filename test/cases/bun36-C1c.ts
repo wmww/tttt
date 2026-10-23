@@ -1,0 +1,22 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+// @filename: a.ts
+import { C } from "pa";
+import { c } from "dep";
+const y: C = c;
+const sentinel: number = "";
+// @filename: node_modules/dep/index.d.ts
+import { C } from "pa/lib";
+export declare const c: C;
+// @filename: node_modules/dep/node_modules/pa/index.d.ts
+export * from "./lib";
+// @filename: node_modules/dep/node_modules/pa/lib/index.d.ts
+export declare class C { private x: number; }
+// @filename: node_modules/dep/node_modules/pa/package.json
+{"name":"pa","version":"1.0.0"}
+// @filename: node_modules/pa/index.d.ts
+export * from "./lib";
+// @filename: node_modules/pa/lib/index.d.ts
+export declare class C { private x: number; }
+// @filename: node_modules/pa/package.json
+{"name":"pa","version":"1.0.0"}

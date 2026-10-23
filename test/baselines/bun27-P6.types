@@ -1,0 +1,18 @@
+//// [test/cases/bun27-P6.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { [k: string]: { s?: string } } }
+>e : 1
+>k : string
+>s : string | undefined
+
+const a = <toString s="x" />;
+>a : JSX.Element
+><toString s="x" /> : JSX.Element
+>toString : any
+>s : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun07-C11.ts] ////
+
+=== a.ts ===
+export {};
+declare const l1: { [x: string]: number; [y: number]: number }; declare const r1: { [y: number]: 1; [x: string]: number };
+>l1 : { [x: string]: number; [y: number]: number; }
+>x : string
+>y : number
+>r1 : { [y: number]: 1; [x: string]: number; }
+>y : number
+>x : string
+
+const x1: null = { ...l1, ...r1 };
+>x1 : null
+>{ ...l1, ...r1 } : { [x: string]: number; [x: number]: number; }
+>l1 : { [x: string]: number; [y: number]: number; }
+>r1 : { [y: number]: 1; [x: string]: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

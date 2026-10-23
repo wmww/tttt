@@ -1,0 +1,21 @@
+a.ts(1,28): error TS2300: Duplicate identifier 'prototype'.
+a.ts(1,51): error TS2300: Duplicate identifier 'prototype'.
+a.ts(1,51): error TS2717: Subsequent property declarations must have the same type.  Property 'prototype' must be of type 'D34', but here has type 'any'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare class D34 { static prototype: any; static prototype: any }
+                               ~~~~~~~~~
+!!! error TS2300: Duplicate identifier 'prototype'.
+                                                      ~~~~~~~~~
+!!! error TS2300: Duplicate identifier 'prototype'.
+                                                      ~~~~~~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'prototype' must be of type 'D34', but here has type 'any'.
+!!! related TS6203 a.ts:1:28: 'prototype' was also declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,8 @@
+//// [test/cases/bun43-C15b.ts] ////
+
+=== a.ts ===
+var x = // -
+>x : Symbol(x, Decl(a.ts, 0, 3))
+
+017
+

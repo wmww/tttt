@@ -1,0 +1,16 @@
+//// [test/cases/bun23-C2b.ts] ////
+
+=== a.ts ===
+declare let m: { [K in (keyof { readonly b: 1 })]: 1 };
+>m : Symbol(m, Decl(a.ts, 0, 11))
+>K : Symbol(K, Decl(a.ts, 0, 18))
+>b : Symbol(b, Decl(a.ts, 0, 31))
+
+m.b = 1;
+>m.b : Symbol(b)
+>m : Symbol(m, Decl(a.ts, 0, 11))
+>b : Symbol(b)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

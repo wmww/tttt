@@ -1,0 +1,27 @@
+//// [test/cases/bun58-L20b.ts] ////
+
+=== m.ts ===
+import { p } from "./mid";
+>p : Symbol(p, Decl(m.ts, 0, 8))
+
+namespace obj { export interface p { t: 1 } }
+>obj : Symbol(obj, Decl(m.ts, 0, 26), Decl(m.ts, 2, 5))
+>p : Symbol(p, Decl(m.ts, 1, 15))
+>t : Symbol(p.t, Decl(m.ts, 1, 36))
+
+const obj = { p: 1, q: p };
+>obj : Symbol(obj, Decl(m.ts, 0, 26), Decl(m.ts, 2, 5))
+>p : Symbol(p, Decl(m.ts, 2, 13))
+>q : Symbol(q, Decl(m.ts, 2, 19))
+>p : Symbol(p, Decl(m.ts, 0, 8))
+
+export = obj;
+>obj : Symbol(obj, Decl(m.ts, 0, 26), Decl(m.ts, 2, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(m.ts, 4, 5))
+
+=== mid.ts ===
+export { p } from "./m";
+>p : Symbol(p, Decl(mid.ts, 0, 8))
+

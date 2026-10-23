@@ -1,0 +1,17 @@
+a.js(2,7): error TS2454: Variable 'x' is used before being assigned.
+a.js(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    /** @type {number} */ let x;
+    () => x;
+          ~
+!!! error TS2454: Variable 'x' is used before being assigned.
+    exports.a = 1;
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

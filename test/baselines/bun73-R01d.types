@@ -1,0 +1,154 @@
+//// [test/cases/bun73-R01d.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : () => boolean
+
+declare function log(v: unknown): void;
+>log : (v: unknown) => void
+>v : unknown
+
+function likely(tokens: string[]) {
+>likely : (tokens: string[]) => void
+>tokens : string[]
+
+  let current: string | null = "";
+>current : string | null
+>"" : ""
+
+  let result: string | number | null = null;
+>result : string | number | null
+
+  let total = 0;
+>total : number
+>0 : 0
+
+  for (const t of tokens) {
+>t : string
+>tokens : string[]
+
+    if (result !== null) log(result);
+>result !== null : boolean
+>result : string | null
+>log(result) : void
+>log : (v: unknown) => void
+>result : string
+
+    if (current) { log(current); }
+>current : string | null
+>log(current) : void
+>log : (v: unknown) => void
+>current : string
+
+    result = current ?? 0;
+>result = current ?? 0 : string | 0
+>result : string | number | null
+>current ?? 0 : string | 0
+>current : string | null
+>0 : 0
+
+    if (t === ";") current = null;
+>t === ";" : boolean
+>t : string
+>";" : ";"
+>current = null : null
+>current : string | null
+
+    if (typeof result === "number") total += result.toFixed().length;
+>typeof result === "number" : boolean
+>typeof result : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>result : string | number
+>"number" : "number"
+>total += result.toFixed().length : number
+>total : number
+>result.toFixed().length : number
+>result.toFixed() : string
+>result.toFixed : (fractionDigits?: number) => string
+>result : number
+>toFixed : (fractionDigits?: number) => string
+>length : number
+  }
+}
+function minimal() {
+>minimal : () => void
+
+  let x: string | null = "";
+>x : string | null
+>"" : ""
+
+  let y: string | number | null = null;
+>y : string | number | null
+
+  while (c()) {
+>c() : boolean
+>c : () => boolean
+
+    y;
+>y : string | null
+
+    if (x) { }
+>x : string | null
+
+    y = x ?? 0;
+>y = x ?? 0 : string | 0
+>y : string | number | null
+>x ?? 0 : string | 0
+>x : string | null
+>0 : 0
+
+    if (c()) x = null;
+>c() : boolean
+>c : () => boolean
+>x = null : null
+>x : string | null
+
+    const p: never = y;
+>p : never
+>y : string | number
+  }
+}
+function nested() {
+>nested : () => void
+
+  let x: string | null = "";
+>x : string | null
+>"" : ""
+
+  let y: string | number | null = null;
+>y : string | number | null
+
+  while (y == null) {
+>y == null : boolean
+>y : string | null
+
+    while (typeof x === "string" || c()) {
+>typeof x === "string" || c() : boolean
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | null
+>"string" : "string"
+>c() : boolean
+>c : () => boolean
+
+      y = x ?? 0;
+>y = x ?? 0 : string | 0
+>y : string | number | null
+>x ?? 0 : string | 0
+>x : string | null
+>0 : 0
+    }
+    if (c()) x = null;
+>c() : boolean
+>c : () => boolean
+>x = null : null
+>x : string | null
+
+    const p: never = y;
+>p : never
+>y : string | number | null
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

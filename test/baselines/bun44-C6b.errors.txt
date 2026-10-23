@@ -1,0 +1,27 @@
+a.ts(10,7): error TS2551: Property 'elbowedX' does not exist on type 'Arrow | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow" | "line"; points: number[]; }> & Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow"; elbowed: boolean; }>) | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow" | "line"; points: number[]; }> & Readonly<{ type: "arrow"; elbowed: boolean; }> & Readonly<{ id: string; x: number; }>)'. Did you mean 'elbowed'?
+  Property 'elbowedX' does not exist on type 'Arrow'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Base = Readonly<{ id: string; x: number }>;
+    type Rect = Base & { type: "rectangle" };
+    type Text = Base & Readonly<{ type: "text"; text: string }>;
+    type Linear = Base & Readonly<{ type: "line" | "arrow"; points: number[] }>;
+    type Arrow = Linear & Readonly<{ type: "arrow"; elbowed: boolean }>;
+    type El = Rect | Text | Linear | Arrow;
+    declare const isArrow: <T extends El>(e?: T | null) => e is T & Arrow;
+    function f(e: El) {
+      if (isArrow(e)) {
+        e.elbowedX;
+          ~~~~~~~~
+!!! error TS2551: Property 'elbowedX' does not exist on type 'Arrow | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow" | "line"; points: number[]; }> & Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow"; elbowed: boolean; }>) | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow" | "line"; points: number[]; }> & Readonly<{ type: "arrow"; elbowed: boolean; }> & Readonly<{ id: string; x: number; }>)'. Did you mean 'elbowed'?
+!!! error TS2551:   Property 'elbowedX' does not exist on type 'Arrow'.
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

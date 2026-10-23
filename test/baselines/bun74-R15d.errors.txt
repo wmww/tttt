@@ -1,0 +1,56 @@
+a.ts(2,12): error TS2749: 'await' refers to a value, but is being used as a type here. Did you mean 'typeof await'?
+a.ts(2,19): error TS2304: Cannot find name 'x'.
+a.ts(2,20): error TS1005: ')' expected.
+a.ts(2,22): error TS7005: Variable 'await' implicitly has an 'any' type.
+a.ts(2,27): error TS1005: ',' expected.
+a.ts(2,29): error TS1005: ';' expected.
+a.ts(2,32): error TS2304: Cannot find name 'x'.
+b.ts(2,12): error TS2304: Cannot find name 'T'.
+b.ts(2,13): error TS1005: '>' expected.
+b.ts(2,15): error TS7005: Variable 'await' implicitly has an 'any' type.
+b.ts(2,20): error TS1005: ',' expected.
+b.ts(2,21): error TS1134: Variable declaration expected.
+b.ts(2,25): error TS2304: Cannot find name 'T'.
+b.ts(2,26): error TS1005: ',' expected.
+b.ts(2,28): error TS1005: ';' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    export {};
+    const q = <await>(x: await) => x;
+               ~~~~~
+!!! error TS2749: 'await' refers to a value, but is being used as a type here. Did you mean 'typeof await'?
+                      ~
+!!! error TS2304: Cannot find name 'x'.
+                       ~
+!!! error TS1005: ')' expected.
+                         ~~~~~
+!!! error TS7005: Variable 'await' implicitly has an 'any' type.
+                              ~
+!!! error TS1005: ',' expected.
+                                ~~
+!!! error TS1005: ';' expected.
+                                   ~
+!!! error TS2304: Cannot find name 'x'.
+==== b.ts (8 errors) ====
+    export {};
+    const q = <T, await>(x: T) => x;
+               ~
+!!! error TS2304: Cannot find name 'T'.
+                ~
+!!! error TS1005: '>' expected.
+                  ~~~~~
+!!! error TS7005: Variable 'await' implicitly has an 'any' type.
+                       ~
+!!! error TS1005: ',' expected.
+                        ~
+!!! error TS1134: Variable declaration expected.
+                            ~
+!!! error TS2304: Cannot find name 'T'.
+                             ~
+!!! error TS1005: ',' expected.
+                               ~~
+!!! error TS1005: ';' expected.
+    

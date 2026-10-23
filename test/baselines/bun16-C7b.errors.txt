@@ -1,0 +1,24 @@
+error TS2318: Cannot find global type 'TypedPropertyDescriptor'.
+a.ts(5,4): error TS1241: Unable to resolve signature of method decorator when called as an expression.
+  Property 'value' is missing in type '{}' but required in type '{ value: number; }'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2318: Cannot find global type 'TypedPropertyDescriptor'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2022", "experimentalDecorators": true } }
+==== a.ts (2 errors) ====
+    interface Array<T> { length: number } interface Boolean {} interface Function {} interface IArguments {} interface Number {} interface Object {} interface RegExp {} interface String {}
+    interface CallableFunction extends Function {} interface NewableFunction extends Function {}
+    declare function dec3(target: any, key: any, d: { value: number }): void;
+    class C {
+      @dec3 m() {}
+       ~~~~
+!!! error TS1241: Unable to resolve signature of method decorator when called as an expression.
+!!! error TS1241:   Property 'value' is missing in type '{}' but required in type '{ value: number; }'.
+!!! related TS2728 a.ts:3:51: 'value' is declared here.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

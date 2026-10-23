@@ -1,0 +1,30 @@
+//// [test/cases/bun31-C3a.ts] ////
+
+=== a.ts ===
+class K { isFoo(): this is Foo { return true; } }
+>K : K
+>isFoo : () => this is Foo
+>true : true
+
+class Foo extends K { foo = 1; }
+>Foo : Foo
+>K : K
+>foo : number
+>1 : 1
+
+function m(a: K) { if ((a.isFoo)()) a.foo; }
+>m : (a: K) => void
+>a : K
+>(a.isFoo)() : boolean
+>(a.isFoo) : () => this is Foo
+>a.isFoo : () => this is Foo
+>a : K
+>isFoo : () => this is Foo
+>a.foo : any
+>a : K
+>foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

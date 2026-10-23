@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X2a.ts] ////
+
+=== a.ts ===
+declare namespace M { return; }
+>M : typeof M
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

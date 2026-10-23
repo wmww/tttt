@@ -1,0 +1,22 @@
+a.ts(2,8): error TS1035: Only ambient modules can use quoted names.
+a.ts(4,3): error TS2339: Property 'y' does not exist on type 'X'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (3 errors) ====
+    import { X } from "./b";
+    module "./b" { export interface X { y: number } }
+           ~~~~~
+!!! error TS1035: Only ambient modules can use quoted names.
+    declare const x: X;
+    x.y;
+      ~
+!!! error TS2339: Property 'y' does not exist on type 'X'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    export interface X { x: number }
+    

@@ -1,0 +1,25 @@
+a.tsx(1,18): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean './x/jsx-runtime.js'?
+a.tsx(1,18): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(2,18): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react-jsx", "jsxImportSource": "./x", "module": "nodenext" } }
+==== a.tsx (4 errors) ====
+    export const a = <div />;
+                     ~~~~~~~
+!!! error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean './x/jsx-runtime.js'?
+                     ~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    export const b = <div />;
+                     ~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== x/jsx-runtime.ts (0 errors) ====
+    export namespace JSX { export interface IntrinsicElements { div: {} } export interface Element {} } export function jsx(): void {}
+    
+==== package.json (0 errors) ====
+    { "type": "module" }

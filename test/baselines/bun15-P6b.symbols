@@ -1,0 +1,10 @@
+//// [test/cases/bun15-P6b.ts] ////
+
+=== a.ts ===
+const { a = () => 1 } = { a: () => 2 };
+>a : Symbol(a, Decl(a.ts, 0, 7))
+>a : Symbol(a, Decl(a.ts, 0, 25))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

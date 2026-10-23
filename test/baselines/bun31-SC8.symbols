@@ -1,0 +1,42 @@
+//// [test/cases/bun31-SC8.ts] ////
+
+=== a.ts ===
+declare function use(...a: any[]): void; declare function fail(): never; declare function assertS(x: unknown): asserts x is string;
+>use : Symbol(use, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+>fail : Symbol(fail, Decl(a.ts, 0, 40))
+>assertS : Symbol(assertS, Decl(a.ts, 0, 72))
+>x : Symbol(x, Decl(a.ts, 0, 98))
+>x : Symbol(x, Decl(a.ts, 0, 98))
+
+function w1(x: any) { with (fail()) { } use(); }
+>w1 : Symbol(w1, Decl(a.ts, 0, 131))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>fail : Symbol(fail, Decl(a.ts, 0, 40))
+>use : Symbol(use, Decl(a.ts, 0, 0))
+
+function w2(x: unknown) { with (assertS(x)) { } const n: never = x; }
+>w2 : Symbol(w2, Decl(a.ts, 1, 48))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+>assertS : Symbol(assertS, Decl(a.ts, 0, 72))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+>n : Symbol(n, Decl(a.ts, 2, 53))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+
+declare let o: any;
+>o : Symbol(o, Decl(a.ts, 3, 11))
+
+function w3() { with (o) let a = 1; a; }
+>w3 : Symbol(w3, Decl(a.ts, 3, 19))
+>o : Symbol(o, Decl(a.ts, 3, 11))
+>a : Symbol(a, Decl(a.ts, 4, 28))
+
+function w5() { let a = 1; with (o) let a = 2; a; }
+>w5 : Symbol(w5, Decl(a.ts, 4, 40))
+>a : Symbol(a, Decl(a.ts, 5, 19))
+>o : Symbol(o, Decl(a.ts, 3, 11))
+>a : Symbol(a, Decl(a.ts, 5, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

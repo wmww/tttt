@@ -1,0 +1,19 @@
+//// [test/cases/bun39-P1.ts] ////
+
+=== a.ts ===
+export {};
+type P6<T> = Promise<Promise<Promise<Promise<Promise<Promise<T>>>>>>;
+>P6 : P6<T>
+
+declare const p: P6<P6<P6<P6<P6<P6<P6<number>>>>>>>;
+>p : P6<P6<P6<P6<P6<P6<P6<number>>>>>>>
+
+// @ts-expect-error
+await p;
+>await p : number
+>p : P6<P6<P6<P6<P6<P6<P6<number>>>>>>>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

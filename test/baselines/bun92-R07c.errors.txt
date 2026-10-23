@@ -1,0 +1,27 @@
+a.js(3,2): error TS2300: Duplicate identifier '"a"'.
+a.js(4,2): error TS2300: Duplicate identifier '"a"'.
+a.js(4,2): error TS2717: Subsequent property declarations must have the same type.  Property '"a"' must be of type '1', but here has type '2'.
+a.js(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"],"allowJs":true,"checkJs":true } }
+==== a.js (4 errors) ====
+    /**
+     * @typedef {{
+     *   "a": 1,
+     ~~~~~~~
+!!! error TS2300: Duplicate identifier '"a"'.
+     *   "a": 2
+     ~~~~~~~
+!!! error TS2300: Duplicate identifier '"a"'.
+     ~~~~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property '"a"' must be of type '1', but here has type '2'.
+!!! related TS6203 a.js:3:2: '"a"' was also declared here.
+     * }} T
+     */
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

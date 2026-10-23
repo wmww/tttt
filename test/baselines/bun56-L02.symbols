@@ -1,0 +1,17 @@
+//// [test/cases/bun56-L02.ts] ////
+
+=== a.ts ===
+type X<T> = T extends [infer U \u0065xtends string] ? U : never;
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>U : Symbol(U, Decl(a.ts, 0, 28))
+>U : Symbol(U, Decl(a.ts, 0, 28))
+
+type Z<T> = T extends infer U \u0065xtends string ? U : never;
+>Z : Symbol(Z, Decl(a.ts, 0, 64))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>U : Symbol(U, Decl(a.ts, 1, 27))
+>U : Symbol(U, Decl(a.ts, 1, 27))
+

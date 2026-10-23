@@ -1,0 +1,69 @@
+a.ts(1,15): error TS2207: The 'type' modifier cannot be used on a named export when 'export type' is used on its export statement.
+a.ts(1,29): error TS1141: String literal expected.
+a.ts(2,19): error TS1141: String literal expected.
+a.ts(2,23): error TS2823: Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.
+a.ts(3,19): error TS1141: String literal expected.
+a.ts(3,23): error TS2322: Type '{ type: 1; }' is not assignable to type 'ImportAttributes'.
+  Property 'type' is incompatible with index signature.
+    Type 'number' is not assignable to type 'string'.
+a.ts(3,23): error TS2823: Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.
+a.ts(4,24): error TS1141: String literal expected.
+a.ts(4,54): error TS1453: `resolution-mode` should be either `require` or `import`.
+a.ts(6,3): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(9,3): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(10,3): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(1,1): error TS1193: An export declaration cannot have modifiers.
+b.ts(1,27): error TS1141: String literal expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (13 errors) ====
+    export type { type A } from 123;
+                  ~~~~
+!!! error TS2207: The 'type' modifier cannot be used on a named export when 'export type' is used on its export statement.
+                                ~~~
+!!! error TS1141: String literal expected.
+    export { B } from 123 with { type: "json" };
+                      ~~~
+!!! error TS1141: String literal expected.
+                          ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2823: Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.
+    export { C } from 123 with { type: 1 };
+                      ~~~
+!!! error TS1141: String literal expected.
+                          ~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ type: 1; }' is not assignable to type 'ImportAttributes'.
+!!! error TS2322:   Property 'type' is incompatible with index signature.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+                          ~~~~~~~~~~~~~~~~
+!!! error TS2823: Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.
+    export type { D } from 123 with { "resolution-mode": "x" };
+                           ~~~
+!!! error TS1141: String literal expected.
+                                                         ~~~
+!!! error TS1453: `resolution-mode` should be either `require` or `import`.
+    function f() {
+      export { E } from 123;
+      ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+    }
+    {
+      export * from 123;
+      ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+      export * as F from 123;
+      ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (2 errors) ====
+    declare export { A } from 123;
+    ~~~~~~~
+!!! error TS1193: An export declaration cannot have modifiers.
+                              ~~~
+!!! error TS1141: String literal expected.
+    

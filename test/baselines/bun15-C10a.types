@@ -1,0 +1,16 @@
+//// [test/cases/bun15-C10a.ts] ////
+
+=== a.ts ===
+function f1<T extends undefined>(r: Required<{ a?: T }>) { const n: never = r.a; }
+>f1 : <T extends undefined>(r: Required<{ a?: T; }>) => void
+>r : Required<{ a?: T | undefined; }>
+>a : T | undefined
+>n : never
+>r.a : never
+>r : Required<{ a?: T | undefined; }>
+>a : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,89 @@
+//// [test/cases/bun58-L05.ts] ////
+
+=== a.ts ===
+import { assertIsString, fail, Promise, Obj } from "./real";
+>assertIsString : any
+>fail : any
+>Promise : any
+>Obj : any
+
+function t1(x: unknown) { assertIsString(x); x.length; }
+>t1 : (x: unknown) => void
+>x : unknown
+>assertIsString(x) : void
+>assertIsString : (x: unknown) => asserts x is string
+>x : unknown
+>x.length : number
+>x : string
+>length : number
+
+function t2(x: string | undefined) { if (!x) fail(); x.length; }
+>t2 : (x: string | undefined) => void
+>x : string | undefined
+>!x : boolean
+>x : string | undefined
+>fail() : never
+>fail : () => never
+>x.length : number
+>x : string
+>length : number
+
+function t3(): number { fail(); }
+>t3 : () => number
+>fail() : never
+>fail : () => never
+
+function t4(x: unknown) { Obj.assert(x); x.length; }
+>t4 : (x: unknown) => void
+>x : unknown
+>Obj.assert(x) : void
+>Obj.assert : (x: unknown) => asserts x is string
+>Obj : { assert(x: unknown): asserts x is string; }
+>assert : (x: unknown) => asserts x is string
+>x : unknown
+>x.length : number
+>x : string
+>length : number
+
+new Promise<number>(resolve => resolve());
+>new Promise<number>(resolve => resolve()) : globalThis.Promise<number>
+>Promise : PromiseConstructor
+>resolve => resolve() : (resolve: (value: number | PromiseLike<number>) => void) => void
+>resolve : (value: number | PromiseLike<number>) => void
+>resolve() : void
+>resolve : (value: number | PromiseLike<number>) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== globals.d.ts ===
+declare function assertIsString(x: unknown): asserts x is string;
+>assertIsString : (x: unknown) => asserts x is string
+>x : unknown
+
+declare function fail(): never;
+>fail : () => never
+
+declare const Obj: { assert(x: unknown): asserts x is string };
+>Obj : { assert(x: unknown): asserts x is string; }
+>assert : (x: unknown) => asserts x is string
+>x : unknown
+
+=== real.ts ===
+namespace g2 {
+  export interface assertIsString { t: 1 } export interface fail { t: 1 } export interface Promise { t: 1 } export interface Obj { t: 1 }
+>t : 1
+>t : 1
+>t : 1
+>t : 1
+}
+const g2 = { v: 1 };
+>g2 : { v: number; }
+>{ v: 1 } : { v: number; }
+>v : number
+>1 : 1
+
+export = g2;
+>g2 : { v: number; }
+

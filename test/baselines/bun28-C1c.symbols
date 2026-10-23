@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C1c.ts] ////
+
+=== a.ts ===
+interface I { out [k: string]: number }
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 0, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

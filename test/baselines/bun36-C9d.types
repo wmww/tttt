@@ -1,0 +1,34 @@
+//// [test/cases/bun36-C9d.ts] ////
+
+=== a.ts ===
+import { C } from "pp";
+>C : typeof C
+
+import { c } from "dep";
+>c : C
+
+const y: C = c;
+>y : C
+>c : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/dep/index.d.ts ===
+import { C } from "pp";
+>C : typeof C
+
+export declare const c: C;
+>c : C
+
+=== node_modules/dep/node_modules/pp/index.d.ts ===
+export declare class C { private x: number; }
+>C : C
+>x : number
+
+=== node_modules/pp/index.d.ts ===
+export declare class C { private x: number; }
+>C : C
+>x : number
+

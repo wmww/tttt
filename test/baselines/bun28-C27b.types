@@ -1,0 +1,15 @@
+//// [test/cases/bun28-C27b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+class C { constructor(@dec public {x}: any) {} }
+>C : C
+>dec : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

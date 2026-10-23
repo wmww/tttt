@@ -1,0 +1,33 @@
+//// [test/cases/bun84-R04.ts] ////
+
+=== a.js ===
+const a = { b: { c: 1 } };
+>a : { b: { c: number; }; }
+>{ b: { c: 1 } } : { b: { c: number; }; }
+>b : { c: number; }
+>{ c: 1 } : { c: number; }
+>c : number
+>1 : 1
+
+/** @type {typeof nope..b} */ let x1 = 1;
+>x1 : any
+>1 : 1
+
+/** @type {typeof a.nope..b} */ let x2 = 1;
+>x2 : any
+>1 : 1
+
+/** @type {typeof em..z} */ let x3 = 2;
+>x3 : 1
+>2 : 2
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== n.d.ts ===
+declare const em: { "": { z: 1 } };
+>em : { "": { z: 1; }; }
+>"" : { z: 1; }
+>z : 1
+

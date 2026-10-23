@@ -1,0 +1,1618 @@
+again_cond__i_first.ts(1,17): error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+again_cond__i_first.ts(4,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_cond__i_first.ts(5,7): error TS2322: Type '"toString" | "valueOf"' is not assignable to type 'never'.
+  Type '"toString"' is not assignable to type 'never'.
+again_cond__i_first.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_cond__i_first.ts(7,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_cond__i_first.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_cond__i_first.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+again_generic__i_first.ts(1,20): error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+again_generic__i_first.ts(1,44): error TS2313: Type parameter 'K' has a circular constraint.
+again_generic__i_first.ts(4,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_generic__i_first.ts(5,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_generic__i_first.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_generic__i_first.ts(7,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_generic__i_first.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_generic__i_first.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+again_pick__i_first.ts(1,17): error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+again_pick__i_first.ts(4,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_pick__i_first.ts(5,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_pick__i_first.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_pick__i_first.ts(7,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_pick__i_first.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_pick__i_first.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+again_prop__i_first.ts(1,17): error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+again_prop__i_first.ts(1,34): error TS2313: Type parameter 'K' has a circular constraint.
+again_prop__i_first.ts(4,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_prop__i_first.ts(5,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_prop__i_first.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_prop__i_first.ts(7,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_prop__i_first.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_prop__i_first.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+again_prop_opt__i_first.ts(1,17): error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+again_prop_opt__i_first.ts(1,34): error TS2313: Type parameter 'K' has a circular constraint.
+again_prop_opt__i_first.ts(4,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_prop_opt__i_first.ts(5,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_prop_opt__i_first.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_prop_opt__i_first.ts(7,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_prop_opt__i_first.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_prop_opt__i_first.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+again_two__i_first.ts(1,15): error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+again_two__i_first.ts(1,35): error TS2313: Type parameter 'K' has a circular constraint.
+again_two__i_first.ts(2,15): error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+again_two__i_first.ts(5,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_two__i_first.ts(6,7): error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+again_two__i_first.ts(7,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_two__i_first.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_two__i_first.ts(9,7): error TS2322: Type 'any' is not assignable to type 'never'.
+again_two__i_first.ts(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__call.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+both_ro__alias__call.ts(5,18): error TS2349: This expression is not callable.
+  Type 'I' has no call signatures.
+both_ro__alias__call.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+both_ro__alias__call.ts(6,18): error TS2349: This expression is not callable.
+  Type 'I' has no call signatures.
+both_ro__alias__call.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__context.ts(6,41): error TS2322: Type 'string' is not assignable to type '1 | 2'.
+both_ro__alias__context.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__from_index.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__from_obj.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__identical.ts(5,13): error TS2451: Cannot redeclare block-scoped variable 'm1'.
+both_ro__alias__identical.ts(6,13): error TS2451: Cannot redeclare block-scoped variable 'm1'.
+both_ro__alias__identical.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__in.ts(5,24): error TS2322: Type 'I' is not assignable to type 'never'.
+both_ro__alias__in.ts(6,16): error TS2322: Type 'I' is not assignable to type 'never'.
+both_ro__alias__in.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__infer_index.ts(6,7): error TS2322: Type '1 | 2' is not assignable to type 'never'.
+  Type '1' is not assignable to type 'never'.
+both_ro__alias__infer_index.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__infer_sig.ts(6,7): error TS2322: Type '[unknown, unknown]' is not assignable to type 'never'.
+both_ro__alias__infer_sig.ts(6,20): error TS2345: Argument of type 'I' is not assignable to parameter of type '(a: unknown) => unknown'.
+  Type 'I' provides no match for the signature '(a: unknown): unknown'.
+both_ro__alias__infer_sig.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__keyof.ts(5,7): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+both_ro__alias__keyof.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__mapped.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__alias__mapped.ts(8,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__alias__mapped.ts(9,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__alias__mapped.ts(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__mapped_as.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__alias__mapped_as.ts(8,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__alias__mapped_as.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__mapped_ro.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__alias__mapped_ro.ts(8,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__alias__mapped_ro.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__mapped_rw.ts(8,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__alias__mapped_rw.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__new.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+both_ro__alias__new.ts(5,22): error TS2351: This expression is not constructable.
+  Type 'I' has no construct signatures.
+both_ro__alias__new.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+both_ro__alias__new.ts(6,22): error TS2351: This expression is not constructable.
+  Type 'I' has no construct signatures.
+both_ro__alias__new.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__params.ts(5,7): error TS2322: Type '0' is not assignable to type 'never'.
+both_ro__alias__params.ts(6,7): error TS2322: Type '0' is not assignable to type 'never'.
+both_ro__alias__params.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__partial.ts(6,1): error TS2542: Index signature in type 'Partial<I>' only permits reading.
+both_ro__alias__partial.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__pattern.ts(6,7): error TS2322: Type '1 | 2' is not assignable to type 'never'.
+  Type '1' is not assignable to type 'never'.
+both_ro__alias__pattern.ts(7,7): error TS2322: Type '{ readonly [x: string]: 1 | 2; }' is not assignable to type 'never'.
+both_ro__alias__pattern.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__read.ts(5,7): error TS2322: Type '1 | 2' is not assignable to type 'never'.
+  Type '1' is not assignable to type 'never'.
+both_ro__alias__read.ts(6,7): error TS2322: Type '1 | 2' is not assignable to type 'never'.
+  Type '1' is not assignable to type 'never'.
+both_ro__alias__read.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__rest.ts(6,7): error TS2322: Type '{ readonly [x: string]: 1 | 2; }' is not assignable to type 'never'.
+both_ro__alias__rest.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__reverse.ts(7,1): error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+both_ro__alias__reverse.ts(8,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__alias__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__reverse_box.ts(6,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__alias__reverse_box.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__reverse_opt.ts(6,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__alias__reverse_opt.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__reverse_ro.ts(8,7): error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+both_ro__alias__reverse_ro.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__spread.ts(7,7): error TS2322: Type '{ [x: string]: 1 | 2; }' is not assignable to type 'never'.
+both_ro__alias__spread.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__to_index.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__to_mapped.ts(6,7): error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+both_ro__alias__to_mapped.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__alias__write.ts(5,1): error TS2542: Index signature in type 'I' only permits reading.
+both_ro__alias__write.ts(6,1): error TS2542: Index signature in type 'I' only permits reading.
+both_ro__alias__write.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__constraint__reverse.ts(6,3): error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+both_ro__constraint__reverse.ts(7,9): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__constraint__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__constraint__reverse_box.ts(5,9): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__constraint__reverse_box.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__constraint__reverse_opt.ts(5,9): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__constraint__reverse_opt.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__constraint__reverse_ro.ts(7,9): error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+both_ro__constraint__reverse_ro.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__constraint__to_mapped.ts(5,9): error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+both_ro__constraint__to_mapped.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__mapped.ts(6,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__itself__mapped.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__itself__mapped.ts(8,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__itself__mapped.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__mapped_as.ts(6,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__itself__mapped_as.ts(7,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__itself__mapped_as.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__partial.ts(5,1): error TS2542: Index signature in type 'Partial<X>' only permits reading.
+both_ro__itself__partial.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__reverse.ts(6,1): error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+both_ro__itself__reverse.ts(7,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__itself__reverse.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__reverse_box.ts(5,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__itself__reverse_box.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__reverse_opt.ts(5,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__itself__reverse_opt.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__reverse_ro.ts(7,7): error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+both_ro__itself__reverse_ro.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__itself__to_mapped.ts(5,7): error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+both_ro__itself__to_mapped.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__mapped.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__property__mapped.ts(8,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__property__mapped.ts(9,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__property__mapped.ts(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__mapped_as.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+both_ro__property__mapped_as.ts(8,7): error TS2322: Type 'R' is not assignable to type 'never'.
+both_ro__property__mapped_as.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__partial.ts(6,1): error TS2542: Index signature in type 'Partial<I>' only permits reading.
+both_ro__property__partial.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__reverse.ts(7,1): error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+both_ro__property__reverse.ts(8,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__property__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__reverse_box.ts(6,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__property__reverse_box.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__reverse_opt.ts(6,7): error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+both_ro__property__reverse_opt.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__reverse_ro.ts(8,7): error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+both_ro__property__reverse_ro.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_ro__property__to_mapped.ts(6,7): error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+both_ro__property__to_mapped.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+ctor__alias__reverse.ts(8,7): error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+ctor__alias__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+ctor__constraint__new.ts(4,9): error TS2322: Type '{ x: 1; }' is not assignable to type 'never'.
+ctor__constraint__new.ts(5,9): error TS2322: Type '{ y: 2; }' is not assignable to type 'never'.
+ctor__constraint__new.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+only_index__alias__reverse.ts(8,7): error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+only_index__alias__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+overloads__alias__call.ts(5,7): error TS2322: Type '1' is not assignable to type 'never'.
+overloads__alias__call.ts(6,7): error TS2322: Type '2' is not assignable to type 'never'.
+overloads__alias__call.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+overloads__constraint__call.ts(4,9): error TS2322: Type '1' is not assignable to type 'never'.
+overloads__constraint__call.ts(5,9): error TS2322: Type '2' is not assignable to type 'never'.
+overloads__constraint__call.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+record__alias__iface.ts(5,11): error TS2411: Property 'tag' of type 'string' is not assignable to 'string' index type 'number'.
+record__alias__iface.ts(7,7): error TS2322: Type 'number' is not assignable to type 'never'.
+record__alias__iface.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+record__alias__reverse.ts(8,7): error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+record__alias__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+record__alias__reverse_box.ts(6,7): error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+record__alias__reverse_box.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+record__alias__reverse_opt.ts(6,7): error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+record__alias__reverse_opt.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+record__alias__reverse_ro.ts(8,7): error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+record__alias__reverse_ro.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+record__alias__to_mapped.ts(6,7): error TS2322: Type '[string, string | number]' is not assignable to type 'never'.
+record__alias__to_mapped.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+record__itself__iface.ts(4,11): error TS2411: Property 'tag' of type 'string' is not assignable to 'string' index type 'number'.
+record__itself__iface.ts(6,7): error TS2322: Type 'number' is not assignable to type 'never'.
+record__itself__iface.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+ro_string__alias__mapped.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+ro_string__alias__mapped.ts(8,1): error TS2542: Index signature in type 'R' only permits reading.
+ro_string__alias__mapped.ts(9,7): error TS2322: Type 'R' is not assignable to type 'never'.
+ro_string__alias__mapped.ts(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+ro_string__constraint__spread.ts(5,3): error TS2862: Type 'T' is generic and can only be indexed for reading.
+ro_string__constraint__spread.ts(6,9): error TS2322: Type 'T' is not assignable to type 'never'.
+  Type 'I' is not assignable to type 'never'.
+ro_string__constraint__spread.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+same_key__alias__reverse.ts(8,7): error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+same_key__alias__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+same_sig__alias__reverse.ts(8,7): error TS2322: Type '{ [x: string]: any; q: 2; }' is not assignable to type 'never'.
+same_sig__alias__reverse.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_alias_arg.ts(7,44): error TS2322: Type '1' is not assignable to type 'never'.
+sub_alias_arg.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_constraint.ts(9,7): error TS2322: Type 'Fn2' is not assignable to type 'never'.
+sub_constraint.ts(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_constraint_bad.ts(7,34): error TS2344: Type '((a: string) => 1) & ((a: number) => 2) & T' does not satisfy the constraint '(a: boolean) => unknown'.
+  Types of parameters 'a' and 'a' are incompatible.
+    Type 'boolean' is not assignable to type 'string'.
+sub_constraint_bad.ts(7,59): error TS2344: Type '{ readonly [k: string]: number; } & { a: 1; } & T' does not satisfy the constraint '{ [k: string]: string; }'.
+  'string' index signatures are incompatible.
+    Type 'number' is not assignable to type 'string'.
+sub_constraint_bad.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_ctor.ts(6,7): error TS2322: Type '[{ y: 2; }, [a: number]]' is not assignable to type 'never'.
+sub_ctor.ts(7,25): error TS2322: Type 'R<T>' is not assignable to type 'never'.
+  Type '[InstanceType<T>, ConstructorParameters<T>]' is not assignable to type 'never'.
+sub_ctor.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_index.ts(6,7): error TS2322: Type '[number, 1, string | number]' is not assignable to type 'never'.
+sub_index.ts(7,25): error TS2322: Type 'R<T>' is not assignable to type 'never'.
+  Type '[T[string], T["a"], keyof T]' is not assignable to type 'never'.
+sub_index.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_infer.ts(6,7): error TS2322: Type '[number, 2]' is not assignable to type 'never'.
+sub_infer.ts(7,25): error TS2322: Type 'R<T>' is not assignable to type 'never'.
+  Type 'T extends (a: infer A) => infer B ? [A, B] : 0' is not assignable to type 'never'.
+    Type '0 | [unknown, unknown]' is not assignable to type 'never'.
+      Type '0' is not assignable to type 'never'.
+sub_infer.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_mapped.ts(6,26): error TS2542: Index signature in type '{ readonly [x: string]: number; a: 1; }' only permits reading.
+sub_mapped.ts(7,32): error TS2322: Type 'R<T>' is not assignable to type 'never'.
+  Type '{ [K in keyof T]: T[K]; }' is not assignable to type 'never'.
+sub_mapped.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_nested.ts(6,7): error TS2322: Type '[2, 1, unknown]' is not assignable to type 'never'.
+sub_nested.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_params.ts(6,7): error TS2322: Type '[a: number]' is not assignable to type 'never'.
+sub_params.ts(7,25): error TS2322: Type 'R<T>' is not assignable to type 'never'.
+  Type 'Parameters<T>' is not assignable to type 'never'.
+    Type '[a: number]' is not assignable to type 'never'.
+sub_params.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_ret.ts(6,7): error TS2322: Type '2' is not assignable to type 'never'.
+sub_ret.ts(7,25): error TS2322: Type 'R<T>' is not assignable to type 'never'.
+  Type 'ReturnType<T>' is not assignable to type 'never'.
+    Type '2' is not assignable to type 'never'.
+sub_ret.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_template.ts(6,7): error TS2322: Type '`${number}`' is not assignable to type 'never'.
+sub_template.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_tuple.ts(6,7): error TS2322: Type 'number[]' is not assignable to type 'never'.
+sub_tuple.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+sub_typeof.ts(6,82): error TS2322: Type '1' is not assignable to type 'never'.
+sub_typeof.ts(6,102): error TS2322: Type '2' is not assignable to type 'never'.
+sub_typeof.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+symbol__alias__to_mapped.ts(6,7): error TS2322: Type '[string, number]' is not assignable to type 'never'.
+symbol__alias__to_mapped.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+template__alias__mapped.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+template__alias__mapped.ts(8,1): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'R'.
+  Property '0' does not exist on type 'R'.
+template__alias__mapped.ts(9,7): error TS2322: Type 'R' is not assignable to type 'never'.
+template__alias__mapped.ts(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+two_keys__alias__mapped.ts(7,1): error TS2542: Index signature in type 'R' only permits reading.
+two_keys__alias__mapped.ts(9,7): error TS2322: Type 'R' is not assignable to type 'never'.
+two_keys__alias__mapped.ts(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+two_keys__constraint__spread.ts(5,3): error TS2862: Type 'T' is generic and can only be indexed for reading.
+two_keys__constraint__spread.ts(6,9): error TS2322: Type 'T' is not assignable to type 'never'.
+  Type 'I' is not assignable to type 'never'.
+two_keys__constraint__spread.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "lib": ["esnext"], "types": []}, "files": ["again_cond__i_first.ts", "again_generic__i_first.ts", "again_pick__i_first.ts", "again_prop__i_first.ts", "again_prop_opt__i_first.ts", "again_two__i_first.ts", "both_ro__alias__call.ts", "both_ro__alias__context.ts", "both_ro__alias__from_index.ts", "both_ro__alias__from_obj.ts", "both_ro__alias__identical.ts", "both_ro__alias__in.ts", "both_ro__alias__infer_index.ts", "both_ro__alias__infer_sig.ts", "both_ro__alias__keyof.ts", "both_ro__alias__mapped.ts", "both_ro__alias__mapped_as.ts", "both_ro__alias__mapped_ro.ts", "both_ro__alias__mapped_rw.ts", "both_ro__alias__new.ts", "both_ro__alias__params.ts", "both_ro__alias__partial.ts", "both_ro__alias__pattern.ts", "both_ro__alias__read.ts", "both_ro__alias__rest.ts", "both_ro__alias__reverse.ts", "both_ro__alias__reverse_box.ts", "both_ro__alias__reverse_opt.ts", "both_ro__alias__reverse_ro.ts", "both_ro__alias__spread.ts", "both_ro__alias__to_index.ts", "both_ro__alias__to_mapped.ts", "both_ro__alias__write.ts", "both_ro__constraint__reverse.ts", "both_ro__constraint__reverse_box.ts", "both_ro__constraint__reverse_opt.ts", "both_ro__constraint__reverse_ro.ts", "both_ro__constraint__to_mapped.ts", "both_ro__itself__mapped.ts", "both_ro__itself__mapped_as.ts", "both_ro__itself__partial.ts", "both_ro__itself__reverse.ts", "both_ro__itself__reverse_box.ts", "both_ro__itself__reverse_opt.ts", "both_ro__itself__reverse_ro.ts", "both_ro__itself__to_mapped.ts", "both_ro__property__mapped.ts", "both_ro__property__mapped_as.ts", "both_ro__property__partial.ts", "both_ro__property__reverse.ts", "both_ro__property__reverse_box.ts", "both_ro__property__reverse_opt.ts", "both_ro__property__reverse_ro.ts", "both_ro__property__to_mapped.ts", "ctor__alias__reverse.ts", "ctor__constraint__new.ts", "only_index__alias__reverse.ts", "overloads__alias__call.ts", "overloads__constraint__call.ts", "record__alias__iface.ts", "record__alias__reverse.ts", "record__alias__reverse_box.ts", "record__alias__reverse_opt.ts", "record__alias__reverse_ro.ts", "record__alias__to_mapped.ts", "record__itself__iface.ts", "ro_string__alias__mapped.ts", "ro_string__constraint__spread.ts", "same_key__alias__reverse.ts", "same_sig__alias__reverse.ts", "sub_alias_arg.ts", "sub_constraint.ts", "sub_constraint_bad.ts", "sub_ctor.ts", "sub_index.ts", "sub_infer.ts", "sub_mapped.ts", "sub_nested.ts", "sub_params.ts", "sub_ret.ts", "sub_template.ts", "sub_tuple.ts", "sub_typeof.ts", "symbol__alias__to_mapped.ts", "template__alias__mapped.ts", "two_keys__alias__mapped.ts", "two_keys__constraint__spread.ts"]}
+==== again_cond__i_first.ts (7 errors) ====
+    interface Box { v: Box & (keyof Box['v'] extends infer K ? { k: K } : never); w: 1 }
+                    ~
+!!! error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+    type I = Box['v'];
+    type M = keyof I;
+    const a: never = null! as keyof I;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const b: never = null! as keyof M;
+          ~
+!!! error TS2322: Type '"toString" | "valueOf"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"toString"' is not assignable to type 'never'.
+    const c: never = null! as I;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const d: never = (null! as I).v;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const e: never = (null! as I).w;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== again_generic__i_first.ts (8 errors) ====
+    interface Box<T> { v: T & Box<T> & { [K in keyof Box<T>['v']]: K }; w: 1 }
+                       ~
+!!! error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+                                               ~~~~~~~~~~~~~~~~~
+!!! error TS2313: Type parameter 'K' has a circular constraint.
+    type I = Box<{ t: 1 }>['v'];
+    type M = { [K in keyof I]: K };
+    const a: never = null! as keyof I;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const b: never = null! as keyof M;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const c: never = null! as I;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const d: never = (null! as I).v;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const e: never = (null! as I).w;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== again_pick__i_first.ts (7 errors) ====
+    interface Box { v: Box & Pick<Box['v'], keyof Box['v']>; w: 1 }
+                    ~
+!!! error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+    type I = Box['v'];
+    type M = Pick<I, keyof I>;
+    const a: never = null! as keyof I;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const b: never = null! as keyof M;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const c: never = null! as I;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const d: never = (null! as I).v;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const e: never = (null! as I).w;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== again_prop__i_first.ts (8 errors) ====
+    interface Box { v: Box & { [K in keyof Box['v']]: K }; w: 1 }
+                    ~
+!!! error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+                                     ~~~~~~~~~~~~~~
+!!! error TS2313: Type parameter 'K' has a circular constraint.
+    type I = Box['v'];
+    type M = { [K in keyof Box['v']]: K };
+    const a: never = null! as keyof I;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const b: never = null! as keyof M;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const c: never = null! as I;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const d: never = (null! as I).v;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const e: never = (null! as I).w;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== again_prop_opt__i_first.ts (8 errors) ====
+    interface Box { v: Box & { [K in keyof Box['v']]?: K } & { x: 1 }; w: 1 }
+                    ~
+!!! error TS2502: 'v' is referenced directly or indirectly in its own type annotation.
+                                     ~~~~~~~~~~~~~~
+!!! error TS2313: Type parameter 'K' has a circular constraint.
+    type I = Box['v'];
+    type M = { [K in keyof Box['v']]?: K };
+    const a: never = null! as keyof I;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const b: never = null! as keyof M;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const c: never = null! as I;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const d: never = (null! as I).v;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const e: never = (null! as I).w;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== again_two__i_first.ts (9 errors) ====
+    interface A { b: B['a'] & { [K in keyof A['b']]: 1 }; p: 1 }
+                  ~
+!!! error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+                                      ~~~~~~~~~~~~
+!!! error TS2313: Type parameter 'K' has a circular constraint.
+!!! related TS2751 again_two__i_first.ts:1:18: Circularity originates in type at this location.
+    interface B { a: A['b'] & { [K in keyof B['a']]: 2 }; q: 2 }
+                  ~
+!!! error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+    type I = A['b'];
+    type M = B['a'];
+    const a: never = null! as keyof I;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const b: never = null! as keyof M;
+          ~
+!!! error TS2322: Type 'string | number | symbol' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const c: never = null! as I;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const d: never = (null! as I).v;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const e: never = (null! as I).w;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__call.ts (5 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const p: never = (v as any as X)("s");
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~~~~~~~~~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'I' has no call signatures.
+    const q: never = (v as any as X)(1);
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~~~~~~~~~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'I' has no call signatures.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__context.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const r: X = { a: 1, xq: (y: any) => y } as any;
+    const c: { f: X } = { f: { a: 1, xq: 1, zz: "s" } };
+                                            ~~
+!!! error TS2322: Type 'string' is not assignable to type '1 | 2'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__from_index.ts (1 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const r: X = null! as { [k: string]: 1 };
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__from_obj.ts (1 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const r: X = null! as { a: 1;
+    xq: 1 };
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__identical.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare let m1: X;
+                ~~
+!!! error TS2451: Cannot redeclare block-scoped variable 'm1'.
+    declare let m1: { [K in keyof X]: X[K] };
+                ~~
+!!! error TS2451: Cannot redeclare block-scoped variable 'm1'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__in.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    if ("xq" in v) { const p: never = v;
+                           ~
+!!! error TS2322: Type 'I' is not assignable to type 'never'.
+    } else { const q: never = v;
+                   ~
+!!! error TS2322: Type 'I' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__infer_index.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [k: string]: U }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '1 | 2' is not assignable to type 'never'.
+!!! error TS2322:   Type '1' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__infer_sig.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<A, R>(x: (a: A) => R): [A, R];
+    const p: never = g(v as any as X);
+          ~
+!!! error TS2322: Type '[unknown, unknown]' is not assignable to type 'never'.
+                       ~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'I' is not assignable to parameter of type '(a: unknown) => unknown'.
+!!! error TS2345:   Type 'I' provides no match for the signature '(a: unknown): unknown'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__keyof.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const p: never = null! as keyof X;
+          ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__mapped.ts (4 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    type R = { [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    r[0] = null!;
+    ~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__mapped_as.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    type R = { [K in keyof X as K]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__mapped_ro.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    type R = { readonly [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__mapped_rw.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    type R = { -readonly [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__new.ts (5 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const p: never = new (v as any as X)("s");
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                         ~~~~~~~~~~~~~~~
+!!! error TS2351: This expression is not constructable.
+!!! error TS2351:   Type 'I' has no construct signatures.
+    const q: never = new (v as any as X)(1);
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                         ~~~~~~~~~~~~~~~
+!!! error TS2351: This expression is not constructable.
+!!! error TS2351:   Type 'I' has no construct signatures.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__params.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const p: never = null! as (X extends (...a: infer A) => infer R ? [A, R] : 0);
+          ~
+!!! error TS2322: Type '0' is not assignable to type 'never'.
+    const q: never = null! as (X extends new (...a: infer A) => infer R ? [A, R] : 0);
+          ~
+!!! error TS2322: Type '0' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__partial.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare const r: Partial<X>;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'Partial<I>' only permits reading.
+    const p: never = r["xq"];
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__pattern.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const { xq, ...r } = v;
+    const p: never = xq;
+          ~
+!!! error TS2322: Type '1 | 2' is not assignable to type 'never'.
+!!! error TS2322:   Type '1' is not assignable to type 'never'.
+    const q: never = r;
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: 1 | 2; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__read.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const p: never = v["xq"];
+          ~
+!!! error TS2322: Type '1 | 2' is not assignable to type 'never'.
+!!! error TS2322:   Type '1' is not assignable to type 'never'.
+    const q: never = v[0];
+          ~
+!!! error TS2322: Type '1 | 2' is not assignable to type 'never'.
+!!! error TS2322:   Type '1' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__rest.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const { a, ...r } = v as X & { a?: unknown };
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: 1 | 2; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__reverse.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__reverse_box.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] | { b: U[K] } }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__reverse_opt.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]?: U[K] }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__reverse_ro.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { readonly [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__spread.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const r = { ...v };
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: 1 | 2; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__to_index.ts (1 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const r: { [k: string]: number } = v;
+    const s: { readonly [k: string]: unknown } = v;
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__to_mapped.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<K extends string, V>(x: { [P in K]: V }): [K, V];
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__alias__write.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    v["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'I' only permits reading.
+    v[0] = null!;
+    ~~~~
+!!! error TS2542: Index signature in type 'I' only permits reading.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__constraint__reverse.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const r = g(v);
+      r["xq"] = null!;
+      ~~~~~~~
+!!! error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+      const p: never = r;
+            ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__constraint__reverse_box.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { [K in keyof U]: U[K] | { b: U[K] } }): U;
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const p: never = g(v);
+            ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__constraint__reverse_opt.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { [K in keyof U]?: U[K] }): U;
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const p: never = g(v);
+            ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__constraint__reverse_ro.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { readonly [K in keyof U]: U[K] }): U;
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const r = g(v);
+      r["xq"] = null!;
+      const p: never = r;
+            ~
+!!! error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__constraint__to_mapped.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<K extends string, V>(x: { [P in K]: V }): [K, V];
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const p: never = g(v);
+            ~
+!!! error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__mapped.ts (4 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type R = { [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    r[0] = null!;
+    ~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__mapped_as.ts (3 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type R = { [K in keyof X as K]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__partial.ts (2 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare const r: Partial<X>;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'Partial<X>' only permits reading.
+    const p: never = r["xq"];
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__reverse.ts (3 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__reverse_box.ts (2 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { [K in keyof U]: U[K] | { b: U[K] } }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__reverse_opt.ts (2 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { [K in keyof U]?: U[K] }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__reverse_ro.ts (2 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<U>(x: { readonly [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__itself__to_mapped.ts (2 errors) ====
+    type X = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X0 = X;
+    declare const v: { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    declare function g<K extends string, V>(x: { [P in K]: V }): [K, V];
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__mapped.ts (4 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    type R = { [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    r[0] = null!;
+    ~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__mapped_as.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    type R = { [K in keyof X as K]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__partial.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    declare const r: Partial<X>;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'Partial<I>' only permits reading.
+    const p: never = r["xq"];
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__reverse.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type '{ readonly [x: string]: any; }' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__reverse_box.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    declare function g<U>(x: { [K in keyof U]: U[K] | { b: U[K] } }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__reverse_opt.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    declare function g<U>(x: { [K in keyof U]?: U[K] }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ readonly [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__reverse_ro.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    declare function g<U>(x: { readonly [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_ro__property__to_mapped.ts (2 errors) ====
+    type I = { readonly [k: string]: number } & { readonly [k: string]: 1 | 2 };
+    type X = O['p'];
+    type X0 = X;
+    type O = { p: I }; declare const v: O["p"];
+    declare function g<K extends string, V>(x: { [P in K]: V }): [K, V];
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '[string, 1 | 2]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== ctor__alias__reverse.ts (2 errors) ====
+    type I = { new (a: string): { x: 1 }; [k: string]: unknown } & { new (a: number): { y: 2 } };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== ctor__constraint__new.ts (3 errors) ====
+    type I = { new (a: string): { x: 1 }; [k: string]: unknown } & { new (a: number): { y: 2 } };
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const p: never = new (v as any as X)("s");
+            ~
+!!! error TS2322: Type '{ x: 1; }' is not assignable to type 'never'.
+      const q: never = new (v as any as X)(1);
+            ~
+!!! error TS2322: Type '{ y: 2; }' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== only_index__alias__reverse.ts (2 errors) ====
+    type I = { [k: string]: number } & { readonly [k: string]: 1 | 2 | 3 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== overloads__alias__call.ts (3 errors) ====
+    type I = { (a: string): 1; p: 1 } & { (a: number): 2; q: 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    const p: never = (v as any as X)("s");
+          ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    const q: never = (v as any as X)(1);
+          ~
+!!! error TS2322: Type '2' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== overloads__constraint__call.ts (3 errors) ====
+    type I = { (a: string): 1; p: 1 } & { (a: number): 2; q: 2 };
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const p: never = (v as any as X)("s");
+            ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+      const q: never = (v as any as X)(1);
+            ~
+!!! error TS2322: Type '2' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== record__alias__iface.ts (3 errors) ====
+    type I = Record<string, number> & { tag: string };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    interface J extends X0 { z: 1 } declare const j: J;
+              ~
+!!! error TS2411: Property 'tag' of type 'string' is not assignable to 'string' index type 'number'.
+    j["xq"] = null!;
+    const p: never = j["xq"];
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== record__alias__reverse.ts (2 errors) ====
+    type I = Record<string, number> & { tag: string };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== record__alias__reverse_box.ts (2 errors) ====
+    type I = Record<string, number> & { tag: string };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] | { b: U[K] } }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== record__alias__reverse_opt.ts (2 errors) ====
+    type I = Record<string, number> & { tag: string };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]?: U[K] }): U;
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== record__alias__reverse_ro.ts (2 errors) ====
+    type I = Record<string, number> & { tag: string };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { readonly [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; tag: string; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== record__alias__to_mapped.ts (2 errors) ====
+    type I = Record<string, number> & { tag: string };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<K extends string, V>(x: { [P in K]: V }): [K, V];
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '[string, string | number]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== record__itself__iface.ts (3 errors) ====
+    type X = Record<string, number> & { tag: string };
+    type X0 = X;
+    declare const v: Record<string, number> & { tag: string };
+    interface J extends X0 { z: 1 } declare const j: J;
+              ~
+!!! error TS2411: Property 'tag' of type 'string' is not assignable to 'string' index type 'number'.
+    j["xq"] = null!;
+    const p: never = j["xq"];
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== ro_string__alias__mapped.ts (4 errors) ====
+    type I = { readonly [k: string]: number } & { a: 1 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    type R = { [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    r[0] = null!;
+    ~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== ro_string__constraint__spread.ts (3 errors) ====
+    type I = { readonly [k: string]: number } & { a: 1 };
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const r = { ...v };
+      r["xq"] = null!;
+      ~~~~~~~
+!!! error TS2862: Type 'T' is generic and can only be indexed for reading.
+      const p: never = r;
+            ~
+!!! error TS2322: Type 'T' is not assignable to type 'never'.
+!!! error TS2322:   Type 'I' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== same_key__alias__reverse.ts (2 errors) ====
+    type I = { [k: string]: number | string } & { readonly [k: string]: number | boolean };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== same_sig__alias__reverse.ts (2 errors) ====
+    type I = { (a: string): 1; [k: string]: unknown } & { (a: string): 1; q: 2 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<U>(x: { [K in keyof U]: U[K] }): U;
+    const r = g(v);
+    r["xq"] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type '{ [x: string]: any; q: 2; }' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_alias_arg.ts (2 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type Box<F> = { f: F }
+    type R<T> = T extends Fn2 ? Box<T>['f'] : never
+    function f<T extends Fn2>(x: R<T>) { const r: never = x('s') }
+                                               ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_constraint.ts (2 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type Call<F extends (a: string) => unknown> = F
+    type New<F extends new (a: string) => unknown> = F
+    type Rec<F extends { [k: string]: unknown }> = F
+    type R<T> = T extends Fn2 ? Call<T> : T extends Ctor2 ? New<T> : T extends Idx ? Rec<T> : never
+    const a: never = null! as R<Fn2>
+          ~
+!!! error TS2322: Type 'Fn2' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_constraint_bad.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type Call<F extends (a: boolean) => unknown> = F
+    type Rec<F extends { [k: string]: string }> = F
+    type R<T> = T extends Fn2 ? Call<T> : T extends Idx ? Rec<T> : never
+                                     ~
+!!! error TS2344: Type '((a: string) => 1) & ((a: number) => 2) & T' does not satisfy the constraint '(a: boolean) => unknown'.
+!!! error TS2344:   Types of parameters 'a' and 'a' are incompatible.
+!!! error TS2344:     Type 'boolean' is not assignable to type 'string'.
+                                                              ~
+!!! error TS2344: Type '{ readonly [k: string]: number; } & { a: 1; } & T' does not satisfy the constraint '{ [k: string]: string; }'.
+!!! error TS2344:   'string' index signatures are incompatible.
+!!! error TS2344:     Type 'number' is not assignable to type 'string'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_ctor.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Ctor2 ? [InstanceType<T>, ConstructorParameters<T>] : never
+    const a: never = null! as R<Ctor2>
+          ~
+!!! error TS2322: Type '[{ y: 2; }, [a: number]]' is not assignable to type 'never'.
+    function f<T>() { const b: never = null! as R<T> }
+                            ~
+!!! error TS2322: Type 'R<T>' is not assignable to type 'never'.
+!!! error TS2322:   Type '[InstanceType<T>, ConstructorParameters<T>]' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_index.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Idx ? [T[string], T['a'], keyof T] : never
+    const a: never = null! as R<Idx>
+          ~
+!!! error TS2322: Type '[number, 1, string | number]' is not assignable to type 'never'.
+    function f<T>() { const b: never = null! as R<T> }
+                            ~
+!!! error TS2322: Type 'R<T>' is not assignable to type 'never'.
+!!! error TS2322:   Type '[T[string], T["a"], keyof T]' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_infer.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Obj ? (T extends (a: infer A) => infer B ? [A, B] : 0) : never
+    const a: never = null! as R<Obj>
+          ~
+!!! error TS2322: Type '[number, 2]' is not assignable to type 'never'.
+    function f<T>() { const b: never = null! as R<T> }
+                            ~
+!!! error TS2322: Type 'R<T>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'T extends (a: infer A) => infer B ? [A, B] : 0' is not assignable to type 'never'.
+!!! error TS2322:     Type '0 | [unknown, unknown]' is not assignable to type 'never'.
+!!! error TS2322:       Type '0' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_mapped.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Idx ? { [K in keyof T]: T[K] } : never
+    declare const a: R<Idx>; a['x'] = 1
+                             ~~~~~~
+!!! error TS2542: Index signature in type '{ readonly [x: string]: number; a: 1; }' only permits reading.
+    function f<T>(b: R<T>) { const c: never = b }
+                                   ~
+!!! error TS2322: Type 'R<T>' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ [K in keyof T]: T[K]; }' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_nested.ts (2 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Fn2 ? (T extends Obj ? [ReturnType<T>, T['p'], T[string]] : 1) : never
+    const a: never = null! as R<Fn2 & Obj>
+          ~
+!!! error TS2322: Type '[2, 1, unknown]' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_params.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Fn2 ? Parameters<T> : never
+    const a: never = null! as R<Fn2>
+          ~
+!!! error TS2322: Type '[a: number]' is not assignable to type 'never'.
+    function f<T>() { const b: never = null! as R<T> }
+                            ~
+!!! error TS2322: Type 'R<T>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Parameters<T>' is not assignable to type 'never'.
+!!! error TS2322:     Type '[a: number]' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_ret.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Fn2 ? ReturnType<T> : never
+    const a: never = null! as R<Fn2>
+          ~
+!!! error TS2322: Type '2' is not assignable to type 'never'.
+    function f<T>() { const b: never = null! as R<T> }
+                            ~
+!!! error TS2322: Type 'R<T>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'ReturnType<T>' is not assignable to type 'never'.
+!!! error TS2322:     Type '2' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_template.ts (2 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Idx ? `${T[string]}` : never
+    const a: never = null! as R<Idx>
+          ~
+!!! error TS2322: Type '`${number}`' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_tuple.ts (2 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Idx ? [...T[string][]] : never
+    const a: never = null! as R<Idx>
+          ~
+!!! error TS2322: Type 'number[]' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub_typeof.ts (3 errors) ====
+    type Fn2 = ((a: string) => 1) & ((a: number) => 2)
+    type Ctor2 = (new (a: string) => { x: 1 }) & (new (a: number) => { y: 2 })
+    type Idx = { readonly [k: string]: number } & { a: 1 }
+    type Obj = { (a: string): 1; p: 1 } & { (a: number): 2; [k: string]: unknown }
+    type R<T> = T extends Fn2 ? { f: T; r: ReturnType<T> } : never
+    function f<T extends Fn2>(x: R<T>) { const r = x.f('s'); const q = x.f(1); const p: never = r; const s: never = q }
+                                                                                     ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+                                                                                                         ~
+!!! error TS2322: Type '2' is not assignable to type 'never'.
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== symbol__alias__to_mapped.ts (2 errors) ====
+    type I = { readonly [k: symbol]: number } & { a: 1 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    declare function g<K extends string, V>(x: { [P in K]: V }): [K, V];
+    const p: never = g(v);
+          ~
+!!! error TS2322: Type '[string, number]' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== template__alias__mapped.ts (4 errors) ====
+    type I = { readonly [k: `x${string}`]: number } & { a: 1 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    type R = { [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    r[0] = null!;
+    ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'R'.
+!!! error TS7053:   Property '0' does not exist on type 'R'.
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== two_keys__alias__mapped.ts (3 errors) ====
+    type I = { readonly [k: string]: number | string } & { [k: number]: 1 };
+    type X = I;
+    type X0 = X;
+    declare const v: I;
+    type R = { [K in keyof X]: X[K] };
+    declare const r: R;
+    r["xq"] = null!;
+    ~~~~~~~
+!!! error TS2542: Index signature in type 'R' only permits reading.
+    r[0] = null!;
+    const p: never = r;
+          ~
+!!! error TS2322: Type 'R' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== two_keys__constraint__spread.ts (3 errors) ====
+    type I = { readonly [k: string]: number | string } & { [k: number]: 1 };
+    export function f<T extends I>(v: T) {
+      type X = T;
+      const r = { ...v };
+      r["xq"] = null!;
+      ~~~~~~~
+!!! error TS2862: Type 'T' is generic and can only be indexed for reading.
+      const p: never = r;
+            ~
+!!! error TS2322: Type 'T' is not assignable to type 'never'.
+!!! error TS2322:   Type 'I' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

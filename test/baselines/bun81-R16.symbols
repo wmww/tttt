@@ -1,0 +1,118 @@
+//// [test/cases/bun81-R16.ts] ////
+
+=== a.ts ===
+declare function run<T>(f: () => T): T;
+>run : Symbol(run, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>f : Symbol(f, Decl(a.ts, 0, 24))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+
+function k6(ns: string[]) {
+>k6 : Symbol(k6, Decl(a.ts, 0, 39))
+>ns : Symbol(ns, Decl(a.ts, 1, 12))
+
+    let last: string | null = null;
+>last : Symbol(last, Decl(a.ts, 2, 7))
+
+    for (const n of ns) {
+>n : Symbol(n, Decl(a.ts, 3, 14))
+>ns : Symbol(ns, Decl(a.ts, 1, 12))
+
+        if (n === last) continue;
+>n : Symbol(n, Decl(a.ts, 3, 14))
+>last : Symbol(last, Decl(a.ts, 2, 7))
+
+        last = run(() => n);
+>last : Symbol(last, Decl(a.ts, 2, 7))
+>run : Symbol(run, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 3, 14))
+    }
+}
+function k1(n: number, more: () => boolean) {
+>k1 : Symbol(k1, Decl(a.ts, 7, 1))
+>n : Symbol(n, Decl(a.ts, 8, 12))
+>more : Symbol(more, Decl(a.ts, 8, 22))
+
+    let acc: number | null = null;
+>acc : Symbol(acc, Decl(a.ts, 9, 7))
+
+    while (more()) {
+>more : Symbol(more, Decl(a.ts, 8, 22))
+
+        if (n === acc) break;
+>n : Symbol(n, Decl(a.ts, 8, 12))
+>acc : Symbol(acc, Decl(a.ts, 9, 7))
+
+        acc = [1].map(() => n)[0];
+>acc : Symbol(acc, Decl(a.ts, 9, 7))
+>[1].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>n : Symbol(n, Decl(a.ts, 8, 12))
+    }
+}
+async function k21(y: "a" | "b", more: () => boolean) {
+>k21 : Symbol(k21, Decl(a.ts, 14, 1))
+>y : Symbol(y, Decl(a.ts, 15, 19))
+>more : Symbol(more, Decl(a.ts, 15, 32))
+
+    let x: "a" | "b" = "a";
+>x : Symbol(x, Decl(a.ts, 16, 7))
+
+    while (more()) {
+>more : Symbol(more, Decl(a.ts, 15, 32))
+
+        if (y === x) { }
+>y : Symbol(y, Decl(a.ts, 15, 19))
+>x : Symbol(x, Decl(a.ts, 16, 7))
+
+        x = await Promise.resolve().then(() => y);
+>x : Symbol(x, Decl(a.ts, 16, 7))
+>Promise.resolve().then : Symbol(Promise.then, Decl(lib.es5.d.ts, --, --))
+>Promise.resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>then : Symbol(Promise.then, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 15, 19))
+    }
+}
+// the two agree: no initializer, a declared type that is no union, an annotated callback
+function a1(ns: string[]) { let last: string | undefined; for (const n of ns) { if (n === last) continue; last = run(() => n); } }
+>a1 : Symbol(a1, Decl(a.ts, 21, 1))
+>ns : Symbol(ns, Decl(a.ts, 23, 12))
+>last : Symbol(last, Decl(a.ts, 23, 31))
+>n : Symbol(n, Decl(a.ts, 23, 68))
+>ns : Symbol(ns, Decl(a.ts, 23, 12))
+>n : Symbol(n, Decl(a.ts, 23, 68))
+>last : Symbol(last, Decl(a.ts, 23, 31))
+>last : Symbol(last, Decl(a.ts, 23, 31))
+>run : Symbol(run, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 23, 68))
+
+function a2(ns: string[]) { let last = ""; for (const n of ns) { if (n === last) continue; last = run(() => n); } }
+>a2 : Symbol(a2, Decl(a.ts, 23, 130))
+>ns : Symbol(ns, Decl(a.ts, 24, 12))
+>last : Symbol(last, Decl(a.ts, 24, 31))
+>n : Symbol(n, Decl(a.ts, 24, 53))
+>ns : Symbol(ns, Decl(a.ts, 24, 12))
+>n : Symbol(n, Decl(a.ts, 24, 53))
+>last : Symbol(last, Decl(a.ts, 24, 31))
+>last : Symbol(last, Decl(a.ts, 24, 31))
+>run : Symbol(run, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 24, 53))
+
+function a3(ns: string[]) { let last: string | null = null; for (const n of ns) { if (n === last) continue; last = run((): string => n); } }
+>a3 : Symbol(a3, Decl(a.ts, 24, 115))
+>ns : Symbol(ns, Decl(a.ts, 25, 12))
+>last : Symbol(last, Decl(a.ts, 25, 31))
+>n : Symbol(n, Decl(a.ts, 25, 70))
+>ns : Symbol(ns, Decl(a.ts, 25, 12))
+>n : Symbol(n, Decl(a.ts, 25, 70))
+>last : Symbol(last, Decl(a.ts, 25, 31))
+>last : Symbol(last, Decl(a.ts, 25, 31))
+>run : Symbol(run, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 25, 70))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 26, 5))
+

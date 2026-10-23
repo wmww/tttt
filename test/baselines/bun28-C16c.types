@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C16c.ts] ////
+
+=== a.ts ===
+interface I { [export x: string]: any }
+>x : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

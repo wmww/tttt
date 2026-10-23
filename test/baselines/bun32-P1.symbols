@@ -1,0 +1,10 @@
+//// [test/cases/bun32-P1.ts] ////
+
+=== a.ts ===
+({ static static m() {} });
+>static : Symbol(static, Decl(a.ts, 0, 2))
+>m : Symbol(m, Decl(a.ts, 0, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun14-C11c.ts] ////
+
+=== a.ts ===
+declare const t: [string, number];
+>t : [string, number]
+
+const { [/*c*/ 2]: t2 } = t;
+>2 : 2
+>t2 : undefined
+>t : [string, number]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

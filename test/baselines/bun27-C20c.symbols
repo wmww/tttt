@@ -1,0 +1,26 @@
+//// [test/cases/bun27-C20c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(a.tsx, 0, 50))
+>children : Symbol(ElementChildrenAttribute.children, Decl(a.tsx, 0, 87))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 102))
+
+function W<P extends { children: number[] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{"b"}</C>; }
+>W : Symbol(W, Decl(a.tsx, 0, 135))
+>P : Symbol(P, Decl(a.tsx, 1, 11))
+>children : Symbol(children, Decl(a.tsx, 1, 22))
+>C : Symbol(C, Decl(a.tsx, 1, 45))
+>p : Symbol(p, Decl(a.tsx, 1, 49))
+>P : Symbol(P, Decl(a.tsx, 1, 11))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+>C : Symbol(C, Decl(a.tsx, 1, 45))
+>C : Symbol(C, Decl(a.tsx, 1, 45))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+

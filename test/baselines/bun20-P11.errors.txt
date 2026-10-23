@@ -1,0 +1,22 @@
+a.ts(7,27): error TS2678: Type '"b"' is not comparable to type '"a"'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function cond(): boolean;
+    declare const m: { a: "b"; b: "a" };
+    function f() {
+        let x: "a" | "b" = "a", y: "a" | "b" = "a";
+        while (cond()) {
+            if (x !== y) { x = m[y]; }
+            switch (x) { case "b": break; }
+                              ~~~
+!!! error TS2678: Type '"b"' is not comparable to type '"a"'.
+        }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

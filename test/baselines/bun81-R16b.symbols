@@ -1,0 +1,100 @@
+//// [test/cases/bun81-R16b.ts] ////
+
+=== a.ts ===
+declare function apply<T, U>(x: T, f: (v: T) => U): U;
+>apply : Symbol(apply, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>U : Symbol(U, Decl(a.ts, 0, 25))
+>x : Symbol(x, Decl(a.ts, 0, 29))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>f : Symbol(f, Decl(a.ts, 0, 34))
+>v : Symbol(v, Decl(a.ts, 0, 39))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>U : Symbol(U, Decl(a.ts, 0, 25))
+>U : Symbol(U, Decl(a.ts, 0, 25))
+
+function sum(xs: number[]) {
+>sum : Symbol(sum, Decl(a.ts, 0, 54))
+>xs : Symbol(xs, Decl(a.ts, 1, 13))
+
+    let acc: number | null = null;
+>acc : Symbol(acc, Decl(a.ts, 2, 7))
+
+    for (const n of xs) {
+>n : Symbol(n, Decl(a.ts, 3, 14))
+>xs : Symbol(xs, Decl(a.ts, 1, 13))
+
+        acc = apply(acc, v => (v ?? 0) + n);
+>acc : Symbol(acc, Decl(a.ts, 2, 7))
+>apply : Symbol(apply, Decl(a.ts, 0, 0))
+>acc : Symbol(acc, Decl(a.ts, 2, 7))
+>v : Symbol(v, Decl(a.ts, 4, 24))
+>v : Symbol(v, Decl(a.ts, 4, 24))
+>n : Symbol(n, Decl(a.ts, 3, 14))
+    }
+    return acc;
+>acc : Symbol(acc, Decl(a.ts, 2, 7))
+}
+function text(more: () => boolean) {
+>text : Symbol(text, Decl(a.ts, 7, 1))
+>more : Symbol(more, Decl(a.ts, 8, 14))
+
+    let x: string | number = 0;
+>x : Symbol(x, Decl(a.ts, 9, 7))
+
+    while (more()) {
+>more : Symbol(more, Decl(a.ts, 8, 14))
+
+        x = apply(x, v => String(v));
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>apply : Symbol(apply, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>v : Symbol(v, Decl(a.ts, 11, 20))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 6 more)
+>v : Symbol(v, Decl(a.ts, 11, 20))
+    }
+}
+// the two agree: a method of an array, an annotated parameter, explicit type arguments
+function a1(xs: number[]) { let acc: number | null = null; for (const n of xs) { acc = [acc].map(v => (v ?? 0) + n)[0]; } }
+>a1 : Symbol(a1, Decl(a.ts, 13, 1))
+>xs : Symbol(xs, Decl(a.ts, 15, 12))
+>acc : Symbol(acc, Decl(a.ts, 15, 31))
+>n : Symbol(n, Decl(a.ts, 15, 69))
+>xs : Symbol(xs, Decl(a.ts, 15, 12))
+>acc : Symbol(acc, Decl(a.ts, 15, 31))
+>[acc].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>acc : Symbol(acc, Decl(a.ts, 15, 31))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 15, 97))
+>v : Symbol(v, Decl(a.ts, 15, 97))
+>n : Symbol(n, Decl(a.ts, 15, 69))
+
+function a2(xs: number[]) { let acc: number | null = null; for (const n of xs) { acc = apply(acc, (v: number | null) => (v ?? 0) + n); } }
+>a2 : Symbol(a2, Decl(a.ts, 15, 123))
+>xs : Symbol(xs, Decl(a.ts, 16, 12))
+>acc : Symbol(acc, Decl(a.ts, 16, 31))
+>n : Symbol(n, Decl(a.ts, 16, 69))
+>xs : Symbol(xs, Decl(a.ts, 16, 12))
+>acc : Symbol(acc, Decl(a.ts, 16, 31))
+>apply : Symbol(apply, Decl(a.ts, 0, 0))
+>acc : Symbol(acc, Decl(a.ts, 16, 31))
+>v : Symbol(v, Decl(a.ts, 16, 99))
+>v : Symbol(v, Decl(a.ts, 16, 99))
+>n : Symbol(n, Decl(a.ts, 16, 69))
+
+function a3(xs: number[]) { let acc: number | null = null; for (const n of xs) { acc = apply<number | null, number>(acc, v => (v ?? 0) + n); } }
+>a3 : Symbol(a3, Decl(a.ts, 16, 138))
+>xs : Symbol(xs, Decl(a.ts, 17, 12))
+>acc : Symbol(acc, Decl(a.ts, 17, 31))
+>n : Symbol(n, Decl(a.ts, 17, 69))
+>xs : Symbol(xs, Decl(a.ts, 17, 12))
+>acc : Symbol(acc, Decl(a.ts, 17, 31))
+>apply : Symbol(apply, Decl(a.ts, 0, 0))
+>acc : Symbol(acc, Decl(a.ts, 17, 31))
+>v : Symbol(v, Decl(a.ts, 17, 120))
+>v : Symbol(v, Decl(a.ts, 17, 120))
+>n : Symbol(n, Decl(a.ts, 17, 69))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

@@ -1,0 +1,29 @@
+//// [test/cases/bun29-C2b.ts] ////
+
+=== a.ts ===
+import { X } from "./m";
+>X : Symbol(X, Decl(a.ts, 0, 8), Decl(a.ts, 0, 24))
+
+type X = string;
+>X : Symbol(X, Decl(a.ts, 0, 8), Decl(a.ts, 0, 24))
+
+let n: number = () => mkX();
+>n : Symbol(n, Decl(a.ts, 2, 3))
+>mkX : Symbol(mkX, Decl(g.d.ts, 0, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== g.d.ts ===
+interface X { gx: number }
+>X : Symbol(X, Decl(g.d.ts, 0, 0))
+>gx : Symbol(X.gx, Decl(g.d.ts, 0, 13))
+
+declare function mkX(): X;
+>mkX : Symbol(mkX, Decl(g.d.ts, 0, 26))
+>X : Symbol(X, Decl(g.d.ts, 0, 0))
+
+=== m.ts ===
+export const X = 1;
+>X : Symbol(X, Decl(m.ts, 0, 12))
+

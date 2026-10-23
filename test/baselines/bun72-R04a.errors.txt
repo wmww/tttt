@@ -1,0 +1,30 @@
+a.ts(4,8): error TS2339: Property 'added' does not exist on type 'C'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": ["foo"], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler"}}
+==== a.ts (2 errors) ====
+    import { make } from "dep";
+    declare module "foo" { interface C { added: number } }
+    make().own;
+    make().added;
+           ~~~~~
+!!! error TS2339: Property 'added' does not exist on type 'C'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@types/foo/index.d.ts (0 errors) ====
+    export declare class C { own: number; }
+==== node_modules/@types/foo/package.json (0 errors) ====
+    { "name": "@types/foo", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/dep/index.d.ts (0 errors) ====
+    import { C } from "foo";
+    export declare function make(): C;
+==== node_modules/dep/node_modules/@types/foo/index.d.ts (0 errors) ====
+    export declare class C { own: number; }
+==== node_modules/dep/node_modules/@types/foo/package.json (0 errors) ====
+    { "name": "@types/foo", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/dep/package.json (0 errors) ====
+    { "name": "dep", "version": "1.0.0", "types": "index.d.ts" }
+    

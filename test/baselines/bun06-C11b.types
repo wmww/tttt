@@ -1,0 +1,13 @@
+//// [test/cases/bun06-C11b.ts] ////
+
+=== b.js ===
+globalThis = 1;
+>globalThis = 1 : 1
+>globalThis : any
+>1 : 1
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

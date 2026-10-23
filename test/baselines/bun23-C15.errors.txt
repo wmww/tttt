@@ -1,0 +1,16 @@
+a.ts(1,7): error TS2322: Type '{}' is not assignable to type '<T extends { readonly k: unique symbol; }>(x: T) => void'.
+  Type '{}' provides no match for the signature '<T extends { readonly k: typeof k; }>(x: T): void'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const s1: { <T extends { readonly k: unique symbol }>(x: T): void } = {};
+          ~~
+!!! error TS2322: Type '{}' is not assignable to type '<T extends { readonly k: unique symbol; }>(x: T) => void'.
+!!! error TS2322:   Type '{}' provides no match for the signature '<T extends { readonly k: typeof k; }>(x: T): void'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

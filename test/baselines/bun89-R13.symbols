@@ -1,0 +1,228 @@
+//// [test/cases/bun89-R13.ts] ////
+
+=== a.ts ===
+// 1 an independent late name first: it starts the binding (getLateBoundSymbol), the key after it is typed in the meantime
+declare const j1: "x";
+>j1 : Symbol(j1, Decl(a.ts, 1, 13))
+
+class C1 { a: "b" = "b"; [j1]: string = ""; [k1]: number = 1 }
+>C1 : Symbol(C1, Decl(a.ts, 1, 22))
+>a : Symbol(C1.a, Decl(a.ts, 2, 10))
+>[j1] : Symbol(C1[j1], Decl(a.ts, 2, 24))
+>j1 : Symbol(j1, Decl(a.ts, 1, 13))
+>[k1] : Symbol(C1[k1], Decl(a.ts, 2, 43))
+>k1 : Symbol(k1, Decl(a.ts, 3, 13))
+
+declare const k1: C1["a"];
+>k1 : Symbol(k1, Decl(a.ts, 3, 13))
+>C1 : Symbol(C1, Decl(a.ts, 1, 22))
+
+new C1().x; new C1().b; new C1().a;
+>C1 : Symbol(C1, Decl(a.ts, 1, 22))
+>C1 : Symbol(C1, Decl(a.ts, 1, 22))
+>new C1().a : Symbol(C1.a, Decl(a.ts, 2, 10))
+>C1 : Symbol(C1, Decl(a.ts, 1, 22))
+>a : Symbol(C1.a, Decl(a.ts, 2, 10))
+
+// 2 the circular key first
+declare const j2: "x";
+>j2 : Symbol(j2, Decl(a.ts, 6, 13))
+
+class C2 { a: "b" = "b"; [k2]: number = 1; [j2]: string = "" }
+>C2 : Symbol(C2, Decl(a.ts, 6, 22))
+>a : Symbol(C2.a, Decl(a.ts, 7, 10))
+>[k2] : Symbol(C2[k2], Decl(a.ts, 7, 24))
+>k2 : Symbol(k2, Decl(a.ts, 8, 13))
+>[j2] : Symbol(C2[j2], Decl(a.ts, 7, 42))
+>j2 : Symbol(j2, Decl(a.ts, 6, 13))
+
+declare const k2: C2["a"];
+>k2 : Symbol(k2, Decl(a.ts, 8, 13))
+>C2 : Symbol(C2, Decl(a.ts, 6, 22))
+
+new C2().x; new C2().b; new C2().a;
+>new C2().x : Symbol(C2[j2], Decl(a.ts, 7, 42))
+>C2 : Symbol(C2, Decl(a.ts, 6, 22))
+>x : Symbol(C2[j2], Decl(a.ts, 7, 42))
+>C2 : Symbol(C2, Decl(a.ts, 6, 22))
+>new C2().a : Symbol(C2.a, Decl(a.ts, 7, 10))
+>C2 : Symbol(C2, Decl(a.ts, 6, 22))
+>a : Symbol(C2.a, Decl(a.ts, 7, 10))
+
+// 3 unique symbol first
+declare const s3: unique symbol;
+>s3 : Symbol(s3, Decl(a.ts, 11, 13))
+
+class C3 { a: "b" = "b"; [s3]: string = ""; [k3]: number = 1 }
+>C3 : Symbol(C3, Decl(a.ts, 11, 32))
+>a : Symbol(C3.a, Decl(a.ts, 12, 10))
+>[s3] : Symbol(C3[s3], Decl(a.ts, 12, 24))
+>s3 : Symbol(s3, Decl(a.ts, 11, 13))
+>[k3] : Symbol(C3[k3], Decl(a.ts, 12, 43))
+>k3 : Symbol(k3, Decl(a.ts, 13, 13))
+
+declare const k3: C3["a"];
+>k3 : Symbol(k3, Decl(a.ts, 13, 13))
+>C3 : Symbol(C3, Decl(a.ts, 11, 32))
+
+new C3()[s3]; new C3().b;
+>C3 : Symbol(C3, Decl(a.ts, 11, 32))
+>s3 : Symbol(s3, Decl(a.ts, 11, 13))
+>C3 : Symbol(C3, Decl(a.ts, 11, 32))
+
+// 4 Symbol.iterator first
+class C4 { a: "b" = "b"; *[Symbol.iterator]() { yield 1; } [k4]: number = 1 }
+>C4 : Symbol(C4, Decl(a.ts, 14, 25))
+>a : Symbol(C4.a, Decl(a.ts, 16, 10))
+>[Symbol.iterator] : Symbol(C4[Symbol.iterator], Decl(a.ts, 16, 24))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>[k4] : Symbol(C4[k4], Decl(a.ts, 16, 58))
+>k4 : Symbol(k4, Decl(a.ts, 17, 13))
+
+declare const k4: C4["a"];
+>k4 : Symbol(k4, Decl(a.ts, 17, 13))
+>C4 : Symbol(C4, Decl(a.ts, 14, 25))
+
+for (const x of new C4()) {} new C4().b;
+>x : Symbol(x, Decl(a.ts, 18, 10))
+>C4 : Symbol(C4, Decl(a.ts, 14, 25))
+>C4 : Symbol(C4, Decl(a.ts, 14, 25))
+
+// 5 static side
+declare const j5: "x";
+>j5 : Symbol(j5, Decl(a.ts, 20, 13))
+
+class C5 { static a: "b" = "b"; static [j5]: string = ""; static [k5]: number = 1 }
+>C5 : Symbol(C5, Decl(a.ts, 20, 22))
+>a : Symbol(C5.a, Decl(a.ts, 21, 10))
+>[j5] : Symbol(C5[j5], Decl(a.ts, 21, 31))
+>j5 : Symbol(j5, Decl(a.ts, 20, 13))
+>[k5] : Symbol(C5[k5], Decl(a.ts, 21, 57))
+>k5 : Symbol(k5, Decl(a.ts, 22, 13))
+
+declare const k5: (typeof C5)["a"];
+>k5 : Symbol(k5, Decl(a.ts, 22, 13))
+>C5 : Symbol(C5, Decl(a.ts, 20, 22))
+
+C5.x; C5.b;
+>C5 : Symbol(C5, Decl(a.ts, 20, 22))
+>C5 : Symbol(C5, Decl(a.ts, 20, 22))
+
+// 6 interface
+declare const j6: "x";
+>j6 : Symbol(j6, Decl(a.ts, 25, 13))
+
+interface I6 { a: "b"; [j6]: string; [k6]: number }
+>I6 : Symbol(I6, Decl(a.ts, 25, 22))
+>a : Symbol(I6.a, Decl(a.ts, 26, 14))
+>[j6] : Symbol(I6[j6], Decl(a.ts, 26, 22))
+>j6 : Symbol(j6, Decl(a.ts, 25, 13))
+>[k6] : Symbol(I6[k6], Decl(a.ts, 26, 36))
+>k6 : Symbol(k6, Decl(a.ts, 27, 13))
+
+declare const k6: I6["a"];
+>k6 : Symbol(k6, Decl(a.ts, 27, 13))
+>I6 : Symbol(I6, Decl(a.ts, 25, 22))
+
+declare const i6: I6; i6.x; i6.b;
+>i6 : Symbol(i6, Decl(a.ts, 28, 13))
+>I6 : Symbol(I6, Decl(a.ts, 25, 22))
+>i6.x : Symbol(I6[j6], Decl(a.ts, 26, 22))
+>i6 : Symbol(i6, Decl(a.ts, 28, 13))
+>x : Symbol(I6[j6], Decl(a.ts, 26, 22))
+>i6.b : Symbol(I6[k6], Decl(a.ts, 26, 36))
+>i6 : Symbol(i6, Decl(a.ts, 28, 13))
+>b : Symbol(I6[k6], Decl(a.ts, 26, 36))
+
+// 7 declare class
+declare const j7: "x";
+>j7 : Symbol(j7, Decl(a.ts, 30, 13))
+
+declare class C7 { a: "b"; [j7]: string; [k7]: number }
+>C7 : Symbol(C7, Decl(a.ts, 30, 22))
+>a : Symbol(C7.a, Decl(a.ts, 31, 18))
+>[j7] : Symbol(C7[j7], Decl(a.ts, 31, 26))
+>j7 : Symbol(j7, Decl(a.ts, 30, 13))
+>[k7] : Symbol(C7[k7], Decl(a.ts, 31, 40))
+>k7 : Symbol(k7, Decl(a.ts, 32, 13))
+
+declare const k7: C7["a"];
+>k7 : Symbol(k7, Decl(a.ts, 32, 13))
+>C7 : Symbol(C7, Decl(a.ts, 30, 22))
+
+new C7().x; new C7().b;
+>C7 : Symbol(C7, Decl(a.ts, 30, 22))
+>C7 : Symbol(C7, Decl(a.ts, 30, 22))
+
+// 8 subclass sees it?
+declare const j8: "x";
+>j8 : Symbol(j8, Decl(a.ts, 35, 13))
+
+class C8 { a: "b" = "b"; [j8]: string = ""; [k8]: number = 1 }
+>C8 : Symbol(C8, Decl(a.ts, 35, 22))
+>a : Symbol(C8.a, Decl(a.ts, 36, 10))
+>[j8] : Symbol(C8[j8], Decl(a.ts, 36, 24))
+>j8 : Symbol(j8, Decl(a.ts, 35, 13))
+>[k8] : Symbol(C8[k8], Decl(a.ts, 36, 43))
+>k8 : Symbol(k8, Decl(a.ts, 37, 13))
+
+declare const k8: C8["a"];
+>k8 : Symbol(k8, Decl(a.ts, 37, 13))
+>C8 : Symbol(C8, Decl(a.ts, 35, 22))
+
+class D8 extends C8 {}
+>D8 : Symbol(D8, Decl(a.ts, 37, 26))
+>C8 : Symbol(C8, Decl(a.ts, 35, 22))
+
+new D8().x; new D8().b;
+>D8 : Symbol(D8, Decl(a.ts, 37, 26))
+>D8 : Symbol(D8, Decl(a.ts, 37, 26))
+
+// 9 generic class, other instantiation
+declare const j9: "x";
+>j9 : Symbol(j9, Decl(a.ts, 41, 13))
+
+class C9<T> { a: "b" = "b"; [j9]: string = ""; [k9]: number = 1; t!: T }
+>C9 : Symbol(C9, Decl(a.ts, 41, 22))
+>T : Symbol(T, Decl(a.ts, 42, 9))
+>a : Symbol(C9.a, Decl(a.ts, 42, 13))
+>[j9] : Symbol(C9[j9], Decl(a.ts, 42, 27))
+>j9 : Symbol(j9, Decl(a.ts, 41, 13))
+>[k9] : Symbol(C9[k9], Decl(a.ts, 42, 46))
+>k9 : Symbol(k9, Decl(a.ts, 43, 13))
+>t : Symbol(C9.t, Decl(a.ts, 42, 64))
+>T : Symbol(T, Decl(a.ts, 42, 9))
+
+declare const k9: C9<1>["a"];
+>k9 : Symbol(k9, Decl(a.ts, 43, 13))
+>C9 : Symbol(C9, Decl(a.ts, 41, 22))
+
+new C9<1>().x; new C9<2>().x; new C9<2>().b;
+>C9 : Symbol(C9, Decl(a.ts, 41, 22))
+>C9 : Symbol(C9, Decl(a.ts, 41, 22))
+>C9 : Symbol(C9, Decl(a.ts, 41, 22))
+
+// 10 type of `this` inside
+declare const j10: "x";
+>j10 : Symbol(j10, Decl(a.ts, 46, 13))
+
+class C10 { a: "b" = "b"; [j10]: string = ""; [k10]: number = 1; m() { this.x; this.b; } }
+>C10 : Symbol(C10, Decl(a.ts, 46, 23))
+>a : Symbol(C10.a, Decl(a.ts, 47, 11))
+>[j10] : Symbol(C10[j10], Decl(a.ts, 47, 25))
+>j10 : Symbol(j10, Decl(a.ts, 46, 13))
+>[k10] : Symbol(C10[k10], Decl(a.ts, 47, 45))
+>k10 : Symbol(k10, Decl(a.ts, 48, 13))
+>m : Symbol(C10.m, Decl(a.ts, 47, 64))
+>this : Symbol(C10, Decl(a.ts, 46, 23))
+>this : Symbol(C10, Decl(a.ts, 46, 23))
+
+declare const k10: C10["a"];
+>k10 : Symbol(k10, Decl(a.ts, 48, 13))
+>C10 : Symbol(C10, Decl(a.ts, 46, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 49, 5))
+

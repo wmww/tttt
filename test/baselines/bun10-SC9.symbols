@@ -1,0 +1,40 @@
+//// [test/cases/bun10-SC9.ts] ////
+
+=== m.js ===
+Object.defineProperty(exports, "p6", { value: undefined });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>"p6" : Symbol("p6", Decl(m.js, 0, 0))
+>value : Symbol(value, Decl(m.js, 0, 38))
+>undefined : Symbol(undefined)
+
+Object.defineProperty(exports, "p7", { get() { return null; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>"p7" : Symbol("p7", Decl(m.js, 0, 59))
+>get : Symbol(get, Decl(m.js, 1, 38))
+
+=== u.ts ===
+import m = require("./m");
+>m : Symbol(m, Decl(u.ts, 0, 0))
+
+declare let n: never;
+>n : Symbol(n, Decl(u.ts, 1, 11))
+
+n = m.p6; n = m.p7;
+>n : Symbol(n, Decl(u.ts, 1, 11))
+>m.p6 : Symbol(m["p6"], Decl(m.js, 0, 0))
+>m : Symbol(m, Decl(u.ts, 0, 0))
+>p6 : Symbol(m["p6"], Decl(m.js, 0, 0))
+>n : Symbol(n, Decl(u.ts, 1, 11))
+>m.p7 : Symbol(m["p7"], Decl(m.js, 0, 59))
+>m : Symbol(m, Decl(u.ts, 0, 0))
+>p7 : Symbol(m["p7"], Decl(m.js, 0, 59))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(u.ts, 3, 5))
+

@@ -1,0 +1,21 @@
+//// [test/cases/bun11-P6a.ts] ////
+
+=== a.ts ===
+function h(v: string | number) { if (p(v)) { return v; } return 0; }
+>h : Symbol(h, Decl(a.ts, 0, 0))
+>v : Symbol(v, Decl(a.ts, 0, 11))
+>p : Symbol(p, Decl(a.ts, 0, 68))
+>v : Symbol(v, Decl(a.ts, 0, 11))
+>v : Symbol(v, Decl(a.ts, 0, 11))
+
+function p(x: string | number, { a } = { a: h(1) }) { return !!x; }
+>p : Symbol(p, Decl(a.ts, 0, 68))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 32))
+>a : Symbol(a, Decl(a.ts, 1, 40))
+>h : Symbol(h, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

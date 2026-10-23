@@ -1,0 +1,194 @@
+//// [test/cases/bun96-KY1.ts] ////
+
+=== a.ts ===
+// ky: source/types/common.ts (`_?: never` became `_: never`), source/types/options.ts, source/core/Ky.ts(397,4)
+type LiteralUnion<L extends B, B extends string> = L | (B & { _: never });
+>LiteralUnion : LiteralUnion<L, B>
+>_ : never
+
+type HttpMethod = LiteralUnion<"get" | "post", string>;
+>HttpMethod : HttpMethod
+
+type KyOptions = { json?: unknown };
+>KyOptions : KyOptions
+>json : unknown
+
+interface Options extends KyOptions {
+  method?: LiteralUnion<HttpMethod, string> | undefined;
+>method : LiteralUnion<HttpMethod, string> | undefined
+}
+declare const s: string;
+>s : string
+
+export const ky: Options = { method: s };
+>ky : Options
+>{ method: s } : { method: string; }
+>method : string
+>s : string
+
+// The mechanism: an alias applied to a union that already has everything the alias adds.
+type Maybe<T> = T | undefined;
+>Maybe : Maybe<T>
+
+type Handler = Maybe<() => void>;
+>Handler : Handler
+
+namespace N {
+  export type Local = Handler | undefined;
+>Local : Local
+}
+type Wrap<T> = { x: T };
+>Wrap : Wrap<T>
+>x : T
+
+interface G<T> {
+  t: T;
+>t : T
+
+  a: Maybe<Handler>;
+>a : Maybe<Handler>
+
+  b: Maybe<Maybe<{ a: 1 }>>;
+>b : Maybe<Maybe<{ a: 1; }>>
+>a : 1
+
+  c: Maybe<Maybe<Maybe<{ a: 1 }[]>>>;
+>c : Maybe<Maybe<Maybe<{ a: 1; }[]>>>
+>a : 1
+
+  d: Wrap<Maybe<Handler>>;
+>d : Wrap<Maybe<Handler>>
+
+  e: N.Local;
+>e : N.Local
+>N : any
+
+  // Controls, the same in both tools.
+  f: Maybe<Maybe<{ a: T }>>;
+>f : Maybe<Maybe<{ a: T; }>>
+>a : T
+
+  g: Maybe<Maybe<string>>;
+>g : Maybe<Maybe<string>>
+
+  h: { x: Maybe<Handler> };
+>h : { x: Maybe<Handler>; }
+>x : Maybe<Handler>
+}
+declare const g: G<number>;
+>g : G<number>
+
+export const a: 0 = g.a;
+>a : 0
+>g.a : Handler
+>g : G<number>
+>a : Handler
+
+export const b: 0 = g.b;
+>b : 0
+>g.b : Maybe<{ a: 1; }>
+>g : G<number>
+>b : Maybe<{ a: 1; }>
+
+export const c: 0 = g.c;
+>c : 0
+>g.c : Maybe<{ a: 1; }[]>
+>g : G<number>
+>c : Maybe<{ a: 1; }[]>
+
+export const d: 0 = g.d;
+>d : 0
+>g.d : Wrap<Handler>
+>g : G<number>
+>d : Wrap<Handler>
+
+export const e: 0 = g.e;
+>e : 0
+>g.e : Handler
+>g : G<number>
+>e : Handler
+
+export const f: 0 = g.f;
+>f : 0
+>g.f : Maybe<{ a: number; }>
+>g : G<number>
+>f : Maybe<{ a: number; }>
+
+export const g1: 0 = g.g;
+>g1 : 0
+>g.g : Maybe<Maybe<string>>
+>g : G<number>
+>g : Maybe<Maybe<string>>
+
+export const h: 0 = g.h;
+>h : 0
+>g.h : { x: Maybe<Handler>; }
+>g : G<number>
+>h : { x: Maybe<Handler>; }
+
+// A class has a `this` type, so every member whose type node is not "thisless" is instantiated.
+class C {
+>C : C
+
+  a: readonly Maybe<Handler>[] = [];
+>a : readonly Maybe<Handler>[]
+>[] : never[]
+
+  b: [Maybe<Handler>] = [undefined];
+>b : [Maybe<Handler>]
+>[undefined] : [undefined]
+>undefined : undefined
+
+  c: Promise<Maybe<Handler>> | null = null;
+>c : Promise<Maybe<Handler>> | null
+}
+declare const o: C;
+>o : C
+
+o.a = 1;
+>o.a = 1 : 1
+>o.a : readonly Handler[]
+>o : C
+>a : readonly Handler[]
+>1 : 1
+
+o.b = 1;
+>o.b = 1 : 1
+>o.b : [Handler]
+>o : C
+>b : [Handler]
+>1 : 1
+
+o.c = 1;
+>o.c = 1 : 1
+>o.c : Promise<Handler> | null
+>o : C
+>c : Promise<Handler> | null
+>1 : 1
+
+// The signature of a generic function, instantiated by a call.
+declare function ret<T>(t: T): Maybe<Handler>;
+>ret : <T>(t: T) => Maybe<Handler>
+>t : T
+
+declare function par<T>(t: T, m: Maybe<Handler>): void;
+>par : <T>(t: T, m: Maybe<Handler>) => void
+>t : T
+>m : Maybe<Handler>
+
+export const r: 0 = ret(1);
+>r : 0
+>ret(1) : Handler
+>ret : <T>(t: T) => Maybe<Handler>
+>1 : 1
+
+par(1, 1);
+>par(1, 1) : void
+>par : <T>(t: T, m: Maybe<Handler>) => void
+>1 : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

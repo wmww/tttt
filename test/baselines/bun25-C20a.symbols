@@ -1,0 +1,17 @@
+//// [test/cases/bun25-C20a.ts] ////
+
+=== a.js ===
+const [x] = require("./m");
+>x : Symbol(x, Decl(a.js, 0, 7))
+>require : Symbol(require)
+>"./m" : Symbol("./m", Decl(m.js, 0, 0))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 1, 27))
+
+=== m.js ===
+exports.x = 1;
+>exports.x : Symbol(x, Decl(m.js, 0, 0))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>x : Symbol(x, Decl(m.js, 0, 0))
+

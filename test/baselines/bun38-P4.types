@@ -1,0 +1,18 @@
+//// [test/cases/bun38-P4.ts] ////
+
+=== a.ts ===
+import { which } from "self";
+>which : "esm"
+
+export const i: "esm" = which;
+>i : "esm"
+>which : "esm"
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== esm.d.ts ===
+export declare const which: "esm";
+>which : "esm"
+

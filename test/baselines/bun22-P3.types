@@ -1,0 +1,24 @@
+//// [test/cases/bun22-P3.ts] ////
+
+=== a.ts ===
+class K { constructor(x: string | number) {} }
+>K : K
+>x : string | number
+
+class D extends K {}
+>D : D
+>K : K
+
+declare const s: new (x: string) => D;
+>s : new (x: string) => D
+>x : string
+
+const t: typeof D = s;
+>t : typeof D
+>D : typeof D
+>s : new (x: string) => D
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,9 @@
+//// [test/cases/bun43-X6c.ts] ////
+
+=== a.ts ===
+function* g() { yield ? 1 : 2; }
+>g : () => Generator<undefined, void, unknown>
+>yield : any
+>1 : 1
+>2 : 2
+

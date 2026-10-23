@@ -1,0 +1,75 @@
+//// [test/cases/bun99-B5.ts] ////
+
+=== a.ts ===
+declare const k: string | undefined;
+>k : Symbol(k, Decl(a.ts, 0, 13))
+
+declare const o: { p?: string } | undefined;
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>p : Symbol(p, Decl(a.ts, 1, 18))
+
+export const n1: number = ({ [k!]: v }: Record<string, number>) => v;
+>n1 : Symbol(n1, Decl(a.ts, 2, 12))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 2, 28))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 2, 28))
+
+export const n2: number = ({ [k!!]: v }: Record<string, number>) => v;
+>n2 : Symbol(n2, Decl(a.ts, 3, 12))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 3, 28))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 3, 28))
+
+export const n3: number = ({ [k!!!]: v }: Record<string, number>) => v;
+>n3 : Symbol(n3, Decl(a.ts, 4, 12))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 4, 28))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 4, 28))
+
+export const n4: number = ({ [(k!!)!]: v }: Record<string, number>) => v;
+>n4 : Symbol(n4, Decl(a.ts, 5, 12))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 5, 28))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 5, 28))
+
+export const n5: number = ({ [o!!.p!!]: v }: Record<string, number>) => v;
+>n5 : Symbol(n5, Decl(a.ts, 6, 12))
+>o!!.p : Symbol(p, Decl(a.ts, 1, 18))
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>p : Symbol(p, Decl(a.ts, 1, 18))
+>v : Symbol(v, Decl(a.ts, 6, 28))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 6, 28))
+
+export const n6: number = ({ [k! ! /* c */ !]: v }: Record<string, number>) => v;
+>n6 : Symbol(n6, Decl(a.ts, 7, 12))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 7, 28))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 7, 28))
+
+export const n7: number = ([{ [k!!]: v }]: Record<string, number>[]) => v;
+>n7 : Symbol(n7, Decl(a.ts, 8, 12))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 8, 29))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 8, 29))
+
+export function f({ [k!!]: v }: Record<string, number>) { return v; }
+>f : Symbol(f, Decl(a.ts, 8, 74))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 9, 19))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 9, 19))
+
+export const n8: number = f;
+>n8 : Symbol(n8, Decl(a.ts, 10, 12))
+>f : Symbol(f, Decl(a.ts, 8, 74))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

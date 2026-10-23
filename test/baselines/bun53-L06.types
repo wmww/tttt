@@ -1,0 +1,31 @@
+//// [test/cases/bun53-L06.ts] ////
+
+=== a.ts ===
+import { o } from "./u";
+>o : { g(): any; }
+
+export const h = o;
+>h : { g(): any; }
+>o : { g(): any; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+let v;
+>v : any
+
+v = 1;
+>v = 1 : 1
+>v : any
+>1 : 1
+
+=== u.ts ===
+// @ts-nocheck
+export const o = { g() { return v; } };
+>o : { g(): any; }
+>{ g() { return v; } } : { g(): any; }
+>g : () => any
+>v : any
+

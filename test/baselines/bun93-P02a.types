@@ -1,0 +1,18 @@
+//// [test/cases/bun93-P02a.ts] ////
+
+=== a.ts ===
+declare const dec: any, m: any;
+>dec : any
+>m : any
+
+function f() { m(@dec x) }
+>f : () => void
+>m(@dec x) : any
+>m : any
+>dec : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,90 @@
+//// [test/cases/bun59-L20.ts] ////
+
+=== a.ts ===
+const g1 = () => {}; g1.a = "b" as const; g1[k1] = 1; declare const k1: (typeof g1)["a"];
+>g1 : Symbol(g1, Decl(a.ts, 0, 5))
+>g1 : Symbol(g1, Decl(a.ts, 0, 5))
+>const : Symbol(const)
+>g1 : Symbol(g1, Decl(a.ts, 0, 5))
+>k1 : Symbol(k1, Decl(a.ts, 0, 67))
+>k1 : Symbol(k1, Decl(a.ts, 0, 67))
+>g1 : Symbol(g1, Decl(a.ts, 0, 5))
+
+const g2 = function () {}; g2.a = "b" as const; g2[k2] = 1; declare const k2: (typeof g2)["a"];
+>g2 : Symbol(g2, Decl(a.ts, 1, 5))
+>g2 : Symbol(g2, Decl(a.ts, 1, 5))
+>const : Symbol(const)
+>g2 : Symbol(g2, Decl(a.ts, 1, 5))
+>k2 : Symbol(k2, Decl(a.ts, 1, 73))
+>k2 : Symbol(k2, Decl(a.ts, 1, 73))
+>g2 : Symbol(g2, Decl(a.ts, 1, 5))
+
+function g3() {} g3.a = "b" as const; g3[k3] = 1; declare const k3: (typeof g3)["a"];
+>g3 : Symbol(g3, Decl(a.ts, 1, 95))
+>g3.a : Symbol(g3.a, Decl(a.ts, 2, 16))
+>g3 : Symbol(g3, Decl(a.ts, 1, 95))
+>a : Symbol(g3.a, Decl(a.ts, 2, 16))
+>const : Symbol(const)
+>g3 : Symbol(g3, Decl(a.ts, 1, 95))
+>k3 : Symbol(k3, Decl(a.ts, 2, 63))
+>k3 : Symbol(k3, Decl(a.ts, 2, 63))
+>g3 : Symbol(g3, Decl(a.ts, 1, 95))
+
+declare const k4: (typeof g4)["a"]; const g4 = () => {}; g4.a = "b" as const; g4[k4] = 1;
+>k4 : Symbol(k4, Decl(a.ts, 3, 13))
+>g4 : Symbol(g4, Decl(a.ts, 3, 41))
+>g4 : Symbol(g4, Decl(a.ts, 3, 41))
+>g4 : Symbol(g4, Decl(a.ts, 3, 41))
+>const : Symbol(const)
+>g4 : Symbol(g4, Decl(a.ts, 3, 41))
+>k4 : Symbol(k4, Decl(a.ts, 3, 13))
+
+const g5 = () => {}; g5.a = "b" as const; g5[k5] = 1; const k5 = "c"; g5.c;
+>g5 : Symbol(g5, Decl(a.ts, 4, 5))
+>g5.a : Symbol(g5.a, Decl(a.ts, 4, 20))
+>g5 : Symbol(g5, Decl(a.ts, 4, 5))
+>a : Symbol(g5.a, Decl(a.ts, 4, 20))
+>const : Symbol(const)
+>g5 : Symbol(g5, Decl(a.ts, 4, 5))
+>k5 : Symbol(k5, Decl(a.ts, 4, 59))
+>k5 : Symbol(k5, Decl(a.ts, 4, 59))
+>g5.c : Symbol(g5[g5[k5]], Decl(a.ts, 4, 41))
+>g5 : Symbol(g5, Decl(a.ts, 4, 5))
+>c : Symbol(g5[g5[k5]], Decl(a.ts, 4, 41))
+
+const g6 = () => {}; g6.a = "b" as const; g6[k6] = 1; declare const k6: "c"; g6.c; g6.b;
+>g6 : Symbol(g6, Decl(a.ts, 5, 5))
+>g6.a : Symbol(g6.a, Decl(a.ts, 5, 20))
+>g6 : Symbol(g6, Decl(a.ts, 5, 5))
+>a : Symbol(g6.a, Decl(a.ts, 5, 20))
+>const : Symbol(const)
+>g6 : Symbol(g6, Decl(a.ts, 5, 5))
+>k6 : Symbol(k6, Decl(a.ts, 5, 67))
+>k6 : Symbol(k6, Decl(a.ts, 5, 67))
+>g6.c : Symbol(g6[g6[k6]], Decl(a.ts, 5, 41))
+>g6 : Symbol(g6, Decl(a.ts, 5, 5))
+>c : Symbol(g6[g6[k6]], Decl(a.ts, 5, 41))
+>g6 : Symbol(g6, Decl(a.ts, 5, 5))
+
+const g7 = () => {}; g7[k7] = 1; declare const k7: ReturnType<typeof g7> extends void ? "c" : "d"; g7.c;
+>g7 : Symbol(g7, Decl(a.ts, 6, 5))
+>g7 : Symbol(g7, Decl(a.ts, 6, 5))
+>k7 : Symbol(k7, Decl(a.ts, 6, 46))
+>k7 : Symbol(k7, Decl(a.ts, 6, 46))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>g7 : Symbol(g7, Decl(a.ts, 6, 5))
+>g7 : Symbol(g7, Decl(a.ts, 6, 5))
+
+const g8 = () => {}; g8.a = "b" as const; declare const k8: (typeof g8)["a"]; g8[k8] = 1; g8.b;
+>g8 : Symbol(g8, Decl(a.ts, 7, 5))
+>g8 : Symbol(g8, Decl(a.ts, 7, 5))
+>const : Symbol(const)
+>k8 : Symbol(k8, Decl(a.ts, 7, 55))
+>g8 : Symbol(g8, Decl(a.ts, 7, 5))
+>g8 : Symbol(g8, Decl(a.ts, 7, 5))
+>k8 : Symbol(k8, Decl(a.ts, 7, 55))
+>g8 : Symbol(g8, Decl(a.ts, 7, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

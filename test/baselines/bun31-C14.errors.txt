@@ -1,0 +1,14 @@
+a.ts(1,33): error TS2304: Cannot find name 'ClassPara'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class M<ClassParam> { static b: ClassPara; }
+                                    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'ClassPara'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

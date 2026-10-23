@@ -1,0 +1,73 @@
+//// [test/cases/bun52-L17.ts] ////
+
+=== a.ts ===
+function entries<T>(t: T) {
+>entries : Symbol(entries, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 17))
+>t : Symbol(t, Decl(a.ts, 0, 20))
+>T : Symbol(T, Decl(a.ts, 0, 17))
+
+  if (t === null || t === undefined) return;
+>t : Symbol(t, Decl(a.ts, 0, 20))
+>t : Symbol(t, Decl(a.ts, 0, 20))
+>undefined : Symbol(undefined)
+
+  for (const [k, v] of Object.entries(t)) v.foo;
+>k : Symbol(k, Decl(a.ts, 2, 14))
+>v : Symbol(v, Decl(a.ts, 2, 16))
+>Object.entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>t : Symbol(t, Decl(a.ts, 0, 20))
+>v : Symbol(v, Decl(a.ts, 2, 16))
+}
+function record<T>(t: T) {
+>record : Symbol(record, Decl(a.ts, 3, 1))
+>T : Symbol(T, Decl(a.ts, 4, 16))
+>t : Symbol(t, Decl(a.ts, 4, 19))
+>T : Symbol(T, Decl(a.ts, 4, 16))
+
+  if (t === undefined || t === null) return;
+>t : Symbol(t, Decl(a.ts, 4, 19))
+>undefined : Symbol(undefined)
+>t : Symbol(t, Decl(a.ts, 4, 19))
+
+  const r: Record<string, unknown> = t;
+>r : Symbol(r, Decl(a.ts, 6, 7))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>t : Symbol(t, Decl(a.ts, 4, 19))
+}
+function both<T>(t: T) { if (t === null) throw 0; if (t === undefined) throw 0; return t; }
+>both : Symbol(both, Decl(a.ts, 7, 1))
+>T : Symbol(T, Decl(a.ts, 8, 14))
+>t : Symbol(t, Decl(a.ts, 8, 17))
+>T : Symbol(T, Decl(a.ts, 8, 14))
+>t : Symbol(t, Decl(a.ts, 8, 17))
+>t : Symbol(t, Decl(a.ts, 8, 17))
+>undefined : Symbol(undefined)
+>t : Symbol(t, Decl(a.ts, 8, 17))
+
+const y = both(null! as unknown);
+>y : Symbol(y, Decl(a.ts, 9, 5))
+>both : Symbol(both, Decl(a.ts, 7, 1))
+
+const r: { [k: string]: number } = y;
+>r : Symbol(r, Decl(a.ts, 10, 5))
+>k : Symbol(k, Decl(a.ts, 10, 12))
+>y : Symbol(y, Decl(a.ts, 9, 5))
+
+const { ...rest } = {}; const stays1: { [k: string]: number } = rest;
+>rest : Symbol(rest, Decl(a.ts, 11, 7))
+>stays1 : Symbol(stays1, Decl(a.ts, 11, 29))
+>k : Symbol(k, Decl(a.ts, 11, 41))
+>rest : Symbol(rest, Decl(a.ts, 11, 7))
+
+const spread = { ...{} }; const stays2: { [k: string]: number } = spread;
+>spread : Symbol(spread, Decl(a.ts, 12, 5))
+>stays2 : Symbol(stays2, Decl(a.ts, 12, 31))
+>k : Symbol(k, Decl(a.ts, 12, 43))
+>spread : Symbol(spread, Decl(a.ts, 12, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+

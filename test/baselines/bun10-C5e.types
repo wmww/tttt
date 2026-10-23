@@ -1,0 +1,47 @@
+//// [test/cases/bun10-C5e.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== ii.js ===
+const { J } = require("./jj");
+>J : typeof J
+>require("./jj") : typeof import("./jj")
+>require : any
+>"./jj" : "./jj"
+
+class I extends J {}
+>I : I
+>J : typeof J
+
+module.exports.I = I;
+>module.exports.I = I : typeof I
+>module.exports.I : typeof I
+>module.exports : typeof import("./ii")
+>module : { exports: typeof import("./ii"); }
+>exports : typeof import("./ii")
+>I : typeof I
+>I : typeof I
+
+=== jj.js ===
+const { I } = require("./ii");
+>I : typeof I
+>require("./ii") : typeof import("./ii")
+>require : any
+>"./ii" : "./ii"
+
+class J extends I {}
+>J : J
+>I : typeof I
+
+module.exports.J = J;
+>module.exports.J = J : typeof J
+>module.exports.J : typeof J
+>module.exports : typeof import("./jj")
+>module : { exports: typeof import("./jj"); }
+>exports : typeof import("./jj")
+>J : typeof J
+>J : typeof J
+

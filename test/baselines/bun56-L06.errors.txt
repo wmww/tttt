@@ -1,0 +1,133 @@
+lt1.tsx(1,8): error TS1005: '{' expected.
+lt1.tsx(1,10): error TS2304: Cannot find name 'T'.
+lt2.tsx(1,10): error TS2394: This overload signature is not compatible with its implementation signature.
+lt2.tsx(1,10): error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+lt2.tsx(1,11): error TS1005: '(' expected.
+lt2.tsx(1,13): error TS2304: Cannot find name 'T'.
+lt2.tsx(1,16): error TS1109: Expression expected.
+lt2.tsx(1,18): error TS1005: ';' expected.
+lt3.tsx(1,7): error TS1005: '=' expected.
+lt3.tsx(1,9): error TS2304: Cannot find name 'T'.
+lt3.tsx(1,12): error TS1109: Expression expected.
+lt4.tsx(1,15): error TS1131: Property or signature expected.
+lt4.tsx(1,17): error TS1131: Property or signature expected.
+lt4.tsx(1,17): error TS2304: Cannot find name 'T'.
+lt4.tsx(1,20): error TS1109: Expression expected.
+lt4.tsx(1,21): error TS1005: ';' expected.
+lt4.tsx(1,28): error TS1109: Expression expected.
+lt5.tsx(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+lt5.tsx(1,8): error TS2314: Generic type 'Array<T>' requires 1 type argument(s).
+lt5.tsx(1,13): error TS1005: ',' expected.
+lt5.tsx(1,21): error TS1005: ',' expected.
+lt5.tsx(1,22): error TS1109: Expression expected.
+lt6.tsx(1,5): error TS2451: Cannot redeclare block-scoped variable 'x'.
+lt6.tsx(1,9): error TS1110: Type expected.
+lt6.tsx(1,11): error TS2552: Cannot find name 'a'. Did you mean 'A'?
+lt7.tsx(1,12): error TS1138: Parameter declaration expected.
+lt7.tsx(1,14): error TS7006: Parameter 'a' implicitly has an 'any' type.
+lt8.tsx(1,11): error TS1434: Unexpected keyword or identifier.
+lt8.tsx(1,11): error TS7008: Member 'm' implicitly has an 'any' type.
+lt8.tsx(1,12): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+lt8.tsx(1,14): error TS1434: Unexpected keyword or identifier.
+lt8.tsx(1,14): error TS7008: Member 'T' implicitly has an 'any' type.
+lt8.tsx(1,15): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+lt8.tsx(1,17): error TS1109: Expression expected.
+lt8.tsx(1,19): error TS1005: ';' expected.
+lt8.tsx(1,22): error TS1128: Declaration or statement expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== lt1.tsx (2 errors) ====
+    class A</T> {}
+           ~~
+!!! error TS1005: '{' expected.
+             ~
+!!! error TS2304: Cannot find name 'T'.
+==== lt2.tsx (6 errors) ====
+    function f</T>() {}
+             ~
+!!! error TS2394: This overload signature is not compatible with its implementation signature.
+!!! related TS2750 lt7.tsx:1:10: The implementation signature is declared here.
+             ~
+!!! error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+              ~~
+!!! error TS1005: '(' expected.
+                ~
+!!! error TS2304: Cannot find name 'T'.
+                   ~
+!!! error TS1109: Expression expected.
+                     ~
+!!! error TS1005: ';' expected.
+==== lt3.tsx (3 errors) ====
+    type X</T> = 1
+          ~~
+!!! error TS1005: '=' expected.
+            ~
+!!! error TS2304: Cannot find name 'T'.
+               ~
+!!! error TS1109: Expression expected.
+==== lt4.tsx (6 errors) ====
+    interface I { </T>(): void }
+                  ~~
+!!! error TS1131: Property or signature expected.
+                    ~
+!!! error TS1131: Property or signature expected.
+                    ~
+!!! error TS2304: Cannot find name 'T'.
+                       ~
+!!! error TS1109: Expression expected.
+                        ~
+!!! error TS1005: ';' expected.
+                               ~
+!!! error TS1109: Expression expected.
+==== lt5.tsx (5 errors) ====
+    let x: Array</number>
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 lt6.tsx:1:5: 'x' was also declared here.
+           ~~~~~
+!!! error TS2314: Generic type 'Array<T>' requires 1 type argument(s).
+                ~~
+!!! error TS1005: ',' expected.
+                        ~
+!!! error TS1005: ',' expected.
+                         
+!!! error TS1109: Expression expected.
+==== lt6.tsx (3 errors) ====
+    let x: [</a]
+        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'x'.
+!!! related TS6203 lt5.tsx:1:5: 'x' was also declared here.
+            ~~
+!!! error TS1110: Type expected.
+              ~
+!!! error TS2552: Cannot find name 'a'. Did you mean 'A'?
+!!! related TS2728 lt1.tsx:1:7: 'A' is declared here.
+==== lt7.tsx (2 errors) ====
+    function f(</a) {}
+               ~~
+!!! error TS1138: Parameter declaration expected.
+                 ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+==== lt8.tsx (9 errors) ====
+    class C { m</T>() {} }
+              ~
+!!! error TS1434: Unexpected keyword or identifier.
+              ~
+!!! error TS7008: Member 'm' implicitly has an 'any' type.
+               ~~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+                 ~
+!!! error TS1434: Unexpected keyword or identifier.
+                 ~
+!!! error TS7008: Member 'T' implicitly has an 'any' type.
+                  ~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+                    ~
+!!! error TS1109: Expression expected.
+                      ~
+!!! error TS1005: ';' expected.
+                         ~
+!!! error TS1128: Declaration or statement expected.
+    

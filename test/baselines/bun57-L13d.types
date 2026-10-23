@@ -1,0 +1,47 @@
+//// [test/cases/bun57-L13d.ts] ////
+
+=== a.ts ===
+interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+declare class Array<T> { filter<S extends T>(f: (x: T) => x is S): S[]; filter(f: (x: T) => unknown): T[] }
+>Array : T[]
+>filter : { <S extends T>(f: (x: T) => x is S): S[]; (f: (x: T) => unknown): T[]; }
+>f : (x: T) => x is S
+>x : T
+>filter : { <S extends T>(f: (x: T) => x is S): S[]; (f: (x: T) => unknown): T[]; }
+>f : (x: T) => unknown
+>x : T
+
+declare const u: string[] | number[];
+>u : string[] | number[]
+
+const r1 = u.filter(x => true); const t1: 1 = r1;
+>r1 : (string | number)[]
+>u.filter(x => true) : (string | number)[]
+>u.filter : { <S extends string>(f: (x: string) => x is S): S[]; (f: (x: string) => unknown): string[]; } | { <S extends number>(f: (x: number) => x is S): S[]; (f: (x: number) => unknown): number[]; }
+>u : string[] | number[]
+>filter : { <S extends string>(f: (x: string) => x is S): S[]; (f: (x: string) => unknown): string[]; } | { <S extends number>(f: (x: number) => x is S): S[]; (f: (x: number) => unknown): number[]; }
+>x => true : (x: string | number) => true
+>x : string | number
+>true : true
+>t1 : 1
+>r1 : (string | number)[]
+
+declare const v: readonly string[] | number[];
+>v : string[] | number[]
+
+const r2 = v.filter(x => true); const t2: 1 = r2;
+>r2 : (string | number)[]
+>v.filter(x => true) : (string | number)[]
+>v.filter : { <S extends string>(f: (x: string) => x is S): S[]; (f: (x: string) => unknown): string[]; } | { <S extends number>(f: (x: number) => x is S): S[]; (f: (x: number) => unknown): number[]; }
+>v : string[] | number[]
+>filter : { <S extends string>(f: (x: string) => x is S): S[]; (f: (x: string) => unknown): string[]; } | { <S extends number>(f: (x: number) => x is S): S[]; (f: (x: number) => unknown): number[]; }
+>x => true : (x: string | number) => true
+>x : string | number
+>true : true
+>t2 : 1
+>r2 : (string | number)[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

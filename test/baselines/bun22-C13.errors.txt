@@ -1,0 +1,16 @@
+a.ts(3,4): error TS2345: Argument of type '"1.0"' is not assignable to parameter of type '"1"'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    enum E { A = 1, B = 2 }
+    declare function f1<T extends E>(x: `${T}`): T;
+    f1("1.0");
+       ~~~~~
+!!! error TS2345: Argument of type '"1.0"' is not assignable to parameter of type '"1"'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,86 @@
+//// [test/cases/bun52-L17.ts] ////
+
+=== a.ts ===
+function entries<T>(t: T) {
+>entries : <T>(t: T) => void
+>t : T
+
+  if (t === null || t === undefined) return;
+>t === null || t === undefined : boolean
+>t === null : boolean
+>t : T
+>t === undefined : boolean
+>t : T & ({} | undefined)
+>undefined : undefined
+
+  for (const [k, v] of Object.entries(t)) v.foo;
+>k : string
+>v : any
+>Object.entries(t) : [string, any][]
+>Object.entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>Object : ObjectConstructor
+>entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>t : T & {}
+>v.foo : any
+>v : any
+>foo : any
+}
+function record<T>(t: T) {
+>record : <T>(t: T) => void
+>t : T
+
+  if (t === undefined || t === null) return;
+>t === undefined || t === null : boolean
+>t === undefined : boolean
+>t : T
+>undefined : undefined
+>t === null : boolean
+>t : T & ({} | null)
+
+  const r: Record<string, unknown> = t;
+>r : Record<string, unknown>
+>t : T & {}
+}
+function both<T>(t: T) { if (t === null) throw 0; if (t === undefined) throw 0; return t; }
+>both : <T>(t: T) => T & {}
+>t : T
+>t === null : boolean
+>t : T
+>0 : 0
+>t === undefined : boolean
+>t : T & ({} | undefined)
+>undefined : undefined
+>0 : 0
+>t : T & {}
+
+const y = both(null! as unknown);
+>y : {}
+>both(null! as unknown) : {}
+>both : <T>(t: T) => T & {}
+>null! as unknown : unknown
+>null! : never
+
+const r: { [k: string]: number } = y;
+>r : { [k: string]: number; }
+>k : string
+>y : {}
+
+const { ...rest } = {}; const stays1: { [k: string]: number } = rest;
+>rest : {}
+>{} : {}
+>stays1 : { [k: string]: number; }
+>k : string
+>rest : {}
+
+const spread = { ...{} }; const stays2: { [k: string]: number } = spread;
+>spread : {}
+>{ ...{} } : {}
+>{} : {}
+>stays2 : { [k: string]: number; }
+>k : string
+>spread : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

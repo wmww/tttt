@@ -1,0 +1,32 @@
+//// [test/cases/bun71-R04c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; call: { (): void; x?: number } } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 44))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>call : Symbol(IntrinsicElements.call, Decl(a.tsx, 0, 83))
+>x : Symbol(x, Decl(a.tsx, 0, 101))
+
+declare function use(...x: any[]): void;
+>use : Symbol(use, Decl(a.tsx, 0, 118))
+>x : Symbol(x, Decl(a.tsx, 1, 21))
+
+declare const ie: JSX.IntrinsicElements;
+>ie : Symbol(ie, Decl(a.tsx, 2, 13))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(a.tsx, 0, 44))
+
+use(ie.call && <div><call /></div>);
+>use : Symbol(use, Decl(a.tsx, 0, 118))
+>ie.call : Symbol(JSX.IntrinsicElements.call, Decl(a.tsx, 0, 83))
+>ie : Symbol(ie, Decl(a.tsx, 2, 13))
+>call : Symbol(JSX.IntrinsicElements.call, Decl(a.tsx, 0, 83))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>call : Symbol(JSX.IntrinsicElements.call, Decl(a.tsx, 0, 83))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 4, 5))
+

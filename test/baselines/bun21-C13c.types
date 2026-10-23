@@ -1,0 +1,21 @@
+//// [test/cases/bun21-C13c.ts] ////
+
+=== a.ts ===
+function f(x: number | undefined, v: [number]) { [x!] = v; x.toFixed(); }
+>f : (x: number | undefined, v: [number]) => void
+>x : number | undefined
+>v : [number]
+>[x!] = v : [number]
+>[x!] : [number]
+>x! : number
+>x : number | undefined
+>v : [number]
+>x.toFixed() : string
+>x.toFixed : (fractionDigits?: number) => string
+>x : number
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

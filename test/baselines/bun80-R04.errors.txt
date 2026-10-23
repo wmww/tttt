@@ -1,0 +1,43 @@
+a.ts(1,1): error TS1120: An export assignment cannot have modifiers.
+a.ts(1,24): error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+a.ts(1,31): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(1,44): error TS1036: Statements are not allowed in ambient contexts.
+a.ts(2,19): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(2,25): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(2,29): error TS1036: Statements are not allowed in ambient contexts.
+a.ts(3,22): error TS1066: In ambient enum declarations member initializer must be constant expression.
+a.ts(3,29): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(3,40): error TS1036: Statements are not allowed in ambient contexts.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (11 errors) ====
+    declare export default (() => { for (;;) { break; } })();
+    ~~~~~~~
+!!! error TS1120: An export assignment cannot have modifiers.
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+                                  ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                               ~~~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+    declare const c = () => { { 1; } };
+                      ~~~~~~~~~~~~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+                            ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                ~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+    declare enum E { A = (() => { if (1) { 1; } return 1 })() }
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1066: In ambient enum declarations member initializer must be constant expression.
+                                ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                           ~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

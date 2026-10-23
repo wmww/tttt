@@ -1,0 +1,25 @@
+//// [test/cases/bun19-C6b.ts] ////
+
+=== a.ts ===
+declare const Ctor: new () => [number, string];
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 13))
+
+function f(x: [string, number] | Date) {
+>f : Symbol(f, Decl(a.ts, 0, 47))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>Date : Symbol(Date, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2020.date.d.ts, --, --))
+
+  if (x instanceof Ctor) return x[0];
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>0 : Symbol(0)
+
+  return x.getTime();
+>x.getTime : Symbol(Date.getTime, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>getTime : Symbol(Date.getTime, Decl(lib.es5.d.ts, --, --))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

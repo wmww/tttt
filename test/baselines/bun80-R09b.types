@@ -1,0 +1,18 @@
+//// [test/cases/bun80-R09b.ts] ////
+
+=== a.js ===
+const v1 = { m() };
+>v1 : { m(): any; }
+>{ m() } : { m(): any; }
+>m : () => any
+
+const v2 = { get a() };
+>v2 : { readonly a: any; }
+>{ get a() } : { readonly a: any; }
+>a : any
+
+const v3 = { async n() };
+>v3 : { n(): any; }
+>{ async n() } : { n(): any; }
+>n : () => any
+

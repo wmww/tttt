@@ -1,0 +1,35 @@
+//// [test/cases/bun42-P4.ts] ////
+
+=== a.ts ===
+import { mk } from "outer";
+>mk : Symbol(mk, Decl(a.ts, 0, 8))
+
+export const v = mk();
+>v : Symbol(v, Decl(a.ts, 1, 12))
+>mk : Symbol(mk, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/outer/index.d.ts ===
+import { T } from "Binner";
+>T : Symbol(T, Decl(index.d.ts, 0, 8))
+
+import { T as T2 } from "ainner";
+>T : Symbol(T, Decl(index.d.ts, 0, 0))
+>T2 : Symbol(T2, Decl(index.d.ts, 1, 8))
+
+export declare function mk(): T;
+>mk : Symbol(mk, Decl(index.d.ts, 1, 33))
+>T : Symbol(T, Decl(index.d.ts, 0, 8))
+
+=== node_modules/outer/node_modules/Binner/index.d.ts ===
+export interface T { t: 1 }
+>T : Symbol(T, Decl(index.d.ts, 0, 0))
+>t : Symbol(T.t, Decl(index.d.ts, 0, 20))
+
+=== node_modules/outer/node_modules/ainner/index.d.ts ===
+export interface T { t: 1 }
+>T : Symbol(T, Decl(index.d.ts, 0, 0))
+>t : Symbol(T.t, Decl(index.d.ts, 0, 20))
+

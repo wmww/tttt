@@ -1,0 +1,19 @@
+//// [test/cases/bun39-P7.ts] ////
+
+=== x.ts ===
+import './y';
+export class C { private x = 1 }
+>C : Symbol(C, Decl(x.ts, 0, 13))
+>x : Symbol(C.x, Decl(x.ts, 1, 16))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(x.ts, 2, 12))
+
+=== y.ts ===
+import { C } from './x';
+>C : Symbol(C, Decl(y.ts, 0, 8))
+
+new C()["x"];
+>C : Symbol(C, Decl(y.ts, 0, 8))
+>"x" : Symbol(C.x, Decl(x.ts, 1, 16))
+

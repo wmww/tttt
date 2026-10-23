@@ -1,0 +1,18 @@
+a.ts(1,13): error TS2502: 'h' is referenced directly or indirectly in its own type annotation.
+a.ts(2,10): error TS7023: 'k' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare let h: ReturnType<typeof k>;
+                ~
+!!! error TS2502: 'h' is referenced directly or indirectly in its own type annotation.
+    function k(p: () => void) { h(); return p; }
+             ~
+!!! error TS7023: 'k' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

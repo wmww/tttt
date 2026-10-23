@@ -1,0 +1,25 @@
+//// [test/cases/bun32-C4.ts] ////
+
+=== a.ts ===
+declare const x: { f(): void };
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+
+(0, (x.f))();
+>x.f : Symbol(f, Decl(a.ts, 0, 18))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+
+((0), x.f)();
+>x.f : Symbol(f, Decl(a.ts, 0, 18))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+
+((0, x.f))();
+>x.f : Symbol(f, Decl(a.ts, 0, 18))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

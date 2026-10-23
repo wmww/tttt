@@ -1,0 +1,146 @@
+//// [test/cases/bun99-G1.ts] ////
+
+=== case.ts ===
+export type A = globalThis.ErrorConstructor;
+>A : Symbol(A, Decl(case.ts, 0, 0))
+>globalThis : Symbol(globalThis)
+>ErrorConstructor : Symbol(ErrorConstructor, Decl(lib.es5.d.ts, --, --), Decl(lib.es2022.error.d.ts, --, --), Decl(lib.es2026.error.d.ts, --, --))
+
+export type B = globalThis.Console;
+>B : Symbol(B, Decl(case.ts, 0, 44))
+>globalThis : Symbol(globalThis)
+>Console : Symbol(Console, Decl(n.d.ts, 5, 12))
+
+export type C = globalThis.console.Options;
+>C : Symbol(C, Decl(case.ts, 1, 35))
+>globalThis : Symbol(globalThis)
+>console : Symbol(c, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11), Decl(o.d.ts, 0, 10))
+>Options : Symbol(c.Options, Decl(n.d.ts, 7, 27))
+
+export const d: never = globalThis.console;
+>d : Symbol(d, Decl(case.ts, 3, 12))
+>globalThis.console : Symbol(c, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11))
+>globalThis : Symbol(globalThis)
+>console : Symbol(c, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11))
+
+import c = require("console");
+>c : Symbol(c, Decl(case.ts, 3, 43))
+
+export const e: never = c;
+>e : Symbol(e, Decl(case.ts, 5, 12))
+>c : Symbol(c, Decl(case.ts, 3, 43))
+
+export type F = c.Console;
+>F : Symbol(F, Decl(case.ts, 5, 26))
+>c : Symbol(c, Decl(case.ts, 3, 43))
+>Console : Symbol(c.Console, Decl(o.d.ts, 1, 26))
+
+export type G = c.Options;
+>G : Symbol(G, Decl(case.ts, 6, 26))
+>c : Symbol(c, Decl(case.ts, 3, 43))
+>Options : Symbol(c.Options, Decl(n.d.ts, 7, 27))
+
+export type H = globalThis.Later;
+>H : Symbol(H, Decl(case.ts, 7, 26))
+>globalThis : Symbol(globalThis)
+>Later : Symbol(Later, Decl(o.d.ts, 4, 16))
+
+export type I = globalThis.LaterNs.T;
+>I : Symbol(I, Decl(case.ts, 8, 33))
+>globalThis : Symbol(globalThis)
+>LaterNs : Symbol(LaterNs, Decl(o.d.ts, 4, 59))
+>T : Symbol(LaterNs.T, Decl(o.d.ts, 4, 79))
+
+export const j: never = globalThis.later;
+>j : Symbol(j, Decl(case.ts, 10, 12))
+>globalThis.later : Symbol(later, Decl(o.d.ts, 4, 45))
+>globalThis : Symbol(globalThis)
+>later : Symbol(later, Decl(o.d.ts, 4, 45))
+
+export interface Extended extends globalThis.Later { z?: 1 }
+>Extended : Symbol(Extended, Decl(case.ts, 10, 41))
+>globalThis.Later : Symbol(Later, Decl(o.d.ts, 4, 16))
+>globalThis : Symbol(globalThis)
+>Later : Symbol(Later, Decl(o.d.ts, 4, 16))
+>z : Symbol(Extended.z, Decl(case.ts, 11, 52))
+
+export const k: Extended = { l: 1 };
+>k : Symbol(k, Decl(case.ts, 12, 12))
+>Extended : Symbol(Extended, Decl(case.ts, 10, 41))
+>l : Symbol(l, Decl(case.ts, 12, 28))
+
+type Return = ReturnType<any[][typeof Symbol.iterator]> extends globalThis.Iterator<any, infer R> ? R : any;
+>Return : Symbol(Return, Decl(case.ts, 12, 36))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>globalThis : Symbol(globalThis)
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2025.iterator.d.ts, --, --))
+>R : Symbol(R, Decl(case.ts, 13, 94))
+>R : Symbol(R, Decl(case.ts, 13, 94))
+
+export const probe: [Return] extends [undefined] ? true : false = true;
+>probe : Symbol(probe, Decl(case.ts, 14, 12))
+>Return : Symbol(Return, Decl(case.ts, 12, 36))
+
+export type L = globalThis.NoSuchType;
+>L : Symbol(L, Decl(case.ts, 14, 71))
+>globalThis : Symbol(globalThis)
+>NoSuchType : Symbol(globalThis.NoSuchType)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(case.ts, 16, 5))
+
+=== n.d.ts ===
+declare module "console" {
+>"console" : Symbol("console", Decl(n.d.ts, 0, 0))
+
+    import console = require("node:console");
+>console : Symbol(console, Decl(n.d.ts, 0, 26))
+
+    export = console;
+>console : Symbol(console, Decl(n.d.ts, 0, 26))
+}
+declare module "node:console" {
+>"node:console" : Symbol("node:console", Decl(n.d.ts, 3, 1))
+
+    global {
+>global : Symbol(global, Decl(n.d.ts, 4, 31))
+
+        interface Console { log(): void }
+>Console : Symbol(Console, Decl(n.d.ts, 5, 12))
+>log : Symbol(Console.log, Decl(n.d.ts, 6, 27))
+
+        namespace console { interface Options { a?: 1 } }
+>console : Symbol(console, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11), Decl(o.d.ts, 0, 10))
+>Options : Symbol(Options, Decl(n.d.ts, 7, 27))
+>a : Symbol(Options.a, Decl(n.d.ts, 7, 47))
+
+        var console: Console;
+>console : Symbol(console, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11), Decl(o.d.ts, 0, 10))
+>Console : Symbol(Console, Decl(n.d.ts, 5, 12))
+    }
+    export = globalThis.console;
+>globalThis.console : Symbol(console, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11), Decl(o.d.ts, 0, 10))
+>globalThis : Symbol(globalThis)
+>console : Symbol(console, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11))
+}
+=== o.d.ts ===
+export {};
+declare module "console" {
+>"console" : Symbol(console, Decl(n.d.ts, 6, 41), Decl(n.d.ts, 8, 11), Decl(o.d.ts, 0, 10))
+
+  interface Console { extra(): void }
+>Console : Symbol(Console, Decl(o.d.ts, 1, 26))
+>extra : Symbol(Console.extra, Decl(o.d.ts, 2, 21))
+}
+declare global { interface Later { l: 1 } var later: Later; namespace LaterNs { type T = 1 } }
+>global : Symbol(global, Decl(o.d.ts, 3, 1))
+>Later : Symbol(Later, Decl(o.d.ts, 4, 16))
+>l : Symbol(Later.l, Decl(o.d.ts, 4, 34))
+>later : Symbol(later, Decl(o.d.ts, 4, 45))
+>Later : Symbol(Later, Decl(o.d.ts, 4, 16))
+>LaterNs : Symbol(LaterNs, Decl(o.d.ts, 4, 59))
+>T : Symbol(T, Decl(o.d.ts, 4, 79))
+

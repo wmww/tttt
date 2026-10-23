@@ -1,0 +1,21 @@
+a.ts(3,1): error TS7053: Element implicitly has an 'any' type because expression of type '"aa" | "ro"' can't be used to index type '{ readonly ro: number; rw: number; }'.
+  Property 'aa' does not exist on type '{ readonly ro: number; rw: number; }'.
+a.ts(3,3): error TS2540: Cannot assign to 'ro' because it is a read-only property.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const o: { readonly ro: number; rw: number };
+    declare const k1: "aa" | "ro";
+    o[k1] = 1;
+    ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"aa" | "ro"' can't be used to index type '{ readonly ro: number; rw: number; }'.
+!!! error TS7053:   Property 'aa' does not exist on type '{ readonly ro: number; rw: number; }'.
+      ~~
+!!! error TS2540: Cannot assign to 'ro' because it is a read-only property.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

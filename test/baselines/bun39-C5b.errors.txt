@@ -1,0 +1,19 @@
+a.ts(1,10): error TS2303: Circular definition of import alias 'A2'.
+a.ts(3,7): error TS2506: 'A' is referenced directly or indirectly in its own base expression.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export { A as A2 };
+             ~~~~~~~
+!!! error TS2303: Circular definition of import alias 'A2'.
+    import { A2 as A3 } from './a';
+    class A extends A3 {}
+          ~
+!!! error TS2506: 'A' is referenced directly or indirectly in its own base expression.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,39 @@
+//// [test/cases/bun04-C3b.ts] ////
+
+=== a.ts ===
+export {};
+interface BadP { then(cb: (v: BadP) => void): void }
+>BadP : Symbol(BadP, Decl(a.ts, 0, 10))
+>then : Symbol(BadP.then, Decl(a.ts, 1, 16))
+>cb : Symbol(cb, Decl(a.ts, 1, 22))
+>v : Symbol(v, Decl(a.ts, 1, 27))
+>BadP : Symbol(BadP, Decl(a.ts, 0, 10))
+
+interface NoCb { then(): void }
+>NoCb : Symbol(NoCb, Decl(a.ts, 1, 52))
+>then : Symbol(NoCb.then, Decl(a.ts, 2, 16))
+
+declare const bp: BadP, nc: NoCb, ai: AsyncIterable<NoCb>;
+>bp : Symbol(bp, Decl(a.ts, 3, 13))
+>BadP : Symbol(BadP, Decl(a.ts, 0, 10))
+>nc : Symbol(nc, Decl(a.ts, 3, 23))
+>NoCb : Symbol(NoCb, Decl(a.ts, 1, 52))
+>ai : Symbol(ai, Decl(a.ts, 3, 33))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>NoCb : Symbol(NoCb, Decl(a.ts, 1, 52))
+
+async function* g1() { yield bp; }
+>g1 : Symbol(g1, Decl(a.ts, 3, 58))
+>bp : Symbol(bp, Decl(a.ts, 3, 13))
+
+async function* g2() { yield nc; }
+>g2 : Symbol(g2, Decl(a.ts, 4, 34))
+>nc : Symbol(nc, Decl(a.ts, 3, 23))
+
+async function* g3() { yield* ai; }
+>g3 : Symbol(g3, Decl(a.ts, 5, 34))
+>ai : Symbol(ai, Decl(a.ts, 3, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

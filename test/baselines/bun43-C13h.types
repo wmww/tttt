@@ -1,0 +1,14 @@
+//// [test/cases/bun43-C13h.ts] ////
+
+=== a.tsx ===
+var v = <a b="\"" />;
+>v : any
+><a b="\" : any
+>a : any
+>b : string
+>" />; : " />;"
+
+var w = 1;
+>w : number
+>1 : 1
+

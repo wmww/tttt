@@ -1,0 +1,15 @@
+//// [test/cases/bun93-P04c.ts] ////
+
+=== a.tsx ===
+var v = (<a><c<<T>()=>void> x="1"/></a>);
+>v : any
+>(<a><c<<T>()=>void> x="1"/></a>) : any
+><a><c<<T>()=>void> x="1"/></a> : any
+>a : any
+><c : any
+>c : any
+><<T>()=>void> x="1"/> : any
+> : any
+>x : string
+>a : any
+

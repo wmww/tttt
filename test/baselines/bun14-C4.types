@@ -1,0 +1,18 @@
+//// [test/cases/bun14-C4.ts] ////
+
+=== a.ts ===
+function f<T extends Record<string, number>>(t: T, s: string) {
+>f : <T extends Record<string, number>>(t: T, s: string) => void
+>t : T
+>s : string
+
+  t[s]++;
+>t[s]++ : number
+>t[s] : any
+>t : T
+>s : string
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,12 @@
+//// [test/cases/bun33-C5f.ts] ////
+
+=== a.ts ===
+interface G<T> {}
+interface X extends G<number>.x {}
+>G<number> : any
+>G : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

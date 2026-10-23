@@ -1,0 +1,15 @@
+a.ts(2,26): error TS2322: Type 'number' is not assignable to type 'C1<T>'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type C1<T> = T extends T[] ? number : number;
+    function g<T>(x: number, y: C1<T> = x) {}
+                             ~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'C1<T>'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

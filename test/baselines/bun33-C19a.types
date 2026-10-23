@@ -1,0 +1,12 @@
+//// [test/cases/bun33-C19a.ts] ////
+
+=== a.ts ===
+class P { #x = !#x }
+>P : P
+>#x : boolean
+>!#x : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

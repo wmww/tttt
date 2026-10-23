@@ -1,0 +1,11 @@
+//// [test/cases/bun02-C3.ts] ////
+
+=== a.ts ===
+function r1<T>(...a: T extends string ? number : string) {}
+>r1 : <T>(...a: T extends string ? number : string) => void
+>a : T extends string ? number : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

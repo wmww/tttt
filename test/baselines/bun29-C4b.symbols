@@ -1,0 +1,30 @@
+//// [test/cases/bun29-C4b.ts] ////
+
+=== a.ts ===
+namespace G1 { export enum E { N = -0, M = 1 } }
+>G1 : Symbol(G1, Decl(a.ts, 0, 0))
+>E : Symbol(E, Decl(a.ts, 0, 14))
+>N : Symbol(E.N, Decl(a.ts, 0, 30))
+>M : Symbol(E.M, Decl(a.ts, 0, 38))
+
+namespace G2 { export enum E { N = 0, M = 1 } }
+>G2 : Symbol(G2, Decl(a.ts, 0, 48))
+>E : Symbol(E, Decl(a.ts, 1, 14))
+>N : Symbol(E.N, Decl(a.ts, 1, 30))
+>M : Symbol(E.M, Decl(a.ts, 1, 37))
+
+declare let g1: G1.E, g2: G2.E;
+>g1 : Symbol(g1, Decl(a.ts, 2, 11))
+>G1 : Symbol(G1, Decl(a.ts, 0, 0))
+>E : Symbol(G1.E, Decl(a.ts, 0, 14))
+>g2 : Symbol(g2, Decl(a.ts, 2, 21))
+>G2 : Symbol(G2, Decl(a.ts, 0, 48))
+>E : Symbol(G2.E, Decl(a.ts, 1, 14))
+
+g1 = g2;
+>g1 : Symbol(g1, Decl(a.ts, 2, 11))
+>g2 : Symbol(g2, Decl(a.ts, 2, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

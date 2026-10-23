@@ -1,0 +1,14 @@
+//// [test/cases/bun24-C13b.ts] ////
+
+=== a.ts ===
+const b: 1 = null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { [Symbol.iterator]: 0 }, { a: 1 }];
+>b : Symbol(b, Decl(a.ts, 0, 5))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 0, 149))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 0, 175))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

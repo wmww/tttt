@@ -1,0 +1,18 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(2,23): error TS2440: Import declaration conflicts with local declaration of 'x'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["b.ts", "a.ts"] }
+==== a.ts (1 errors) ====
+    function f() {}
+    f.x = "";
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    declare namespace Y { let v: string }
+    declare namespace f { export import x = Y.v; }
+                          ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2440: Import declaration conflicts with local declaration of 'x'.
+    

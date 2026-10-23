@@ -1,0 +1,17 @@
+//// [test/cases/bun10-C2b.ts] ////
+
+=== a.ts ===
+declare const k: string;
+>k : Symbol(k, Decl(a.ts, 0, 13))
+
+const x10 = { [k]: 1, set s(v: typeof x10) {} };
+>x10 : Symbol(x10, Decl(a.ts, 1, 5))
+>[k] : Symbol([k], Decl(a.ts, 1, 13))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>s : Symbol(s, Decl(a.ts, 1, 21))
+>v : Symbol(v, Decl(a.ts, 1, 28))
+>x10 : Symbol(x10, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

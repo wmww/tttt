@@ -1,0 +1,12 @@
+//// [test/cases/bun39-C9b.ts] ////
+
+=== a.ts ===
+// @ts-expect-error
+export const __esModule = 1;
+>__esModule : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

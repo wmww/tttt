@@ -1,0 +1,33 @@
+//// [test/cases/bun71-R12b.ts] ////
+
+=== a.ts ===
+export {};
+declare function dec(...x: any[]): (c: any, ctx: any) => void;
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>x : any[]
+>c : any
+>ctx : any
+
+class Out { #i = "outer"; m(x: Out) { return @dec(x.#i.length, #i in x) class { #i = 1; }; } }
+>Out : Out
+>#i : string
+>"outer" : "outer"
+>m : (x: Out) => typeof (Anonymous class)
+>x : Out
+>@dec(x.#i.length, #i in x) class { #i = 1; } : typeof (Anonymous class)
+>dec(x.#i.length, #i in x) : (c: any, ctx: any) => void
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>x.#i.length : number
+>x.#i : string
+>x : Out
+>length : number
+>#i in x : boolean
+>#i : any
+>x : Out
+>#i : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

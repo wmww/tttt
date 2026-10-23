@@ -1,0 +1,25 @@
+//// [test/cases/bun21-C5b.ts] ////
+
+=== a.ts ===
+type O = { a: number } | undefined;
+>O : O
+>a : number
+
+function f(x: O) { if ((x satisfies O)?.a !== undefined) { x.a; } }
+>f : (x: O) => void
+>x : O
+>(x satisfies O)?.a !== undefined : boolean
+>(x satisfies O)?.a : number | undefined
+>(x satisfies O) : O
+>x satisfies O : O
+>x : O
+>a : number | undefined
+>undefined : undefined
+>x.a : number
+>x : { a: number; }
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun07-C1c.ts] ////
+
+=== a.ts ===
+export {};
+declare function id<T>(o: T): T;
+>id : Symbol(id, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>o : Symbol(o, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+const e = id({ a: 1, get g() { return this.zz; }, f() { return this.g; } });
+>e : Symbol(e, Decl(a.ts, 2, 5))
+>id : Symbol(id, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 2, 14))
+>g : Symbol(g, Decl(a.ts, 2, 20))
+>this : Symbol(__object, Decl(a.ts, 2, 13))
+>f : Symbol(f, Decl(a.ts, 2, 49))
+>this.g : Symbol(g, Decl(a.ts, 2, 20))
+>this : Symbol(__object, Decl(a.ts, 2, 13))
+>g : Symbol(g, Decl(a.ts, 2, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

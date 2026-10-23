@@ -1,0 +1,23 @@
+//// [test/cases/bun08-C13a.ts] ////
+
+=== a.ts ===
+interface I1 { a: "b"; [k1]: number }
+>I1 : Symbol(I1, Decl(a.ts, 0, 0))
+>a : Symbol(I1.a, Decl(a.ts, 0, 14))
+>[k1] : Symbol(I1[k1], Decl(a.ts, 0, 22))
+>k1 : Symbol(k1, Decl(a.ts, 1, 13))
+
+declare const k1: I1["a"];
+>k1 : Symbol(k1, Decl(a.ts, 1, 13))
+>I1 : Symbol(I1, Decl(a.ts, 0, 0))
+
+declare let i1: I1; i1.b;
+>i1 : Symbol(i1, Decl(a.ts, 2, 11))
+>I1 : Symbol(I1, Decl(a.ts, 0, 0))
+>i1.b : Symbol(I1[k1], Decl(a.ts, 0, 22))
+>i1 : Symbol(i1, Decl(a.ts, 2, 11))
+>b : Symbol(I1[k1], Decl(a.ts, 0, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

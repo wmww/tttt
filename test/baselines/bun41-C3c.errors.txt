@@ -1,0 +1,13 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,102): error TS6046: Argument for '--target' option must be: 'es6', 'es2015', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021', 'es2022', 'es2023', 'es2024', 'es2025', 'es2026', 'esnext'.
+
+
+==== tsconfig.json (1 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "target": "y" } }
+                                                                                                         ~~~
+!!! error TS6046: Argument for '--target' option must be: 'es6', 'es2015', 'es2016', 'es2017', 'es2018', 'es2019', 'es2020', 'es2021', 'es2022', 'es2023', 'es2024', 'es2025', 'es2026', 'esnext'.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

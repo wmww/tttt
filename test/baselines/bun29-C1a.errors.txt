@@ -1,0 +1,15 @@
+a.ts(2,14): error TS2527: The inferred type of 'a' references an inaccessible 'unique symbol' type. A type annotation is necessary.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace N { interface I { readonly p: unique symbol } export declare const x: I["p"]; }
+    export const a = [N.x] as const;
+                 ~
+!!! error TS2527: The inferred type of 'a' references an inaccessible 'unique symbol' type. A type annotation is necessary.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

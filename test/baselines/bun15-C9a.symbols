@@ -1,0 +1,17 @@
+//// [test/cases/bun15-C9a.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+declare function g2(...args: [number] | []): void;
+>g2 : Symbol(g2, Decl(a.ts, 0, 28))
+>args : Symbol(args, Decl(a.ts, 1, 20))
+
+g2(...(cond ? [1] : []));
+>g2 : Symbol(g2, Decl(a.ts, 0, 28))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,7 @@
+//// [test/cases/bun38-C15.ts] ////
+
+=== a.ts ===
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

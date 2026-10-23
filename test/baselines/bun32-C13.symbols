@@ -1,0 +1,29 @@
+//// [test/cases/bun32-C13.ts] ////
+
+=== a.ts ===
+function f(a: { b: { c: string | number } }) {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 15))
+>c : Symbol(c, Decl(a.ts, 0, 20))
+
+  if (typeof (a.b).c === "string") { a = { b: { c: 1 } }; (a.b).c.length; }
+>(a.b).c : Symbol(c, Decl(a.ts, 0, 20))
+>a.b : Symbol(b, Decl(a.ts, 0, 15))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 15))
+>c : Symbol(c, Decl(a.ts, 0, 20))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 1, 42))
+>c : Symbol(c, Decl(a.ts, 1, 47))
+>(a.b).c.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>(a.b).c : Symbol(c, Decl(a.ts, 0, 20))
+>a.b : Symbol(b, Decl(a.ts, 0, 15))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 15))
+>c : Symbol(c, Decl(a.ts, 0, 20))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

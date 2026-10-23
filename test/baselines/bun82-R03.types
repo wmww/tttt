@@ -1,0 +1,94 @@
+//// [test/cases/bun82-R03.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+type Item = { id: number; parent: Item | undefined; label: string };
+>Item : Item
+>id : number
+>parent : Item | undefined
+>label : string
+
+function walk(start: Item) {
+>walk : (start: Item) => void
+>start : Item
+
+  let item: Item | undefined = start;
+>item : Item | undefined
+>start : Item
+
+  while (item) {
+>item : Item | undefined
+
+    const { id, ...rest } = item;
+>id : number
+>rest : { parent: Item | undefined; label: string; }
+>item : Item
+
+    item = rest.parent;
+>item = rest.parent : Item | undefined
+>item : Item | undefined
+>rest.parent : Item | undefined
+>rest : { parent: Item | undefined; label: string; }
+>parent : Item | undefined
+  }
+}
+function f1() {
+>f1 : () => void
+
+  let n: 1 | 2 = 1;
+>n : 1 | 2
+>1 : 1
+
+  while (cond()) {
+>cond() : boolean
+>cond : () => boolean
+
+    const { a, ...rest } = { a: n, b: n };
+>a : 1
+>rest : { b: 1; }
+>{ a: n, b: n } : { a: 1; b: 1; }
+>a : 1
+>n : 1
+>b : 1
+>n : 1
+
+    n = rest.b;
+>n = rest.b : 1
+>n : 1 | 2
+>rest.b : 1
+>rest : { b: 1; }
+>b : 1
+  }
+}
+function f2() {
+>f2 : () => void
+
+  let n: 1 | 2 = 1;
+>n : 1 | 2
+>1 : 1
+
+  while (cond()) {
+>cond() : boolean
+>cond : () => boolean
+
+    const [a, ...rest] = [n, n];
+>a : 1
+>rest : [1]
+>[n, n] : [1, 1]
+>n : 1
+>n : 1
+
+    n = rest[0];
+>n = rest[0] : 1
+>n : 1 | 2
+>rest[0] : 1
+>rest : [1]
+>0 : 0
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

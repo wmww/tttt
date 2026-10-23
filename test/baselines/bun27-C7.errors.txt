@@ -1,0 +1,18 @@
+a.tsx(4,11): error TS2741: Property 'x' is missing in type '{}' but required in type '{ x: number; }'.
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react", "jsxFactory": "h", "jsxFragmentFactory": "Fragment" } }
+==== a.tsx (2 errors) ====
+    declare function h(...a: any[]): any;
+    declare namespace h { namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} } }
+    declare function Fragment(p: { x: number }): h.JSX.Element;
+    const f = <></>;
+              ~~
+!!! error TS2741: Property 'x' is missing in type '{}' but required in type '{ x: number; }'.
+!!! related TS2728 a.tsx:3:32: 'x' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

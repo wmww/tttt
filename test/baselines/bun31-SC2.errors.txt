@@ -1,0 +1,20 @@
+a.ts(1,70): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(2,52): error TS2352: Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function f1(x: string | number) { const y = <typeof x>(x = 1); const n: never = y; }
+                                                                         ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    function f2(x: string | number) { x = 1; const y = <typeof x>(x = "a"); }
+                                                       ~~~~~~~~~~~~~~~~~~~
+!!! error TS2352: Conversion of type 'string' to type 'number' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

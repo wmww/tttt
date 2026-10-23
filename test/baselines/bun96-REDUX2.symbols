@@ -1,0 +1,102 @@
+//// [test/cases/bun96-REDUX2.ts] ////
+
+=== a.ts ===
+interface Store<S, T> { getState(): S & T }
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+>getState : Symbol(Store.getState, Decl(a.ts, 0, 23))
+>S : Symbol(S, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+
+interface Pair<A, B> { either: A | B }
+>Pair : Symbol(Pair, Decl(a.ts, 0, 43))
+>A : Symbol(A, Decl(a.ts, 1, 15))
+>B : Symbol(B, Decl(a.ts, 1, 17))
+>either : Symbol(Pair.either, Decl(a.ts, 1, 22))
+>A : Symbol(A, Decl(a.ts, 1, 15))
+>B : Symbol(B, Decl(a.ts, 1, 17))
+
+type AB = Store<{ a: 1 }, { b: 2 }>
+>AB : Symbol(AB, Decl(a.ts, 1, 38))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 2, 17))
+>b : Symbol(b, Decl(a.ts, 2, 27))
+
+type BA = Store<{ b: 2 }, { a: 1 }>
+>BA : Symbol(BA, Decl(a.ts, 2, 35))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>b : Symbol(b, Decl(a.ts, 3, 17))
+>a : Symbol(a, Decl(a.ts, 3, 27))
+
+// two references to one generic type are related by variances, not by their members
+function r1<E extends {}>(s: AB & E) { const t: BA = s }
+>r1 : Symbol(r1, Decl(a.ts, 3, 35))
+>E : Symbol(E, Decl(a.ts, 6, 12))
+>s : Symbol(s, Decl(a.ts, 6, 26))
+>AB : Symbol(AB, Decl(a.ts, 1, 38))
+>E : Symbol(E, Decl(a.ts, 6, 12))
+>t : Symbol(t, Decl(a.ts, 6, 44))
+>BA : Symbol(BA, Decl(a.ts, 2, 35))
+>s : Symbol(s, Decl(a.ts, 6, 26))
+
+function r2<E extends object>(s: AB & E): BA { return s }
+>r2 : Symbol(r2, Decl(a.ts, 6, 56))
+>E : Symbol(E, Decl(a.ts, 7, 12))
+>s : Symbol(s, Decl(a.ts, 7, 30))
+>AB : Symbol(AB, Decl(a.ts, 1, 38))
+>E : Symbol(E, Decl(a.ts, 7, 12))
+>BA : Symbol(BA, Decl(a.ts, 2, 35))
+>s : Symbol(s, Decl(a.ts, 7, 30))
+
+function r3<E extends {}>(s: Pair<1, 2> & E) { const t: Pair<2, 1> = s }
+>r3 : Symbol(r3, Decl(a.ts, 7, 57))
+>E : Symbol(E, Decl(a.ts, 8, 12))
+>s : Symbol(s, Decl(a.ts, 8, 26))
+>Pair : Symbol(Pair, Decl(a.ts, 0, 43))
+>E : Symbol(E, Decl(a.ts, 8, 12))
+>t : Symbol(t, Decl(a.ts, 8, 52))
+>Pair : Symbol(Pair, Decl(a.ts, 0, 43))
+>s : Symbol(s, Decl(a.ts, 8, 26))
+
+// both tools agree on these
+function r4(s: AB) { const t: BA = s }
+>r4 : Symbol(r4, Decl(a.ts, 8, 72))
+>s : Symbol(s, Decl(a.ts, 10, 12))
+>AB : Symbol(AB, Decl(a.ts, 1, 38))
+>t : Symbol(t, Decl(a.ts, 10, 26))
+>BA : Symbol(BA, Decl(a.ts, 2, 35))
+>s : Symbol(s, Decl(a.ts, 10, 12))
+
+function r5<E>(s: AB & E) { const t: BA = s }
+>r5 : Symbol(r5, Decl(a.ts, 10, 38))
+>E : Symbol(E, Decl(a.ts, 11, 12))
+>s : Symbol(s, Decl(a.ts, 11, 15))
+>AB : Symbol(AB, Decl(a.ts, 1, 38))
+>E : Symbol(E, Decl(a.ts, 11, 12))
+>t : Symbol(t, Decl(a.ts, 11, 33))
+>BA : Symbol(BA, Decl(a.ts, 2, 35))
+>s : Symbol(s, Decl(a.ts, 11, 15))
+
+function r6<E extends { c: 3 }>(s: AB & E) { const t: BA = s }
+>r6 : Symbol(r6, Decl(a.ts, 11, 45))
+>E : Symbol(E, Decl(a.ts, 12, 12))
+>c : Symbol(c, Decl(a.ts, 12, 23))
+>s : Symbol(s, Decl(a.ts, 12, 32))
+>AB : Symbol(AB, Decl(a.ts, 1, 38))
+>E : Symbol(E, Decl(a.ts, 12, 12))
+>t : Symbol(t, Decl(a.ts, 12, 50))
+>BA : Symbol(BA, Decl(a.ts, 2, 35))
+>s : Symbol(s, Decl(a.ts, 12, 32))
+
+function r7(s: AB & {}) { const t: BA = s }
+>r7 : Symbol(r7, Decl(a.ts, 12, 62))
+>s : Symbol(s, Decl(a.ts, 13, 12))
+>AB : Symbol(AB, Decl(a.ts, 1, 38))
+>t : Symbol(t, Decl(a.ts, 13, 31))
+>BA : Symbol(BA, Decl(a.ts, 2, 35))
+>s : Symbol(s, Decl(a.ts, 13, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+

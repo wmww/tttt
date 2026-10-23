@@ -1,0 +1,42 @@
+//// [test/cases/bun17-C1a.ts] ////
+
+=== a.ts ===
+type Matrix<T> = Row<T>[]; type Row<T> = T[];
+>Matrix : Symbol(Matrix, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>Row : Symbol(Row, Decl(a.ts, 0, 26))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>Row : Symbol(Row, Decl(a.ts, 0, 26))
+>T : Symbol(T, Decl(a.ts, 0, 36))
+>T : Symbol(T, Decl(a.ts, 0, 36))
+
+type Grid<T> = Line<T>[]; type Line<T> = T[];
+>Grid : Symbol(Grid, Decl(a.ts, 0, 45))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>Line : Symbol(Line, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>Line : Symbol(Line, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 36))
+>T : Symbol(T, Decl(a.ts, 1, 36))
+
+declare function flat<T>(m: Matrix<T>): T;
+>flat : Symbol(flat, Decl(a.ts, 1, 45))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+>m : Symbol(m, Decl(a.ts, 2, 25))
+>Matrix : Symbol(Matrix, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+
+declare let grid: Grid<number>;
+>grid : Symbol(grid, Decl(a.ts, 3, 11))
+>Grid : Symbol(Grid, Decl(a.ts, 0, 45))
+
+flat(grid).toFixed();
+>flat(grid).toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>flat : Symbol(flat, Decl(a.ts, 1, 45))
+>grid : Symbol(grid, Decl(a.ts, 3, 11))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

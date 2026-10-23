@@ -1,0 +1,96 @@
+//// [test/cases/bun73-R01c.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+type U = string | boolean;
+>U : Symbol(U, Decl(a.ts, 0, 30))
+
+function afterLoop(x: U) {
+>afterLoop : Symbol(afterLoop, Decl(a.ts, 1, 26))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+>U : Symbol(U, Decl(a.ts, 0, 30))
+
+  if (x) { x = true; }
+>x : Symbol(x, Decl(a.ts, 2, 19))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+
+  while (c()) { c(); }
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+  const p: number = x;
+>p : Symbol(p, Decl(a.ts, 5, 7))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+}
+function afterIf(x: U) {
+>afterIf : Symbol(afterIf, Decl(a.ts, 6, 1))
+>x : Symbol(x, Decl(a.ts, 7, 17))
+>U : Symbol(U, Decl(a.ts, 0, 30))
+
+  if (x) { x = true; }
+>x : Symbol(x, Decl(a.ts, 7, 17))
+>x : Symbol(x, Decl(a.ts, 7, 17))
+
+  if (c()) { c(); }
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+  const p: number = x;
+>p : Symbol(p, Decl(a.ts, 10, 7))
+>x : Symbol(x, Decl(a.ts, 7, 17))
+}
+function afterTry(x: U) {
+>afterTry : Symbol(afterTry, Decl(a.ts, 11, 1))
+>x : Symbol(x, Decl(a.ts, 12, 18))
+>U : Symbol(U, Decl(a.ts, 0, 30))
+
+  if (x) { x = true; }
+>x : Symbol(x, Decl(a.ts, 12, 18))
+>x : Symbol(x, Decl(a.ts, 12, 18))
+
+  try { c(); } catch { }
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+  const p: number = x;
+>p : Symbol(p, Decl(a.ts, 15, 7))
+>x : Symbol(x, Decl(a.ts, 12, 18))
+}
+interface Options { verbose?: Flag }
+>Options : Symbol(Options, Decl(a.ts, 16, 1))
+>verbose : Symbol(Options.verbose, Decl(a.ts, 17, 19))
+>Flag : Symbol(Flag, Decl(a.ts, 17, 36))
+
+type Flag = boolean | "auto" | undefined;
+>Flag : Symbol(Flag, Decl(a.ts, 17, 36))
+
+function likely(o: Options, args: string[]) {
+>likely : Symbol(likely, Decl(a.ts, 18, 41))
+>o : Symbol(o, Decl(a.ts, 19, 16))
+>Options : Symbol(Options, Decl(a.ts, 16, 1))
+>args : Symbol(args, Decl(a.ts, 19, 27))
+
+  let verbose: Flag = o.verbose;
+>verbose : Symbol(verbose, Decl(a.ts, 20, 5))
+>Flag : Symbol(Flag, Decl(a.ts, 17, 36))
+>o.verbose : Symbol(Options.verbose, Decl(a.ts, 17, 19))
+>o : Symbol(o, Decl(a.ts, 19, 16))
+>verbose : Symbol(Options.verbose, Decl(a.ts, 17, 19))
+
+  if (verbose === "auto") { verbose = false; }
+>verbose : Symbol(verbose, Decl(a.ts, 20, 5))
+>verbose : Symbol(verbose, Decl(a.ts, 20, 5))
+
+  for (const a of args) { c(); }
+>a : Symbol(a, Decl(a.ts, 22, 12))
+>args : Symbol(args, Decl(a.ts, 19, 27))
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+  const n: number = verbose;
+>n : Symbol(n, Decl(a.ts, 23, 7))
+>verbose : Symbol(verbose, Decl(a.ts, 20, 5))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 25, 5))
+

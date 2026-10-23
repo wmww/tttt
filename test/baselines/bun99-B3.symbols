@@ -1,0 +1,19 @@
+//// [test/cases/bun99-B3.ts] ////
+
+=== b.js ===
+export const x = /** @type {number | undefined} */ (undefined);
+>x : Symbol(x, Decl(b.js, 0, 12))
+>undefined : Symbol(undefined)
+
+export const j1 = x!;
+>j1 : Symbol(j1, Decl(b.js, 1, 12))
+>x : Symbol(x, Decl(b.js, 0, 12))
+
+export const j2 = x!!;
+>j2 : Symbol(j2, Decl(b.js, 2, 12))
+>x : Symbol(x, Decl(b.js, 0, 12))
+
+export const j3 = x!!!;
+>j3 : Symbol(j3, Decl(b.js, 3, 12))
+>x : Symbol(x, Decl(b.js, 0, 12))
+

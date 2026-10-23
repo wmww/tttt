@@ -1,0 +1,17 @@
+//// [test/cases/bun56-L19.ts] ////
+
+=== a.ts ===
+type A<T> = T extends infer #a ? 1 : 2;
+>A : A<T>
+
+type B<T> = T extends [infer #a extends string] ? 1 : 2;
+>B : B<T>
+
+declare function f(x: any): asserts #a;
+>f : (x: any) => asserts #a
+>x : any
+
+declare function g(x: any): asserts #a is string;
+>g : (x: any) => asserts #a is string
+>x : any
+

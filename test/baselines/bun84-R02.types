@@ -1,0 +1,23 @@
+//// [test/cases/bun84-R02.ts] ////
+
+=== a.ts ===
+type A = ([...a,]: any);
+>A : A
+>a : any
+
+=== b.ts ===
+type B = ({...a,}: any, b: string);
+>B : B
+>a : any
+>b : string
+
+=== c.ts ===
+type C = string | ([...a,]: any) => void;
+>C : C
+>a : any
+
+=== e.ts ===
+type D = ([...a,]?);
+>D : D
+>a : any[]
+

@@ -1,0 +1,27 @@
+//// [test/cases/bun36-C15.ts] ////
+
+=== a.ts ===
+import { which as f } from "./node_modules/foo";
+>which : "foo"
+>f : "foo"
+
+import { which as g } from "./node_modules/goo";
+>which : "goo"
+>g : "goo"
+
+const x: "goo" = g;
+>x : "goo"
+>g : "goo"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/foo.d.ts ===
+export declare const which: "foo";
+>which : "foo"
+
+=== node_modules/goo.d.ts ===
+export declare const which: "goo";
+>which : "goo"
+

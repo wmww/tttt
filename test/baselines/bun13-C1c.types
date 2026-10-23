@@ -1,0 +1,21 @@
+//// [test/cases/bun13-C1c.ts] ////
+
+=== a.ts ===
+type Q = keyof M<C>;
+>Q : any
+
+type M<T> = { [K in keyof T]: T[K] };
+>M : M<T>
+
+declare const B: new () => M<C>;
+>B : new () => M<C>
+
+class C extends B { m() {} }
+>C : C
+>B : M<C>
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

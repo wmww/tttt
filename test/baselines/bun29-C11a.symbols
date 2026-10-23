@@ -1,0 +1,16 @@
+//// [test/cases/bun29-C11a.ts] ////
+
+=== a.ts ===
+declare const l: { readonly s: unique symbol };
+>l : Symbol(l, Decl(a.ts, 0, 13))
+>s : Symbol(s, Decl(a.ts, 0, 18))
+
+({ a: 1 })[l.s];
+>a : Symbol(a, Decl(a.ts, 1, 2))
+>l.s : Symbol(s, Decl(a.ts, 0, 18))
+>l : Symbol(l, Decl(a.ts, 0, 13))
+>s : Symbol(s, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

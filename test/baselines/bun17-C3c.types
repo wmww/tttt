@@ -1,0 +1,26 @@
+//// [test/cases/bun17-C3c.ts] ////
+
+=== a.ts ===
+interface Foo<T> { m<U>(cb: T, u: U): void }
+>m : <U>(cb: T, u: U) => void
+>cb : T
+>u : U
+
+interface Bar<T> { m<U>(cb: T, u: U): void }
+>m : <U>(cb: T, u: U) => void
+>cb : T
+>u : U
+
+declare let f: Foo<(x: string) => void>;
+>f : Foo<(x: string) => void>
+>x : string
+
+f as Bar<(x: number) => void>;
+>f as Bar<(x: number) => void> : Bar<(x: number) => void>
+>f : Foo<(x: string) => void>
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

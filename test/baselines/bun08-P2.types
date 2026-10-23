@@ -1,0 +1,15 @@
+//// [test/cases/bun08-P2.ts] ////
+
+=== a.ts ===
+import { b } from "pk/src.ts";
+>b : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/pk/src.ts ===
+export const b = 1;
+>b : 1
+>1 : 1
+

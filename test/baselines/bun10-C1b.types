@@ -1,0 +1,17 @@
+//// [test/cases/bun10-C1b.ts] ////
+
+=== a.ts ===
+function i2<T>(x: T, y = i2(x, undefined)) { return x; }
+>i2 : <T>(x: T, y?: any) => T
+>x : T
+>y : any
+>i2(x, undefined) : T
+>i2 : <T>(x: T, y?: any) => T
+>x : T
+>undefined : undefined
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

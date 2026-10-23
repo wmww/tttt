@@ -1,0 +1,33 @@
+d.ts(2,3): error TS1234: An ambient module declaration is only allowed at the top level in a file.
+e.ts(3,10): error TS1234: An ambient module declaration is only allowed at the top level in a file.
+use.ts(1,15): error TS2724: '"./m"' has no exported member named 'InBlock'. Did you mean 'InBlock2'?
+use.ts(1,24): error TS2305: Module '"./m"' has no exported member 'AfterBlock'.
+use.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["m.ts", "d.ts", "e.ts", "use.ts"] }
+==== d.ts (1 errors) ====
+    export {};
+    { declare module "./m" { interface InBlock { a: 1 } } }
+      ~~~~~~~
+!!! error TS1234: An ambient module declaration is only allowed at the top level in a file.
+    declare module "./m" { interface AfterBlock { a: 1 } }
+==== e.ts (1 errors) ====
+    export {};
+    declare module "./m" { interface BeforeBlock { a: 1 } }
+    if (1) { declare module "./m" { interface InBlock2 { a: 1 } } }
+             ~~~~~~~
+!!! error TS1234: An ambient module declaration is only allowed at the top level in a file.
+==== m.ts (0 errors) ====
+    export interface Own { o: 1 }
+==== use.ts (3 errors) ====
+    import { Own, InBlock, AfterBlock, BeforeBlock, InBlock2 } from "./m";
+                  ~~~~~~~
+!!! error TS2724: '"./m"' has no exported member named 'InBlock'. Did you mean 'InBlock2'?
+                           ~~~~~~~~~~
+!!! error TS2305: Module '"./m"' has no exported member 'AfterBlock'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,58 @@
+a.ts(3,1): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(3,2): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(4,2): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(4,3): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(5,7): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(5,8): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(6,6): error TS2487: The left-hand side of a 'for...of' statement must be a variable or a property access.
+a.ts(6,7): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(7,7): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(7,13): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(8,7): error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+a.ts(8,10): error TS1136: Property assignment expected.
+a.ts(9,2): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (14 errors) ====
+    declare let y: any;
+    declare let s: string;
+    (s = 1) = y;
+    ~~~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+     ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    [(s = 1)] = y;
+     ~~~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+      ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    ({ a: (s = 1) } = y);
+          ~~~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+           ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    for ((s = 1) of y) {}
+         ~~~~~~~
+!!! error TS2487: The left-hand side of a 'for...of' statement must be a variable or a property access.
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    ({ a: ({ b: s } = { b: 1 }) } = y);
+          ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+                ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    ({ a: ({ k() {} } = y) } = y);
+          ~~~~~~~~~~~~~~~~
+!!! error TS2364: The left-hand side of an assignment expression must be a variable or a property access.
+             ~
+!!! error TS1136: Property assignment expected.
+    [s = 1] = y;
+     ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

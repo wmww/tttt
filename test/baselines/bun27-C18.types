@@ -1,0 +1,28 @@
+//// [test/cases/bun27-C18.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+declare function W(p: { x?: number }): JSX.Element;
+>W : (p: { x?: number; }) => JSX.Element
+>p : { x?: number; }
+>x : number | undefined
+>JSX : any
+
+const s = <W x={1} x={3} {...{ x: 4 }} />;
+>s : JSX.Element
+><W x={1} x={3} {...{ x: 4 }} /> : JSX.Element
+>W : (p: { x?: number; }) => JSX.Element
+>x : number
+>1 : 1
+>x : number
+>3 : 3
+>{ x: 4 } : { x: number; }
+>x : number
+>4 : 4
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

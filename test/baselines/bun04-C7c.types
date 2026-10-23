@@ -1,0 +1,21 @@
+//// [test/cases/bun04-C7c.ts] ////
+
+=== a.ts ===
+declare const o: { f?: (n: number) => number };
+>o : { f?: (n: number) => number; }
+>f : ((n: number) => number) | undefined
+>n : number
+
+const p = (o?.f)(1);
+>p : number
+>(o?.f)(1) : number
+>(o?.f) : ((n: number) => number) | undefined
+>o?.f : ((n: number) => number) | undefined
+>o : { f?: (n: number) => number; }
+>f : ((n: number) => number) | undefined
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

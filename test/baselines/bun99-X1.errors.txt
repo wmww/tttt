@@ -1,0 +1,1068 @@
+a.ts(2,88): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(2,137): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+  '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b"'.
+a.ts(2,189): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(3,81): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(3,130): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+  '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a"'.
+a.ts(3,182): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(4,89): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(4,138): error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+  'string' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint 'string'.
+a.ts(4,190): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(5,95): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(5,144): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+  '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b" | "c"'.
+a.ts(5,196): error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(7,88): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(7,137): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(7,151): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(7,189): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(8,81): error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(8,182): error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(9,89): error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(9,190): error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(10,95): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(10,144): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(10,158): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(10,196): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(12,88): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(12,137): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(12,151): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(12,189): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(13,81): error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(13,182): error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(14,89): error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(14,190): error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(15,95): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(15,144): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(15,158): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(15,196): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(17,88): error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+a.ts(17,137): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(17,151): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(17,189): error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+a.ts(18,81): error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+a.ts(18,182): error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+a.ts(19,89): error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+  Type '((data: string) => void) & ((data: string) => void)' is not assignable to type 'never'.
+a.ts(19,190): error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+  Type '((data: string) => void) & ((data: string) => void)' is not assignable to type 'never'.
+a.ts(20,95): error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void)) | (((data: "c") => void) & ((data: "c") => void))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+a.ts(20,144): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(20,158): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(20,196): error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void)) | (((data: "c") => void) & ((data: "c") => void))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+a.ts(22,88): error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+a.ts(22,129): error TS2349: This expression is not callable.
+  Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' has signatures, but none of those signatures are compatible with each other.
+a.ts(22,143): error TS2349: This expression is not callable.
+  Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' has signatures, but none of those signatures are compatible with each other.
+a.ts(22,189): error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+a.ts(23,81): error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+a.ts(23,182): error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+a.ts(24,89): error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+  Type '((data: string) => void) & ((data: string) => string)' is not assignable to type 'never'.
+a.ts(24,190): error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+  Type '((data: string) => void) & ((data: string) => string)' is not assignable to type 'never'.
+a.ts(25,95): error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+a.ts(25,136): error TS2349: This expression is not callable.
+  Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' has signatures, but none of those signatures are compatible with each other.
+a.ts(25,150): error TS2349: This expression is not callable.
+  Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' has signatures, but none of those signatures are compatible with each other.
+a.ts(25,196): error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' is not assignable to type 'never'.
+  Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+a.ts(27,88): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(27,129): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(27,137): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(27,143): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(27,151): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(27,189): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(28,81): error TS2322: Type '((data: "a") => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(28,122): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(28,136): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(28,182): error TS2322: Type '((data: "a") => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(29,89): error TS2322: Type '((data: string) => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(29,130): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(29,144): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(29,190): error TS2322: Type '((data: string) => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(30,95): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(30,136): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(30,144): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(30,150): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(30,158): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(30,196): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void) | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(32,88): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(32,137): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(32,151): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(32,189): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(33,81): error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(33,182): error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(34,89): error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(34,190): error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(35,95): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(35,144): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(35,158): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(35,196): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(37,73): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(37,88): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(37,112): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(37,129): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(37,143): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(37,170): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(37,189): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(38,66): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(38,81): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(38,105): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(38,122): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(38,136): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(38,163): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(38,182): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(39,74): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(39,89): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(39,113): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(39,130): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(39,144): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(39,171): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(39,190): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(40,80): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(40,95): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(40,119): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(40,136): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(40,150): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(40,177): error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+a.ts(40,196): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(42,88): error TS2322: Type '"a" | "b"' is not assignable to type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(42,129): error TS2349: This expression is not callable.
+  No constituent of type '"a" | "b"' is callable.
+a.ts(42,143): error TS2349: This expression is not callable.
+  No constituent of type '"a" | "b"' is callable.
+a.ts(42,189): error TS2322: Type '"a" | "b"' is not assignable to type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(43,81): error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(43,122): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+a.ts(43,136): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+a.ts(43,182): error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(44,89): error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(44,130): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+a.ts(44,144): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+a.ts(44,190): error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(45,95): error TS2322: Type '"a" | "b" | "c"' is not assignable to type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(45,136): error TS2349: This expression is not callable.
+  No constituent of type '"a" | "b" | "c"' is callable.
+a.ts(45,150): error TS2349: This expression is not callable.
+  No constituent of type '"a" | "b" | "c"' is callable.
+a.ts(45,196): error TS2322: Type '"a" | "b" | "c"' is not assignable to type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(47,90): error TS2322: Type '{ value: "a"; } | { value: "b"; }' is not assignable to type 'never'.
+  Type '{ value: "a"; }' is not assignable to type 'never'.
+a.ts(47,131): error TS2349: This expression is not callable.
+  No constituent of type '{ value: "a"; } | { value: "b"; }' is callable.
+a.ts(47,145): error TS2349: This expression is not callable.
+  No constituent of type '{ value: "a"; } | { value: "b"; }' is callable.
+a.ts(47,191): error TS2322: Type '{ value: "a"; } | { value: "b"; }' is not assignable to type 'never'.
+  Type '{ value: "a"; }' is not assignable to type 'never'.
+a.ts(48,83): error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+  Type '{ value: "a"; }' is not assignable to type 'never'.
+a.ts(48,124): error TS2349: This expression is not callable.
+  Type '{ value: "a"; }' has no call signatures.
+a.ts(48,138): error TS2349: This expression is not callable.
+  Type '{ value: "a"; }' has no call signatures.
+a.ts(48,184): error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+  Type '{ value: "a"; }' is not assignable to type 'never'.
+a.ts(49,91): error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+  Type '{ value: string; }' is not assignable to type 'never'.
+a.ts(49,132): error TS2349: This expression is not callable.
+  Type '{ value: string; }' has no call signatures.
+a.ts(49,146): error TS2349: This expression is not callable.
+  Type '{ value: string; }' has no call signatures.
+a.ts(49,192): error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+  Type '{ value: string; }' is not assignable to type 'never'.
+a.ts(50,97): error TS2322: Type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is not assignable to type 'never'.
+  Type '{ value: "a"; }' is not assignable to type 'never'.
+a.ts(50,138): error TS2349: This expression is not callable.
+  No constituent of type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is callable.
+a.ts(50,152): error TS2349: This expression is not callable.
+  No constituent of type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is callable.
+a.ts(50,198): error TS2322: Type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is not assignable to type 'never'.
+  Type '{ value: "a"; }' is not assignable to type 'never'.
+a.ts(52,90): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(52,139): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(52,153): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(52,191): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(53,83): error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(53,184): error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(54,91): error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(54,192): error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(55,97): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(55,146): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(55,160): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(55,198): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(57,75): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(57,90): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(57,114): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(57,131): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(57,145): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(57,172): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(57,191): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(58,83): error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+  Type 'O12<T>["a"]' is not assignable to type 'never'.
+    Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(58,184): error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+  Type 'O12<T>["a"]' is not assignable to type 'never'.
+    Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(59,91): error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+  Type 'O12<T>[string]' is not assignable to type 'never'.
+    Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(59,192): error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+  Type 'O12<T>[string]' is not assignable to type 'never'.
+    Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(60,82): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(60,97): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(60,121): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(60,138): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(60,152): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(60,179): error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+a.ts(60,198): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(62,90): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(62,139): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(62,153): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(62,191): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(63,83): error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(63,184): error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(64,91): error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(64,192): error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+  Type '(data: string) => void' is not assignable to type 'never'.
+a.ts(65,97): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(65,146): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(65,160): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(65,198): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(67,90): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(67,139): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+  '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b"'.
+a.ts(67,191): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(68,83): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(68,132): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+  '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a"'.
+a.ts(68,184): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(69,91): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(69,140): error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+  'string' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint 'string'.
+a.ts(69,192): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(70,97): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(70,146): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+  '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b" | "c"'.
+a.ts(70,198): error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+  Type '(data: T) => void' is not assignable to type 'never'.
+a.ts(71,123): error TS2344: Type 'K' does not satisfy the constraint '"a" | "b" | "c"'.
+  Type 'string' is not assignable to type '"a" | "b" | "c"'.
+a.ts(72,90): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(72,139): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(72,153): error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(72,191): error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(73,83): error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(73,184): error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(74,91): error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+  Type 'unknown' is not assignable to type 'never'.
+a.ts(74,132): error TS2349: This expression is not callable.
+  Type 'unknown' has no call signatures.
+a.ts(74,146): error TS2349: This expression is not callable.
+  Type 'unknown' has no call signatures.
+a.ts(74,192): error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+  Type 'unknown' is not assignable to type 'never'.
+a.ts(75,97): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(75,146): error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+a.ts(75,160): error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+  Type '"a"' is not assignable to type 'never'.
+a.ts(75,198): error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+  Type '(data: "a") => void' is not assignable to type 'never'.
+a.ts(76,94): error TS2322: Type 'T[number]' is not assignable to type 'never'.
+a.ts(76,117): error TS2322: Type 'string | T[number]' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(76,140): error TS2322: Type 'number | T[number]' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+a.ts(76,163): error TS2322: Type 'string' is not assignable to type 'never'.
+a.ts(77,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "skipLibCheck": true } }
+==== a.ts (226 errors) ====
+    type O1<K extends string> = { [P in K]: (data: P) => void };
+    function f1_ab<T extends "a" | "b">(c: O1<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                            ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+!!! error TS2345:   '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b"'.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+    function f1_a<T extends "a">(c: O1<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                     ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+!!! error TS2345:   '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a"'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+    function f1_string<T extends string>(c: O1<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                             ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+!!! error TS2345:   'string' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint 'string'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+    function f1_abc<T extends "a" | "b" | "c">(c: O1<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                                   ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+!!! error TS2345:   '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b" | "c"'.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '(data: T) => void' is not assignable to type 'never'.
+    type O2<K extends string> = { db: K } & { [P in K]: (data: P) => void };
+    function f2_ab<T extends "a" | "b">(c: O2<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                            ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                          ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f2_a<T extends "a">(c: O2<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f2_string<T extends string>(c: O2<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type 'O2<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+    function f2_abc<T extends "a" | "b" | "c">(c: O2<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                   ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                                 ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    type O3<K extends string> = { [P in K]: (data: P) => void } & { db: K };
+    function f3_ab<T extends "a" | "b">(c: O3<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                            ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                          ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f3_a<T extends "a">(c: O3<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f3_string<T extends string>(c: O3<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type 'O3<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+    function f3_abc<T extends "a" | "b" | "c">(c: O3<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                   ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                                 ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    type O4<K extends string> = { [P in K]: (data: P) => void } & { [P in K]: (data: P) => void };
+    function f4_ab<T extends "a" | "b">(c: O4<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+                                                                                                                                            ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                          ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+    function f4_a<T extends "a">(c: O4<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+    function f4_string<T extends string>(c: O4<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: string) => void) & ((data: string) => void)' is not assignable to type 'never'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type 'O4<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: string) => void) & ((data: string) => void)' is not assignable to type 'never'.
+    function f4_abc<T extends "a" | "b" | "c">(c: O4<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void)) | (((data: "c") => void) & ((data: "c") => void))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+                                                                                                                                                   ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                                 ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => void)) | (((data: "b") => void) & ((data: "b") => void)) | (((data: "c") => void) & ((data: "c") => void))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => void)' is not assignable to type 'never'.
+    type O5<K extends string> = { [P in K]: (data: P) => void } & { [P in K]: (data: P) => P };
+    function f5_ab<T extends "a" | "b">(c: O5<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+                                                                                                                                    ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' has signatures, but none of those signatures are compatible with each other.
+                                                                                                                                                  ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' has signatures, but none of those signatures are compatible with each other.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b"))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+    function f5_a<T extends "a">(c: O5<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+    function f5_string<T extends string>(c: O5<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: string) => void) & ((data: string) => string)' is not assignable to type 'never'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type 'O5<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: string) => void) & ((data: string) => string)' is not assignable to type 'never'.
+    function f5_abc<T extends "a" | "b" | "c">(c: O5<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+                                                                                                                                           ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' has signatures, but none of those signatures are compatible with each other.
+                                                                                                                                                         ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Each member of the union type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' has signatures, but none of those signatures are compatible with each other.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '(((data: "a") => void) & ((data: "a") => "a")) | (((data: "b") => void) & ((data: "b") => "b")) | (((data: "c") => void) & ((data: "c") => "c"))' is not assignable to type 'never'.
+!!! error TS2322:   Type '((data: "a") => void) & ((data: "a") => "a")' is not assignable to type 'never'.
+    type O6<K extends string> = { db: K } & { [P in K]?: (data: P) => void };
+    function f6_ab<T extends "a" | "b">(c: O6<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                                                                                                                                    ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                            ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                  ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                                          ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    function f6_a<T extends "a">(c: O6<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                                                                                                                             ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                           ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type '((data: "a") => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    function f6_string<T extends string>(c: O6<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type '((data: string) => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                                                                                                                                     ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                                   ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type '((data: string) => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    function f6_abc<T extends "a" | "b" | "c">(c: O6<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                                                                                                                                           ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                                   ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                         ~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+                                                                                                                                                                 ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void) | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    type O7<K extends string> = { db: K } & { readonly [P in K]: (data: P) => void };
+    function f7_ab<T extends "a" | "b">(c: O7<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                            ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                          ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f7_a<T extends "a">(c: O7<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f7_string<T extends string>(c: O7<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type 'O7<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+    function f7_abc<T extends "a" | "b" | "c">(c: O7<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                   ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                                 ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    type O8<K extends string> = { db: K } & { [P in K as `on_${P}`]: (data: P) => void };
+    function f8_ab<T extends "a" | "b">(c: O8<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                            ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                           ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                                                                                                   ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                    ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                  ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                             ~~~~~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function f8_a<T extends "a">(c: O8<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                     ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                    ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                                                                                            ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                             ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                           ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                      ~~~~~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function f8_string<T extends string>(c: O8<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                             ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                                                                                                    ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                     ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                   ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                              ~~~~~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function f8_abc<T extends "a" | "b" | "c">(c: O8<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                   ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                  ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                                                                                                          ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                           ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                         ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                                    ~~~~~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O8<T>'.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type O9<K extends string> = { db: K } & { [P in K]: P };
+    function f9_ab<T extends "a" | "b">(c: O9<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                           ~~~~~
+!!! error TS2322: Type '"a" | "b"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                    ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '"a" | "b"' is callable.
+                                                                                                                                                  ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '"a" | "b"' is callable.
+                                                                                                                                                                                                ~~
+!!! error TS2322: Type '"a" | "b"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"a"' is not assignable to type 'never'.
+    function f9_a<T extends "a">(c: O9<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                    ~~~~~
+!!! error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                             ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'String' has no call signatures.
+                                                                                                                                           ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'String' has no call signatures.
+                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '"a"' is not assignable to type 'never'.
+    function f9_string<T extends string>(c: O9<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                            ~~~~~
+!!! error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+                                                                                                                                     ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'String' has no call signatures.
+                                                                                                                                                   ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'String' has no call signatures.
+                                                                                                                                                                                                 ~~
+!!! error TS2322: Type 'O9<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    function f9_abc<T extends "a" | "b" | "c">(c: O9<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '"a" | "b" | "c"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                           ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '"a" | "b" | "c"' is callable.
+                                                                                                                                                         ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '"a" | "b" | "c"' is callable.
+                                                                                                                                                                                                       ~~
+!!! error TS2322: Type '"a" | "b" | "c"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"a"' is not assignable to type 'never'.
+    type O10<K extends string> = { db: K } & { [P in K]: { value: P } };
+    function f10_ab<T extends "a" | "b">(c: O10<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                             ~~~~~
+!!! error TS2322: Type '{ value: "a"; } | { value: "b"; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: "a"; }' is not assignable to type 'never'.
+                                                                                                                                      ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '{ value: "a"; } | { value: "b"; }' is callable.
+                                                                                                                                                    ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '{ value: "a"; } | { value: "b"; }' is callable.
+                                                                                                                                                                                                  ~~
+!!! error TS2322: Type '{ value: "a"; } | { value: "b"; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: "a"; }' is not assignable to type 'never'.
+    function f10_a<T extends "a">(c: O10<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: "a"; }' is not assignable to type 'never'.
+                                                                                                                               ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type '{ value: "a"; }' has no call signatures.
+                                                                                                                                             ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type '{ value: "a"; }' has no call signatures.
+                                                                                                                                                                                           ~~
+!!! error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: "a"; }' is not assignable to type 'never'.
+    function f10_string<T extends string>(c: O10<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                              ~~~~~
+!!! error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: string; }' is not assignable to type 'never'.
+                                                                                                                                       ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type '{ value: string; }' has no call signatures.
+                                                                                                                                                     ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type '{ value: string; }' has no call signatures.
+                                                                                                                                                                                                   ~~
+!!! error TS2322: Type 'O10<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: string; }' is not assignable to type 'never'.
+    function f10_abc<T extends "a" | "b" | "c">(c: O10<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                    ~~~~~
+!!! error TS2322: Type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: "a"; }' is not assignable to type 'never'.
+                                                                                                                                             ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is callable.
+                                                                                                                                                           ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is callable.
+                                                                                                                                                                                                         ~~
+!!! error TS2322: Type '{ value: "a"; } | { value: "b"; } | { value: "c"; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ value: "a"; }' is not assignable to type 'never'.
+    type O11<K extends string> = { db: K } & { n: number } & { [P in K]: (data: P) => void };
+    function f11_ab<T extends "a" | "b">(c: O11<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                             ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                              ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                            ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                  ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f11_a<T extends "a">(c: O11<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                                                           ~~
+!!! error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f11_string<T extends string>(c: O11<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                              ~~~~~
+!!! error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+                                                                                                                                                                                                   ~~
+!!! error TS2322: Type 'O11<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+    function f11_abc<T extends "a" | "b" | "c">(c: O11<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                    ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                     ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                                   ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                         ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    type O12<K extends string> = K extends string ? { db: K } & { [P in K]: (data: P) => void } : never;
+    function f12_ab<T extends "a" | "b">(c: O12<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                              ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                             ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                                                                                                     ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                      ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                                    ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                                                               ~~~~~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                                                                                  ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function f12_a<T extends "a">(c: O12<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'O12<T>["a"]' is not assignable to type 'never'.
+!!! error TS2322:     Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                                                           ~~
+!!! error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'O12<T>["a"]' is not assignable to type 'never'.
+!!! error TS2322:     Type '(data: "a") => void' is not assignable to type 'never'.
+    function f12_string<T extends string>(c: O12<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                              ~~~~~
+!!! error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'O12<T>[string]' is not assignable to type 'never'.
+!!! error TS2322:     Type '(data: string) => void' is not assignable to type 'never'.
+                                                                                                                                                                                                   ~~
+!!! error TS2322: Type 'O12<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'O12<T>[string]' is not assignable to type 'never'.
+!!! error TS2322:     Type '(data: string) => void' is not assignable to type 'never'.
+    function f12_abc<T extends "a" | "b" | "c">(c: O12<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                     ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                    ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                                                                                                            ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                             ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                                           ~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                                                                      ~~~~~~~~~~~
+!!! error TS2536: Type 'T' cannot be used to index type 'O12<T>'.
+                                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type O13<K extends string> = { [key: string]: unknown } & { [P in K]: (data: P) => void };
+    function f13_ab<T extends "a" | "b">(c: O13<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                             ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                              ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                            ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                  ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f13_a<T extends "a">(c: O13<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                                                           ~~
+!!! error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f13_string<T extends string>(c: O13<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                              ~~~~~
+!!! error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+                                                                                                                                                                                                   ~~
+!!! error TS2322: Type 'O13<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: string) => void' is not assignable to type 'never'.
+    function f13_abc<T extends "a" | "b" | "c">(c: O13<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                    ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                     ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                                   ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                         ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    type O14<K extends string> = { db: K } & Record<K, (data: K) => void>;
+    function f14_ab<T extends "a" | "b">(c: O14<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                             ~~~~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                              ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+!!! error TS2345:   '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b"'.
+                                                                                                                                                                                                  ~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+    function f14_a<T extends "a">(c: O14<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                       ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+!!! error TS2345:   '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a"'.
+                                                                                                                                                                                           ~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+    function f14_string<T extends string>(c: O14<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                              ~~~~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                               ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'T'.
+!!! error TS2345:   'string' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint 'string'.
+                                                                                                                                                                                                   ~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+    function f14_abc<T extends "a" | "b" | "c">(c: O14<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                    ~~~~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+                                                                                                                                                     ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'T'.
+!!! error TS2345:   '"a"' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '"a" | "b" | "c"'.
+                                                                                                                                                                                                         ~~
+!!! error TS2322: Type 'O14<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: T) => void' is not assignable to type 'never'.
+    type O15<K extends string> = { db: K } & Pick<{ a: (data: "a") => void; b: (data: "b") => void; c: (data: "c") => void }, K>;
+                                                                                                                              ~
+!!! error TS2344: Type 'K' does not satisfy the constraint '"a" | "b" | "c"'.
+!!! error TS2344:   Type 'string' is not assignable to type '"a" | "b" | "c"'.
+    function f15_ab<T extends "a" | "b">(c: O15<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                             ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                              ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                            ~~~~
+!!! error TS2345: Argument of type '"a" | "b"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                  ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f15_a<T extends "a">(c: O15<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                                                           ~~
+!!! error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function f15_string<T extends string>(c: O15<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                              ~~~~~
+!!! error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'unknown' is not assignable to type 'never'.
+                                                                                                                                       ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'unknown' has no call signatures.
+                                                                                                                                                     ~~~~~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'unknown' has no call signatures.
+                                                                                                                                                                                                   ~~
+!!! error TS2322: Type 'O15<T>[T]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'unknown' is not assignable to type 'never'.
+    function f15_abc<T extends "a" | "b" | "c">(c: O15<T>, name: T) { const member = c[name]; const probe: never = member; (c[name] as any); c[name]("a"); c[name](name); const asA = c["a" as T]; const p2: never = asA; }
+                                                                                                    ~~~~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+                                                                                                                                                     ~~~
+!!! error TS2345: Argument of type '"a"' is not assignable to parameter of type 'never'.
+                                                                                                                                                                   ~~~~
+!!! error TS2345: Argument of type '"a" | "b" | "c"' is not assignable to parameter of type 'never'.
+!!! error TS2345:   Type '"a"' is not assignable to type 'never'.
+                                                                                                                                                                                                         ~~
+!!! error TS2322: Type '((data: "a") => void) | ((data: "b") => void) | ((data: "c") => void)' is not assignable to type 'never'.
+!!! error TS2322:   Type '(data: "a") => void' is not assignable to type 'never'.
+    function tuples<T extends unknown[]>(t: [string, ...T], u: [...T, number], i: 0 | 1) { const a: never = t[1]; const b: never = t[i]; const c: never = u[0]; const d: never = t[0]; }
+                                                                                                 ~
+!!! error TS2322: Type 'T[number]' is not assignable to type 'never'.
+                                                                                                                        ~
+!!! error TS2322: Type 'string | T[number]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+                                                                                                                                               ~
+!!! error TS2322: Type 'number | T[number]' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+                                                                                                                                                                      ~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+    

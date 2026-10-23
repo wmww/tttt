@@ -1,0 +1,21 @@
+//// [test/cases/bun34-C9.ts] ////
+
+=== a.ts ===
+export {};
+await using f = function () {};
+>f : Symbol(f, Decl(a.ts, 1, 11))
+
+f[Symbol.asyncDispose] = async () => {};
+>f : Symbol(f, Decl(a.ts, 1, 11))
+>Symbol.asyncDispose : Symbol(SymbolConstructor.asyncDispose, Decl(lib.esnext.disposable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>asyncDispose : Symbol(SymbolConstructor.asyncDispose, Decl(lib.esnext.disposable.d.ts, --, --))
+
+f.x = 1;
+>f.x : Symbol(f.x, Decl(a.ts, 2, 40))
+>f : Symbol(f, Decl(a.ts, 1, 11))
+>x : Symbol(f.x, Decl(a.ts, 2, 40))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

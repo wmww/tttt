@@ -1,0 +1,40 @@
+//// [test/cases/bun27-P3.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+
+declare function G<T>(p: { a: (n: number) => T; f: (x: T) => void }): JSX.Element;
+>G : Symbol(G, Decl(a.tsx, 0, 83))
+>T : Symbol(T, Decl(a.tsx, 1, 19))
+>p : Symbol(p, Decl(a.tsx, 1, 22))
+>a : Symbol(a, Decl(a.tsx, 1, 26))
+>n : Symbol(n, Decl(a.tsx, 1, 31))
+>T : Symbol(T, Decl(a.tsx, 1, 19))
+>f : Symbol(f, Decl(a.tsx, 1, 47))
+>x : Symbol(x, Decl(a.tsx, 1, 52))
+>T : Symbol(T, Decl(a.tsx, 1, 19))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+declare const anyV: any;
+>anyV : Symbol(anyV, Decl(a.tsx, 2, 13))
+
+const g = <G {...anyV} a={n => "s"} f={x => x.length} />;
+>g : Symbol(g, Decl(a.tsx, 3, 5))
+>G : Symbol(G, Decl(a.tsx, 0, 83))
+>anyV : Symbol(anyV, Decl(a.tsx, 2, 13))
+>a : Symbol(a, Decl(a.tsx, 3, 22))
+>n : Symbol(n, Decl(a.tsx, 3, 26))
+>f : Symbol(f, Decl(a.tsx, 3, 35))
+>x : Symbol(x, Decl(a.tsx, 3, 39))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.tsx, 3, 39))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 4, 5))
+

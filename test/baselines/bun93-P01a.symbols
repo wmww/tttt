@@ -1,0 +1,41 @@
+//// [test/cases/bun93-P01a.ts] ////
+
+=== a.ts ===
+export {};
+declare const p: Promise<string>, q: Promise<number>, x: any;
+>p : Symbol(p, Decl(a.ts, 1, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>q : Symbol(q, Decl(a.ts, 1, 33))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 53))
+
+const o1 = { [await p]: 1 };
+>o1 : Symbol(o1, Decl(a.ts, 2, 5))
+>[await p] : Symbol([await p], Decl(a.ts, 2, 12))
+>p : Symbol(p, Decl(a.ts, 1, 13))
+
+const o2 = { [await p]: await q };
+>o2 : Symbol(o2, Decl(a.ts, 3, 5))
+>[await p] : Symbol([await p], Decl(a.ts, 3, 12))
+>p : Symbol(p, Decl(a.ts, 1, 13))
+>q : Symbol(q, Decl(a.ts, 1, 33))
+
+const o3 = { [await p]: await (q) };
+>o3 : Symbol(o3, Decl(a.ts, 4, 5))
+>[await p] : Symbol([await p], Decl(a.ts, 4, 12))
+>p : Symbol(p, Decl(a.ts, 1, 13))
+>q : Symbol(q, Decl(a.ts, 1, 33))
+
+const { [await p]: a } = x;
+>p : Symbol(p, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 5, 7))
+>x : Symbol(x, Decl(a.ts, 1, 53))
+
+class C { [await p] = 1 }
+>C : Symbol(C, Decl(a.ts, 5, 27))
+>[await p] : Symbol(C[await p], Decl(a.ts, 6, 9))
+>p : Symbol(p, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

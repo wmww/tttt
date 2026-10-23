@@ -1,0 +1,30 @@
+//// [test/cases/bun17-C1b.ts] ////
+
+=== a.ts ===
+type P<T> = [Q<T>]; type Q<T> = [T];
+>P : P<T>
+>Q : Q<T>
+
+type P2<T> = [Q2<T>]; type Q2<T> = [T];
+>P2 : P2<T>
+>Q2 : Q2<T>
+
+declare function fp<T>(m: P<T>): T;
+>fp : <T>(m: P<T>) => T
+>m : P<T>
+
+declare let p2: P2<number>;
+>p2 : P2<number>
+
+fp(p2).toFixed();
+>fp(p2).toFixed() : string
+>fp(p2).toFixed : (fractionDigits?: number) => string
+>fp(p2) : number
+>fp : <T>(m: P<T>) => T
+>p2 : P2<number>
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

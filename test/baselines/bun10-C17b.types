@@ -1,0 +1,27 @@
+//// [test/cases/bun10-C17b.ts] ////
+
+=== a.ts ===
+const k = "key";
+>k : "key"
+>"key" : "key"
+
+class C14 { static [k]() {} }
+>C14 : C14
+>[k] : () => void
+>k : "key"
+
+namespace C14 { export function key(x: 1): void {} }
+>C14 : typeof C14
+>key : (x: 1) => void
+>x : 1
+
+const t: boolean = C14.key;
+>t : boolean
+>C14.key : (x: 1) => void
+>C14 : typeof C14
+>key : (x: 1) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

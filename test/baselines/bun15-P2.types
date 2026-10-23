@@ -1,0 +1,24 @@
+//// [test/cases/bun15-P2.ts] ////
+
+=== a.ts ===
+interface MyAsyncIter { next(v: string): Promise<IteratorResult<Promise<number>, void>>; [Symbol.asyncIterator](): MyAsyncIter }
+>next : (v: string) => Promise<IteratorResult<Promise<number>, void>>
+>v : string
+>[Symbol.asyncIterator] : () => MyAsyncIter
+>Symbol.asyncIterator : unique symbol
+>Symbol : SymbolConstructor
+>asyncIterator : unique symbol
+
+const f: () => MyAsyncIter | AsyncGenerator<number, void, boolean> = async function* () { const x = yield 1; const b: boolean = x; };
+>f : () => MyAsyncIter | AsyncGenerator<number, void, boolean>
+>async function* () { const x = yield 1; const b: boolean = x; } : () => AsyncGenerator<number, void, boolean>
+>x : boolean
+>yield 1 : boolean
+>1 : 1
+>b : boolean
+>x : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

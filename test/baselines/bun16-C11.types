@@ -1,0 +1,27 @@
+//// [test/cases/bun16-C11.ts] ////
+
+=== a.ts ===
+const q1: (this: number) => void = function (this) {};
+>q1 : (this: number) => void
+>this : number
+>function (this) {} : (this: number) => void
+>this : number
+
+declare function ft<T>(cb: (this: T) => void, v: T): void;
+>ft : <T>(cb: (this: T) => void, v: T) => void
+>cb : (this: T) => void
+>this : T
+>v : T
+
+ft(function (this) { return 1 }, 1);
+>ft(function (this) { return 1 }, 1) : void
+>ft : <T>(cb: (this: T) => void, v: T) => void
+>function (this) { return 1 } : (this: number) => number
+>this : number
+>1 : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

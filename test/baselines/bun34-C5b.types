@@ -1,0 +1,15 @@
+//// [test/cases/bun34-C5b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+class G { @dec public [k: string]: any }
+>G : G
+>dec : any
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

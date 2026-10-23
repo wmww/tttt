@@ -1,0 +1,14 @@
+//// [test/cases/bun28-C1b.ts] ////
+
+=== a.ts ===
+let v: { export p: number };
+>v : { p: number; }
+>p : number
+
+interface M { static p: number }
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

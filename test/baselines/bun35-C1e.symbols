@@ -1,0 +1,35 @@
+//// [test/cases/bun35-C1e.ts] ////
+
+=== a.ts ===
+import { Sub } from "old/sub";
+>Sub : Symbol(Sub, Decl(a.ts, 0, 8))
+
+import { sub } from "dep";
+>sub : Symbol(sub, Decl(a.ts, 1, 8))
+
+sub(new Sub());
+>sub : Symbol(sub, Decl(a.ts, 1, 8))
+>Sub : Symbol(Sub, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== node_modules/dep/index.d.ts ===
+import { Sub } from "old/sub";
+>Sub : Symbol(Sub, Decl(index.d.ts, 0, 8))
+
+export declare function sub(c: Sub): void;
+>sub : Symbol(sub, Decl(index.d.ts, 0, 30))
+>c : Symbol(c, Decl(index.d.ts, 1, 28))
+>Sub : Symbol(Sub, Decl(index.d.ts, 0, 8))
+
+=== node_modules/dep/node_modules/old/dist/sub.d.ts ===
+export declare class Sub { private p; }
+>Sub : Symbol(Sub, Decl(sub.d.ts, 0, 0))
+>p : Symbol(Sub.p, Decl(sub.d.ts, 0, 26))
+
+=== node_modules/old/dist/sub.d.ts ===
+export declare class Sub { private p; }
+>Sub : Symbol(Sub, Decl(sub.d.ts, 0, 0))
+>p : Symbol(Sub.p, Decl(sub.d.ts, 0, 26))
+

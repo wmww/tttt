@@ -1,0 +1,27 @@
+//// [test/cases/bun29-C12a.ts] ////
+
+=== a.ts ===
+import * as ns from "./m";
+>ns : typeof ns
+
+let n: number = () => ns.mk();
+>n : number
+>() => ns.mk() : () => ns.default
+>ns.mk() : ns.default
+>ns.mk : () => ns.default
+>ns : typeof ns
+>mk : () => ns.default
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export default class D { d = 1 }
+>D : D
+>d : number
+>1 : 1
+
+export declare function mk(): D;
+>mk : () => D
+

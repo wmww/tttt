@@ -1,0 +1,37 @@
+//// [test/cases/bun35-P3a.ts] ////
+
+=== a.ts ===
+import { A } from "noname";
+>A : typeof A
+
+import { a } from "dep";
+>a : (c: import("dep/node_modules/noname").A) => void
+
+a(new A());
+>a(new A()) : void
+>a : (c: import("dep/node_modules/noname").A) => void
+>new A() : A
+>A : typeof A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/dep/index.d.ts ===
+import { A } from "noname";
+>A : typeof A
+
+export declare function a(c: A): void;
+>a : (c: A) => void
+>c : A
+
+=== node_modules/dep/node_modules/noname/index.d.ts ===
+export declare class A { private p; }
+>A : A
+>p : any
+
+=== node_modules/noname/index.d.ts ===
+export declare class A { private p; }
+>A : A
+>p : any
+

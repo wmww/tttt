@@ -1,0 +1,13 @@
+//// [test/cases/bun43-C8d.ts] ////
+
+=== a.js ===
+/** @typ\u0065 {number} */
+export const x = true;
+>x : number
+>true : true
+
+=== b.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

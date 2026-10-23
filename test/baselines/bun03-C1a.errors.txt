@@ -1,0 +1,16 @@
+a.ts(3,7): error TS2515: Non-abstract class 'D' does not implement inherited abstract member m from class 'mix.M & A'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    abstract class A { abstract m(): void; }
+    function mix<T extends abstract new (...a: any[]) => A>(B: T) { abstract class M extends B {} return M; }
+    class D extends mix(A) {}
+          ~
+!!! error TS2515: Non-abstract class 'D' does not implement inherited abstract member m from class 'mix.M & A'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

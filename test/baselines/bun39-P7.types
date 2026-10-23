@@ -1,0 +1,23 @@
+//// [test/cases/bun39-P7.ts] ////
+
+=== x.ts ===
+import './y';
+export class C { private x = 1 }
+>C : C
+>x : number
+>1 : 1
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== y.ts ===
+import { C } from './x';
+>C : typeof C
+
+new C()["x"];
+>new C()["x"] : number
+>new C() : C
+>C : typeof C
+>"x" : "x"
+

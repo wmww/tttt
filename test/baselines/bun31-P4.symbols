@@ -1,0 +1,25 @@
+//// [test/cases/bun31-P4.ts] ////
+
+=== a.ts ===
+declare const o: { y: boolean };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>y : Symbol(y, Decl(a.ts, 0, 18))
+
+function f(p: unknown) { return q; }
+>f : Symbol(f, Decl(a.ts, 0, 32))
+>p : Symbol(p, Decl(a.ts, 1, 11))
+>q : Symbol(q, Decl(a.ts, 3, 5))
+
+f(o);
+>f : Symbol(f, Decl(a.ts, 0, 32))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const q = o.y;
+>q : Symbol(q, Decl(a.ts, 3, 5))
+>o.y : Symbol(y, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>y : Symbol(y, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

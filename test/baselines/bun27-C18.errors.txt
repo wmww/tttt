@@ -1,0 +1,20 @@
+a.tsx(3,14): error TS2783: 'x' is specified more than once, so this usage will be overwritten.
+a.tsx(3,20): error TS17001: JSX elements cannot have multiple attributes with the same name.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    declare function W(p: { x?: number }): JSX.Element;
+    const s = <W x={1} x={3} {...{ x: 4 }} />;
+                 ~~~~~
+!!! error TS2783: 'x' is specified more than once, so this usage will be overwritten.
+!!! related TS2785 a.tsx:3:26: This spread always overwrites this property.
+                       ~
+!!! error TS17001: JSX elements cannot have multiple attributes with the same name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

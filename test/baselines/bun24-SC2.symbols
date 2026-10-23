@@ -1,0 +1,23 @@
+//// [test/cases/bun24-SC2.ts] ////
+
+=== a.ts ===
+import { o, sym } from "./m";
+>o : Symbol(o, Decl(a.ts, 0, 8))
+>sym : Symbol(sym, Decl(a.ts, 0, 11))
+
+export const x: number = { a: o };
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>a : Symbol(a, Decl(a.ts, 1, 26))
+>o : Symbol(o, Decl(a.ts, 0, 8))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+
+=== m.ts ===
+export const sym = Symbol(); export const o = { [sym]: 1 };
+>sym : Symbol(sym, Decl(m.ts, 0, 12))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>o : Symbol(o, Decl(m.ts, 0, 41))
+>[sym] : Symbol([sym], Decl(m.ts, 0, 47))
+>sym : Symbol(sym, Decl(m.ts, 0, 12))
+

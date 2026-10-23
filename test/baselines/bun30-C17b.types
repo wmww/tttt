@@ -1,0 +1,28 @@
+//// [test/cases/bun30-C17b.ts] ////
+
+=== a.ts ===
+class C { p = (g.x = 1) }
+>C : C
+>p : number
+>(g.x = 1) : 1
+>g.x = 1 : 1
+>g.x : any
+>g : any
+>x : any
+>1 : 1
+
+namespace C { export function g() {} }
+>C : typeof C
+>g : { (): void; x: number; }
+
+C.g.x;
+>C.g.x : number
+>C.g : { (): void; x: number; }
+>C : typeof C
+>g : { (): void; x: number; }
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

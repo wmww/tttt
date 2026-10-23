@@ -1,0 +1,59 @@
+//// [test/cases/bun18-C1a.ts] ////
+
+=== a.ts ===
+type S = (p: string) => string;
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>p : Symbol(p, Decl(a.ts, 0, 10))
+
+type T = (p: string | number) => string | number;
+>T : Symbol(T, Decl(a.ts, 0, 31))
+>p : Symbol(p, Decl(a.ts, 1, 10))
+
+interface Foo<X> { m<U>(a: X, b: U): void; m<U>(a: X, b: U, c: U): void }
+>Foo : Symbol(Foo, Decl(a.ts, 1, 49))
+>X : Symbol(X, Decl(a.ts, 2, 14))
+>m : Symbol(Foo.m, Decl(a.ts, 2, 18), Decl(a.ts, 2, 42))
+>U : Symbol(U, Decl(a.ts, 2, 21))
+>a : Symbol(a, Decl(a.ts, 2, 24))
+>X : Symbol(X, Decl(a.ts, 2, 14))
+>b : Symbol(b, Decl(a.ts, 2, 29))
+>U : Symbol(U, Decl(a.ts, 2, 21))
+>m : Symbol(Foo.m, Decl(a.ts, 2, 18), Decl(a.ts, 2, 42))
+>U : Symbol(U, Decl(a.ts, 2, 45))
+>a : Symbol(a, Decl(a.ts, 2, 48))
+>X : Symbol(X, Decl(a.ts, 2, 14))
+>b : Symbol(b, Decl(a.ts, 2, 53))
+>U : Symbol(U, Decl(a.ts, 2, 45))
+>c : Symbol(c, Decl(a.ts, 2, 59))
+>U : Symbol(U, Decl(a.ts, 2, 45))
+
+interface Bar { m<U>(a: T, b: U): void; m<U>(a: T, b: U, c: U): void }
+>Bar : Symbol(Bar, Decl(a.ts, 2, 73))
+>m : Symbol(Bar.m, Decl(a.ts, 3, 15), Decl(a.ts, 3, 39))
+>U : Symbol(U, Decl(a.ts, 3, 18))
+>a : Symbol(a, Decl(a.ts, 3, 21))
+>T : Symbol(T, Decl(a.ts, 0, 31))
+>b : Symbol(b, Decl(a.ts, 3, 26))
+>U : Symbol(U, Decl(a.ts, 3, 18))
+>m : Symbol(Bar.m, Decl(a.ts, 3, 15), Decl(a.ts, 3, 39))
+>U : Symbol(U, Decl(a.ts, 3, 42))
+>a : Symbol(a, Decl(a.ts, 3, 45))
+>T : Symbol(T, Decl(a.ts, 0, 31))
+>b : Symbol(b, Decl(a.ts, 3, 50))
+>U : Symbol(U, Decl(a.ts, 3, 42))
+>c : Symbol(c, Decl(a.ts, 3, 56))
+>U : Symbol(U, Decl(a.ts, 3, 42))
+
+declare let foo: Foo<S>;
+>foo : Symbol(foo, Decl(a.ts, 4, 11))
+>Foo : Symbol(Foo, Decl(a.ts, 1, 49))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+
+let bar: Bar = foo;
+>bar : Symbol(bar, Decl(a.ts, 5, 3))
+>Bar : Symbol(Bar, Decl(a.ts, 2, 73))
+>foo : Symbol(foo, Decl(a.ts, 4, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

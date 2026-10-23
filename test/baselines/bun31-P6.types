@@ -1,0 +1,19 @@
+//// [test/cases/bun31-P6.ts] ////
+
+=== a.ts ===
+namespace A { export interface I { a: 1 } }
+>a : 1
+
+export namespace N { const A = 1; import foo = A; export let v: foo.I; }
+>N : typeof N
+>A : 1
+>1 : 1
+>foo : any
+>A : any
+>v : foo.I
+>foo : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

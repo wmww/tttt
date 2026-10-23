@@ -1,0 +1,17 @@
+a.tsx(2,1): error TS1434: Unexpected keyword or identifier.
+a.tsx(2,3): error TS1128: Declaration or statement expected.
+a.tsx(2,5): error TS1161: Unterminated regular expression literal.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    var x = 1;
+    x <// c
+    ~
+!!! error TS1434: Unexpected keyword or identifier.
+      ~~
+!!! error TS1128: Declaration or statement expected.
+        ~~~
+!!! error TS1161: Unterminated regular expression literal.
+    

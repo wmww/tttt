@@ -1,0 +1,26 @@
+//// [test/cases/bun09-C2a.ts] ////
+
+=== a.ts ===
+declare function f1(a: number): void;
+>f1 : (a: number) => void
+>a : number
+
+declare function f2(a: number): void;
+>f2 : (a: number) => void
+>a : number
+
+declare const u4: Parameters<typeof f1> | Parameters<typeof f2>;
+>u4 : [a: number] | [a: number]
+>f1 : (a: number) => void
+>f2 : (a: number) => void
+
+f1(...u4);
+>f1(...u4) : void
+>f1 : (a: number) => void
+>...u4 : number
+>u4 : [a: number] | [a: number]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

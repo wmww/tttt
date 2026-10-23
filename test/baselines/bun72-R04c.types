@@ -1,0 +1,37 @@
+//// [test/cases/bun72-R04c.ts] ////
+
+=== a.ts ===
+import { C } from "old";
+>C : typeof C
+
+import { take } from "dep";
+>take : (c: import("dep/node_modules/old").C) => void
+
+take(new C());
+>take(new C()) : void
+>take : (c: import("dep/node_modules/old").C) => void
+>new C() : C
+>C : typeof C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/dep/index.d.ts ===
+import { C } from "old";
+>C : typeof C
+
+export declare function take(c: C): void;
+>take : (c: C) => void
+>c : C
+
+=== node_modules/dep/node_modules/old/index.d.ts ===
+export declare class C { private p; }
+>C : C
+>p : any
+
+=== node_modules/old/index.d.ts ===
+export declare class C { private p; }
+>C : C
+>p : any
+

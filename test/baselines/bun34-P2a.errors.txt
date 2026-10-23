@@ -1,0 +1,25 @@
+a.ts(2,1): error TS7053: Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'K'.
+  Property '1' does not exist on type 'K'.
+a.ts(3,1): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'K'.
+  Property '0' does not exist on type 'K'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class K { [+1] = ""; [-0] = "" }
+    new K()[1];
+    ~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'K'.
+!!! error TS7053:   Property '1' does not exist on type 'K'.
+    new K()[0];
+    ~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'K'.
+!!! error TS7053:   Property '0' does not exist on type 'K'.
+    new K()["+1"];
+    new K()["-0"];
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

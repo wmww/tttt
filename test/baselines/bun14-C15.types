@@ -1,0 +1,22 @@
+//// [test/cases/bun14-C15.ts] ////
+
+=== a.ts ===
+type X = { p?: string; q?: number };
+>X : X
+>p : string | undefined
+>q : number | undefined
+
+type A = X["p" | "q"];
+>A : A
+
+declare let a: A;
+>a : A
+
+const n1: null = a;
+>n1 : null
+>a : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

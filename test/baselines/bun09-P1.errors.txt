@@ -1,0 +1,35 @@
+m.ts(2,1): error TS2308: Module "./a" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+m.ts(3,1): error TS2308: Module "./a" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+m.ts(3,1): error TS2308: Module "./b" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+m.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+main.ts(2,1): error TS2308: Module "./a" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (0 errors) ====
+    export const x = 1;
+==== b.ts (0 errors) ====
+    export const x = 2;
+==== c.ts (0 errors) ====
+    export const x = 3;
+==== m.ts (4 errors) ====
+    export * from "./a";
+    export * from "./b";
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2308: Module "./a" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+    export * from "./c";
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2308: Module "./a" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2308: Module "./b" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+    import "./main";
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== main.ts (1 errors) ====
+    export * from "./a";
+    export * from "./m";
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2308: Module "./a" has already exported a member named 'x'. Consider explicitly re-exporting to resolve the ambiguity.
+    

@@ -1,0 +1,10 @@
+//// [test/cases/bun33-C5e.ts] ////
+
+=== a.ts ===
+class X implements this {}
+>X : X
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

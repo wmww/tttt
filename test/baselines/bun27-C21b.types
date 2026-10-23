@@ -1,0 +1,27 @@
+//// [test/cases/bun27-C21b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+declare function F(p: { style?: { className?: string } }): JSX.Element;
+>F : (p: { style?: { className?: string; }; }) => JSX.Element
+>p : { style?: { className?: string; }; }
+>style : { className?: string; } | undefined
+>className : string | undefined
+>JSX : any
+
+const a = <F {...{ style: { class: "x" } }} />;
+>a : JSX.Element
+><F {...{ style: { class: "x" } }} /> : JSX.Element
+>F : (p: { style?: { className?: string; }; }) => JSX.Element
+>{ style: { class: "x" } } : { style: { class: string; }; }
+>style : { class: string; }
+>{ class: "x" } : { class: string; }
+>class : string
+>"x" : "x"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

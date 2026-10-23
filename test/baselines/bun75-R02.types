@@ -1,0 +1,95 @@
+//// [test/cases/bun75-R02.ts] ////
+
+=== a.ts ===
+import { make, make2, make3, cls } from "./m";
+>make : () => N.default
+>make2 : () => N2.default
+>make3 : () => N3.default
+>cls : () => typeof N.default
+
+export const v = make();
+>v : N.default
+>make() : N.default
+>make : () => N.default
+
+export const v2 = make2();
+>v2 : N2.default
+>make2() : N2.default
+>make2 : () => N2.default
+
+export const v3 = make3();
+>v3 : N3.default
+>make3() : N3.default
+>make3 : () => N3.default
+
+export const v4 = cls();
+>v4 : typeof N.default
+>cls() : typeof N.default
+>cls : () => typeof N.default
+
+export function f(p = make()) { return [make2()]; }
+>f : (p?: N.default) => N2.default[]
+>p : N.default
+>make() : N.default
+>make : () => N.default
+>[make2()] : N2.default[]
+>make2() : N2.default
+>make2 : () => N2.default
+
+export class C { p = make(); static s = make2(); m() { return make3(); } }
+>C : C
+>p : N.default
+>make() : N.default
+>make : () => N.default
+>s : N2.default
+>make2() : N2.default
+>make2 : () => N2.default
+>m : () => N3.default
+>make3() : N3.default
+>make3 : () => N3.default
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+namespace N { export default class Foo { x = 1 } }
+>N : typeof N
+>Foo : Foo
+>x : number
+>1 : 1
+
+namespace N2 { export default class { y = 1 } }
+>N2 : typeof N2
+>y : number
+>1 : 1
+
+namespace N3 { export default interface Ifc { z: number } }
+>z : number
+
+export function make() { return new N.default(); }
+>make : () => N.default
+>new N.default() : N.default
+>N.default : typeof N.default
+>N : typeof N
+>default : typeof N.default
+
+export function make2() { return new N2.default(); }
+>make2 : () => N2.default
+>new N2.default() : N2.default
+>N2.default : typeof N2.default
+>N2 : typeof N2
+>default : typeof N2.default
+
+export function make3() { return null! as N3.default; }
+>make3 : () => N3.default
+>null! as N3.default : N3.default
+>null! : never
+>N3 : any
+
+export function cls() { return N.default; }
+>cls : () => typeof N.default
+>N.default : typeof N.default
+>N : typeof N
+>default : typeof N.default
+

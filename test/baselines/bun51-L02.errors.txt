@@ -1,0 +1,22 @@
+a.ts(1,22): error TS1035: Only ambient modules can use quoted names.
+a.ts(1,22): error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+a.ts(2,16): error TS1234: An ambient module declaration is only allowed at the top level in a file.
+a.ts(4,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (4 errors) ====
+    namespace N { module "x" {} }
+                         ~~~
+!!! error TS1035: Only ambient modules can use quoted names.
+                         ~~~
+!!! error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+    function f() { module "y" {} }
+                   ~~~~~~
+!!! error TS1234: An ambient module declaration is only allowed at the top level in a file.
+    export { N, f };
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

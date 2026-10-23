@@ -1,0 +1,82 @@
+//// [test/cases/bun59-L19a.ts] ////
+
+=== a.ts ===
+class Base<T> { value?: T; other!: T; n?: number; init: T | undefined = undefined; }
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>value : Symbol(Base.value, Decl(a.ts, 0, 15))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>other : Symbol(Base.other, Decl(a.ts, 0, 26))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>n : Symbol(Base.n, Decl(a.ts, 0, 37))
+>init : Symbol(Base.init, Decl(a.ts, 0, 49))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>undefined : Symbol(undefined)
+
+type Ctor<T> = new (...a: any[]) => T;
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 84))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>a : Symbol(a, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+
+function MixAny<TB extends Ctor<Base<any>>>(B: TB) { return class extends B { extra = 1 }; }
+>MixAny : Symbol(MixAny, Decl(a.ts, 1, 38))
+>TB : Symbol(TB, Decl(a.ts, 2, 16))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 84))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 2, 44))
+>TB : Symbol(TB, Decl(a.ts, 2, 16))
+>B : Symbol(B, Decl(a.ts, 2, 44))
+>extra : Symbol((Anonymous class).extra, Decl(a.ts, 2, 77))
+
+function MixUnknown<TB extends Ctor<Base<unknown>>>(B: TB) { return class extends B {}; }
+>MixUnknown : Symbol(MixUnknown, Decl(a.ts, 2, 92))
+>TB : Symbol(TB, Decl(a.ts, 3, 20))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 84))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 3, 52))
+>TB : Symbol(TB, Decl(a.ts, 3, 20))
+>B : Symbol(B, Decl(a.ts, 3, 52))
+
+function MixSame<TB extends Ctor<Base<number>>>(B: TB) { return class extends B {}; }
+>MixSame : Symbol(MixSame, Decl(a.ts, 3, 89))
+>TB : Symbol(TB, Decl(a.ts, 4, 17))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 84))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 4, 48))
+>TB : Symbol(TB, Decl(a.ts, 4, 17))
+>B : Symbol(B, Decl(a.ts, 4, 48))
+
+class D1 extends MixAny(Base<number>) {}
+>D1 : Symbol(D1, Decl(a.ts, 4, 85))
+>MixAny : Symbol(MixAny, Decl(a.ts, 1, 38))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+
+class Num extends Base<number> {}
+>Num : Symbol(Num, Decl(a.ts, 5, 40))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+
+class D2 extends MixAny(Num) {}
+>D2 : Symbol(D2, Decl(a.ts, 6, 33))
+>MixAny : Symbol(MixAny, Decl(a.ts, 1, 38))
+>Num : Symbol(Num, Decl(a.ts, 5, 40))
+
+class D3 extends MixUnknown(Base<number>) {}
+>D3 : Symbol(D3, Decl(a.ts, 7, 31))
+>MixUnknown : Symbol(MixUnknown, Decl(a.ts, 2, 92))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+
+class D4 extends MixSame(Base<number>) {}
+>D4 : Symbol(D4, Decl(a.ts, 8, 44))
+>MixSame : Symbol(MixSame, Decl(a.ts, 3, 89))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+
+class D5 extends MixAny(Base<number>) { value?: number }
+>D5 : Symbol(D5, Decl(a.ts, 9, 41))
+>MixAny : Symbol(MixAny, Decl(a.ts, 1, 38))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>value : Symbol(D5.value, Decl(a.ts, 10, 39))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

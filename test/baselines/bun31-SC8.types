@@ -1,0 +1,50 @@
+//// [test/cases/bun31-SC8.ts] ////
+
+=== a.ts ===
+declare function use(...a: any[]): void; declare function fail(): never; declare function assertS(x: unknown): asserts x is string;
+>use : (...a: any[]) => void
+>a : any[]
+>fail : () => never
+>assertS : (x: unknown) => asserts x is string
+>x : unknown
+
+function w1(x: any) { with (fail()) { } use(); }
+>w1 : (x: any) => void
+>x : any
+>fail() : never
+>fail : () => never
+>use() : void
+>use : (...a: any[]) => void
+
+function w2(x: unknown) { with (assertS(x)) { } const n: never = x; }
+>w2 : (x: unknown) => void
+>x : unknown
+>assertS(x) : void
+>assertS : (x: unknown) => asserts x is string
+>x : unknown
+>n : never
+>x : unknown
+
+declare let o: any;
+>o : any
+
+function w3() { with (o) let a = 1; a; }
+>w3 : () => void
+>o : any
+>a : any
+>1 : any
+>a : number
+
+function w5() { let a = 1; with (o) let a = 2; a; }
+>w5 : () => void
+>a : number
+>1 : 1
+>o : any
+>a : any
+>2 : any
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

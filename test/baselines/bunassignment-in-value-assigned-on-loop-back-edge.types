@@ -1,0 +1,461 @@
+//// [test/cases/bunassignment-in-value-assigned-on-loop-back-edge.ts] ////
+
+=== a.ts ===
+interface Item { value: number; next: Item | null; items: Item[] }
+>value : number
+>next : Item | null
+>items : Item[]
+
+declare const item: Item;
+>item : Item
+
+declare const more: boolean;
+>more : boolean
+
+declare function id<T>(x: T): T;
+>id : <T>(x: T) => T
+>x : T
+
+export function copy(first: Item | null) {
+>copy : (first: Item | null) => Item | null
+>first : Item | null
+
+  var newFirst = null, newLast = null;
+>newFirst : any
+>newLast : any
+
+  var at = first;
+>at : Item | null
+>first : Item | null
+
+  if (null !== at) {
+>null !== at : boolean
+>at : Item | null
+
+    do {
+      var clone: Item = { value: at.value, next: null, items: [] };
+>clone : Item
+>{ value: at.value, next: null, items: [] } : { value: number; next: null; items: never[]; }
+>value : number
+>at.value : number
+>at : Item
+>value : number
+>next : null
+>items : never[]
+>[] : never[]
+
+      null === newLast ? (newFirst = newLast = clone) : (newLast = newLast.next = clone);
+>null === newLast ? (newFirst = newLast = clone) : (newLast = newLast.next = clone) : Item
+>null === newLast : boolean
+>newLast : Item | null
+>(newFirst = newLast = clone) : Item
+>newFirst = newLast = clone : Item
+>newFirst : any
+>newLast = clone : Item
+>newLast : any
+>clone : Item
+>(newLast = newLast.next = clone) : Item
+>newLast = newLast.next = clone : Item
+>newLast : any
+>newLast.next = clone : Item
+>newLast.next : Item | null
+>newLast : Item
+>next : Item | null
+>clone : Item
+
+      at = at.next;
+>at = at.next : Item | null
+>at : Item | null
+>at.next : Item | null
+>at : Item
+>next : Item | null
+
+    } while (null !== at);
+>null !== at : boolean
+>at : Item | null
+  }
+  return newFirst;
+>newFirst : Item | null
+}
+export function declared() {
+>declared : () => void
+
+  let last: Item | null = null;
+>last : Item | null
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : Item | null
+>item : Item
+
+    else last = last.next = item;
+>last = last.next = item : Item
+>last : Item | null
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+  }
+}
+export function conditional() {
+>conditional : () => void
+
+  var last = null;
+>last : any
+
+  while (more) null === last ? (last = item) : (last = last.next = item);
+>more : boolean
+>null === last ? (last = item) : (last = last.next = item) : Item
+>null === last : boolean
+>last : Item | null
+>(last = item) : Item
+>last = item : Item
+>last : any
+>item : Item
+>(last = last.next = item) : Item
+>last = last.next = item : Item
+>last : any
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+}
+export function forever() {
+>forever : () => void
+
+  let last = null;
+>last : any
+
+  for (;;) {
+    if (last !== null) last = last.next = item;
+>last !== null : boolean
+>last : Item | null
+>last = last.next = item : Item
+>last : any
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+
+    else last = item;
+>last = item : Item
+>last : any
+>item : Item
+  }
+}
+export function comma() {
+>comma : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = (last.next = item, item);
+>last = (last.next = item, item) : Item
+>last : any
+>(last.next = item, item) : Item
+>last.next = item, item : Item
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+>item : Item
+  }
+}
+export function argument() {
+>argument : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = id(last.next = item);
+>last = id(last.next = item) : Item
+>last : any
+>id(last.next = item) : Item
+>id : <T>(x: T) => T
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+  }
+}
+export function elementAccess() {
+>elementAccess : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = last["next"] = item;
+>last = last["next"] = item : Item
+>last : any
+>last["next"] = item : Item
+>last["next"] : Item | null
+>last : Item
+>"next" : "next"
+>item : Item
+  }
+}
+export function destructuring() {
+>destructuring : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = ([last.next] = [item])[0];
+>last = ([last.next] = [item])[0] : Item
+>last : any
+>([last.next] = [item])[0] : Item
+>([last.next] = [item]) : [Item]
+>[last.next] = [item] : [Item]
+>[last.next] : [Item | null]
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>[item] : [Item]
+>item : Item
+>0 : 0
+  }
+}
+export function fromUndefined() {
+>fromUndefined : () => void
+
+  var last;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === undefined) last = item;
+>last === undefined : boolean
+>last : Item | undefined
+>undefined : undefined
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = last.next = item;
+>last = last.next = item : Item
+>last : any
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+  }
+}
+export function truthiness() {
+>truthiness : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (!last) last = item;
+>!last : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = last.next = item;
+>last = last.next = item : Item
+>last : any
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+  }
+}
+// No error in these.
+export function twoStatements() {
+>twoStatements : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else { last.next = item; last = item; }
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+>last = item : Item
+>last : any
+>item : Item
+  }
+}
+export function compound() {
+>compound : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = (last.value += 1, item);
+>last = (last.value += 1, item) : Item
+>last : any
+>(last.value += 1, item) : Item
+>last.value += 1, item : Item
+>last.value += 1 : number
+>last.value : number
+>last : Item
+>value : number
+>1 : 1
+>item : Item
+  }
+}
+export function read() {
+>read : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = last.next;
+>last = last.next : Item | null
+>last : any
+>last.next : Item | null
+>last : Item
+>next : Item | null
+  }
+}
+export function call() {
+>call : () => void
+
+  var last = null;
+>last : any
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = item;
+>last === null : boolean
+>last : Item | null
+>last = item : Item
+>last : any
+>item : Item
+
+    else last = id(last.items.push(item) ? item : item);
+>last = id(last.items.push(item) ? item : item) : Item
+>last : any
+>id(last.items.push(item) ? item : item) : Item
+>id : <T>(x: T) => T
+>last.items.push(item) ? item : item : Item
+>last.items.push(item) : number
+>last.items.push : (...items: Item[]) => number
+>last.items : Item[]
+>last : Item
+>items : Item[]
+>push : (...items: Item[]) => number
+>item : Item
+>item : Item
+>item : Item
+  }
+}
+export function noLoop() {
+>noLoop : () => void
+
+  var last = null;
+>last : any
+
+  if (more) last = item;
+>more : boolean
+>last = item : Item
+>last : any
+>item : Item
+
+  if (last !== null) last = last.next = item;
+>last !== null : boolean
+>last : Item | null
+>last = last.next = item : Item
+>last : any
+>last.next = item : Item
+>last.next : Item | null
+>last : Item
+>next : Item | null
+>item : Item
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

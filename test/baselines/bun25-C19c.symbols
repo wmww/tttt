@@ -1,0 +1,14 @@
+//// [test/cases/bun25-C19c.ts] ////
+
+=== a.ts ===
+const c: { [k: string]: (a: number) => void } = { "#a@1": a => a.length };
+>c : Symbol(c, Decl(a.ts, 0, 5))
+>k : Symbol(k, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 25))
+>"#a@1" : Symbol("#a@1", Decl(a.ts, 0, 49))
+>a : Symbol(a, Decl(a.ts, 0, 57))
+>a : Symbol(a, Decl(a.ts, 0, 57))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

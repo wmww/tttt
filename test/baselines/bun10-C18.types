@@ -1,0 +1,31 @@
+//// [test/cases/bun10-C18.ts] ////
+
+=== a.ts ===
+declare class X { static readonly ["a"]: unique symbol; static readonly 1: unique symbol }
+>X : X
+>["a"] : unique symbol
+>"a" : "a"
+>1 : unique symbol
+
+const k = { [X.a]: 1, [X[1]]: 3 };
+>k : { [X["a"]]: number; [X[1]]: number; }
+>{ [X.a]: 1, [X[1]]: 3 } : { [X["a"]]: number; [X[1]]: number; }
+>[X.a] : number
+>X.a : unique symbol
+>X : typeof X
+>a : unique symbol
+>1 : 1
+>[X[1]] : number
+>X[1] : unique symbol
+>X : typeof X
+>1 : 1
+>3 : 3
+
+const t: boolean = k;
+>t : boolean
+>k : { [X["a"]]: number; [X[1]]: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

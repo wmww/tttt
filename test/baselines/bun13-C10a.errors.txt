@@ -1,0 +1,17 @@
+a.ts(2,7): error TS2322: Type '[a: string] | [a: string]' is not assignable to type 'never'.
+  Type '[a: string]' is not assignable to type 'never'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare let x1: [a: string] | [a: string];
+    const n1: never = x1;
+          ~~
+!!! error TS2322: Type '[a: string] | [a: string]' is not assignable to type 'never'.
+!!! error TS2322:   Type '[a: string]' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,117 @@
+a.ts(10,3): error TS2322: Type '{ type: "array"; maxItems: 125; items: [Schema, Schema]; }' is not assignable to type 'MapType | RecordType'.
+  Types of property 'type' are incompatible.
+    Type '"array"' is not assignable to type '"object"'.
+a.ts(23,7): error TS2322: Type 'Pet' is not assignable to type 'number'.
+  Type 'Animal' is not assignable to type 'number'.
+a.ts(24,7): error TS2322: Type 'Pet[]' is not assignable to type 'number'.
+a.ts(25,7): error TS2322: Type 'Pet' is not assignable to type 'number'.
+  Type 'Animal' is not assignable to type 'number'.
+a.ts(26,7): error TS2322: Type 'Pet' is not assignable to type 'number'.
+  Type 'Animal' is not assignable to type 'number'.
+a.ts(27,7): error TS2322: Type 'Pet' is not assignable to type 'number'.
+  Type 'Animal' is not assignable to type 'number'.
+a.ts(28,7): error TS2322: Type 'Pet' is not assignable to type 'number'.
+  Type 'Animal' is not assignable to type 'number'.
+a.ts(31,7): error TS2322: Type '({ type: "s"; } | { type: "n"; } | {}) & Meta' is not assignable to type 'number'.
+  Type 'Meta' is not assignable to type 'number'.
+a.ts(36,7): error TS2322: Type 'VU' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+a.ts(37,7): error TS2322: Type 'VUS' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+a.ts(42,7): error TS2322: Type 'Three' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a.ts(43,7): error TS2322: Type 'Animal' is not assignable to type 'number'.
+a.ts(44,7): error TS2322: Type 'Animal | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+a.ts(45,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (14 errors) ====
+    declare const c: boolean;
+    // The shape of openai-node, src/_vendor/zod-to-json-schema: `{} & Meta` is `Meta`, a supertype of the other members.
+    type Meta = { title?: string };
+    type Schema = ({ type: "string" } | { type: "number" } | {}) & Meta;
+    type MapType = { maxItems: 125; items: [Schema, Schema] };
+    type RecordType = { type: "object"; additionalProperties: Schema };
+    declare function parseDef(): Schema | undefined;
+    function parseMapDef(): MapType | RecordType {
+      const keys = parseDef() || {};
+      return { type: "array", maxItems: 125, items: [keys, keys] };
+      ~~~~~~
+!!! error TS2322: Type '{ type: "array"; maxItems: 125; items: [Schema, Schema]; }' is not assignable to type 'MapType | RecordType'.
+!!! error TS2322:   Types of property 'type' are incompatible.
+!!! error TS2322:     Type '"array"' is not assignable to type '"object"'.
+    }
+    // Ordinary code: a named union with a member that is a supertype of all the others.
+    interface Animal { name: string }
+    interface Dog extends Animal { bark(): void }
+    interface Cat extends Animal { meow(): void }
+    type Pet = Animal | Dog;
+    declare const a: Pet, b: Pet, u: Pet | undefined, dog: Dog, cat: Cat;
+    const x = c ? a : b;
+    if ("bark" in x) x.bark();
+    for (const e of [a, b]) if ("bark" in e) e.bark();
+    let y = u ?? b;
+    y = { name: "", bark() {} };
+    const t1: number = c ? a : b;
+          ~~
+!!! error TS2322: Type 'Pet' is not assignable to type 'number'.
+!!! error TS2322:   Type 'Animal' is not assignable to type 'number'.
+    const t2: number = [a, b];
+          ~~
+!!! error TS2322: Type 'Pet[]' is not assignable to type 'number'.
+    const t3: number = u || b;
+          ~~
+!!! error TS2322: Type 'Pet' is not assignable to type 'number'.
+!!! error TS2322:   Type 'Animal' is not assignable to type 'number'.
+    const t4: number = u ?? b;
+          ~~
+!!! error TS2322: Type 'Pet' is not assignable to type 'number'.
+!!! error TS2322:   Type 'Animal' is not assignable to type 'number'.
+    const t5: number = c ? a : dog;
+          ~~
+!!! error TS2322: Type 'Pet' is not assignable to type 'number'.
+!!! error TS2322:   Type 'Animal' is not assignable to type 'number'.
+    const t6: number = c ? a : cat;
+          ~~
+!!! error TS2322: Type 'Pet' is not assignable to type 'number'.
+!!! error TS2322:   Type 'Animal' is not assignable to type 'number'.
+    // Named by an origin, without an alias.
+    declare const o: ({ type: "s" } | { type: "n" } | {}) & Meta;
+    const t7: number = c ? o : o;
+          ~~
+!!! error TS2322: Type '({ type: "s"; } | { type: "n"; } | {}) & Meta' is not assignable to type 'number'.
+!!! error TS2322:   Type 'Meta' is not assignable to type 'number'.
+    // reduceVoidUndefined of removeRedundantLiteralTypes: one member is left, two are left.
+    type VU = void | undefined;
+    type VUS = void | undefined | string;
+    declare const vu: VU, vus: VUS;
+    const t8: number = c ? vu : vu;
+          ~~
+!!! error TS2322: Type 'VU' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    const t9: number = c ? vus : vus;
+          ~~
+!!! error TS2322: Type 'VUS' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    // The two agree: two members are left, two named unions, a named union inside `Pet | undefined`.
+    type Three = Animal | Dog | string;
+    type Pet2 = Animal | Cat;
+    declare const three: Three, p2: Pet2;
+    const s1: number = c ? three : three;
+          ~~
+!!! error TS2322: Type 'Three' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    const s2: number = c ? a : p2;
+          ~~
+!!! error TS2322: Type 'Animal' is not assignable to type 'number'.
+    const s3: number = c ? u : a;
+          ~~
+!!! error TS2322: Type 'Animal | undefined' is not assignable to type 'number'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

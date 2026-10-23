@@ -1,0 +1,34 @@
+//// [test/cases/bun08-C13b.ts] ////
+
+=== a.ts ===
+function f() {}
+>f : { (): void; a: "b"; b: number; }
+
+f.a = "b" as const;
+>f.a = "b" as const : "b"
+>f.a : "b"
+>f : { (): void; a: "b"; b: number; }
+>a : "b"
+>"b" as const : "b"
+>"b" : "b"
+
+f[k] = 1;
+>f[k] = 1 : 1
+>f[k] : number
+>f : { (): void; a: "b"; b: number; }
+>k : "b"
+>1 : 1
+
+declare const k: (typeof f)["a"];
+>k : "b"
+>f : { (): void; a: "b"; b: number; }
+
+f.b;
+>f.b : number
+>f : { (): void; a: "b"; b: number; }
+>b : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

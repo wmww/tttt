@@ -1,0 +1,36 @@
+//// [test/cases/bun91-R12b.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : any
+
+with (o) { var a1 = 1; }
+>o : any
+>a1 : any
+>1 : any
+
+with (o) { var [a2, ...a3] = o; }
+>o : any
+>a2 : any
+>a3 : any
+>o : any
+
+with (o) { namespace a4 {} }
+>o : any
+
+function f() { with (o) { var b1 = 1; let b2 = 2; } }
+>f : () => void
+>o : any
+>b1 : any
+>1 : any
+>b2 : any
+>2 : any
+
+f();
+>f() : void
+>f : () => void
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

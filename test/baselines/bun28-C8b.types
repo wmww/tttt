@@ -1,0 +1,8 @@
+//// [test/cases/bun28-C8b.ts] ////
+
+=== a.ts ===
+interface B extends import<string> {}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

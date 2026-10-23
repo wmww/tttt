@@ -1,0 +1,18 @@
+a.ts(3,16): error TS2351: This expression is not constructable.
+  Type 'typeof A4' has no construct signatures.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class B4<T> { b!: T }
+    class A4 extends B4<typeof a4> { own = 1 }
+    const a4 = new A4().own;
+                   ~~
+!!! error TS2351: This expression is not constructable.
+!!! error TS2351:   Type 'typeof A4' has no construct signatures.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

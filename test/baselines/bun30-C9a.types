@@ -1,0 +1,14 @@
+//// [test/cases/bun30-C9a.ts] ////
+
+=== a.ts ===
+export class C { m() { enum E { #a, #a } } }
+>C : C
+>m : () => void
+>E : E
+>#a : (typeof E)["\uFFFD#17191@#a"]
+>#a : (typeof E)["\uFFFD#17191@#a"]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,33 @@
+//// [test/cases/bun74-R09c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { [k: string]: any } }
+>k : string
+
+const a = <form onSubmit={function (e: any) { arguments = e; }} />;
+>a : any
+><form onSubmit={function (e: any) { arguments = e; }} /> : any
+>form : any
+>onSubmit : (e: any) => void
+>function (e: any) { arguments = e; } : (e: any) => void
+>e : any
+>arguments = e : any
+>arguments : IArguments
+>e : any
+
+const b = <div a={(eval: any) => 1}>{function arguments() {}}</div>;
+>b : any
+><div a={(eval: any) => 1}>{function arguments() {}}</div> : any
+>div : any
+>a : (eval: any) => number
+>(eval: any) => 1 : (eval: any) => number
+>eval : any
+>1 : 1
+>function arguments() {} : () => void
+>arguments : () => void
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

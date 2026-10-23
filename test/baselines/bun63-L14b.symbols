@@ -1,0 +1,166 @@
+//// [test/cases/bun63-L14b.ts] ////
+
+=== a.ts ===
+let r: 1; let x: any;
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+
+class P { a = 1; b = 2; }
+>P : Symbol(P, Decl(a.ts, 0, 21))
+>a : Symbol(P.a, Decl(a.ts, 1, 9))
+>b : Symbol(P.b, Decl(a.ts, 1, 16))
+
+declare const p: P;
+>p : Symbol(p, Decl(a.ts, 2, 13))
+>P : Symbol(P, Decl(a.ts, 0, 21))
+
+({ a: x, ...r } = p);
+>a : Symbol(a, Decl(a.ts, 3, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>p : Symbol(p, Decl(a.ts, 2, 13))
+
+({ ...r } = p);
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>p : Symbol(p, Decl(a.ts, 2, 13))
+
+enum E { A, B }
+>E : Symbol(E, Decl(a.ts, 4, 15))
+>A : Symbol(E.A, Decl(a.ts, 5, 8))
+>B : Symbol(E.B, Decl(a.ts, 5, 11))
+
+({ A: x, ...r } = E);
+>A : Symbol(A, Decl(a.ts, 6, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>E : Symbol(E, Decl(a.ts, 4, 15))
+
+namespace NS { export const a = 1, b = 2; }
+>NS : Symbol(NS, Decl(a.ts, 6, 21))
+>a : Symbol(a, Decl(a.ts, 7, 27))
+>b : Symbol(b, Decl(a.ts, 7, 34))
+
+({ a: x, ...r } = NS);
+>a : Symbol(a, Decl(a.ts, 8, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>NS : Symbol(NS, Decl(a.ts, 6, 21))
+
+function f() {} f.a = 1; f.b = 2;
+>f : Symbol(f, Decl(a.ts, 8, 22))
+>f.a : Symbol(f.a, Decl(a.ts, 9, 15))
+>f : Symbol(f, Decl(a.ts, 8, 22))
+>a : Symbol(f.a, Decl(a.ts, 9, 15))
+>f.b : Symbol(f.b, Decl(a.ts, 9, 24))
+>f : Symbol(f, Decl(a.ts, 8, 22))
+>b : Symbol(f.b, Decl(a.ts, 9, 24))
+
+({ a: x, ...r } = f);
+>a : Symbol(a, Decl(a.ts, 10, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>f : Symbol(f, Decl(a.ts, 8, 22))
+
+interface I { a: number; b: number }
+>I : Symbol(I, Decl(a.ts, 10, 21))
+>a : Symbol(I.a, Decl(a.ts, 11, 13))
+>b : Symbol(I.b, Decl(a.ts, 11, 24))
+
+declare const i: I;
+>i : Symbol(i, Decl(a.ts, 12, 13))
+>I : Symbol(I, Decl(a.ts, 10, 21))
+
+({ a: x, ...r } = i);
+>a : Symbol(a, Decl(a.ts, 13, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>i : Symbol(i, Decl(a.ts, 12, 13))
+
+class Box<T> { a!: T; b!: T[]; }
+>Box : Symbol(Box, Decl(a.ts, 13, 21))
+>T : Symbol(T, Decl(a.ts, 14, 10))
+>a : Symbol(Box.a, Decl(a.ts, 14, 14))
+>T : Symbol(T, Decl(a.ts, 14, 10))
+>b : Symbol(Box.b, Decl(a.ts, 14, 21))
+>T : Symbol(T, Decl(a.ts, 14, 10))
+
+declare const bx: Box<string>;
+>bx : Symbol(bx, Decl(a.ts, 15, 13))
+>Box : Symbol(Box, Decl(a.ts, 13, 21))
+
+({ a: x, ...r } = bx);
+>a : Symbol(a, Decl(a.ts, 16, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>bx : Symbol(bx, Decl(a.ts, 15, 13))
+
+({ a: x, ...r } = P);
+>a : Symbol(a, Decl(a.ts, 17, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>P : Symbol(P, Decl(a.ts, 0, 21))
+
+declare const u: P | I;
+>u : Symbol(u, Decl(a.ts, 18, 13))
+>P : Symbol(P, Decl(a.ts, 0, 21))
+>I : Symbol(I, Decl(a.ts, 10, 21))
+
+({ a: x, ...r } = u);
+>a : Symbol(a, Decl(a.ts, 19, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>u : Symbol(u, Decl(a.ts, 18, 13))
+
+const ce = class { a = 1; b = 2 };
+>ce : Symbol(ce, Decl(a.ts, 20, 5))
+>a : Symbol(ce.a, Decl(a.ts, 20, 18))
+>b : Symbol(ce.b, Decl(a.ts, 20, 25))
+
+({ a: x, ...r } = new ce());
+>a : Symbol(a, Decl(a.ts, 21, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>ce : Symbol(ce, Decl(a.ts, 20, 5))
+
+type TL = { a: number; b: number };
+>TL : Symbol(TL, Decl(a.ts, 21, 28))
+>a : Symbol(a, Decl(a.ts, 22, 11))
+>b : Symbol(b, Decl(a.ts, 22, 22))
+
+declare const tl: TL;
+>tl : Symbol(tl, Decl(a.ts, 23, 13))
+>TL : Symbol(TL, Decl(a.ts, 21, 28))
+
+({ a: x, ...r } = tl);
+>a : Symbol(a, Decl(a.ts, 24, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>tl : Symbol(tl, Decl(a.ts, 23, 13))
+
+({ a: x, ...r } = { a: 1, b: 2 });
+>a : Symbol(a, Decl(a.ts, 25, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>a : Symbol(a, Decl(a.ts, 25, 19))
+>b : Symbol(b, Decl(a.ts, 25, 25))
+
+let need: { b: number; c: number };
+>need : Symbol(need, Decl(a.ts, 26, 3))
+>b : Symbol(b, Decl(a.ts, 26, 11))
+>c : Symbol(c, Decl(a.ts, 26, 22))
+
+({ a: x, ...need } = p);
+>a : Symbol(a, Decl(a.ts, 27, 2))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>need : Symbol(need, Decl(a.ts, 26, 3))
+>p : Symbol(p, Decl(a.ts, 2, 13))
+
+for ({ a: x, ...r } of [p]) {}
+>a : Symbol(a, Decl(a.ts, 28, 6))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>r : Symbol(r, Decl(a.ts, 0, 3))
+>p : Symbol(p, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 29, 5))
+

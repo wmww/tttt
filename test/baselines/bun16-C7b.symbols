@@ -1,0 +1,38 @@
+//// [test/cases/bun16-C7b.ts] ////
+
+=== a.ts ===
+interface Array<T> { length: number } interface Boolean {} interface Function {} interface IArguments {} interface Number {} interface Object {} interface RegExp {} interface String {}
+>Array : Symbol(Array, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+>length : Symbol(Array.length, Decl(a.ts, 0, 20))
+>Boolean : Symbol(Boolean, Decl(a.ts, 0, 37))
+>Function : Symbol(Function, Decl(a.ts, 0, 58))
+>IArguments : Symbol(IArguments, Decl(a.ts, 0, 80))
+>Number : Symbol(Number, Decl(a.ts, 0, 104))
+>Object : Symbol(Object, Decl(a.ts, 0, 124))
+>RegExp : Symbol(RegExp, Decl(a.ts, 0, 144))
+>String : Symbol(String, Decl(a.ts, 0, 164))
+
+interface CallableFunction extends Function {} interface NewableFunction extends Function {}
+>CallableFunction : Symbol(CallableFunction, Decl(a.ts, 0, 184))
+>Function : Symbol(Function, Decl(a.ts, 0, 58))
+>NewableFunction : Symbol(NewableFunction, Decl(a.ts, 1, 46))
+>Function : Symbol(Function, Decl(a.ts, 0, 58))
+
+declare function dec3(target: any, key: any, d: { value: number }): void;
+>dec3 : Symbol(dec3, Decl(a.ts, 1, 92))
+>target : Symbol(target, Decl(a.ts, 2, 22))
+>key : Symbol(key, Decl(a.ts, 2, 34))
+>d : Symbol(d, Decl(a.ts, 2, 44))
+>value : Symbol(value, Decl(a.ts, 2, 49))
+
+class C {
+>C : Symbol(C, Decl(a.ts, 2, 73))
+
+  @dec3 m() {}
+>dec3 : Symbol(dec3, Decl(a.ts, 1, 92))
+>m : Symbol(C.m, Decl(a.ts, 3, 9))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

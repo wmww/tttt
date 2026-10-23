@@ -1,0 +1,17 @@
+//// [test/cases/bun36-C9b.ts] ////
+
+=== a.ts ===
+import { which } from "k";
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+const x: 0 = which;
+>x : Symbol(x, Decl(a.ts, 1, 5))
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/k/t.d.ts ===
+export declare const which: "t";
+>which : Symbol(which, Decl(t.d.ts, 0, 20))
+

@@ -1,0 +1,12 @@
+//// [test/cases/bun34-C6a.ts] ////
+
+=== a.ts ===
+export interface I {
+  /** {@link T} */
+  p: (<T>() => void);
+>p : <T>() => void
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

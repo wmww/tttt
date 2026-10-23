@@ -1,0 +1,10 @@
+//// [test/cases/bun33-C8c.ts] ////
+
+=== a.ts ===
+type T = typeof import(("./nope"));
+>T : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

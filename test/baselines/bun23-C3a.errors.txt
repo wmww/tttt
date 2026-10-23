@@ -1,0 +1,16 @@
+a.ts(3,30): error TS2322: Type 'A["w"]' is not assignable to type 'B["w"]'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface A { readonly w: unique symbol }
+    interface B { readonly w: unique symbol }
+    declare let x: A["w"]; const y: B["w"] = x;
+                                 ~
+!!! error TS2322: Type 'A["w"]' is not assignable to type 'B["w"]'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

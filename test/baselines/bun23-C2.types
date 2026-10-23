@@ -1,0 +1,15 @@
+//// [test/cases/bun23-C2.ts] ////
+
+=== a.ts ===
+type M1 = { [K in (keyof { a?: 1 })]: 1 };
+>M1 : M1
+>a : 1 | undefined
+
+const m1: M1 = {};
+>m1 : M1
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

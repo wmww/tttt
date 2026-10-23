@@ -1,0 +1,71 @@
+//// [test/cases/bun73-R04.ts] ////
+
+=== a.ts ===
+import { L3 } from "./b";
+>L3 : Symbol(L3, Decl(a.ts, 0, 8))
+
+declare const u: unknown;
+>u : Symbol(u, Decl(a.ts, 1, 13))
+
+// an ambient class: no TS2449
+const k1 = u instanceof L1 ? "s" : "s";
+>k1 : Symbol(k1, Decl(a.ts, 3, 5))
+>u : Symbol(u, Decl(a.ts, 1, 13))
+>L1 : Symbol(L1, Decl(a.ts, 3, 39))
+
+declare class L1 { static [k1]: number; i: number }
+>L1 : Symbol(L1, Decl(a.ts, 3, 39))
+>[k1] : Symbol(L1[k1], Decl(a.ts, 4, 18))
+>k1 : Symbol(k1, Decl(a.ts, 3, 5))
+>i : Symbol(L1.i, Decl(a.ts, 4, 39))
+
+const p1: never = L1.s;
+>p1 : Symbol(p1, Decl(a.ts, 5, 5))
+>L1.s : Symbol(L1[k1], Decl(a.ts, 4, 18))
+>L1 : Symbol(L1, Decl(a.ts, 3, 39))
+>s : Symbol(L1[k1], Decl(a.ts, 4, 18))
+
+// a class in another file
+export const k3 = u instanceof L3 ? "s" : "s";
+>k3 : Symbol(k3, Decl(a.ts, 7, 12))
+>u : Symbol(u, Decl(a.ts, 1, 13))
+>L3 : Symbol(L3, Decl(a.ts, 0, 8))
+
+const p3: never = L3.s;
+>p3 : Symbol(p3, Decl(a.ts, 8, 5))
+>L3 : Symbol(L3, Decl(a.ts, 0, 8))
+
+// with TS2449
+const k2 = u instanceof L2 ? "s" : "s";
+>k2 : Symbol(k2, Decl(a.ts, 10, 5))
+>u : Symbol(u, Decl(a.ts, 1, 13))
+>L2 : Symbol(L2, Decl(a.ts, 10, 39))
+
+class L2 { static [k2] = 1; i = 1 }
+>L2 : Symbol(L2, Decl(a.ts, 10, 39))
+>[k2] : Symbol(L2[k2], Decl(a.ts, 11, 10))
+>k2 : Symbol(k2, Decl(a.ts, 10, 5))
+>i : Symbol(L2.i, Decl(a.ts, 11, 27))
+
+const p2: never = L2.s;
+>p2 : Symbol(p2, Decl(a.ts, 12, 5))
+>L2.s : Symbol(L2[k2], Decl(a.ts, 11, 10))
+>L2 : Symbol(L2, Decl(a.ts, 10, 39))
+>s : Symbol(L2[k2], Decl(a.ts, 11, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+
+=== b.ts ===
+import { k3 } from "./a";
+>k3 : Symbol(k3, Decl(b.ts, 0, 8))
+
+export class L3 { static [k3] = 1; i = 1 }
+>L3 : Symbol(L3, Decl(b.ts, 0, 25))
+>[k3] : Symbol(L3[k3], Decl(b.ts, 1, 17))
+>k3 : Symbol(k3, Decl(b.ts, 0, 8))
+>i : Symbol(L3.i, Decl(b.ts, 1, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 2, 5))
+

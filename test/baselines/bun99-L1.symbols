@@ -1,0 +1,116 @@
+//// [test/cases/bun99-L1.ts] ////
+
+=== a.ts ===
+interface Matcher<T> { match(other: T): boolean }
+>Matcher : Symbol(Matcher, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+>match : Symbol(Matcher.match, Decl(a.ts, 0, 22))
+>other : Symbol(other, Decl(a.ts, 0, 29))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+
+type With<T> = T | Matcher<unknown>;
+>With : Symbol(With, Decl(a.ts, 0, 49))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>Matcher : Symbol(Matcher, Decl(a.ts, 0, 0))
+
+type Deep<T> = T extends Array<infer E> ? With<T> | Deep<E>[] : T extends object ? With<T> | { [K in keyof T]: Deep<T[K]> } : With<T>;
+>Deep : Symbol(Deep, Decl(a.ts, 1, 36))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>E : Symbol(E, Decl(a.ts, 2, 36))
+>With : Symbol(With, Decl(a.ts, 0, 49))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>Deep : Symbol(Deep, Decl(a.ts, 1, 36))
+>E : Symbol(E, Decl(a.ts, 2, 36))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>With : Symbol(With, Decl(a.ts, 0, 49))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>K : Symbol(K, Decl(a.ts, 2, 96))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>Deep : Symbol(Deep, Decl(a.ts, 1, 36))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>K : Symbol(K, Decl(a.ts, 2, 96))
+>With : Symbol(With, Decl(a.ts, 0, 49))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+
+declare function containing<T = any>(expected: Deep<T>): any;
+>containing : Symbol(containing, Decl(a.ts, 2, 134))
+>T : Symbol(T, Decl(a.ts, 3, 28))
+>expected : Symbol(expected, Decl(a.ts, 3, 37))
+>Deep : Symbol(Deep, Decl(a.ts, 1, 36))
+>T : Symbol(T, Decl(a.ts, 3, 28))
+
+declare function strict<T>(expected: Deep<T>): T;
+>strict : Symbol(strict, Decl(a.ts, 3, 61))
+>T : Symbol(T, Decl(a.ts, 4, 24))
+>expected : Symbol(expected, Decl(a.ts, 4, 27))
+>Deep : Symbol(Deep, Decl(a.ts, 1, 36))
+>T : Symbol(T, Decl(a.ts, 4, 24))
+>T : Symbol(T, Decl(a.ts, 4, 24))
+
+declare const four: { a: string; b?: undefined; c?: undefined } | { b: string; a?: undefined; c?: undefined } | { c: string; a?: undefined; b?: undefined } | { a?: undefined; b?: undefined; c?: undefined };
+>four : Symbol(four, Decl(a.ts, 5, 13))
+>a : Symbol(a, Decl(a.ts, 5, 21))
+>b : Symbol(b, Decl(a.ts, 5, 32))
+>c : Symbol(c, Decl(a.ts, 5, 47))
+>b : Symbol(b, Decl(a.ts, 5, 67))
+>a : Symbol(a, Decl(a.ts, 5, 78))
+>c : Symbol(c, Decl(a.ts, 5, 93))
+>c : Symbol(c, Decl(a.ts, 5, 113))
+>a : Symbol(a, Decl(a.ts, 5, 124))
+>b : Symbol(b, Decl(a.ts, 5, 139))
+>a : Symbol(a, Decl(a.ts, 5, 159))
+>b : Symbol(b, Decl(a.ts, 5, 174))
+>c : Symbol(c, Decl(a.ts, 5, 189))
+
+declare const two: { a: string } | { a?: undefined };
+>two : Symbol(two, Decl(a.ts, 6, 13))
+>a : Symbol(a, Decl(a.ts, 6, 20))
+>a : Symbol(a, Decl(a.ts, 6, 36))
+
+containing({ id: "x", empty: {}, ...four });
+>containing : Symbol(containing, Decl(a.ts, 2, 134))
+>id : Symbol(id, Decl(a.ts, 7, 12))
+>empty : Symbol(empty, Decl(a.ts, 7, 21))
+>four : Symbol(four, Decl(a.ts, 5, 13))
+
+containing({ empty: {}, ...two });
+>containing : Symbol(containing, Decl(a.ts, 2, 134))
+>empty : Symbol(empty, Decl(a.ts, 8, 12))
+>two : Symbol(two, Decl(a.ts, 6, 13))
+
+containing({ ...two, empty: {} });
+>containing : Symbol(containing, Decl(a.ts, 2, 134))
+>two : Symbol(two, Decl(a.ts, 6, 13))
+>empty : Symbol(empty, Decl(a.ts, 9, 20))
+
+containing({ nested: { empty: {} }, ...two });
+>containing : Symbol(containing, Decl(a.ts, 2, 134))
+>nested : Symbol(nested, Decl(a.ts, 10, 12))
+>empty : Symbol(empty, Decl(a.ts, 10, 22))
+>two : Symbol(two, Decl(a.ts, 6, 13))
+
+containing({ list: [{}], ...two });
+>containing : Symbol(containing, Decl(a.ts, 2, 134))
+>list : Symbol(list, Decl(a.ts, 11, 12))
+>two : Symbol(two, Decl(a.ts, 6, 13))
+
+export const v1: never = strict({ empty: {}, ...two });
+>v1 : Symbol(v1, Decl(a.ts, 12, 12))
+>strict : Symbol(strict, Decl(a.ts, 3, 61))
+>empty : Symbol(empty, Decl(a.ts, 12, 33))
+>two : Symbol(two, Decl(a.ts, 6, 13))
+
+export const v2: never = strict({ id: "x", empty: {}, other: {}, ...four });
+>v2 : Symbol(v2, Decl(a.ts, 13, 12))
+>strict : Symbol(strict, Decl(a.ts, 3, 61))
+>id : Symbol(id, Decl(a.ts, 13, 33))
+>empty : Symbol(empty, Decl(a.ts, 13, 42))
+>other : Symbol(other, Decl(a.ts, 13, 53))
+>four : Symbol(four, Decl(a.ts, 5, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+

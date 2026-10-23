@@ -1,0 +1,33 @@
+//// [test/cases/bun17-C1c.ts] ////
+
+=== a.ts ===
+interface Box<T> { v: T }
+>v : T
+
+type IA<T> = Box<IB<T>>; type IB<T> = Box<T>;
+>IA : IA<T>
+>IB : IB<T>
+
+type JA<T> = Box<JB<T>>; type JB<T> = Box<T>;
+>JA : JA<T>
+>JB : JB<T>
+
+declare function h<T>(x: IA<T>): T;
+>h : <T>(x: IA<T>) => T
+>x : IA<T>
+
+declare let j: JA<number>;
+>j : JA<number>
+
+h(j).toFixed();
+>h(j).toFixed() : string
+>h(j).toFixed : (fractionDigits?: number) => string
+>h(j) : number
+>h : <T>(x: IA<T>) => T
+>j : JA<number>
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

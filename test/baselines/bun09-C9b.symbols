@@ -1,0 +1,23 @@
+//// [test/cases/bun09-C9b.ts] ////
+
+=== a.ts ===
+interface I { k: "i"; p: this extends { k: "i" } ? 1 : 2 }
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>k : Symbol(I.k, Decl(a.ts, 0, 13))
+>p : Symbol(I.p, Decl(a.ts, 0, 21))
+>k : Symbol(k, Decl(a.ts, 0, 39))
+
+function fi<T extends I>(t: T) { const a: 1 = t.p; }
+>fi : Symbol(fi, Decl(a.ts, 0, 58))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>a : Symbol(a, Decl(a.ts, 1, 38))
+>t.p : Symbol(I.p, Decl(a.ts, 0, 21))
+>t : Symbol(t, Decl(a.ts, 1, 25))
+>p : Symbol(I.p, Decl(a.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

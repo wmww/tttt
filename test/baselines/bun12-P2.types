@@ -1,0 +1,10 @@
+//// [test/cases/bun12-P2.ts] ////
+
+=== a.ts ===
+type D = Missing<D>[] | 1;
+>D : D
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

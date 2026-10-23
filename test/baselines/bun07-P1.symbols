@@ -1,0 +1,21 @@
+//// [test/cases/bun07-P1.ts] ////
+
+=== a.ts ===
+export {};
+const b1: (this: { q: 1 }) => void = function (this) {};
+>b1 : Symbol(b1, Decl(a.ts, 1, 5))
+>this : Symbol(this, Decl(a.ts, 1, 11))
+>q : Symbol(q, Decl(a.ts, 1, 18))
+>this : Symbol(this, Decl(a.ts, 1, 47))
+
+const o1: { m(this: { q: 1 }): void } = { m(this) {} };
+>o1 : Symbol(o1, Decl(a.ts, 2, 5))
+>m : Symbol(m, Decl(a.ts, 2, 11))
+>this : Symbol(this, Decl(a.ts, 2, 14))
+>q : Symbol(q, Decl(a.ts, 2, 21))
+>m : Symbol(m, Decl(a.ts, 2, 41))
+>this : Symbol(this, Decl(a.ts, 2, 44))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

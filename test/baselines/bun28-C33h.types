@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C33h.ts] ////
+
+=== a.ts ===
+abstract function n(): void;
+>n : () => void
+
+function n() {}
+>n : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

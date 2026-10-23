@@ -1,0 +1,24 @@
+//// [test/cases/bun21-C20a.ts] ////
+
+=== a.ts ===
+function f(c: boolean): number {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>c : Symbol(c, Decl(a.ts, 0, 11))
+
+  let y: 1 | 2 = 1;
+>y : Symbol(y, Decl(a.ts, 1, 5))
+
+  while (true) {
+    switch (y) { case 1: return 1; case 2: return 2; }
+>y : Symbol(y, Decl(a.ts, 1, 5))
+
+    y = 2;
+>y : Symbol(y, Decl(a.ts, 1, 5))
+
+    if (c) break;
+>c : Symbol(c, Decl(a.ts, 0, 11))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

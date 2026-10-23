@@ -1,0 +1,13 @@
+//// [test/cases/bun32-C8.ts] ////
+
+=== a.ts ===
+({ async get g() { return 1; } });
+>({ async get g() { return 1; } }) : { readonly g: number; }
+>{ async get g() { return 1; } } : { readonly g: number; }
+>g : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

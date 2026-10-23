@@ -1,0 +1,19 @@
+//// [test/cases/bun39-P6.ts] ////
+
+=== a.ts ===
+export {};
+type P6<T> = Promise<Promise<Promise<Promise<Promise<Promise<T>>>>>>;
+>P6 : P6<T>
+
+declare const p42: P6<P6<P6<P6<P6<P6<P6<number>>>>>>>;
+>p42 : P6<P6<P6<P6<P6<P6<P6<number>>>>>>>
+
+const a: string = await p42;
+>a : string
+>await p42 : number
+>p42 : P6<P6<P6<P6<P6<P6<P6<number>>>>>>>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

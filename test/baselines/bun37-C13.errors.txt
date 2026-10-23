@@ -1,0 +1,9 @@
+error TS18003: No inputs were found in config file 'tsconfig.json'. Specified 'include' paths were '["ſ.ts"]' and 'exclude' paths were '[]'.
+
+
+!!! error TS18003: No inputs were found in config file 'tsconfig.json'. Specified 'include' paths were '["ſ.ts"]' and 'exclude' paths were '[]'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] }, "include": ["ſ.ts"] }
+==== s.ts (0 errors) ====
+    const sentinel: number = "";
+    

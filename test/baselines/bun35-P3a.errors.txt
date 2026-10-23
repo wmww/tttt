@@ -1,0 +1,29 @@
+a.ts(3,3): error TS2345: Argument of type 'import("node_modules/noname/index").A' is not assignable to parameter of type 'import("node_modules/dep/node_modules/noname/index").A'.
+  Types have separate declarations of a private property 'p'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import { A } from "noname";
+    import { a } from "dep";
+    a(new A());
+      ~~~~~~~
+!!! error TS2345: Argument of type 'import("node_modules/noname/index").A' is not assignable to parameter of type 'import("node_modules/dep/node_modules/noname/index").A'.
+!!! error TS2345:   Types have separate declarations of a private property 'p'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/dep/index.d.ts (0 errors) ====
+    import { A } from "noname";
+    export declare function a(c: A): void;
+==== node_modules/dep/node_modules/noname/index.d.ts (0 errors) ====
+    export declare class A { private p; }
+==== node_modules/dep/node_modules/noname/package.json (0 errors) ====
+    { "name": "", "version": "1.0.0" }
+==== node_modules/noname/index.d.ts (0 errors) ====
+    export declare class A { private p; }
+==== node_modules/noname/package.json (0 errors) ====
+    { "name": "", "version": "1.0.0" }
+    

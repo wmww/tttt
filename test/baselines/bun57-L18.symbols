@@ -1,0 +1,31 @@
+//// [test/cases/bun57-L18.ts] ////
+
+=== a.ts ===
+const f = async <T extends object>(x: T)
+>f : Symbol(f, Decl(a.ts, 0, 5))
+>T : Symbol(T)
+> : Symbol(unknown)
+> : Symbol(unknown)
+>T : Symbol(T, Decl(e.ts, 0, 12))
+
+=== b.ts ===
+const g = async <T,>(x: T)
+>g : Symbol(g, Decl(b.ts, 0, 5))
+>T : Symbol(T)
+>T : Symbol(T, Decl(e.ts, 0, 12))
+
+=== c.ts ===
+async <T extends U>(x);
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== d.ts ===
+async <T = U>(x);
+>T : Symbol(T, Decl(e.ts, 0, 12))
+
+=== e.ts ===
+async <const T>(x);
+>T : Symbol(T, Decl(e.ts, 0, 12))
+

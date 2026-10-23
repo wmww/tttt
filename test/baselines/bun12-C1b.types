@@ -1,0 +1,31 @@
+//// [test/cases/bun12-C1b.ts] ////
+
+=== a.ts ===
+function f<T extends any[], U extends any[]>(t: T, u: U): { [K in keyof T]: [T[K], U] } {
+>f : <T extends any[], U extends any[]>(t: T, u: U) => { [K in keyof T]: [T[K], U]; }
+>t : T
+>u : U
+
+  const r = f([...u] as [...U], [1] as [number]);
+>r : [[number, [number]]]
+>f([...u] as [...U], [1] as [number]) : [[number, [number]]]
+>f : <T extends any[], U extends any[]>(t: T, u: U) => { [K in keyof T]: [T[K], U]; }
+>[...u] as [...U] : [...U]
+>[...u] : [...U]
+>...u : any
+>u : U
+>[1] as [number] : [number]
+>[1] : [number]
+>1 : 1
+
+  const bad: string = r;
+>bad : string
+>r : [[number, [number]]]
+
+  return null!;
+>null! : never
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

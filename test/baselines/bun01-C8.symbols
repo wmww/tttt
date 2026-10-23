@@ -1,0 +1,21 @@
+//// [test/cases/bun01-C8.ts] ////
+
+=== a.ts ===
+export {};
+class C3 { [arguments.length]() {} }
+>C3 : Symbol(C3, Decl(a.ts, 0, 10))
+>[arguments.length] : Symbol(C3[arguments.length], Decl(a.ts, 1, 10))
+>arguments.length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+>arguments : Symbol(arguments)
+>length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+
+const o = { get [arguments.length]() { return 1; } };
+>o : Symbol(o, Decl(a.ts, 2, 5))
+>[arguments.length] : Symbol([arguments.length], Decl(a.ts, 2, 11))
+>arguments.length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+>arguments : Symbol(arguments)
+>length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

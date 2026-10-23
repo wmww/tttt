@@ -1,0 +1,12 @@
+//// [test/cases/bun32-C25.ts] ////
+
+=== a.ts ===
+class C { @a; }
+>C : C
+>a : any
+> : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

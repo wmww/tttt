@@ -1,0 +1,19 @@
+a.ts(1,10): error TS1134: Variable declaration expected.
+a.ts(1,10): error TS2872: This kind of expression is always truthy.
+a.ts(1,14): error TS1109: Expression expected.
+a.ts(1,15): error TS1128: Declaration or statement expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    for (let "x";;) {}
+             ~~~
+!!! error TS1134: Variable declaration expected.
+             ~~~
+!!! error TS2872: This kind of expression is always truthy.
+                 ~
+!!! error TS1109: Expression expected.
+                  ~
+!!! error TS1128: Declaration or statement expected.
+    

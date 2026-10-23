@@ -1,0 +1,21 @@
+//// [test/cases/bun43-C5c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+
+declare function Foo(p: { x: string }): JSX.Element;
+>Foo : Symbol(Foo, Decl(a.tsx, 0, 46))
+>p : Symbol(p, Decl(a.tsx, 1, 21))
+>x : Symbol(x, Decl(a.tsx, 1, 25))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+<Foo x=/**/"\"" />;
+>Foo : Symbol(Foo, Decl(a.tsx, 0, 46))
+>x : Symbol(x, Decl(a.tsx, 2, 4))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

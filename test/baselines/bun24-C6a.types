@@ -1,0 +1,20 @@
+//// [test/cases/bun24-C6a.ts] ////
+
+=== a.ts ===
+class C { static "a-b"() { return C["a-b"]; } }
+>C : C
+>"a-b" : () => any
+>C["a-b"] : () => any
+>C : typeof C
+>"a-b" : "a-b"
+
+const a: 1 = C["a-b"];
+>a : 1
+>C["a-b"] : () => any
+>C : typeof C
+>"a-b" : "a-b"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

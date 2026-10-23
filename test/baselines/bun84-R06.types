@@ -1,0 +1,80 @@
+//// [test/cases/bun84-R06.ts] ////
+
+=== a.ts ===
+declare function g(...a: boolean[]): void;
+>g : (...a: boolean[]) => void
+>a : boolean[]
+
+declare const x: unknown, b: number, c: number, d: number, an: any;
+>x : unknown
+>b : number
+>c : number
+>d : number
+>an : any
+
+declare let n: number;
+>n : number
+
+g(x as number < b, c > (d));
+>g(x as number < b, c > (d)) : void
+>g : (...a: boolean[]) => void
+>x as number < b : boolean
+>x as number : number
+>x : unknown
+>b : number
+>c > (d) : boolean
+>c : number
+>(d) : number
+>d : number
+
+g(x satisfies unknown as number < b, c > (d));
+>g(x satisfies unknown as number < b, c > (d)) : void
+>g : (...a: boolean[]) => void
+>x satisfies unknown as number < b : boolean
+>x satisfies unknown as number : number
+>x satisfies unknown : unknown
+>x : unknown
+>b : number
+>c > (d) : boolean
+>c : number
+>(d) : number
+>d : number
+
+const t = [x as number < b, c > (d)];
+>t : boolean[]
+>[x as number < b, c > (d)] : boolean[]
+>x as number < b : boolean
+>x as number : number
+>x : unknown
+>b : number
+>c > (d) : boolean
+>c : number
+>(d) : number
+>d : number
+
+const u = x as any < b > (an);
+>u : boolean
+>x as any < b > (an) : boolean
+>x as any < b : boolean
+>x as any : any
+>x : unknown
+>b : number
+>(an) : any
+>an : any
+
+g(n++ < b, c > (d));
+>g(n++ < b, c > (d)) : void
+>g : (...a: boolean[]) => void
+>n++ < b : boolean
+>n++ : number
+>n : number
+>b : number
+>c > (d) : boolean
+>c : number
+>(d) : number
+>d : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

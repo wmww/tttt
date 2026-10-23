@@ -1,0 +1,8 @@
+//// [test/cases/bun40-C11a.ts] ////
+
+=== a.ts ===
+/// <reference path="./b.TS" />
+b;
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

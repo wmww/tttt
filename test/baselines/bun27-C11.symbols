@@ -1,0 +1,25 @@
+//// [test/cases/bun27-C11.ts] ////
+
+=== a.tsx ===
+declare namespace Other { type ET = "div"; }
+>Other : Symbol(Other, Decl(a.tsx, 0, 0))
+>ET : Symbol(ET, Decl(a.tsx, 0, 25))
+
+declare namespace JSX { interface Element { e: 1 } export import ElementType = Other.ET; interface IntrinsicElements { div: {}; span: {} } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 44))
+>Element : Symbol(Element, Decl(a.tsx, 1, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 1, 43))
+>ElementType : Symbol(ElementType, Decl(a.tsx, 1, 50))
+>Other : Symbol(Other, Decl(a.tsx, 0, 0))
+>ET : Symbol(ElementType, Decl(a.tsx, 0, 25))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 1, 88))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 1, 118))
+>span : Symbol(IntrinsicElements.span, Decl(a.tsx, 1, 127))
+
+const a = <span />;
+>a : Symbol(a, Decl(a.tsx, 2, 5))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(a.tsx, 1, 127))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

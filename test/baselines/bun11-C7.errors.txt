@@ -1,0 +1,18 @@
+a.ts(1,11): error TS2317: Global type 'IterableIterator' must have 3 type parameter(s).
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2022" } }
+==== a.ts (2 errors) ====
+    interface IterableIterator<T> { }
+              ~~~~~~~~~~~~~~~~
+!!! error TS2317: Global type 'IterableIterator' must have 3 type parameter(s).
+    function* g1() { yield 1; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== lib.d.ts (0 errors) ====
+    interface Array<T> { length: number; [n: number]: T } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { }
+    interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+    

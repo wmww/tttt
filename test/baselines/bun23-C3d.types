@@ -1,0 +1,19 @@
+//// [test/cases/bun23-C3d.ts] ////
+
+=== a.ts ===
+declare let x: import("./m1").A["w"]; const y: import("./m1").B["w"] = x;
+>x : unique symbol
+>y : unique symbol
+>x : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+export interface A { readonly w: unique symbol }
+>w : unique symbol
+
+export interface B { readonly w: unique symbol }
+>w : unique symbol
+

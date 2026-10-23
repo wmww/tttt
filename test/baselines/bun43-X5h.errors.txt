@@ -1,0 +1,28 @@
+a.tsx(1,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(1,12): error TS1005: '</' expected.
+a.tsx(2,1): error TS1185: Merge conflict marker encountered.
+a.tsx(3,2): error TS1005: ',' expected.
+a.tsx(3,5): error TS1005: ',' expected.
+a.tsx(3,6): error TS1109: Expression expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (6 errors) ====
+    var v = <a>x
+            ~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+               ~
+    <<<<<<< x
+    ~~~~~~~~~
+!!! error TS1005: '</' expected.
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    y</a>;
+     ~~
+!!! error TS1005: ',' expected.
+        ~
+!!! error TS1005: ',' expected.
+         ~
+!!! error TS1109: Expression expected.
+    

@@ -1,0 +1,20 @@
+//// [test/cases/bun03-P2.ts] ////
+
+=== a.ts ===
+const abcdefgh: unique symbol = Symbol();
+>abcdefgh : Symbol(abcdefgh, Decl(a.ts, 0, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+class B { abcdefgh() {} }
+>B : Symbol(B, Decl(a.ts, 0, 41))
+>abcdefgh : Symbol(B.abcdefgh, Decl(a.ts, 1, 9))
+
+class D extends B { override [abcdefgh]() {} }
+>D : Symbol(D, Decl(a.ts, 1, 25))
+>B : Symbol(B, Decl(a.ts, 0, 41))
+>[abcdefgh] : Symbol(D[abcdefgh], Decl(a.ts, 2, 19))
+>abcdefgh : Symbol(abcdefgh, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

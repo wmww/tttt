@@ -1,0 +1,33 @@
+//// [test/cases/bun19-P5.ts] ////
+
+=== a.ts ===
+class C {
+>C : C
+
+  r!: { a: 1, b: 2 } | { a: 2, c: 3 };
+>r : { a: 1; b: 2; } | { a: 2; c: 3; }
+>a : 1
+>b : 2
+>a : 2
+>c : 3
+
+  m(q: this["r"]) {
+>m : (q: this["r"]) => void
+>q : this["r"]
+
+    const { a, ...rest } = q;
+>a : 1 | 2
+>rest : Omit<this["r"], "a">
+>q : { a: 1; b: 2; } | { a: 2; c: 3; }
+
+    const x: { b: 2 } | { c: 3 } = rest;
+>x : { b: 2; } | { c: 3; }
+>b : 2
+>c : 3
+>rest : Omit<this["r"], "a">
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

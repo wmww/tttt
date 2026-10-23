@@ -1,0 +1,22 @@
+//// [test/cases/bun10-C8b.ts] ////
+
+=== a.ts ===
+class B4<T> { b!: T }
+>B4 : Symbol(B4, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+>b : Symbol(B4.b, Decl(a.ts, 0, 13))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+
+class A4 extends B4<typeof a4> { own = 1 }
+>A4 : Symbol(A4, Decl(a.ts, 0, 21))
+>B4 : Symbol(B4, Decl(a.ts, 0, 0))
+>a4 : Symbol(a4, Decl(a.ts, 2, 5))
+>own : Symbol(A4.own, Decl(a.ts, 1, 32))
+
+const a4 = new A4().own;
+>a4 : Symbol(a4, Decl(a.ts, 2, 5))
+>A4 : Symbol(A4, Decl(a.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

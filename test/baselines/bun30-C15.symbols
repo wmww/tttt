@@ -1,0 +1,14 @@
+//// [test/cases/bun30-C15.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+export class J { constructor() { this.a = 1; } get a() { return 1 } }
+>J : Symbol(J, Decl(f.js, 0, 0))
+>this.a : Symbol(J.a, Decl(f.js, 0, 32), Decl(f.js, 0, 46))
+>this : Symbol(J, Decl(f.js, 0, 0))
+>a : Symbol(J.a, Decl(f.js, 0, 32), Decl(f.js, 0, 46))
+>a : Symbol(J.a, Decl(f.js, 0, 32), Decl(f.js, 0, 46))
+

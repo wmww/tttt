@@ -1,0 +1,18 @@
+a.ts(1,23): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(1,49): error TS2322: Type 'T' is not assignable to type '{}'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function f6<T extends T[keyof T]>(t: T) { const b: {} = t; }
+                          ~~~~~~~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+                                                    ~
+!!! error TS2322: Type 'T' is not assignable to type '{}'.
+!!! related TS2208 a.ts:1:13: This type parameter might need an `extends {}` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,97 @@
+//// [test/cases/bun83-R10a.ts] ////
+
+=== a.ts ===
+export {};
+declare class B {} interface I {}
+>B : Symbol(B, Decl(a.ts, 0, 10))
+>I : Symbol(I, Decl(a.ts, 1, 18))
+
+export class C1 implements (function () { const a: number = ""; return a; }) {}
+>C1 : Symbol(C1, Decl(a.ts, 1, 33))
+>a : Symbol(a, Decl(a.ts, 2, 47))
+>a : Symbol(a, Decl(a.ts, 2, 47))
+
+export class C7 implements (function () { return this; }) {}
+>C7 : Symbol(C7, Decl(a.ts, 2, 79))
+
+export class C9 implements (function (p: any) {}) {}
+>C9 : Symbol(C9, Decl(a.ts, 3, 60))
+>p : Symbol(p, Decl(a.ts, 4, 38))
+
+export class C10 implements (function () { const u = 1; }) {}
+>C10 : Symbol(C10, Decl(a.ts, 4, 52))
+>u : Symbol(u, Decl(a.ts, 5, 48))
+
+export class C12 implements (class { private p = 1; m(q: any) { const u = 1; } }) {}
+>C12 : Symbol(C12, Decl(a.ts, 5, 61))
+>p : Symbol((Anonymous class).p, Decl(a.ts, 6, 36))
+>m : Symbol((Anonymous class).m, Decl(a.ts, 6, 51))
+>q : Symbol(q, Decl(a.ts, 6, 54))
+>u : Symbol(u, Decl(a.ts, 6, 69))
+
+export class C13 implements ((p: any) => { const u = 1; }) {}
+>C13 : Symbol(C13, Decl(a.ts, 6, 84))
+>p : Symbol(p, Decl(a.ts, 7, 30))
+>u : Symbol(u, Decl(a.ts, 7, 48))
+
+export class C14 implements ({ m(p: any) { const u = 1; return this; } }) {}
+>C14 : Symbol(C14, Decl(a.ts, 7, 61))
+>m : Symbol(m, Decl(a.ts, 8, 30))
+>p : Symbol(p, Decl(a.ts, 8, 33))
+>u : Symbol(u, Decl(a.ts, 8, 48))
+>this : Symbol(__object, Decl(a.ts, 8, 29))
+
+export class C15 implements (function <T>() {}) {}
+>C15 : Symbol(C15, Decl(a.ts, 8, 76))
+>T : Symbol(T, Decl(a.ts, 9, 39))
+
+export class C19 implements (function ({ a, b }) {}) {}
+>C19 : Symbol(C19, Decl(a.ts, 9, 50))
+>a : Symbol(a, Decl(a.ts, 10, 40))
+>b : Symbol(b, Decl(a.ts, 10, 43))
+
+export class C20 implements (function (...r) {}) {}
+>C20 : Symbol(C20, Decl(a.ts, 10, 55))
+>r : Symbol(r, Decl(a.ts, 11, 39))
+
+export interface J1 extends (function (p: any) { const u = 1; return this; }) {}
+>J1 : Symbol(J1, Decl(a.ts, 11, 51))
+>p : Symbol(p, Decl(a.ts, 12, 39))
+>u : Symbol(u, Decl(a.ts, 12, 54))
+
+export class D1 extends B, (function (p: any) { const u = 1; return this; }) {}
+>D1 : Symbol(D1, Decl(a.ts, 12, 80))
+>B : Symbol(B, Decl(a.ts, 0, 10))
+>p : Symbol(p, Decl(a.ts, 13, 38))
+>u : Symbol(u, Decl(a.ts, 13, 53))
+
+export class D2 extends B extends (function (p: any) { const u = 1; return this; }) {}
+>D2 : Symbol(D2, Decl(a.ts, 13, 79))
+>B : Symbol(B, Decl(a.ts, 0, 10))
+>p : Symbol(p, Decl(a.ts, 14, 45))
+>u : Symbol(u, Decl(a.ts, 14, 60))
+
+export class D3 implements I implements (function (p: any) { const u = 1; return this; }) {}
+>D3 : Symbol(D3, Decl(a.ts, 14, 86))
+>I : Symbol(I, Decl(a.ts, 1, 18))
+>p : Symbol(p, Decl(a.ts, 15, 51))
+>u : Symbol(u, Decl(a.ts, 15, 66))
+
+export interface J2 extends I extends (function (p: any) { const u = 1; return this; }) {}
+>J2 : Symbol(J2, Decl(a.ts, 15, 92))
+>I : Symbol(I, Decl(a.ts, 1, 18))
+>p : Symbol(p, Decl(a.ts, 16, 49))
+>u : Symbol(u, Decl(a.ts, 16, 64))
+
+export class C22 implements (function () { type U = 1; interface V {} enum W {} namespace X {} class Y {} }) {}
+>C22 : Symbol(C22, Decl(a.ts, 16, 90))
+>U : Symbol(U, Decl(a.ts, 17, 42))
+>V : Symbol(V, Decl(a.ts, 17, 54))
+>W : Symbol(W, Decl(a.ts, 17, 69))
+>X : Symbol(X, Decl(a.ts, 17, 79))
+>Y : Symbol(Y, Decl(a.ts, 17, 94))
+
+const sentinel: number = ""; sentinel;
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

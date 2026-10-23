@@ -1,0 +1,13 @@
+//// [test/cases/bun34-P1b.ts] ////
+
+=== a.ts ===
+namespace N { export interface Y {} }
+class C implements (N).Y {}
+>C : C
+>(N) : any
+>N : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

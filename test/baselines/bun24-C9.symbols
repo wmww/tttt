@@ -1,0 +1,13 @@
+//// [test/cases/bun24-C9.ts] ////
+
+=== a.ts ===
+const v: 1 = null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { get g(): string; set g(v: number) }, { a: 1 }];
+>v : Symbol(v, Decl(a.ts, 0, 5))
+>g : Symbol(g, Decl(a.ts, 0, 152), Decl(a.ts, 0, 169))
+>g : Symbol(g, Decl(a.ts, 0, 152), Decl(a.ts, 0, 169))
+>v : Symbol(v, Decl(a.ts, 0, 176))
+>a : Symbol(a, Decl(a.ts, 0, 191))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,26 @@
+//// [test/cases/bun21-P1.ts] ////
+
+=== a.ts ===
+declare function make<T>(): T;
+>make : <T>() => T
+
+f();
+>f() : string[]
+>f : () => string[]
+
+function f() { let x = []; x[make()] = "a"; return x; }
+>f : () => string[]
+>x : any[]
+>[] : never[]
+>x[make()] = "a" : "a"
+>x[make()] : any
+>x : any[]
+>make() : any
+>make : <T>() => T
+>"a" : "a"
+>x : string[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

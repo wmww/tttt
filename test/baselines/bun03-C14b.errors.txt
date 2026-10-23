@@ -1,0 +1,18 @@
+a.ts(1,24): error TS2676: Accessors must both be abstract or non-abstract.
+a.ts(1,62): error TS2676: Accessors must both be abstract or non-abstract.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    abstract class A { get x(): number { return 1 } abstract set x(v: number); }
+                           ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+                                                                 ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+    class D extends A {}
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

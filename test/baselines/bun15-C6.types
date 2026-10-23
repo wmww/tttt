@@ -1,0 +1,15 @@
+//// [test/cases/bun15-C6.ts] ////
+
+=== a.ts ===
+import b4 = Missing4;
+>b4 : any
+>Missing4 : any
+
+export import c = b4;
+>c : any
+>b4 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

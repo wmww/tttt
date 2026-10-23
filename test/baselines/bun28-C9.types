@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C9.ts] ////
+
+=== a.ts ===
+{ export as namespace Foo; }
+>Foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

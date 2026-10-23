@@ -1,0 +1,9 @@
+//// [test/cases/bun34-C7d.ts] ////
+
+=== a.ts ===
+type K = k\u0065yof { a: 1 }; const sentinel: number = "";
+>K : "a"
+>a : 1
+>sentinel : number
+>"" : ""
+

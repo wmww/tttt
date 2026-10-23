@@ -1,0 +1,23 @@
+//// [test/cases/bun44-C4.ts] ////
+
+=== a.ts ===
+interface I { a: 1 }
+>a : 1
+
+type A = I & { p: 1 };
+>A : A
+>p : 1
+
+function f<T extends A>(t: T) {
+>f : <T extends A>(t: T) => void
+>t : T
+
+  const x: { q: 1 } = t;
+>x : { q: 1; }
+>q : 1
+>t : T
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

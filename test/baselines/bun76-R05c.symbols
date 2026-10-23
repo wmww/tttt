@@ -1,0 +1,82 @@
+//// [test/cases/bun76-R05c.ts] ////
+
+=== a.ts ===
+declare const w1: { readonly p: keyof W1 };
+>w1 : Symbol(w1, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 19))
+>W1 : Symbol(W1, Decl(a.ts, 0, 43))
+
+interface W1 { x(): void; [w1.p](): void }
+>W1 : Symbol(W1, Decl(a.ts, 0, 43))
+>x : Symbol(W1.x, Decl(a.ts, 1, 14))
+>[w1.p] : Symbol(W1[w1.p], Decl(a.ts, 1, 25))
+>w1.p : Symbol(p, Decl(a.ts, 0, 19))
+>w1 : Symbol(w1, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 19))
+
+declare const w2: { readonly p: keyof W2 };
+>w2 : Symbol(w2, Decl(a.ts, 2, 13))
+>p : Symbol(p, Decl(a.ts, 2, 19))
+>W2 : Symbol(W2, Decl(a.ts, 2, 43))
+
+interface W2 { x: 1; [w2.p]: number }
+>W2 : Symbol(W2, Decl(a.ts, 2, 43))
+>x : Symbol(W2.x, Decl(a.ts, 3, 14))
+>[w2.p] : Symbol(W2[w2.p], Decl(a.ts, 3, 20))
+>w2.p : Symbol(p, Decl(a.ts, 2, 19))
+>w2 : Symbol(w2, Decl(a.ts, 2, 13))
+>p : Symbol(p, Decl(a.ts, 2, 19))
+
+declare const w3: { readonly p: W3 extends { x: 1 } ? "a" : "b" };
+>w3 : Symbol(w3, Decl(a.ts, 4, 13))
+>p : Symbol(p, Decl(a.ts, 4, 19))
+>W3 : Symbol(W3, Decl(a.ts, 4, 66))
+>x : Symbol(x, Decl(a.ts, 4, 44))
+
+interface W3 { x: 1; [w3.p]: number }
+>W3 : Symbol(W3, Decl(a.ts, 4, 66))
+>x : Symbol(W3.x, Decl(a.ts, 5, 14))
+>[w3.p] : Symbol(W3[w3.p], Decl(a.ts, 5, 20))
+>w3.p : Symbol(p, Decl(a.ts, 4, 19))
+>w3 : Symbol(w3, Decl(a.ts, 4, 13))
+>p : Symbol(p, Decl(a.ts, 4, 19))
+
+declare class H4 { readonly p: keyof W4 }
+>H4 : Symbol(H4, Decl(a.ts, 5, 37))
+>p : Symbol(H4.p, Decl(a.ts, 6, 18))
+>W4 : Symbol(W4, Decl(a.ts, 7, 21))
+
+declare const h4: H4;
+>h4 : Symbol(h4, Decl(a.ts, 7, 13))
+>H4 : Symbol(H4, Decl(a.ts, 5, 37))
+
+interface W4 { x(): void; [h4.p](): void }
+>W4 : Symbol(W4, Decl(a.ts, 7, 21))
+>x : Symbol(W4.x, Decl(a.ts, 8, 14))
+>[h4.p] : Symbol(W4[h4.p], Decl(a.ts, 8, 25))
+>h4.p : Symbol(H4.p, Decl(a.ts, 6, 18))
+>h4 : Symbol(h4, Decl(a.ts, 7, 13))
+>p : Symbol(H4.p, Decl(a.ts, 6, 18))
+
+// `p` is asked for before its declaration is checked: the two agree
+w5.p;
+>w5.p : Symbol(p, Decl(a.ts, 11, 19))
+>w5 : Symbol(w5, Decl(a.ts, 11, 13))
+>p : Symbol(p, Decl(a.ts, 11, 19))
+
+declare const w5: { readonly p: keyof W5 };
+>w5 : Symbol(w5, Decl(a.ts, 11, 13))
+>p : Symbol(p, Decl(a.ts, 11, 19))
+>W5 : Symbol(W5, Decl(a.ts, 11, 43))
+
+interface W5 { x(): void; [w5.p](): void }
+>W5 : Symbol(W5, Decl(a.ts, 11, 43))
+>x : Symbol(W5.x, Decl(a.ts, 12, 14))
+>[w5.p] : Symbol(W5[w5.p], Decl(a.ts, 12, 25))
+>w5.p : Symbol(p, Decl(a.ts, 11, 19))
+>w5 : Symbol(w5, Decl(a.ts, 11, 13))
+>p : Symbol(p, Decl(a.ts, 11, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+

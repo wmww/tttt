@@ -1,0 +1,104 @@
+//// [test/cases/bun81-R02.ts] ////
+
+=== a.ts ===
+function a1<T extends string | undefined>(x: T) { return x!.toUpperCase(); }
+>a1 : Symbol(a1, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 42))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>x!.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 42))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+function a2<T extends number | null>(x: T) { return x!.toFixed(); }
+>a2 : Symbol(a2, Decl(a.ts, 0, 76))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>x : Symbol(x, Decl(a.ts, 1, 37))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>x!.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 37))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+function a3<T extends string | undefined>(o: { p: T }) { return o.p!.length; }
+>a3 : Symbol(a3, Decl(a.ts, 1, 67))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>o : Symbol(o, Decl(a.ts, 2, 42))
+>p : Symbol(p, Decl(a.ts, 2, 46))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>o.p!.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>o.p : Symbol(p, Decl(a.ts, 2, 46))
+>o : Symbol(o, Decl(a.ts, 2, 42))
+>p : Symbol(p, Decl(a.ts, 2, 46))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+function a4<T extends string | undefined>(f: () => NonNullable<T>) { return f().length; }
+>a4 : Symbol(a4, Decl(a.ts, 2, 78))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>f : Symbol(f, Decl(a.ts, 3, 42))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>f().length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(a.ts, 3, 42))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+class A5<T extends string | undefined> { p!: T; m() { return this.p!.length; } }
+>A5 : Symbol(A5, Decl(a.ts, 3, 89))
+>T : Symbol(T, Decl(a.ts, 4, 9))
+>p : Symbol(A5.p, Decl(a.ts, 4, 40))
+>T : Symbol(T, Decl(a.ts, 4, 9))
+>m : Symbol(A5.m, Decl(a.ts, 4, 47))
+>this.p!.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>this.p : Symbol(A5.p, Decl(a.ts, 4, 40))
+>this : Symbol(A5, Decl(a.ts, 3, 89))
+>p : Symbol(A5.p, Decl(a.ts, 4, 40))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+function a6<T extends string | undefined>(x: T) { x!.length = 1; }
+>a6 : Symbol(a6, Decl(a.ts, 4, 80))
+>T : Symbol(T, Decl(a.ts, 5, 12))
+>x : Symbol(x, Decl(a.ts, 5, 42))
+>T : Symbol(T, Decl(a.ts, 5, 12))
+>x!.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 5, 42))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+// the two agree: a constraint that is still a union or an object type after `& {}`, a reference in a constraint position
+function b1<T extends string | number | undefined>(x: T) { return x!.toString(); }
+>b1 : Symbol(b1, Decl(a.ts, 5, 66))
+>T : Symbol(T, Decl(a.ts, 7, 12))
+>x : Symbol(x, Decl(a.ts, 7, 51))
+>T : Symbol(T, Decl(a.ts, 7, 12))
+>x!.toString : Symbol(toString, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 7, 51))
+>toString : Symbol(toString, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+function b2<T extends { a: number } | undefined>(x: T) { return x!.a; }
+>b2 : Symbol(b2, Decl(a.ts, 7, 82))
+>T : Symbol(T, Decl(a.ts, 8, 12))
+>a : Symbol(a, Decl(a.ts, 8, 23))
+>x : Symbol(x, Decl(a.ts, 8, 49))
+>T : Symbol(T, Decl(a.ts, 8, 12))
+>x!.a : Symbol(a, Decl(a.ts, 8, 23))
+>x : Symbol(x, Decl(a.ts, 8, 49))
+>a : Symbol(a, Decl(a.ts, 8, 23))
+
+function b3<T extends string | undefined>(x: NonNullable<T>) { return x.length; }
+>b3 : Symbol(b3, Decl(a.ts, 8, 71))
+>T : Symbol(T, Decl(a.ts, 9, 12))
+>x : Symbol(x, Decl(a.ts, 9, 42))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 9, 12))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 9, 42))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+function b4<T extends string | undefined>(x: T) { return x![0]; }
+>b4 : Symbol(b4, Decl(a.ts, 9, 81))
+>T : Symbol(T, Decl(a.ts, 10, 12))
+>x : Symbol(x, Decl(a.ts, 10, 42))
+>T : Symbol(T, Decl(a.ts, 10, 12))
+>x : Symbol(x, Decl(a.ts, 10, 42))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

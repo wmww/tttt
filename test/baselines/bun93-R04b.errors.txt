@@ -1,0 +1,105 @@
+a.ts(2,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+a.ts(2,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+a.ts(2,78): error TS2695: Left side of comma operator is unused and has no side effects.
+a.ts(3,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): boolean; }'.
+a.ts(3,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): boolean; }'.
+a.ts(3,74): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+a.ts(4,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+a.ts(4,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+a.ts(4,74): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a.ts(5,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): string; }'.
+a.ts(5,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): string; }'.
+a.ts(5,77): error TS1360: Type 'string' does not satisfy the expected type 'number'.
+a.ts(6,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+a.ts(6,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+a.ts(6,76): error TS2698: Spread types may only be created from object types.
+a.ts(7,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+a.ts(7,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+a.ts(7,74): error TS2673: Constructor of class '(Anonymous class)' is private and only accessible within the class declaration.
+a.ts(8,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): 1 | 2; }'.
+a.ts(8,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): 1 | 2; }'.
+a.ts(8,74): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(9,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): RegExp; }'.
+a.ts(9,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): RegExp; }'.
+a.ts(9,76): error TS1005: ')' expected.
+a.ts(10,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+a.ts(10,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+a.ts(10,74): error TS2448: Block-scoped variable 'later' used before its declaration.
+a.ts(10,74): error TS2454: Variable 'later' is used before being assigned.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (29 errors) ====
+    declare function abs(n: number): number; declare let u: (() => number) | undefined;
+    const a = { m() { return this.z; }, f() { return this.z; }, g() { const q = (1, 2); return q; } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+                                                                                 ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    const b = { m() { return this.z; }, f() { return this.z; }, g() { return abs(1) instanceof Object; } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): boolean; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): boolean; }'.
+                                                                             ~~~~~~
+!!! error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+    const c = { m() { return this.z; }, f() { return this.z; }, g() { return u(); } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+                                                                             ~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+    const d = { m() { return this.z; }, f() { return this.z; }, g() { return "" satisfies number; } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): string; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): string; }'.
+                                                                                ~~~~~~~~~
+!!! error TS1360: Type 'string' does not satisfy the expected type 'number'.
+    const e = { m() { return this.z; }, f() { return this.z; }, g() { return { ...1 }; } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+                                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    const h = { m() { return this.z; }, f() { return this.z; }, g() { return new (class { private constructor() {} })(); } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): any; }'.
+                                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2673: Constructor of class '(Anonymous class)' is private and only accessible within the class declaration.
+    const i = { m() { return this.z; }, f() { return this.z; }, g() { return g2 ? 1 : 2; function g2() {} } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): 1 | 2; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): 1 | 2; }'.
+                                                                             ~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    const j = { m() { return this.z; }, f() { return this.z; }, g() { return /(/; } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): RegExp; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): RegExp; }'.
+                                                                               
+!!! error TS1005: ')' expected.
+    const k = { m() { return this.z; }, f() { return this.z; }, g() { return later; let later = 1; } };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g(): number; }'.
+                                                                             ~~~~~
+!!! error TS2448: Block-scoped variable 'later' used before its declaration.
+!!! related TS2728 a.ts:10:85: 'later' is declared here.
+                                                                             ~~~~~
+!!! error TS2454: Variable 'later' is used before being assigned.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

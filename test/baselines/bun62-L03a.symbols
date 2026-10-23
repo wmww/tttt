@@ -1,0 +1,23 @@
+//// [test/cases/bun62-L03a.ts] ////
+
+=== a.ts ===
+declare let a: number; declare let b: number;
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 34))
+
+({ a = 1 } += 1);
+>a : Symbol(a, Decl(a.ts, 1, 2))
+
+({ a: b = 1 } += 1);
+>a : Symbol(a, Decl(a.ts, 2, 2))
+>b : Symbol(b, Decl(a.ts, 0, 34))
+
+[{ a = 1 }] += 1;
+>a : Symbol(a, Decl(a.ts, 3, 2))
+
+({ a = 1, ...{} } += 1);
+>a : Symbol(a, Decl(a.ts, 4, 2))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

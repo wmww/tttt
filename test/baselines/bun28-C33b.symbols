@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C33b.ts] ////
+
+=== a.ts ===
+class n { export p(): any; p(): any { } }
+>n : Symbol(n, Decl(a.ts, 0, 0))
+>p : Symbol(n.p, Decl(a.ts, 0, 9), Decl(a.ts, 0, 26))
+>p : Symbol(n.p, Decl(a.ts, 0, 9), Decl(a.ts, 0, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

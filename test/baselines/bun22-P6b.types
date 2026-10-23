@@ -1,0 +1,21 @@
+//// [test/cases/bun22-P6b.ts] ////
+
+=== a.ts ===
+declare function f<T>(cb: (x: T) => { ok: boolean }): T;
+>f : <T>(cb: (x: T) => { ok: boolean; }) => T
+>cb : (x: T) => { ok: boolean; }
+>x : T
+>ok : boolean
+
+function g(x: { ok: boolean }) { return f(g); }
+>g : (x: { ok: boolean; }) => any
+>x : { ok: boolean; }
+>ok : boolean
+>f(g) : { ok: boolean; }
+>f : <T>(cb: (x: T) => { ok: boolean; }) => T
+>g : (x: { ok: boolean; }) => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

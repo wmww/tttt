@@ -1,0 +1,16 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,88): error TS1327: String literal with double quotes expected.
+tsconfig.json(1,88): error TS5023: Unknown compiler option '#x'.
+
+
+==== tsconfig.json (2 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], #x: 1 } }
+                                                                                           ~~
+!!! error TS1327: String literal with double quotes expected.
+                                                                                           ~~
+!!! error TS5023: Unknown compiler option '#x'.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

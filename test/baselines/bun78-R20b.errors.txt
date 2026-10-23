@@ -1,0 +1,19 @@
+a.ts(6,15): error TS7031: Binding element 'x' implicitly has an 'any' type.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "strictNullChecks": false, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function o1(a: {}): void; function o1({ x = null }) {}
+    function o2(a: {}): void; function o2({ x = undefined, y = [], z = { w: null } }) {}
+    class O3 { m(a: {}): void; m({ x = null }) {} constructor(a: {}); constructor({ x = null }) {} }
+    export function o4(): void; export function o4({ x = null } = {}) {}
+    // both report: no overloads
+    function p1({ x = null }) {}
+                  ~
+!!! error TS7031: Binding element 'x' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,17 @@
+a.ts(1,60): error TS1014: A rest parameter must be last in a parameter list.
+a.ts(1,60): error TS2370: A rest parameter must be of an array type.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const f1: (a: number, b: string, c: boolean) => void = (x, ...y, z) => {};
+                                                               ~~~
+!!! error TS1014: A rest parameter must be last in a parameter list.
+                                                               ~~~~
+!!! error TS2370: A rest parameter must be of an array type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

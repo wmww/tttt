@@ -1,0 +1,15 @@
+j.json(1,6): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+j.json(1,7): error TS1109: Expression expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "resolveJsonModule": true, "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (0 errors) ====
+    import j from "./j.json";
+==== j.json (2 errors) ====
+    {"a": }
+         
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+          ~
+!!! error TS1109: Expression expected.
+    

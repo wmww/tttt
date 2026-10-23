@@ -1,0 +1,28 @@
+//// [test/cases/bun03-C23.ts] ////
+
+=== a.ts ===
+interface Array<T> { } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { } interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+>Array : Symbol(Array, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+>Boolean : Symbol(Boolean, Decl(a.ts, 0, 22))
+>CallableFunction : Symbol(CallableFunction, Decl(a.ts, 0, 44))
+>Function : Symbol(Function, Decl(a.ts, 0, 75))
+>IArguments : Symbol(IArguments, Decl(a.ts, 0, 98))
+>NewableFunction : Symbol(NewableFunction, Decl(a.ts, 0, 123))
+>Number : Symbol(Number, Decl(a.ts, 0, 153))
+>Object : Symbol(Object, Decl(a.ts, 0, 174))
+>RegExp : Symbol(RegExp, Decl(a.ts, 0, 195))
+>String : Symbol(String, Decl(a.ts, 0, 216))
+
+declare const o: { a: 1 }; declare let k: "a";
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 1, 18))
+>k : Symbol(k, Decl(a.ts, 1, 38))
+
+for (k in o) {}
+>k : Symbol(k, Decl(a.ts, 1, 38))
+>o : Symbol(o, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

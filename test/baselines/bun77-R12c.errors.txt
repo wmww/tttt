@@ -1,0 +1,30 @@
+a.js(1,39): error TS8024: JSDoc '@param' tag has name 'extra', but there is no parameter with that name.
+a.js(2,33): error TS2301: Initializer of instance member variable 'arguments' cannot reference identifier 'arguments' declared in the constructor.
+a.js(2,60): error TS1210: Code contained in a class is evaluated in JavaScript's strict mode which does not allow this use of 'arguments'. For more information, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.
+a.js(2,60): error TS7006: Parameter 'arguments' implicitly has an 'any' type.
+a.js(3,39): error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+a.js(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "useDefineForClassFields": false, "types": [], "lib": ["es2022"] } }
+==== a.js (6 errors) ====
+    /** @param {number} a @param {number} extra */
+                                          ~~~~~
+!!! error TS8024: JSDoc '@param' tag has name 'extra', but there is no parameter with that name.
+    function g3(a) { return class { arguments = 1; constructor(arguments) {} }; }
+                                    ~~~~~~~~~
+!!! error TS2301: Initializer of instance member variable 'arguments' cannot reference identifier 'arguments' declared in the constructor.
+                                                               ~~~~~~~~~
+!!! error TS1210: Code contained in a class is evaluated in JavaScript's strict mode which does not allow this use of 'arguments'. For more information, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.
+                                                               ~~~~~~~~~
+!!! error TS7006: Parameter 'arguments' implicitly has an 'any' type.
+    /** @param {number} a @param {number} extra */
+                                          ~~~~~
+!!! error TS8029: JSDoc '@param' tag has name 'extra', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+    function g1(a) { return class { arguments = 1; }; }
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

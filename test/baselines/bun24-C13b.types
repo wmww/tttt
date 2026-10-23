@@ -1,0 +1,17 @@
+//// [test/cases/bun24-C13b.ts] ////
+
+=== a.ts ===
+const b: 1 = null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { [Symbol.iterator]: 0 }, { a: 1 }];
+>b : 1
+>null! as ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { [Symbol.iterator]: 0 }, { a: 1 }] : ["xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", { [Symbol.iterator]: 0; }, { a: 1; }]
+>null! : never
+>[Symbol.iterator] : 0
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,42 @@
+//// [test/cases/bun01-C3.ts] ////
+
+=== a.ts ===
+export {};
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+type T4 = string;
+>T4 : string
+
+const c1 = @dec(() => CE1) class CE1 {};
+>c1 : typeof CE1
+>@dec(() => CE1) class CE1 {} : typeof CE1
+>dec(() => CE1) : any
+>dec : (...a: any[]) => any
+>() => CE1 : () => typeof CE1
+>CE1 : typeof CE1
+>CE1 : typeof CE1
+
+const c2 = @dec((x: T) => x) class<T> {};
+>c2 : typeof c2
+>@dec((x: T) => x) class<T> {} : typeof c2
+>dec((x: T) => x) : any
+>dec : (...a: any[]) => any
+>(x: T) => x : (x: T) => T
+>x : T
+>x : T
+
+const c4 = @dec((x: T4): string => x) class<T4> {};
+>c4 : typeof c4
+>@dec((x: T4): string => x) class<T4> {} : typeof c4
+>dec((x: T4): string => x) : any
+>dec : (...a: any[]) => any
+>(x: T4): string => x : (x: T4) => string
+>x : T4
+>x : T4
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,26 @@
+//// [test/cases/bun22-P4.ts] ////
+
+=== a.ts ===
+class K<T> { constructor(cb: T) {} }
+>K : K<T>
+>cb : T
+
+class D<T> extends K<T> {}
+>D : D<T>
+>K : K<T>
+
+declare const s: typeof D<(y: 1) => void>;
+>s : typeof D<(y: 1) => void>
+>D : typeof D
+>y : 1
+
+const t: typeof D<(y: 2) => void> = s;
+>t : typeof D<(y: 2) => void>
+>D : typeof D
+>y : 2
+>s : typeof D<(y: 1) => void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

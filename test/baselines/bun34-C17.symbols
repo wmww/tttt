@@ -1,0 +1,18 @@
+//// [test/cases/bun34-C17.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { div: { a?: { c?: 1 } } } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 23))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 0, 53))
+>a : Symbol(a, Decl(a.tsx, 0, 60))
+>c : Symbol(c, Decl(a.tsx, 0, 66))
+
+<div {...{ a: { b: 1 } }} />;
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 53))
+>a : Symbol(a, Decl(a.tsx, 1, 10))
+>b : Symbol(b, Decl(a.tsx, 1, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+

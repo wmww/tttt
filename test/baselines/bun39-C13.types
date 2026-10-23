@@ -1,0 +1,11 @@
+//// [test/cases/bun39-C13.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/index.d.ts ===
+declare let mydom: Nope2;
+>mydom : Nope2
+

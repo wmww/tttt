@@ -1,0 +1,27 @@
+a.ts(3,33): error TS1174: Classes can only extend a single class.
+a.ts(4,20): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(4,34): error TS1009: Trailing comma not allowed.
+a.ts(5,22): error TS1175: 'implements' clause already seen.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare const v: any;
+    interface I {}
+    class X extends import<string>, v {}
+                                    ~
+!!! error TS1174: Classes can only extend a single class.
+    class Y implements import<string>, {}
+                       ~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+                                     ~
+!!! error TS1009: Trailing comma not allowed.
+    class Z implements I implements import<string>, I {}
+                         ~~~~~~~~~~
+!!! error TS1175: 'implements' clause already seen.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

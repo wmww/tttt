@@ -1,0 +1,240 @@
+a.ts(1,41): error TS2322: Type '"index [>= 4.0]"' is not assignable to type '0'.
+a.ts(2,41): error TS2322: Type '"index [v7.0.2]"' is not assignable to type '0'.
+a.ts(3,41): error TS2322: Type '"index [latest]"' is not assignable to type '0'.
+a.ts(4,41): error TS2322: Type '"index [foo]"' is not assignable to type '0'.
+a.ts(5,41): error TS2322: Type '"index [07]"' is not assignable to type '0'.
+a.ts(6,41): error TS2322: Type '"index [7.0.2.1]"' is not assignable to type '0'.
+a.ts(7,41): error TS2322: Type '"index [>=4.0,<8]"' is not assignable to type '0'.
+a.ts(8,41): error TS2322: Type '"index [==7.0.2]"' is not assignable to type '0'.
+a.ts(9,41): error TS2322: Type '"index [!7]"' is not assignable to type '0'.
+a.ts(10,43): error TS2322: Type '"index [~>7.0]"' is not assignable to type '0'.
+a.ts(11,43): error TS2322: Type '"index [>x]"' is not assignable to type '0'.
+a.ts(12,43): error TS2322: Type '"index [<*]"' is not assignable to type '0'.
+a.ts(13,43): error TS2322: Type '"index [> 4]"' is not assignable to type '0'.
+a.ts(14,43): error TS2322: Type '"index [<= 8]"' is not assignable to type '0'.
+a.ts(15,43): error TS2322: Type '"index [^ 7]"' is not assignable to type '0'.
+a.ts(16,43): error TS2322: Type '"index [~ 7]"' is not assignable to type '0'.
+a.ts(17,43): error TS2322: Type '"index [=v7]"' is not assignable to type '0'.
+a.ts(18,43): error TS2322: Type '"index [>=v4]"' is not assignable to type '0'.
+a.ts(19,43): error TS2322: Type '"index [>=4 || foo]"' is not assignable to type '0'.
+a.ts(20,43): error TS2322: Type '"index [foo || >=4]"' is not assignable to type '0'.
+a.ts(21,43): error TS2322: Type '"index [ - 8]"' is not assignable to type '0'.
+a.ts(22,43): error TS2322: Type '"index [4 -8]"' is not assignable to type '0'.
+a.ts(23,43): error TS2322: Type '"index [4- 8]"' is not assignable to type '0'.
+a.ts(24,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (24 errors) ====
+    import { which as w1 } from "v1"; const x1: 0 = w1;
+                                            ~~
+!!! error TS2322: Type '"index [>= 4.0]"' is not assignable to type '0'.
+    import { which as w2 } from "v2"; const x2: 0 = w2;
+                                            ~~
+!!! error TS2322: Type '"index [v7.0.2]"' is not assignable to type '0'.
+    import { which as w3 } from "v3"; const x3: 0 = w3;
+                                            ~~
+!!! error TS2322: Type '"index [latest]"' is not assignable to type '0'.
+    import { which as w4 } from "v4"; const x4: 0 = w4;
+                                            ~~
+!!! error TS2322: Type '"index [foo]"' is not assignable to type '0'.
+    import { which as w5 } from "v5"; const x5: 0 = w5;
+                                            ~~
+!!! error TS2322: Type '"index [07]"' is not assignable to type '0'.
+    import { which as w6 } from "v6"; const x6: 0 = w6;
+                                            ~~
+!!! error TS2322: Type '"index [7.0.2.1]"' is not assignable to type '0'.
+    import { which as w7 } from "v7"; const x7: 0 = w7;
+                                            ~~
+!!! error TS2322: Type '"index [>=4.0,<8]"' is not assignable to type '0'.
+    import { which as w8 } from "v8"; const x8: 0 = w8;
+                                            ~~
+!!! error TS2322: Type '"index [==7.0.2]"' is not assignable to type '0'.
+    import { which as w9 } from "v9"; const x9: 0 = w9;
+                                            ~~
+!!! error TS2322: Type '"index [!7]"' is not assignable to type '0'.
+    import { which as w10 } from "v10"; const x10: 0 = w10;
+                                              ~~~
+!!! error TS2322: Type '"index [~>7.0]"' is not assignable to type '0'.
+    import { which as w11 } from "v11"; const x11: 0 = w11;
+                                              ~~~
+!!! error TS2322: Type '"index [>x]"' is not assignable to type '0'.
+    import { which as w12 } from "v12"; const x12: 0 = w12;
+                                              ~~~
+!!! error TS2322: Type '"index [<*]"' is not assignable to type '0'.
+    import { which as w13 } from "v13"; const x13: 0 = w13;
+                                              ~~~
+!!! error TS2322: Type '"index [> 4]"' is not assignable to type '0'.
+    import { which as w14 } from "v14"; const x14: 0 = w14;
+                                              ~~~
+!!! error TS2322: Type '"index [<= 8]"' is not assignable to type '0'.
+    import { which as w15 } from "v15"; const x15: 0 = w15;
+                                              ~~~
+!!! error TS2322: Type '"index [^ 7]"' is not assignable to type '0'.
+    import { which as w16 } from "v16"; const x16: 0 = w16;
+                                              ~~~
+!!! error TS2322: Type '"index [~ 7]"' is not assignable to type '0'.
+    import { which as w17 } from "v17"; const x17: 0 = w17;
+                                              ~~~
+!!! error TS2322: Type '"index [=v7]"' is not assignable to type '0'.
+    import { which as w18 } from "v18"; const x18: 0 = w18;
+                                              ~~~
+!!! error TS2322: Type '"index [>=v4]"' is not assignable to type '0'.
+    import { which as w19 } from "v19"; const x19: 0 = w19;
+                                              ~~~
+!!! error TS2322: Type '"index [>=4 || foo]"' is not assignable to type '0'.
+    import { which as w20 } from "v20"; const x20: 0 = w20;
+                                              ~~~
+!!! error TS2322: Type '"index [foo || >=4]"' is not assignable to type '0'.
+    import { which as w21 } from "v21"; const x21: 0 = w21;
+                                              ~~~
+!!! error TS2322: Type '"index [ - 8]"' is not assignable to type '0'.
+    import { which as w22 } from "v22"; const x22: 0 = w22;
+                                              ~~~
+!!! error TS2322: Type '"index [4 -8]"' is not assignable to type '0'.
+    import { which as w23 } from "v23"; const x23: 0 = w23;
+                                              ~~~
+!!! error TS2322: Type '"index [4- 8]"' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/v1/index.d.ts (0 errors) ====
+    export declare const which: "index [>= 4.0]";
+==== node_modules/v1/package.json (0 errors) ====
+    {"name":"v1","version":"1.0.0","typesVersions":{">= 4.0":{"*":["t.d.ts"]}}}
+==== node_modules/v1/t.d.ts (0 errors) ====
+    export declare const which: "t [>= 4.0]";
+==== node_modules/v10/index.d.ts (0 errors) ====
+    export declare const which: "index [~>7.0]";
+==== node_modules/v10/package.json (0 errors) ====
+    {"name":"v10","version":"1.0.0","typesVersions":{"~>7.0":{"*":["t.d.ts"]}}}
+==== node_modules/v10/t.d.ts (0 errors) ====
+    export declare const which: "t [~>7.0]";
+==== node_modules/v11/index.d.ts (0 errors) ====
+    export declare const which: "index [>x]";
+==== node_modules/v11/package.json (0 errors) ====
+    {"name":"v11","version":"1.0.0","typesVersions":{">x":{"*":["t.d.ts"]}}}
+==== node_modules/v11/t.d.ts (0 errors) ====
+    export declare const which: "t [>x]";
+==== node_modules/v12/index.d.ts (0 errors) ====
+    export declare const which: "index [<*]";
+==== node_modules/v12/package.json (0 errors) ====
+    {"name":"v12","version":"1.0.0","typesVersions":{"<*":{"*":["t.d.ts"]}}}
+==== node_modules/v12/t.d.ts (0 errors) ====
+    export declare const which: "t [<*]";
+==== node_modules/v13/index.d.ts (0 errors) ====
+    export declare const which: "index [> 4]";
+==== node_modules/v13/package.json (0 errors) ====
+    {"name":"v13","version":"1.0.0","typesVersions":{"> 4":{"*":["t.d.ts"]}}}
+==== node_modules/v13/t.d.ts (0 errors) ====
+    export declare const which: "t [> 4]";
+==== node_modules/v14/index.d.ts (0 errors) ====
+    export declare const which: "index [<= 8]";
+==== node_modules/v14/package.json (0 errors) ====
+    {"name":"v14","version":"1.0.0","typesVersions":{"<= 8":{"*":["t.d.ts"]}}}
+==== node_modules/v14/t.d.ts (0 errors) ====
+    export declare const which: "t [<= 8]";
+==== node_modules/v15/index.d.ts (0 errors) ====
+    export declare const which: "index [^ 7]";
+==== node_modules/v15/package.json (0 errors) ====
+    {"name":"v15","version":"1.0.0","typesVersions":{"^ 7":{"*":["t.d.ts"]}}}
+==== node_modules/v15/t.d.ts (0 errors) ====
+    export declare const which: "t [^ 7]";
+==== node_modules/v16/index.d.ts (0 errors) ====
+    export declare const which: "index [~ 7]";
+==== node_modules/v16/package.json (0 errors) ====
+    {"name":"v16","version":"1.0.0","typesVersions":{"~ 7":{"*":["t.d.ts"]}}}
+==== node_modules/v16/t.d.ts (0 errors) ====
+    export declare const which: "t [~ 7]";
+==== node_modules/v17/index.d.ts (0 errors) ====
+    export declare const which: "index [=v7]";
+==== node_modules/v17/package.json (0 errors) ====
+    {"name":"v17","version":"1.0.0","typesVersions":{"=v7":{"*":["t.d.ts"]}}}
+==== node_modules/v17/t.d.ts (0 errors) ====
+    export declare const which: "t [=v7]";
+==== node_modules/v18/index.d.ts (0 errors) ====
+    export declare const which: "index [>=v4]";
+==== node_modules/v18/package.json (0 errors) ====
+    {"name":"v18","version":"1.0.0","typesVersions":{">=v4":{"*":["t.d.ts"]}}}
+==== node_modules/v18/t.d.ts (0 errors) ====
+    export declare const which: "t [>=v4]";
+==== node_modules/v19/index.d.ts (0 errors) ====
+    export declare const which: "index [>=4 || foo]";
+==== node_modules/v19/package.json (0 errors) ====
+    {"name":"v19","version":"1.0.0","typesVersions":{">=4 || foo":{"*":["t.d.ts"]}}}
+==== node_modules/v19/t.d.ts (0 errors) ====
+    export declare const which: "t [>=4 || foo]";
+==== node_modules/v2/index.d.ts (0 errors) ====
+    export declare const which: "index [v7.0.2]";
+==== node_modules/v2/package.json (0 errors) ====
+    {"name":"v2","version":"1.0.0","typesVersions":{"v7.0.2":{"*":["t.d.ts"]}}}
+==== node_modules/v2/t.d.ts (0 errors) ====
+    export declare const which: "t [v7.0.2]";
+==== node_modules/v20/index.d.ts (0 errors) ====
+    export declare const which: "index [foo || >=4]";
+==== node_modules/v20/package.json (0 errors) ====
+    {"name":"v20","version":"1.0.0","typesVersions":{"foo || >=4":{"*":["t.d.ts"]}}}
+==== node_modules/v20/t.d.ts (0 errors) ====
+    export declare const which: "t [foo || >=4]";
+==== node_modules/v21/index.d.ts (0 errors) ====
+    export declare const which: "index [ - 8]";
+==== node_modules/v21/package.json (0 errors) ====
+    {"name":"v21","version":"1.0.0","typesVersions":{" - 8":{"*":["t.d.ts"]}}}
+==== node_modules/v21/t.d.ts (0 errors) ====
+    export declare const which: "t [ - 8]";
+==== node_modules/v22/index.d.ts (0 errors) ====
+    export declare const which: "index [4 -8]";
+==== node_modules/v22/package.json (0 errors) ====
+    {"name":"v22","version":"1.0.0","typesVersions":{"4 -8":{"*":["t.d.ts"]}}}
+==== node_modules/v22/t.d.ts (0 errors) ====
+    export declare const which: "t [4 -8]";
+==== node_modules/v23/index.d.ts (0 errors) ====
+    export declare const which: "index [4- 8]";
+==== node_modules/v23/package.json (0 errors) ====
+    {"name":"v23","version":"1.0.0","typesVersions":{"4- 8":{"*":["t.d.ts"]}}}
+==== node_modules/v23/t.d.ts (0 errors) ====
+    export declare const which: "t [4- 8]";
+==== node_modules/v3/index.d.ts (0 errors) ====
+    export declare const which: "index [latest]";
+==== node_modules/v3/package.json (0 errors) ====
+    {"name":"v3","version":"1.0.0","typesVersions":{"latest":{"*":["t.d.ts"]}}}
+==== node_modules/v3/t.d.ts (0 errors) ====
+    export declare const which: "t [latest]";
+==== node_modules/v4/index.d.ts (0 errors) ====
+    export declare const which: "index [foo]";
+==== node_modules/v4/package.json (0 errors) ====
+    {"name":"v4","version":"1.0.0","typesVersions":{"foo":{"*":["t.d.ts"]}}}
+==== node_modules/v4/t.d.ts (0 errors) ====
+    export declare const which: "t [foo]";
+==== node_modules/v5/index.d.ts (0 errors) ====
+    export declare const which: "index [07]";
+==== node_modules/v5/package.json (0 errors) ====
+    {"name":"v5","version":"1.0.0","typesVersions":{"07":{"*":["t.d.ts"]}}}
+==== node_modules/v5/t.d.ts (0 errors) ====
+    export declare const which: "t [07]";
+==== node_modules/v6/index.d.ts (0 errors) ====
+    export declare const which: "index [7.0.2.1]";
+==== node_modules/v6/package.json (0 errors) ====
+    {"name":"v6","version":"1.0.0","typesVersions":{"7.0.2.1":{"*":["t.d.ts"]}}}
+==== node_modules/v6/t.d.ts (0 errors) ====
+    export declare const which: "t [7.0.2.1]";
+==== node_modules/v7/index.d.ts (0 errors) ====
+    export declare const which: "index [>=4.0,<8]";
+==== node_modules/v7/package.json (0 errors) ====
+    {"name":"v7","version":"1.0.0","typesVersions":{">=4.0,<8":{"*":["t.d.ts"]}}}
+==== node_modules/v7/t.d.ts (0 errors) ====
+    export declare const which: "t [>=4.0,<8]";
+==== node_modules/v8/index.d.ts (0 errors) ====
+    export declare const which: "index [==7.0.2]";
+==== node_modules/v8/package.json (0 errors) ====
+    {"name":"v8","version":"1.0.0","typesVersions":{"==7.0.2":{"*":["t.d.ts"]}}}
+==== node_modules/v8/t.d.ts (0 errors) ====
+    export declare const which: "t [==7.0.2]";
+==== node_modules/v9/index.d.ts (0 errors) ====
+    export declare const which: "index [!7]";
+==== node_modules/v9/package.json (0 errors) ====
+    {"name":"v9","version":"1.0.0","typesVersions":{"!7":{"*":["t.d.ts"]}}}
+==== node_modules/v9/t.d.ts (0 errors) ====
+    export declare const which: "t [!7]";
+    

@@ -1,0 +1,108 @@
+//// [test/cases/bun93-R19a.ts] ////
+
+=== a.ts ===
+declare const b1: { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+>b1 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : number
+
+const r1 = f1();
+>r1 : number
+>f1() : number
+>f1 : () => number
+
+function f1() { let a: number | string; [a] = b1; return a; }
+>f1 : () => number
+>a : string | number
+>[a] = b1 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+>[a] : [string | number]
+>a : string | number
+>b1 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+>a : number
+
+declare const b2: { [Symbol.iterator](): { next(): IteratorResult<number>; return: string } };
+>b2 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: string; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: string; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : string
+
+const r2 = f2();
+>r2 : number[]
+>f2() : number[]
+>f2 : () => number[]
+
+function f2() { let a: number | string, b: number[] | string; [a, ...b] = b2; return b; }
+>f2 : () => number[]
+>a : string | number
+>b : string | number[]
+>[a, ...b] = b2 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: string; }; }
+>[a, ...b] : [string | number, ...(string | number)[]]
+>a : string | number
+>...b : string | number
+>b : string | number[]
+>b2 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: string; }; }
+>b : number[]
+
+declare const b3: { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean } };
+>b3 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: boolean; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : boolean
+
+const r3 = f3();
+>r3 : number
+>f3() : number
+>f3 : () => number
+
+function f3() { let a: number | string; ({ p: [a] } = { p: b3 }); return a; }
+>f3 : () => number
+>a : string | number
+>({ p: [a] } = { p: b3 }) : { p: { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }; }
+>{ p: [a] } = { p: b3 } : { p: { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }; }
+>{ p: [a] } : { p: [string | number]; }
+>p : [string | number]
+>[a] : [string | number]
+>a : string | number
+>{ p: b3 } : { p: { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }; }
+>p : { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }
+>b3 : { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean; }; }
+>a : number
+
+// the function first, the call after: both tools report
+declare const b4: { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number } };
+>b4 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; throw: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>throw : number
+
+function f4() { let a: number | string; [a] = b4; return a; }
+>f4 : () => number
+>a : string | number
+>[a] = b4 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number; }; }
+>[a] : [string | number]
+>a : string | number
+>b4 : { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number; }; }
+>a : number
+
+const r4 = f4();
+>r4 : number
+>f4() : number
+>f4 : () => number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

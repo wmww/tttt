@@ -1,0 +1,19 @@
+a.ts(2,5): error TS2322: Type 'typeof Symbol.["m7"]' is not assignable to type 'boolean'.
+a.ts(3,1): error TS2322: Type 'typeof Symbol."m8"' is not assignable to type 'boolean'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    interface SymbolConstructor { readonly ["m7"]: symbol; readonly "m8": symbol }
+    let t: boolean = Symbol.m7;
+        ~
+!!! error TS2322: Type 'typeof Symbol.["m7"]' is not assignable to type 'boolean'.
+    t = Symbol.m8;
+    ~
+!!! error TS2322: Type 'typeof Symbol."m8"' is not assignable to type 'boolean'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

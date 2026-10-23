@@ -1,0 +1,30 @@
+//// [test/cases/bun19-P2.ts] ////
+
+=== a.ts ===
+import * as m4 from "./m4";
+>m4 : typeof m4
+
+declare let m: { [K in keyof typeof m4]: 1 };
+>m : { a: 1; }
+>m4 : typeof m4
+
+m.a = 1;
+>m.a = 1 : 1
+>m.a : 1
+>m : { a: 1; }
+>a : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+
+=== m4.ts ===
+
+export type * from "./m1";
+

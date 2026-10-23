@@ -1,0 +1,41 @@
+//// [test/cases/bun20-C3c.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+declare const m: { a: "b"; b: "c"; c: "d"; d: "a" };
+>m : { a: "b"; b: "c"; c: "d"; d: "a"; }
+>a : "b"
+>b : "c"
+>c : "d"
+>d : "a"
+
+function q() {
+>q : () => void
+
+    let x: "a" | "b" | "c" | "d" = "a";
+>x : "a" | "b" | "c" | "d"
+>"a" : "a"
+
+    while (cond()) {
+>cond() : boolean
+>cond : () => boolean
+
+        while (x !== "d") { x = m[x]; if (cond()) break; }
+>x !== "d" : boolean
+>x : "a" | "b"
+>"d" : "d"
+>x = m[x] : "b" | "c"
+>x : "a" | "b" | "c" | "d"
+>m[x] : "b" | "c"
+>m : { a: "b"; b: "c"; c: "d"; d: "a"; }
+>x : "a" | "b"
+>cond() : boolean
+>cond : () => boolean
+    }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun10-C20.ts] ////
+
+=== a.ts ===
+const o7 = { 1n: 1, "1n": 3 };
+>o7 : { "1n": number; }
+>{ 1n: 1, "1n": 3 } : { "1n": number; }
+>1n : number
+>1 : 1
+>"1n" : number
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

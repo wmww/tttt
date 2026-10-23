@@ -1,0 +1,25 @@
+//// [test/cases/bun91-R12b.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+with (o) { var a1 = 1; }
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+with (o) { var [a2, ...a3] = o; }
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+with (o) { namespace a4 {} }
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+function f() { with (o) { var b1 = 1; let b2 = 2; } }
+>f : Symbol(f, Decl(a.ts, 3, 28))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+f();
+>f : Symbol(f, Decl(a.ts, 3, 28))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 12))
+

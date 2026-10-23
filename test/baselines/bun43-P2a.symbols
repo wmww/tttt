@@ -1,0 +1,6 @@
+//// [test/cases/bun43-P2a.ts] ////
+
+=== a.ts ===
+var s = f<typeof a.#>();
+>s : Symbol(s, Decl(a.ts, 0, 3))
+

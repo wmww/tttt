@@ -1,0 +1,26 @@
+//// [test/cases/bun28-C12.ts] ////
+
+=== a.ts ===
+declare function g(): any;
+>g : () => any
+
+let a: any;
+>a : any
+
+({ [g(), "a"]: a } = {} as any);
+>({ [g(), "a"]: a } = {} as any) : any
+>{ [g(), "a"]: a } = {} as any : any
+>{ [g(), "a"]: a } : { a: any; }
+>[g(), "a"] : any
+>g(), "a" : "a"
+>g() : any
+>g : () => any
+>"a" : "a"
+>a : any
+>{} as any : any
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

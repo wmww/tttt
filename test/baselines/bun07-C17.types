@@ -1,0 +1,23 @@
+//// [test/cases/bun07-C17.ts] ////
+
+=== a.ts ===
+export {};
+declare let n: number;
+>n : number
+
+for (({ n }) in {}) {}
+>({ n }) : { n: number; }
+>{ n } : { n: number; }
+>n : number
+>{} : {}
+
+for (([n]) in {}) {}
+>([n]) : [number]
+>[n] : [number]
+>n : number
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

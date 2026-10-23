@@ -1,0 +1,31 @@
+//// [test/cases/bun74-R15e.ts] ////
+
+=== a.ts ===
+declare const x: any; type T = any;
+>x : any
+>T : any
+
+<T>(x?: number);
+><T>(x?: number) : any
+>(x?: number) : any
+>x?: number : any
+>x : any
+> : any
+>number : any
+
+=== b.ts ===
+declare const x2: any, y2: any; type T2 = any;
+>x2 : any
+>y2 : any
+>T2 : any
+
+<T2>(x2? = 1);
+><T2>(x2? = 1) : any
+>(x2? = 1) : any
+>x2? = 1 : any
+>x2 : any
+>= 1 : 1
+> : any
+>1 : 1
+> : any
+

@@ -1,0 +1,17 @@
+//// [test/cases/bun33-C18a.ts] ////
+
+=== a.ts ===
+import.defer<1>("./m");
+>import.defer<1>("./m") : Promise<typeof import("./m")>
+>defer : any
+>"./m" : "./m"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const m = 1;
+>m : 1
+>1 : 1
+

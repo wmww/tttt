@@ -1,0 +1,23 @@
+//// [test/cases/bun25-C7c.ts] ////
+
+=== a.ts ===
+declare const o: { p?(v: unknown): v is string } | undefined;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 18))
+>v : Symbol(v, Decl(a.ts, 0, 22))
+>v : Symbol(v, Decl(a.ts, 0, 22))
+
+function f(v: unknown) { if (o?.p!(v)) v.length; }
+>f : Symbol(f, Decl(a.ts, 0, 61))
+>v : Symbol(v, Decl(a.ts, 1, 11))
+>o?.p : Symbol(p, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 18))
+>v : Symbol(v, Decl(a.ts, 1, 11))
+>v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 1, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

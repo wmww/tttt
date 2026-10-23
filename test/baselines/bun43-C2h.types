@@ -1,0 +1,8 @@
+//// [test/cases/bun43-C2h.ts] ////
+
+=== a.ts ===
+var y = 1 \u0061s number;
+>y : number
+>1 \u0061s number : number
+>1 : 1
+

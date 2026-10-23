@@ -1,0 +1,16 @@
+//// [test/cases/bun23-C2c.ts] ////
+
+=== a.ts ===
+function f<A, B>() { const p: 1 = null! as { [K in (keyof (A | B))]: K }; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 11))
+>B : Symbol(B, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 26))
+>K : Symbol(K, Decl(a.ts, 0, 46))
+>A : Symbol(A, Decl(a.ts, 0, 11))
+>B : Symbol(B, Decl(a.ts, 0, 13))
+>K : Symbol(K, Decl(a.ts, 0, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,30 @@
+a.ts(2,29): error TS2344: Type 'U' does not satisfy the constraint 'string'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(4,49): error TS2344: Type 'Y' does not satisfy the constraint 'X'.
+  'X' could be instantiated with an arbitrary type which could be unrelated to 'Y'.
+a.ts(5,31): error TS2344: Type 'U' does not satisfy the constraint 'string'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    interface IFoo<X extends string> { x: X }
+    type T2<T> = T extends IFoo<infer U extends number> ? U : never;
+                                ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'U' does not satisfy the constraint 'string'.
+!!! error TS2344:   Type 'number' is not assignable to type 'string'.
+    type Two<A extends string, B extends A> = [A, B];
+    type T9<T> = T extends Two<infer X extends "a", infer Y extends "b"> ? [X, Y] : never;
+                                                    ~~~~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'Y' does not satisfy the constraint 'X'.
+!!! error TS2344:   'X' could be instantiated with an arbitrary type which could be unrelated to 'Y'.
+    type T11<T> = T extends [IFoo<infer U>, { n: infer U extends number }] ? U : never;
+                                  ~~~~~~~
+!!! error TS2344: Type 'U' does not satisfy the constraint 'string'.
+!!! error TS2344:   Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

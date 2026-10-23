@@ -1,0 +1,14 @@
+//// [test/cases/bun04-C5.ts] ////
+
+=== a.ts ===
+export type S4 = ({ a: b }: any, c = b) => void;
+>S4 : S4
+>a : any
+>b : any
+>c : any
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

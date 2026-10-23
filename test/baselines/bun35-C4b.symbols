@@ -1,0 +1,17 @@
+//// [test/cases/bun35-C4b.ts] ////
+
+=== a.ts ===
+import { v } from "v";
+>v : Symbol(v, Decl(a.ts, 0, 8))
+
+const r: 0 = v;
+>r : Symbol(r, Decl(a.ts, 1, 5))
+>v : Symbol(v, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/v/no.d.ts ===
+export const v: "no";
+>v : Symbol(v, Decl(no.d.ts, 0, 12))
+

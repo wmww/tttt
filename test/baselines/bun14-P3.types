@@ -1,0 +1,26 @@
+//// [test/cases/bun14-P3.ts] ////
+
+=== a.ts ===
+function mk<T>(t: T) { return {}; }
+>mk : <T>(t: T) => {}
+>t : T
+>{} : {}
+
+const r = mk(1);
+>r : {}
+>mk(1) : {}
+>mk : <T>(t: T) => {}
+>1 : 1
+
+declare const u: unknown;
+>u : unknown
+
+const t1: typeof r | null | undefined = u;
+>t1 : {} | null | undefined
+>r : {}
+>u : unknown
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,33 @@
+//// [test/cases/bun09-C15a.ts] ////
+
+=== a.ts ===
+type G<A extends B[], B> = [A, B];
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>B : Symbol(B, Decl(a.ts, 0, 21))
+>B : Symbol(B, Decl(a.ts, 0, 21))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>B : Symbol(B, Decl(a.ts, 0, 21))
+
+type E2<T> = T extends G<infer X, infer Y> ? X : never;
+>E2 : Symbol(E2, Decl(a.ts, 0, 34))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 1, 30))
+>Y : Symbol(Y, Decl(a.ts, 1, 39))
+>X : Symbol(X, Decl(a.ts, 1, 30))
+
+function fe<T>(y: E2<T>) { y.includes(1); }
+>fe : Symbol(fe, Decl(a.ts, 1, 55))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>y : Symbol(y, Decl(a.ts, 2, 15))
+>E2 : Symbol(E2, Decl(a.ts, 0, 34))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>y.includes : Symbol(Array.includes, Decl(lib.es2016.array.include.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 2, 15))
+>includes : Symbol(Array.includes, Decl(lib.es2016.array.include.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

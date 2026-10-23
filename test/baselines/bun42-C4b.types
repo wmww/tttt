@@ -1,0 +1,31 @@
+//// [test/cases/bun42-C4b.ts] ////
+
+=== a.ts ===
+namespace A { export enum E { z = 0, o = 1 } }
+>A : typeof A
+>E : E
+>z : E.z
+>0 : 0
+>o : E.o
+>1 : 1
+
+namespace B { export enum E { z = -0, o = 1 } }
+>B : typeof B
+>E : E
+>z : E.z
+>-0 : 0
+>0 : 0
+>o : E.o
+>1 : 1
+
+let x: A.E = null! as B.E;
+>x : A.E
+>A : any
+>null! as B.E : B.E
+>null! : never
+>B : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

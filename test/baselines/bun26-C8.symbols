@@ -1,0 +1,18 @@
+//// [test/cases/bun26-C8.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: T): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+const r9: string = f([[[[[[[[[(z) => 1]]]]]]]]]);
+>r9 : Symbol(r9, Decl(a.ts, 1, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>z : Symbol(z, Decl(a.ts, 1, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

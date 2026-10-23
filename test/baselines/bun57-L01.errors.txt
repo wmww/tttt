@@ -1,0 +1,35 @@
+a.ts(2,11): error TS1030: 'export' modifier already seen.
+a.ts(3,4): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+a.ts(4,12): error TS1029: 'export' modifier must precede 'declare' modifier.
+a.ts(5,19): error TS1184: Modifiers cannot appear here.
+a.ts(6,25): error TS1319: A default export can only be used in an ECMAScript-style module.
+a.ts(7,25): error TS1319: A default export can only be used in an ECMAScript-style module.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    declare const a: any, b: any;
+    @a export export @b class C1 {}
+              ~~~~~~
+!!! error TS1030: 'export' modifier already seen.
+    @a public export @b class C2 {}
+       ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+    @a declare export @b class C3 {}
+               ~~~~~~
+!!! error TS1029: 'export' modifier must precede 'declare' modifier.
+    function f() { @a export @b class C4 {} }
+                      ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    namespace N { export @a default class C5 {} }
+                            ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    namespace M { @a export default @b class C6 {} }
+                            ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

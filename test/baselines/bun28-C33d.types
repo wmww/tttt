@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C33d.ts] ////
+
+=== a.ts ===
+for (var a = 1 of []) {}
+>a : never
+>1 : 1
+>[] : never[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

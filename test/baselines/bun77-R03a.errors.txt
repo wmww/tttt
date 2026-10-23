@@ -1,0 +1,30 @@
+a.ts(1,18): error TS2304: Cannot find name 'Unresolved'.
+a.ts(2,44): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(3,50): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(4,63): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(5,45): error TS2322: Type 'Unresolved<number>' is not assignable to type 'never'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    declare const u: Unresolved<number>;
+                     ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'Unresolved'.
+    function* g1() { const r = yield* u; const t: never = r; }
+                                               ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    async function* g2() { const r = yield* u; const t: never = r; }
+                                                     ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function* g3(): Generator<number> { const r = yield* u; const t: never = r; }
+                                                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    function* g4() { for (const x of u) { const t: never = x; } }
+                                                ~
+!!! error TS2322: Type 'Unresolved<number>' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

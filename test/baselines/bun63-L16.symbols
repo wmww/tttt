@@ -1,0 +1,43 @@
+//// [test/cases/bun63-L16.ts] ////
+
+=== a.ts ===
+interface Array<T> { length: number } interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+>Array : Symbol(Array, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+>length : Symbol(Array.length, Decl(a.ts, 0, 20))
+>Boolean : Symbol(Boolean, Decl(a.ts, 0, 37))
+>CallableFunction : Symbol(CallableFunction, Decl(a.ts, 0, 58))
+>Function : Symbol(Function, Decl(a.ts, 0, 88))
+>IArguments : Symbol(IArguments, Decl(a.ts, 0, 110))
+>NewableFunction : Symbol(NewableFunction, Decl(a.ts, 0, 134))
+>Number : Symbol(Number, Decl(a.ts, 0, 163))
+>Object : Symbol(Object, Decl(a.ts, 0, 183))
+>RegExp : Symbol(RegExp, Decl(a.ts, 0, 203))
+>String : Symbol(String, Decl(a.ts, 0, 223))
+
+namespace N { export type NoInfer<T> = intrinsic; }
+>N : Symbol(N, Decl(a.ts, 0, 243))
+>NoInfer : Symbol(NoInfer, Decl(a.ts, 1, 13))
+>T : Symbol(T, Decl(a.ts, 1, 34))
+
+declare function g<T>(a: T, b: N.NoInfer<T>): { c: N.NoInfer<T[]> };
+>g : Symbol(g, Decl(a.ts, 1, 51))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>a : Symbol(a, Decl(a.ts, 2, 22))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>b : Symbol(b, Decl(a.ts, 2, 27))
+>N : Symbol(N, Decl(a.ts, 0, 243))
+>NoInfer : Symbol(N.NoInfer, Decl(a.ts, 1, 13))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>c : Symbol(c, Decl(a.ts, 2, 47))
+>N : Symbol(N, Decl(a.ts, 0, 243))
+>NoInfer : Symbol(N.NoInfer, Decl(a.ts, 1, 13))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+
+const n: 1 = g;
+>n : Symbol(n, Decl(a.ts, 3, 5))
+>g : Symbol(g, Decl(a.ts, 1, 51))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

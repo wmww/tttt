@@ -1,0 +1,40 @@
+//// [test/cases/bun90-R10a.ts] ////
+
+=== a.ts ===
+import { G1 as GC, G1 as GN } from "./t";
+>G1 : any
+>GC : any
+>G1 : any
+>GN : any
+
+import c = GC.v;
+>c : any
+>GC : any
+>v : any
+
+import d = GN.nope;
+>d : any
+>GN : typeof GN
+>nope : any
+
+c; d;
+>c : any
+>d : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== g.d.ts ===
+declare class GC { static v: number }
+>GC : GC
+>v : number
+
+declare namespace GN { const v: number }
+>GN : typeof GN
+>v : number
+
+=== t.ts ===
+export interface G1 { x: 1 }
+>x : 1
+

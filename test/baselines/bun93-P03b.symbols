@@ -1,0 +1,9 @@
+//// [test/cases/bun93-P03b.ts] ////
+
+=== a.ts ===
+({ abstract e(): voi`);
+>e : Symbol(e, Decl(a.ts, 0, 2))
+>voi : Symbol(voi)
+
+const sentinel: number = "";
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun27-P7.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+const f = <></>;
+>f : JSX.Element
+><></> : JSX.Element
+
+const Frag = (p: {}) => null! as JSX.Element;
+>Frag : (p: {}) => JSX.Element
+>(p: {}) => null! as JSX.Element : (p: {}) => JSX.Element
+>p : {}
+>null! as JSX.Element : JSX.Element
+>null! : never
+>JSX : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

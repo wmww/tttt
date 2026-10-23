@@ -1,0 +1,15 @@
+//// [test/cases/bun25-C12a.ts] ////
+
+=== a.ts ===
+const k = 1; ({ k = 1 });
+>k : 1
+>1 : 1
+>({ k = 1 }) : { k: number; }
+>{ k = 1 } : { k: number; }
+>k : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

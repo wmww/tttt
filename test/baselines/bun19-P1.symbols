@@ -1,0 +1,26 @@
+//// [test/cases/bun19-P1.ts] ////
+
+=== a.ts ===
+import * as m4 from "./m4";
+>m4 : Symbol(m4, Decl(a.ts, 0, 6))
+
+const o: typeof m4 = { fn: x => x };
+>o : Symbol(o, Decl(a.ts, 1, 5))
+>m4 : Symbol(m4, Decl(a.ts, 0, 6))
+>fn : Symbol(fn, Decl(a.ts, 1, 22))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m1.ts ===
+export const fn = (x: number) => x;
+>fn : Symbol(fn, Decl(m1.ts, 0, 12))
+>x : Symbol(x, Decl(m1.ts, 0, 19))
+>x : Symbol(x, Decl(m1.ts, 0, 19))
+
+=== m4.ts ===
+
+export type * from "./m1";
+

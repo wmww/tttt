@@ -1,0 +1,52 @@
+//// [test/cases/bun62-L06a.ts] ////
+
+=== a.js ===
+const k = "x";
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+class D1 { static [k] = 1; static m() { this.x = 2; } }
+>D1 : Symbol(D1, Decl(a.js, 0, 14))
+>[k] : Symbol(D1.x, Decl(a.js, 1, 39), Decl(a.js, 1, 10))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>m : Symbol(D1.m, Decl(a.js, 1, 26))
+>this.x : Symbol(D1.x, Decl(a.js, 1, 39), Decl(a.js, 1, 10))
+>this : Symbol(D1, Decl(a.js, 0, 14))
+>x : Symbol(D1.x, Decl(a.js, 1, 39), Decl(a.js, 1, 10))
+
+class D2 { static m() { this.x = 2; } static [k] = 1; }
+>D2 : Symbol(D2, Decl(a.js, 1, 55))
+>m : Symbol(D2.m, Decl(a.js, 2, 10))
+>this.x : Symbol(D2.x, Decl(a.js, 2, 23), Decl(a.js, 2, 37))
+>this : Symbol(D2, Decl(a.js, 1, 55))
+>x : Symbol(D2.x, Decl(a.js, 2, 23), Decl(a.js, 2, 37))
+>[k] : Symbol(D2.x, Decl(a.js, 2, 23), Decl(a.js, 2, 37))
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+class D3 { constructor() { this.x = 2; } /** @readonly */ [k] = 1; }
+>D3 : Symbol(D3, Decl(a.js, 2, 55))
+>this.x : Symbol(D3.x, Decl(a.js, 3, 26), Decl(a.js, 3, 40))
+>this : Symbol(D3, Decl(a.js, 2, 55))
+>x : Symbol(D3.x, Decl(a.js, 3, 26), Decl(a.js, 3, 40))
+>[k] : Symbol(D3.x, Decl(a.js, 3, 26), Decl(a.js, 3, 40))
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+class D4 { constructor() { this.x = 2; } /** @private */ [k] = 1; }
+>D4 : Symbol(D4, Decl(a.js, 3, 68))
+>this.x : Symbol(D4.x, Decl(a.js, 4, 26), Decl(a.js, 4, 40))
+>this : Symbol(D4, Decl(a.js, 3, 68))
+>x : Symbol(D4.x, Decl(a.js, 4, 26), Decl(a.js, 4, 40))
+>[k] : Symbol(D4.x, Decl(a.js, 4, 26), Decl(a.js, 4, 40))
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+class D5 { constructor() { this.x = 2; } [k] = 1; }
+>D5 : Symbol(D5, Decl(a.js, 4, 67))
+>this.x : Symbol(D5.x, Decl(a.js, 5, 26), Decl(a.js, 5, 40))
+>this : Symbol(D5, Decl(a.js, 4, 67))
+>x : Symbol(D5.x, Decl(a.js, 5, 26), Decl(a.js, 5, 40))
+>[k] : Symbol(D5.x, Decl(a.js, 5, 26), Decl(a.js, 5, 40))
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 7, 5))
+

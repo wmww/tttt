@@ -1,0 +1,19 @@
+//// [test/cases/bun17-C2b.ts] ////
+
+=== a.ts ===
+function f<T extends { a: string }>(x: Partial<T>, y: { b: number }) {
+>f : <T extends { a: string; }>(x: Partial<T>, y: { b: number; }) => void
+>a : string
+>x : Partial<T>
+>y : { b: number; }
+>b : number
+
+  x = y;
+>x = y : { b: number; }
+>x : Partial<T>
+>y : { b: number; }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

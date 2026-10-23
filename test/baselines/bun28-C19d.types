@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C19d.ts] ////
+
+=== a.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.d.ts ===
+
+export default function* (): any;
+

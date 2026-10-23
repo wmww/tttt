@@ -1,0 +1,15 @@
+//// [test/cases/bun12-C7c.ts] ////
+
+=== a.ts ===
+type Sw<T, U> = T extends string ? [T, U] : Sw<U | "k", T>;
+>Sw : Sw<T, U>
+
+const r: ["a", 1] | ["k", 1] = null! as Sw<1, "a">;
+>r : ["a", 1] | ["k", 1]
+>null! as Sw<1, "a"> : any
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

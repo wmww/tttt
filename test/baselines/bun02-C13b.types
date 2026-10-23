@@ -1,0 +1,37 @@
+//// [test/cases/bun02-C13b.ts] ////
+
+=== a.ts ===
+const a1 = { abstract m() {} };
+>a1 : { m(): void; }
+>{ abstract m() {} } : { m(): void; }
+>m : () => void
+
+const a2 = { readonly m() {} };
+>a2 : { readonly m: () => void; }
+>{ readonly m() {} } : { readonly m: () => void; }
+>m : () => void
+
+const a3 = { accessor m() {} };
+>a3 : { m(): void; }
+>{ accessor m() {} } : { m(): void; }
+>m : () => void
+
+const a4 = { public public m() {} };
+>a4 : { m(): void; }
+>{ public public m() {} } : { m(): void; }
+>m : () => void
+
+const a5 = { public static m() {} };
+>a5 : { m(): void; }
+>{ public static m() {} } : { m(): void; }
+>m : () => void
+
+const a6 = { static public m() {} };
+>a6 : { m(): void; }
+>{ static public m() {} } : { m(): void; }
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

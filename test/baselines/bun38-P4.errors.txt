@@ -1,0 +1,18 @@
+a.ts(3,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "moduleResolution": "bundler", "resolvePackageJsonExports": false, "resolvePackageJsonImports": false }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    import { which } from "self";
+    export const i: "esm" = which;
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== cjs.d.ts (0 errors) ====
+    export declare const which: "cjs";
+==== esm.d.ts (0 errors) ====
+    export declare const which: "esm";
+==== package.json (0 errors) ====
+    { "name": "self", "exports": { "import": "./esm.d.ts", "require": "./cjs.d.ts" } }
+    

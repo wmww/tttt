@@ -1,0 +1,27 @@
+//// [test/cases/bun34-C4b.ts] ////
+
+=== a.ts ===
+import type { X } from "./m";
+>X : X
+
+function n1(a = X.y): void; function n1(a: any) {} n1();
+>n1 : (a?: string) => void
+>a : string
+>X.y : "k"
+>X : typeof X
+>y : "k"
+>n1 : (a?: string) => void
+>a : any
+>n1() : void
+>n1 : (a?: string) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export class X { static readonly y = "k"; }
+>X : X
+>y : "k"
+>"k" : "k"
+

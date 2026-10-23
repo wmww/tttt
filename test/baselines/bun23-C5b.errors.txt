@@ -1,0 +1,22 @@
+a.ts(3,18): error TS2322: Type '() => { self: typeof M2.D.n; d: M2.D; }' is not assignable to type '() => { self: typeof M1.D.n; d: M1.D; }'.
+  Type '{ self: () => any; d: M2.D; }' is not assignable to type '{ self: () => any; d: M1.D; }'.
+    The types of 'd.a' are incompatible between these types.
+      Type 'string' is not assignable to type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace M1 { export class D { a = 1; static n() { return { self: D.n, d: new D() }; } } }
+    namespace M2 { export class D { a = ""; static n() { return { self: D.n, d: new D() }; } } }
+    let q1 = M1.D.n; q1 = M2.D.n;
+                     ~~
+!!! error TS2322: Type '() => { self: typeof M2.D.n; d: M2.D; }' is not assignable to type '() => { self: typeof M1.D.n; d: M1.D; }'.
+!!! error TS2322:   Type '{ self: () => any; d: M2.D; }' is not assignable to type '{ self: () => any; d: M1.D; }'.
+!!! error TS2322:     The types of 'd.a' are incompatible between these types.
+!!! error TS2322:       Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

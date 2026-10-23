@@ -1,0 +1,22 @@
+a.ts(2,23): error TS2322: Type 'string' is not assignable to type 'never'.
+a.ts(4,24): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function f<T extends string>(x: { p: `a${T}` }): T;
+    const r1: never = f({ p: "ab" });
+                          ~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+!!! related TS6500 a.ts:1:43: The expected type comes from property 'p' which is declared here on type '{ p: never; }'
+    declare function f4<T extends string>(x: { p: `a${T}` | number }): T;
+    const r4: never = f4({ p: "ab" });
+                           ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 a.ts:3:44: The expected type comes from property 'p' which is declared here on type '{ p: number; }'
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,28 @@
+//// [test/cases/bun01-C14.ts] ////
+
+=== a.ts ===
+export {};
+class A {
+>A : Symbol(A, Decl(a.ts, 0, 10))
+
+  inst = 1;
+>inst : Symbol(A.inst, Decl(a.ts, 1, 9))
+
+  static stat = 1;
+>stat : Symbol(A.stat, Decl(a.ts, 2, 11))
+
+  m1() { interface J extends inst {} }
+>m1 : Symbol(A.m1, Decl(a.ts, 3, 18))
+>J : Symbol(J, Decl(a.ts, 4, 8))
+
+  m2() { class B implements stat {} }
+>m2 : Symbol(A.m2, Decl(a.ts, 4, 38))
+>B : Symbol(B, Decl(a.ts, 5, 8))
+
+  m3() { class B implements inst.X {} }
+>m3 : Symbol(A.m3, Decl(a.ts, 5, 37))
+>B : Symbol(B, Decl(a.ts, 6, 8))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

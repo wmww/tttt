@@ -1,0 +1,25 @@
+//// [test/cases/bun21-C24.ts] ////
+
+=== a.ts ===
+k = "b"; export {}; let k = "a"; declare const rec: Record<string, string | undefined>;
+>k = "b" : "b"
+>k : string
+>"b" : "b"
+>k : string
+>"a" : "a"
+>rec : Record<string, string | undefined>
+
+if (rec[k]) rec[k].length;
+>rec[k] : string | undefined
+>rec : Record<string, string | undefined>
+>k : string
+>rec[k].length : number
+>rec[k] : string
+>rec : Record<string, string | undefined>
+>k : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,19 @@
+a.ts(2,1): error TS2343: This syntax requires an imported helper named '__decorate' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+a.ts(3,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "importHelpers": true, "experimentalDecorators": true, "module": "commonjs", "moduleResolution": "bundler", "allowJs": true, "maxNodeModuleJsDepth": 1 } }
+==== a.ts (2 errors) ====
+    declare function dec(x: any): void;
+    @dec class A {}
+    ~~~~
+!!! error TS2343: This syntax requires an imported helper named '__decorate' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/tslib/package.json (0 errors) ====
+    {"name":"tslib","version":"2.0.0","main":"tslib.js"}
+==== node_modules/tslib/tslib.js (0 errors) ====
+    exports.__extends = function () {};
+    

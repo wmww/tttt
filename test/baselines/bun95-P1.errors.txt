@@ -1,0 +1,36 @@
+a.ts(1,15): error TS2307: Cannot find module '/c:/x' or its corresponding type declarations.
+a.ts(2,15): error TS2307: Cannot find module '/^/y' or its corresponding type declarations.
+a.ts(4,7): error TS2322: Type '"/q:/r"' is not assignable to type '"/a:/b"'.
+a.ts(6,7): error TS2322: Type '"no"' is not assignable to type '`/z:/${string}`'.
+a.ts(8,1): error TS7053: Element implicitly has an 'any' type because expression of type '"/m:/n"' can't be used to index type '{ "/k:/p": number; }'.
+  Property '/m:/n' does not exist on type '{ "/k:/p": number; }'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"]}}
+==== a.ts (6 errors) ====
+    import x from "/c:/x";
+                  ~~~~~~~
+!!! error TS2307: Cannot find module '/c:/x' or its corresponding type declarations.
+    import y from "/^/y";
+                  ~~~~~~
+!!! error TS2307: Cannot find module '/^/y' or its corresponding type declarations.
+    type T = "/a:/b";
+    const t: T = "/q:/r";
+          ~
+!!! error TS2322: Type '"/q:/r"' is not assignable to type '"/a:/b"'.
+    type U = `/z:/${string}`;
+    const u: U = "no";
+          ~
+!!! error TS2322: Type '"no"' is not assignable to type '`/z:/${string}`'.
+    const o = { "/k:/p": 1 };
+    o["/m:/n"];
+    ~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"/m:/n"' can't be used to index type '{ "/k:/p": number; }'.
+!!! error TS7053:   Property '/m:/n' does not exist on type '{ "/k:/p": number; }'.
+    export const all = [x, y, t, u];
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

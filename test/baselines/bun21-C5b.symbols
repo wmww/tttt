@@ -1,0 +1,23 @@
+//// [test/cases/bun21-C5b.ts] ////
+
+=== a.ts ===
+type O = { a: number } | undefined;
+>O : Symbol(O, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 10))
+
+function f(x: O) { if ((x satisfies O)?.a !== undefined) { x.a; } }
+>f : Symbol(f, Decl(a.ts, 0, 35))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>O : Symbol(O, Decl(a.ts, 0, 0))
+>(x satisfies O)?.a : Symbol(a, Decl(a.ts, 0, 10))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>O : Symbol(O, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 10))
+>undefined : Symbol(undefined)
+>x.a : Symbol(a, Decl(a.ts, 0, 10))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 0, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

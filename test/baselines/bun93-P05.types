@@ -1,0 +1,14 @@
+//// [test/cases/bun93-P05.ts] ////
+
+=== a.ts ===
+class C { a = 1 c\u006fnstructor
+>C : C
+>a : number
+>1 : 1
+
+<<<<<<< x
+() { } }
+=== b.ts ===
+class D { c\u006fnstructor() {} }
+>D : D
+

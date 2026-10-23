@@ -1,0 +1,176 @@
+a01.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a01.ts(2,30): error TS1123: Variable declaration list cannot be empty.
+a01.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a02.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a02.ts(2,27): error TS1184: Modifiers cannot appear here.
+a02.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a03.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a03.ts(2,32): error TS1123: Variable declaration list cannot be empty.
+a03.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a05.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a05.ts(2,36): error TS1009: Trailing comma not allowed.
+a05.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a07.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a07.ts(2,27): error TS1184: Modifiers cannot appear here.
+a07.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a08.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a08.ts(2,42): error TS1123: Variable declaration list cannot be empty.
+a08.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a09.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a09.ts(2,42): error TS1123: Variable declaration list cannot be empty.
+a09.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a10.ts(2,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a10.ts(2,30): error TS1123: Variable declaration list cannot be empty.
+a10.ts(2,37): error TS7006: Parameter 'b' implicitly has an 'any' type.
+a10.ts(2,51): error TS1123: Variable declaration list cannot be empty.
+a10.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a11.ts(2,22): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a11.ts(2,26): error TS1064: The return type of an async function or method must be the global Promise<T> type. Did you mean to write 'Promise<any>'?
+a11.ts(2,36): error TS1123: Variable declaration list cannot be empty.
+a11.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a13.ts(2,20): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a13.ts(2,34): error TS1123: Variable declaration list cannot be empty.
+a13.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+c01.ts(2,12): error TS7006: Parameter 'a' implicitly has an 'any' type.
+c01.ts(2,18): error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+c01.ts(2,31): error TS1123: Variable declaration list cannot be empty.
+c01.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+c02.ts(2,11): error TS2347: Untyped function calls may not accept type arguments.
+c02.ts(2,15): error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+c02.ts(2,28): error TS1123: Variable declaration list cannot be empty.
+c02.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a01.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => { var; } : 1;
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                 
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a02.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => { declare let; } : 1;
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                              ~~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a03.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => { const; } : 1;
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                   
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a05.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => { var b = 1,; } : 1;
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                       ~
+!!! error TS1009: Trailing comma not allowed.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a07.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => { export var; } : 1;
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                              ~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a08.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => function () { var; } : 1;
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                             
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a09.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => class { m() { var; } } : 1;
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                             
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a10.ts (5 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? (a): T => { var; } : (b): T => { var; };
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                 
+!!! error TS1123: Variable declaration list cannot be empty.
+                                        ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+                                                      
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a11.ts (4 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? async (a): T => { var; } : 1;
+                         ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                             ~
+!!! error TS1064: The return type of an async function or method must be the global Promise<T> type. Did you mean to write 'Promise<any>'?
+                                       
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a13.ts (3 errors) ====
+    export {}; declare const x: any; type T = any;
+    const v = x ? x ? (a): T => { var; } : 1 : 2;
+                       ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                                     
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== c01.ts (4 errors) ====
+    export {}; declare const f: any, x: any;
+    const v = (a): { [(() => { var; return "x" })()]: 1 } => x;
+               ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                                  
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== c02.ts (4 errors) ====
+    export {}; declare const f: any, x: any;
+    const v = f<{ [(() => { var; return "x" })()]: 1 }>(x);
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2347: Untyped function calls may not accept type arguments.
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                               
+!!! error TS1123: Variable declaration list cannot be empty.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

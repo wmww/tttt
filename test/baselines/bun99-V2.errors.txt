@@ -1,0 +1,598 @@
+derived.ts(6,23): error TS2425: Class '{ other?: 1 | undefined; } & typeof N' defines instance member property 'id', but extended class 'C3' defines it as instance member function.
+derived.ts(9,14): error TS2322: Type '1' is not assignable to type 'never'.
+derived.ts(10,14): error TS2322: Type '1' is not assignable to type 'never'.
+enums.ts(3,14): error TS2322: Type '"id"' is not assignable to type 'never'.
+enums.ts(4,14): error TS2322: Type '{ readonly [x: number]: string; id: E.id; }' is not assignable to type 'never'.
+enums.ts(6,14): error TS2322: Type 'number | "id" | "other"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+enums.ts(7,14): error TS2322: Type '{ [x: number]: string; id: E.id; other: E.other; }' is not assignable to type 'never'.
+enums.ts(8,14): error TS2322: Type '"id" | "other"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums.ts(10,14): error TS2322: Type '{ readonly [x: number]: string; readonly id: E.id; readonly other: E.other; }' is not assignable to type 'never'.
+enums.ts(11,14): error TS2322: Type '"id" | "other"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums.ts(12,14): error TS2322: Type '"id" | "other" | "x"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums.ts(13,14): error TS2322: Type '"id" | "other"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums.ts(15,14): error TS2322: Type '"id" | "other" | "x"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums.ts(16,14): error TS2322: Type 'string' is not assignable to type 'never'.
+enums.ts(17,14): error TS2322: Type 'string' is not assignable to type 'never'.
+enums2.ts(7,14): error TS2322: Type '"third"' is not assignable to type 'never'.
+enums2.ts(8,14): error TS2322: Type '{ readonly [x: number]: string; third: E.third; }' is not assignable to type 'never'.
+enums2.ts(10,14): error TS2322: Type 'number | "id" | "third"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+enums2.ts(11,14): error TS2322: Type '"id" | "third" | "x"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums2.ts(12,14): error TS2322: Type '"id"' is not assignable to type 'never'.
+enums2.ts(13,14): error TS2322: Type '{ readonly [x: number]: 1; id: 1; third: 1; }' is not assignable to type 'never'.
+enums2.ts(14,14): error TS2322: Type 'Readonly<{ readonly [x: number]: string; id: E.id; third: E.third; }>' is not assignable to type 'never'.
+enums2.ts(15,14): error TS2322: Type '"id" | "third"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums2.ts(17,14): error TS2322: Type '"id"' is not assignable to type 'never'.
+enums2.ts(19,14): error TS2322: Type '"id"' is not assignable to type 'never'.
+enums2.ts(20,14): error TS2322: Type '{ readonly [x: number]: string; id: Mixed.id; }' is not assignable to type 'never'.
+enums2.ts(22,14): error TS2322: Type '{ id: E.id; third: E.third; }' is not assignable to type 'never'.
+enums2.ts(24,14): error TS2322: Type 'string | E.id | E.third' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+enums2.ts(25,14): error TS2322: Type 'string | E' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+enums2.ts(27,14): error TS2322: Type '["id" | "third", E.id | E.third]' is not assignable to type 'never'.
+enums2.ts(28,14): error TS2322: Type '["id" | "other" | "third", E]' is not assignable to type 'never'.
+enums2.ts(29,14): error TS2322: Type 'string' is not assignable to type 'never'.
+enums2.ts(30,47): error TS2322: Type '"id" | "third"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+enums2.ts(34,14): error TS2322: Type '"id"' is not assignable to type 'never'.
+enums2.ts(35,14): error TS2322: Type '{ readonly [x: number]: string; id: E.id; third: E.third; } | { id: S.id; }' is not assignable to type 'never'.
+  Type '{ readonly [x: number]: string; id: E.id; third: E.third; }' is not assignable to type 'never'.
+enums2.ts(37,14): error TS2322: Type 'string[]' is not assignable to type 'never'.
+enums2.ts(38,29): error TS2322: Type 'string' is not assignable to type 'never'.
+namespaces.ts(5,14): error TS2322: Type '1' is not assignable to type 'never'.
+namespaces.ts(6,14): error TS2322: Type '{ x?: 1 | undefined; readonly y?: 2 | undefined; f?: ((() => void) & (() => void)) | undefined; K?: (typeof K & typeof K) | undefined; }' is not assignable to type 'never'.
+namespaces.ts(7,14): error TS2322: Type 'Required<typeof A & typeof B>' is not assignable to type 'never'.
+namespaces.ts(9,3): error TS2540: Cannot assign to 'y' because it is a read-only property.
+namespaces.ts(14,14): error TS2322: Type '{ readonly [x: number]: 1; readonly m?: 1 | undefined; }' is not assignable to type 'never'.
+namespaces.ts(17,14): error TS2322: Type '{ x?: 1 | undefined; readonly y?: 2 | undefined; f?: ((() => void) & (() => void)) | undefined; K?: (typeof K & typeof K) | undefined; }' is not assignable to type 'never'.
+namespaces.ts(21,14): error TS2322: Type '1' is not assignable to type 'never'.
+namespaces.ts(25,14): error TS2322: Type '{ x?: 1; y?: 2; f?: (() => void) & (() => void); K?: typeof A.K & typeof B.K; }' is not assignable to type 'never'.
+namespaces.ts(27,14): error TS2322: Type '1 | 2' is not assignable to type 'never'.
+  Type '1' is not assignable to type 'never'.
+nested.ts(22,14): error TS2322: Type '"x"' is not assignable to type 'never'.
+nested.ts(23,14): error TS2322: Type '{ x: number; }' is not assignable to type 'never'.
+rest.ts(3,14): error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest.ts(7,14): error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest.ts(8,14): error TS2322: Type '{ id: string; }[]' is not assignable to type 'never'.
+rest.ts(10,14): error TS2322: Type '{ id: string; }' is not assignable to type 'never'.
+rest.ts(11,122): error TS2322: Type 'Omit<T, "a"> | { id: string; } | { id: string; b?: 1 | undefined; }' is not assignable to type 'never'.
+  Type 'Omit<T, "a">' is not assignable to type 'never'.
+rest.ts(13,14): error TS2322: Type '{ a: 1; id: string; } | { a: 1; id: string; }' is not assignable to type 'never'.
+  Type '{ a: 1; id: string; }' is not assignable to type 'never'.
+rest.ts(16,14): error TS2322: Type '{ id: string; } | { id: string; a?: 1 | undefined; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(6,14): error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(7,14): error TS2322: Type '"id"' is not assignable to type 'never'.
+rest2.ts(8,50): error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(12,14): error TS2322: Type '({ id: string; } | { id: string; } | { id: string; })[]' is not assignable to type 'never'.
+rest2.ts(14,14): error TS2322: Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(16,14): error TS2322: Type '{ a: 1; } | { a: 1; } | { a: 1; }' is not assignable to type 'never'.
+  Type '{ a: 1; }' is not assignable to type 'never'.
+rest2.ts(17,82): error TS2322: Type 'Omit<T, "a"> | { id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type 'Omit<T, "a">' is not assignable to type 'never'.
+rest2.ts(18,40): error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(20,14): error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(22,14): error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(23,14): error TS2322: Type 'Same<{ id: string; } | { id: string; } | { id: string; }>' is not assignable to type 'never'.
+  Type 'Same<{ id: string; }>' is not assignable to type 'never'.
+rest2.ts(25,14): error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+rest2.ts(29,14): error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+  Type '{ id: string; }' is not assignable to type 'never'.
+variable.ts(4,14): error TS2322: Type '1' is not assignable to type 'never'.
+variable.ts(5,14): error TS2322: Type '2' is not assignable to type 'never'.
+variable.ts(6,14): error TS2322: Type '(() => void) & (() => void)' is not assignable to type 'never'.
+variable.ts(10,14): error TS2322: Type '1 | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+variable.ts(12,14): error TS2322: Type 'M' is not assignable to type 'never'.
+variable.ts(13,14): error TS2322: Type 'Required<{ other?: 1 | undefined; } & typeof N>' is not assignable to type 'never'.
+variable.ts(14,14): error TS2322: Type 'Partial<{ other?: 1 | undefined; } & typeof N>' is not assignable to type 'never'.
+variable.ts(15,7): error TS2322: Type 'C1' is not assignable to type '{ other: 1; }'.
+  Property 'other' is optional in type 'C1' but required in type '{ other: 1; }'.
+variable.ts(18,14): error TS2322: Type '{ id: 2; f(): void; K: typeof N.K; other?: 1; }' is not assignable to type 'never'.
+variable.ts(20,14): error TS2322: Type '{ f(): void; K: typeof K; other?: 1; }' is not assignable to type 'never'.
+variable.ts(21,14): error TS2322: Type '1' is not assignable to type 'never'.
+variable.ts(22,46): error TS2322: Type '1' is not assignable to type 'never'.
+variable.ts(26,14): error TS2322: Type '1' is not assignable to type 'never'.
+variable.ts(30,14): error TS2322: Type '1 | 2' is not assignable to type 'never'.
+  Type '1' is not assignable to type 'never'.
+widened.ts(5,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(6,14): error TS2322: Type '{ readonly [x: number]: string; readonly A: E.A; readonly B: E.B; }' is not assignable to type 'never'.
+widened.ts(8,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(10,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(13,14): error TS2322: Type '"B"' is not assignable to type 'never'.
+widened.ts(15,14): error TS2322: Type 'number | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(17,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(19,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(21,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(23,14): error TS2322: Type '"A" | "B" | "x"' is not assignable to type 'never'.
+  Type '"A"' is not assignable to type 'never'.
+widened.ts(25,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+widened.ts(27,14): error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "module": "esnext", "lib": ["esnext"], "types": [], "moduleDetection": "force"}, "files": ["derived.ts", "rest.ts", "enums.ts", "rest2.ts", "variable.ts", "enums2.ts", "widened.ts", "nested.ts", "namespaces.ts"]}
+==== derived.ts (3 errors) ====
+    declare namespace N { const id: string | number; let other: 1 }
+    declare const b1: new () => Partial<typeof N> & typeof N
+    class C1 extends b1 { id = 'x' }
+    class C2 extends b1 {}
+    declare const b3: new () => { other?: 1 } & typeof N
+    class C3 extends b3 { id = 'x' }
+                          ~~
+!!! error TS2425: Class '{ other?: 1 | undefined; } & typeof N' defines instance member property 'id', but extended class 'C3' defines it as instance member function.
+    declare const b4: new () => { other?: 1 } & { other: 1; id: string }
+    class C4 extends b4 { id = 'x' }
+    export const p1: never = new C1().other
+                 ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    export const p3: never = new C3().other
+                 ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+==== enums.ts (12 errors) ====
+    enum E { id, other }
+    const { other, ...rest } = E
+    export const p1: never = null! as keyof typeof rest
+                 ~~
+!!! error TS2322: Type '"id"' is not assignable to type 'never'.
+    export const p2: never = rest
+                 ~~
+!!! error TS2322: Type '{ readonly [x: number]: string; id: E.id; }' is not assignable to type 'never'.
+    const spread = { ...E }
+    export const p3: never = null! as keyof typeof spread
+                 ~~
+!!! error TS2322: Type 'number | "id" | "other"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    export const p4: never = spread
+                 ~~
+!!! error TS2322: Type '{ [x: number]: string; id: E.id; other: E.other; }' is not assignable to type 'never'.
+    export const p5: never = null! as keyof { [K in keyof typeof E]: 1 }
+                 ~~
+!!! error TS2322: Type '"id" | "other"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    declare const m: { [K in keyof typeof E]: (typeof E)[K] }
+    export const p6: never = m
+                 ~~
+!!! error TS2322: Type '{ readonly [x: number]: string; readonly id: E.id; readonly other: E.other; }' is not assignable to type 'never'.
+    export const p7: never = null! as keyof typeof m
+                 ~~
+!!! error TS2322: Type '"id" | "other"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    export const p8: never = null! as keyof (typeof E & { x: 1 })
+                 ~~
+!!! error TS2322: Type '"id" | "other" | "x"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    export const p9: never = null! as keyof Readonly<typeof E>
+                 ~~
+!!! error TS2322: Type '"id" | "other"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    const two = { ...E, ...{ x: 1 } }
+    export const p10: never = null! as keyof typeof two
+                 ~~~
+!!! error TS2322: Type '"id" | "other" | "x"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    export const p11: never = rest[0]
+                 ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    export const p12: never = spread[0]
+                 ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+==== enums2.ts (22 errors) ====
+    enum E { id, other, third }
+    enum S { id = 'a', other = 'b' }
+    enum Mixed { id, other = 'b' }
+    const enum CE { id, other }
+    const { other, ...r1 } = E
+    const { id, ...r2 } = r1
+    export const p1: never = null! as keyof typeof r2
+                 ~~
+!!! error TS2322: Type '"third"' is not assignable to type 'never'.
+    export const p2: never = r2
+                 ~~
+!!! error TS2322: Type '{ readonly [x: number]: string; third: E.third; }' is not assignable to type 'never'.
+    const s1 = { ...r1 }
+    export const p3: never = null! as keyof typeof s1
+                 ~~
+!!! error TS2322: Type 'number | "id" | "third"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    export const p4: never = null! as keyof (typeof r1 & { x: 1 })
+                 ~~
+!!! error TS2322: Type '"id" | "third" | "x"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    export const p5: never = null! as keyof (typeof r1 | { id: 1 })
+                 ~~
+!!! error TS2322: Type '"id"' is not assignable to type 'never'.
+    export const p6: never = null! as { [K in keyof typeof r1]: 1 }
+                 ~~
+!!! error TS2322: Type '{ readonly [x: number]: 1; id: 1; third: 1; }' is not assignable to type 'never'.
+    export const p7: never = null! as Readonly<typeof r1>
+                 ~~
+!!! error TS2322: Type 'Readonly<{ readonly [x: number]: string; id: E.id; third: E.third; }>' is not assignable to type 'never'.
+    export const p8: never = null! as keyof Readonly<typeof r1>
+                 ~~
+!!! error TS2322: Type '"id" | "third"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    const { other: o2, ...rs } = S
+    export const p9: never = null! as keyof typeof rs
+                 ~~
+!!! error TS2322: Type '"id"' is not assignable to type 'never'.
+    const { other: o3, ...rm } = Mixed
+    export const p10: never = null! as keyof typeof rm
+                 ~~~
+!!! error TS2322: Type '"id"' is not assignable to type 'never'.
+    export const p11: never = rm
+                 ~~~
+!!! error TS2322: Type '{ readonly [x: number]: string; id: Mixed.id; }' is not assignable to type 'never'.
+    declare function values<T>(x: { [K in keyof T]: T[K] }): T
+    export const p12: never = values(r1)
+                 ~~~
+!!! error TS2322: Type '{ id: E.id; third: E.third; }' is not assignable to type 'never'.
+    declare function record<V>(x: { [k: string]: V }): V
+    export const p13: never = record(r1)
+                 ~~~
+!!! error TS2322: Type 'string | E.id | E.third' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    export const p14: never = record(E)
+                 ~~~
+!!! error TS2322: Type 'string | E' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    declare function mapped<K extends PropertyKey, V>(x: { [P in K]: V }): [K, V]
+    export const p15: never = mapped(r1)
+                 ~~~
+!!! error TS2322: Type '["id" | "third", E.id | E.third]' is not assignable to type 'never'.
+    export const p16: never = mapped(E)
+                 ~~~
+!!! error TS2322: Type '["id" | "other" | "third", E]' is not assignable to type 'never'.
+    export const p17: never = r1[0]
+                 ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    function f({ other, ...r }: typeof E) { const p: never = null! as keyof typeof r }
+                                                  ~
+!!! error TS2322: Type '"id" | "third"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    let a; ({ other: a, ...a } = E)
+    declare const eu: typeof E | typeof S
+    const { other: o4, ...ru } = eu
+    export const p18: never = null! as keyof typeof ru
+                 ~~~
+!!! error TS2322: Type '"id"' is not assignable to type 'never'.
+    export const p19: never = ru
+                 ~~~
+!!! error TS2322: Type '{ readonly [x: number]: string; id: E.id; third: E.third; } | { id: S.id; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ readonly [x: number]: string; id: E.id; third: E.third; }' is not assignable to type 'never'.
+    const target: { readonly [x: number]: string } = r1
+    export const p20: never = Object.keys(r1)
+                 ~~~
+!!! error TS2322: Type 'string[]' is not assignable to type 'never'.
+    for (const k in r1) { const p: never = k }
+                                ~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+==== namespaces.ts (9 errors) ====
+    declare namespace A { let x: 1; const y: 2; function f(): void; class K {} }
+    declare namespace B { let x: 1; const y: 2; function f(): void; class K {} }
+    declare const v: typeof A & typeof B
+    const r: { x: 1; y: 2 } = v
+    export const p1: never = v.x
+                 ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    export const p2: never = null! as { [K in keyof typeof v]: (typeof v)[K] }
+                 ~~
+!!! error TS2322: Type '{ x?: 1 | undefined; readonly y?: 2 | undefined; f?: ((() => void) & (() => void)) | undefined; K?: (typeof K & typeof K) | undefined; }' is not assignable to type 'never'.
+    export const p3: never = null! as Required<typeof v>
+                 ~~
+!!! error TS2322: Type 'Required<typeof A & typeof B>' is not assignable to type 'never'.
+    v.x = 1
+    v.y = 2
+      ~
+!!! error TS2540: Cannot assign to 'y' because it is a read-only property.
+    enum E1 { m }
+    enum E2 { m }
+    declare const e: typeof E1 & typeof E2
+    const re: { m: unknown } = e
+    export const p4: never = null! as { [K in keyof typeof e]: 1 }
+                 ~~
+!!! error TS2322: Type '{ readonly [x: number]: 1; readonly m?: 1 | undefined; }' is not assignable to type 'never'.
+    declare const three: typeof A & typeof B & { x?: 1 }
+    const r3: { x: 1 } = three
+    export const p5: never = null! as { [K in keyof typeof three]: (typeof three)[K] }
+                 ~~
+!!! error TS2322: Type '{ x?: 1 | undefined; readonly y?: 2 | undefined; f?: ((() => void) & (() => void)) | undefined; K?: (typeof K & typeof K) | undefined; }' is not assignable to type 'never'.
+    declare const mixed: typeof A & { x: 1 }
+    const r4: { x: 1 } = mixed
+    declare const opt: typeof A & typeof B & { x?: 1 } & { x?: 1 }
+    export const p6: never = opt.x
+                 ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    declare const base: new () => typeof A & typeof B
+    class D extends base { own = 1 }
+    const spread = { ...v }
+    export const p7: never = spread
+                 ~~
+!!! error TS2322: Type '{ x?: 1; y?: 2; f?: (() => void) & (() => void); K?: typeof A.K & typeof B.K; }' is not assignable to type 'never'.
+    declare const u: (typeof A & typeof B) | { x: 2 }
+    export const p8: never = u.x
+                 ~~
+!!! error TS2322: Type '1 | 2' is not assignable to type 'never'.
+!!! error TS2322:   Type '1' is not assignable to type 'never'.
+==== nested.ts (2 errors) ====
+    declare class A { protected x: number }
+    interface B { x: number }
+    type M = { [K in 'x']: number }
+    declare const v: A & (B | M)
+    v.x
+    declare const v2: (B | M) & A
+    v2.x
+    declare const v3: A & (M | M)
+    v3.x
+    declare const v4: (A & M) | (A & { [K in 'x']: string })
+    v4.x
+    declare const v5: (A & B) | (A & B & M)
+    v5.x
+    declare class P { private x: number }
+    declare const v6: P & (B | M)
+    v6.x
+    declare class R { readonly x: number }
+    declare const v7: R & (B | M)
+    v7.x = 1
+    declare const v8: (R & M) & (R & M & { y: 1 })
+    v8.x = 1
+    export const k1: never = null! as keyof typeof v
+                 ~~
+!!! error TS2322: Type '"x"' is not assignable to type 'never'.
+    export const k7: never = null! as { [K in keyof typeof v7]: (typeof v7)[K] }
+                 ~~
+!!! error TS2322: Type '{ x: number; }' is not assignable to type 'never'.
+    class Sub extends A { m(a: Sub & (B | M), b: A & (B | M)) { a.x; b.x } }
+==== rest.ts (7 errors) ====
+    declare const u: { a: 1; id: string } | { a: 2; id: string }
+    const { a, ...rest } = u
+    export const p1: never = rest
+                 ~~
+!!! error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    declare const v: { a: 1; id: string }
+    const { a: a1, ...r1 } = v
+    const { a: a2, ...r2 } = v
+    export const p2: never = null! as typeof r1 | typeof r2
+                 ~~
+!!! error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    export const p3: never = [r1, r2]
+                 ~~
+!!! error TS2322: Type '{ id: string; }[]' is not assignable to type 'never'.
+    declare const c: boolean
+    export const p4: never = c ? r1 : r2
+                 ~~
+!!! error TS2322: Type '{ id: string; }' is not assignable to type 'never'.
+    function f<T extends { a: 1 }>(t: T | { a: 1; id: string } | { a: 1; id: string; b?: 1 }) { const { a, ...r } = t; const p: never = r }
+                                                                                                                             ~
+!!! error TS2322: Type 'Omit<T, "a"> | { id: string; } | { id: string; b?: 1 | undefined; }' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Omit<T, "a">' is not assignable to type 'never'.
+    const s1 = { ...v }, s2 = { ...v }
+    export const p5: never = null! as typeof s1 | typeof s2
+                 ~~
+!!! error TS2322: Type '{ a: 1; id: string; } | { a: 1; id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ a: 1; id: string; }' is not assignable to type 'never'.
+    declare const w: { id: string } | { id: string; a?: 1 }
+    const s3 = { ...w }
+    export const p6: never = s3
+                 ~~
+!!! error TS2322: Type '{ id: string; } | { id: string; a?: 1 | undefined; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+==== rest2.ts (13 errors) ====
+    interface D { readonly id: string; a: 1 }
+    type Same<T> = { [K in keyof T]: T[K] }
+    type Writable<T> = { -readonly [K in keyof T]: T[K] }
+    declare const u: D | Same<D> | Writable<D>
+    const { a, ...r1 } = u
+    export const p1: never = r1
+                 ~~
+!!! error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    export const p2: never = null! as keyof typeof r1
+                 ~~
+!!! error TS2322: Type '"id"' is not assignable to type 'never'.
+    function param({ a, ...r }: D | Same<D>) { const p: never = r }
+                                                     ~
+!!! error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    let r3; ({ a: r3, ...r3 } = u)
+    let a4: 1, r4: { id: string }
+    ;({ a: a4, ...r4 } = u)
+    export const p5: never = [r1]
+                 ~~
+!!! error TS2322: Type '({ id: string; } | { id: string; } | { id: string; })[]' is not assignable to type 'never'.
+    declare const c: boolean
+    export const p6: never = c ? r1 : { id: '' }
+                 ~~
+!!! error TS2322: Type '{ id: string; }' is not assignable to type 'never'.
+    const { id, ...r7 } = u
+    export const p7: never = r7
+                 ~~
+!!! error TS2322: Type '{ a: 1; } | { a: 1; } | { a: 1; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ a: 1; }' is not assignable to type 'never'.
+    function generic<T extends D>(t: T | D | Same<D>) { const { a, ...r } = t; const p: never = r }
+                                                                                     ~
+!!! error TS2322: Type 'Omit<T, "a"> | { id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Omit<T, "a">' is not assignable to type 'never'.
+    for (const { a, ...r } of [u]) { const p: never = r }
+                                           ~
+!!! error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    const { a: a8, ...r8 } = r1 as typeof r1 & { a: 1 }
+    export const p8: never = r8
+                 ~~
+!!! error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    const copy = { ...r1 }
+    export const p9: never = copy
+                 ~~
+!!! error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    export const p10: never = null! as Same<typeof r1>
+                 ~~~
+!!! error TS2322: Type 'Same<{ id: string; } | { id: string; } | { id: string; }>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Same<{ id: string; }>' is not assignable to type 'never'.
+    declare function first<T>(x: T, y: T): T
+    export const p11: never = first(r1, r1)
+                 ~~~
+!!! error TS2322: Type '{ id: string; } | { id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+    const assignable: { id: string } = r1
+    declare const nested: { x: D | Same<D> }
+    const { x: { a: a12, ...r12 } } = nested
+    export const p12: never = r12
+                 ~~~
+!!! error TS2322: Type '{ id: string; } | { id: string; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ id: string; }' is not assignable to type 'never'.
+==== variable.ts (14 errors) ====
+    declare namespace N { let other: 1; const id: 2; function f(): void; class K {} }
+    declare const b1: new () => { other?: 1; id?: 2; f?: () => void } & typeof N
+    class C1 extends b1 { own = 1 }
+    export const p1: never = new C1().other
+                 ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    export const p2: never = new C1().id
+                 ~~
+!!! error TS2322: Type '2' is not assignable to type 'never'.
+    export const p3: never = new C1().f
+                 ~~
+!!! error TS2322: Type '(() => void) & (() => void)' is not assignable to type 'never'.
+    declare const x: { other?: 1 } & typeof N
+    interface I1 extends Pick<typeof x, 'other'> { own: 1 }
+    declare const i1: I1
+    export const p4: never = i1.other
+                 ~~
+!!! error TS2322: Type '1 | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    type M = { [K in keyof typeof x]: (typeof x)[K] }
+    export const p5: never = null! as M
+                 ~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+    export const p6: never = null! as Required<typeof x>
+                 ~~
+!!! error TS2322: Type 'Required<{ other?: 1 | undefined; } & typeof N>' is not assignable to type 'never'.
+    export const p7: never = null! as Partial<typeof x>
+                 ~~
+!!! error TS2322: Type 'Partial<{ other?: 1 | undefined; } & typeof N>' is not assignable to type 'never'.
+    const req: { other: 1 } = new C1()
+          ~~~
+!!! error TS2322: Type 'C1' is not assignable to type '{ other: 1; }'.
+!!! error TS2322:   Property 'other' is optional in type 'C1' but required in type '{ other: 1; }'.
+    const back: C1 = null! as { other: 1; id: 2; f(): void; own: number; K: typeof N.K }
+    const spread = { ...x }
+    export const p8: never = spread
+                 ~~
+!!! error TS2322: Type '{ id: 2; f(): void; K: typeof N.K; other?: 1; }' is not assignable to type 'never'.
+    const { id, ...rest } = x
+    export const p9: never = rest
+                 ~~
+!!! error TS2322: Type '{ f(): void; K: typeof K; other?: 1; }' is not assignable to type 'never'.
+    export const p10: never = x['other']
+                 ~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    function g<T extends typeof x>(t: T) { const p: never = t.other }
+                                                 ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    declare const g1: new () => { Array?: 1 } & typeof globalThis
+    class C2 extends g1 { own = 1 }
+    declare const y: { other?: 1 } & { other?: 1 } & typeof N
+    export const p11: never = y.other
+                 ~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    declare const b3: new () => typeof y
+    class C3 extends b3 { own = 1 }
+    declare const z: ({ other?: 1 } & typeof N) | { other: 2 }
+    export const p12: never = z.other
+                 ~~~
+!!! error TS2322: Type '1 | 2' is not assignable to type 'never'.
+!!! error TS2322:   Type '1' is not assignable to type 'never'.
+==== widened.ts (12 errors) ====
+    enum E { A, B }
+    const x = { ...E } as const
+    type K = keyof typeof x
+    const k: K = 0
+    export const p1: never = null! as K
+                 ~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    export const p2: never = x
+                 ~~
+!!! error TS2322: Type '{ readonly [x: number]: string; readonly A: E.A; readonly B: E.B; }' is not assignable to type 'never'.
+    let y = { ...E } as const
+    export const p3: never = null! as keyof typeof y
+                 ~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    const z = { ...E }
+    export const p4: never = null! as keyof typeof z
+                 ~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    const { A, ...rest } = E
+    let w = rest
+    export const p5: never = null! as keyof typeof w
+                 ~~
+!!! error TS2322: Type '"B"' is not assignable to type 'never'.
+    const s = { ...rest } as const
+    export const p6: never = null! as keyof typeof s
+                 ~~
+!!! error TS2322: Type 'number | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    const t = [{ ...E } as const]
+    export const p7: never = null! as keyof (typeof t)[0]
+                 ~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    function f() { return { ...E } as const }
+    export const p8: never = null! as keyof ReturnType<typeof f>
+                 ~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    const n = { inner: { ...E } } as const
+    export const p9: never = null! as keyof typeof n.inner
+                 ~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    const r = { ...E, ...{ x: 1 } } as const
+    export const p10: never = null! as keyof typeof r
+                 ~~~
+!!! error TS2322: Type '"A" | "B" | "x"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"A"' is not assignable to type 'never'.
+    declare function id<T>(t: T): T
+    export const p11: never = null! as keyof ReturnType<typeof id<typeof x>>
+                 ~~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    const viaId = id({ ...E } as const)
+    export const p12: never = null! as keyof typeof viaId
+                 ~~~
+!!! error TS2322: Type 'number | "A" | "B"' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+    

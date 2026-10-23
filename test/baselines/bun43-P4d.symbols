@@ -1,0 +1,14 @@
+//// [test/cases/bun43-P4d.ts] ////
+
+=== a.ts ===
+import { Foo } from "./p";
+>Foo : Symbol(Foo, Decl(a.ts, 0, 8))
+
+/** a /** {@link Foo} */
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+
+=== p.ts ===
+export class Foo {}
+>Foo : Symbol(Foo, Decl(p.ts, 0, 0))
+

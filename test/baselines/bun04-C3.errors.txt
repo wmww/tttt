@@ -1,0 +1,17 @@
+a.ts(4,23): error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "esnext", "module": "esnext" } }
+==== a.ts (2 errors) ====
+    export {};
+    interface BadP { then(cb: (v: BadP) => void): void }
+    declare const it: Iterable<BadP>;
+    for await (const x of it) {}
+                          ~~
+!!! error TS1062: Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

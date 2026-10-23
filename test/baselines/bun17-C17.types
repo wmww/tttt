@@ -1,0 +1,35 @@
+//// [test/cases/bun17-C17.ts] ////
+
+=== a.ts ===
+type Digits = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7';
+>Digits : Digits
+
+type T1 = `${Digits}${Digits}${Digits}${Digits}` | undefined;
+>T1 : T1
+
+type T2 = { a: string } | { b: number };
+>T2 : T2
+>a : string
+>b : number
+
+function f(x: T1, y: T1 & T2) {
+>f : (x: T1, y: T1 & T2) => void
+>x : T1
+>y : T1 & T2
+
+    const a = [x, y];
+>a : any[]
+>[x, y] : any[]
+>x : T1
+>y : T1 & T2
+
+    const b = [x, y];
+>b : any[]
+>[x, y] : any[]
+>x : T1
+>y : T1 & T2
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

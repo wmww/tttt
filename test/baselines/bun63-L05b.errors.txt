@@ -1,0 +1,30 @@
+a.tsx(5,39): error TS2322: Type 'string' is not assignable to type 'never'.
+a.tsx(7,13): error TS2322: Type '{ q: number; k: string; } | { r: number; k: string; }' is not assignable to type '({ q: number; k: string; } | { r: number; k: string; }) & { z: 1; }'.
+  Type '{ q: number; k: string; }' is not assignable to type '({ q: number; k: string; } | { r: number; k: string; }) & { z: 1; }'.
+    Type '{ q: number; k: string; }' is not assignable to type '{ q: number; k: string; } & { z: 1; }'.
+      Property 'z' is missing in type '{ q: number; k: string; }' but required in type '{ z: 1; }'.
+a.tsx(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { } }
+    declare const cond: boolean;
+    const o1 = { q: 1 }, o2 = { r: 2 };
+    declare function Gen<T>(props: T & { pick?: keyof T }): JSX.Element;
+    const x1 = <Gen {...(cond ? o2 : o1)} pick="q" />;
+                                          ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    declare function Req<T>(props: T & { z: 1 }): JSX.Element;
+    const x2 = <Req {...(cond ? o2 : o1)} k="" />;
+                ~~~
+!!! error TS2322: Type '{ q: number; k: string; } | { r: number; k: string; }' is not assignable to type '({ q: number; k: string; } | { r: number; k: string; }) & { z: 1; }'.
+!!! error TS2322:   Type '{ q: number; k: string; }' is not assignable to type '({ q: number; k: string; } | { r: number; k: string; }) & { z: 1; }'.
+!!! error TS2322:     Type '{ q: number; k: string; }' is not assignable to type '{ q: number; k: string; } & { z: 1; }'.
+!!! error TS2322:       Property 'z' is missing in type '{ q: number; k: string; }' but required in type '{ z: 1; }'.
+!!! related TS2728 a.tsx:6:38: 'z' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

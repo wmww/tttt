@@ -1,0 +1,19 @@
+//// [test/cases/bun23-C16.ts] ////
+
+=== a.ts ===
+const cs = "k";
+>cs : Symbol(cs, Decl(a.ts, 0, 5))
+
+const o3 = { [cs]: 1, b: 2, [cs]: 3 }; const y3: 1 = o3;
+>o3 : Symbol(o3, Decl(a.ts, 1, 5))
+>[cs] : Symbol([cs], Decl(a.ts, 1, 12), Decl(a.ts, 1, 27))
+>cs : Symbol(cs, Decl(a.ts, 0, 5))
+>b : Symbol(b, Decl(a.ts, 1, 21))
+>[cs] : Symbol([cs], Decl(a.ts, 1, 12), Decl(a.ts, 1, 27))
+>cs : Symbol(cs, Decl(a.ts, 0, 5))
+>y3 : Symbol(y3, Decl(a.ts, 1, 44))
+>o3 : Symbol(o3, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

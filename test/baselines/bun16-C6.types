@@ -1,0 +1,19 @@
+//// [test/cases/bun16-C6.ts] ////
+
+=== a.ts ===
+const t1: { a: never } & ThisType<{ x: 1 }> = { a: { m() { this.x; } } };
+>t1 : { a: never; } & ThisType<{ x: 1; }>
+>a : never
+>x : 1
+>{ a: { m() { this.x; } } } : { a: { m(): void; }; }
+>a : { m(): void; }
+>{ m() { this.x; } } : { m(): void; }
+>m : () => void
+>this.x : any
+>this : never
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

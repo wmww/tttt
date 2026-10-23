@@ -1,0 +1,27 @@
+//// [test/cases/bun20-C14a.ts] ////
+
+=== a.ts ===
+class A { a = 1 } class C { c = 3 } declare const AorC: typeof A | typeof C;
+>A : A
+>a : number
+>1 : 1
+>C : C
+>c : number
+>3 : 3
+>AorC : typeof A | typeof C
+>A : typeof A
+>C : typeof C
+
+function f<TU extends unknown>(x: TU) { if (x instanceof AorC) { const a: null = x; } }
+>f : <TU extends unknown>(x: TU) => void
+>x : TU
+>x instanceof AorC : boolean
+>x : TU
+>AorC : typeof A | typeof C
+>a : null
+>x : TU & (A | C)
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

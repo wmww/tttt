@@ -1,0 +1,6 @@
+//// [test/cases/bun43-C2b.ts] ////
+
+=== a.ts ===
+var x: \u0076oid;
+>x : void
+

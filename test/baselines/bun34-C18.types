@@ -1,0 +1,13 @@
+//// [test/cases/bun34-C18.ts] ////
+
+=== d.cjs ===
+
+/** @import * as M from "./m.mjs" */
+=== m.mts ===
+
+export {};
+=== s.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

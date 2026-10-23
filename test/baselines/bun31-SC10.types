@@ -1,0 +1,11 @@
+//// [test/cases/bun31-SC10.ts] ////
+
+=== a.ts ===
+function b1() { let x: arguments; }
+>b1 : () => void
+>x : arguments
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

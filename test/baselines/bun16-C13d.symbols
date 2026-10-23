@@ -1,0 +1,28 @@
+//// [test/cases/bun16-C13d.ts] ////
+
+=== a.ts ===
+interface Bad { then(): void }
+>Bad : Symbol(Bad, Decl(a.ts, 0, 0))
+>then : Symbol(Bad.then, Decl(a.ts, 0, 15))
+
+type U = number[] | Bad;
+>U : Symbol(U, Decl(a.ts, 0, 30))
+>Bad : Symbol(Bad, Decl(a.ts, 0, 0))
+
+declare const u: U;
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>U : Symbol(U, Decl(a.ts, 0, 30))
+
+async function f() {
+>f : Symbol(f, Decl(a.ts, 2, 19))
+
+  const x: U = await [];
+>x : Symbol(x, Decl(a.ts, 4, 7))
+>U : Symbol(U, Decl(a.ts, 0, 30))
+
+  await u;
+>u : Symbol(u, Decl(a.ts, 2, 13))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

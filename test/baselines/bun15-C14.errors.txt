@@ -1,0 +1,19 @@
+a.ts(2,31): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(3,7): error TS2322: Type '{ a: number; 1: number; s: number; }' is not assignable to type 'never'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const kn = 1;
+    const o = { a: 1, 1: 2, s: 3, [kn]: 4 };
+                                  ~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const n: never = o;
+          ~
+!!! error TS2322: Type '{ a: number; 1: number; s: number; }' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

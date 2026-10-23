@@ -1,0 +1,25 @@
+//// [test/cases/bun13-C1b.ts] ////
+
+=== a.ts ===
+type Q = keyof M<D>;
+>Q : Symbol(Q, Decl(a.ts, 0, 0))
+>M : Symbol(M, Decl(a.ts, 0, 20))
+>D : Symbol(D, Decl(a.ts, 1, 37))
+
+type M<T> = { [K in keyof T]: T[K] };
+>M : Symbol(M, Decl(a.ts, 0, 20))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>K : Symbol(K, Decl(a.ts, 1, 15))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>K : Symbol(K, Decl(a.ts, 1, 15))
+
+interface D extends M<D> { m(): void }
+>D : Symbol(D, Decl(a.ts, 1, 37))
+>M : Symbol(M, Decl(a.ts, 0, 20))
+>D : Symbol(D, Decl(a.ts, 1, 37))
+>m : Symbol(D.m, Decl(a.ts, 2, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

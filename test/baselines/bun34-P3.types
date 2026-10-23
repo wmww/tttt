@@ -1,0 +1,20 @@
+//// [test/cases/bun34-P3.ts] ////
+
+=== a.ts ===
+class C { #p = new Map<string, 1>(); f(c: C, k: string) { c.#p[k]; } }
+>C : C
+>#p : Map<string, 1>
+>new Map<string, 1>() : Map<string, 1>
+>Map : MapConstructor
+>f : (c: C, k: string) => void
+>c : C
+>k : string
+>c.#p[k] : any
+>c.#p : Map<string, 1>
+>c : C
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun21-C1a.ts] ////
+
+=== a.ts ===
+function helper(p: number) { return compute(p); }
+>helper : (p: number) => any
+>p : number
+>compute(p) : any
+>compute : (v: number) => any
+>p : number
+
+function compute(v: number) { helper(v); return v; }
+>compute : (v: number) => any
+>v : number
+>helper(v) : any
+>helper : (p: number) => any
+>v : number
+>v : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

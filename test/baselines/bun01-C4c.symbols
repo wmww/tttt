@@ -1,0 +1,69 @@
+//// [test/cases/bun01-C4c.ts] ////
+
+=== a.ts ===
+interface Array<T> {}
+>Array : Symbol(Array, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+
+interface Object {}
+>Object : Symbol(Object, Decl(a.ts, 0, 21))
+
+interface Function {}
+>Function : Symbol(Function, Decl(a.ts, 1, 19))
+
+interface String {}
+>String : Symbol(String, Decl(a.ts, 2, 21))
+
+interface Number {}
+>Number : Symbol(Number, Decl(a.ts, 3, 19))
+
+interface Boolean {}
+>Boolean : Symbol(Boolean, Decl(a.ts, 4, 19))
+
+interface RegExp {}
+>RegExp : Symbol(RegExp, Decl(a.ts, 5, 20))
+
+interface IArguments {}
+>IArguments : Symbol(IArguments, Decl(a.ts, 6, 19))
+
+interface CallableFunction {}
+>CallableFunction : Symbol(CallableFunction, Decl(a.ts, 7, 23))
+
+interface NewableFunction {}
+>NewableFunction : Symbol(NewableFunction, Decl(a.ts, 8, 29))
+
+interface Promise {}
+>Promise : Symbol(Promise, Decl(a.ts, 9, 28))
+
+type Omit<T> = T;
+>Omit : Symbol(Omit, Decl(a.ts, 10, 20))
+>T : Symbol(T, Decl(a.ts, 11, 10))
+>T : Symbol(T, Decl(a.ts, 11, 10))
+
+interface TemplateStringsArray<T> {}
+>TemplateStringsArray : Symbol(TemplateStringsArray, Decl(a.ts, 11, 17))
+>T : Symbol(T, Decl(a.ts, 12, 31))
+
+async function f1() { return 1; }
+>f1 : Symbol(f1, Decl(a.ts, 12, 36))
+
+function tag(x: any) {}
+>tag : Symbol(tag, Decl(a.ts, 13, 33))
+>x : Symbol(x, Decl(a.ts, 14, 13))
+
+tag`a`;
+>tag : Symbol(tag, Decl(a.ts, 13, 33))
+
+function f5<T extends { a: number }>(o: T) { const { a, ...rest } = o; }
+>f5 : Symbol(f5, Decl(a.ts, 15, 7))
+>T : Symbol(T, Decl(a.ts, 16, 12))
+>a : Symbol(a, Decl(a.ts, 16, 23))
+>o : Symbol(o, Decl(a.ts, 16, 37))
+>T : Symbol(T, Decl(a.ts, 16, 12))
+>a : Symbol(a, Decl(a.ts, 16, 52))
+>rest : Symbol(rest, Decl(a.ts, 16, 55))
+>o : Symbol(o, Decl(a.ts, 16, 37))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 17, 5))
+

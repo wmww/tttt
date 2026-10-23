@@ -1,0 +1,19 @@
+//// [test/cases/bun20-C12.ts] ////
+
+=== a.ts ===
+declare const nv: never;
+>nv : Symbol(nv, Decl(a.ts, 0, 13))
+
+function t6(x: "a" | "b" | "c") {
+>t6 : Symbol(t6, Decl(a.ts, 0, 24))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+
+    switch (x) { case "a": break; case nv: const a: null = x; break; case "b": break; }
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>nv : Symbol(nv, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 2, 48))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

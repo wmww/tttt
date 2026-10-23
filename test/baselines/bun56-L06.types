@@ -1,0 +1,61 @@
+//// [test/cases/bun56-L06.ts] ////
+
+=== lt1.tsx ===
+class A</T> {}
+>A : A
+>T> {} : boolean
+>T : any
+>{} : {}
+
+=== lt2.tsx ===
+function f</T>() {}
+>f : { (): any; (a: any): void; }
+>T>() : boolean
+>T : any
+>() : any
+> : any
+
+=== lt3.tsx ===
+type X</T> = 1
+>X : any
+>T> : boolean
+>T : any
+> : any
+>1 : 1
+
+=== lt4.tsx ===
+interface I { </T>(): void }
+>T>() : boolean
+>T : any
+>() : any
+> : any
+>void : undefined
+> : any
+
+=== lt5.tsx ===
+let x: Array</number>
+>x : any
+>number : any
+>> : boolean
+> : any
+> : any
+
+=== lt6.tsx ===
+let x: [</a]
+>x : [a]
+
+=== lt7.tsx ===
+function f(</a) {}
+>f : { (): any; (a: any): void; }
+>a : any
+
+=== lt8.tsx ===
+class C { m</T>() {} }
+>C : C
+>m : any
+>T : any
+>>() : boolean
+> : any
+>() : any
+> : any
+

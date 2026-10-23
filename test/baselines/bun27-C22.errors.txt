@@ -1,0 +1,19 @@
+a.tsx(3,16): error TS2322: Type 'string' is not assignable to type 'number'.
+a.tsx(3,23): error TS2322: Type 'undefined' is not assignable to type 'number'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    declare function Arr(p: { children: number[] }): JSX.Element;
+    const c = <Arr>{}{"b"}{2}</Arr>;
+                   ~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                          ~~~
+!!! error TS2322: Type 'undefined' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

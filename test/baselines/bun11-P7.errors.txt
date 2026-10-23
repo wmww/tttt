@@ -1,0 +1,21 @@
+a.ts(1,6): error TS2456: Type alias 'M' circularly references itself.
+a.ts(1,18): error TS2313: Type parameter 'P' has a circular constraint.
+a.ts(1,29): error TS2322: Type 'P' is not assignable to type 'string | number | symbol'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    type M = { [P in keyof M as P]: number };
+         ~
+!!! error TS2456: Type alias 'M' circularly references itself.
+                     ~~~~~~~
+!!! error TS2313: Type parameter 'P' has a circular constraint.
+                                ~
+!!! error TS2322: Type 'P' is not assignable to type 'string | number | symbol'.
+!!! related TS2208 a.ts:1:13: This type parameter might need an `extends string | number | symbol` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

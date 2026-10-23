@@ -1,0 +1,12 @@
+//// [test/cases/bun43-X7.ts] ////
+
+=== a.ts ===
+import j from "./j.json";
+>j : { a: any; }
+
+=== j.json ===
+{"a": }
+>{"a": } : { a: any; }
+>"a" : any
+> : any
+

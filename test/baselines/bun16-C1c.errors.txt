@@ -1,0 +1,27 @@
+a.ts(2,7): error TS2310: Type 'C' recursively references itself as a base type.
+a.ts(2,7): error TS2506: 'C' is referenced directly or indirectly in its own base expression.
+a.ts(2,20): error TS2448: Block-scoped variable 'x' used before its declaration.
+a.ts(4,7): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare function mk<T>(x: T): new () => {};
+    class C extends mk(x) {}
+          ~
+!!! error TS2310: Type 'C' recursively references itself as a base type.
+          ~
+!!! error TS2506: 'C' is referenced directly or indirectly in its own base expression.
+                       ~
+!!! error TS2448: Block-scoped variable 'x' used before its declaration.
+!!! related TS2728 a.ts:4:7: 'x' is declared here.
+    declare const y: C | undefined;
+    const x = y!;
+          ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

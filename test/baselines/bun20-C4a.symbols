@@ -1,0 +1,18 @@
+//// [test/cases/bun20-C4a.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+function t8b() { if (cond()) { var a = []; } a.push(1); return a; }
+>t8b : Symbol(t8b, Decl(a.ts, 0, 33))
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 1, 34))
+>a.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 1, 34))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 1, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

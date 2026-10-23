@@ -1,0 +1,27 @@
+a.ts(7,17): error TS2322: Type 'P | Q' is not assignable to type 'never'.
+  Type 'P' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "target": "esnext", "module": "esnext", "moduleResolution": "bundler", "types": [] }, "files": ["b.ts", "c.ts", "a.ts"] }
+==== a.ts (1 errors) ====
+    interface P { k: "p"; next: P | Q | null } interface Q { k: "q"; next: P | Q | null }
+    declare const more: boolean; declare const p: P; declare const q: Q;
+    export function build() {
+      let last: P | Q | null = null;
+      while (more) {
+        if (last === null) last = more ? p : q;
+        else last = last.next = more ? q : p;
+                    ~~~~~~~~~
+!!! error TS2322: Type 'P | Q' is not assignable to type 'never'.
+!!! error TS2322:   Type 'P' is not assignable to type 'never'.
+      }
+      return last;
+    }
+==== b.ts (0 errors) ====
+    import { build } from "./a";
+    export const x = build();
+==== c.ts (0 errors) ====
+    import { build } from "./a";
+    export const y = [build()];
+    

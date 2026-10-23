@@ -1,0 +1,12 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    declare function f<T extends unknown[]>(x: { [K in keyof T]: { v: T[K] } }): T;
+    function g<U extends { v: number }[]>(v: [...U]) { f(v)[0].foo; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,18 @@
+a.ts(1,16): error TS2307: Cannot find module 'dep/sub/' or its corresponding type declarations.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import {} from "dep/sub/";
+                   ~~~~~~~~~~
+!!! error TS2307: Cannot find module 'dep/sub/' or its corresponding type declarations.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/dep/package.json (0 errors) ====
+    { "name": "dep", "exports": { "./sub": "./sub.d.ts" } }
+==== node_modules/dep/sub.d.ts (0 errors) ====
+    export {};
+    

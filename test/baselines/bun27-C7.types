@@ -1,0 +1,25 @@
+//// [test/cases/bun27-C7.ts] ////
+
+=== a.tsx ===
+declare function h(...a: any[]): any;
+>h : (...a: any[]) => any
+>a : any[]
+
+declare namespace h { namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} } }
+>e : 1
+
+declare function Fragment(p: { x: number }): h.JSX.Element;
+>Fragment : (p: { x: number; }) => h.JSX.Element
+>p : { x: number; }
+>x : number
+>h : any
+>JSX : any
+
+const f = <></>;
+>f : h.JSX.Element
+><></> : h.JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

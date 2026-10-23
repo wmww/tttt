@@ -1,0 +1,17 @@
+//// [test/cases/bun26-C11.ts] ////
+
+=== a.ts ===
+type H<X, T> = { p: T extends string ? X : 2 };
+>H : H<X, T>
+>p : T extends string ? X : 2
+
+function f<A, B>(x: H<B, A>["p"] | H<A, A | B>["p"]) { const n: never = x; }
+>f : <A, B>(x: H<B, A>["p"] | H<A, A | B>["p"]) => void
+>x : (A extends string ? B : 2) | (A extends string ? A : 2) | (B extends string ? A : 2)
+>n : never
+>x : (A extends string ? B : 2) | (A extends string ? A : 2) | (B extends string ? A : 2)
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

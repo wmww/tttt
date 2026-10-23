@@ -1,0 +1,9 @@
+//// [test/cases/bun26-C5.ts] ////
+
+=== a.ts ===
+let d9 = [[[[[[[[[null]]]]]]]]];
+>d9 : Symbol(d9, Decl(a.ts, 0, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

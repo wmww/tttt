@@ -1,0 +1,26 @@
+//// [test/cases/bun08-C4.ts] ////
+
+=== a.ts ===
+import { Sub } from "graphics";
+>Sub : string
+
+let s1: Sub.S;
+>s1 : Sub.S
+>Sub : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== amb.d.ts ===
+declare namespace graphics { namespace Sub { interface S { s: 1 } } }
+>s : 1
+
+declare var graphics: { Sub: string };
+>graphics : { Sub: string; }
+>Sub : string
+
+declare module "graphics" { export = graphics; }
+>"graphics" : typeof import("graphics")
+>graphics : { Sub: string; }
+

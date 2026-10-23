@@ -1,0 +1,8 @@
+//// [test/cases/bun43-C2g.ts] ////
+
+=== a.js ===
+/** @type {numb\u0065r} */
+var x = 1;
+>x : number
+>1 : 1
+

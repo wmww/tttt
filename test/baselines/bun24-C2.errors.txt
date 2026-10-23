@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type 'm.L' is not assignable to type '1'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const o = { m<A>(a: A) { class L { a!: A } return new L(); } };
+    const v: 1 = o.m(1);
+          ~
+!!! error TS2322: Type 'm.L' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

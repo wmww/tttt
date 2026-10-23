@@ -1,0 +1,17 @@
+//// [test/cases/bun39-P5a.ts] ////
+
+=== a.ts ===
+export {};
+const h = f;
+>h : () => never
+>f : () => never
+
+function f() { return h(); }
+>f : () => never
+>h() : never
+>h : () => never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

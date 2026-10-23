@@ -1,0 +1,36 @@
+a.ts(10,5): error TS2322: Type 'number' is not assignable to type '(u: 1) => 1'.
+a.ts(10,50): error TS2322: Type 'number' is not assignable to type '(u: 2) => 2'.
+a.ts(10,95): error TS2322: Type 'number' is not assignable to type '(u: 3) => 3'.
+a.ts(11,5): error TS2322: Type 'number' is not assignable to type '(u: 4) => 4'.
+a.ts(11,50): error TS2322: Type 'number' is not assignable to type '(u: 5) => 5'.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    class C<T> {
+      m<U>(u: U) { return u; }
+      static sm<U>(u: U) { return u; }
+      a = (<U,>(u: U) => u)<1>;
+      b = (function <U>(u: U) { return u; })<2>;
+      c = ({ m<U>(u: U): U { return u; } }).m<3>;
+      d = this.m<4>;
+      e = C.sm<5>;
+    }
+    let a: C<string>["a"] | C<boolean>["a"] = 1; let b: C<string>["b"] | C<boolean>["b"] = 1; let c: C<string>["c"] | C<boolean>["c"] = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '(u: 1) => 1'.
+                                                     ~
+!!! error TS2322: Type 'number' is not assignable to type '(u: 2) => 2'.
+                                                                                                  ~
+!!! error TS2322: Type 'number' is not assignable to type '(u: 3) => 3'.
+    let d: C<string>["d"] | C<boolean>["d"] = 1; let e: C<string>["e"] | C<boolean>["e"] = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '(u: 4) => 4'.
+                                                     ~
+!!! error TS2322: Type 'number' is not assignable to type '(u: 5) => 5'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

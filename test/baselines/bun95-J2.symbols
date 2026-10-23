@@ -1,0 +1,31 @@
+//// [test/cases/bun95-J2.ts] ////
+
+=== a.d.ts ===
+declare module "m" {
+>"m" : Symbol("m", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0))
+
+  class C {}
+>C : Symbol(C, Decl(a.d.ts, 0, 20), Decl(a.d.ts, 1, 12))
+
+  namespace C {
+>C : Symbol(C, Decl(a.d.ts, 0, 20), Decl(a.d.ts, 1, 12))
+
+    interface Options { a?: number }
+>Options : Symbol(Options, Decl(a.d.ts, 2, 15))
+>a : Symbol(Options.a, Decl(a.d.ts, 3, 23))
+  }
+  export = C;
+>C : Symbol(C, Decl(a.d.ts, 0, 20), Decl(a.d.ts, 1, 12))
+}
+=== b.d.ts ===
+declare module "m" {
+>"m" : Symbol("m", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0))
+
+  interface Options { b?: number }
+>Options : Symbol(Options, Decl(b.d.ts, 0, 20))
+>b : Symbol(Options.b, Decl(b.d.ts, 1, 21))
+}
+=== c.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(c.ts, 0, 5))
+

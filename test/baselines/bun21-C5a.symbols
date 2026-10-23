@@ -1,0 +1,21 @@
+//// [test/cases/bun21-C5a.ts] ////
+
+=== a.ts ===
+function f(x: { a: number } | undefined, y: typeof x) { if ((x = y)?.a !== undefined) x.a; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 15))
+>y : Symbol(y, Decl(a.ts, 0, 40))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>(x = y)?.a : Symbol(a, Decl(a.ts, 0, 15))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>y : Symbol(y, Decl(a.ts, 0, 40))
+>a : Symbol(a, Decl(a.ts, 0, 15))
+>undefined : Symbol(undefined)
+>x.a : Symbol(a, Decl(a.ts, 0, 15))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

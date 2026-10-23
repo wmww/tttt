@@ -1,0 +1,25 @@
+a.ts(2,20): error TS2300: Duplicate identifier '[k]'.
+a.ts(3,33): error TS2300: Duplicate identifier '[k]'.
+a.ts(4,7): error TS2322: Type '(x: 1) => void' is not assignable to type 'boolean'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    const k = "key";
+    class C14 { static [k]() {} }
+                       ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 a.ts:3:33: '[k]' was also declared here.
+    namespace C14 { export function key(x: 1): void {} }
+                                    ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 a.ts:2:20: '[k]' was also declared here.
+    const t: boolean = C14.key;
+          ~
+!!! error TS2322: Type '(x: 1) => void' is not assignable to type 'boolean'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

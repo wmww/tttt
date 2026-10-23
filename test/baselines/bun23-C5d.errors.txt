@@ -1,0 +1,17 @@
+a.ts(3,19): error TS2741: Property 'a' is missing in type 'N2.f.C' but required in type 'N1.f.C'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace N1 { export function f<T>(x: T) { class C { a!: T } return new C(); } }
+    namespace N2 { export function f<T>(x: T) { class C { b!: T } return new C(); } }
+    let a1 = N1.f(1); a1 = N2.f(1);
+                      ~~
+!!! error TS2741: Property 'a' is missing in type 'N2.f.C' but required in type 'N1.f.C'.
+!!! related TS2728 a.ts:1:55: 'a' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

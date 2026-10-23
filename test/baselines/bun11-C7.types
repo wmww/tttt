@@ -1,0 +1,20 @@
+//// [test/cases/bun11-C7.ts] ////
+
+=== a.ts ===
+interface IterableIterator<T> { }
+function* g1() { yield 1; }
+>g1 : () => {}
+>yield 1 : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+interface Array<T> { length: number; [n: number]: T } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { }
+>length : number
+>n : number
+
+interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+

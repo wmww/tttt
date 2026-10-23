@@ -1,0 +1,25 @@
+//// [test/cases/bun26-P4.ts] ////
+
+=== a.ts ===
+interface Foo<A extends number, B> { a: A; b: B }
+>Foo : Symbol(Foo, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 14))
+>B : Symbol(B, Decl(a.ts, 0, 31))
+>a : Symbol(Foo.a, Decl(a.ts, 0, 36))
+>A : Symbol(A, Decl(a.ts, 0, 14))
+>b : Symbol(Foo.b, Decl(a.ts, 0, 42))
+>B : Symbol(B, Decl(a.ts, 0, 31))
+
+type T<U> = U extends Foo<infer X, (infer X) & string> ? Foo<X, 1> : never;
+>T : Symbol(T, Decl(a.ts, 0, 49))
+>U : Symbol(U, Decl(a.ts, 1, 7))
+>U : Symbol(U, Decl(a.ts, 1, 7))
+>Foo : Symbol(Foo, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 1, 31), Decl(a.ts, 1, 41))
+>X : Symbol(X, Decl(a.ts, 1, 31), Decl(a.ts, 1, 41))
+>Foo : Symbol(Foo, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 1, 31), Decl(a.ts, 1, 41))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

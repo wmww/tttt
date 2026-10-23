@@ -1,0 +1,21 @@
+//// [test/cases/bun21-C14c.ts] ////
+
+=== a.ts ===
+declare const o: { fail(): never } | undefined;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>fail : Symbol(fail, Decl(a.ts, 0, 18))
+
+function g(x: string | number) { if (typeof x === "string") { o?.fail(), 0; } x.toFixed(); }
+>g : Symbol(g, Decl(a.ts, 0, 47))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>o?.fail : Symbol(fail, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>fail : Symbol(fail, Decl(a.ts, 0, 18))
+>x.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

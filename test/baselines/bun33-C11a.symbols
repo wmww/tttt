@@ -1,0 +1,15 @@
+//// [test/cases/bun33-C11a.ts] ////
+
+=== a.ts ===
+const v = 1;
+>v : Symbol(v, Decl(a.ts, 0, 5))
+
+namespace N { export { v as o }; o; }
+>N : Symbol(N, Decl(a.ts, 0, 12))
+>v : Symbol(v, Decl(a.ts, 0, 5))
+>o : Symbol(o, Decl(a.ts, 1, 22))
+>o : Symbol(o, Decl(a.ts, 1, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

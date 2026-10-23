@@ -1,0 +1,15 @@
+a.ts(2,39): error TS18048: 'q.v' is possibly 'undefined'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class Q { v: string | undefined; isS(): this is { v: string } { return true; } }
+    function b22(q: Q) { if ((q.isS)()) { q.v.length; } }
+                                          ~~~
+!!! error TS18048: 'q.v' is possibly 'undefined'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

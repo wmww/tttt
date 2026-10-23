@@ -1,0 +1,28 @@
+//// [test/cases/bun24-SC2.ts] ////
+
+=== a.ts ===
+import { o, sym } from "./m";
+>o : { [sym]: number; }
+>sym : unique symbol
+
+export const x: number = { a: o };
+>x : number
+>{ a: o } : { a: { [sym]: number; }; }
+>a : { [sym]: number; }
+>o : { [sym]: number; }
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const sym = Symbol(); export const o = { [sym]: 1 };
+>sym : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>o : { [sym]: number; }
+>{ [sym]: 1 } : { [sym]: number; }
+>[sym] : number
+>sym : unique symbol
+>1 : 1
+

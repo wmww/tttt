@@ -1,0 +1,18 @@
+//// [test/cases/bun21-P4.ts] ////
+
+=== a.ts ===
+function f(o: any) { with (o) { var g = () => { const n: number = ""; }; } return g(); }
+>f : (o: any) => void
+>o : any
+>o : any
+>g : any
+>() => { const n: number = ""; } : any
+>n : any
+>"" : any
+>g() : void
+>g : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

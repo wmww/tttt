@@ -1,0 +1,22 @@
+//// [test/cases/bun14-C9b.ts] ////
+
+=== a.ts ===
+const { a, ...rest } = { a: 1 };
+>a : number
+>rest : {}
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+declare let r3: typeof rest & string;
+>r3 : string
+>rest : {}
+
+const e2: number = r3;
+>e2 : number
+>r3 : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

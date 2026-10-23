@@ -1,0 +1,25 @@
+//// [test/cases/bun44-C6a.ts] ////
+
+=== a.ts ===
+type Base = Readonly<{ id: string }>;
+>Base : Readonly<{ id: string; }>
+>id : string
+
+declare function g<T>(t: T): T & Base;
+>g : <T>(t: T) => T & Base
+>t : T
+
+declare const b: Base;
+>b : Readonly<{ id: string; }>
+
+g(b).x;
+>g(b).x : any
+>g(b) : Readonly<{ id: string; }> & Readonly<{ id: string; }>
+>g : <T>(t: T) => T & Base
+>b : Readonly<{ id: string; }>
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

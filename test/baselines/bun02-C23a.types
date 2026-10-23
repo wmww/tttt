@@ -1,0 +1,8 @@
+//// [test/cases/bun02-C23a.ts] ////
+
+=== a.ts ===
+type W12 = { [in K in string]: 1 };
+>W12 : W12
+>K : any
+>string : any
+

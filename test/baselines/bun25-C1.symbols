@@ -1,0 +1,24 @@
+//// [test/cases/bun25-C1.ts] ////
+
+=== a.ts ===
+type U = { k: "a"; v: string } | { k: "b"; v: number };
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 0, 10))
+>v : Symbol(v, Decl(a.ts, 0, 18))
+>k : Symbol(k, Decl(a.ts, 0, 34))
+>v : Symbol(v, Decl(a.ts, 0, 42))
+
+function f(u: U | undefined) { if ((u!).k === "a") u!.v.length; }
+>f : Symbol(f, Decl(a.ts, 0, 55))
+>u : Symbol(u, Decl(a.ts, 1, 11))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>(u!).k : Symbol(k, Decl(a.ts, 0, 10), Decl(a.ts, 0, 34))
+>u : Symbol(u, Decl(a.ts, 1, 11))
+>k : Symbol(k, Decl(a.ts, 0, 10), Decl(a.ts, 0, 34))
+>u!.v : Symbol(v, Decl(a.ts, 0, 18), Decl(a.ts, 0, 42))
+>u : Symbol(u, Decl(a.ts, 1, 11))
+>v : Symbol(v, Decl(a.ts, 0, 18), Decl(a.ts, 0, 42))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun22-C6.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: ({ a: 1 } & { b: 1 }) | T): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 22))
+>a : Symbol(a, Decl(a.ts, 0, 27))
+>b : Symbol(b, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+declare const s: ({ a: 1 } & { b: 1 }) | boolean;
+>s : Symbol(s, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+>b : Symbol(b, Decl(a.ts, 1, 30))
+
+const p: boolean = f(s);
+>p : Symbol(p, Decl(a.ts, 2, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>s : Symbol(s, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,8 @@
+//// [test/cases/bun40-C7a.ts] ////
+
+=== a.ts ===
+/// <reference lib="dom" />
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

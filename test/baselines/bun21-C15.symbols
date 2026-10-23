@@ -1,0 +1,14 @@
+//// [test/cases/bun21-C15.ts] ////
+
+=== a.ts ===
+declare function fail(): never;
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+
+function f(o: any): number { with (o) { fail(); } }
+>f : Symbol(f, Decl(a.ts, 0, 31))
+>o : Symbol(o, Decl(a.ts, 1, 11))
+>o : Symbol(o, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

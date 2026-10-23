@@ -1,0 +1,11 @@
+//// [test/cases/bun74-R16c.ts] ////
+
+=== a.tsx ===
+function f(a = <a>
+>f : Symbol(f, Decl(a.tsx, 0, 0))
+>a : Symbol(a, Decl(a.tsx, 0, 11))
+
+<<<<<<< x
+</a>) {}
+>a : Symbol(a, Decl(a.tsx, 2, 2))
+

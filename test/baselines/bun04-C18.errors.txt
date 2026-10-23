@@ -1,0 +1,13 @@
+a.ts(1,18): error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+a.ts(1,28): error TS1005: ';' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export type X1 = intrinsic | 1;
+                     ~~~~~~~~~
+!!! error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+                               ~
+!!! error TS1005: ';' expected.
+    

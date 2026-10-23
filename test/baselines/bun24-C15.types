@@ -1,0 +1,16 @@
+//// [test/cases/bun24-C15.ts] ////
+
+=== a.ts ===
+const b: 1 = null! as { get x(this: 1): number; set x(v: string) };
+>b : 1
+>null! as { get x(this: 1): number; set x(v: string) } : { get x(this: 1): number; set x(this: 1, v: string); }
+>null! : never
+>x : number
+>this : 1
+>x : number
+>v : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

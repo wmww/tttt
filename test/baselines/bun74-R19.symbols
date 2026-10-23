@@ -1,0 +1,26 @@
+//// [test/cases/bun74-R19.ts] ////
+
+=== a.ts ===
+declare function need(n: number): number;
+>need : Symbol(need, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 0, 22))
+
+const a1: number = Symbol.iterator;
+>a1 : Symbol(a1, Decl(a.ts, 1, 5))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+var d1 = { x: need(Symbol.iterator), y: d1 };
+>d1 : Symbol(d1, Decl(a.ts, 2, 3))
+>x : Symbol(x, Decl(a.ts, 2, 10))
+>need : Symbol(need, Decl(a.ts, 0, 0))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 2, 36))
+>d1 : Symbol(d1, Decl(a.ts, 2, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun11-C14.ts] ////
+
+=== a.ts ===
+type A1<T = A1> = { x: T };
+>A1 : A1<T>
+>x : T
+
+const a1: A1 = 0;
+>a1 : A1<unknown>
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

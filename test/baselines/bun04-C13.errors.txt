@@ -1,0 +1,14 @@
+a.ts(1,15): error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedParameters": true } }
+==== a.ts (2 errors) ====
+    type Foo<T> = intrinsic;
+                  ~~~~~~~~~
+!!! error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

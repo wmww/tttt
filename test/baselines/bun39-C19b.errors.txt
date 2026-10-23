@@ -1,0 +1,31 @@
+a.ts(3,29): error TS2416: Property 'x' in type 'C' is not assignable to the same property in base type 'Base'.
+  Type '{ y: string; }' is not assignable to type '{ y: number; }'.
+    Types of property 'y' are incompatible.
+      Type 'string' is not assignable to type 'number'.
+a.ts(3,29): error TS2416: Property 'x' in type 'C' is not assignable to the same property in base type 'Base'.
+  Type '{ y: string; }' is not assignable to type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    import { Base as B1 } from './m1';
+    import { Base as B2 } from './m2';
+    class C implements B1, B2 { x = { y: "" } }
+                                ~
+!!! error TS2416: Property 'x' in type 'C' is not assignable to the same property in base type 'Base'.
+!!! error TS2416:   Type '{ y: string; }' is not assignable to type '{ y: number; }'.
+!!! error TS2416:     Types of property 'y' are incompatible.
+!!! error TS2416:       Type 'string' is not assignable to type 'number'.
+                                ~
+!!! error TS2416: Property 'x' in type 'C' is not assignable to the same property in base type 'Base'.
+!!! error TS2416:   Type '{ y: string; }' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m1.ts (0 errors) ====
+    export interface Base { x: number }
+==== m2.ts (0 errors) ====
+    export interface Base { x: { y: number } }
+    

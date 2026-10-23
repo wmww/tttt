@@ -1,0 +1,20 @@
+a.mts(2,12): error TS2339: Property 'k' does not exist on type '{ amb: number; }'.
+a.mts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext", "paths": { "x.json": ["./typed.json"] } } }
+==== a.mts (2 errors) ====
+    import t1 from "x.json";
+    t1.amb; t1.k;
+               ~
+!!! error TS2339: Property 'k' does not exist on type '{ amb: number; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== amb.d.ts (0 errors) ====
+    declare module "x.json" { const v: { amb: number }; export default v; }
+==== typed.d.json.ts (0 errors) ====
+    declare const v: { k: number };
+    export default v;
+    

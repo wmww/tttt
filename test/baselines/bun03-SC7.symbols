@@ -1,0 +1,20 @@
+//// [test/cases/bun03-SC7.ts] ////
+
+=== a.ts ===
+class B { x: number = 1; }
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>x : Symbol(B.x, Decl(a.ts, 0, 9))
+
+class D extends B { x: number; }
+>D : Symbol(D, Decl(a.ts, 0, 26), Decl(b.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>x : Symbol(D.x, Decl(a.ts, 1, 19), Decl(b.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+interface D { x: number }
+>D : Symbol(D, Decl(a.ts, 0, 26), Decl(b.ts, 0, 0))
+>x : Symbol(D.x, Decl(a.ts, 1, 19), Decl(b.ts, 0, 13))
+

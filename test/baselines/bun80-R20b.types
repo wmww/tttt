@@ -1,0 +1,56 @@
+//// [test/cases/bun80-R20b.ts] ////
+
+=== a.ts ===
+function f1<T extends object>(t: T) {
+>f1 : <T extends object>(t: T) => void
+>t : T
+
+  const r = { ...t, get a() { return "g"; } };
+>r : T & { readonly a: string; }
+>{ ...t, get a() { return "g"; } } : T & { readonly a: string; }
+>t : T
+>a : string
+>"g" : "g"
+
+  r.a = "x";
+>r.a = "x" : "x"
+>r.a : any
+>r : T & { readonly a: string; }
+>a : any
+>"x" : "x"
+
+  r.zzz;
+>r.zzz : any
+>r : T & { readonly a: string; }
+>zzz : any
+}
+class K<T extends object> {
+>K : K<T>
+
+  constructor(public t: T) {}
+>t : T
+
+  m() {
+>m : () => void
+
+    const s = { ...this, b: 1, get c() { return 1; } };
+>s : this & { b: number; readonly c: number; }
+>{ ...this, b: 1, get c() { return 1; } } : this & { b: number; readonly c: number; }
+>this : this
+>b : number
+>1 : 1
+>c : number
+>1 : 1
+
+    s.c = 2;
+>s.c = 2 : 2
+>s.c : any
+>s : this & { b: number; readonly c: number; }
+>c : any
+>2 : 2
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

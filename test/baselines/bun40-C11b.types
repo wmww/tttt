@@ -1,0 +1,8 @@
+//// [test/cases/bun40-C11b.ts] ////
+
+=== a.ts ===
+/// <reference path="./h.JS" />
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

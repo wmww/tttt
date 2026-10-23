@@ -1,0 +1,27 @@
+//// [test/cases/bun08-C7a.ts] ////
+
+=== a.cts ===
+import * as cns from "./cjs.cjs";
+>cns : Symbol(cns, Decl(a.cts, 0, 6))
+
+async function dyn() {
+>dyn : Symbol(dyn, Decl(a.cts, 0, 33))
+
+  const c = await import("./cjs.cjs");
+>c : Symbol(c, Decl(a.cts, 2, 7))
+>"./cjs.cjs" : Symbol("./cjs.cjs", Decl(cjs.cts, 0, 0))
+
+  c.default.a;
+>c.default : Symbol(cns.default, Decl(cjs.cts, 0, 19))
+>c : Symbol(c, Decl(a.cts, 2, 7))
+>default : Symbol(cns.default, Decl(cjs.cts, 0, 19))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.cts, 5, 5))
+
+=== cjs.cts ===
+export const a = 1;
+>a : Symbol(a, Decl(cjs.cts, 0, 12))
+
+export default 5;
+

@@ -1,0 +1,20 @@
+//// [test/cases/bun30-C3.ts] ////
+
+=== a.ts ===
+function f() {}
+>f : () => void
+
+@(f.a = 1 as any) class C {}
+>(f.a = 1 as any) : any
+>f.a = 1 as any : any
+>f.a : any
+>f : () => void
+>a : any
+>1 as any : any
+>1 : 1
+>C : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,13 @@
+a.ts(1,1): error TS17013: Meta-property 'new.target' is only allowed in the body of a function declaration, function expression, or constructor.
+a.ts(1,5): error TS1003: Identifier expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    new.
+    ~~~~
+!!! error TS17013: Meta-property 'new.target' is only allowed in the body of a function declaration, function expression, or constructor.
+        
+!!! error TS1003: Identifier expected.
+    

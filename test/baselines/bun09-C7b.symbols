@@ -1,0 +1,18 @@
+//// [test/cases/bun09-C7b.ts] ////
+
+=== m4.ts ===
+import m4 = require("./m4");
+>m4 : Symbol(m4, Decl(m4.ts, 0, 0))
+
+const obj = { p: 1, q: m4.p };
+>obj : Symbol(obj, Decl(m4.ts, 1, 5))
+>p : Symbol(p, Decl(m4.ts, 1, 13))
+>q : Symbol(q, Decl(m4.ts, 1, 19))
+>m4 : Symbol(m4, Decl(m4.ts, 0, 0))
+
+export = obj;
+>obj : Symbol(obj, Decl(m4.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(m4.ts, 3, 5))
+

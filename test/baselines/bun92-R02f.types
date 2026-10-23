@@ -1,0 +1,17 @@
+//// [test/cases/bun92-R02f.ts] ////
+
+=== a.ts ===
+declare const a: any, b: any, x: any, f: any; x = class { p = a?.! }
+>a : any
+>b : any
+>x : any
+>f : any
+>x = class { p = a?.! : typeof (Anonymous class)
+>x : any
+>class { p = a?.! : typeof (Anonymous class)
+>class { p = a?. : typeof (Anonymous class)
+>p : any
+>a?. : any
+>a : any
+> : any
+

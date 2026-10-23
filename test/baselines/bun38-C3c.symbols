@@ -1,0 +1,11 @@
+//// [test/cases/bun38-C3c.ts] ////
+
+=== a.ts ===
+/// <reference lib="lib.dom.d.ts" />
+export const p = document;
+>p : Symbol(p, Decl(a.ts, 1, 12))
+>document : Symbol(document, Decl(lib.dom.d.ts, --, --))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+

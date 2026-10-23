@@ -1,0 +1,15 @@
+//// [test/cases/bun43-C8b.ts] ////
+
+=== a.ts ===
+import { Foo } from "./p";
+>Foo : any
+
+/** {@link \u0046oo} */
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== p.ts ===
+
+export interface Foo {}
+

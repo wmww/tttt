@@ -1,0 +1,16 @@
+a.ts(1,12): error TS2304: Cannot find name 'dec'.
+a.ts(1,15): error TS1146: Declaration expected.
+a.ts(1,15): error TS7008: Member '(Missing)' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class K { @dec }
+               ~~~
+!!! error TS2304: Cannot find name 'dec'.
+                  
+!!! error TS1146: Declaration expected.
+                  
+!!! error TS7008: Member '(Missing)' implicitly has an 'any' type.
+    

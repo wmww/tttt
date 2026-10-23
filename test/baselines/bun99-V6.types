@@ -1,0 +1,202 @@
+//// [test/cases/bun99-V6.ts] ////
+
+=== globals.ts ===
+export {}
+declare global {
+>global : typeof global
+
+  let counter: string | number
+>counter : string | number
+
+  var legacy: string | number
+>legacy : string | number
+
+  const fixed: string | number
+>fixed : string | number
+
+  let assignedHere: string | number
+>assignedHere : string | number
+
+  let assignedThere: string | number
+>assignedThere : string | number
+
+  namespace Space { let inside: string | number }
+>Space : typeof Space
+>inside : string | number
+}
+assignedHere = 1
+>assignedHere = 1 : 1
+>assignedHere : string | number
+>1 : 1
+
+=== later.ts ===
+export {}
+if (typeof counter === 'string') { const f = () => counter.toUpperCase() }
+>typeof counter === 'string' : boolean
+>typeof counter : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>counter : string | number
+>'string' : "string"
+>f : () => string
+>() => counter.toUpperCase() : () => string
+>counter.toUpperCase() : string
+>counter.toUpperCase : () => string
+>counter : string
+>toUpperCase : () => string
+
+if (typeof assignedHere === 'string') { const f = () => assignedHere.toUpperCase() }
+>typeof assignedHere === 'string' : boolean
+>typeof assignedHere : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>assignedHere : string | number
+>'string' : "string"
+>f : () => any
+>() => assignedHere.toUpperCase() : () => any
+>assignedHere.toUpperCase() : any
+>assignedHere.toUpperCase : any
+>assignedHere : string | number
+>toUpperCase : any
+
+counter = 3
+>counter = 3 : 3
+>counter : string | number
+>3 : 3
+
+=== main.ts ===
+export {}
+if (typeof counter === 'string') { const f = () => counter.toUpperCase() }
+>typeof counter === 'string' : boolean
+>typeof counter : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>counter : string | number
+>'string' : "string"
+>f : () => string
+>() => counter.toUpperCase() : () => string
+>counter.toUpperCase() : string
+>counter.toUpperCase : () => string
+>counter : string
+>toUpperCase : () => string
+
+if (typeof legacy === 'string') { const f = () => legacy.toUpperCase() }
+>typeof legacy === 'string' : boolean
+>typeof legacy : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>legacy : string | number
+>'string' : "string"
+>f : () => any
+>() => legacy.toUpperCase() : () => any
+>legacy.toUpperCase() : any
+>legacy.toUpperCase : any
+>legacy : string | number
+>toUpperCase : any
+
+if (typeof fixed === 'string') { const f = () => fixed.toUpperCase() }
+>typeof fixed === 'string' : boolean
+>typeof fixed : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>fixed : string | number
+>'string' : "string"
+>f : () => string
+>() => fixed.toUpperCase() : () => string
+>fixed.toUpperCase() : string
+>fixed.toUpperCase : () => string
+>fixed : string
+>toUpperCase : () => string
+
+if (typeof assignedHere === 'string') { const f = () => assignedHere.toUpperCase() }
+>typeof assignedHere === 'string' : boolean
+>typeof assignedHere : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>assignedHere : string | number
+>'string' : "string"
+>f : () => string
+>() => assignedHere.toUpperCase() : () => string
+>assignedHere.toUpperCase() : string
+>assignedHere.toUpperCase : () => string
+>assignedHere : string
+>toUpperCase : () => string
+
+if (typeof assignedThere === 'string') { const f = () => assignedThere.toUpperCase() }
+>typeof assignedThere === 'string' : boolean
+>typeof assignedThere : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>assignedThere : string | number
+>'string' : "string"
+>f : () => string
+>() => assignedThere.toUpperCase() : () => string
+>assignedThere.toUpperCase() : string
+>assignedThere.toUpperCase : () => string
+>assignedThere : string
+>toUpperCase : () => string
+
+if (typeof Space.inside === 'string') { const f = () => Space.inside.toUpperCase() }
+>typeof Space.inside === 'string' : boolean
+>typeof Space.inside : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>Space.inside : string | number
+>Space : typeof Space
+>inside : string | number
+>'string' : "string"
+>f : () => any
+>() => Space.inside.toUpperCase() : () => any
+>Space.inside.toUpperCase() : any
+>Space.inside.toUpperCase : any
+>Space.inside : string | number
+>Space : typeof Space
+>inside : string | number
+>toUpperCase : any
+
+if (typeof scriptLet === 'string') { const f = () => scriptLet.toUpperCase() }
+>typeof scriptLet === 'string' : boolean
+>typeof scriptLet : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>scriptLet : string | number
+>'string' : "string"
+>f : () => any
+>() => scriptLet.toUpperCase() : () => any
+>scriptLet.toUpperCase() : any
+>scriptLet.toUpperCase : any
+>scriptLet : string | number
+>toUpperCase : any
+
+if (typeof counter === 'string') { function g() { return counter.toUpperCase() } }
+>typeof counter === 'string' : boolean
+>typeof counter : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>counter : string | number
+>'string' : "string"
+>g : () => any
+>counter.toUpperCase() : any
+>counter.toUpperCase : any
+>counter : string | number
+>toUpperCase : any
+
+if (typeof counter === 'string') { const o = { m() { return counter.toUpperCase() } } }
+>typeof counter === 'string' : boolean
+>typeof counter : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>counter : string | number
+>'string' : "string"
+>o : { m(): string; }
+>{ m() { return counter.toUpperCase() } } : { m(): string; }
+>m : () => string
+>counter.toUpperCase() : string
+>counter.toUpperCase : () => string
+>counter : string
+>toUpperCase : () => string
+
+if (typeof counter === 'string') { const probe: never = counter; const f = () => { const inner: never = counter } }
+>typeof counter === 'string' : boolean
+>typeof counter : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>counter : string | number
+>'string' : "string"
+>probe : never
+>counter : string
+>f : () => void
+>() => { const inner: never = counter } : () => void
+>inner : never
+>counter : string
+
+assignedThere = 2
+>assignedThere = 2 : 2
+>assignedThere : string | number
+>2 : 2
+
+export const sentinel: number = ''
+>sentinel : number
+>'' : ""
+
+=== script.ts ===
+let scriptLet: string | number = 1
+>scriptLet : string | number
+>1 : 1
+

@@ -1,0 +1,43 @@
+//// [test/cases/bun98-F1.ts] ////
+
+=== a.ts ===
+declare const k: unique symbol;
+>k : Symbol(k, Decl(a.ts, 0, 13))
+
+const c = "x";
+>c : Symbol(c, Decl(a.ts, 1, 5))
+
+export class C {
+>C : Symbol(C, Decl(a.ts, 1, 14))
+
+  ["\0\0\u007f\u007f\u007f\u007f"]: number;
+>["\0\0\u007f\u007f\u007f\u007f"] : Symbol(C["00u007fu007fu007fu007f"], Decl(a.ts, 2, 16))
+>"\0\0\u007f\u007f\u007f\u007f" : Symbol(C["00u007fu007fu007fu007f"], Decl(a.ts, 2, 16))
+
+  ["\0\u0001\u007f\u007f\u007f\u007f"]: number;
+>["\0\u0001\u007f\u007f\u007f\u007f"] : Symbol(C["0u0001u007fu007fu007fu007f"], Decl(a.ts, 3, 43))
+>"\0\u0001\u007f\u007f\u007f\u007f" : Symbol(C["0u0001u007fu007fu007fu007f"], Decl(a.ts, 3, 43))
+
+  [c]: number;
+>[c] : Symbol(C[c], Decl(a.ts, 4, 47))
+>c : Symbol(c, Decl(a.ts, 1, 5))
+
+  [k]: number;
+>[k] : Symbol(C[k], Decl(a.ts, 5, 14))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+
+  constructor() {
+    for (;;) {
+      if (Math.random()) break;
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+    }
+    this[c] = 1;
+>this : Symbol(C, Decl(a.ts, 1, 14))
+>c : Symbol(c, Decl(a.ts, 1, 5))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+

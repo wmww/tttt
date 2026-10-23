@@ -1,0 +1,12 @@
+//// [test/cases/bun93-P03b.ts] ////
+
+=== a.ts ===
+({ abstract e(): voi`);
+>({ abstract e(): voi`);const sentinel: number = ""; : any
+>{ abstract e(): voi`);const sentinel: number = ""; : any
+>{ abstract e(): voi : { e(): voi; }
+>e : () => voi
+>`);const sentinel: number = ""; : ");\nconst sentinel: number = \"\";\n"
+
+const sentinel: number = "";
+

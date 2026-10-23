@@ -1,0 +1,14 @@
+//// [test/cases/bun14-P1.ts] ////
+
+=== a.ts ===
+function f<T extends unknown, U extends T>() {
+>f : <T extends unknown, U extends T>() => void
+
+  const x: U = 1;
+>x : U
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

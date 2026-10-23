@@ -1,0 +1,51 @@
+//// [test/cases/bun73-R13b.ts] ////
+
+=== a.ts ===
+// valid programs: tsc reports nothing but the sentinel
+function method({ o = { m() {} } } = { o: { m() {} } }) {}
+>method : Symbol(method, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 1, 17))
+>m : Symbol(m, Decl(a.ts, 1, 23))
+>o : Symbol(o, Decl(a.ts, 1, 38))
+>m : Symbol(m, Decl(a.ts, 1, 43))
+
+function inArray({ a = [() => {}] } = { a: [() => {}] }) {}
+>inArray : Symbol(inArray, Decl(a.ts, 1, 58))
+>a : Symbol(a, Decl(a.ts, 2, 18))
+>a : Symbol(a, Decl(a.ts, 2, 39))
+
+function inObject({ a = { f: () => {} } } = { a: { f: () => {} } }) {}
+>inObject : Symbol(inObject, Decl(a.ts, 2, 59))
+>a : Symbol(a, Decl(a.ts, 3, 19))
+>f : Symbol(f, Decl(a.ts, 3, 25))
+>a : Symbol(a, Decl(a.ts, 3, 45))
+>f : Symbol(f, Decl(a.ts, 3, 50))
+
+function sibling({ a = () => {}, b = () => a } = { a: () => {}, b: () => () => {} }) {}
+>sibling : Symbol(sibling, Decl(a.ts, 3, 70))
+>a : Symbol(a, Decl(a.ts, 4, 18))
+>b : Symbol(b, Decl(a.ts, 4, 32))
+>a : Symbol(a, Decl(a.ts, 4, 18))
+>a : Symbol(a, Decl(a.ts, 4, 50))
+>b : Symbol(b, Decl(a.ts, 4, 63))
+
+const { s1 = () => s2, s2 = () => s1 } = { s1: () => 1, s2: () => 2 };
+>s1 : Symbol(s1, Decl(a.ts, 5, 7))
+>s2 : Symbol(s2, Decl(a.ts, 5, 22))
+>s2 : Symbol(s2, Decl(a.ts, 5, 22))
+>s1 : Symbol(s1, Decl(a.ts, 5, 7))
+>s1 : Symbol(s1, Decl(a.ts, 5, 42))
+>s2 : Symbol(s2, Decl(a.ts, 5, 55))
+
+const { v = { f: () => {} } } = { v: { f: () => {} } };
+>v : Symbol(v, Decl(a.ts, 6, 7))
+>f : Symbol(f, Decl(a.ts, 6, 13))
+>v : Symbol(v, Decl(a.ts, 6, 33))
+>f : Symbol(f, Decl(a.ts, 6, 38))
+
+const [w = [() => {}]] = [[() => {}]];
+>w : Symbol(w, Decl(a.ts, 7, 7))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

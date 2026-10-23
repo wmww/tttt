@@ -1,0 +1,7 @@
+//// [test/cases/bun34-C7a.ts] ////
+
+=== a.ts ===
+let w: \u0061ny = 1; const sentinel: number = "";
+>w : Symbol(w, Decl(a.ts, 0, 3))
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 26))
+

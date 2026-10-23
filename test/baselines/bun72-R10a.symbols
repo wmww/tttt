@@ -1,0 +1,48 @@
+//// [test/cases/bun72-R10a.ts] ////
+
+=== a.ts ===
+type Primitive = string | number | boolean | null | undefined;
+>Primitive : Symbol(Primitive, Decl(a.ts, 0, 0))
+
+type DeepReadonly<T> = T extends Primitive ? T : { readonly [K in keyof T]: DeepReadonly<T[K]> };
+>DeepReadonly : Symbol(DeepReadonly, Decl(a.ts, 0, 62))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>Primitive : Symbol(Primitive, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>K : Symbol(K, Decl(a.ts, 1, 61))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>DeepReadonly : Symbol(DeepReadonly, Decl(a.ts, 0, 62))
+>T : Symbol(T, Decl(a.ts, 1, 18))
+>K : Symbol(K, Decl(a.ts, 1, 61))
+
+class Store<S> { snapshot!: S }
+>Store : Symbol(Store, Decl(a.ts, 1, 97))
+>S : Symbol(S, Decl(a.ts, 2, 12))
+>snapshot : Symbol(Store.snapshot, Decl(a.ts, 2, 16))
+>S : Symbol(S, Decl(a.ts, 2, 12))
+
+class App extends Store<DeepReadonly<App>> { count = 1 }
+>App : Symbol(App, Decl(a.ts, 2, 31))
+>Store : Symbol(Store, Decl(a.ts, 1, 97))
+>DeepReadonly : Symbol(DeepReadonly, Decl(a.ts, 0, 62))
+>App : Symbol(App, Decl(a.ts, 2, 31))
+>count : Symbol(App.count, Decl(a.ts, 3, 44))
+
+class Other extends Store<Exclude<Other, null | undefined>> { count = 1 }
+>Other : Symbol(Other, Decl(a.ts, 3, 56))
+>Store : Symbol(Store, Decl(a.ts, 1, 97))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>Other : Symbol(Other, Decl(a.ts, 3, 56))
+>count : Symbol(Other.count, Decl(a.ts, 4, 61))
+
+new App().snapshot.count = 2;
+>new App().snapshot.count : Symbol(count, Decl(a.ts, 3, 44))
+>new App().snapshot : Symbol(Store.snapshot, Decl(a.ts, 2, 16))
+>App : Symbol(App, Decl(a.ts, 2, 31))
+>snapshot : Symbol(Store.snapshot, Decl(a.ts, 2, 16))
+>count : Symbol(count, Decl(a.ts, 3, 44))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

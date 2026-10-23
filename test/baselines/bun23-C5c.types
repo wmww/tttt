@@ -1,0 +1,34 @@
+//// [test/cases/bun23-C5c.ts] ////
+
+=== a.ts ===
+class D { static readonly u: unique symbol = Symbol(); }
+>D : D
+>u : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+class E { static readonly u: unique symbol = Symbol(); }
+>E : E
+>u : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+let x1 = null! as { [K in typeof D.u]: 1 }; x1 = null! as { [K in typeof E.u]: 1 };
+>x1 : { [D.u]: 1; }
+>null! as { [K in typeof D.u]: 1 } : { [D.u]: 1; }
+>null! : never
+>D.u : unique symbol
+>D : typeof D
+>u : unique symbol
+>x1 = null! as { [K in typeof E.u]: 1 } : { [E.u]: 1; }
+>x1 : { [D.u]: 1; }
+>null! as { [K in typeof E.u]: 1 } : { [E.u]: 1; }
+>null! : never
+>E.u : unique symbol
+>E : typeof E
+>u : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

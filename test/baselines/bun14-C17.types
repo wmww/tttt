@@ -1,0 +1,18 @@
+//// [test/cases/bun14-C17.ts] ////
+
+=== a.ts ===
+declare const o2: { m: Map<string, number> };
+>o2 : { m: Map<string, number>; }
+>m : Map<string, number>
+
+o2[`m`]["a"];
+>o2[`m`]["a"] : any
+>o2[`m`] : Map<string, number>
+>o2 : { m: Map<string, number>; }
+>`m` : "m"
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

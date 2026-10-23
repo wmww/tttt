@@ -1,0 +1,20 @@
+//// [test/cases/bun17-C12.ts] ////
+
+=== a.ts ===
+type TA = [x: number, y: string];
+>TA : TA
+
+type TB = [x: number, y: boolean];
+>TB : TB
+
+declare let s: [x: number, y: symbol];
+>s : [x: number, y: symbol]
+
+let t: TA | TB = s;
+>t : TA | TB
+>s : [x: number, y: symbol]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,385 @@
+//// [test/cases/bun72-R10d.ts] ////
+
+=== a.ts ===
+class Base<T> { b!: T }
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>b : Symbol(Base.b, Decl(a.ts, 0, 15))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+type P1<T> = T extends string ? 1 : 2;
+>P1 : Symbol(P1, Decl(a.ts, 0, 23))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+
+type P2<T> = T extends string | number ? 1 : 2;
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>T : Symbol(T, Decl(a.ts, 2, 8))
+>T : Symbol(T, Decl(a.ts, 2, 8))
+
+type P3<T> = T extends null | undefined ? 1 : 2;
+>P3 : Symbol(P3, Decl(a.ts, 2, 47))
+>T : Symbol(T, Decl(a.ts, 3, 8))
+>T : Symbol(T, Decl(a.ts, 3, 8))
+
+type P4<T> = T extends object ? 1 : 2;
+>P4 : Symbol(P4, Decl(a.ts, 3, 48))
+>T : Symbol(T, Decl(a.ts, 4, 8))
+>T : Symbol(T, Decl(a.ts, 4, 8))
+
+type P5<T> = T extends Function ? 1 : 2;
+>P5 : Symbol(P5, Decl(a.ts, 4, 38))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+type P6<T> = T extends any[] ? 1 : 2;
+>P6 : Symbol(P6, Decl(a.ts, 5, 40))
+>T : Symbol(T, Decl(a.ts, 6, 8))
+>T : Symbol(T, Decl(a.ts, 6, 8))
+
+type P7<T> = T extends string | any[] ? 1 : 2;
+>P7 : Symbol(P7, Decl(a.ts, 6, 37))
+>T : Symbol(T, Decl(a.ts, 7, 8))
+>T : Symbol(T, Decl(a.ts, 7, 8))
+
+type P8<T> = T extends "a" | "b" ? 1 : 2;
+>P8 : Symbol(P8, Decl(a.ts, 7, 46))
+>T : Symbol(T, Decl(a.ts, 8, 8))
+>T : Symbol(T, Decl(a.ts, 8, 8))
+
+type P9<T> = T extends boolean ? 1 : 2;
+>P9 : Symbol(P9, Decl(a.ts, 8, 41))
+>T : Symbol(T, Decl(a.ts, 9, 8))
+>T : Symbol(T, Decl(a.ts, 9, 8))
+
+type P10<T> = T extends string | object ? 1 : 2;
+>P10 : Symbol(P10, Decl(a.ts, 9, 39))
+>T : Symbol(T, Decl(a.ts, 10, 9))
+>T : Symbol(T, Decl(a.ts, 10, 9))
+
+type P11<T> = T extends unknown ? 1 : 2;
+>P11 : Symbol(P11, Decl(a.ts, 10, 48))
+>T : Symbol(T, Decl(a.ts, 11, 9))
+>T : Symbol(T, Decl(a.ts, 11, 9))
+
+type P12<T> = T extends never ? 1 : 2;
+>P12 : Symbol(P12, Decl(a.ts, 11, 40))
+>T : Symbol(T, Decl(a.ts, 12, 9))
+>T : Symbol(T, Decl(a.ts, 12, 9))
+
+type P13<T> = T extends {} ? 1 : 2;
+>P13 : Symbol(P13, Decl(a.ts, 12, 38))
+>T : Symbol(T, Decl(a.ts, 13, 9))
+>T : Symbol(T, Decl(a.ts, 13, 9))
+
+type P14<T> = [T] extends [string | number] ? 1 : 2;
+>P14 : Symbol(P14, Decl(a.ts, 13, 35))
+>T : Symbol(T, Decl(a.ts, 14, 9))
+>T : Symbol(T, Decl(a.ts, 14, 9))
+
+type P15<T> = T extends string & { brand: 1 } ? 1 : 2;
+>P15 : Symbol(P15, Decl(a.ts, 14, 52))
+>T : Symbol(T, Decl(a.ts, 15, 9))
+>T : Symbol(T, Decl(a.ts, 15, 9))
+>brand : Symbol(brand, Decl(a.ts, 15, 34))
+
+type P16<T> = T extends `a${string}` | number ? 1 : 2;
+>P16 : Symbol(P16, Decl(a.ts, 15, 54))
+>T : Symbol(T, Decl(a.ts, 16, 9))
+>T : Symbol(T, Decl(a.ts, 16, 9))
+
+type P17<T> = T extends keyof any ? 1 : 2;
+>P17 : Symbol(P17, Decl(a.ts, 16, 54))
+>T : Symbol(T, Decl(a.ts, 17, 9))
+>T : Symbol(T, Decl(a.ts, 17, 9))
+
+type P18<T> = string | number extends T ? 1 : 2;
+>P18 : Symbol(P18, Decl(a.ts, 17, 42))
+>T : Symbol(T, Decl(a.ts, 18, 9))
+>T : Symbol(T, Decl(a.ts, 18, 9))
+
+type P19<T> = T extends bigint | symbol ? T : { readonly [K in keyof T]: P19<T[K]> };
+>P19 : Symbol(P19, Decl(a.ts, 18, 48))
+>T : Symbol(T, Decl(a.ts, 19, 9))
+>T : Symbol(T, Decl(a.ts, 19, 9))
+>T : Symbol(T, Decl(a.ts, 19, 9))
+>K : Symbol(K, Decl(a.ts, 19, 58))
+>T : Symbol(T, Decl(a.ts, 19, 9))
+>P19 : Symbol(P19, Decl(a.ts, 18, 48))
+>T : Symbol(T, Decl(a.ts, 19, 9))
+>K : Symbol(K, Decl(a.ts, 19, 58))
+
+class D1 extends Base<P1<D1>> { x = 1 }
+>D1 : Symbol(D1, Decl(a.ts, 19, 85))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P1 : Symbol(P1, Decl(a.ts, 0, 23))
+>D1 : Symbol(D1, Decl(a.ts, 19, 85))
+>x : Symbol(D1.x, Decl(a.ts, 20, 31))
+
+class D2 extends Base<P2<D2>> { x = 1 }
+>D2 : Symbol(D2, Decl(a.ts, 20, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D2 : Symbol(D2, Decl(a.ts, 20, 39))
+>x : Symbol(D2.x, Decl(a.ts, 21, 31))
+
+class D3 extends Base<P3<D3>> { x = 1 }
+>D3 : Symbol(D3, Decl(a.ts, 21, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P3 : Symbol(P3, Decl(a.ts, 2, 47))
+>D3 : Symbol(D3, Decl(a.ts, 21, 39))
+>x : Symbol(D3.x, Decl(a.ts, 22, 31))
+
+class D4 extends Base<P4<D4>> { x = 1 }
+>D4 : Symbol(D4, Decl(a.ts, 22, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P4 : Symbol(P4, Decl(a.ts, 3, 48))
+>D4 : Symbol(D4, Decl(a.ts, 22, 39))
+>x : Symbol(D4.x, Decl(a.ts, 23, 31))
+
+class D5 extends Base<P5<D5>> { x = 1 }
+>D5 : Symbol(D5, Decl(a.ts, 23, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P5 : Symbol(P5, Decl(a.ts, 4, 38))
+>D5 : Symbol(D5, Decl(a.ts, 23, 39))
+>x : Symbol(D5.x, Decl(a.ts, 24, 31))
+
+class D6 extends Base<P6<D6>> { x = 1 }
+>D6 : Symbol(D6, Decl(a.ts, 24, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P6 : Symbol(P6, Decl(a.ts, 5, 40))
+>D6 : Symbol(D6, Decl(a.ts, 24, 39))
+>x : Symbol(D6.x, Decl(a.ts, 25, 31))
+
+class D7 extends Base<P7<D7>> { x = 1 }
+>D7 : Symbol(D7, Decl(a.ts, 25, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P7 : Symbol(P7, Decl(a.ts, 6, 37))
+>D7 : Symbol(D7, Decl(a.ts, 25, 39))
+>x : Symbol(D7.x, Decl(a.ts, 26, 31))
+
+class D8 extends Base<P8<D8>> { x = 1 }
+>D8 : Symbol(D8, Decl(a.ts, 26, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P8 : Symbol(P8, Decl(a.ts, 7, 46))
+>D8 : Symbol(D8, Decl(a.ts, 26, 39))
+>x : Symbol(D8.x, Decl(a.ts, 27, 31))
+
+class D9 extends Base<P9<D9>> { x = 1 }
+>D9 : Symbol(D9, Decl(a.ts, 27, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P9 : Symbol(P9, Decl(a.ts, 8, 41))
+>D9 : Symbol(D9, Decl(a.ts, 27, 39))
+>x : Symbol(D9.x, Decl(a.ts, 28, 31))
+
+class D10 extends Base<P10<D10>> { x = 1 }
+>D10 : Symbol(D10, Decl(a.ts, 28, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P10 : Symbol(P10, Decl(a.ts, 9, 39))
+>D10 : Symbol(D10, Decl(a.ts, 28, 39))
+>x : Symbol(D10.x, Decl(a.ts, 29, 34))
+
+class D11 extends Base<P11<D11>> { x = 1 }
+>D11 : Symbol(D11, Decl(a.ts, 29, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P11 : Symbol(P11, Decl(a.ts, 10, 48))
+>D11 : Symbol(D11, Decl(a.ts, 29, 42))
+>x : Symbol(D11.x, Decl(a.ts, 30, 34))
+
+class D12 extends Base<P12<D12>> { x = 1 }
+>D12 : Symbol(D12, Decl(a.ts, 30, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P12 : Symbol(P12, Decl(a.ts, 11, 40))
+>D12 : Symbol(D12, Decl(a.ts, 30, 42))
+>x : Symbol(D12.x, Decl(a.ts, 31, 34))
+
+class D13 extends Base<P13<D13>> { x = 1 }
+>D13 : Symbol(D13, Decl(a.ts, 31, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P13 : Symbol(P13, Decl(a.ts, 12, 38))
+>D13 : Symbol(D13, Decl(a.ts, 31, 42))
+>x : Symbol(D13.x, Decl(a.ts, 32, 34))
+
+class D14 extends Base<P14<D14>> { x = 1 }
+>D14 : Symbol(D14, Decl(a.ts, 32, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P14 : Symbol(P14, Decl(a.ts, 13, 35))
+>D14 : Symbol(D14, Decl(a.ts, 32, 42))
+>x : Symbol(D14.x, Decl(a.ts, 33, 34))
+
+class D15 extends Base<P15<D15>> { x = 1 }
+>D15 : Symbol(D15, Decl(a.ts, 33, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P15 : Symbol(P15, Decl(a.ts, 14, 52))
+>D15 : Symbol(D15, Decl(a.ts, 33, 42))
+>x : Symbol(D15.x, Decl(a.ts, 34, 34))
+
+class D16 extends Base<P16<D16>> { x = 1 }
+>D16 : Symbol(D16, Decl(a.ts, 34, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P16 : Symbol(P16, Decl(a.ts, 15, 54))
+>D16 : Symbol(D16, Decl(a.ts, 34, 42))
+>x : Symbol(D16.x, Decl(a.ts, 35, 34))
+
+class D17 extends Base<P17<D17>> { x = 1 }
+>D17 : Symbol(D17, Decl(a.ts, 35, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P17 : Symbol(P17, Decl(a.ts, 16, 54))
+>D17 : Symbol(D17, Decl(a.ts, 35, 42))
+>x : Symbol(D17.x, Decl(a.ts, 36, 34))
+
+class D18 extends Base<P18<D18>> { x = 1 }
+>D18 : Symbol(D18, Decl(a.ts, 36, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P18 : Symbol(P18, Decl(a.ts, 17, 42))
+>D18 : Symbol(D18, Decl(a.ts, 36, 42))
+>x : Symbol(D18.x, Decl(a.ts, 37, 34))
+
+class D19 extends Base<P19<D19>> { x = 1 }
+>D19 : Symbol(D19, Decl(a.ts, 37, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P19 : Symbol(P19, Decl(a.ts, 18, 48))
+>D19 : Symbol(D19, Decl(a.ts, 37, 42))
+>x : Symbol(D19.x, Decl(a.ts, 38, 34))
+
+class D20 extends Base<D20 extends string | number ? 1 : 2> { x = 1 }
+>D20 : Symbol(D20, Decl(a.ts, 38, 42))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>D20 : Symbol(D20, Decl(a.ts, 38, 42))
+>x : Symbol(D20.x, Decl(a.ts, 39, 61))
+
+class D21 extends Base<Extract<D21, string | number>> { x = 1 }
+>D21 : Symbol(D21, Decl(a.ts, 39, 69))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>D21 : Symbol(D21, Decl(a.ts, 39, 69))
+>x : Symbol(D21.x, Decl(a.ts, 40, 55))
+
+class D22 extends Base<Exclude<D22, string | number>> { x = 1 }
+>D22 : Symbol(D22, Decl(a.ts, 40, 63))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>D22 : Symbol(D22, Decl(a.ts, 40, 63))
+>x : Symbol(D22.x, Decl(a.ts, 41, 55))
+
+class D23 extends Base<NonNullable<D23>> { x = 1 }
+>D23 : Symbol(D23, Decl(a.ts, 41, 63))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>D23 : Symbol(D23, Decl(a.ts, 41, 63))
+>x : Symbol(D23.x, Decl(a.ts, 42, 42))
+
+class D24 extends Base<Awaited<D24>> { x = 1 }
+>D24 : Symbol(D24, Decl(a.ts, 42, 50))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>D24 : Symbol(D24, Decl(a.ts, 42, 50))
+>x : Symbol(D24.x, Decl(a.ts, 43, 38))
+
+namespace NS { export class B<T> { b!: T } }
+>NS : Symbol(NS, Decl(a.ts, 43, 46))
+>B : Symbol(B, Decl(a.ts, 44, 14))
+>T : Symbol(T, Decl(a.ts, 44, 30))
+>b : Symbol(B.b, Decl(a.ts, 44, 34))
+>T : Symbol(T, Decl(a.ts, 44, 30))
+
+class D25 extends NS.B<P2<D25>> { x = 1 }
+>D25 : Symbol(D25, Decl(a.ts, 44, 44))
+>NS.B : Symbol(NS.B, Decl(a.ts, 44, 14))
+>NS : Symbol(NS, Decl(a.ts, 43, 46))
+>B : Symbol(NS.B, Decl(a.ts, 44, 14))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D25 : Symbol(D25, Decl(a.ts, 44, 44))
+>x : Symbol(D25.x, Decl(a.ts, 45, 33))
+
+class D26 extends (Base)<P2<D26>> { x = 1 }
+>D26 : Symbol(D26, Decl(a.ts, 45, 41))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D26 : Symbol(D26, Decl(a.ts, 45, 41))
+>x : Symbol(D26.x, Decl(a.ts, 46, 35))
+
+class D27 extends Base<P2<D27>> {}
+>D27 : Symbol(D27, Decl(a.ts, 46, 43))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D27 : Symbol(D27, Decl(a.ts, 46, 43))
+
+class D28 extends Base<P2<D28>> { static s = 1 }
+>D28 : Symbol(D28, Decl(a.ts, 47, 34))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D28 : Symbol(D28, Decl(a.ts, 47, 34))
+>s : Symbol(D28.s, Decl(a.ts, 48, 33))
+
+abstract class D29 extends Base<P2<D29>> { abstract x: number }
+>D29 : Symbol(D29, Decl(a.ts, 48, 48))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D29 : Symbol(D29, Decl(a.ts, 48, 48))
+>x : Symbol(D29.x, Decl(a.ts, 49, 42))
+
+const D30 = class D30i extends Base<P2<D30i>> { x = 1 };
+>D30 : Symbol(D30, Decl(a.ts, 50, 5))
+>D30i : Symbol(D30i, Decl(a.ts, 50, 11))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D30i : Symbol(D30i, Decl(a.ts, 50, 11))
+>x : Symbol(D30i.x, Decl(a.ts, 50, 47))
+
+class D31<T> extends Base<P2<D31<T>>> { x!: T }
+>D31 : Symbol(D31, Decl(a.ts, 50, 56))
+>T : Symbol(T, Decl(a.ts, 51, 10))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D31 : Symbol(D31, Decl(a.ts, 50, 56))
+>T : Symbol(T, Decl(a.ts, 51, 10))
+>x : Symbol(D31.x, Decl(a.ts, 51, 39))
+>T : Symbol(T, Decl(a.ts, 51, 10))
+
+class D32 extends Base<Base<P2<D32>>> { x = 1 }
+>D32 : Symbol(D32, Decl(a.ts, 51, 47))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D32 : Symbol(D32, Decl(a.ts, 51, 47))
+>x : Symbol(D32.x, Decl(a.ts, 52, 39))
+
+class D33 extends Base<{ p: P2<D33> }> { x = 1 }
+>D33 : Symbol(D33, Decl(a.ts, 52, 47))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>p : Symbol(p, Decl(a.ts, 53, 24))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D33 : Symbol(D33, Decl(a.ts, 52, 47))
+>x : Symbol(D33.x, Decl(a.ts, 53, 40))
+
+class D34 extends Base<[P2<D34>]> { x = 1 }
+>D34 : Symbol(D34, Decl(a.ts, 53, 48))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D34 : Symbol(D34, Decl(a.ts, 53, 48))
+>x : Symbol(D34.x, Decl(a.ts, 54, 35))
+
+class D35 extends Base<() => P2<D35>> { x = 1 }
+>D35 : Symbol(D35, Decl(a.ts, 54, 43))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D35 : Symbol(D35, Decl(a.ts, 54, 43))
+>x : Symbol(D35.x, Decl(a.ts, 55, 39))
+
+class D36 extends Base<P2<D37>> { x = 1 } class D37 extends Base<P2<D36>> { y = 1 }
+>D36 : Symbol(D36, Decl(a.ts, 55, 47))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D37 : Symbol(D37, Decl(a.ts, 56, 41))
+>x : Symbol(D36.x, Decl(a.ts, 56, 33))
+>D37 : Symbol(D37, Decl(a.ts, 56, 41))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>P2 : Symbol(P2, Decl(a.ts, 1, 38))
+>D36 : Symbol(D36, Decl(a.ts, 55, 47))
+>y : Symbol(D37.y, Decl(a.ts, 56, 75))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 57, 5))
+

@@ -1,0 +1,44 @@
+a.ts(12,7): error TS2559: Type '{ extra: number; }' has no properties in common with type 'Options'.
+a.ts(13,7): error TS2741: Property 'b' is missing in type '{ a?: number; extra: number; }' but required in type '{ b: number; }'.
+a.ts(15,36): error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Options'.
+a.ts(16,36): error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Options'.
+a.ts(17,40): error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Options'.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    interface Options { a?: number }
+    declare const defaults: Options;
+    declare function take(o: Options): void;
+    // Valid in tsc: getSpreadSymbol makes a NEW symbol, without a value declaration, for a get-only accessor (it is read-only, the copy is not).
+    const o1: Options = { ...defaults, get extra() { return 1; } };
+    const o2: Options = { get extra() { return 1; }, ...defaults };
+    take({ ...defaults, get extra() { return 1; } });
+    const o3: { n: Options }[] = [{ n: { ...defaults, get extra() { return 1; } } }];
+    function ret(): Options { return { ...defaults, get extra() { return 1; } }; }
+    const o4: Readonly<Options> = { ...defaults, get extra() { return 1; } };
+    // another error in place of TS2353
+    const o5: Options = { ...{}, get extra() { return 1; } };
+          ~~
+!!! error TS2559: Type '{ extra: number; }' has no properties in common with type 'Options'.
+    const o6: { b: number } = { ...defaults, get extra() { return 1; } };
+          ~~
+!!! error TS2741: Property 'b' is missing in type '{ a?: number; extra: number; }' but required in type '{ b: number; }'.
+!!! related TS2728 a.ts:13:13: 'b' is declared here.
+    // the two agree: TS2353 for a property, a method, a getter with a setter; none for a setter alone
+    const p1: Options = { ...defaults, extra: 1 };
+                                       ~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Options'.
+    const p2: Options = { ...defaults, extra() {} };
+                                       ~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Options'.
+    const p3: Options = { ...defaults, get extra() { return 1; }, set extra(v) {} };
+                                           ~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'extra' does not exist in type 'Options'.
+    const p4: Options = { ...defaults, set extra(v: number) {} };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

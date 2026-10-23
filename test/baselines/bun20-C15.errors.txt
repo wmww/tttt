@@ -1,0 +1,15 @@
+a.ts(2,65): error TS2322: Type 'typeof C' is not assignable to type 'null'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class A { a = 1 } class C { c = 3; static s = 1 }
+    function o2(x: typeof C | A) { if (x.constructor === C) { const _: null = x; } }
+                                                                    ~
+!!! error TS2322: Type 'typeof C' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

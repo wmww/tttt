@@ -1,0 +1,20 @@
+//// [test/cases/bun75-R06.ts] ////
+
+=== p1.ts ===
+import * as n1 from "./p2"; export { n1, n1 as m1 }; export default 1;
+>n1 : any
+>n1 : any
+>n1 : any
+>m1 : any
+
+=== p2.ts ===
+import * as n2 from "./p1"; import * as o2 from "./p1"; export { n2, o2 };
+>n2 : any
+>o2 : any
+>n2 : any
+>o2 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

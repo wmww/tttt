@@ -1,0 +1,20 @@
+//// [test/cases/bun30-C4.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.js ===
+(class K { p = (K.x = 1); });
+>(class K { p = (K.x = 1); }) : typeof K
+>class K { p = (K.x = 1); } : typeof K
+>K : typeof K
+>p : number
+>(K.x = 1) : 1
+>K.x = 1 : 1
+>K.x : any
+>K : typeof K
+>x : any
+>1 : 1
+

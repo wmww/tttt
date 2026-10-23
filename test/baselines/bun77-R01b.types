@@ -1,0 +1,46 @@
+//// [test/cases/bun77-R01b.ts] ////
+
+=== a.ts ===
+const o1 = { set p({ a, b } = { a: null, b: undefined }) { } };
+>o1 : { p: any; }
+>{ set p({ a, b } = { a: null, b: undefined }) { } } : { p: any; }
+>p : any
+>a : any
+>b : any
+>{ a: null, b: undefined } : { a: null; b: undefined; }
+>a : null
+>b : undefined
+>undefined : undefined
+
+const o2 = { set p([a, b] = [null, undefined]) { } };
+>o2 : { p: any; }
+>{ set p([a, b] = [null, undefined]) { } } : { p: any; }
+>p : any
+>a : any
+>b : any
+>[null, undefined] : [null, undefined]
+>undefined : undefined
+
+const o3 = { set p({ a } = { a: [] }) { } };
+>o3 : { p: any; }
+>{ set p({ a } = { a: [] }) { } } : { p: any; }
+>p : any
+>a : any[]
+>{ a: [] } : { a: undefined[]; }
+>a : undefined[]
+>[] : undefined[]
+
+class C1 { set p({ a, b } = { a: null, b: undefined }) { } }
+>C1 : C1
+>p : any
+>a : any
+>b : any
+>{ a: null, b: undefined } : { a: null; b: undefined; }
+>a : null
+>b : undefined
+>undefined : undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

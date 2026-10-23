@@ -1,0 +1,13 @@
+//// [test/cases/bun13-P4b.ts] ////
+
+=== a.ts ===
+declare const xs: number[];
+>xs : Symbol(xs, Decl(a.ts, 0, 13))
+
+new Map([["a", xs], ["b", ["s"]], ["c", [1]]]);
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>xs : Symbol(xs, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

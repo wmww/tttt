@@ -1,0 +1,20 @@
+//// [test/cases/bun08-C24a.ts] ////
+
+=== a.ts ===
+declare module "./r11" { namespace star { interface Added {} } }
+>"./r11" : typeof import("./r11")
+
+import { Zip } from "./n";
+>Zip : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== n.ts ===
+
+export namespace N { export interface X {} }
+=== r11.ts ===
+export * as star from "./n";
+>star : typeof import("./n")
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun29-P4b.ts] ////
+
+=== a.ts ===
+let n: number = { a: 0xFFn } as const;
+>n : number
+>{ a: 0xFFn } as const : { readonly a: 0xffn; }
+>{ a: 0xFFn } : { readonly a: 0xffn; }
+>a : 255n
+>0xFFn : 255n
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

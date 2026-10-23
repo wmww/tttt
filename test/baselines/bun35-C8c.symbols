@@ -1,0 +1,11 @@
+//// [test/cases/bun35-C8c.ts] ////
+
+=== a.ts ===
+/// <reference types="foo/" />
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/@types/foo/index.d.ts ===
+declare const foo: 1;
+>foo : Symbol(foo, Decl(index.d.ts, 0, 13))
+

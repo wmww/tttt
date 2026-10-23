@@ -1,0 +1,34 @@
+//// [test/cases/bun10-P1.ts] ////
+
+=== a.ts ===
+const a = [{ q: { u1: 1, r: { ...kk } } }, { q: { u2: 1, get r() { return a; } } }];
+>a : any
+>[{ q: { u1: 1, r: { ...kk } } }, { q: { u2: 1, get r() { return a; } } }] : ({ q: { u1: number; r: { v: any; }; }; } | { q: { u2: number; readonly r: any; }; })[]
+>{ q: { u1: 1, r: { ...kk } } } : { q: { u1: number; r: { v: any; }; }; }
+>q : { u1: number; r: { v: any; }; }
+>{ u1: 1, r: { ...kk } } : { u1: number; r: { v: any; }; }
+>u1 : number
+>1 : 1
+>r : { v: any; }
+>{ ...kk } : { v: any; }
+>kk : K
+>{ q: { u2: 1, get r() { return a; } } } : { q: { u2: number; readonly r: any; }; }
+>q : { u2: number; readonly r: any; }
+>{ u2: 1, get r() { return a; } } : { u2: number; readonly r: any; }
+>u2 : number
+>1 : 1
+>r : any
+>a : any
+
+declare const kk: K;
+>kk : K
+
+class K { v = a; }
+>K : K
+>v : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

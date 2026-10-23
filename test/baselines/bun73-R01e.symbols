@@ -1,0 +1,85 @@
+//// [test/cases/bun73-R01e.ts] ////
+
+=== a.ts ===
+declare function fail(): never;
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+
+declare function c(): boolean;
+>c : Symbol(c, Decl(a.ts, 0, 31))
+
+declare function use(v: unknown): void;
+>use : Symbol(use, Decl(a.ts, 1, 30))
+>v : Symbol(v, Decl(a.ts, 2, 21))
+
+declare const arr: number[];
+>arr : Symbol(arr, Decl(a.ts, 3, 13))
+
+type U = string | number | boolean | null | undefined;
+>U : Symbol(U, Decl(a.ts, 3, 28))
+
+function f4(x: string | number) { fail(); do { try { } finally { x.foo; } } while (true); }
+>f4 : Symbol(f4, Decl(a.ts, 4, 54))
+>x : Symbol(x, Decl(a.ts, 5, 12))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 5, 12))
+
+function f7(x: string | number) { fail(); do { try { } finally { try { x.foo; } finally { } } } while (true); }
+>f7 : Symbol(f7, Decl(a.ts, 5, 91))
+>x : Symbol(x, Decl(a.ts, 6, 12))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 6, 12))
+
+function plainLoop(x: string | number) { fail(); do { x.foo; } while (true); }
+>plainLoop : Symbol(plainLoop, Decl(a.ts, 6, 111))
+>x : Symbol(x, Decl(a.ts, 7, 19))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 7, 19))
+
+function plainFinally(x: string | number) { fail(); try { } finally { x.foo; } }
+>plainFinally : Symbol(plainFinally, Decl(a.ts, 7, 78))
+>x : Symbol(x, Decl(a.ts, 8, 22))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 8, 22))
+
+// the other way round: tsc reports TS2339 on `never` at the `o.x` of the switch, bun does not
+function f43(o: { x: U }) { fail(); do { try { } catch { try { } catch { use(o.x); } switch (typeof o.x) { } } } while (c() && o.x == null); if (typeof o.x === "boolean") { } }
+>f43 : Symbol(f43, Decl(a.ts, 8, 80))
+>o : Symbol(o, Decl(a.ts, 10, 13))
+>x : Symbol(x, Decl(a.ts, 10, 17))
+>U : Symbol(U, Decl(a.ts, 3, 28))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+>use : Symbol(use, Decl(a.ts, 1, 30))
+>o : Symbol(o, Decl(a.ts, 10, 13))
+>o : Symbol(o, Decl(a.ts, 10, 13))
+>c : Symbol(c, Decl(a.ts, 0, 31))
+>o : Symbol(o, Decl(a.ts, 10, 13))
+>o : Symbol(o, Decl(a.ts, 10, 13))
+
+// `arr`, a global constant, is `never` in bun (TS2488), not in tsc
+function f140(o: { n: { x: U; y: U } }) { try { fail(); } finally { switch (typeof o.n.y) { case "boolean": do { } while (typeof o.n.x === "boolean"); for (const e of arr) { } } } for (const e of arr) { } }
+>f140 : Symbol(f140, Decl(a.ts, 10, 176))
+>o : Symbol(o, Decl(a.ts, 12, 14))
+>n : Symbol(n, Decl(a.ts, 12, 18))
+>x : Symbol(x, Decl(a.ts, 12, 23))
+>U : Symbol(U, Decl(a.ts, 3, 28))
+>y : Symbol(y, Decl(a.ts, 12, 29))
+>U : Symbol(U, Decl(a.ts, 3, 28))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+>o.n.y : Symbol(y, Decl(a.ts, 12, 29))
+>o.n : Symbol(n, Decl(a.ts, 12, 18))
+>o : Symbol(o, Decl(a.ts, 12, 14))
+>n : Symbol(n, Decl(a.ts, 12, 18))
+>y : Symbol(y, Decl(a.ts, 12, 29))
+>o.n.x : Symbol(x, Decl(a.ts, 12, 23))
+>o.n : Symbol(n, Decl(a.ts, 12, 18))
+>o : Symbol(o, Decl(a.ts, 12, 14))
+>n : Symbol(n, Decl(a.ts, 12, 18))
+>x : Symbol(x, Decl(a.ts, 12, 23))
+>e : Symbol(e, Decl(a.ts, 12, 161))
+>arr : Symbol(arr, Decl(a.ts, 3, 13))
+>e : Symbol(e, Decl(a.ts, 12, 190))
+>arr : Symbol(arr, Decl(a.ts, 3, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+

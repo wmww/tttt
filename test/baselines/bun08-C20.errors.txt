@@ -1,0 +1,26 @@
+a.ts(1,10): error TS2595: 'x' can only be imported by using a default import.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+eqmissing.ts(1,1): error TS1202: Import assignment cannot be used when targeting ECMAScript modules. Consider using 'import * as ns from "mod"', 'import {a} from "mod"', 'import d from "mod"', or another module format instead.
+eqmissing.ts(1,20): error TS2307: Cannot find module './missing-mod2' or its corresponding type declarations.
+eqmissing.ts(2,1): error TS1203: Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or another module format instead.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import { x } from "./eqmissing";
+             ~
+!!! error TS2595: 'x' can only be imported by using a default import.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== eqmissing.ts (3 errors) ====
+    import x = require("./missing-mod2");
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1202: Import assignment cannot be used when targeting ECMAScript modules. Consider using 'import * as ns from "mod"', 'import {a} from "mod"', 'import d from "mod"', or another module format instead.
+                       ~~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module './missing-mod2' or its corresponding type declarations.
+    export = x;
+    ~~~~~~~~~~~
+!!! error TS1203: Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or another module format instead.
+    

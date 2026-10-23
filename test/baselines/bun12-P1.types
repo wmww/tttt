@@ -1,0 +1,33 @@
+//// [test/cases/bun12-P1.ts] ////
+
+=== a.ts ===
+interface C { kind: string; m(): this extends { kind: "a" } ? 1 : 2 }
+>kind : string
+>m : () => this extends { kind: "a"; } ? 1 : 2
+>kind : "a"
+
+interface A extends C { kind: "a" }
+>kind : "a"
+
+interface B extends C { kind: "b" }
+>kind : "b"
+
+function f<T extends C>(t: T) { return t.m(); }
+>f : <T extends C>(t: T) => T extends { kind: "a"; } ? 1 : 2
+>t : T
+>t.m() : T extends { kind: "a"; } ? 1 : 2
+>t.m : () => T extends { kind: "a"; } ? 1 : 2
+>t : T
+>m : () => T extends { kind: "a"; } ? 1 : 2
+
+const r: 1 | 2 = f(null! as A | B);
+>r : 1 | 2
+>f(null! as A | B) : 1 | 2
+>f : <T extends C>(t: T) => T extends { kind: "a"; } ? 1 : 2
+>null! as A | B : A | B
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

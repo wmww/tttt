@@ -1,0 +1,25 @@
+//// [test/cases/bun20-C5b.ts] ////
+
+=== a.ts ===
+class Q { v: string | undefined; isS(): this is { v: string } { return true; } }
+>Q : Symbol(Q, Decl(a.ts, 0, 0))
+>v : Symbol(Q.v, Decl(a.ts, 0, 9))
+>isS : Symbol(Q.isS, Decl(a.ts, 0, 32))
+>v : Symbol(v, Decl(a.ts, 0, 49))
+
+function b22(q: Q) { if ((q.isS)()) { q.v.length; } }
+>b22 : Symbol(b22, Decl(a.ts, 0, 80))
+>q : Symbol(q, Decl(a.ts, 1, 13))
+>Q : Symbol(Q, Decl(a.ts, 0, 0))
+>q.isS : Symbol(Q.isS, Decl(a.ts, 0, 32))
+>q : Symbol(q, Decl(a.ts, 1, 13))
+>isS : Symbol(Q.isS, Decl(a.ts, 0, 32))
+>q.v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>q.v : Symbol(Q.v, Decl(a.ts, 0, 9))
+>q : Symbol(q, Decl(a.ts, 1, 13))
+>v : Symbol(Q.v, Decl(a.ts, 0, 9))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

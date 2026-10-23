@@ -1,0 +1,14 @@
+a.ts(1,16): error TS1013: A rest parameter or binding pattern may not have a trailing comma.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    type F = ([...a,]: any) => void;
+                   ~
+!!! error TS1013: A rest parameter or binding pattern may not have a trailing comma.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

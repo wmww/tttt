@@ -1,0 +1,13 @@
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    class K<T> { constructor(public x: T) {} }
+    function mk<X>() { return class D<T extends (a: X) => void> extends K<T> {} }
+    new (mk<string>())(a => a.length);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

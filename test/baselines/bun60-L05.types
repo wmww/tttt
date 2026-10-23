@@ -1,0 +1,51 @@
+//// [test/cases/bun60-L05.ts] ////
+
+=== a.ts ===
+class A1 { [+2]: number; constructor() { this["+2"] = 1; } }
+>A1 : A1
+>[+2] : number
+>+2 : 2
+>2 : 2
+>this["+2"] = 1 : 1
+>this["+2"] : number
+>this : this
+>"+2" : "+2"
+>1 : 1
+
+class B5 { [-2]: number; constructor() { this["-2"] = 1; } }
+>B5 : B5
+>[-2] : number
+>-2 : -2
+>2 : 2
+>this["-2"] = 1 : 1
+>this["-2"] : number
+>this : this
+>"-2" : "-2"
+>1 : 1
+
+class B4 { [-2]: number; constructor() { this[-2] = 1; } }
+>B4 : B4
+>[-2] : number
+>-2 : -2
+>2 : 2
+>this[-2] = 1 : 1
+>this[-2] : number
+>this : this
+>-2 : -2
+>2 : 2
+>1 : 1
+
+class A4 { [2]: number; constructor() { this[2] = 1; } }
+>A4 : A4
+>[2] : number
+>2 : 2
+>this[2] = 1 : 1
+>this[2] : number
+>this : this
+>2 : 2
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

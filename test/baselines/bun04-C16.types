@@ -1,0 +1,12 @@
+//// [test/cases/bun04-C16.ts] ////
+
+=== a.ts ===
+declare function f1(a = missing1): void;
+>f1 : (a?: any) => void
+>a : any
+>missing1 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

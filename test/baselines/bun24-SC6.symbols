@@ -1,0 +1,25 @@
+//// [test/cases/bun24-SC6.ts] ////
+
+=== a.ts ===
+const o = { x: 1, m(a: typeof this) { return a.x }, n(a: typeof this.x) { return a } };
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>m : Symbol(m, Decl(a.ts, 0, 17))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+>a.x : Symbol(x, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>n : Symbol(n, Decl(a.ts, 0, 51))
+>a : Symbol(a, Decl(a.ts, 0, 54))
+>this.x : Symbol(x, Decl(a.ts, 0, 11))
+>this : Symbol(o, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 54))
+
+const q1: number = o;
+>q1 : Symbol(q1, Decl(a.ts, 1, 5))
+>o : Symbol(o, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

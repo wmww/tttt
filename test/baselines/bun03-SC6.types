@@ -1,0 +1,16 @@
+//// [test/cases/bun03-SC6.ts] ////
+
+=== a.d.ts ===
+declare module "x5" { namespace N { interface I {} } export = N; }
+>"x5" : typeof import("x5")
+>N : any
+
+=== b.d.ts ===
+declare module "x5" { export interface J {} }
+>"x5" : typeof import("x5")
+
+=== f.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

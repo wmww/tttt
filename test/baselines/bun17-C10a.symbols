@@ -1,0 +1,33 @@
+//// [test/cases/bun17-C10a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements {} interface ElementChildrenAttribute { children: {} } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 44))
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(a.tsx, 0, 75))
+>children : Symbol(ElementChildrenAttribute.children, Decl(a.tsx, 0, 112))
+
+declare const React: any;
+>React : Symbol(React, Decl(a.tsx, 1, 13))
+
+function Outer<T>() {
+>Outer : Symbol(Outer, Decl(a.tsx, 1, 25))
+>T : Symbol(T, Decl(a.tsx, 2, 15))
+
+  function D(props: T extends string ? { children: number } : { children: number }) { return null as any as JSX.Element; }
+>D : Symbol(D, Decl(a.tsx, 2, 21))
+>props : Symbol(props, Decl(a.tsx, 3, 13))
+>T : Symbol(T, Decl(a.tsx, 2, 15))
+>children : Symbol(children, Decl(a.tsx, 3, 40))
+>children : Symbol(children, Decl(a.tsx, 3, 63))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+  <D>{"s"}{"t"}</D>;
+>D : Symbol(D, Decl(a.tsx, 2, 21))
+>D : Symbol(D, Decl(a.tsx, 2, 21))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 6, 5))
+

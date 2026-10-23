@@ -1,0 +1,20 @@
+//// [test/cases/bun06-C11a.ts] ////
+
+=== b.js ===
+NS = { x: 1 };
+>NS = { x: 1 } : { x: number; }
+>NS : typeof NS
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+=== g.d.ts ===
+declare namespace NS { const x: number }
+>NS : typeof NS
+>x : number
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

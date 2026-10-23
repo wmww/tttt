@@ -1,0 +1,23 @@
+//// [test/cases/bun12-C4b.ts] ////
+
+=== a.ts ===
+function i<T extends [1, 2]>() {
+>i : Symbol(i, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+  type M = { [P in keyof T as P extends `${number}` ? P : never]: T[P] };
+>M : Symbol(M, Decl(a.ts, 0, 32))
+>P : Symbol(P, Decl(a.ts, 1, 14))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>P : Symbol(P, Decl(a.ts, 1, 14))
+>P : Symbol(P, Decl(a.ts, 1, 14))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>P : Symbol(P, Decl(a.ts, 1, 14))
+
+  let k1: keyof M = "0";
+>k1 : Symbol(k1, Decl(a.ts, 2, 5))
+>M : Symbol(M, Decl(a.ts, 0, 32))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

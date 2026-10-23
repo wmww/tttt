@@ -1,0 +1,91 @@
+//// [test/cases/bun73-R04.ts] ////
+
+=== a.ts ===
+import { L3 } from "./b";
+>L3 : typeof L3
+
+declare const u: unknown;
+>u : unknown
+
+// an ambient class: no TS2449
+const k1 = u instanceof L1 ? "s" : "s";
+>k1 : "s"
+>u instanceof L1 ? "s" : "s" : "s"
+>u instanceof L1 : boolean
+>u : unknown
+>L1 : typeof L1
+>"s" : "s"
+>"s" : "s"
+
+declare class L1 { static [k1]: number; i: number }
+>L1 : L1
+>[k1] : number
+>k1 : "s"
+>i : number
+
+const p1: never = L1.s;
+>p1 : never
+>L1.s : number
+>L1 : typeof L1
+>s : number
+
+// a class in another file
+export const k3 = u instanceof L3 ? "s" : "s";
+>k3 : "s"
+>u instanceof L3 ? "s" : "s" : "s"
+>u instanceof L3 : boolean
+>u : unknown
+>L3 : typeof L3
+>"s" : "s"
+>"s" : "s"
+
+const p3: never = L3.s;
+>p3 : never
+>L3.s : any
+>L3 : typeof L3
+>s : any
+
+// with TS2449
+const k2 = u instanceof L2 ? "s" : "s";
+>k2 : "s"
+>u instanceof L2 ? "s" : "s" : "s"
+>u instanceof L2 : boolean
+>u : unknown
+>L2 : typeof L2
+>"s" : "s"
+>"s" : "s"
+
+class L2 { static [k2] = 1; i = 1 }
+>L2 : L2
+>[k2] : number
+>k2 : "s"
+>1 : 1
+>i : number
+>1 : 1
+
+const p2: never = L2.s;
+>p2 : never
+>L2.s : number
+>L2 : typeof L2
+>s : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import { k3 } from "./a";
+>k3 : "s"
+
+export class L3 { static [k3] = 1; i = 1 }
+>L3 : L3
+>[k3] : number
+>k3 : "s"
+>1 : 1
+>i : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

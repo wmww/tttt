@@ -1,0 +1,8 @@
+//// [test/cases/bun34-C7d.ts] ////
+
+=== a.ts ===
+type K = k\u0065yof { a: 1 }; const sentinel: number = "";
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 35))
+

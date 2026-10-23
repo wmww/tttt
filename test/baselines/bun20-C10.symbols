@@ -1,0 +1,19 @@
+//// [test/cases/bun20-C10.ts] ////
+
+=== a.ts ===
+declare function isEmpty(x: unknown): x is {};
+>isEmpty : Symbol(isEmpty, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 25))
+>x : Symbol(x, Decl(a.ts, 0, 25))
+
+function f(x: unknown) { if (!isEmpty(x)) { const b: string = x; } }
+>f : Symbol(f, Decl(a.ts, 0, 46))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>isEmpty : Symbol(isEmpty, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>b : Symbol(b, Decl(a.ts, 1, 49))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

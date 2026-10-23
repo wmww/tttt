@@ -1,0 +1,44 @@
+a.ts(8,5): error TS2322: Type 'number' is not assignable to type '{ a: this["r"]; }'.
+a.ts(10,11): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a.ts(12,5): error TS2322: Type 'number' is not assignable to type '{ a: this["r"]; }'.
+a.ts(16,5): error TS2322: Type 'number' is not assignable to type 'keyof this'.
+  Type '1' is not assignable to type '"m" | "n" | "r"'.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare function box<T extends { a: string | number }>(o: T): T;
+    declare function both<T>(o: T & { a: string | number }): T;
+    declare function key<K extends PropertyKey>(o: { key: K }): K;
+    class C {
+      r!: string | number;
+      m(x: this["r"]) {
+        let u = both({ a: x });
+        u = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '{ a: this["r"]; }'.
+        if (typeof x === "string") return;
+        const n: number = box({ a: x }).a;
+              ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+        let v = box({ a: x });
+        v = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '{ a: this["r"]; }'.
+      }
+      n(name: keyof this) {
+        let got = key({ key: name });
+        got = 1;
+        ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'keyof this'.
+!!! error TS2322:   Type '1' is not assignable to type '"m" | "n" | "r"'.
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

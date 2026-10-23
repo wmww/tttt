@@ -1,0 +1,30 @@
+//// [test/cases/bun27-C4a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+declare function C<const T>(p: { v: T; f: (x: T) => void }): JSX.Element;
+>C : <const T>(p: { v: T; f: (x: T) => void; }) => JSX.Element
+>p : { v: T; f: (x: T) => void; }
+>v : T
+>f : (x: T) => void
+>x : T
+>JSX : any
+
+const m = <C v={1} f={x => { const one: 1 = x; }} />;
+>m : JSX.Element
+><C v={1} f={x => { const one: 1 = x; }} /> : JSX.Element
+>C : <const T>(p: { v: T; f: (x: T) => void; }) => JSX.Element
+>v : number
+>1 : 1
+>f : (x: number) => void
+>x => { const one: 1 = x; } : (x: number) => void
+>x : number
+>one : 1
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,17 @@
+a.tsx(2,21): error TS2322: Type '{ s: string; }' is not assignable to type '() => string'.
+  Property 's' does not exist on type '() => string'.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { [k: string]: { s?: string } } }
+    const a = <toString s="x" />;
+                        ~
+!!! error TS2322: Type '{ s: string; }' is not assignable to type '() => string'.
+!!! error TS2322:   Property 's' does not exist on type '() => string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

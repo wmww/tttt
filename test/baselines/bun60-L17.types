@@ -1,0 +1,38 @@
+//// [test/cases/bun60-L17.ts] ////
+
+=== a.ts ===
+class C { private constructor() {} x = 1; }
+>C : C
+>x : number
+>1 : 1
+
+type CT = typeof C;
+>CT : typeof C
+>C : typeof C
+
+interface IC extends CT {}
+declare const B1: IC;
+>B1 : IC
+
+class D1 extends B1 {}
+>D1 : D1
+>B1 : C
+
+interface IC6 extends IC { y: 1 }
+>y : 1
+
+declare const B6: IC6;
+>B6 : IC6
+
+class D6 extends B6 {}
+>D6 : D6
+>B6 : C
+
+class D2 extends C {}
+>D2 : D2
+>C : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

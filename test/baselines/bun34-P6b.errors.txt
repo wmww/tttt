@@ -1,0 +1,17 @@
+a.ts(1,11): error TS1433: Neither decorators nor modifiers may be applied to 'this' parameters.
+a.ts(1,11): error TS2369: A parameter property is only allowed in a constructor implementation.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type T = (public this: any) => void;
+              ~~~~~~
+!!! error TS1433: Neither decorators nor modifiers may be applied to 'this' parameters.
+              ~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

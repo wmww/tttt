@@ -1,0 +1,56 @@
+//// [test/cases/bun84-R02c.ts] ////
+
+=== a.ts ===
+declare class A {} declare class B {} interface I {}
+>A : A
+>B : B
+
+type T1 = ({a = class extends A, B {}}: any) => void;
+>T1 : T1
+>a : any
+>class extends A, B {} : typeof a
+>A : A
+>B : A
+
+type T2 = ({a = class extends A extends B {}}: any) => void;
+>T2 : T2
+>a : any
+>class extends A extends B {} : typeof a
+>A : A
+>B : A
+
+type T3 = ({a = class implements I extends A {}}: any) => void;
+>T3 : T3
+>a : any
+>class implements I extends A {} : typeof a
+>A : A
+
+type T4 = ({a = class <> {}}: any) => void;
+>T4 : T4
+>a : any
+>class <> {} : typeof a
+
+type T5 = ({a = class { m<>() {} }}: any) => void;
+>T5 : T5
+>a : any
+>class { m<>() {} } : typeof a
+>m : () => void
+
+type T6 = ({a = (public a) => 1}: any) => void;
+>T6 : T6
+>a : any
+>(public a) => 1 : (a: any) => number
+>a : any
+>1 : 1
+
+type OK = <T>({a = class extends A, B {}}: any) => void;
+>OK : OK
+>a : any
+>class extends A, B {} : typeof a
+>A : A
+>B : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,102 @@
+//// [test/cases/bun79-R11.ts] ////
+
+=== j.js ===
+class B { constructor() { this.x = new B().x; } m() { return this.x; } }
+>B : B
+>this.x = new B().x : any
+>this.x : any
+>this : this
+>x : any
+>new B().x : any
+>new B() : B
+>B : typeof B
+>x : any
+>m : () => any
+>this.x : any
+>this : this
+>x : any
+
+class D { constructor() { this.x = mk().x; } m() { return this.x; } } /** @returns {D} */ function mk() { return new D(); }
+>D : D
+>this.x = mk().x : any
+>this.x : any
+>this : this
+>x : any
+>mk().x : any
+>mk() : D
+>mk : () => D
+>x : any
+>m : () => any
+>this.x : any
+>this : this
+>x : any
+>mk : () => D
+>new D() : D
+>D : typeof D
+
+class E { constructor() { const t = mk2().x; this.x = t; } m() { return this.x; } } /** @returns {E} */ function mk2() { return new E(); }
+>E : E
+>t : any
+>mk2().x : any
+>mk2() : E
+>mk2 : () => E
+>x : any
+>this.x = t : any
+>this.x : any
+>this : this
+>x : any
+>t : any
+>m : () => any
+>this.x : any
+>this : this
+>x : any
+>mk2 : () => E
+>new E() : E
+>E : typeof E
+
+class K { constructor() { this.x = new K; this.y = new K().x.y; } m() { return [this.x, this.y]; } }
+>K : K
+>this.x = new K : K
+>this.x : any
+>this : this
+>x : any
+>new K : K
+>K : typeof K
+>this.y = new K().x.y : any
+>this.y : any
+>this : this
+>y : any
+>new K().x.y : any
+>new K().x : any
+>new K() : K
+>K : typeof K
+>x : any
+>y : any
+>m : () => any[]
+>[this.x, this.y] : any[]
+>this.x : K
+>this : this
+>x : K
+>this.y : any
+>this : this
+>y : any
+
+class O { constructor(/** @type {O} */ o) { this.x = o.x; } m() { return this.x; } }
+>O : O
+>o : O
+>this.x = o.x : undefined
+>this.x : any
+>this : this
+>x : any
+>o.x : undefined
+>o : O
+>x : undefined
+>m : () => any
+>this.x : any
+>this : this
+>x : any
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+

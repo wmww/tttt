@@ -1,0 +1,15 @@
+a.ts(2,17): error TS2461: Type '{ a: number; }' is not an array type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es5"] } }
+==== a.ts (2 errors) ====
+    declare const u1: string | { a: number } | { a: number; b: string };
+    for (const x of u1) {}
+                    ~~
+!!! error TS2461: Type '{ a: number; }' is not an array type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

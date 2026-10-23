@@ -1,0 +1,24 @@
+//// [test/cases/bun86-R11a.ts] ////
+
+=== a.ts ===
+document.title = 2; const d: Document = { title: 3 };
+>document.title : Symbol(Document.title, Decl(index.ts, 0, 20))
+>document : Symbol(document, Decl(index.ts, 1, 3))
+>title : Symbol(Document.title, Decl(index.ts, 0, 20))
+>d : Symbol(d, Decl(a.ts, 0, 25))
+>Document : Symbol(Document, Decl(index.ts, 0, 0))
+>title : Symbol(title, Decl(a.ts, 0, 41))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/@typescript/lib-dom/index.ts ===
+interface Document { title: string }
+>Document : Symbol(Document, Decl(index.ts, 0, 0))
+>title : Symbol(Document.title, Decl(index.ts, 0, 20))
+
+var document: Document = { title: 1 };
+>document : Symbol(document, Decl(index.ts, 1, 3))
+>Document : Symbol(Document, Decl(index.ts, 0, 0))
+>title : Symbol(title, Decl(index.ts, 1, 26))
+

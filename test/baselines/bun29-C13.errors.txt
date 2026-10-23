@@ -1,0 +1,16 @@
+a.ts(3,5): error TS2322: Type '() => typeof G' is not assignable to type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare class G { static s: number }
+    declare function g(): typeof G;
+    let n: number = function G() { return g(); };
+        ~
+!!! error TS2322: Type '() => typeof G' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

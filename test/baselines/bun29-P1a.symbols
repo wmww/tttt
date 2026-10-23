@@ -1,0 +1,21 @@
+//// [test/cases/bun29-P1a.ts] ////
+
+=== a.ts ===
+type T = { readonly s: unique symbol };
+>T : Symbol(T, Decl(a.ts, 0, 0))
+>s : Symbol(s, Decl(a.ts, 0, 10))
+
+declare const o: T;
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>T : Symbol(T, Decl(a.ts, 0, 0))
+
+export const v = { [o.s]: 1 };
+>v : Symbol(v, Decl(a.ts, 2, 12))
+>[o.s] : Symbol([o.s], Decl(a.ts, 2, 18))
+>o.s : Symbol(s, Decl(a.ts, 0, 10))
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>s : Symbol(s, Decl(a.ts, 0, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

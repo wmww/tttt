@@ -1,0 +1,17 @@
+a.ts(1,16): error TS1090: 'export' modifier cannot appear on a parameter.
+a.ts(1,23): error TS1018: An index signature parameter cannot have an accessibility modifier.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    interface I { [export x: string]: any }
+                   ~~~~~~
+!!! error TS1090: 'export' modifier cannot appear on a parameter.
+                          ~
+!!! error TS1018: An index signature parameter cannot have an accessibility modifier.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

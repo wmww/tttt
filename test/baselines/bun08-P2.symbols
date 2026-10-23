@@ -1,0 +1,13 @@
+//// [test/cases/bun08-P2.ts] ////
+
+=== a.ts ===
+import { b } from "pk/src.ts";
+>b : Symbol(b, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/pk/src.ts ===
+export const b = 1;
+>b : Symbol(b, Decl(src.ts, 0, 12))
+

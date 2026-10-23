@@ -1,0 +1,21 @@
+a.ts(1,13): error TS2395: Individual declarations in merged declaration 'E' must be all exported or all local.
+a.ts(2,6): error TS2395: Individual declarations in merged declaration 'E' must be all exported or all local.
+a.ts(2,10): error TS2432: In an enum with multiple declarations, only one declaration can omit an initializer for its first enum element.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    export enum E { A }
+                ~
+!!! error TS2395: Individual declarations in merged declaration 'E' must be all exported or all local.
+    enum E { B }
+         ~
+!!! error TS2395: Individual declarations in merged declaration 'E' must be all exported or all local.
+             ~
+!!! error TS2432: In an enum with multiple declarations, only one declaration can omit an initializer for its first enum element.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

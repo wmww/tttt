@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C21b.ts] ////
+
+=== a.ts ===
+import type d, { a } from "./nope";
+>d : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,21 @@
+//// [test/cases/bun14-C5.ts] ////
+
+=== a.ts ===
+class R {
+>R : R
+
+  readonly x: number;
+>x : number
+
+  constructor() { (this).x = 2; }
+>(this).x = 2 : 2
+>(this).x : any
+>(this) : this
+>this : this
+>x : any
+>2 : 2
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

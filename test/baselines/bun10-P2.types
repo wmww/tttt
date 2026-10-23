@@ -1,0 +1,35 @@
+//// [test/cases/bun10-P2.ts] ////
+
+=== a.ts ===
+const a = i["z"];
+>a : any
+>i["z"] : any
+>i : I
+>"z" : "z"
+
+declare const i: I;
+>i : I
+
+declare const s: string;
+>s : string
+
+interface I { [k: typeof k2]: typeof x1 }
+>k : string
+>k2 : string
+>x1 : any
+
+const x1 = a;
+>x1 : any
+>a : any
+
+const k2 = a ? s : s;
+>k2 : string
+>a ? s : s : string
+>a : any
+>s : string
+>s : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

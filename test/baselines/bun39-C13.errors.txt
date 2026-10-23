@@ -1,0 +1,14 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "dom"], "libReplacement": true, "skipDefaultLibCheck": true } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@typescript/lib-dom/index.d.ts (0 errors) ====
+    declare let mydom: Nope2;
+==== node_modules/@typescript/lib-dom/package.json (0 errors) ====
+    {"name":"@typescript/lib-dom","version":"1.0.0","types":"index.d.ts"}
+    

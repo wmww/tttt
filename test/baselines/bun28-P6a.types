@@ -1,0 +1,14 @@
+//// [test/cases/bun28-P6a.ts] ////
+
+=== a.ts ===
+class A {}
+>A : A
+
+public class B extends A, {}
+>B : B
+>A : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

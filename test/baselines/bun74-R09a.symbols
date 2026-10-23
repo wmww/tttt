@@ -1,0 +1,40 @@
+//// [test/cases/bun74-R09a.ts] ////
+
+=== a.tsx ===
+declare global { namespace JSX { interface IntrinsicElements { [k: string]: any } } }
+>global : Symbol(global, Decl(a.tsx, 0, 0))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 16))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 32))
+>k : Symbol(k, Decl(a.tsx, 0, 64))
+
+export function List(props: { items: { name: string }[] }) {
+>List : Symbol(List, Decl(a.tsx, 0, 85))
+>props : Symbol(props, Decl(a.tsx, 1, 21))
+>items : Symbol(items, Decl(a.tsx, 1, 29))
+>name : Symbol(name, Decl(a.tsx, 1, 38))
+
+  return <ul>{props.items.map(package => <li>{package.name}</li>)}</ul>;
+>ul : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+>props.items.map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>props.items : Symbol(items, Decl(a.tsx, 1, 29))
+>props : Symbol(props, Decl(a.tsx, 1, 21))
+>items : Symbol(items, Decl(a.tsx, 1, 29))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>package : Symbol(package, Decl(a.tsx, 2, 30))
+>li : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+>package.name : Symbol(name, Decl(a.tsx, 1, 38))
+>package : Symbol(package, Decl(a.tsx, 2, 30))
+>name : Symbol(name, Decl(a.tsx, 1, 38))
+>li : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+>ul : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+}
+export const frag = <>{[1].map(static => static)}</>;
+>frag : Symbol(frag, Decl(a.tsx, 4, 12))
+>[1].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>static : Symbol(static, Decl(a.tsx, 4, 31))
+>static : Symbol(static, Decl(a.tsx, 4, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 5, 5))
+

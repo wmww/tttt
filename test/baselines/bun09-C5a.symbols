@@ -1,0 +1,20 @@
+//// [test/cases/bun09-C5a.ts] ////
+
+=== a.ts ===
+type P2<T extends Record<string, string>> = ({ [K in keyof T]: T[K] }) extends { [K in keyof T]: infer U } ? Uppercase<U> : never;
+>P2 : Symbol(P2, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(a.ts, 0, 48))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 48))
+>K : Symbol(K, Decl(a.ts, 0, 82))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>U : Symbol(U, Decl(a.ts, 0, 102))
+>Uppercase : Symbol(Uppercase, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(a.ts, 0, 102))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

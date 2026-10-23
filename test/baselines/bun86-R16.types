@@ -1,0 +1,39 @@
+//// [test/cases/bun86-R16.ts] ////
+
+=== d.ts ===
+export {};
+{ declare module "./m" { interface InBlock { a: 1 } } }
+>"./m" : typeof import("./m")
+>a : 1
+
+declare module "./m" { interface AfterBlock { a: 1 } }
+>"./m" : typeof import("./m")
+>a : 1
+
+=== e.ts ===
+export {};
+declare module "./m" { interface BeforeBlock { a: 1 } }
+>"./m" : typeof import("./m")
+>a : 1
+
+if (1) { declare module "./m" { interface InBlock2 { a: 1 } } }
+>1 : 1
+>"./m" : typeof import("./m")
+>a : 1
+
+=== m.ts ===
+export interface Own { o: 1 }
+>o : 1
+
+=== use.ts ===
+import { Own, InBlock, AfterBlock, BeforeBlock, InBlock2 } from "./m";
+>Own : any
+>InBlock : any
+>AfterBlock : any
+>BeforeBlock : any
+>InBlock2 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

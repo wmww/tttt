@@ -1,0 +1,60 @@
+//// [test/cases/bun83-R02a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface ElementChildrenAttribute { children: {} } interface IntrinsicElements { div: { children?: unknown } } }
+>children : {}
+>div : { children?: unknown; }
+>children : unknown
+
+declare function A<T>(props: { children?: unknown }): JSX.Element;
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>props : { children?: unknown; }
+>children : unknown
+>JSX : any
+
+type G<T> = T;
+>G : T
+
+var v1 = <A<number>>=1</A>;
+>v1 : JSX.Element
+><A<number>>=1</A> : JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+
+var v2 = <A<number>>= </A>;
+>v2 : JSX.Element
+><A<number>>= </A> : JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+
+var v3 = <A<G<number>>>=1</A>;
+>v3 : JSX.Element
+><A<G<number>>>=1</A> : JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+
+var v4 = <A<number>>==1</A>;
+>v4 : JSX.Element
+><A<number>>==1</A> : JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+
+var v5 = <div><A<number>>=1</A></div>;
+>v5 : JSX.Element
+><div><A<number>>=1</A></div> : JSX.Element
+>div : any
+><A<number>>=1</A> : JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>div : any
+
+var v6 = <A<number> >=1</A>;
+>v6 : JSX.Element
+><A<number> >=1</A> : JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+>A : <T>(props: { children?: unknown; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

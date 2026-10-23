@@ -1,0 +1,29 @@
+//// [test/cases/bun21-C14c.ts] ////
+
+=== a.ts ===
+declare const o: { fail(): never } | undefined;
+>o : { fail(): never; } | undefined
+>fail : () => never
+
+function g(x: string | number) { if (typeof x === "string") { o?.fail(), 0; } x.toFixed(); }
+>g : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>o?.fail(), 0 : 0
+>o?.fail() : undefined
+>o?.fail : (() => never) | undefined
+>o : { fail(): never; } | undefined
+>fail : (() => never) | undefined
+>0 : 0
+>x.toFixed() : string
+>x.toFixed : (fractionDigits?: number) => string
+>x : number
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,17 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(1,15): error TS2425: Class 'B' defines instance member property 'foo', but extended class 'D' defines it as instance member function.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["a.ts", "b.ts"] }
+==== a.ts (1 errors) ====
+    class B { foo = () => {}; }
+    class D extends B {}
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    interface D { foo(): void }
+                  ~~~
+!!! error TS2425: Class 'B' defines instance member property 'foo', but extended class 'D' defines it as instance member function.
+    

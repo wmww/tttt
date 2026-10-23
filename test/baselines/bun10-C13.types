@@ -1,0 +1,19 @@
+//// [test/cases/bun10-C13.ts] ////
+
+=== a.ts ===
+const k = "nm";
+>k : "nm"
+>"nm" : "nm"
+
+class C2b { nm = 1; [k] = 1; }
+>C2b : C2b
+>nm : number
+>1 : 1
+>[k] : number
+>k : "nm"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

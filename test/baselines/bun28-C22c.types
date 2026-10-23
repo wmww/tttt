@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C22c.ts] ////
+
+=== a.ts ===
+async function f() { namespace N { await 1; } }
+>f : () => Promise<void>
+>N : typeof N
+>await 1 : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

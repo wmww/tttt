@@ -1,0 +1,14 @@
+a.ts(1,33): error TS2353: Object literal may only specify known properties, and '[+3]' does not exist in type '{ 3: number; }'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const g1: { 3: number } = { get [+3]() { return 1; } };
+                                    ~~~~
+!!! error TS2353: Object literal may only specify known properties, and '[+3]' does not exist in type '{ 3: number; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

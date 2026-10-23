@@ -1,0 +1,17 @@
+//// [test/cases/bun31-C10.ts] ////
+
+=== a.ts ===
+function m() { let a: string | number; a! = 1; const n: number = a; }
+>m : () => void
+>a : string | number
+>a! = 1 : 1
+>a! : string | number
+>a : string | number
+>1 : 1
+>n : number
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

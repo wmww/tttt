@@ -1,0 +1,26 @@
+//// [test/cases/bun87-R17c.ts] ////
+
+=== a.ts ===
+var globalThis: number;
+>globalThis : Symbol(globalThis, Decl(a.ts, 0, 3))
+
+var x1 = 1;
+>x1 : Symbol(x1, Decl(a.ts, 1, 3))
+
+const r1: 0 = globalThis;
+>r1 : Symbol(r1, Decl(a.ts, 2, 5))
+>globalThis : Symbol(globalThis)
+
+const r2: 0 = globalThis.x1;
+>r2 : Symbol(r2, Decl(a.ts, 3, 5))
+>globalThis.x1 : Symbol(x1, Decl(a.ts, 1, 3))
+>globalThis : Symbol(globalThis)
+>x1 : Symbol(x1, Decl(a.ts, 1, 3))
+
+const r3: typeof globalThis = 1;
+>r3 : Symbol(r3, Decl(a.ts, 4, 5))
+>globalThis : Symbol(globalThis)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

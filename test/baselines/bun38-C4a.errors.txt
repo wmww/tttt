@@ -1,0 +1,16 @@
+a.ts(1,22): error TS2550: Property 'at' does not exist on type 'number[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+a.ts(2,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "extends": "./base.json", "compilerOptions": { "strict": true, "noEmit": true, "types": [], "target": "" } }
+==== a.ts (2 errors) ====
+    export const l = [1].at(0);
+                         ~~
+!!! error TS2550: Property 'at' does not exist on type 'number[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== base.json (0 errors) ====
+    { "compilerOptions": { "target": "es2015" } }
+    

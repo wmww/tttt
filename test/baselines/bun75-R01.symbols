@@ -1,0 +1,81 @@
+//// [test/cases/bun75-R01.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: T): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+declare const v1: (typeof f<string>);
+>v1 : Symbol(v1, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const n1: number = v1;
+>n1 : Symbol(n1, Decl(a.ts, 2, 5))
+>v1 : Symbol(v1, Decl(a.ts, 1, 13))
+
+declare const v2: { a: (typeof f<string>) };
+>v2 : Symbol(v2, Decl(a.ts, 3, 13))
+>a : Symbol(a, Decl(a.ts, 3, 19))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const n2: number = v2;
+>n2 : Symbol(n2, Decl(a.ts, 4, 5))
+>v2 : Symbol(v2, Decl(a.ts, 3, 13))
+
+type Q = (typeof f<string>) | null;
+>Q : Symbol(Q, Decl(a.ts, 4, 22))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+declare const v3: Q;
+>v3 : Symbol(v3, Decl(a.ts, 6, 13))
+>Q : Symbol(Q, Decl(a.ts, 4, 22))
+
+const n3: number = v3;
+>n3 : Symbol(n3, Decl(a.ts, 7, 5))
+>v3 : Symbol(v3, Decl(a.ts, 6, 13))
+
+declare const v4: (typeof f<string>) | null;
+>v4 : Symbol(v4, Decl(a.ts, 8, 13))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const n4: number = v4;
+>n4 : Symbol(n4, Decl(a.ts, 9, 5))
+>v4 : Symbol(v4, Decl(a.ts, 8, 13))
+
+declare const v5: (typeof f<string>)[];
+>v5 : Symbol(v5, Decl(a.ts, 10, 13))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const n5: number = v5;
+>n5 : Symbol(n5, Decl(a.ts, 11, 5))
+>v5 : Symbol(v5, Decl(a.ts, 10, 13))
+
+declare const v6: ( /* c */ typeof f<string> );
+>v6 : Symbol(v6, Decl(a.ts, 12, 13))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const n6: number = v6;
+>n6 : Symbol(n6, Decl(a.ts, 13, 5))
+>v6 : Symbol(v6, Decl(a.ts, 12, 13))
+
+function g(p: (typeof f<string>) | undefined) { const n7: number = p; }
+>g : Symbol(g, Decl(a.ts, 13, 22))
+>p : Symbol(p, Decl(a.ts, 14, 11))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>n7 : Symbol(n7, Decl(a.ts, 14, 53))
+>p : Symbol(p, Decl(a.ts, 14, 11))
+
+let v8 = null! as (typeof f<number>);
+>v8 : Symbol(v8, Decl(a.ts, 15, 3))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const n8: number = v8;
+>n8 : Symbol(n8, Decl(a.ts, 16, 5))
+>v8 : Symbol(v8, Decl(a.ts, 15, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 17, 5))
+

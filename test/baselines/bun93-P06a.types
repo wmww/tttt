@@ -1,0 +1,10 @@
+//// [test/cases/bun93-P06a.ts] ////
+
+=== a.ts ===
+namespace N { export class {} }
+>N : typeof N
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

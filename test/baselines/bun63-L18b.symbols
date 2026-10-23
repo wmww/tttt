@@ -1,0 +1,16 @@
+//// [test/cases/bun63-L18b.ts] ////
+
+=== a.ts ===
+import { x } from "./café";
+>x : Symbol(x, Decl(a.ts, 0, 8))
+
+x;
+>x : Symbol(x, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== café.ts ===
+export const x = 1;
+>x : Symbol(x, Decl(café.ts, 0, 12))
+

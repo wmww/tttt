@@ -1,0 +1,15 @@
+a.ts(1,7): error TS2741: Property 'foo' is missing in type '{}' but required in type 'Required<{ foo: 1; }>'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const b: Required<{ ["foo"]: 1 }> = {};
+          ~
+!!! error TS2741: Property 'foo' is missing in type '{}' but required in type 'Required<{ foo: 1; }>'.
+!!! related TS2728 a.ts:1:21: 'foo' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

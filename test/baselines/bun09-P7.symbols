@@ -1,0 +1,20 @@
+//// [test/cases/bun09-P7.ts] ////
+
+=== a.ts ===
+type X7 = [1] & { a: 1 };
+>X7 : Symbol(X7, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 17))
+
+function f7<T extends X7>(t: T) { const q: { a: 2 } = t; }
+>f7 : Symbol(f7, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>X7 : Symbol(X7, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 1, 26))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>q : Symbol(q, Decl(a.ts, 1, 39))
+>a : Symbol(a, Decl(a.ts, 1, 44))
+>t : Symbol(t, Decl(a.ts, 1, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

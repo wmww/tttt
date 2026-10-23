@@ -1,0 +1,13 @@
+//// [test/cases/bun10-C12.ts] ////
+
+=== a.ts ===
+function g1(this: ReturnType<typeof g1>) { return this; }
+>g1 : (this: ReturnType<typeof g1>) => any
+>this : any
+>g1 : (this: ReturnType<typeof g1>) => any
+>this : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,71 @@
+//// [test/cases/bun57-L15.ts] ////
+
+=== a.js ===
+function f() {}
+>f : { (): void; a: any; }
+
+f.a = (f.a, exports);
+>f.a = (f.a, exports) : typeof import("./a")
+>f.a : any
+>f : { (): void; a: any; }
+>a : any
+>(f.a, exports) : typeof import("./a")
+>f.a, exports : typeof import("./a")
+>f.a : any
+>f : { (): void; a: any; }
+>a : any
+>exports : typeof import("./a")
+
+exports.b = 1;
+>exports.b = 1 : 1
+>exports.b : 1
+>exports : typeof import("./a")
+>b : 1
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== b.js ===
+class C {
+>C : C
+
+  x = (new C().x, module);
+>x : any
+>(new C().x, module) : { exports: typeof import("./b"); }
+>new C().x, module : { exports: typeof import("./b"); }
+>new C().x : any
+>new C() : C
+>C : typeof C
+>x : any
+>module : { exports: typeof import("./b"); }
+}
+exports.a = 1;
+>exports.a = 1 : 1
+>exports.a : 1
+>exports : typeof import("./b")
+>a : 1
+>1 : 1
+
+=== c.js ===
+class C {
+>C : C
+
+  static x = (C.x, exports);
+>x : any
+>(C.x, exports) : typeof import("./c")
+>C.x, exports : typeof import("./c")
+>C.x : any
+>C : typeof C
+>x : any
+>exports : typeof import("./c")
+}
+exports.a = 1;
+>exports.a = 1 : 1
+>exports.a : 1
+>exports : typeof import("./c")
+>a : 1
+>1 : 1
+

@@ -1,0 +1,16 @@
+a.ts(3,7): error TS2322: Type '{ [X["a"]]: number; [X[1]]: number; }' is not assignable to type 'boolean'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare class X { static readonly ["a"]: unique symbol; static readonly 1: unique symbol }
+    const k = { [X.a]: 1, [X[1]]: 3 };
+    const t: boolean = k;
+          ~
+!!! error TS2322: Type '{ [X["a"]]: number; [X[1]]: number; }' is not assignable to type 'boolean'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

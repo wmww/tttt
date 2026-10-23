@@ -1,0 +1,34 @@
+node_modules/b/index.d.ts(1,8): error TS6059: File 'node_modules/b/node_modules/x/index.ts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+    Imported via "x" from file 'node_modules/b/index.d.ts' with packageId 'x/index.ts@1.0.0'
+src/a.ts(3,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "rootDir": "src", "types": [], "lib": ["es2022"] }, "files": ["src/a.ts", "node_modules/b/node_modules/x/index.ts"] }
+==== node_modules/b/node_modules/x/index.ts (0 errors) ====
+    export const x = 1;
+==== src/a.ts (1 errors) ====
+    import "x";
+    import "b";
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== node_modules/b/index.d.ts (1 errors) ====
+    import "x";
+           ~~~
+!!! error TS6059: File 'node_modules/b/node_modules/x/index.ts' is not under 'rootDir' 'src'. 'rootDir' is expected to contain all source files.
+!!! error TS6059:   The file is in the program because:
+!!! error TS6059:     Part of 'files' list in tsconfig.json
+!!! error TS6059:     Imported via "x" from file 'node_modules/b/index.d.ts' with packageId 'x/index.ts@1.0.0'
+!!! related TS1410 tsconfig.json:1:130: File is matched by 'files' list specified here.
+==== node_modules/b/node_modules/x/package.json (0 errors) ====
+    {"name":"x","version":"1.0.0","types":"index.ts"}
+==== node_modules/b/package.json (0 errors) ====
+    {"name":"b","version":"1.0.0","types":"index.d.ts"}
+==== node_modules/x/index.ts (0 errors) ====
+    export const x = 1;
+==== node_modules/x/package.json (0 errors) ====
+    {"name":"x","version":"1.0.0","types":"index.ts"}

@@ -1,0 +1,15 @@
+//// [test/cases/bun30-C2b.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== m.d.ts ===
+declare var y: any;
+>y : Symbol(y, Decl(m.d.ts, 0, 11))
+
+declare enum E { A = delete y }
+>E : Symbol(E, Decl(m.d.ts, 0, 19))
+>A : Symbol(E.A, Decl(m.d.ts, 1, 16))
+>y : Symbol(y, Decl(m.d.ts, 0, 11))
+

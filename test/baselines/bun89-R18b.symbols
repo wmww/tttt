@@ -1,0 +1,35 @@
+//// [test/cases/bun89-R18b.ts] ////
+
+=== a.ts ===
+import { a1 } from "./v";
+>a1 : Symbol(a1, Decl(a.ts, 0, 8))
+
+export interface I1 extends Array<typeof a1> {}
+>I1 : Symbol(I1, Decl(a.ts, 0, 25))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>a1 : Symbol(a1, Decl(a.ts, 0, 8))
+
+export declare class Base<T> { inherited: T }
+>Base : Symbol(Base, Decl(a.ts, 1, 47))
+>T : Symbol(T, Decl(a.ts, 2, 26))
+>inherited : Symbol(Base.inherited, Decl(a.ts, 2, 30))
+>T : Symbol(T, Decl(a.ts, 2, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== v.ts ===
+// Before a.ts in program order: tsc types the variable first, as with the variable above the interface in one file. No TS2339.
+import type { I1 } from "./a";
+>I1 : Symbol(I1, Decl(v.ts, 1, 13))
+
+declare const i1: I1;
+>i1 : Symbol(i1, Decl(v.ts, 2, 13))
+>I1 : Symbol(I1, Decl(v.ts, 1, 13))
+
+export const a1 = i1.length;
+>a1 : Symbol(a1, Decl(v.ts, 3, 12))
+>i1.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>i1 : Symbol(i1, Decl(v.ts, 2, 13))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun57-L18b.ts] ////
+
+=== a.ts ===
+declare function async<T>(x: T): T;
+>async : <T>(x: T) => T
+>x : T
+
+async <number,>(1);
+>async <number,>(1) : number
+>async : <T>(x: T) => T
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

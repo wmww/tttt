@@ -1,0 +1,24 @@
+//// [test/cases/bun05-C8b.ts] ////
+
+=== a.ts ===
+const i5 = import("./m", {});
+>i5 : Promise<typeof import("./m")>
+>import("./m", {}) : Promise<typeof import("./m")>
+>"./m" : "./m"
+>{} : {}
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+interface Promise<T> {} interface PromiseConstructor {} declare var Promise: PromiseConstructor;
+>Promise : PromiseConstructor
+
+=== m.ts ===
+export const v = 1;
+>v : 1
+>1 : 1
+

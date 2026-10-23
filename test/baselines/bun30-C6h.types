@@ -1,0 +1,17 @@
+//// [test/cases/bun30-C6h.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+class C extends Object, (x.#constructor) {}
+>C : C
+>Object : Object
+>(x.#constructor) : Object
+>x.#constructor : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

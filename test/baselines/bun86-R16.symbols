@@ -1,0 +1,42 @@
+//// [test/cases/bun86-R16.ts] ////
+
+=== d.ts ===
+export {};
+{ declare module "./m" { interface InBlock { a: 1 } } }
+>"./m" : Symbol("./m", Decl(d.ts, 1, 1), Decl(d.ts, 1, 55))
+>InBlock : Symbol(InBlock, Decl(d.ts, 1, 24))
+>a : Symbol(InBlock.a, Decl(d.ts, 1, 44))
+
+declare module "./m" { interface AfterBlock { a: 1 } }
+>"./m" : Symbol("./m", Decl(d.ts, 1, 1), Decl(d.ts, 1, 55))
+>AfterBlock : Symbol(AfterBlock, Decl(d.ts, 2, 22))
+>a : Symbol(AfterBlock.a, Decl(d.ts, 2, 45))
+
+=== e.ts ===
+export {};
+declare module "./m" { interface BeforeBlock { a: 1 } }
+>"./m" : Symbol("./m", Decl(m.ts, 0, 0), Decl(e.ts, 0, 10), Decl(e.ts, 2, 8))
+>BeforeBlock : Symbol(BeforeBlock, Decl(e.ts, 1, 22))
+>a : Symbol(BeforeBlock.a, Decl(e.ts, 1, 46))
+
+if (1) { declare module "./m" { interface InBlock2 { a: 1 } } }
+>"./m" : Symbol("./m", Decl(m.ts, 0, 0), Decl(e.ts, 0, 10), Decl(e.ts, 2, 8))
+>InBlock2 : Symbol(InBlock2, Decl(e.ts, 2, 31))
+>a : Symbol(InBlock2.a, Decl(e.ts, 2, 52))
+
+=== m.ts ===
+export interface Own { o: 1 }
+>Own : Symbol(Own, Decl(m.ts, 0, 0))
+>o : Symbol(Own.o, Decl(m.ts, 0, 22))
+
+=== use.ts ===
+import { Own, InBlock, AfterBlock, BeforeBlock, InBlock2 } from "./m";
+>Own : Symbol(Own, Decl(use.ts, 0, 8))
+>InBlock : Symbol(InBlock, Decl(use.ts, 0, 13))
+>AfterBlock : Symbol(AfterBlock, Decl(use.ts, 0, 22))
+>BeforeBlock : Symbol(BeforeBlock, Decl(use.ts, 0, 34))
+>InBlock2 : Symbol(InBlock2, Decl(use.ts, 0, 47))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(use.ts, 1, 5))
+

@@ -1,0 +1,92 @@
+//// [test/cases/bun76-R20.ts] ////
+
+=== a.ts ===
+export {};
+declare const key: string;
+>key : Symbol(key, Decl(a.ts, 1, 13))
+
+h1({});
+>h1 : Symbol(h1, Decl(a.ts, 2, 7))
+
+function h1({ [key]: a = 1, b = a }) {}
+>h1 : Symbol(h1, Decl(a.ts, 2, 7))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 3, 13))
+>b : Symbol(b, Decl(a.ts, 3, 27))
+>a : Symbol(a, Decl(a.ts, 3, 13))
+
+function h2({ [key]: a = 1, b = a }) {}
+>h2 : Symbol(h2, Decl(a.ts, 3, 39))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>b : Symbol(b, Decl(a.ts, 4, 27))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+
+h2({});
+>h2 : Symbol(h2, Decl(a.ts, 3, 39))
+
+function h3({ [key]: a = 1, b = a }) {}
+>h3 : Symbol(h3, Decl(a.ts, 5, 7))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+>b : Symbol(b, Decl(a.ts, 6, 27))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+
+h4({});
+>h4 : Symbol(h4, Decl(a.ts, 7, 7))
+
+function h4({ b = a, [key]: a = 1 }) {}
+>h4 : Symbol(h4, Decl(a.ts, 7, 7))
+>b : Symbol(b, Decl(a.ts, 8, 13))
+>a : Symbol(a, Decl(a.ts, 8, 20))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 8, 20))
+
+h5({});
+>h5 : Symbol(h5, Decl(a.ts, 9, 7))
+
+function h5({ [key]: a = 1, b = () => a }) {}
+>h5 : Symbol(h5, Decl(a.ts, 9, 7))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 10, 13))
+>b : Symbol(b, Decl(a.ts, 10, 27))
+>a : Symbol(a, Decl(a.ts, 10, 13))
+
+h6({});
+>h6 : Symbol(h6, Decl(a.ts, 11, 7))
+
+function h6({ x: { [key]: a = 1 }, b = a }) {}
+>h6 : Symbol(h6, Decl(a.ts, 11, 7))
+>x : Symbol(x)
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 12, 18))
+>b : Symbol(b, Decl(a.ts, 12, 34))
+>a : Symbol(a, Decl(a.ts, 12, 18))
+
+h7([]);
+>h7 : Symbol(h7, Decl(a.ts, 13, 7))
+
+function h7([{ [key]: a = 1 }, b = a]) {}
+>h7 : Symbol(h7, Decl(a.ts, 13, 7))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 14, 14))
+>b : Symbol(b, Decl(a.ts, 14, 30))
+>a : Symbol(a, Decl(a.ts, 14, 14))
+
+const h8 = function ({ [key]: a = 1, b = a }) {};
+>h8 : Symbol(h8, Decl(a.ts, 15, 5))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 15, 22))
+>b : Symbol(b, Decl(a.ts, 15, 36))
+>a : Symbol(a, Decl(a.ts, 15, 22))
+
+const h9 = ({ [key]: a = 1, b = a }) => {};
+>h9 : Symbol(h9, Decl(a.ts, 16, 5))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+>b : Symbol(b, Decl(a.ts, 16, 27))
+>a : Symbol(a, Decl(a.ts, 16, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 17, 5))
+

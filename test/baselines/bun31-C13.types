@@ -1,0 +1,34 @@
+//// [test/cases/bun31-C13.ts] ////
+
+=== a.ts ===
+declare function dec(...x: any[]): any;
+>dec : (...x: any[]) => any
+>x : any[]
+
+declare function pick<T>(other: (t: T) => void, cb: () => T): void;
+>pick : <T>(other: (t: T) => void, cb: () => T) => void
+>other : (t: T) => void
+>t : T
+>cb : () => T
+
+pick(t => { t.toFixed(); }, function () { class C { @dec(this) m() {} } return 1; });
+>pick(t => { t.toFixed(); }, function () { class C { @dec(this) m() {} } return 1; }) : void
+>pick : <T>(other: (t: T) => void, cb: () => T) => void
+>t => { t.toFixed(); } : (t: number) => void
+>t : number
+>t.toFixed() : string
+>t.toFixed : (fractionDigits?: number) => string
+>t : number
+>toFixed : (fractionDigits?: number) => string
+>function () { class C { @dec(this) m() {} } return 1; } : () => number
+>C : C
+>dec(this) : any
+>dec : (...x: any[]) => any
+>this : any
+>m : () => void
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

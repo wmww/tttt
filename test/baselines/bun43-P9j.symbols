@@ -1,0 +1,9 @@
+//// [test/cases/bun43-P9j.ts] ////
+
+=== a.ts ===
+type T = A.
+>T : Symbol(T, Decl(a.ts, 0, 0))
+>A : Symbol(A)
+
+> : Symbol(unknown)
+

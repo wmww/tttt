@@ -1,0 +1,17 @@
+//// [test/cases/bun42-C2a.ts] ////
+
+=== a.ts ===
+const a: "3" = `${27 ** (1 / 3)}`;
+>a : "3"
+>`${27 ** (1 / 3)}` : "2.9999999999999996"
+>27 ** (1 / 3) : number
+>27 : 27
+>(1 / 3) : number
+>1 / 3 : number
+>1 : 1
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

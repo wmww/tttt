@@ -1,0 +1,10 @@
+//// [test/cases/bun23-C13.ts] ////
+
+=== a.ts ===
+const v1: 1 = ({ 0x10: b }: any) => {};
+>v1 : Symbol(v1, Decl(a.ts, 0, 5))
+>b : Symbol(b, Decl(a.ts, 0, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

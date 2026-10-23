@@ -1,0 +1,18 @@
+//// [test/cases/bun25-C13.ts] ////
+
+=== a.ts ===
+class S { set c(this: string) {} } new S().c = 1;
+>S : S
+>c : string
+>this : string
+>new S().c = 1 : 1
+>new S().c : string
+>new S() : S
+>S : typeof S
+>c : string
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,180 @@
+//// [test/cases/bun89-R19.ts] ////
+
+=== a.js ===
+Object.defineProperty(exports, "g1", { get() { return exports.g1; } });
+>Object.defineProperty(exports, "g1", { get() { return exports.g1; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"g1" : "g1"
+>{ get() { return exports.g1; } } : { get(): any; }
+>get : () => any
+>exports.g1 : any
+>exports : typeof import("./a")
+>g1 : any
+
+Object.defineProperty(exports, "g2", { get: () => exports.g2 });
+>Object.defineProperty(exports, "g2", { get: () => exports.g2 }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"g2" : "g2"
+>{ get: () => exports.g2 } : { get: () => any; }
+>get : () => any
+>() => exports.g2 : () => any
+>exports.g2 : any
+>exports : typeof import("./a")
+>g2 : any
+
+Object.defineProperty(exports, "g3", { get: () => { return exports.g3; } });
+>Object.defineProperty(exports, "g3", { get: () => { return exports.g3; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"g3" : "g3"
+>{ get: () => { return exports.g3; } } : { get: () => any; }
+>get : () => any
+>() => { return exports.g3; } : () => any
+>exports.g3 : any
+>exports : typeof import("./a")
+>g3 : any
+
+Object.defineProperty(exports, "g4", { get: function () { return exports.g4; } });
+>Object.defineProperty(exports, "g4", { get: function () { return exports.g4; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"g4" : "g4"
+>{ get: function () { return exports.g4; } } : { get: () => any; }
+>get : () => any
+>function () { return exports.g4; } : () => any
+>exports.g4 : any
+>exports : typeof import("./a")
+>g4 : any
+
+Object.defineProperty(exports, "g5", { get: function named() { return exports.g5; } });
+>Object.defineProperty(exports, "g5", { get: function named() { return exports.g5; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"g5" : "g5"
+>{ get: function named() { return exports.g5; } } : { get: () => any; }
+>get : () => any
+>function named() { return exports.g5; } : () => any
+>named : () => any
+>exports.g5 : any
+>exports : typeof import("./a")
+>g5 : any
+
+Object.defineProperty(exports, "g6", { get() { return exports.g7; } });
+>Object.defineProperty(exports, "g6", { get() { return exports.g7; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"g6" : "g6"
+>{ get() { return exports.g7; } } : { get(): any; }
+>get : () => any
+>exports.g7 : any
+>exports : typeof import("./a")
+>g7 : any
+
+Object.defineProperty(exports, "g7", { get() { return exports.g6; } });
+>Object.defineProperty(exports, "g7", { get() { return exports.g6; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"g7" : "g7"
+>{ get() { return exports.g6; } } : { get(): any; }
+>get : () => any
+>exports.g6 : any
+>exports : typeof import("./a")
+>g6 : any
+
+Object.defineProperty(exports, "v1", { value: () => exports.v1 });
+>Object.defineProperty(exports, "v1", { value: () => exports.v1 }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"v1" : "v1"
+>{ value: () => exports.v1 } : { value: () => () => any; }
+>value : () => any
+>() => exports.v1 : () => any
+>exports.v1 : () => any
+>exports : typeof import("./a")
+>v1 : () => any
+
+Object.defineProperty(exports, "v2", { value() { return exports.v2; } });
+>Object.defineProperty(exports, "v2", { value() { return exports.v2; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./a")
+>"v2" : "v2"
+>{ value() { return exports.v2; } } : { value(): () => any; }
+>value : () => any
+>exports.v2 : () => any
+>exports : typeof import("./a")
+>v2 : () => any
+
+Object.defineProperty(module.exports, "g8", { get() { return module.exports.g8; } });
+>Object.defineProperty(module.exports, "g8", { get() { return module.exports.g8; } }) : typeof import("./a")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>module.exports : typeof import("./a")
+>module : { exports: typeof import("./a"); }
+>exports : typeof import("./a")
+>"g8" : "g8"
+>{ get() { return module.exports.g8; } } : { get(): any; }
+>get : () => any
+>module.exports.g8 : any
+>module.exports : typeof import("./a")
+>module : { exports: typeof import("./a"); }
+>exports : typeof import("./a")
+>g8 : any
+
+function F() {}
+>F : { (): void; readonly g9: any; }
+
+Object.defineProperty(F, "g9", { get() { return F.g9; } });
+>Object.defineProperty(F, "g9", { get() { return F.g9; } }) : { (): void; readonly g9: any; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>F : { (): void; readonly g9: any; }
+>"g9" : "g9"
+>{ get() { return F.g9; } } : { get(): any; }
+>get : () => any
+>F.g9 : any
+>F : { (): void; readonly g9: any; }
+>g9 : any
+
+Object.defineProperty(F.prototype, "g10", { get() { return new F().g10; } });
+>Object.defineProperty(F.prototype, "g10", { get() { return new F().g10; } }) : any
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>F.prototype : any
+>F : { (): void; readonly g9: any; }
+>prototype : any
+>"g10" : "g10"
+>{ get() { return new F().g10; } } : { get(): any; }
+>get : () => any
+>new F().g10 : any
+>new F() : any
+>F : { (): void; readonly g9: any; }
+>g10 : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,158 @@
+//// [test/cases/bun99-P16.ts] ////
+
+=== a.ts ===
+import { b0, m0 } from "p0";
+>b0 : Symbol(b0, Decl(a.ts, 0, 8))
+>m0 : Symbol(m0, Decl(a.ts, 0, 12))
+
+import { b1, m1 } from "p1";
+>b1 : Symbol(b1, Decl(a.ts, 1, 8))
+>m1 : Symbol(m1, Decl(a.ts, 1, 12))
+
+import { b2, m2 } from "p2";
+>b2 : Symbol(b2, Decl(a.ts, 2, 8))
+>m2 : Symbol(m2, Decl(a.ts, 2, 12))
+
+let b = b0; b = b1; b = b2;
+>b : Symbol(b, Decl(a.ts, 3, 3))
+>b0 : Symbol(b0, Decl(a.ts, 0, 8))
+>b : Symbol(b, Decl(a.ts, 3, 3))
+>b1 : Symbol(b1, Decl(a.ts, 1, 8))
+>b : Symbol(b, Decl(a.ts, 3, 3))
+>b2 : Symbol(b2, Decl(a.ts, 2, 8))
+
+let m = m0; m = m1; m = m2;
+>m : Symbol(m, Decl(a.ts, 4, 3))
+>m0 : Symbol(m0, Decl(a.ts, 0, 12))
+>m : Symbol(m, Decl(a.ts, 4, 3))
+>m1 : Symbol(m1, Decl(a.ts, 1, 12))
+>m : Symbol(m, Decl(a.ts, 4, 3))
+>m2 : Symbol(m2, Decl(a.ts, 2, 12))
+
+{ const probe: never = b0.d; }
+>probe : Symbol(probe, Decl(a.ts, 5, 7))
+>b0.d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+>b0 : Symbol(b0, Decl(a.ts, 0, 8))
+>d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+
+{ const probe: never = m0; }
+>probe : Symbol(probe, Decl(a.ts, 6, 7))
+>m0 : Symbol(m0, Decl(a.ts, 0, 12))
+
+{ const probe: never = b1.d; }
+>probe : Symbol(probe, Decl(a.ts, 7, 7))
+>b1.d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+>b1 : Symbol(b1, Decl(a.ts, 1, 8))
+>d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+
+{ const probe: never = m1; }
+>probe : Symbol(probe, Decl(a.ts, 8, 7))
+>m1 : Symbol(m1, Decl(a.ts, 1, 12))
+
+{ const probe: never = b2.d; }
+>probe : Symbol(probe, Decl(a.ts, 9, 7))
+>b2.d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+>b2 : Symbol(b2, Decl(a.ts, 2, 8))
+>d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+
+{ const probe: never = m2; }
+>probe : Symbol(probe, Decl(a.ts, 10, 7))
+>m2 : Symbol(m2, Decl(a.ts, 2, 12))
+
+declare const g0: FromDep0; declare const g1: FromDep1; declare const g2: FromDep2;
+>g0 : Symbol(g0, Decl(a.ts, 11, 13))
+>FromDep0 : Symbol(FromDep0, Decl(index.d.ts, 1, 16))
+>g1 : Symbol(g1, Decl(a.ts, 11, 41))
+>FromDep1 : Symbol(FromDep1)
+>g2 : Symbol(g2, Decl(a.ts, 11, 69))
+>FromDep2 : Symbol(FromDep2)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+
+=== node_modules/p0/index.d.ts ===
+import { Big, M } from "big";
+>Big : Symbol(Big, Decl(index.d.ts, 0, 8))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+export declare const b0: Big;
+>b0 : Symbol(b0, Decl(index.d.ts, 1, 20))
+>Big : Symbol(Big, Decl(index.d.ts, 0, 8))
+
+export declare const m0: M;
+>m0 : Symbol(m0, Decl(index.d.ts, 2, 20))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+=== node_modules/p0/node_modules/big/index.d.ts ===
+import type { D } from "dep";
+>D : Symbol(D, Decl(index.d.ts, 0, 13))
+
+export * from "./m";
+export declare class Big { #secret: number; d: D; }
+>Big : Symbol(Big, Decl(index.d.ts, 1, 20))
+>#secret : Symbol(Big.#secret, Decl(index.d.ts, 2, 26))
+>d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+>D : Symbol(D, Decl(index.d.ts, 0, 13))
+
+=== node_modules/p0/node_modules/big/m.d.ts ===
+export interface M { m: number }
+>M : Symbol(M, Decl(m.d.ts, 0, 0))
+>m : Symbol(M.m, Decl(m.d.ts, 0, 20))
+
+=== node_modules/p0/node_modules/dep/index.d.ts ===
+export type D = 0;
+>D : Symbol(D, Decl(index.d.ts, 0, 0))
+
+declare global { interface FromDep0 { k: 0 } }
+>global : Symbol(global, Decl(index.d.ts, 0, 18))
+>FromDep0 : Symbol(FromDep0, Decl(index.d.ts, 1, 16))
+>k : Symbol(FromDep0.k, Decl(index.d.ts, 1, 37))
+
+=== node_modules/p1/index.d.ts ===
+import { Big, M } from "big";
+>Big : Symbol(Big, Decl(index.d.ts, 0, 8))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+export declare const b1: Big;
+>b1 : Symbol(b1, Decl(index.d.ts, 1, 20))
+>Big : Symbol(Big, Decl(index.d.ts, 0, 8))
+
+export declare const m1: M;
+>m1 : Symbol(m1, Decl(index.d.ts, 2, 20))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+=== node_modules/p1/node_modules/big/index.d.ts ===
+import type { D } from "dep";
+>D : Symbol(D, Decl(index.d.ts, 0, 13))
+
+export * from "./m";
+export declare class Big { #secret: number; d: D; }
+>Big : Symbol(Big, Decl(index.d.ts, 1, 20))
+>#secret : Symbol(Big.#secret, Decl(index.d.ts, 2, 26))
+>d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+>D : Symbol(D, Decl(index.d.ts, 0, 13))
+
+=== node_modules/p2/index.d.ts ===
+import { Big, M } from "big";
+>Big : Symbol(Big, Decl(index.d.ts, 0, 8))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+export declare const b2: Big;
+>b2 : Symbol(b2, Decl(index.d.ts, 1, 20))
+>Big : Symbol(Big, Decl(index.d.ts, 0, 8))
+
+export declare const m2: M;
+>m2 : Symbol(m2, Decl(index.d.ts, 2, 20))
+>M : Symbol(M, Decl(index.d.ts, 0, 13))
+
+=== node_modules/p2/node_modules/big/index.d.ts ===
+import type { D } from "dep";
+>D : Symbol(D, Decl(index.d.ts, 0, 13))
+
+export * from "./m";
+export declare class Big { #secret: number; d: D; }
+>Big : Symbol(Big, Decl(index.d.ts, 1, 20))
+>#secret : Symbol(Big.#secret, Decl(index.d.ts, 2, 26))
+>d : Symbol(Big.d, Decl(index.d.ts, 2, 43))
+>D : Symbol(D, Decl(index.d.ts, 0, 13))
+

@@ -1,0 +1,23 @@
+//// [test/cases/bun10-C14.ts] ////
+
+=== a.ts ===
+declare const k: string;
+>k : string
+
+type T19 = C17["q"];
+>T19 : number
+
+class C17 { [k] = 1; p: T19 = 1; q = 1 }
+>C17 : C17
+>[k] : number
+>k : string
+>1 : 1
+>p : number
+>1 : 1
+>q : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

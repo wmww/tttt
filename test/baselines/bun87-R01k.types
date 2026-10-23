@@ -1,0 +1,630 @@
+//// [test/cases/bun87-R01k.ts] ////
+
+=== a.ts ===
+interface I0 { n: I1 }
+>n : I1
+
+interface I1 { n: I2 }
+>n : I2
+
+interface I2 { n: I3 }
+>n : I3
+
+interface I3 { n: I4 }
+>n : I4
+
+interface I4 { n: I5 }
+>n : I5
+
+interface I5 { n: I6 }
+>n : I6
+
+interface I6 { n: I7 }
+>n : I7
+
+interface I7 { n: I8 }
+>n : I8
+
+interface I8 { n: I9 }
+>n : I9
+
+interface I9 { n: I10 }
+>n : I10
+
+interface I10 { n: I11 }
+>n : I11
+
+interface I11 { n: I12 }
+>n : I12
+
+interface I12 { n: I13 }
+>n : I13
+
+interface I13 { n: I14 }
+>n : I14
+
+interface I14 { n: I15 }
+>n : I15
+
+interface I15 { n: I16 }
+>n : I16
+
+interface I16 { n: I17 }
+>n : I17
+
+interface I17 { n: I18 }
+>n : I18
+
+interface I18 { n: I19 }
+>n : I19
+
+interface I19 { n: I20 }
+>n : I20
+
+interface I20 { n: I21 }
+>n : I21
+
+interface I21 { n: I22 }
+>n : I22
+
+interface I22 { n: I23 }
+>n : I23
+
+interface I23 { n: I24 }
+>n : I24
+
+interface I24 { n: I25 }
+>n : I25
+
+interface I25 { n: I26 }
+>n : I26
+
+interface I26 { n: I27 }
+>n : I27
+
+interface I27 { n: I28 }
+>n : I28
+
+interface I28 { n: I29 }
+>n : I29
+
+interface I29 { n: I30 }
+>n : I30
+
+interface I30 { n: I31 }
+>n : I31
+
+interface I31 { n: I32 }
+>n : I32
+
+interface I32 { n: I33 }
+>n : I33
+
+interface I33 { n: I34 }
+>n : I34
+
+interface I34 { n: I35 }
+>n : I35
+
+interface I35 { n: I36 }
+>n : I36
+
+interface I36 { n: I37 }
+>n : I37
+
+interface I37 { n: I38 }
+>n : I38
+
+interface I38 { n: I39 }
+>n : I39
+
+interface I39 { n: I40 }
+>n : I40
+
+interface I40 { n: I41 }
+>n : I41
+
+interface I41 { n: I42 }
+>n : I42
+
+interface I42 { n: I43 }
+>n : I43
+
+interface I43 { n: I44 }
+>n : I44
+
+interface I44 { n: I45 }
+>n : I45
+
+interface I45 { n: I46 }
+>n : I46
+
+interface I46 { n: I47 }
+>n : I47
+
+interface I47 { n: I48 }
+>n : I48
+
+interface I48 { n: I49 }
+>n : I49
+
+interface I49 { n: I50 }
+>n : I50
+
+interface I50 { n: I51 }
+>n : I51
+
+interface I51 { n: I52 }
+>n : I52
+
+interface I52 { n: I53 }
+>n : I53
+
+interface I53 { n: I54 }
+>n : I54
+
+interface I54 { n: I55 }
+>n : I55
+
+interface I55 { n: I56 }
+>n : I56
+
+interface I56 { n: I57 }
+>n : I57
+
+interface I57 { n: I58 }
+>n : I58
+
+interface I58 { n: I59 }
+>n : I59
+
+interface I59 { n: I60 }
+>n : I60
+
+interface I60 { n: I61 }
+>n : I61
+
+interface I61 { n: I62 }
+>n : I62
+
+interface I62 { n: I63 }
+>n : I63
+
+interface I63 { n: I64 }
+>n : I64
+
+interface I64 { n: I65 }
+>n : I65
+
+interface I65 { n: I66 }
+>n : I66
+
+interface I66 { n: I67 }
+>n : I67
+
+interface I67 { n: I68 }
+>n : I68
+
+interface I68 { n: I69 }
+>n : I69
+
+interface I69 { n: I70 }
+>n : I70
+
+interface I70 { n: I71 }
+>n : I71
+
+interface I71 { n: I72 }
+>n : I72
+
+interface I72 { n: I73 }
+>n : I73
+
+interface I73 { n: I74 }
+>n : I74
+
+interface I74 { n: I75 }
+>n : I75
+
+interface I75 { n: I76 }
+>n : I76
+
+interface I76 { n: I77 }
+>n : I77
+
+interface I77 { n: I78 }
+>n : I78
+
+interface I78 { n: I79 }
+>n : I79
+
+interface I79 { n: I80 }
+>n : I80
+
+interface I80 { n: I81 }
+>n : I81
+
+interface I81 { n: I82 }
+>n : I82
+
+interface I82 { n: I83 }
+>n : I83
+
+interface I83 { n: I84 }
+>n : I84
+
+interface I84 { n: I85 }
+>n : I85
+
+interface I85 { n: I86 }
+>n : I86
+
+interface I86 { n: I87 }
+>n : I87
+
+interface I87 { n: I88 }
+>n : I88
+
+interface I88 { n: I89 }
+>n : I89
+
+interface I89 { n: I90 }
+>n : I90
+
+interface I90 { n: I91 }
+>n : I91
+
+interface I91 { n: I92 }
+>n : I92
+
+interface I92 { n: I93 }
+>n : I93
+
+interface I93 { n: I94 }
+>n : I94
+
+interface I94 { n: I95 }
+>n : I95
+
+interface I95 { n: I96 }
+>n : I96
+
+interface I96 { n: I97 }
+>n : I97
+
+interface I97 { n: I98 }
+>n : I98
+
+interface I98 { n: I99 }
+>n : I99
+
+interface I99 { n: I100 }
+>n : I100
+
+interface I100 { n: I101 }
+>n : I101
+
+interface I101 { n: 1 }
+>n : 1
+
+interface J0 { n: J1 }
+>n : J1
+
+interface J1 { n: J2 }
+>n : J2
+
+interface J2 { n: J3 }
+>n : J3
+
+interface J3 { n: J4 }
+>n : J4
+
+interface J4 { n: J5 }
+>n : J5
+
+interface J5 { n: J6 }
+>n : J6
+
+interface J6 { n: J7 }
+>n : J7
+
+interface J7 { n: J8 }
+>n : J8
+
+interface J8 { n: J9 }
+>n : J9
+
+interface J9 { n: J10 }
+>n : J10
+
+interface J10 { n: J11 }
+>n : J11
+
+interface J11 { n: J12 }
+>n : J12
+
+interface J12 { n: J13 }
+>n : J13
+
+interface J13 { n: J14 }
+>n : J14
+
+interface J14 { n: J15 }
+>n : J15
+
+interface J15 { n: J16 }
+>n : J16
+
+interface J16 { n: J17 }
+>n : J17
+
+interface J17 { n: J18 }
+>n : J18
+
+interface J18 { n: J19 }
+>n : J19
+
+interface J19 { n: J20 }
+>n : J20
+
+interface J20 { n: J21 }
+>n : J21
+
+interface J21 { n: J22 }
+>n : J22
+
+interface J22 { n: J23 }
+>n : J23
+
+interface J23 { n: J24 }
+>n : J24
+
+interface J24 { n: J25 }
+>n : J25
+
+interface J25 { n: J26 }
+>n : J26
+
+interface J26 { n: J27 }
+>n : J27
+
+interface J27 { n: J28 }
+>n : J28
+
+interface J28 { n: J29 }
+>n : J29
+
+interface J29 { n: J30 }
+>n : J30
+
+interface J30 { n: J31 }
+>n : J31
+
+interface J31 { n: J32 }
+>n : J32
+
+interface J32 { n: J33 }
+>n : J33
+
+interface J33 { n: J34 }
+>n : J34
+
+interface J34 { n: J35 }
+>n : J35
+
+interface J35 { n: J36 }
+>n : J36
+
+interface J36 { n: J37 }
+>n : J37
+
+interface J37 { n: J38 }
+>n : J38
+
+interface J38 { n: J39 }
+>n : J39
+
+interface J39 { n: J40 }
+>n : J40
+
+interface J40 { n: J41 }
+>n : J41
+
+interface J41 { n: J42 }
+>n : J42
+
+interface J42 { n: J43 }
+>n : J43
+
+interface J43 { n: J44 }
+>n : J44
+
+interface J44 { n: J45 }
+>n : J45
+
+interface J45 { n: J46 }
+>n : J46
+
+interface J46 { n: J47 }
+>n : J47
+
+interface J47 { n: J48 }
+>n : J48
+
+interface J48 { n: J49 }
+>n : J49
+
+interface J49 { n: J50 }
+>n : J50
+
+interface J50 { n: J51 }
+>n : J51
+
+interface J51 { n: J52 }
+>n : J52
+
+interface J52 { n: J53 }
+>n : J53
+
+interface J53 { n: J54 }
+>n : J54
+
+interface J54 { n: J55 }
+>n : J55
+
+interface J55 { n: J56 }
+>n : J56
+
+interface J56 { n: J57 }
+>n : J57
+
+interface J57 { n: J58 }
+>n : J58
+
+interface J58 { n: J59 }
+>n : J59
+
+interface J59 { n: J60 }
+>n : J60
+
+interface J60 { n: J61 }
+>n : J61
+
+interface J61 { n: J62 }
+>n : J62
+
+interface J62 { n: J63 }
+>n : J63
+
+interface J63 { n: J64 }
+>n : J64
+
+interface J64 { n: J65 }
+>n : J65
+
+interface J65 { n: J66 }
+>n : J66
+
+interface J66 { n: J67 }
+>n : J67
+
+interface J67 { n: J68 }
+>n : J68
+
+interface J68 { n: J69 }
+>n : J69
+
+interface J69 { n: J70 }
+>n : J70
+
+interface J70 { n: J71 }
+>n : J71
+
+interface J71 { n: J72 }
+>n : J72
+
+interface J72 { n: J73 }
+>n : J73
+
+interface J73 { n: J74 }
+>n : J74
+
+interface J74 { n: J75 }
+>n : J75
+
+interface J75 { n: J76 }
+>n : J76
+
+interface J76 { n: J77 }
+>n : J77
+
+interface J77 { n: J78 }
+>n : J78
+
+interface J78 { n: J79 }
+>n : J79
+
+interface J79 { n: J80 }
+>n : J80
+
+interface J80 { n: J81 }
+>n : J81
+
+interface J81 { n: J82 }
+>n : J82
+
+interface J82 { n: J83 }
+>n : J83
+
+interface J83 { n: J84 }
+>n : J84
+
+interface J84 { n: J85 }
+>n : J85
+
+interface J85 { n: J86 }
+>n : J86
+
+interface J86 { n: J87 }
+>n : J87
+
+interface J87 { n: J88 }
+>n : J88
+
+interface J88 { n: J89 }
+>n : J89
+
+interface J89 { n: J90 }
+>n : J90
+
+interface J90 { n: J91 }
+>n : J91
+
+interface J91 { n: J92 }
+>n : J92
+
+interface J92 { n: J93 }
+>n : J93
+
+interface J93 { n: J94 }
+>n : J94
+
+interface J94 { n: J95 }
+>n : J95
+
+interface J95 { n: J96 }
+>n : J96
+
+interface J96 { n: J97 }
+>n : J97
+
+interface J97 { n: J98 }
+>n : J98
+
+interface J98 { n: J99 }
+>n : J99
+
+interface J99 { n: J100 }
+>n : J100
+
+interface J100 { n: J101 }
+>n : J101
+
+interface J101 { n: 1 }
+>n : 1
+
+declare let i0: I0; declare let j0: J0; declare const c: boolean;
+>i0 : I0
+>j0 : J0
+>c : boolean
+
+var v: I0;
+>v : I0
+
+var v: J0;
+>v : I0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,1727 @@
+abstract__outer_value.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+abstract__outer_value.ts(3,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(3,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(3,58): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__outer_value.ts(5,11): error TS6133: 'n_return' is declared but its value is never read.
+abstract__outer_value.ts(7,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(7,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(7,66): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__outer_value.ts(9,11): error TS6133: 'n_other_param' is declared but its value is never read.
+abstract__outer_value.ts(11,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(11,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(11,68): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__outer_value.ts(13,11): error TS6133: 'n_unused' is declared but its value is never read.
+abstract__outer_value.ts(15,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(15,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(17,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+abstract__outer_value.ts(19,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(21,11): error TS6133: 'n_predicate' is declared but its value is never read.
+abstract__outer_value.ts(23,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(23,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(23,66): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+abstract__outer_value.ts(25,11): error TS6133: 'n_asserts' is declared but its value is never read.
+abstract__outer_value.ts(27,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(27,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(27,74): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+abstract__outer_value.ts(29,11): error TS6133: 'n_nested' is declared but its value is never read.
+abstract__outer_value.ts(31,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(31,53): error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(31,70): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__outer_value.ts(33,11): error TS6133: 'n_array' is declared but its value is never read.
+abstract__outer_value.ts(35,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(35,61): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__outer_value.ts(37,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+abstract__outer_value.ts(39,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(39,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(39,54): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__outer_value.ts(41,11): error TS6133: 'n_two' is declared but its value is never read.
+abstract__outer_value.ts(43,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(43,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(43,54): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(43,64): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__outer_value.ts(45,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+abstract__outer_value.ts(47,40): error TS6196: 'T' is declared but never used.
+abstract__outer_value.ts(47,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__outer_value.ts(47,64): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+abstract__own.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+abstract__own.ts(4,11): error TS6133: 'n_return' is declared but its value is never read.
+abstract__own.ts(7,11): error TS6133: 'n_other_param' is declared but its value is never read.
+abstract__own.ts(10,11): error TS6133: 'n_unused' is declared but its value is never read.
+abstract__own.ts(11,40): error TS6196: 'X' is declared but never used.
+abstract__own.ts(11,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__own.ts(13,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+abstract__own.ts(14,40): error TS6196: 'X' is declared but never used.
+abstract__own.ts(16,11): error TS6133: 'n_predicate' is declared but its value is never read.
+abstract__own.ts(17,40): error TS6196: 'X' is declared but never used.
+abstract__own.ts(17,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__own.ts(17,66): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+abstract__own.ts(19,11): error TS6133: 'n_asserts' is declared but its value is never read.
+abstract__own.ts(20,40): error TS6196: 'X' is declared but never used.
+abstract__own.ts(20,48): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__own.ts(20,74): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+abstract__own.ts(22,11): error TS6133: 'n_nested' is declared but its value is never read.
+abstract__own.ts(25,11): error TS6133: 'n_array' is declared but its value is never read.
+abstract__own.ts(28,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+abstract__own.ts(31,11): error TS6133: 'n_two' is declared but its value is never read.
+abstract__own.ts(32,54): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+abstract__own.ts(34,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+abstract__own_second.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+abstract__own_second.ts(2,40): error TS6196: 'T' is declared but never used.
+abstract__own_second.ts(4,11): error TS6133: 'n_return' is declared but its value is never read.
+abstract__own_second.ts(5,40): error TS6196: 'T' is declared but never used.
+abstract__own_second.ts(7,11): error TS6133: 'n_other_param' is declared but its value is never read.
+abstract__own_second.ts(8,40): error TS6196: 'T' is declared but never used.
+abstract__own_second.ts(10,11): error TS6133: 'n_unused' is declared but its value is never read.
+abstract__own_second.ts(11,39): error TS6205: All type parameters are unused.
+abstract__own_second.ts(11,51): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__own_second.ts(13,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+abstract__own_second.ts(14,39): error TS6205: All type parameters are unused.
+abstract__own_second.ts(16,11): error TS6133: 'n_predicate' is declared but its value is never read.
+abstract__own_second.ts(17,39): error TS6205: All type parameters are unused.
+abstract__own_second.ts(17,51): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__own_second.ts(17,69): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+abstract__own_second.ts(19,11): error TS6133: 'n_asserts' is declared but its value is never read.
+abstract__own_second.ts(20,39): error TS6205: All type parameters are unused.
+abstract__own_second.ts(20,51): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+abstract__own_second.ts(20,77): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+abstract__own_second.ts(22,11): error TS6133: 'n_nested' is declared but its value is never read.
+abstract__own_second.ts(23,40): error TS6196: 'T' is declared but never used.
+abstract__own_second.ts(25,11): error TS6133: 'n_array' is declared but its value is never read.
+abstract__own_second.ts(26,40): error TS6196: 'T' is declared but never used.
+abstract__own_second.ts(28,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+abstract__own_second.ts(29,40): error TS6196: 'T' is declared but never used.
+abstract__own_second.ts(31,11): error TS6133: 'n_two' is declared but its value is never read.
+abstract__own_second.ts(32,40): error TS6196: 'T' is declared but never used.
+abstract__own_second.ts(32,57): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+abstract__own_second.ts(34,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+abstract__own_second.ts(35,40): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+fn_type__outer_value.ts(3,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(3,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(3,38): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__outer_value.ts(5,11): error TS6133: 'n_return' is declared but its value is never read.
+fn_type__outer_value.ts(7,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(7,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(7,48): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__outer_value.ts(9,11): error TS6133: 'n_other_param' is declared but its value is never read.
+fn_type__outer_value.ts(11,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(11,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(11,48): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__outer_value.ts(13,11): error TS6133: 'n_unused' is declared but its value is never read.
+fn_type__outer_value.ts(15,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(15,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(17,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+fn_type__outer_value.ts(19,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(21,11): error TS6133: 'n_predicate' is declared but its value is never read.
+fn_type__outer_value.ts(23,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(23,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(23,48): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+fn_type__outer_value.ts(25,11): error TS6133: 'n_asserts' is declared but its value is never read.
+fn_type__outer_value.ts(27,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(27,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(27,56): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+fn_type__outer_value.ts(29,11): error TS6133: 'n_nested' is declared but its value is never read.
+fn_type__outer_value.ts(31,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(31,33): error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(31,50): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__outer_value.ts(33,11): error TS6133: 'n_array' is declared but its value is never read.
+fn_type__outer_value.ts(35,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(35,41): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__outer_value.ts(37,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+fn_type__outer_value.ts(39,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(39,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(39,36): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__outer_value.ts(41,11): error TS6133: 'n_two' is declared but its value is never read.
+fn_type__outer_value.ts(43,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(43,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(43,34): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(43,44): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__outer_value.ts(45,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+fn_type__outer_value.ts(47,20): error TS6196: 'T' is declared but never used.
+fn_type__outer_value.ts(47,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__outer_value.ts(47,44): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+fn_type__own.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+fn_type__own.ts(4,11): error TS6133: 'n_return' is declared but its value is never read.
+fn_type__own.ts(7,11): error TS6133: 'n_other_param' is declared but its value is never read.
+fn_type__own.ts(10,11): error TS6133: 'n_unused' is declared but its value is never read.
+fn_type__own.ts(11,20): error TS6196: 'X' is declared but never used.
+fn_type__own.ts(11,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__own.ts(13,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+fn_type__own.ts(14,20): error TS6196: 'X' is declared but never used.
+fn_type__own.ts(16,11): error TS6133: 'n_predicate' is declared but its value is never read.
+fn_type__own.ts(17,20): error TS6196: 'X' is declared but never used.
+fn_type__own.ts(17,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__own.ts(17,48): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+fn_type__own.ts(19,11): error TS6133: 'n_asserts' is declared but its value is never read.
+fn_type__own.ts(20,20): error TS6196: 'X' is declared but never used.
+fn_type__own.ts(20,28): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__own.ts(20,56): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+fn_type__own.ts(22,11): error TS6133: 'n_nested' is declared but its value is never read.
+fn_type__own.ts(25,11): error TS6133: 'n_array' is declared but its value is never read.
+fn_type__own.ts(28,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+fn_type__own.ts(31,11): error TS6133: 'n_two' is declared but its value is never read.
+fn_type__own.ts(32,34): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+fn_type__own.ts(34,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+fn_type__own_second.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+fn_type__own_second.ts(2,20): error TS6196: 'T' is declared but never used.
+fn_type__own_second.ts(4,11): error TS6133: 'n_return' is declared but its value is never read.
+fn_type__own_second.ts(5,20): error TS6196: 'T' is declared but never used.
+fn_type__own_second.ts(7,11): error TS6133: 'n_other_param' is declared but its value is never read.
+fn_type__own_second.ts(8,20): error TS6196: 'T' is declared but never used.
+fn_type__own_second.ts(10,11): error TS6133: 'n_unused' is declared but its value is never read.
+fn_type__own_second.ts(11,19): error TS6205: All type parameters are unused.
+fn_type__own_second.ts(11,31): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__own_second.ts(13,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+fn_type__own_second.ts(14,19): error TS6205: All type parameters are unused.
+fn_type__own_second.ts(16,11): error TS6133: 'n_predicate' is declared but its value is never read.
+fn_type__own_second.ts(17,19): error TS6205: All type parameters are unused.
+fn_type__own_second.ts(17,31): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__own_second.ts(17,51): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+fn_type__own_second.ts(19,11): error TS6133: 'n_asserts' is declared but its value is never read.
+fn_type__own_second.ts(20,19): error TS6205: All type parameters are unused.
+fn_type__own_second.ts(20,31): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+fn_type__own_second.ts(20,59): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+fn_type__own_second.ts(22,11): error TS6133: 'n_nested' is declared but its value is never read.
+fn_type__own_second.ts(23,20): error TS6196: 'T' is declared but never used.
+fn_type__own_second.ts(25,11): error TS6133: 'n_array' is declared but its value is never read.
+fn_type__own_second.ts(26,20): error TS6196: 'T' is declared but never used.
+fn_type__own_second.ts(28,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+fn_type__own_second.ts(29,20): error TS6196: 'T' is declared but never used.
+fn_type__own_second.ts(31,11): error TS6133: 'n_two' is declared but its value is never read.
+fn_type__own_second.ts(32,20): error TS6196: 'T' is declared but never used.
+fn_type__own_second.ts(32,37): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+fn_type__own_second.ts(34,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+fn_type__own_second.ts(35,20): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+method_sig__outer_value.ts(3,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(3,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(3,44): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__outer_value.ts(5,11): error TS6133: 'n_return' is declared but its value is never read.
+method_sig__outer_value.ts(7,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(7,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(7,52): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__outer_value.ts(9,11): error TS6133: 'n_other_param' is declared but its value is never read.
+method_sig__outer_value.ts(11,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(11,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(11,54): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__outer_value.ts(13,11): error TS6133: 'n_unused' is declared but its value is never read.
+method_sig__outer_value.ts(15,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(15,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(17,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+method_sig__outer_value.ts(19,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(21,11): error TS6133: 'n_predicate' is declared but its value is never read.
+method_sig__outer_value.ts(23,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(23,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(23,52): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+method_sig__outer_value.ts(25,11): error TS6133: 'n_asserts' is declared but its value is never read.
+method_sig__outer_value.ts(27,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(27,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(27,60): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+method_sig__outer_value.ts(29,11): error TS6133: 'n_nested' is declared but its value is never read.
+method_sig__outer_value.ts(31,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(31,39): error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(31,56): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__outer_value.ts(33,11): error TS6133: 'n_array' is declared but its value is never read.
+method_sig__outer_value.ts(35,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(35,47): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__outer_value.ts(37,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+method_sig__outer_value.ts(39,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(39,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(39,40): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__outer_value.ts(41,11): error TS6133: 'n_two' is declared but its value is never read.
+method_sig__outer_value.ts(43,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(43,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(43,40): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(43,50): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__outer_value.ts(45,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+method_sig__outer_value.ts(47,26): error TS6196: 'T' is declared but never used.
+method_sig__outer_value.ts(47,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__outer_value.ts(47,50): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+method_sig__own.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+method_sig__own.ts(4,11): error TS6133: 'n_return' is declared but its value is never read.
+method_sig__own.ts(7,11): error TS6133: 'n_other_param' is declared but its value is never read.
+method_sig__own.ts(10,11): error TS6133: 'n_unused' is declared but its value is never read.
+method_sig__own.ts(11,26): error TS6196: 'X' is declared but never used.
+method_sig__own.ts(11,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__own.ts(13,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+method_sig__own.ts(14,26): error TS6196: 'X' is declared but never used.
+method_sig__own.ts(16,11): error TS6133: 'n_predicate' is declared but its value is never read.
+method_sig__own.ts(17,26): error TS6196: 'X' is declared but never used.
+method_sig__own.ts(17,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__own.ts(17,52): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+method_sig__own.ts(19,11): error TS6133: 'n_asserts' is declared but its value is never read.
+method_sig__own.ts(20,26): error TS6196: 'X' is declared but never used.
+method_sig__own.ts(20,34): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__own.ts(20,60): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+method_sig__own.ts(22,11): error TS6133: 'n_nested' is declared but its value is never read.
+method_sig__own.ts(25,11): error TS6133: 'n_array' is declared but its value is never read.
+method_sig__own.ts(28,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+method_sig__own.ts(31,11): error TS6133: 'n_two' is declared but its value is never read.
+method_sig__own.ts(32,40): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+method_sig__own.ts(34,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+method_sig__own_second.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+method_sig__own_second.ts(2,26): error TS6196: 'T' is declared but never used.
+method_sig__own_second.ts(4,11): error TS6133: 'n_return' is declared but its value is never read.
+method_sig__own_second.ts(5,26): error TS6196: 'T' is declared but never used.
+method_sig__own_second.ts(7,11): error TS6133: 'n_other_param' is declared but its value is never read.
+method_sig__own_second.ts(8,26): error TS6196: 'T' is declared but never used.
+method_sig__own_second.ts(10,11): error TS6133: 'n_unused' is declared but its value is never read.
+method_sig__own_second.ts(11,25): error TS6205: All type parameters are unused.
+method_sig__own_second.ts(11,37): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__own_second.ts(13,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+method_sig__own_second.ts(14,25): error TS6205: All type parameters are unused.
+method_sig__own_second.ts(16,11): error TS6133: 'n_predicate' is declared but its value is never read.
+method_sig__own_second.ts(17,25): error TS6205: All type parameters are unused.
+method_sig__own_second.ts(17,37): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__own_second.ts(17,55): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+method_sig__own_second.ts(19,11): error TS6133: 'n_asserts' is declared but its value is never read.
+method_sig__own_second.ts(20,25): error TS6205: All type parameters are unused.
+method_sig__own_second.ts(20,37): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+method_sig__own_second.ts(20,63): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+method_sig__own_second.ts(22,11): error TS6133: 'n_nested' is declared but its value is never read.
+method_sig__own_second.ts(23,26): error TS6196: 'T' is declared but never used.
+method_sig__own_second.ts(25,11): error TS6133: 'n_array' is declared but its value is never read.
+method_sig__own_second.ts(26,26): error TS6196: 'T' is declared but never used.
+method_sig__own_second.ts(28,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+method_sig__own_second.ts(29,26): error TS6196: 'T' is declared but never used.
+method_sig__own_second.ts(31,11): error TS6133: 'n_two' is declared but its value is never read.
+method_sig__own_second.ts(32,26): error TS6196: 'T' is declared but never used.
+method_sig__own_second.ts(32,43): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+method_sig__own_second.ts(34,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+method_sig__own_second.ts(35,26): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+overload__outer_value.ts(3,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(3,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(3,39): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__outer_value.ts(6,11): error TS6133: 'n_return' is declared but its value is never read.
+overload__outer_value.ts(8,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(8,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(8,47): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__outer_value.ts(11,11): error TS6133: 'n_other_param' is declared but its value is never read.
+overload__outer_value.ts(13,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(13,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(13,49): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__outer_value.ts(16,11): error TS6133: 'n_unused' is declared but its value is never read.
+overload__outer_value.ts(18,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(18,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(21,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+overload__outer_value.ts(23,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(26,11): error TS6133: 'n_predicate' is declared but its value is never read.
+overload__outer_value.ts(28,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(28,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(28,47): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+overload__outer_value.ts(31,11): error TS6133: 'n_asserts' is declared but its value is never read.
+overload__outer_value.ts(33,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(33,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(33,55): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+overload__outer_value.ts(36,11): error TS6133: 'n_nested' is declared but its value is never read.
+overload__outer_value.ts(38,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(38,34): error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(38,51): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__outer_value.ts(41,11): error TS6133: 'n_array' is declared but its value is never read.
+overload__outer_value.ts(43,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(43,42): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__outer_value.ts(46,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+overload__outer_value.ts(48,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(48,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(48,29): error TS7031: Binding element 'X' implicitly has an 'any' type.
+overload__outer_value.ts(48,35): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__outer_value.ts(51,11): error TS6133: 'n_two' is declared but its value is never read.
+overload__outer_value.ts(53,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(53,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(53,35): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(53,45): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__outer_value.ts(56,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+overload__outer_value.ts(58,21): error TS6196: 'T' is declared but never used.
+overload__outer_value.ts(58,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__outer_value.ts(58,45): error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+overload__own.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+overload__own.ts(5,11): error TS6133: 'n_return' is declared but its value is never read.
+overload__own.ts(9,11): error TS6133: 'n_other_param' is declared but its value is never read.
+overload__own.ts(13,11): error TS6133: 'n_unused' is declared but its value is never read.
+overload__own.ts(14,21): error TS6196: 'X' is declared but never used.
+overload__own.ts(14,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__own.ts(17,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+overload__own.ts(18,21): error TS6196: 'X' is declared but never used.
+overload__own.ts(21,11): error TS6133: 'n_predicate' is declared but its value is never read.
+overload__own.ts(22,21): error TS6196: 'X' is declared but never used.
+overload__own.ts(22,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__own.ts(22,47): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+overload__own.ts(25,11): error TS6133: 'n_asserts' is declared but its value is never read.
+overload__own.ts(26,21): error TS6196: 'X' is declared but never used.
+overload__own.ts(26,29): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__own.ts(26,55): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+overload__own.ts(29,11): error TS6133: 'n_nested' is declared but its value is never read.
+overload__own.ts(33,11): error TS6133: 'n_array' is declared but its value is never read.
+overload__own.ts(37,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+overload__own.ts(38,29): error TS7031: Binding element 'X' implicitly has an 'any' type.
+overload__own.ts(41,11): error TS6133: 'n_two' is declared but its value is never read.
+overload__own.ts(42,35): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+overload__own.ts(45,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+overload__own_second.ts(1,11): error TS6133: 'n_annotation' is declared but its value is never read.
+overload__own_second.ts(2,21): error TS6196: 'T' is declared but never used.
+overload__own_second.ts(5,11): error TS6133: 'n_return' is declared but its value is never read.
+overload__own_second.ts(6,21): error TS6196: 'T' is declared but never used.
+overload__own_second.ts(9,11): error TS6133: 'n_other_param' is declared but its value is never read.
+overload__own_second.ts(10,21): error TS6196: 'T' is declared but never used.
+overload__own_second.ts(13,11): error TS6133: 'n_unused' is declared but its value is never read.
+overload__own_second.ts(14,20): error TS6205: All type parameters are unused.
+overload__own_second.ts(14,32): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__own_second.ts(17,11): error TS6133: 'n_typeof_return' is declared but its value is never read.
+overload__own_second.ts(18,20): error TS6205: All type parameters are unused.
+overload__own_second.ts(21,11): error TS6133: 'n_predicate' is declared but its value is never read.
+overload__own_second.ts(22,20): error TS6205: All type parameters are unused.
+overload__own_second.ts(22,32): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__own_second.ts(22,50): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+overload__own_second.ts(25,11): error TS6133: 'n_asserts' is declared but its value is never read.
+overload__own_second.ts(26,20): error TS6205: All type parameters are unused.
+overload__own_second.ts(26,32): error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+overload__own_second.ts(26,58): error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+overload__own_second.ts(29,11): error TS6133: 'n_nested' is declared but its value is never read.
+overload__own_second.ts(30,21): error TS6196: 'T' is declared but never used.
+overload__own_second.ts(33,11): error TS6133: 'n_array' is declared but its value is never read.
+overload__own_second.ts(34,21): error TS6196: 'T' is declared but never used.
+overload__own_second.ts(37,11): error TS6133: 'n_no_annotation' is declared but its value is never read.
+overload__own_second.ts(38,21): error TS6196: 'T' is declared but never used.
+overload__own_second.ts(38,32): error TS7031: Binding element 'X' implicitly has an 'any' type.
+overload__own_second.ts(41,11): error TS6133: 'n_two' is declared but its value is never read.
+overload__own_second.ts(42,21): error TS6196: 'T' is declared but never used.
+overload__own_second.ts(42,38): error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+overload__own_second.ts(45,11): error TS6133: 'n_generic_arg' is declared but its value is never read.
+overload__own_second.ts(46,21): error TS6196: 'T' is declared but never used.
+sentinel.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "types": [], "noUnusedLocals": true, "noUnusedParameters": true}, "files": ["fn_type__own.ts", "fn_type__own_second.ts", "fn_type__outer_value.ts", "method_sig__own.ts", "method_sig__own_second.ts", "method_sig__outer_value.ts", "overload__own.ts", "overload__own_second.ts", "overload__outer_value.ts", "abstract__own.ts", "abstract__own_second.ts", "abstract__outer_value.ts", "sentinel.ts"]}
+==== abstract__outer_value.ts (45 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: X }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                             ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: any }): X; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                     ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: any }, b: X): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                       ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: any }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: any }): typeof X; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: any }): X is string; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                     ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: any }): asserts X; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                             ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: { b: X } }: { a: { b: X } }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                        ~
+!!! error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                                                         ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: [X] }: { a: [X] }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                                ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }): X; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 abstract__outer_value.ts:39:51: We can only write a type for 'a' by adding a type for the entire parameter here.
+                                                         ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X, b: Y }: { a: X; b: any }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                         ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                                                   ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      declare const X: 1;
+      export abstract class D { abstract m<T>({ a: X }: { a: Array<X> }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                   ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    export {};
+==== abstract__own.ts (22 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: X }): void; }
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: any }): X; }
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: any }, b: X): void; }
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: any }): void; }
+                                           ~
+!!! error TS6196: 'X' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: any }): typeof X; }
+                                           ~
+!!! error TS6196: 'X' is declared but never used.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: any }): X is string; }
+                                           ~
+!!! error TS6196: 'X' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                     ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: any }): asserts X; }
+                                           ~
+!!! error TS6196: 'X' is declared but never used.
+                                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                             ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: { b: X } }: { a: { b: X } }): void; }
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: [X] }: { a: [X] }): void; }
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }): X; }
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X, b: Y }: { a: X; b: any }): void; }
+                                                         ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export abstract class D { abstract m<X>({ a: X }: { a: Array<X> }): void; }
+    }
+    export {};
+==== abstract__own_second.ts (30 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: X }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: any }): X; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: any }, b: X): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: any }): void; }
+                                          ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                                      ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: any }): typeof X; }
+                                          ~~~~~~
+!!! error TS6205: All type parameters are unused.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: any }): X is string; }
+                                          ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                                      ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                        ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: any }): asserts X; }
+                                          ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                                      ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                                ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: { b: X } }: { a: { b: X } }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: [X] }: { a: [X] }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }): X; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X, b: Y }: { a: X; b: any }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+                                                            ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export abstract class D { abstract m<T, X>({ a: X }: { a: Array<X> }): void; }
+                                           ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    export {};
+==== fn_type__outer_value.ts (45 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: X }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                         ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: any }) => X;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                   ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: any }, b: X) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                   ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: any }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: any }) => typeof X;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: any }) => X is string;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                   ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: any }) => asserts X;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                           ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: { b: X } }: { a: { b: X } }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                                    ~
+!!! error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                                     ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: [X] }: { a: [X] }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                                            ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }) => X;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 fn_type__outer_value.ts:39:31: We can only write a type for 'a' by adding a type for the entire parameter here.
+                                       ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X, b: Y }: { a: X; b: any }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                     ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                               ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      declare const X: 1;
+      export type D = <T>({ a: X }: { a: Array<X> }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                               ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    export {};
+==== fn_type__own.ts (22 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: X }) => void;
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: any }) => X;
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: any }, b: X) => void;
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: any }) => void;
+                       ~
+!!! error TS6196: 'X' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: any }) => typeof X;
+                       ~
+!!! error TS6196: 'X' is declared but never used.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: any }) => X is string;
+                       ~
+!!! error TS6196: 'X' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                   ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: any }) => asserts X;
+                       ~
+!!! error TS6196: 'X' is declared but never used.
+                               ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                           ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export type D = <X>({ a: { b: X } }: { a: { b: X } }) => void;
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export type D = <X>({ a: [X] }: { a: [X] }) => void;
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export type D = <X>({ a: X }) => X;
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export type D = <X>({ a: X, b: Y }: { a: X; b: any }) => void;
+                                     ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export type D = <X>({ a: X }: { a: Array<X> }) => void;
+    }
+    export {};
+==== fn_type__own_second.ts (30 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: X }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: any }) => X;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: any }, b: X) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: any }) => void;
+                      ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                  ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: any }) => typeof X;
+                      ~~~~~~
+!!! error TS6205: All type parameters are unused.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: any }) => X is string;
+                      ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                  ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                      ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: any }) => asserts X;
+                      ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                  ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                              ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export type D = <T, X>({ a: { b: X } }: { a: { b: X } }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export type D = <T, X>({ a: [X] }: { a: [X] }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export type D = <T, X>({ a: X }) => X;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export type D = <T, X>({ a: X, b: Y }: { a: X; b: any }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+                                        ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export type D = <T, X>({ a: X }: { a: Array<X> }) => void;
+                       ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    export {};
+==== method_sig__outer_value.ts (45 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: X }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                               ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: any }): X }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                       ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: any }, b: X): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                         ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: any }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: any }): typeof X }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: any }): X is string }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                       ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: any }): asserts X }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                               ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: { b: X } }: { a: { b: X } }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                          ~
+!!! error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                                           ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: [X] }: { a: [X] }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                                  ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }): X }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 method_sig__outer_value.ts:39:37: We can only write a type for 'a' by adding a type for the entire parameter here.
+                                           ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X, b: Y }: { a: X; b: any }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                           ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                                     ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      declare const X: 1;
+      export interface D { m<T>({ a: X }: { a: Array<X> }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                     ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+    }
+    export {};
+==== method_sig__own.ts (22 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: X }): void }
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: any }): X }
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: any }, b: X): void }
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: any }): void }
+                             ~
+!!! error TS6196: 'X' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: any }): typeof X }
+                             ~
+!!! error TS6196: 'X' is declared but never used.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: any }): X is string }
+                             ~
+!!! error TS6196: 'X' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                       ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: any }): asserts X }
+                             ~
+!!! error TS6196: 'X' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                               ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export interface D { m<X>({ a: { b: X } }: { a: { b: X } }): void }
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export interface D { m<X>({ a: [X] }: { a: [X] }): void }
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export interface D { m<X>({ a: X }): X }
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export interface D { m<X>({ a: X, b: Y }: { a: X; b: any }): void }
+                                           ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export interface D { m<X>({ a: X }: { a: Array<X> }): void }
+    }
+    export {};
+==== method_sig__own_second.ts (30 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: X }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: any }): X }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: any }, b: X): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: any }): void }
+                            ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                        ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: any }): typeof X }
+                            ~~~~~~
+!!! error TS6205: All type parameters are unused.
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: any }): X is string }
+                            ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                        ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                          ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: any }): asserts X }
+                            ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                        ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                                  ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export interface D { m<T, X>({ a: { b: X } }: { a: { b: X } }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export interface D { m<T, X>({ a: [X] }: { a: [X] }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }): X }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X, b: Y }: { a: X; b: any }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+                                              ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export interface D { m<T, X>({ a: X }: { a: Array<X> }): void }
+                             ~
+!!! error TS6196: 'T' is declared but never used.
+    }
+    export {};
+==== overload__outer_value.ts (46 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: X }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                          ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: any }): X;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                  ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: any }, b: X): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                    ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: any }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: any }): typeof X;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: any }): X is string;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                  ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: any }): asserts X;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                          ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: { b: X } }: { a: { b: X } }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                     ~
+!!! error TS2842: 'X' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                                      ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: [X] }: { a: [X] }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                             ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }): X;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 overload__outer_value.ts:48:32: We can only write a type for 'a' by adding a type for the entire parameter here.
+                                ~
+!!! error TS7031: Binding element 'X' implicitly has an 'any' type.
+                                      ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X, b: Y }: { a: X; b: any }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                      ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+                                                ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      declare const X: 1;
+      export function d<T>({ a: X }: { a: Array<X> }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                ~
+!!! error TS2749: 'X' refers to a value, but is being used as a type here. Did you mean 'typeof X'?
+      export function d(...args: any[]): any { return args; }
+    }
+    export {};
+==== overload__own.ts (23 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: X }): void;
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: any }): X;
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: any }, b: X): void;
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: any }): void;
+                        ~
+!!! error TS6196: 'X' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: any }): typeof X;
+                        ~
+!!! error TS6196: 'X' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: any }): X is string;
+                        ~
+!!! error TS6196: 'X' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                  ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: any }): asserts X;
+                        ~
+!!! error TS6196: 'X' is declared but never used.
+                                ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                          ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export function d<X>({ a: { b: X } }: { a: { b: X } }): void;
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export function d<X>({ a: [X] }: { a: [X] }): void;
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export function d<X>({ a: X }): X;
+                                ~
+!!! error TS7031: Binding element 'X' implicitly has an 'any' type.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export function d<X>({ a: X, b: Y }: { a: X; b: any }): void;
+                                      ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export function d<X>({ a: X }: { a: Array<X> }): void;
+      export function d(...args: any[]): any { return args; }
+    }
+    export {};
+==== overload__own_second.ts (31 errors) ====
+    namespace n_annotation {
+              ~~~~~~~~~~~~
+!!! error TS6133: 'n_annotation' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: X }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_return {
+              ~~~~~~~~
+!!! error TS6133: 'n_return' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: any }): X;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_other_param {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_other_param' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: any }, b: X): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_unused {
+              ~~~~~~~~
+!!! error TS6133: 'n_unused' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: any }): void;
+                       ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_typeof_return {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_typeof_return' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: any }): typeof X;
+                       ~~~~~~
+!!! error TS6205: All type parameters are unused.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_predicate {
+              ~~~~~~~~~~~
+!!! error TS6133: 'n_predicate' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: any }): X is string;
+                       ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                     ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_asserts {
+              ~~~~~~~~~
+!!! error TS6133: 'n_asserts' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: any }): asserts X;
+                       ~~~~~~
+!!! error TS6205: All type parameters are unused.
+                                   ~
+!!! error TS2842: 'X' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                                             ~
+!!! error TS1230: A type predicate cannot reference element 'X' in a binding pattern.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_nested {
+              ~~~~~~~~
+!!! error TS6133: 'n_nested' is declared but its value is never read.
+      export function d<T, X>({ a: { b: X } }: { a: { b: X } }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_array {
+              ~~~~~~~
+!!! error TS6133: 'n_array' is declared but its value is never read.
+      export function d<T, X>({ a: [X] }: { a: [X] }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_no_annotation {
+              ~~~~~~~~~~~~~~~
+!!! error TS6133: 'n_no_annotation' is declared but its value is never read.
+      export function d<T, X>({ a: X }): X;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                   ~
+!!! error TS7031: Binding element 'X' implicitly has an 'any' type.
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_two {
+              ~~~~~
+!!! error TS6133: 'n_two' is declared but its value is never read.
+      export function d<T, X>({ a: X, b: Y }: { a: X; b: any }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+                                         ~
+!!! error TS2842: 'Y' is an unused renaming of 'b'. Did you intend to use it as a type annotation?
+      export function d(...args: any[]): any { return args; }
+    }
+    namespace n_generic_arg {
+              ~~~~~~~~~~~~~
+!!! error TS6133: 'n_generic_arg' is declared but its value is never read.
+      export function d<T, X>({ a: X }: { a: Array<X> }): void;
+                        ~
+!!! error TS6196: 'T' is declared but never used.
+      export function d(...args: any[]): any { return args; }
+    }
+    export {};
+==== sentinel.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

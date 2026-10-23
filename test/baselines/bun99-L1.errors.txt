@@ -1,0 +1,34 @@
+a.ts(13,14): error TS2322: Type '{ a: string; empty: {}; } | { a?: undefined; empty: {}; }' is not assignable to type 'never'.
+  Type '{ a: string; empty: {}; }' is not assignable to type 'never'.
+a.ts(14,14): error TS2322: Type '{ a: string; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { b: string; a?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { c: string; a?: undefined; b?: undefined; id: string; empty: {}; other: {}; } | { a?: undefined; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; }' is not assignable to type 'never'.
+  Type '{ a: string; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; }' is not assignable to type 'never'.
+a.ts(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (3 errors) ====
+    interface Matcher<T> { match(other: T): boolean }
+    type With<T> = T | Matcher<unknown>;
+    type Deep<T> = T extends Array<infer E> ? With<T> | Deep<E>[] : T extends object ? With<T> | { [K in keyof T]: Deep<T[K]> } : With<T>;
+    declare function containing<T = any>(expected: Deep<T>): any;
+    declare function strict<T>(expected: Deep<T>): T;
+    declare const four: { a: string; b?: undefined; c?: undefined } | { b: string; a?: undefined; c?: undefined } | { c: string; a?: undefined; b?: undefined } | { a?: undefined; b?: undefined; c?: undefined };
+    declare const two: { a: string } | { a?: undefined };
+    containing({ id: "x", empty: {}, ...four });
+    containing({ empty: {}, ...two });
+    containing({ ...two, empty: {} });
+    containing({ nested: { empty: {} }, ...two });
+    containing({ list: [{}], ...two });
+    export const v1: never = strict({ empty: {}, ...two });
+                 ~~
+!!! error TS2322: Type '{ a: string; empty: {}; } | { a?: undefined; empty: {}; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ a: string; empty: {}; }' is not assignable to type 'never'.
+    export const v2: never = strict({ id: "x", empty: {}, other: {}, ...four });
+                 ~~
+!!! error TS2322: Type '{ a: string; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { b: string; a?: undefined; c?: undefined; id: string; empty: {}; other: {}; } | { c: string; a?: undefined; b?: undefined; id: string; empty: {}; other: {}; } | { a?: undefined; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ a: string; b?: undefined; c?: undefined; id: string; empty: {}; other: {}; }' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

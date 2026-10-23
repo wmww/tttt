@@ -1,0 +1,14 @@
+//// [test/cases/bun19-C1a.ts] ////
+
+=== a.ts ===
+function f<T>(x: number) { const y: T extends string ? number : number = x; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 14))
+>y : Symbol(y, Decl(a.ts, 0, 32))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

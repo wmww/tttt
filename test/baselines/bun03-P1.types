@@ -1,0 +1,27 @@
+//// [test/cases/bun03-P1.ts] ////
+
+=== a.ts ===
+declare function mk(): symbol;
+>mk : () => symbol
+
+class K { static readonly k = mk(); }
+>K : K
+>k : symbol
+>mk() : symbol
+>mk : () => symbol
+
+class B {}
+>B : B
+
+class D extends B { override [K.k]() {} }
+>D : D
+>B : B
+>[K.k] : () => void
+>K.k : symbol
+>K : typeof K
+>k : symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

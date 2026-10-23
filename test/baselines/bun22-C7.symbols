@@ -1,0 +1,28 @@
+//// [test/cases/bun22-C7.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: { [K in (keyof T & "a") | (keyof T & "b")]: T[K] }): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 22))
+>K : Symbol(K, Decl(a.ts, 0, 28))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>K : Symbol(K, Decl(a.ts, 0, 28))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+declare const s: { a: 1; c: 1 };
+>s : Symbol(s, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 1, 18))
+>c : Symbol(c, Decl(a.ts, 1, 24))
+
+f(s).c;
+>f(s).c : Symbol(c, Decl(a.ts, 1, 24))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>s : Symbol(s, Decl(a.ts, 1, 13))
+>c : Symbol(c, Decl(a.ts, 1, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

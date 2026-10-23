@@ -1,0 +1,36 @@
+//// [test/cases/bun92-R11a.ts] ////
+
+=== a.ts ===
+type D = 0|1|2|3|4|5|6|7|8|9;
+>D : D
+
+type G<X extends string, Y extends number = D> = `${Y}${Y}${Y}${Y}${Y}${Y}${X}`;
+>G : `${Y}${Y}${Y}${Y}${Y}${Y}${X}`
+
+declare function f<T>(x?: any): T;
+>f : <T>(x?: any) => T
+>x : any
+
+declare function tag<T>(s: TemplateStringsArray): T;
+>tag : <T>(s: TemplateStringsArray) => T
+>s : TemplateStringsArray
+
+declare class K<T> { k: T }
+>K : K<T>
+>k : T
+
+declare const e: any;
+>e : any
+
+interface IG<T> { g: T }
+>g : T
+
+class C33 implements IG<G<"33">> { g = e }
+>C33 : C33
+>g : any
+>e : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

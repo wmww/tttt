@@ -1,0 +1,28 @@
+//// [test/cases/bun01-P4.ts] ////
+
+=== a.tsx ===
+export {};
+declare global { namespace JSX { interface IntrinsicElements { div: any } interface Element {} } }
+>global : Symbol(global, Decl(a.tsx, 0, 10))
+>JSX : Symbol(JSX, Decl(a.tsx, 1, 16))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 1, 32))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 1, 62))
+>Element : Symbol(Element, Decl(a.tsx, 1, 73))
+
+function unrelated(React: number) {}
+>unrelated : Symbol(unrelated, Decl(a.tsx, 1, 98))
+>React : Symbol(React, Decl(a.tsx, 2, 19))
+
+const x1 = <div />;
+>x1 : Symbol(x1, Decl(a.tsx, 3, 5))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 1, 62))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 4, 5))
+
+=== react.d.ts ===
+export function createElement(...a: any[]): any; export as namespace React;
+>createElement : Symbol(createElement, Decl(react.d.ts, 0, 0))
+>a : Symbol(a, Decl(react.d.ts, 0, 30))
+>React : Symbol(React, Decl(react.d.ts, 0, 48))
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun18-C3b.ts] ////
+
+=== a.ts ===
+function g4<T extends U[K], U extends T, K extends keyof U>(t: T, u: U) { const a: U[K] = t; const b: T = u; }
+>g4 : <T, U, K extends keyof U>(t: T, u: U) => void
+>t : T
+>u : U
+>a : U[K]
+>t : T
+>b : T
+>u : U
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

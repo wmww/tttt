@@ -1,0 +1,19 @@
+a.ts(3,9): error TS2322: Type 'number | `a${string}` | Uppercase<string>' is not assignable to type 'number | `a${U}` | Uppercase<U>'.
+  Type '`a${string}`' is not assignable to type 'number | `a${U}` | Uppercase<U>'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function nu<T extends number | undefined, U extends string>(o: { p: T | `a${U}` | Uppercase<U> }) {
+      const { p = 1 } = o;
+      const back: number | `a${U}` | Uppercase<U> = p;
+            ~~~~
+!!! error TS2322: Type 'number | `a${string}` | Uppercase<string>' is not assignable to type 'number | `a${U}` | Uppercase<U>'.
+!!! error TS2322:   Type '`a${string}`' is not assignable to type 'number | `a${U}` | Uppercase<U>'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

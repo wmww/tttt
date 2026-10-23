@@ -1,0 +1,120 @@
+//// [test/cases/bungeneric-signature-of-an-instantiated-alias-inferred-as-itself.ts] ////
+
+=== a.ts ===
+type Id<A> = <T extends A>(a: T) => T;
+>Id : Id<A>
+>a : T
+
+type IdS = <T extends string>(a: T) => T;
+>IdS : IdS
+>a : T
+
+type Id0<A> = <T>(a: T, b: A) => T;
+>Id0 : Id0<A>
+>a : T
+>b : A
+
+interface IdI<A> { <T extends A>(a: T): T }
+>a : T
+
+declare function wrap<R, P extends any[]>(f: (...a: P) => R): (...a: P) => R;
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>f : (...a: P) => R
+>a : P
+>a : P
+
+declare function wrap1<R, X>(f: (a: X) => R): (a: X) => R;
+>wrap1 : <R, X>(f: (a: X) => R) => (a: X) => R
+>f : (a: X) => R
+>a : X
+>a : X
+
+declare const id: Id<string>;
+>id : Id<string>
+
+declare const ids: IdS;
+>ids : IdS
+
+declare const id0: Id0<string>;
+>id0 : Id0<string>
+
+declare const idi: IdI<string>;
+>idi : IdI<string>
+
+export const a1: Id<string> = wrap(id);
+>a1 : Id<string>
+>wrap(id) : (a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>id : Id<string>
+
+export const a2: IdS = wrap(ids);
+>a2 : IdS
+>wrap(ids) : (a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>ids : IdS
+
+export const a3: Id<string> = wrap(ids);
+>a3 : Id<string>
+>wrap(ids) : (a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>ids : IdS
+
+export const a4: IdS = wrap(id);
+>a4 : IdS
+>wrap(id) : (a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>id : Id<string>
+
+export const a5: Id0<string> = wrap(id0);
+>a5 : Id0<string>
+>wrap(id0) : (a: T, b: string) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>id0 : Id0<string>
+
+export const a6: IdI<string> = wrap(idi);
+>a6 : IdI<string>
+>wrap(idi) : (a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>idi : IdI<string>
+
+export const a7: Id<string> = wrap1(id);
+>a7 : Id<string>
+>wrap1(id) : (a: T) => T
+>wrap1 : <R, X>(f: (a: X) => R) => (a: X) => R
+>id : Id<string>
+
+export const a8 = wrap(id);
+>a8 : <T extends string>(a: T) => T
+>wrap(id) : <T extends string>(a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>id : Id<string>
+
+export const a9: 0 = wrap(id);
+>a9 : 0
+>wrap(id) : <T extends string>(a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>id : Id<string>
+
+export const b1: Id<number> = wrap(id);
+>b1 : Id<number>
+>wrap(id) : (a: string) => string
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>id : Id<string>
+
+export const b2: Id<"a"> = wrap(id);
+>b2 : Id<"a">
+>wrap(id) : (a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>id : Id<string>
+
+export function g<B extends string>(f: Id<B>): Id<B> { return wrap(f); }
+>g : <B extends string>(f: Id<B>) => Id<B>
+>f : Id<B>
+>wrap(f) : (a: T) => T
+>wrap : <R, P extends any[]>(f: (...a: P) => R) => (...a: P) => R
+>f : Id<B>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

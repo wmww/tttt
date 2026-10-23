@@ -1,0 +1,142 @@
+//// [test/cases/bun54-L10.ts] ////
+
+=== a.ts ===
+const o1 = { get a() { return 1 }, a: 2 };
+>o1 : { readonly a: number; }
+>{ get a() { return 1 }, a: 2 } : { readonly a: number; }
+>a : number
+>1 : 1
+>a : number
+>2 : 2
+
+o1.a();
+>o1.a() : any
+>o1.a : number
+>o1 : { readonly a: number; }
+>a : number
+
+const o2 = { a: 2, get a() { return 1 } };
+>o2 : { readonly a: number; }
+>{ a: 2, get a() { return 1 } } : { readonly a: number; }
+>a : number
+>2 : 2
+>a : number
+>1 : 1
+
+o2.a();
+>o2.a() : any
+>o2.a : number
+>o2 : { readonly a: number; }
+>a : number
+
+const o3 = { set a(v: number) {}, get a() { return 1 } };
+>o3 : { a: number; }
+>{ set a(v: number) {}, get a() { return 1 } } : { a: number; }
+>a : number
+>v : number
+>a : number
+>1 : 1
+
+o3.a();
+>o3.a() : any
+>o3.a : number
+>o3 : { a: number; }
+>a : number
+
+const o4 = { get a() { return 1 }, set a(v: number) {} };
+>o4 : { a: number; }
+>{ get a() { return 1 }, set a(v: number) {} } : { a: number; }
+>a : number
+>1 : 1
+>a : number
+>v : number
+
+o4.a();
+>o4.a() : any
+>o4.a : number
+>o4 : { a: number; }
+>a : number
+
+const o5 = { get a() { return 1 }, a() {} , b: 1 };
+>o5 : { a(): void; b: number; }
+>{ get a() { return 1 }, a() {} , b: 1 } : { a(): void; b: number; }
+>a : number
+>1 : 1
+>a : () => void
+>b : number
+>1 : 1
+
+o5.b();
+>o5.b() : any
+>o5.b : number
+>o5 : { a(): void; b: number; }
+>b : number
+
+const o6 = { set a(v: number) {}, a: 2 };
+>o6 : { a: number; }
+>{ set a(v: number) {}, a: 2 } : { a: number; }
+>a : number
+>v : number
+>a : number
+>2 : 2
+
+o6.a();
+>o6.a() : any
+>o6.a : number
+>o6 : { a: number; }
+>a : number
+
+const k = "a";
+>k : "a"
+>"a" : "a"
+
+const o7 = { get [k]() { return 1 }, [k]: 2 };
+>o7 : { readonly a: number; }
+>{ get [k]() { return 1 }, [k]: 2 } : { readonly a: number; }
+>[k] : number
+>k : "a"
+>1 : 1
+>[k] : number
+>k : "a"
+>2 : 2
+
+o7.a();
+>o7.a() : any
+>o7.a : number
+>o7 : { readonly a: number; }
+>a : number
+
+const o8 = { [k]: 2, get a() { return 1 } };
+>o8 : { readonly a: number; }
+>{ [k]: 2, get a() { return 1 } } : { readonly a: number; }
+>[k] : number
+>k : "a"
+>2 : 2
+>a : number
+>1 : 1
+
+o8.a();
+>o8.a() : any
+>o8.a : number
+>o8 : { readonly a: number; }
+>a : number
+
+const o9 = { get a() { return 1 }, [k]: 2 };
+>o9 : { readonly a: number; }
+>{ get a() { return 1 }, [k]: 2 } : { readonly a: number; }
+>a : number
+>1 : 1
+>[k] : number
+>k : "a"
+>2 : 2
+
+o9.a();
+>o9.a() : any
+>o9.a : number
+>o9 : { readonly a: number; }
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

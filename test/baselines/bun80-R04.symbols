@@ -1,0 +1,14 @@
+//// [test/cases/bun80-R04.ts] ////
+
+=== a.ts ===
+declare export default (() => { for (;;) { break; } })();
+declare const c = () => { { 1; } };
+>c : Symbol(c, Decl(a.ts, 1, 13))
+
+declare enum E { A = (() => { if (1) { 1; } return 1 })() }
+>E : Symbol(E, Decl(a.ts, 1, 35))
+>A : Symbol(E.A, Decl(a.ts, 2, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

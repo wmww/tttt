@@ -1,0 +1,18 @@
+a.ts(2,7): error TS2322: Type '"😀"' is not assignable to type '0'.
+a.ts(2,16): error TS2345: Argument of type '"\uD83D\uDE00"' is not assignable to parameter of type '"😀"'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function f<X extends string>(x: `${X}`): X;
+    const r: 0 = f(`${"\ud83d" + "\ude00"}`);
+          ~
+!!! error TS2322: Type '"😀"' is not assignable to type '0'.
+                   ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '"\uD83D\uDE00"' is not assignable to parameter of type '"😀"'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

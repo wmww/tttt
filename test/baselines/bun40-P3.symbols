@@ -1,0 +1,19 @@
+//// [test/cases/bun40-P3.ts] ////
+
+=== node_modules/b/node_modules/x/index.ts ===
+export const x = 1;
+>x : Symbol(x, Decl(index.ts, 0, 12))
+
+=== src/a.ts ===
+import "x";
+import "b";
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+
+=== node_modules/b/index.d.ts ===
+
+import "x";
+=== node_modules/x/index.ts ===
+export const x = 1;
+>x : Symbol(x, Decl(index.ts, 0, 12))
+

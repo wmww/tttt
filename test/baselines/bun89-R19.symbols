@@ -1,0 +1,146 @@
+//// [test/cases/bun89-R19.ts] ////
+
+=== a.js ===
+Object.defineProperty(exports, "g1", { get() { return exports.g1; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g1" : Symbol("g1", Decl(a.js, 0, 0))
+>get : Symbol(get, Decl(a.js, 0, 38))
+>exports.g1 : Symbol("g1", Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g1 : Symbol("g1", Decl(a.js, 0, 0))
+
+Object.defineProperty(exports, "g2", { get: () => exports.g2 });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g2" : Symbol("g2", Decl(a.js, 0, 71))
+>get : Symbol(get, Decl(a.js, 1, 38))
+>exports.g2 : Symbol("g2", Decl(a.js, 0, 71))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g2 : Symbol("g2", Decl(a.js, 0, 71))
+
+Object.defineProperty(exports, "g3", { get: () => { return exports.g3; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g3" : Symbol("g3", Decl(a.js, 1, 64))
+>get : Symbol(get, Decl(a.js, 2, 38))
+>exports.g3 : Symbol("g3", Decl(a.js, 1, 64))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g3 : Symbol("g3", Decl(a.js, 1, 64))
+
+Object.defineProperty(exports, "g4", { get: function () { return exports.g4; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g4" : Symbol("g4", Decl(a.js, 2, 76))
+>get : Symbol(get, Decl(a.js, 3, 38))
+>exports.g4 : Symbol("g4", Decl(a.js, 2, 76))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g4 : Symbol("g4", Decl(a.js, 2, 76))
+
+Object.defineProperty(exports, "g5", { get: function named() { return exports.g5; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g5" : Symbol("g5", Decl(a.js, 3, 82))
+>get : Symbol(get, Decl(a.js, 4, 38))
+>named : Symbol(named, Decl(a.js, 4, 43))
+>exports.g5 : Symbol("g5", Decl(a.js, 3, 82))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g5 : Symbol("g5", Decl(a.js, 3, 82))
+
+Object.defineProperty(exports, "g6", { get() { return exports.g7; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g6" : Symbol("g6", Decl(a.js, 4, 87))
+>get : Symbol(get, Decl(a.js, 5, 38))
+>exports.g7 : Symbol("g7", Decl(a.js, 5, 71))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g7 : Symbol("g7", Decl(a.js, 5, 71))
+
+Object.defineProperty(exports, "g7", { get() { return exports.g6; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g7" : Symbol("g7", Decl(a.js, 5, 71))
+>get : Symbol(get, Decl(a.js, 6, 38))
+>exports.g6 : Symbol("g6", Decl(a.js, 4, 87))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g6 : Symbol("g6", Decl(a.js, 4, 87))
+
+Object.defineProperty(exports, "v1", { value: () => exports.v1 });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"v1" : Symbol("v1", Decl(a.js, 6, 71))
+>value : Symbol(value, Decl(a.js, 7, 38))
+>exports.v1 : Symbol("v1", Decl(a.js, 6, 71))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>v1 : Symbol("v1", Decl(a.js, 6, 71))
+
+Object.defineProperty(exports, "v2", { value() { return exports.v2; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"v2" : Symbol("v2", Decl(a.js, 7, 66))
+>value : Symbol(value, Decl(a.js, 8, 38))
+>exports.v2 : Symbol("v2", Decl(a.js, 7, 66))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>v2 : Symbol("v2", Decl(a.js, 7, 66))
+
+Object.defineProperty(module.exports, "g8", { get() { return module.exports.g8; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>"g8" : Symbol("g8", Decl(a.js, 8, 73))
+>get : Symbol(get, Decl(a.js, 9, 45))
+>module.exports.g8 : Symbol("g8", Decl(a.js, 8, 73))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>g8 : Symbol("g8", Decl(a.js, 8, 73))
+
+function F() {}
+>F : Symbol(F, Decl(a.js, 9, 85))
+
+Object.defineProperty(F, "g9", { get() { return F.g9; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>F : Symbol(F, Decl(a.js, 9, 85))
+>"g9" : Symbol(F["g9"], Decl(a.js, 10, 15))
+>get : Symbol(get, Decl(a.js, 11, 32))
+>F.g9 : Symbol(F["g9"], Decl(a.js, 10, 15))
+>F : Symbol(F, Decl(a.js, 9, 85))
+>g9 : Symbol(F["g9"], Decl(a.js, 10, 15))
+
+Object.defineProperty(F.prototype, "g10", { get() { return new F().g10; } });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>F.prototype : Symbol(Function.prototype, Decl(lib.es5.d.ts, --, --))
+>F : Symbol(F, Decl(a.js, 9, 85))
+>prototype : Symbol(Function.prototype, Decl(lib.es5.d.ts, --, --))
+>get : Symbol(get, Decl(a.js, 12, 43))
+>F : Symbol(F, Decl(a.js, 9, 85))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 14, 5))
+

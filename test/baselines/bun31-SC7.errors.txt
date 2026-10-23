@@ -1,0 +1,33 @@
+a.ts(3,29): error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+a.ts(4,36): error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+a.ts(5,70): error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+a.ts(5,88): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(6,43): error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    declare function use(...a: any[]): void;
+    type O = { b?: number } | undefined;
+    function y1(o: O): number { o?.b ??= 1; }
+                                ~~~~
+!!! error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+    function y2(o: O) { let x: number; o?.b ||= 1; use(x); }
+                                       ~~~~
+!!! error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+    function y3(o: O, s: string | number) { if (typeof s === "string") { o?.b &&= 1; const n: never = s; } }
+                                                                         ~~~~
+!!! error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+                                                                                           ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    class Y4 { a: number; constructor(o: O) { o?.["b"] ??= 1; } }
+                                              ~~~~~~~~
+!!! error TS2779: The left-hand side of an assignment expression may not be an optional property access.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

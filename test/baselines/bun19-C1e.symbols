@@ -1,0 +1,16 @@
+//// [test/cases/bun19-C1e.ts] ////
+
+=== a.ts ===
+function g<T>(a: number, x: number, y: T extends string ? typeof a : number = x) {}
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 14))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+>y : Symbol(y, Decl(a.ts, 0, 35))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 14))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

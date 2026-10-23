@@ -1,0 +1,6 @@
+//// [test/cases/bun43-C2c.ts] ////
+
+=== a.ts ===
+var x: \u0072eadonly number[];
+>x : readonly number[]
+

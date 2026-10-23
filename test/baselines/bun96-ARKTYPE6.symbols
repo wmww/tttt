@@ -1,0 +1,74 @@
+//// [test/cases/bun96-ARKTYPE6.ts] ////
+
+=== a.ts ===
+type show<t> = { [k in keyof t]: t[k] } & unknown
+>show : Symbol(show, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 0, 10))
+>k : Symbol(k, Decl(a.ts, 0, 18))
+>t : Symbol(t, Decl(a.ts, 0, 10))
+>t : Symbol(t, Decl(a.ts, 0, 10))
+>k : Symbol(k, Decl(a.ts, 0, 18))
+
+type R<d> = d extends object ? show<{ [k: string]: R<d> | 1 } & { b: 1 }> : never
+>R : Symbol(R, Decl(a.ts, 0, 49))
+>d : Symbol(d, Decl(a.ts, 1, 7))
+>d : Symbol(d, Decl(a.ts, 1, 7))
+>show : Symbol(show, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 1, 39))
+>R : Symbol(R, Decl(a.ts, 0, 49))
+>d : Symbol(d, Decl(a.ts, 1, 7))
+>b : Symbol(b, Decl(a.ts, 1, 65))
+
+declare const s: R<{ a: 1 }>
+>s : Symbol(s, Decl(a.ts, 2, 13))
+>R : Symbol(R, Decl(a.ts, 0, 49))
+>a : Symbol(a, Decl(a.ts, 2, 20))
+
+const x = s["k"]
+>x : Symbol(x, Decl(a.ts, 3, 5))
+>s : Symbol(s, Decl(a.ts, 2, 13))
+
+if (x !== 1) {
+>x : Symbol(x, Decl(a.ts, 3, 5))
+
+	x["z"]
+>x : Symbol(x, Decl(a.ts, 3, 5))
+
+	const y: number = x
+>y : Symbol(y, Decl(a.ts, 6, 6))
+>x : Symbol(x, Decl(a.ts, 3, 5))
+}
+const t: number = s
+>t : Symbol(t, Decl(a.ts, 8, 5))
+>s : Symbol(s, Decl(a.ts, 2, 13))
+
+// without the mapped type: the intersection itself
+type I<d> = d extends object ? { [k: string]: I<d> | 1 } & { b: 1 } : never
+>I : Symbol(I, Decl(a.ts, 8, 19))
+>d : Symbol(d, Decl(a.ts, 10, 7))
+>d : Symbol(d, Decl(a.ts, 10, 7))
+>k : Symbol(k, Decl(a.ts, 10, 34))
+>I : Symbol(I, Decl(a.ts, 8, 19))
+>d : Symbol(d, Decl(a.ts, 10, 7))
+>b : Symbol(b, Decl(a.ts, 10, 60))
+
+declare const i: I<{ a: 1 }>
+>i : Symbol(i, Decl(a.ts, 11, 13))
+>I : Symbol(I, Decl(a.ts, 8, 19))
+>a : Symbol(a, Decl(a.ts, 11, 20))
+
+const ti: number = i
+>ti : Symbol(ti, Decl(a.ts, 12, 5))
+>i : Symbol(i, Decl(a.ts, 11, 13))
+
+const xi = i["k"]
+>xi : Symbol(xi, Decl(a.ts, 13, 5))
+>i : Symbol(i, Decl(a.ts, 11, 13))
+
+if (xi !== 1) { xi["z"] }
+>xi : Symbol(xi, Decl(a.ts, 13, 5))
+>xi : Symbol(xi, Decl(a.ts, 13, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 15, 5))
+

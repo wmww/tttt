@@ -1,0 +1,42 @@
+//// [test/cases/bun61-L15b.ts] ////
+
+=== a.ts ===
+export {};
+interface I { default class: 1 } declare const i: I; i.class; i.default;
+>I : Symbol(I, Decl(a.ts, 0, 10))
+>class : Symbol(I.default, Decl(a.ts, 1, 13))
+>i : Symbol(i, Decl(a.ts, 1, 46))
+>I : Symbol(I, Decl(a.ts, 0, 10))
+>i : Symbol(i, Decl(a.ts, 1, 46))
+>i.default : Symbol(I.default, Decl(a.ts, 1, 13))
+>i : Symbol(i, Decl(a.ts, 1, 46))
+>default : Symbol(I.default, Decl(a.ts, 1, 13))
+
+type T = { default function: 1 }; declare const t: T; t.function; t.default;
+>T : Symbol(T, Decl(a.ts, 1, 72))
+>function : Symbol(function, Decl(a.ts, 2, 10))
+>t : Symbol(t, Decl(a.ts, 2, 47))
+>T : Symbol(T, Decl(a.ts, 1, 72))
+>t : Symbol(t, Decl(a.ts, 2, 47))
+>t.default : Symbol(function, Decl(a.ts, 2, 10))
+>t : Symbol(t, Decl(a.ts, 2, 47))
+>default : Symbol(function, Decl(a.ts, 2, 10))
+
+class C { default class = 1 } declare const c: C; c.class; c.default;
+>C : Symbol(C, Decl(a.ts, 2, 76))
+>class : Symbol(C.default, Decl(a.ts, 3, 9))
+>c : Symbol(c, Decl(a.ts, 3, 43))
+>C : Symbol(C, Decl(a.ts, 2, 76))
+>c : Symbol(c, Decl(a.ts, 3, 43))
+>c.default : Symbol(C.default, Decl(a.ts, 3, 9))
+>c : Symbol(c, Decl(a.ts, 3, 43))
+>default : Symbol(C.default, Decl(a.ts, 3, 9))
+
+interface L { default class: 1; default: 2 }
+>L : Symbol(L, Decl(a.ts, 3, 69))
+>class : Symbol(L.default, Decl(a.ts, 4, 13), Decl(a.ts, 4, 31))
+>default : Symbol(L.default, Decl(a.ts, 4, 13), Decl(a.ts, 4, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

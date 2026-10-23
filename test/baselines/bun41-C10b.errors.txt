@@ -1,0 +1,31 @@
+a.ts(5,11): error TS2430: Interface 'I' incorrectly extends interface 'A'.
+  Types of property 'x' are incompatible.
+    Type 'string[]' is not assignable to type 'number[]'.
+      Type 'string' is not assignable to type 'number'.
+a.ts(5,11): error TS2430: Interface 'I' incorrectly extends interface 'A'.
+  Types of property 'a' are incompatible.
+    Type 'string' is not assignable to type 'number'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function f() { interface A { a: number } return null! as A; }
+    function g() { interface A { x: number[] } return null! as A; }
+    type A1 = ReturnType<typeof f>;
+    type A2 = ReturnType<typeof g>;
+    interface I extends A1, A2 { a: string; x: string[] }
+              ~
+!!! error TS2430: Interface 'I' incorrectly extends interface 'A'.
+!!! error TS2430:   Types of property 'x' are incompatible.
+!!! error TS2430:     Type 'string[]' is not assignable to type 'number[]'.
+!!! error TS2430:       Type 'string' is not assignable to type 'number'.
+              ~
+!!! error TS2430: Interface 'I' incorrectly extends interface 'A'.
+!!! error TS2430:   Types of property 'a' are incompatible.
+!!! error TS2430:     Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

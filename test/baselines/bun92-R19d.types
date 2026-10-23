@@ -1,0 +1,131 @@
+//// [test/cases/bun92-R19d.ts] ////
+
+=== a.ts ===
+import * as j1 from "./j1";
+>j1 : typeof j1
+
+import { K, o as jo } from "./j3";
+>K : typeof K
+>o : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>jo : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : S<X>
+
+const t1: S<typeof j1> = ["?", -99], t2: S<K> = ["?", -99], t3: S<typeof K> = ["?", -99], t4: S<typeof jo> = ["?", -99];
+>t1 : S<typeof j1>
+>j1 : typeof j1
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+>t2 : S<K>
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+>t3 : S<typeof K>
+>K : typeof K
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+>t4 : S<{ 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }>
+>jo : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== j1.js ===
+exports[0] = 1; exports["1"] = 2; exports.a = 3;
+>exports[0] = 1 : 1
+>exports[0] : 1
+>exports : typeof import("./j1")
+>0 : 0
+>1 : 1
+>exports["1"] = 2 : 2
+>exports["1"] : 2
+>exports : typeof import("./j1")
+>"1" : "1"
+>2 : 2
+>exports.a = 3 : 3
+>exports.a : 3
+>exports : typeof import("./j1")
+>a : 3
+>3 : 3
+
+=== j3.js ===
+export class K { constructor() { this[0] = 1; this["1"] = 2; this.a = 3; } }
+>K : K
+>this[0] = 1 : 1
+>this[0] : any
+>this : this
+>0 : 0
+>1 : 1
+>this["1"] = 2 : 2
+>this["1"] : any
+>this : this
+>"1" : "1"
+>2 : 2
+>this.a = 3 : 3
+>this.a : any
+>this : this
+>a : any
+>3 : 3
+
+K[5] = 1; K["6"] = 2;
+>K[5] = 1 : 1
+>K[5] : number
+>K : typeof K
+>5 : 5
+>1 : 1
+>K["6"] = 2 : 2
+>K["6"] : number
+>K : typeof K
+>"6" : "6"
+>2 : 2
+
+export const o = {}; o[0] = 1; o["1"] = 2; o.a = 3;
+>o : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>{} : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>o[0] = 1 : 1
+>o[0] : number
+>o : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>0 : 0
+>1 : 1
+>o["1"] = 2 : 2
+>o["1"] : number
+>o : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>"1" : "1"
+>2 : 2
+>o.a = 3 : 3
+>o.a : number
+>o : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>a : number
+>3 : 3
+
+Object.defineProperty(o, "3", { value: 1 }); Object.defineProperty(o, 4, { value: 1 });
+>Object.defineProperty(o, "3", { value: 1 }) : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>o : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>"3" : "3"
+>{ value: 1 } : { value: number; }
+>value : number
+>1 : 1
+>Object.defineProperty(o, 4, { value: 1 }) : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>o : { 0: number; "1": number; a: number; readonly "3": number; readonly 4: number; }
+>4 : 4
+>{ value: 1 } : { value: number; }
+>value : number
+>1 : 1
+

@@ -1,0 +1,20 @@
+//// [test/cases/bun10-C2b.ts] ////
+
+=== a.ts ===
+declare const k: string;
+>k : string
+
+const x10 = { [k]: 1, set s(v: typeof x10) {} };
+>x10 : any
+>{ [k]: 1, set s(v: typeof x10) {} } : { [k]: number; s: typeof x10; }
+>[k] : number
+>k : string
+>1 : 1
+>s : any
+>v : any
+>x10 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

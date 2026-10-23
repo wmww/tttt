@@ -1,0 +1,14 @@
+//// [test/cases/bun24-C5.ts] ////
+
+=== a.ts ===
+const t: { (b: { readonly s: unique symbol }): void; (q: 1): 1 } = {};
+>t : { (b: { readonly s: unique symbol; }): void; (q: 1): 1; }
+>b : { readonly s: unique symbol; }
+>s : unique symbol
+>q : 1
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

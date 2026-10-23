@@ -1,0 +1,12 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "target": "es2015", "lib": ["es5", "es2015.symbol", "es2015.symbol.wellknown", "es2015.iterable"] } }
+==== a.ts (1 errors) ====
+    function* g(): IterableIterator<(x: number) => void> { yield* [x => {}]; }
+    const k: () => IterableIterator<(x: number) => void> = function* () { yield x => {}; };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

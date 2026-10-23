@@ -1,0 +1,15 @@
+a.ts(2,11): error TS2310: Type 'D' recursively references itself as a base type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Q = keyof Partial<D>;
+    interface D extends Partial<D> { m(): void }
+              ~
+!!! error TS2310: Type 'D' recursively references itself as a base type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

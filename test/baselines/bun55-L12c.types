@@ -1,0 +1,62 @@
+//// [test/cases/bun55-L12c.ts] ////
+
+=== a.ts ===
+const K: string = compute({ a: "" });
+>K : string
+>compute({ a: "" }) : string
+>compute : (o: Record<string, string>) => string
+>{ a: "" } : { a: string; }
+>a : string
+>"" : ""
+
+function compute(o: Record<string, string>) { return o[K]; }
+>compute : (o: Record<string, string>) => string
+>o : Record<string, string>
+>o[K] : string
+>o : Record<string, string>
+>K : string
+
+const K3: string = compute3({ a: "" });
+>K3 : string
+>compute3({ a: "" }) : string
+>compute3 : (o: Record<string, string>) => string
+>{ a: "" } : { a: string; }
+>a : string
+>"" : ""
+
+function compute3(o: Record<string, string>) { return o[K3].length + ""; }
+>compute3 : (o: Record<string, string>) => string
+>o : Record<string, string>
+>o[K3].length + "" : string
+>o[K3].length : number
+>o[K3] : string
+>o : Record<string, string>
+>K3 : string
+>length : number
+>"" : ""
+
+// an access on the way is compared with it: TS7023 in both
+const K2: string = compute2({ a: "" });
+>K2 : string
+>compute2({ a: "" }) : any
+>compute2 : (o: Record<string, string>) => any
+>{ a: "" } : { a: string; }
+>a : string
+>"" : ""
+
+function compute2(o: Record<string, string>) { o.x = ""; return o[K2]; }
+>compute2 : (o: Record<string, string>) => any
+>o : Record<string, string>
+>o.x = "" : ""
+>o.x : string
+>o : Record<string, string>
+>x : string
+>"" : ""
+>o[K2] : string
+>o : Record<string, string>
+>K2 : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

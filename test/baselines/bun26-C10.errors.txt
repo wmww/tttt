@@ -1,0 +1,17 @@
+a.ts(2,7): error TS2322: Type '{ b: 2; } | { b: 2; }' is not assignable to type 'never'.
+  Type '{ b: 2; }' is not assignable to type 'never'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function r<T>({ a, ...rest }: { a: 1; b: 2 }) { return rest; }
+    const n: never = null! as ReturnType<typeof r<1>> | ReturnType<typeof r<2>>;
+          ~
+!!! error TS2322: Type '{ b: 2; } | { b: 2; }' is not assignable to type 'never'.
+!!! error TS2322:   Type '{ b: 2; }' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

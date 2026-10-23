@@ -1,0 +1,12 @@
+//// [test/cases/bun32-C10b.ts] ////
+
+=== a.ts ===
+({ async async m() {} });
+>({ async async m() {} }) : { m(): Promise<void>; }
+>{ async async m() {} } : { m(): Promise<void>; }
+>m : () => Promise<void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

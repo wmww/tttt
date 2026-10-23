@@ -1,0 +1,26 @@
+//// [test/cases/bun32-C14a.ts] ////
+
+=== a.ts ===
+function f(x: string | number) { if (typeof x === "string") { () => x.length; class D extends (x = 1, Object) {} } }
+>f : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>() => x.length : () => number
+>x.length : number
+>x : string
+>length : number
+>D : D
+>(x = 1, Object) : Object
+>x = 1, Object : ObjectConstructor
+>x = 1 : 1
+>x : string | number
+>1 : 1
+>Object : ObjectConstructor
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

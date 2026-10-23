@@ -1,0 +1,41 @@
+//// [test/cases/bun56-L06.ts] ////
+
+=== lt1.tsx ===
+class A</T> {}
+>A : Symbol(A, Decl(lt1.tsx, 0, 0))
+
+=== lt2.tsx ===
+function f</T>() {}
+>f : Symbol(f, Decl(lt2.tsx, 0, 0), Decl(lt7.tsx, 0, 0))
+
+=== lt3.tsx ===
+type X</T> = 1
+>X : Symbol(X, Decl(lt3.tsx, 0, 0))
+> : Symbol(unknown)
+
+=== lt4.tsx ===
+interface I { </T>(): void }
+>I : Symbol(I, Decl(lt4.tsx, 0, 0))
+
+=== lt5.tsx ===
+let x: Array</number>
+>x : Symbol(x, Decl(lt5.tsx, 0, 3))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>number : Symbol(number, Decl(lt5.tsx, 0, 14))
+
+=== lt6.tsx ===
+let x: [</a]
+>x : Symbol(x, Decl(lt6.tsx, 0, 3))
+>a : Symbol(a)
+
+=== lt7.tsx ===
+function f(</a) {}
+>f : Symbol(f, Decl(lt2.tsx, 0, 0), Decl(lt7.tsx, 0, 0))
+>a : Symbol(a, Decl(lt7.tsx, 0, 13))
+
+=== lt8.tsx ===
+class C { m</T>() {} }
+>C : Symbol(C, Decl(lt8.tsx, 0, 0))
+>m : Symbol(C.m, Decl(lt8.tsx, 0, 9))
+>T : Symbol(C.T, Decl(lt8.tsx, 0, 13))
+

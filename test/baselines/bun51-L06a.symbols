@@ -1,0 +1,62 @@
+//// [test/cases/bun51-L06a.ts] ////
+
+=== f.js ===
+export const store = {
+>store : Symbol(store, Decl(f.js, 0, 12))
+
+  /** @param {number} n */
+  format(n) { return String(n); },
+>format : Symbol(format, Decl(f.js, 0, 22))
+>n : Symbol(n, Decl(f.js, 2, 9))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 6 more)
+>n : Symbol(n, Decl(f.js, 2, 9))
+
+  pair: /** @type {[number, number]} */ ([1, 2]),
+>pair : Symbol(pair, Decl(f.js, 2, 34))
+
+  reset() {
+>reset : Symbol(reset, Decl(f.js, 3, 49))
+
+    this.format = (n) => n.toFixed(2);
+>this.format : Symbol(format, Decl(f.js, 0, 22))
+>this : Symbol(store, Decl(f.js, 0, 20))
+>format : Symbol(format, Decl(f.js, 0, 22))
+>n : Symbol(n, Decl(f.js, 5, 19))
+>n.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>n : Symbol(n, Decl(f.js, 5, 19))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+    this.pair = [3, 4];
+>this.pair : Symbol(pair, Decl(f.js, 2, 34))
+>this : Symbol(store, Decl(f.js, 0, 20))
+>pair : Symbol(pair, Decl(f.js, 2, 34))
+
+  },
+};
+export const later = {
+>later : Symbol(later, Decl(f.js, 9, 12))
+
+  reset() {
+>reset : Symbol(reset, Decl(f.js, 9, 22))
+
+    this.format = (n) => String(n);
+>this.format : Symbol(format, Decl(f.js, 12, 4))
+>this : Symbol(later, Decl(f.js, 9, 20))
+>format : Symbol(format, Decl(f.js, 12, 4))
+>n : Symbol(n, Decl(f.js, 11, 19))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 6 more)
+>n : Symbol(n, Decl(f.js, 11, 19))
+
+  },
+  /** @param {number} n */
+  format(n) { return String(n); },
+>format : Symbol(format, Decl(f.js, 12, 4))
+>n : Symbol(n, Decl(f.js, 14, 9))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 6 more)
+>n : Symbol(n, Decl(f.js, 14, 9))
+
+};
+/** @type {number} */
+export const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(f.js, 17, 12))
+

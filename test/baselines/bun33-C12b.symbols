@@ -1,0 +1,9 @@
+//// [test/cases/bun33-C12b.ts] ////
+
+=== a.ts ===
+1 as const<1>;
+>const : Symbol(const)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

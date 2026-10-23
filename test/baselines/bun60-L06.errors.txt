@@ -1,0 +1,77 @@
+a.ts(2,7): error TS2322: Type '2' is not assignable to type 'null'.
+a.ts(4,7): error TS2322: Type 'keyof I2' is not assignable to type 'null'.
+  Type '-3' is not assignable to type 'null'.
+a.ts(6,7): error TS2322: Type '2' is not assignable to type 'null'.
+a.ts(8,7): error TS2322: Type '2' is not assignable to type 'null'.
+a.ts(9,41): error TS2322: Type 'M5' is not assignable to type 'null'.
+a.ts(10,23): error TS7053: Element implicitly has an 'any' type because expression of type '2' can't be used to index type 'A1'.
+  Property '2' does not exist on type 'A1'.
+a.ts(10,40): error TS7053: Element implicitly has an 'any' type because expression of type '"2"' can't be used to index type 'A1'.
+  Property '2' does not exist on type 'A1'.
+a.ts(11,23): error TS7053: Element implicitly has an 'any' type because expression of type '2' can't be used to index type 'I2'.
+  Property '2' does not exist on type 'I2'.
+a.ts(11,40): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'I2'.
+  Property '0' does not exist on type 'I2'.
+a.ts(11,57): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'I2'.
+  Property '0' does not exist on type 'I2'.
+a.ts(12,43): error TS2344: Type '"+2"' does not satisfy the constraint 'keyof I2'.
+a.ts(12,63): error TS2339: Property '2' does not exist on type 'I2'.
+a.ts(13,32): error TS2322: Type '"+2"' is not assignable to type 'keyof I2'.
+a.ts(13,85): error TS2322: Type '"-0"' is not assignable to type 'keyof I2'.
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (15 errors) ====
+    class A1 { [+2] = 1; }
+    const m1: null = null! as keyof A1;
+          ~~
+!!! error TS2322: Type '2' is not assignable to type 'null'.
+    interface I2 { [+2]: 1; [-0]: 2; [-3]: 3 }
+    const m2: null = null! as keyof I2;
+          ~~
+!!! error TS2322: Type 'keyof I2' is not assignable to type 'null'.
+!!! error TS2322:   Type '-3' is not assignable to type 'null'.
+    type T3 = { [+2]: 1 };
+    const m3: null = null! as keyof T3;
+          ~~
+!!! error TS2322: Type '2' is not assignable to type 'null'.
+    const o4 = { [+2]: 1 };
+    const m4: null = null! as keyof typeof o4;
+          ~~
+!!! error TS2322: Type '2' is not assignable to type 'null'.
+    type M5 = { [K in keyof I2]: K }; const m5: null = null! as M5;
+                                            ~~
+!!! error TS2322: Type 'M5' is not assignable to type 'null'.
+    declare const a1: A1; a1[2]; a1["+2"]; a1["2"];
+                          ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '2' can't be used to index type 'A1'.
+!!! error TS7053:   Property '2' does not exist on type 'A1'.
+                                           ~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"2"' can't be used to index type 'A1'.
+!!! error TS7053:   Property '2' does not exist on type 'A1'.
+    declare const i2: I2; i2[2]; i2["+2"]; i2[0]; i2["-0"]; i2[-0]; i2[-3]; i2["-3"];
+                          ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '2' can't be used to index type 'I2'.
+!!! error TS7053:   Property '2' does not exist on type 'I2'.
+                                           ~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'I2'.
+!!! error TS7053:   Property '0' does not exist on type 'I2'.
+                                                            ~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'I2'.
+!!! error TS7053:   Property '0' does not exist on type 'I2'.
+    type P6 = Pick<I2, 2>; type P7 = Pick<I2, "+2">; type P8 = I2[2]; type P9 = I2["+2"];
+                                              ~~~~
+!!! error TS2344: Type '"+2"' does not satisfy the constraint 'keyof I2'.
+                                                                  ~
+!!! error TS2339: Property '2' does not exist on type 'I2'.
+    const k10: keyof I2 = 2; const k11: keyof I2 = "+2"; const k12: keyof I2 = 0; const k13: keyof I2 = "-0";
+                                   ~~~
+!!! error TS2322: Type '"+2"' is not assignable to type 'keyof I2'.
+                                                                                        ~~~
+!!! error TS2322: Type '"-0"' is not assignable to type 'keyof I2'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

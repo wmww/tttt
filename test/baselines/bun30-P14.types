@@ -1,0 +1,22 @@
+//// [test/cases/bun30-P14.ts] ////
+
+=== a.ts ===
+interface J { a(): void }
+>a : () => void
+
+interface J { a?: 1 }
+>a : 1 | undefined
+
+declare const x: J;
+>x : J
+
+x.a();
+>x.a() : void
+>x.a : () => void
+>x : J
+>a : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

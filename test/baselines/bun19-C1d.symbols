@@ -1,0 +1,20 @@
+//// [test/cases/bun19-C1d.ts] ////
+
+=== a.ts ===
+type Ignore<X> = number;
+>Ignore : Symbol(Ignore, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 12))
+
+function f<T>(x: number, y: T extends string ? Ignore<T> : number = x) {}
+>f : Symbol(f, Decl(a.ts, 0, 24))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 14))
+>y : Symbol(y, Decl(a.ts, 1, 24))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>Ignore : Symbol(Ignore, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

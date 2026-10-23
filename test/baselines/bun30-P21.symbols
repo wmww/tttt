@@ -1,0 +1,20 @@
+//// [test/cases/bun30-P21.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+exports.a = function () {};
+>exports.a : Symbol(a, Decl(f.js, 0, 0))
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+>a : Symbol(a, Decl(f.js, 0, 0))
+
+a.b = 1;
+exports.a.b;
+>exports.a.b : Symbol(a.b, Decl(f.js, 0, 27))
+>exports.a : Symbol(a, Decl(f.js, 0, 0))
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+>a : Symbol(a, Decl(f.js, 0, 0))
+>b : Symbol(a.b, Decl(f.js, 0, 27))
+

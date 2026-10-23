@@ -1,0 +1,19 @@
+//// [test/cases/bun18-C4b.ts] ////
+
+=== a.ts ===
+declare let f1: (a: number, ...rest: [...string[], boolean]) => void;
+>f1 : Symbol(f1, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 17))
+>rest : Symbol(rest, Decl(a.ts, 0, 27))
+
+declare let f2: (...args: readonly [number, ...string[], boolean]) => void;
+>f2 : Symbol(f2, Decl(a.ts, 1, 11))
+>args : Symbol(args, Decl(a.ts, 1, 17))
+
+f2 = f1;
+>f2 : Symbol(f2, Decl(a.ts, 1, 11))
+>f1 : Symbol(f1, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

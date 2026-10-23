@@ -1,0 +1,16 @@
+//// [test/cases/bun24-C19.ts] ////
+
+=== a.ts ===
+const t: { (a: typeof Symbol.iterator): void; (q: 1): 1 } = {};
+>t : { (a: typeof Symbol.iterator): void; (q: 1): 1; }
+>a : unique symbol
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>q : 1
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

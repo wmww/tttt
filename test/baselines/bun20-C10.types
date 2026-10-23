@@ -1,0 +1,21 @@
+//// [test/cases/bun20-C10.ts] ////
+
+=== a.ts ===
+declare function isEmpty(x: unknown): x is {};
+>isEmpty : (x: unknown) => x is {}
+>x : unknown
+
+function f(x: unknown) { if (!isEmpty(x)) { const b: string = x; } }
+>f : (x: unknown) => void
+>x : unknown
+>!isEmpty(x) : boolean
+>isEmpty(x) : boolean
+>isEmpty : (x: unknown) => x is {}
+>x : unknown
+>b : string
+>x : unknown
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

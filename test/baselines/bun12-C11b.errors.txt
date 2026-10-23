@@ -1,0 +1,17 @@
+a.ts(1,26): error TS1005: 'symbol' expected.
+a.ts(1,26): error TS1335: 'unique symbol' types are not allowed here.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const r7: unique unique symbol;
+                             ~~~~~~~~~~~~~
+!!! error TS1005: 'symbol' expected.
+                             ~~~~~~~~~~~~~
+!!! error TS1335: 'unique symbol' types are not allowed here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

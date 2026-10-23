@@ -1,0 +1,7 @@
+//// [test/cases/bun80-R09c.ts] ////
+
+=== a.js ===
+function g(a: ) {}
+>g : (a: any) => void
+>a : any
+

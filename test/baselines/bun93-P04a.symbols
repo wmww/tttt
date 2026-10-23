@@ -1,0 +1,13 @@
+//// [test/cases/bun93-P04a.ts] ////
+
+=== a.tsx ===
+var v = (<a>
+>v : Symbol(v, Decl(a.tsx, 0, 3))
+
+<<<<<< x
+>x : Symbol(x, Decl(a.tsx, 1, 6))
+
+<b/></a>);
+>b : Symbol(b, Decl(a.tsx, 2, 1))
+> : Symbol(unknown)
+

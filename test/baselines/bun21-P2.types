@@ -1,0 +1,23 @@
+//// [test/cases/bun21-P2.ts] ////
+
+=== a.ts ===
+function f(o: any, x: string | number) { with (o) { x = "a"; var g = () => x; } g().length; }
+>f : (o: any, x: string | number) => void
+>o : any
+>x : string | number
+>o : any
+>x = "a" : any
+>x : any
+>"a" : any
+>g : any
+>() => x : any
+>x : any
+>g().length : any
+>g() : string | number
+>g : () => string | number
+>length : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

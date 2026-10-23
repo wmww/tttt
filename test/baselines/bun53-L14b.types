@@ -1,0 +1,64 @@
+//// [test/cases/bun53-L14b.ts] ////
+
+=== a.ts ===
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+@dec(() => {}) declare class C1 {}
+>dec(() => {}) : any
+>dec : (...a: any[]) => any
+>() => {} : () => void
+>C1 : C1
+
+@dec(function () {}) declare class C2 {}
+>dec(function () {}) : any
+>dec : (...a: any[]) => any
+>function () {} : () => void
+>C2 : C2
+
+@dec({ m() {} }) declare class C3 {}
+>dec({ m() {} }) : any
+>dec : (...a: any[]) => any
+>{ m() {} } : { m(): void; }
+>m : () => void
+>C3 : C3
+
+@dec(class { m() {} }) declare class C4 {}
+>dec(class { m() {} }) : any
+>dec : (...a: any[]) => any
+>class { m() {} } : typeof (Anonymous class)
+>m : () => void
+>C4 : C4
+
+@dec(() => {}) export declare class C5 {}
+>dec(() => {}) : any
+>dec : (...a: any[]) => any
+>() => {} : () => void
+>C5 : C5
+
+export @dec(() => {}) declare class C6 {}
+>dec(() => {}) : any
+>dec : (...a: any[]) => any
+>() => {} : () => void
+>C6 : C6
+
+@dec(() => {}) declare abstract class C8 {}
+>dec(() => {}) : any
+>dec : (...a: any[]) => any
+>() => {} : () => void
+>C8 : C8
+
+@dec(() => { let x = 1; return x; }) declare class C9 {}
+>dec(() => { let x = 1; return x; }) : any
+>dec : (...a: any[]) => any
+>() => { let x = 1; return x; } : () => number
+>x : number
+>1 : 1
+>x : number
+>C9 : C9
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

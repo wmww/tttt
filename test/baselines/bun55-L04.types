@@ -1,0 +1,27 @@
+//// [test/cases/bun55-L04.ts] ////
+
+=== a.ts ===
+declare function fail(): never;
+>fail : () => never
+
+function f(o: any): number { with (fail()) { } }
+>f : (o: any) => number
+>o : any
+>fail() : never
+>fail : () => never
+
+function g(o: any) { with (fail()) { } let x: string | number = 1; x.length; }
+>g : (o: any) => void
+>o : any
+>fail() : never
+>fail : () => never
+>x : string | number
+>1 : 1
+>x.length : any
+>x : number
+>length : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

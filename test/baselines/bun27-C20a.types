@@ -1,0 +1,28 @@
+//// [test/cases/bun27-C20a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+declare function U(p: { a: 1; children: number } | { a: 2 }): JSX.Element;
+>U : (p: { a: 1; children: number; } | { a: 2; }) => JSX.Element
+>p : { a: 1; children: number; } | { a: 2; }
+>a : 1
+>children : number
+>a : 2
+>JSX : any
+
+const u = <U a={1}>{"s"}</U>;
+>u : JSX.Element
+><U a={1}>{"s"}</U> : JSX.Element
+>U : (p: { a: 1; children: number; } | { a: 2; }) => JSX.Element
+>a : 1
+>1 : 1
+>"s" : "s"
+>U : (p: { a: 1; children: number; } | { a: 2; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

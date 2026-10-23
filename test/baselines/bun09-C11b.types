@@ -1,0 +1,27 @@
+//// [test/cases/bun09-C11b.ts] ////
+
+=== a.ts ===
+declare const s: string;
+>s : string
+
+interface I7 { [s]: number }
+>[s] : number
+>s : string
+
+interface I7 { [s]: string }
+>[s] : string
+>s : string
+
+declare const i7: I7;
+>i7 : I7
+
+const x: number = i7["zz"];
+>x : number
+>i7["zz"] : string | number
+>i7 : I7
+>"zz" : "zz"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

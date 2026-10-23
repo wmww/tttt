@@ -1,0 +1,38 @@
+//// [test/cases/bun17-C4.ts] ////
+
+=== a.ts ===
+declare function f<T>(u: U, t: T): number;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>u : Symbol(u, Decl(a.ts, 0, 22))
+>U : Symbol(U, Decl(a.ts, 1, 25))
+>t : Symbol(t, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+const x = f({ k: 5 }, 1);
+>x : Symbol(x, Decl(a.ts, 1, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 1, 13))
+
+type U =
+>U : Symbol(U, Decl(a.ts, 1, 25))
+
+  | { k: 1 | 2 } | { k: 3 | 4 } | { z?: typeof x; k: 5 | 6 } | { k: 7 | 8 } | { k: 9 | 10 }
+>k : Symbol(k, Decl(a.ts, 3, 5))
+>k : Symbol(k, Decl(a.ts, 3, 20))
+>z : Symbol(z, Decl(a.ts, 3, 35))
+>x : Symbol(x, Decl(a.ts, 1, 5))
+>k : Symbol(k, Decl(a.ts, 3, 49))
+>k : Symbol(k, Decl(a.ts, 3, 64))
+>k : Symbol(k, Decl(a.ts, 3, 79))
+
+  | { k: 11 | 12 } | { k: 13 | 14 } | { k: 15 | 16 } | { k: 17 | 18 } | { k: 19 | 20 };
+>k : Symbol(k, Decl(a.ts, 4, 5))
+>k : Symbol(k, Decl(a.ts, 4, 22))
+>k : Symbol(k, Decl(a.ts, 4, 39))
+>k : Symbol(k, Decl(a.ts, 4, 56))
+>k : Symbol(k, Decl(a.ts, 4, 73))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

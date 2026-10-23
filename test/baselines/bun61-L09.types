@@ -1,0 +1,32 @@
+//// [test/cases/bun61-L09.ts] ////
+
+=== a.ts ===
+declare namespace N { const o: { get a() {} } }
+>N : typeof N
+>o : { readonly a: void; }
+>a : void
+
+declare namespace N3 { type U = { get a() { let x = 1; return x; } } }
+>U : U
+>a : number
+>x : number
+>1 : 1
+>x : number
+
+declare const p: { set a(v: number) {} };
+>p : { a: number; }
+>a : number
+>v : number
+
+const q: { get a() { return 1; } } = { a: 1 };
+>q : { readonly a: number; }
+>a : number
+>1 : 1
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

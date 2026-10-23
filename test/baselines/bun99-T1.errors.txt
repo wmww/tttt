@@ -1,0 +1,1882 @@
+first.ts(2,14): error TS2322: Type 'any' is not assignable to type 'never'.
+first.ts(3,14): error TS2322: Type 'any' is not assignable to type 'never'.
+jsx_noinfer_num__instanceof.tsx(7,37): error TS2698: Spread types may only be created from object types.
+jsx_noinfer_num__instanceof.tsx(8,43): error TS2698: Spread types may only be created from object types.
+jsx_noinfer_num__instanceof.tsx(11,9): error TS2322: Type '1' is not assignable to type 'never'.
+jsx_noinfer_u__instanceof.tsx(7,37): error TS2698: Spread types may only be created from object types.
+jsx_noinfer_u__instanceof.tsx(8,43): error TS2698: Spread types may only be created from object types.
+jsx_noinfer_u__instanceof.tsx(11,9): error TS2322: Type '1' is not assignable to type 'never'.
+jsx_param__instanceof.tsx(7,37): error TS2698: Spread types may only be created from object types.
+jsx_param__instanceof.tsx(8,43): error TS2698: Spread types may only be created from object types.
+jsx_param__instanceof.tsx(11,9): error TS2322: Type '1' is not assignable to type 'never'.
+jsx_plain__instanceof.tsx(11,9): error TS2322: Type '1' is not assignable to type 'never'.
+late.ts(4,46): error TS2698: Spread types may only be created from object types.
+late.ts(5,43): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(18,44): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(19,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(20,43): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(21,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(22,49): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(23,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(24,49): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(25,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(26,50): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(27,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(30,47): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(31,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(32,53): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(33,9): error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(34,48): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(35,9): error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(36,55): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(37,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(38,56): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(39,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(40,56): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(41,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(44,59): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(46,48): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(47,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(48,53): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(49,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(50,60): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(51,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(52,64): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(53,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(54,48): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(54,60): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(55,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(56,62): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(57,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(58,50): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(59,9): error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(60,48): error TS2698: Spread types may only be created from object types.
+noinfer_u__instanceof.ts(61,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__instanceof.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+noinfer_u__not_string.ts(18,51): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(19,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(20,50): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(21,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(22,56): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(23,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(24,56): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(25,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+noinfer_u__not_string.ts(26,57): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(27,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+noinfer_u__not_string.ts(30,54): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(31,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(32,60): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(33,9): error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+noinfer_u__not_string.ts(34,55): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(35,9): error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+noinfer_u__not_string.ts(36,62): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(37,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(38,63): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(39,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(40,63): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(41,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+noinfer_u__not_string.ts(44,66): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+noinfer_u__not_string.ts(46,55): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(47,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(48,60): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(49,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(50,67): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(51,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(52,71): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(53,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(54,55): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(54,67): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(55,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(56,69): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(57,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+noinfer_u__not_string.ts(58,57): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(59,9): error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+noinfer_u__not_string.ts(60,55): error TS2698: Spread types may only be created from object types.
+noinfer_u__not_string.ts(61,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__not_string.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+noinfer_u__truthy.ts(18,31): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(19,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(20,30): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(21,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(22,36): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(23,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(24,36): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(25,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+noinfer_u__truthy.ts(26,37): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(27,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(28,37): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+noinfer_u__truthy.ts(30,34): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(31,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(32,40): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(33,9): error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+noinfer_u__truthy.ts(34,35): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(35,9): error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+noinfer_u__truthy.ts(36,42): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(37,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(38,43): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(39,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(40,43): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(41,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(42,46): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+noinfer_u__truthy.ts(44,46): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+noinfer_u__truthy.ts(46,35): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(47,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(48,40): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(49,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(50,47): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(51,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(52,51): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(53,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(54,35): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(54,47): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(55,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(56,49): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(57,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+noinfer_u__truthy.ts(58,37): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(59,9): error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+noinfer_u__truthy.ts(60,35): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(61,9): error TS2322: Type 'any' is not assignable to type 'never'.
+noinfer_u__truthy.ts(62,46): error TS2698: Spread types may only be created from object types.
+noinfer_u__truthy.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+param__instanceof.ts(18,44): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(19,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(20,43): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(21,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(22,49): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(23,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(24,49): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(25,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+param__instanceof.ts(26,50): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(27,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+param__instanceof.ts(30,47): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(31,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(32,53): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(33,9): error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+param__instanceof.ts(34,48): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(35,9): error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+param__instanceof.ts(36,55): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(37,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(38,56): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(39,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(40,56): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(41,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+param__instanceof.ts(44,59): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+param__instanceof.ts(46,48): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(47,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(48,53): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(49,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(50,60): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(51,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(52,64): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(53,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(54,48): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(54,60): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(55,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(56,62): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(57,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+param__instanceof.ts(58,50): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(59,9): error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+param__instanceof.ts(60,48): error TS2698: Spread types may only be created from object types.
+param__instanceof.ts(61,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__instanceof.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+param__not_string.ts(18,51): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(19,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(20,50): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(21,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(22,56): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(23,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(24,56): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(25,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+param__not_string.ts(26,57): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(27,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+param__not_string.ts(30,54): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(31,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(32,60): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(33,9): error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+param__not_string.ts(34,55): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(35,9): error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+param__not_string.ts(36,62): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(37,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(38,63): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(39,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(40,63): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(41,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+param__not_string.ts(44,66): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+param__not_string.ts(46,55): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(47,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(48,60): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(49,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(50,67): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(51,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(52,71): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(53,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(54,55): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(54,67): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(55,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(56,69): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(57,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+param__not_string.ts(58,57): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(59,9): error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+param__not_string.ts(60,55): error TS2698: Spread types may only be created from object types.
+param__not_string.ts(61,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__not_string.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+param__truthy.ts(18,31): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(19,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(20,30): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(21,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(22,36): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(23,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(24,36): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(25,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+param__truthy.ts(26,37): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(27,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(28,37): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+param__truthy.ts(30,34): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(31,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(32,40): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(33,9): error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+param__truthy.ts(34,35): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(35,9): error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+param__truthy.ts(36,42): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(37,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(38,43): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(39,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(40,43): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(41,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(42,46): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+param__truthy.ts(44,46): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+param__truthy.ts(46,35): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(47,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(48,40): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(49,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(50,47): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(51,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(52,51): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(53,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(54,35): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(54,47): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(55,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(56,49): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(57,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+param__truthy.ts(58,37): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(59,9): error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+param__truthy.ts(60,35): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(61,9): error TS2322: Type 'any' is not assignable to type 'never'.
+param__truthy.ts(62,46): error TS2698: Spread types may only be created from object types.
+param__truthy.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+plain__instanceof.ts(19,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(21,9): error TS2322: Type '{ k: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(23,9): error TS2322: Type 'false | { k: number; s: number; }' is not assignable to type 'never'.
+  Type 'false' is not assignable to type 'never'.
+plain__instanceof.ts(25,9): error TS2322: Type '[number, { k: number; s: number; } | undefined]' is not assignable to type 'never'.
+plain__instanceof.ts(27,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+plain__instanceof.ts(31,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(33,9): error TS2322: Type '{ a: { k: number; s: number; }; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(35,9): error TS2322: Type '{ k: number; s: number; }[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(37,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(39,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(41,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+plain__instanceof.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+plain__instanceof.ts(47,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(49,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(51,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(53,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(55,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(57,9): error TS2322: Type '[number, { k: number; s: number; } | undefined]' is not assignable to type 'never'.
+plain__instanceof.ts(59,9): error TS2322: Type 'Box<{ k: number; s: number; } | undefined>' is not assignable to type 'never'.
+plain__instanceof.ts(61,9): error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__instanceof.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+plain__not_string.ts(19,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(21,9): error TS2322: Type '{ k?: number | undefined; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(23,9): error TS2322: Type 'false | { k?: number | undefined; s: number; }' is not assignable to type 'never'.
+  Type 'false' is not assignable to type 'never'.
+plain__not_string.ts(25,9): error TS2322: Type '[number, { k?: number | undefined; s: number; } | undefined]' is not assignable to type 'never'.
+plain__not_string.ts(27,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+plain__not_string.ts(31,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(33,9): error TS2322: Type '{ a: { k?: number | undefined; s: number; }; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(35,9): error TS2322: Type '{ k?: number | undefined; s: number; }[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(37,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(39,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(41,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+plain__not_string.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+plain__not_string.ts(47,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(49,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(51,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(53,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(55,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(57,9): error TS2322: Type '[number, { k?: number | undefined; s: number; } | undefined]' is not assignable to type 'never'.
+plain__not_string.ts(59,9): error TS2322: Type 'Box<{ k?: number | undefined; s: number; } | undefined>' is not assignable to type 'never'.
+plain__not_string.ts(61,9): error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__not_string.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+plain__truthy.ts(18,31): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(19,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(20,30): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(21,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(22,36): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(23,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(24,36): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(25,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+plain__truthy.ts(26,37): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(27,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(28,37): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(29,9): error TS2322: Type 'void' is not assignable to type 'never'.
+plain__truthy.ts(30,34): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(31,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(32,40): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(33,9): error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__truthy.ts(34,35): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(35,9): error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+plain__truthy.ts(36,42): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(37,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(38,43): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(39,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(40,43): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(41,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(42,46): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(43,9): error TS2322: Type 'number' is not assignable to type 'never'.
+plain__truthy.ts(44,46): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(45,9): error TS2322: Type 'void' is not assignable to type 'never'.
+plain__truthy.ts(46,35): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(47,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(48,40): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(49,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(50,47): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(51,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(52,51): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(53,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(54,35): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(54,47): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(55,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(56,49): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(57,9): error TS2322: Type '[number, any]' is not assignable to type 'never'.
+plain__truthy.ts(58,37): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(59,9): error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+plain__truthy.ts(60,35): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(61,9): error TS2322: Type 'any' is not assignable to type 'never'.
+plain__truthy.ts(62,46): error TS2698: Spread types may only be created from object types.
+plain__truthy.ts(63,9): error TS2322: Type 'unknown' is not assignable to type 'never'.
+sentinel.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "jsx": "preserve", "module": "esnext", "moduleResolution": "bundler", "skipLibCheck": true}, "files": ["first.ts", "late.ts", "noinfer_u__instanceof.ts", "noinfer_u__not_string.ts", "noinfer_u__truthy.ts", "param__instanceof.ts", "param__not_string.ts", "param__truthy.ts", "plain__instanceof.ts", "plain__not_string.ts", "plain__truthy.ts", "jsx_noinfer_u__instanceof.tsx", "jsx_param__instanceof.tsx", "jsx_plain__instanceof.tsx", "jsx_noinfer_num__instanceof.tsx", "jsx.d.ts", "sentinel.ts"]}
+==== first.ts (2 errors) ====
+    import { v, w } from "./late";
+    export const p1: never = v;
+                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export const p2: never = w;
+                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== jsx.d.ts (0 errors) ====
+    declare namespace JSX { interface Element {} interface IntrinsicElements { div: any } }
+==== jsx_noinfer_num__instanceof.tsx (3 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function G<T>(props: T): JSX.Element;
+    declare function N(props: object): JSX.Element;
+    declare const c: boolean;
+    export function f(k: NoInfer<K | number> | null) {
+      const a = k instanceof K ? <G {...k} /> : undefined;
+                                        ~
+!!! error TS2698: Spread types may only be created from object types.
+      const b = k instanceof K ? <G s={1} {...k} /> : undefined;
+                                              ~
+!!! error TS2698: Spread types may only be created from object types.
+      const d = k instanceof K ? <N {...k} /> : undefined;
+      const e = k instanceof K ? <div {...k} /> : undefined;
+      const z: never = 1;
+            ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    }
+==== jsx_noinfer_u__instanceof.tsx (3 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function G<T>(props: T): JSX.Element;
+    declare function N(props: object): JSX.Element;
+    declare const c: boolean;
+    export function f(k: NoInfer<K | string | undefined> | undefined) {
+      const a = k instanceof K ? <G {...k} /> : undefined;
+                                        ~
+!!! error TS2698: Spread types may only be created from object types.
+      const b = k instanceof K ? <G s={1} {...k} /> : undefined;
+                                              ~
+!!! error TS2698: Spread types may only be created from object types.
+      const d = k instanceof K ? <N {...k} /> : undefined;
+      const e = k instanceof K ? <div {...k} /> : undefined;
+      const z: never = 1;
+            ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    }
+==== jsx_param__instanceof.tsx (3 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function G<T>(props: T): JSX.Element;
+    declare function N(props: object): JSX.Element;
+    declare const c: boolean;
+    export function f<P extends K | string | undefined>(k: P) {
+      const a = k instanceof K ? <G {...k} /> : undefined;
+                                        ~
+!!! error TS2698: Spread types may only be created from object types.
+      const b = k instanceof K ? <G s={1} {...k} /> : undefined;
+                                              ~
+!!! error TS2698: Spread types may only be created from object types.
+      const d = k instanceof K ? <N {...k} /> : undefined;
+      const e = k instanceof K ? <div {...k} /> : undefined;
+      const z: never = 1;
+            ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    }
+==== jsx_plain__instanceof.tsx (1 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function G<T>(props: T): JSX.Element;
+    declare function N(props: object): JSX.Element;
+    declare const c: boolean;
+    export function f(k: K | string | undefined) {
+      const a = k instanceof K ? <G {...k} /> : undefined;
+      const b = k instanceof K ? <G s={1} {...k} /> : undefined;
+      const d = k instanceof K ? <N {...k} /> : undefined;
+      const e = k instanceof K ? <div {...k} /> : undefined;
+      const z: never = 1;
+            ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    }
+==== late.ts (2 errors) ====
+    class K { k = 1 }
+    declare function id<T>(value: T): T;
+    declare const k: NoInfer<K | string | undefined> | undefined;
+    export const v = id(k instanceof K ? { s: 1, ...k } : undefined);
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const w = id(id(k instanceof K ? { ...k } : undefined));
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+==== noinfer_u__instanceof.ts (44 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f(k: NoInfer<K | string | undefined> | undefined) {
+      const v_id = id(k instanceof K ? { s: 1, ...k } : undefined);
+                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_only = id(k instanceof K ? { ...k } : undefined);
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_and = id(k instanceof K && { s: 1, ...k });
+                                                    ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_two = two(1, k instanceof K ? { s: 1, ...k } : undefined);
+                                                    ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_bound = bound(k instanceof K ? { s: 1, ...k } : undefined);
+                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_plain = plain(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (k instanceof K ? { s: 1, ...k } : undefined);
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested = id(k instanceof K ? { a: { s: 1, ...k } } : undefined);
+                                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(k instanceof K ? [{ s: 1, ...k }] : undefined);
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (k instanceof K ? { s: 1, ...k } : undefined));
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_given = given(x => (k instanceof K ? { s: x, ...k } : undefined));
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested_call = id(id(k instanceof K ? { s: 1, ...k } : undefined));
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_count_in_id = id(count(k instanceof K ? { s: 1, ...k } : undefined));
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(k instanceof K ? { s: 1, ...k } : undefined));
+                                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(k instanceof K ? { s: 1, ...k } : undefined);
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_method = box.set(k instanceof K ? { s: 1, ...k } : undefined);
+                                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(k instanceof K ? { s: 1, ...k } : undefined);
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_block = lazy(() => { return k instanceof K ? { s: 1, ...k } : undefined; });
+                                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_spread_twice = id(k instanceof K ? { ...k, s: 1, ...k } : undefined);
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(k instanceof K ? { s: 1, ...k } : undefined)));
+                                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_new = new Box(k instanceof K ? { s: 1, ...k } : undefined);
+                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+      const v_tag = tag`${k instanceof K ? { s: 1, ...k } : undefined}`;
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== noinfer_u__not_string.ts (44 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f(k: NoInfer<K | string | undefined> | undefined) {
+      const v_id = id(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_only = id(typeof k !== "string" ? { ...k } : undefined);
+                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_and = id(typeof k !== "string" && { s: 1, ...k });
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_two = two(1, typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_bound = bound(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                            ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_plain = plain(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                         ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested = id(typeof k !== "string" ? { a: { s: 1, ...k } } : undefined);
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(typeof k !== "string" ? [{ s: 1, ...k }] : undefined);
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (typeof k !== "string" ? { s: 1, ...k } : undefined));
+                                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_given = given(x => (typeof k !== "string" ? { s: x, ...k } : undefined));
+                                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested_call = id(id(typeof k !== "string" ? { s: 1, ...k } : undefined));
+                                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_count_in_id = id(count(typeof k !== "string" ? { s: 1, ...k } : undefined));
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(typeof k !== "string" ? { s: 1, ...k } : undefined));
+                                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_method = box.set(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_block = lazy(() => { return typeof k !== "string" ? { s: 1, ...k } : undefined; });
+                                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_spread_twice = id(typeof k !== "string" ? { ...k, s: 1, ...k } : undefined);
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(typeof k !== "string" ? { s: 1, ...k } : undefined)));
+                                                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_new = new Box(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                            ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+      const v_tag = tag`${typeof k !== "string" ? { s: 1, ...k } : undefined}`;
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== noinfer_u__truthy.ts (47 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f(k: NoInfer<K | string | undefined> | undefined) {
+      const v_id = id(k ? { s: 1, ...k } : undefined);
+                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_only = id(k ? { ...k } : undefined);
+                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_and = id(k && { s: 1, ...k });
+                                       ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_two = two(1, k ? { s: 1, ...k } : undefined);
+                                       ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_bound = bound(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_plain = plain(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (k ? { s: 1, ...k } : undefined);
+                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested = id(k ? { a: { s: 1, ...k } } : undefined);
+                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(k ? [{ s: 1, ...k }] : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (k ? { s: 1, ...k } : undefined));
+                                             ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_given = given(x => (k ? { s: x, ...k } : undefined));
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested_call = id(id(k ? { s: 1, ...k } : undefined));
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_count_in_id = id(count(k ? { s: 1, ...k } : undefined));
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(k ? { s: 1, ...k } : undefined));
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(k ? { s: 1, ...k } : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_method = box.set(k ? { s: 1, ...k } : undefined);
+                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(k ? { s: 1, ...k } : undefined);
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_block = lazy(() => { return k ? { s: 1, ...k } : undefined; });
+                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_spread_twice = id(k ? { ...k, s: 1, ...k } : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(k ? { s: 1, ...k } : undefined)));
+                                                    ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_new = new Box(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+      const v_tag = tag`${k ? { s: 1, ...k } : undefined}`;
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(k ? { s: 1, ...k } : undefined);
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== param__instanceof.ts (44 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f<P extends K | string | undefined>(k: P) {
+      const v_id = id(k instanceof K ? { s: 1, ...k } : undefined);
+                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_only = id(k instanceof K ? { ...k } : undefined);
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_and = id(k instanceof K && { s: 1, ...k });
+                                                    ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_two = two(1, k instanceof K ? { s: 1, ...k } : undefined);
+                                                    ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_bound = bound(k instanceof K ? { s: 1, ...k } : undefined);
+                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_plain = plain(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (k instanceof K ? { s: 1, ...k } : undefined);
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested = id(k instanceof K ? { a: { s: 1, ...k } } : undefined);
+                                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(k instanceof K ? [{ s: 1, ...k }] : undefined);
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (k instanceof K ? { s: 1, ...k } : undefined));
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_given = given(x => (k instanceof K ? { s: x, ...k } : undefined));
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested_call = id(id(k instanceof K ? { s: 1, ...k } : undefined));
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_count_in_id = id(count(k instanceof K ? { s: 1, ...k } : undefined));
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(k instanceof K ? { s: 1, ...k } : undefined));
+                                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(k instanceof K ? { s: 1, ...k } : undefined);
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_method = box.set(k instanceof K ? { s: 1, ...k } : undefined);
+                                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(k instanceof K ? { s: 1, ...k } : undefined);
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_block = lazy(() => { return k instanceof K ? { s: 1, ...k } : undefined; });
+                                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_spread_twice = id(k instanceof K ? { ...k, s: 1, ...k } : undefined);
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(k instanceof K ? { s: 1, ...k } : undefined)));
+                                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_new = new Box(k instanceof K ? { s: 1, ...k } : undefined);
+                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+      const v_tag = tag`${k instanceof K ? { s: 1, ...k } : undefined}`;
+                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== param__not_string.ts (44 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f<P extends K | string | undefined>(k: P) {
+      const v_id = id(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_only = id(typeof k !== "string" ? { ...k } : undefined);
+                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_and = id(typeof k !== "string" && { s: 1, ...k });
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_two = two(1, typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_bound = bound(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                            ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_plain = plain(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                         ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested = id(typeof k !== "string" ? { a: { s: 1, ...k } } : undefined);
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(typeof k !== "string" ? [{ s: 1, ...k }] : undefined);
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (typeof k !== "string" ? { s: 1, ...k } : undefined));
+                                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_given = given(x => (typeof k !== "string" ? { s: x, ...k } : undefined));
+                                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested_call = id(id(typeof k !== "string" ? { s: 1, ...k } : undefined));
+                                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_count_in_id = id(count(typeof k !== "string" ? { s: 1, ...k } : undefined));
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(typeof k !== "string" ? { s: 1, ...k } : undefined));
+                                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_method = box.set(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_block = lazy(() => { return typeof k !== "string" ? { s: 1, ...k } : undefined; });
+                                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_spread_twice = id(typeof k !== "string" ? { ...k, s: 1, ...k } : undefined);
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(typeof k !== "string" ? { s: 1, ...k } : undefined)));
+                                                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_new = new Box(typeof k !== "string" ? { s: 1, ...k } : undefined);
+                                                            ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+      const v_tag = tag`${typeof k !== "string" ? { s: 1, ...k } : undefined}`;
+                                                          ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== param__truthy.ts (47 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f<P extends K | string | undefined>(k: P) {
+      const v_id = id(k ? { s: 1, ...k } : undefined);
+                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_only = id(k ? { ...k } : undefined);
+                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_and = id(k && { s: 1, ...k });
+                                       ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_two = two(1, k ? { s: 1, ...k } : undefined);
+                                       ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_bound = bound(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_plain = plain(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (k ? { s: 1, ...k } : undefined);
+                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested = id(k ? { a: { s: 1, ...k } } : undefined);
+                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(k ? [{ s: 1, ...k }] : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (k ? { s: 1, ...k } : undefined));
+                                             ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_given = given(x => (k ? { s: x, ...k } : undefined));
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested_call = id(id(k ? { s: 1, ...k } : undefined));
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_count_in_id = id(count(k ? { s: 1, ...k } : undefined));
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(k ? { s: 1, ...k } : undefined));
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(k ? { s: 1, ...k } : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_method = box.set(k ? { s: 1, ...k } : undefined);
+                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(k ? { s: 1, ...k } : undefined);
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_block = lazy(() => { return k ? { s: 1, ...k } : undefined; });
+                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_spread_twice = id(k ? { ...k, s: 1, ...k } : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(k ? { s: 1, ...k } : undefined)));
+                                                    ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_new = new Box(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+      const v_tag = tag`${k ? { s: 1, ...k } : undefined}`;
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(k ? { s: 1, ...k } : undefined);
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== plain__instanceof.ts (23 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f(k: K | string | undefined) {
+      const v_id = id(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_id_only = id(k instanceof K ? { ...k } : undefined);
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type '{ k: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_id_and = id(k instanceof K && { s: 1, ...k });
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'false | { k: number; s: number; }' is not assignable to type 'never'.
+!!! error TS2322:   Type 'false' is not assignable to type 'never'.
+      const v_two = two(1, k instanceof K ? { s: 1, ...k } : undefined);
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, { k: number; s: number; } | undefined]' is not assignable to type 'never'.
+      const v_bound = bound(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_plain = plain(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (k instanceof K ? { s: 1, ...k } : undefined);
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_nested = id(k instanceof K ? { a: { s: 1, ...k } } : undefined);
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: { k: number; s: number; }; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(k instanceof K ? [{ s: 1, ...k }] : undefined);
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; }[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (k instanceof K ? { s: 1, ...k } : undefined));
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_given = given(x => (k instanceof K ? { s: x, ...k } : undefined));
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_nested_call = id(id(k instanceof K ? { s: 1, ...k } : undefined));
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_count_in_id = id(count(k instanceof K ? { s: 1, ...k } : undefined));
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(k instanceof K ? { s: 1, ...k } : undefined));
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_method = box.set(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_block = lazy(() => { return k instanceof K ? { s: 1, ...k } : undefined; });
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_spread_twice = id(k instanceof K ? { ...k, s: 1, ...k } : undefined);
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(k instanceof K ? { s: 1, ...k } : undefined)));
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, { k: number; s: number; } | undefined]' is not assignable to type 'never'.
+      const v_new = new Box(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<{ k: number; s: number; } | undefined>' is not assignable to type 'never'.
+      const v_tag = tag`${k instanceof K ? { s: 1, ...k } : undefined}`;
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type '{ k: number; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(k instanceof K ? { s: 1, ...k } : undefined);
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== plain__not_string.ts (23 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f(k: K | string | undefined) {
+      const v_id = id(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_id_only = id(typeof k !== "string" ? { ...k } : undefined);
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_id_and = id(typeof k !== "string" && { s: 1, ...k });
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'false | { k?: number | undefined; s: number; }' is not assignable to type 'never'.
+!!! error TS2322:   Type 'false' is not assignable to type 'never'.
+      const v_two = two(1, typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, { k?: number | undefined; s: number; } | undefined]' is not assignable to type 'never'.
+      const v_bound = bound(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_plain = plain(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_nested = id(typeof k !== "string" ? { a: { s: 1, ...k } } : undefined);
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: { k?: number | undefined; s: number; }; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(typeof k !== "string" ? [{ s: 1, ...k }] : undefined);
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; }[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (typeof k !== "string" ? { s: 1, ...k } : undefined));
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_given = given(x => (typeof k !== "string" ? { s: x, ...k } : undefined));
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_nested_call = id(id(typeof k !== "string" ? { s: 1, ...k } : undefined));
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_count_in_id = id(count(typeof k !== "string" ? { s: 1, ...k } : undefined));
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(typeof k !== "string" ? { s: 1, ...k } : undefined));
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_method = box.set(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_block = lazy(() => { return typeof k !== "string" ? { s: 1, ...k } : undefined; });
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_spread_twice = id(typeof k !== "string" ? { ...k, s: 1, ...k } : undefined);
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(typeof k !== "string" ? { s: 1, ...k } : undefined)));
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, { k?: number | undefined; s: number; } | undefined]' is not assignable to type 'never'.
+      const v_new = new Box(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<{ k?: number | undefined; s: number; } | undefined>' is not assignable to type 'never'.
+      const v_tag = tag`${typeof k !== "string" ? { s: 1, ...k } : undefined}`;
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type '{ k?: number | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(typeof k !== "string" ? { s: 1, ...k } : undefined);
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== plain__truthy.ts (47 errors) ====
+    class K { k = 1 }
+    interface O { o: 1 }
+    declare function id<T>(value: T): T;
+    declare function two<T, U>(a: T, b: U): [T, U];
+    declare function bound<T extends object | undefined>(value: T): T;
+    declare function plain(value: unknown): void;
+    declare function lazy<T>(make: () => T): T;
+    declare function given<T>(make: (x: number) => T): T;
+    declare class Box<T> { constructor(value: T); value: T }
+    declare function tag<T>(strings: TemplateStringsArray, value: T): T;
+    declare const c: boolean;
+    declare function count(value: unknown): number;
+    declare function over<T>(value: T, more: string): 1;
+    declare function over<T>(value: T): T;
+    declare const box: { set<T>(value: T): T };
+    declare const maybe: undefined | (<T>(value: T) => T);
+    export function f(k: K | string | undefined) {
+      const v_id = id(k ? { s: 1, ...k } : undefined);
+                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id: never = v_id;
+            ~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_only = id(k ? { ...k } : undefined);
+                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_only: never = v_id_only;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_id_and = id(k && { s: 1, ...k });
+                                       ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_and: never = v_id_and;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_two = two(1, k ? { s: 1, ...k } : undefined);
+                                       ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_two: never = v_two;
+            ~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_bound = bound(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_bound: never = v_bound;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_plain = plain(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_plain: never = v_plain;
+            ~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_no_call = (k ? { s: 1, ...k } : undefined);
+                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_no_call: never = v_no_call;
+            ~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested = id(k ? { a: { s: 1, ...k } } : undefined);
+                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested: never = v_nested;
+            ~~~~~~~~
+!!! error TS2322: Type '{ a: any; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_array = id(k ? [{ s: 1, ...k }] : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_array: never = v_array;
+            ~~~~~~~
+!!! error TS2322: Type 'any[] | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+      const v_lazy = lazy(() => (k ? { s: 1, ...k } : undefined));
+                                             ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_lazy: never = v_lazy;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_given = given(x => (k ? { s: x, ...k } : undefined));
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_given: never = v_given;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_nested_call = id(id(k ? { s: 1, ...k } : undefined));
+                                              ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_nested_call: never = v_nested_call;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_count_in_id = id(count(k ? { s: 1, ...k } : undefined));
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_count_in_id: never = v_count_in_id;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+      const v_id_in_plain = plain(id(k ? { s: 1, ...k } : undefined));
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_id_in_plain: never = v_id_in_plain;
+            ~~~~~~~~~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+      const v_over = over(k ? { s: 1, ...k } : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_over: never = v_over;
+            ~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_method = box.set(k ? { s: 1, ...k } : undefined);
+                                           ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_method: never = v_method;
+            ~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_optional_call = maybe?.(k ? { s: 1, ...k } : undefined);
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_optional_call: never = v_optional_call;
+            ~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_block = lazy(() => { return k ? { s: 1, ...k } : undefined; });
+                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_block: never = v_block;
+            ~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_spread_twice = id(k ? { ...k, s: 1, ...k } : undefined);
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_spread_twice: never = v_spread_twice;
+            ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_three_deep = id(two(1, id(k ? { s: 1, ...k } : undefined)));
+                                                    ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_three_deep: never = v_three_deep;
+            ~~~~~~~~~~~~
+!!! error TS2322: Type '[number, any]' is not assignable to type 'never'.
+      const v_new = new Box(k ? { s: 1, ...k } : undefined);
+                                        ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_new: never = v_new;
+            ~~~~~
+!!! error TS2322: Type 'Box<any>' is not assignable to type 'never'.
+      const v_tag = tag`${k ? { s: 1, ...k } : undefined}`;
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_tag: never = v_tag;
+            ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+      const v_explicit = id<unknown>(k ? { s: 1, ...k } : undefined);
+                                                 ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+      const p_explicit: never = v_explicit;
+            ~~~~~~~~~~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    }
+==== sentinel.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,15 @@
+a.ts(2,11): error TS2310: Type 'A' recursively references itself as a base type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+    interface A extends Cond<A> { x: number }
+              ~
+!!! error TS2310: Type 'A' recursively references itself as a base type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

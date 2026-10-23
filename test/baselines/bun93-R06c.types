@@ -1,0 +1,25 @@
+//// [test/cases/bun93-R06c.ts] ////
+
+=== a.ts ===
+type M = { [K in "x" | "p"]: K extends "p" ? typeof arr : number };
+>M : M
+>arr : any
+
+interface C { x: number; p: any }
+>x : number
+>p : any
+
+declare let m: M; declare let c: C;
+>m : M
+>c : C
+
+const arr = [m, c];
+>arr : any
+>[m, c] : C[]
+>m : M
+>c : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

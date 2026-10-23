@@ -1,0 +1,22 @@
+a.tsx(3,12): error TS2322: Type '{ style: { class: string; }; }' is not assignable to type '{ style?: { className?: string | undefined; } | undefined; }'.
+  Types of property 'style' are incompatible.
+    Type '{ class: string; }' is not assignable to type '{ className?: string | undefined; }'.
+      Property 'class' does not exist on type '{ className?: string | undefined; }'. Did you mean 'className'?
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    declare function F(p: { style?: { className?: string } }): JSX.Element;
+    const a = <F {...{ style: { class: "x" } }} />;
+               ~
+!!! error TS2322: Type '{ style: { class: string; }; }' is not assignable to type '{ style?: { className?: string | undefined; } | undefined; }'.
+!!! error TS2322:   Types of property 'style' are incompatible.
+!!! error TS2322:     Type '{ class: string; }' is not assignable to type '{ className?: string | undefined; }'.
+!!! error TS2322:       Property 'class' does not exist on type '{ className?: string | undefined; }'. Did you mean 'className'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

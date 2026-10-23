@@ -1,0 +1,25 @@
+//// [test/cases/bun04-C14.ts] ////
+
+=== a.ts ===
+import { v as Shadow } from "./m";
+>v : 1
+>Shadow : 1
+
+namespace Inner { declare const enum Shadow { A } export const y = Shadow.A; }
+>Inner : typeof Inner
+>Shadow : Shadow
+>A : Shadow.A
+>y : Shadow.A
+>Shadow.A : Shadow
+>Shadow : typeof Shadow
+>A : Shadow
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const v = 1;
+>v : 1
+>1 : 1
+

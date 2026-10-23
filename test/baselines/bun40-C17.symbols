@@ -1,0 +1,12 @@
+//// [test/cases/bun40-C17.ts] ////
+
+=== a.ts ===
+/// <reference types="bar" />
+/// <reference types="Bar" />
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/bar/index.d.ts ===
+declare const bar: 1;
+>bar : Symbol(bar, Decl(index.d.ts, 0, 13))
+

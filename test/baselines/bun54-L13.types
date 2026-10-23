@@ -1,0 +1,77 @@
+//// [test/cases/bun54-L13.ts] ////
+
+=== a.tsx ===
+namespace N {
+>N : typeof N
+
+  namespace React {
+>React : typeof React
+
+    export declare function createElement(...a: any[]): any;
+>createElement : (...a: any[]) => any
+>a : any[]
+
+    export namespace JSX {
+      export interface Element {}
+      export interface IntrinsicAttributes { key?: string }
+>key : string | undefined
+
+      export interface IntrinsicClassAttributes<T> { ref?: T }
+>ref : T | undefined
+
+      export interface IntrinsicElements { div: {} }
+>div : {}
+    }
+  }
+  function C(props: { x: string }) { return null as any; }
+>C : (props: { x: string; }) => any
+>props : { x: string; }
+>x : string
+>null as any : any
+
+  export const e1 = <C x={1} />;
+>e1 : React.JSX.Element
+><C x={1} /> : React.JSX.Element
+>C : (props: { x: string; }) => any
+>x : number
+>1 : 1
+
+  export const e2 = <C />;
+>e2 : React.JSX.Element
+><C /> : React.JSX.Element
+>C : (props: { x: string; }) => any
+
+  export const e3 = <C x="a" y={1} />;
+>e3 : React.JSX.Element
+><C x="a" y={1} /> : React.JSX.Element
+>C : (props: { x: string; }) => any
+>x : string
+>y : number
+>1 : 1
+
+  class K { props!: { x: string }; constructor(p: { x: string }) {} render() { return null as any; } }
+>K : K
+>props : { x: string; }
+>x : string
+>p : { x: string; }
+>x : string
+>render : () => any
+>null as any : any
+
+  export const e4 = <K />;
+>e4 : React.JSX.Element
+><K /> : React.JSX.Element
+>K : typeof K
+
+  export const e5 = <K x="a" y={1} />;
+>e5 : React.JSX.Element
+><K x="a" y={1} /> : React.JSX.Element
+>K : typeof K
+>x : string
+>y : number
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun14-P2.ts] ////
+
+=== a.ts ===
+type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+>Cond : Cond<T>
+>y : 1
+>z : 1
+
+interface A extends Cond<A> { x: number }
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

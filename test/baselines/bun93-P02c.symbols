@@ -1,0 +1,7 @@
+//// [test/cases/bun93-P02c.ts] ////
+
+=== a.ts ===
+xport clatypeof ss B { m(@dec(a) x: number) { return x; } }
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun08-C23b.ts] ////
+
+=== a.js ===
+const { F } = require("./lib");
+>F : Symbol(F, Decl(a.js, 0, 7))
+>require : Symbol(require)
+>"./lib" : Symbol("./lib", Decl(lib.js, 0, 0))
+
+/** @type {F.Inner} */
+let t;
+>t : Symbol(t, Decl(a.js, 2, 3))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 3, 27))
+
+=== lib.js ===
+function F() {}
+>F : Symbol(F, Decl(lib.js, 0, 0))
+
+module.exports = { F };
+>module.exports : Symbol(exports, Decl(lib.js, 0, 0))
+>module : Symbol(module, Decl(lib.js, 0, 0))
+>exports : Symbol(exports, Decl(lib.js, 0, 0))
+>F : Symbol(F, Decl(lib.js, 1, 18))
+

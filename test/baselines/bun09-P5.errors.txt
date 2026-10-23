@@ -1,0 +1,22 @@
+a.ts(3,41): error TS2322: Type 'T' is not assignable to type '{ a: 2; }'.
+  Type 'X1' is not assignable to type '{ a: 2; }'.
+    Types of property 'a' are incompatible.
+      Type '1' is not assignable to type '2'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface I { p: 0 }
+    type X1 = I & { a: 1 };
+    function f1<T extends X1>(t: T) { const q: { a: 2 } = t; }
+                                            ~
+!!! error TS2322: Type 'T' is not assignable to type '{ a: 2; }'.
+!!! error TS2322:   Type 'X1' is not assignable to type '{ a: 2; }'.
+!!! error TS2322:     Types of property 'a' are incompatible.
+!!! error TS2322:       Type '1' is not assignable to type '2'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

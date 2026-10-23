@@ -1,0 +1,16 @@
+a.js(2,35): error TS2815: 'arguments' cannot be referenced in property initializers or class static initialization blocks.
+a.js(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "target": "es2022" } }
+==== a.js (2 errors) ====
+    /** @param {number[]} q */
+    function f() { class K { static { arguments; } } }
+                                      ~~~~~~~~~
+!!! error TS2815: 'arguments' cannot be referenced in property initializers or class static initialization blocks.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,84 @@
+//// [test/cases/bun60-L04a.ts] ////
+
+=== a.js ===
+function f() { const s = Symbol(); return { [s]: 1 }; }
+>f : () => { [s]: number; }
+>s : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>{ [s]: 1 } : { [s]: number; }
+>[s] : number
+>s : unique symbol
+>1 : 1
+
+export class C0 { constructor() { this.x = f(); } }
+>C0 : C0
+>this.x = f() : { [s]: number; }
+>this.x : any
+>this : this
+>x : any
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+export class C1 { [+1]() {} constructor() { this[1] = f(); } }
+>C1 : C1
+>[+1] : () => void
+>+1 : 1
+>1 : 1
+>this[1] = f() : { [s]: number; }
+>this[1] : any
+>this : this
+>1 : 1
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+export class C2 { 1() {} constructor() { this[1] = f(); } }
+>C2 : C2
+>1 : () => void
+>this[1] = f() : { [s]: number; }
+>this[1] : () => void
+>this : this
+>1 : 1
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+export class C3 { [1]() {} constructor() { this[1] = f(); } }
+>C3 : C3
+>[1] : () => void
+>1 : 1
+>this[1] = f() : { [s]: number; }
+>this[1] : () => void
+>this : this
+>1 : 1
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+export class C4 { [-1]() {} constructor() { this["-1"] = f(); } }
+>C4 : C4
+>[-1] : () => void
+>-1 : -1
+>1 : 1
+>this["-1"] = f() : { [s]: number; }
+>this["-1"] : () => void
+>this : this
+>"-1" : "-1"
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+export class C5 { [+1]() {} constructor() { this["+1"] = f(); } }
+>C5 : C5
+>[+1] : () => void
+>+1 : 1
+>1 : 1
+>this["+1"] = f() : { [s]: number; }
+>this["+1"] : () => void
+>this : this
+>"+1" : "+1"
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

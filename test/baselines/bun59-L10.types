@@ -1,0 +1,58 @@
+//// [test/cases/bun59-L10.ts] ////
+
+=== a.ts ===
+import { make, make2, make3 } from "other";
+>make : () => import("dep/a").Thing
+>make2 : () => import("dep2/a").Thing2
+>make3 : () => import("dep3/a").Thing3
+
+export const x = make();
+>x : import("dep/a").Thing
+>make() : import("dep/a").Thing
+>make : () => import("dep/a").Thing
+
+export const x2 = make2();
+>x2 : import("dep2/a").Thing2
+>make2() : import("dep2/a").Thing2
+>make2 : () => import("dep2/a").Thing2
+
+export const x3 = make3();
+>x3 : import("dep3/a").Thing3
+>make3() : import("dep3/a").Thing3
+>make3 : () => import("dep3/a").Thing3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/dep/a.d.ts ===
+export interface Thing { a: number }
+>a : number
+
+=== node_modules/dep2/a.d.ts ===
+export interface Thing2 { a: number }
+>a : number
+
+=== node_modules/dep3/a.d.ts ===
+export interface Thing3 { a: number }
+>a : number
+
+=== node_modules/other/index.d.ts ===
+import { Thing } from "dep/a";
+>Thing : any
+
+import { Thing2 } from "dep2/a";
+>Thing2 : any
+
+import { Thing3 } from "dep3/a";
+>Thing3 : any
+
+export declare function make(): Thing;
+>make : () => Thing
+
+export declare function make2(): Thing2;
+>make2 : () => Thing2
+
+export declare function make3(): Thing3;
+>make3 : () => Thing3
+

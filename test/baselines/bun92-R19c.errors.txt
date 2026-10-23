@@ -1,0 +1,28 @@
+a.ts(3,27): error TS2322: Type 'string' is not assignable to type 'never'.
+a.ts(3,32): error TS2322: Type 'number' is not assignable to type '"0" | "1.5" | "2" | "a b" | "y"'.
+a.ts(4,47): error TS2322: Type 'number' is not assignable to type 'M'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"],"module":"preserve","moduleResolution":"bundler" } }
+==== a.ts (4 errors) ====
+    import * as m1 from "./m1";
+    type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+    const t1: S<typeof m1> = ["?", -99];
+                              ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+                                   ~~~
+!!! error TS2322: Type 'number' is not assignable to type '"0" | "1.5" | "2" | "a b" | "y"'.
+    type M = { [K in keyof typeof m1]: K }; const m: M = 0;
+                                                  ~
+!!! error TS2322: Type 'number' is not assignable to type 'M'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m1.ts (0 errors) ====
+    const x = 1; export { x as "0", x as "1.5", x as "a b", x as y };
+    export * as "2" from "./m2";
+==== m2.ts (0 errors) ====
+    export const z = 1;
+    

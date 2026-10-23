@@ -1,0 +1,28 @@
+//// [test/cases/bun09-C20.ts] ////
+
+=== a.ts ===
+const k = "foo";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+interface I6 { [k](): number }
+>I6 : Symbol(I6, Decl(a.ts, 0, 16), Decl(a.ts, 1, 30))
+>[k] : Symbol(I6[k], Decl(a.ts, 1, 14))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+interface I6 { foo: string }
+>I6 : Symbol(I6, Decl(a.ts, 0, 16), Decl(a.ts, 1, 30))
+>foo : Symbol(I6.foo, Decl(a.ts, 2, 14))
+
+declare const i6: I6;
+>i6 : Symbol(i6, Decl(a.ts, 3, 13))
+>I6 : Symbol(I6, Decl(a.ts, 0, 16), Decl(a.ts, 1, 30))
+
+const a6: never = i6.foo;
+>a6 : Symbol(a6, Decl(a.ts, 4, 5))
+>i6.foo : Symbol(I6.foo, Decl(a.ts, 2, 14))
+>i6 : Symbol(i6, Decl(a.ts, 3, 13))
+>foo : Symbol(I6.foo, Decl(a.ts, 2, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

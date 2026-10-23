@@ -1,0 +1,61 @@
+//// [test/cases/bun54-L02a.ts] ////
+
+=== a.ts ===
+function h() { export { xxx as www }; www; }
+>h : Symbol(h, Decl(a.ts, 0, 0))
+>www : Symbol(www, Decl(a.ts, 0, 23))
+>www : Symbol(www, Decl(a.ts, 0, 23))
+
+function h2() { export { yyy as vvv }; }
+>h2 : Symbol(h2, Decl(a.ts, 0, 44))
+>vvv : Symbol(vvv, Decl(a.ts, 1, 24))
+
+function h3() { export { zzz }; zzz; }
+>h3 : Symbol(h3, Decl(a.ts, 1, 40))
+>zzz : Symbol(zzz, Decl(a.ts, 2, 24))
+>zzz : Symbol(zzz, Decl(a.ts, 2, 24))
+
+function h4() { const loc = 1; export { loc as uuu }; uuu; }
+>h4 : Symbol(h4, Decl(a.ts, 2, 38))
+>loc : Symbol(loc, Decl(a.ts, 3, 21))
+>loc : Symbol(loc, Decl(a.ts, 3, 21))
+>uuu : Symbol(uuu, Decl(a.ts, 3, 39))
+>uuu : Symbol(uuu, Decl(a.ts, 3, 39))
+
+function h5() { export { ttt as sss }; let q: sss; }
+>h5 : Symbol(h5, Decl(a.ts, 3, 60))
+>sss : Symbol(sss, Decl(a.ts, 4, 24))
+>q : Symbol(q, Decl(a.ts, 4, 42))
+>sss : Symbol(sss, Decl(a.ts, 4, 24))
+
+function h6() { export { rrr as ppp }; let q: typeof ppp; }
+>h6 : Symbol(h6, Decl(a.ts, 4, 52))
+>ppp : Symbol(ppp, Decl(a.ts, 5, 24))
+>q : Symbol(q, Decl(a.ts, 5, 42))
+>ppp : Symbol(ppp, Decl(a.ts, 5, 24))
+
+namespace N { export { nnn as mmm }; mmm; }
+>N : Symbol(N, Decl(a.ts, 5, 59))
+>mmm : Symbol(mmm, Decl(a.ts, 6, 22))
+>mmm : Symbol(mmm, Decl(a.ts, 6, 22))
+
+{ export { bbb as ccc }; ccc; }
+>ccc : Symbol(ccc, Decl(a.ts, 7, 10))
+
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+
+=== b.ts ===
+{ export { b1 as b2 }; }
+>b2 : Symbol(b2, Decl(b.ts, 0, 10))
+
+{ export { b3 as b4 }; b4; }
+>b4 : Symbol(b4, Decl(b.ts, 1, 10))
+>b4 : Symbol(b4, Decl(b.ts, 1, 10))
+
+function hb() { export { b5 as b6 }; b6; }
+>hb : Symbol(hb, Decl(b.ts, 1, 28))
+>b6 : Symbol(b6, Decl(b.ts, 2, 24))
+>b6 : Symbol(b6, Decl(b.ts, 2, 24))
+

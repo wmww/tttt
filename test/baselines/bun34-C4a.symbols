@@ -1,0 +1,17 @@
+//// [test/cases/bun34-C4a.ts] ////
+
+=== a.ts ===
+import type { u } from "./m";
+>u : Symbol(u, Decl(a.ts, 0, 13))
+
+type F = ({ [u]: [] }: any) => void;
+>F : Symbol(F, Decl(a.ts, 0, 29))
+>u : Symbol(u, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+export const u = "k";
+>u : Symbol(u, Decl(m.ts, 0, 12))
+

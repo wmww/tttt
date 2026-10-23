@@ -1,0 +1,71 @@
+//// [test/cases/bun96-ARKTYPE6.ts] ////
+
+=== a.ts ===
+type show<t> = { [k in keyof t]: t[k] } & unknown
+>show : { [k in keyof t]: t[k]; }
+
+type R<d> = d extends object ? show<{ [k: string]: R<d> | 1 } & { b: 1 }> : never
+>R : R<d>
+>k : string
+>b : 1
+
+declare const s: R<{ a: 1 }>
+>s : { [x: string]: 1 | { b: 1; }; b: 1; }
+>a : 1
+
+const x = s["k"]
+>x : 1 | { b: 1; }
+>s["k"] : 1 | { b: 1; }
+>s : { [x: string]: 1 | { b: 1; }; b: 1; }
+>"k" : "k"
+
+if (x !== 1) {
+>x !== 1 : boolean
+>x : 1 | { b: 1; }
+>1 : 1
+
+	x["z"]
+>x["z"] : any
+>x : { b: 1; }
+>"z" : "z"
+
+	const y: number = x
+>y : number
+>x : { b: 1; }
+}
+const t: number = s
+>t : number
+>s : { [x: string]: 1 | { b: 1; }; b: 1; }
+
+// without the mapped type: the intersection itself
+type I<d> = d extends object ? { [k: string]: I<d> | 1 } & { b: 1 } : never
+>I : I<d>
+>k : string
+>b : 1
+
+declare const i: I<{ a: 1 }>
+>i : { [k: string]: 1 | (any & { b: 1; }); } & { b: 1; }
+>a : 1
+
+const ti: number = i
+>ti : number
+>i : { [k: string]: 1 | (any & { b: 1; }); } & { b: 1; }
+
+const xi = i["k"]
+>xi : 1 | ({ [k: string]: 1 | (any & { b: 1; }); } & { b: 1; })
+>i["k"] : 1 | ({ [k: string]: 1 | (any & { b: 1; }); } & { b: 1; })
+>i : { [k: string]: 1 | (any & { b: 1; }); } & { b: 1; }
+>"k" : "k"
+
+if (xi !== 1) { xi["z"] }
+>xi !== 1 : boolean
+>xi : 1 | ({ [k: string]: 1 | (any & { b: 1; }); } & { b: 1; })
+>1 : 1
+>xi["z"] : 1 | ({ [k: string]: 1 | (any & { b: 1; }); } & { b: 1; })
+>xi : { [k: string]: 1 | (any & { b: 1; }); } & { b: 1; }
+>"z" : "z"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

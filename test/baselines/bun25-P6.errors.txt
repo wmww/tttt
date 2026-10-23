@@ -1,0 +1,15 @@
+a2.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": false, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true }, "files": ["a1.js", "a2.ts"] }
+==== a1.js (0 errors) ====
+    var lit = {};
+    /** @this {typeof lit} */ function g() { return (this).missing; }
+    var v = g();
+==== a2.ts (1 errors) ====
+    var v: string;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,24 @@
+//// [test/cases/bun25-C2.ts] ////
+
+=== a.ts ===
+declare const o: { a: string | number };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+
+if (typeof o[E.A] === "string") o[E.A].length;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>E.A : Symbol(E.A, Decl(a.ts, 2, 14))
+>E : Symbol(E, Decl(a.ts, 1, 46))
+>A : Symbol(E.A, Decl(a.ts, 2, 14))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>E.A : Symbol(E.A, Decl(a.ts, 2, 14))
+>E : Symbol(E, Decl(a.ts, 1, 46))
+>A : Symbol(E.A, Decl(a.ts, 2, 14))
+
+const enum E { A = "a" }
+>E : Symbol(E, Decl(a.ts, 1, 46))
+>A : Symbol(E.A, Decl(a.ts, 2, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

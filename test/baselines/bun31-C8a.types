@@ -1,0 +1,39 @@
+//// [test/cases/bun31-C8a.ts] ////
+
+=== a.ts ===
+declare function dec(...x: any[]): any;
+>dec : (...x: any[]) => any
+>x : any[]
+
+function m() { let y: string | number = 1; class K { @dec(y = "a") p: any; } y.toFixed(); }
+>m : () => void
+>y : string | number
+>1 : 1
+>K : K
+>dec(y = "a") : any
+>dec : (...x: any[]) => any
+>y = "a" : "a"
+>y : string | number
+>"a" : "a"
+>p : any
+>y.toFixed() : any
+>y.toFixed : any
+>y : string
+>toFixed : any
+
+function n() { let y: number; class K { @dec(y = 1) p: any; } y; }
+>n : () => void
+>y : number
+>K : K
+>dec(y = 1) : any
+>dec : (...x: any[]) => any
+>y = 1 : 1
+>y : number
+>1 : 1
+>p : any
+>y : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

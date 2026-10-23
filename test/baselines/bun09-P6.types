@@ -1,0 +1,23 @@
+//// [test/cases/bun09-P6.ts] ////
+
+=== a.js ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+class C5 { constructor() { this.foo = 1; } [k]() { return ""; } }
+>C5 : C5
+>this.foo = 1 : 1
+>this.foo : any
+>this : this
+>foo : any
+>1 : 1
+>[k] : any
+>k : "foo"
+>"" : ""
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

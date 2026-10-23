@@ -1,0 +1,14 @@
+//// [test/cases/bun06-P5.ts] ////
+
+=== a.ts ===
+async function w2() { const f = (a = await) => { }; }
+>w2 : () => Promise<void>
+>f : (a?: any) => void
+>(a = await) => { } : (a?: any) => void
+>a : any
+>await : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

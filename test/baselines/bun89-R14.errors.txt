@@ -1,0 +1,82 @@
+a.ts(4,7): error TS7022: 'k1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(5,7): error TS2310: Type 'C1' recursively references itself as a base type.
+a.ts(5,7): error TS2506: 'C1' is referenced directly or indirectly in its own base expression.
+a.ts(8,7): error TS7022: 'k2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(9,7): error TS2310: Type 'C2' recursively references itself as a base type.
+a.ts(9,7): error TS2506: 'C2' is referenced directly or indirectly in its own base expression.
+a.ts(11,7): error TS7022: 'k3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(11,13): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(12,7): error TS2310: Type 'C3' recursively references itself as a base type.
+a.ts(12,7): error TS2506: 'C3' is referenced directly or indirectly in its own base expression.
+a.ts(15,7): error TS7022: 'k4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(16,11): error TS2310: Type 'I4' recursively references itself as a base type.
+a.ts(19,7): error TS7022: 'k5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(23,7): error TS7022: 'k6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(24,7): error TS2310: Type 'C6' recursively references itself as a base type.
+a.ts(24,7): error TS2506: 'C6' is referenced directly or indirectly in its own base expression.
+a.ts(25,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (17 errors) ====
+    declare function base<T>(x: T): new () => { v: T };
+    // checkConditionalExpression tests the condition for TS2774 / TS2801 at once: it asks for the call signatures of its type.
+    declare const x1: C1;
+    const k1 = x1 ? "a" : "b";
+          ~~
+!!! error TS7022: 'k1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    class C1 extends base(k1) {}
+          ~~
+!!! error TS2310: Type 'C1' recursively references itself as a base type.
+          ~~
+!!! error TS2506: 'C1' is referenced directly or indirectly in its own base expression.
+    // nested in the condition, nullable, in an arrow function
+    declare const x2: C2 | undefined, y2: boolean;
+    const k2 = (y2 && x2) ? "a" : "b";
+          ~~
+!!! error TS7022: 'k2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    class C2 extends base(k2) {}
+          ~~
+!!! error TS2310: Type 'C2' recursively references itself as a base type.
+          ~~
+!!! error TS2506: 'C2' is referenced directly or indirectly in its own base expression.
+    declare const x3: C3;
+    const k3 = (() => x3 ? "a" : "b")();
+          ~~
+!!! error TS7022: 'k3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                ~~~~~~~~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    class C3 extends base(k3) {}
+          ~~
+!!! error TS2310: Type 'C3' recursively references itself as a base type.
+          ~~
+!!! error TS2506: 'C3' is referenced directly or indirectly in its own base expression.
+    // an interface
+    declare const x4: I4;
+    const k4 = x4 ? "a" : "b";
+          ~~
+!!! error TS7022: 'k4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    interface I4 extends Array<typeof k4> {}
+              ~~
+!!! error TS2310: Type 'I4' recursively references itself as a base type.
+    // a late-bound name
+    declare const x5: I5;
+    const k5 = x5 ? "a" : "a";
+          ~~
+!!! error TS7022: 'k5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    interface I5 { [k5]: number }
+    // `&&`, `||`, `!`: the two agree
+    declare const x6: C6;
+    const k6 = x6 && "a";
+          ~~
+!!! error TS7022: 'k6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    class C6 extends base(k6) {}
+          ~~
+!!! error TS2310: Type 'C6' recursively references itself as a base type.
+          ~~
+!!! error TS2506: 'C6' is referenced directly or indirectly in its own base expression.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

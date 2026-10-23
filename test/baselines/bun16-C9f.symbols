@@ -1,0 +1,13 @@
+//// [test/cases/bun16-C9f.ts] ////
+
+=== a.ts ===
+var vf = () => {};
+>vf : Symbol(vf, Decl(a.ts, 0, 3), Decl(a.ts, 1, 13))
+
+if (vf) { var vf: () => void; }
+>vf : Symbol(vf, Decl(a.ts, 0, 3), Decl(a.ts, 1, 13))
+>vf : Symbol(vf, Decl(a.ts, 0, 3), Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

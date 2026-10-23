@@ -1,0 +1,26 @@
+//// [test/cases/bun02-C21a.ts] ////
+
+=== a.ts ===
+let q3: import("./b").BFoo<"a",>;
+>q3 : Symbol(q3, Decl(a.ts, 0, 3))
+>BFoo : Symbol(BFoo, Decl(b.ts, 0, 0))
+
+let q5: typeof import("./b").bf<>;
+>q5 : Symbol(q5, Decl(a.ts, 1, 3))
+>bf : Symbol(bf, Decl(b.ts, 0, 48))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+export interface BFoo<X extends string> { x: X }
+>BFoo : Symbol(BFoo, Decl(b.ts, 0, 0))
+>X : Symbol(X, Decl(b.ts, 0, 22))
+>x : Symbol(BFoo.x, Decl(b.ts, 0, 41))
+>X : Symbol(X, Decl(b.ts, 0, 22))
+
+export declare function bf<X extends string>(): X;
+>bf : Symbol(bf, Decl(b.ts, 0, 48))
+>X : Symbol(X, Decl(b.ts, 1, 27))
+>X : Symbol(X, Decl(b.ts, 1, 27))
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun33-C5f.ts] ////
+
+=== a.ts ===
+interface G<T> {}
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+interface X extends G<number>.x {}
+>X : Symbol(X, Decl(a.ts, 0, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

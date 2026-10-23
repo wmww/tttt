@@ -1,0 +1,21 @@
+//// [test/cases/bun10-C8c.ts] ////
+
+=== a.ts ===
+interface I9 extends Array<typeof a9> {}
+>I9 : Symbol(I9, Decl(a.ts, 0, 0))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>a9 : Symbol(a9, Decl(a.ts, 2, 5))
+
+declare const i9: I9;
+>i9 : Symbol(i9, Decl(a.ts, 1, 13))
+>I9 : Symbol(I9, Decl(a.ts, 0, 0))
+
+const a9 = i9.length;
+>a9 : Symbol(a9, Decl(a.ts, 2, 5))
+>i9.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>i9 : Symbol(i9, Decl(a.ts, 1, 13))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

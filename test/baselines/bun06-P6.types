@@ -1,0 +1,19 @@
+//// [test/cases/bun06-P6.ts] ////
+
+=== a.ts ===
+function* z3() { const f = ({ yield }) => { }; }
+>z3 : () => Generator<never, void, unknown>
+>f : ({ yield }: { yield: any; }) => void
+>({ yield }) => { } : ({ yield }: { yield: any; }) => void
+>yield : any
+
+async function w3() { const f = ({ await }) => { }; }
+>w3 : () => Promise<void>
+>f : ({ await }: { await: any; }) => void
+>({ await }) => { } : ({ await }: { await: any; }) => void
+>await : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

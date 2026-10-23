@@ -1,0 +1,16 @@
+a.ts(3,45): error TS2322: Type 'number' is not assignable to type '{ q: "k" | ("k" & keyof V) | ("z" & keyof V); }'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type U<T, V extends { k: T }> = (V & { k: "b"; y: 2 }) | { k: "c"; z: 3 };
+    type K<T, V extends { k: T }> = keyof U<T, V>;
+    function f<T, V extends { k: T }>() { const n: { q: K<T, V> } = 1; }
+                                                ~
+!!! error TS2322: Type 'number' is not assignable to type '{ q: "k" | ("k" & keyof V) | ("z" & keyof V); }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,17 @@
+//// [test/cases/bun03-C14a.ts] ////
+
+=== a.ts ===
+abstract class A { foo(): void; abstract foo(x: number): void; }
+>A : A
+>foo : { (): void; (x: number): void; }
+>foo : { (): void; (x: number): void; }
+>x : number
+
+class D extends A {}
+>D : D
+>A : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

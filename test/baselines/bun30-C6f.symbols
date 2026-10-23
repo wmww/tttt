@@ -1,0 +1,14 @@
+//// [test/cases/bun30-C6f.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+class C extends Object, (delete x) {}
+>C : Symbol(C, Decl(a.ts, 0, 19))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

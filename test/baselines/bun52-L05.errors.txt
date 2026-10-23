@@ -1,0 +1,38 @@
+a.ts(1,20): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(2,20): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(3,18): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(4,24): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(5,34): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(6,20): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(7,20): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    declare const {} = miss1;
+                       ~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+    declare const [] = miss2;
+                       ~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+    declare let {} = miss3;
+                     ~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+    declare const {}: {} = miss4;
+                           ~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+    declare namespace N { const {} = miss5; }
+                                     ~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+    declare const {} = class { declare x = 1 };
+                       ~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+    declare const {} = (() => { const q: number = ""; })();
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

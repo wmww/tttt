@@ -1,0 +1,17 @@
+//// [test/cases/bun28-C11b.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : any
+
+o?.a<>`x`;
+>o?.a<>`x` : any
+>o?.a : any
+>o : any
+>a : any
+>`x` : "x"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

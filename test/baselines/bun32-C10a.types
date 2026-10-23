@@ -1,0 +1,27 @@
+//// [test/cases/bun32-C10a.ts] ////
+
+=== a.ts ===
+({ abstract e() {} });
+>({ abstract e() {} }) : { e(): void; }
+>{ abstract e() {} } : { e(): void; }
+>e : () => void
+
+({ readonly m() {} });
+>({ readonly m() {} }) : { readonly m: () => void; }
+>{ readonly m() {} } : { readonly m: () => void; }
+>m : () => void
+
+({ async public m() {} });
+>({ async public m() {} }) : { m(): Promise<void>; }
+>{ async public m() {} } : { m(): Promise<void>; }
+>m : () => Promise<void>
+
+({ public public m() {} });
+>({ public public m() {} }) : { m(): void; }
+>{ public public m() {} } : { m(): void; }
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

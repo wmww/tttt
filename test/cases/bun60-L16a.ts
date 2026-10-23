@@ -1,0 +1,27 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+// @filename: a.ts
+interface Asserts { str(x: unknown): asserts x is string; num: (x: unknown) => asserts x is number }
+type Prefixed<T> = { [K in keyof T as `assert${Capitalize<K & string>}`]: T[K] };
+declare const p: Prefixed<Asserts>;
+function f(v: unknown, w: unknown) {
+  p.assertStr(v);
+  v.length;
+  p.assertNum(w);
+  w.toFixed();
+}
+const inferred = { bad: (x: unknown): asserts x is string => {} };
+declare const q: Prefixed<typeof inferred>;
+function g(v: unknown) { q.assertBad(v); }
+const sentinel: number = "";
+// @filename: bun.related.txt
+a.ts(5,3) TS2775 Assertions require every name in the call target to be declared with an explicit type anno
+a.ts(6,3) TS18046 'v' is of type 'unknown'.
+a.ts(7,3) TS2775 Assertions require every name in the call target to be declared with an explicit type anno
+a.ts(8,3) TS18046 'w' is of type 'unknown'.
+a.ts(12,26) TS2775 Assertions require every name in the call target to be declared with an explicit type anno
+a.ts(13,7) TS2322 Type 'string' is not assignable to type 'number'.
+// @filename: tsc.related.txt
+a.ts(12,26) TS2775 Assertions require every name in the call target to be declared with an explicit type anno
+    related a.ts(10,20) 'bad' needs an explicit type annotation.
+a.ts(13,7) TS2322 Type 'string' is not assignable to type 'number'.

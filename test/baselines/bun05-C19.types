@@ -1,0 +1,18 @@
+//// [test/cases/bun05-C19.ts] ////
+
+=== a.ts ===
+declare const e: { b?: () => boolean };
+>e : { b?: () => boolean; }
+>b : (() => boolean) | undefined
+
+if (e.b()) { e; }
+>e.b() : boolean
+>e.b : (() => boolean) | undefined
+>e : { b?: () => boolean; }
+>b : (() => boolean) | undefined
+>e : { b?: () => boolean; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

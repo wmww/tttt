@@ -1,0 +1,10 @@
+//// [test/cases/bun53-L17b.ts] ////
+
+=== a.js ===
+const dec = 0;
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+
+export @dec default function f() {}
+>dec : Symbol(dec, Decl(a.js, 0, 5))
+>f : Symbol(f, Decl(a.js, 0, 14))
+

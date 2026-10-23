@@ -1,0 +1,22 @@
+a.ts(2,1): error TS2670: Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(2,8): error TS2304: Cannot find name 'FromDeclared'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    export {};
+    global { interface FromUndeclared { a: number } }
+    ~~~~~~
+!!! error TS2670: Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.
+    declare global { interface FromDeclared { a: number } }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    export {};
+    let y: FromDeclared;
+           ~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'FromDeclared'.
+    

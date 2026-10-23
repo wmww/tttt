@@ -1,0 +1,20 @@
+a.ts(2,7): error TS7022: 'k' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(4,10): error TS7023: 'compute' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class N { static a = 1; }
+    const k = compute();
+          ~
+!!! error TS7022: 'k' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function check(p: unknown) { return k; }
+    function compute() { if (check(N)) { } return N.a; }
+             ~~~~~~~
+!!! error TS7023: 'compute' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

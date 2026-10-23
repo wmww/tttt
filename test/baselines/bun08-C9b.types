@@ -1,0 +1,28 @@
+//// [test/cases/bun08-C9b.ts] ////
+
+=== a.js ===
+const { ["a"]: c1 } = require("./esm2"); c1.nope;
+>"a" : "a"
+>c1 : any
+>require("./esm2") : typeof import("./esm2")
+>require : any
+>"./esm2" : "./esm2"
+>c1.nope : any
+>c1 : any
+>nope : any
+
+const { 0: n1 } = require("./esm2");
+>n1 : any
+>require("./esm2") : typeof import("./esm2")
+>require : any
+>"./esm2" : "./esm2"
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== esm2.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+

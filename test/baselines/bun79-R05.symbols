@@ -1,0 +1,33 @@
+//// [test/cases/bun79-R05.ts] ////
+
+=== a.ts ===
+const a1: "" = `${2 ** -25}`;
+>a1 : Symbol(a1, Decl(a.ts, 0, 5))
+
+const a2: never = 2.98023223876953125e-8;
+>a2 : Symbol(a2, Decl(a.ts, 1, 5))
+
+const a3: never = 713680496268224.25;
+>a3 : Symbol(a3, Decl(a.ts, 2, 5))
+
+const a4: never = 258555422826684.625;
+>a4 : Symbol(a4, Decl(a.ts, 3, 5))
+
+enum E { B = 1 / 33554432 } const a5: "" = `${E.B}`;
+>E : Symbol(E, Decl(a.ts, 3, 38))
+>B : Symbol(E.B, Decl(a.ts, 4, 8))
+>a5 : Symbol(a5, Decl(a.ts, 4, 33))
+>E.B : Symbol(E.B, Decl(a.ts, 4, 8))
+>E : Symbol(E, Decl(a.ts, 3, 38))
+>B : Symbol(E.B, Decl(a.ts, 4, 8))
+
+const o = { 713680496268224.25: 1 }; o["713680496268224.2"]; o["713680496268224.3"];
+>o : Symbol(o, Decl(a.ts, 5, 5))
+>713680496268224.25 : Symbol(713680496268224.25, Decl(a.ts, 5, 11))
+>o : Symbol(o, Decl(a.ts, 5, 5))
+>"713680496268224.2" : Symbol(713680496268224.25, Decl(a.ts, 5, 11))
+>o : Symbol(o, Decl(a.ts, 5, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

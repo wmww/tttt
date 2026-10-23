@@ -1,0 +1,49 @@
+//// [test/cases/bun55-L01.ts] ////
+
+=== a.ts ===
+type Args = [a: 1, b: number] | [a: 2, b: string];
+>Args : Args
+
+const g: (...args: Args) => void = (kind, x?) => {
+>g : (...args: Args) => void
+>args : Args
+>(kind, x?) => {  throw 0;  x.toString();} : (kind: 1 | 2, x?: string | number | undefined) => never
+>kind : 1 | 2
+>x : string | number | undefined
+
+  throw 0;
+>0 : 0
+
+  x.toString();
+>x.toString() : string
+>x.toString : (() => string) | ((radix?: number) => string)
+>x : string | number
+>toString : (() => string) | ((radix?: number) => string)
+
+};
+function outer<A extends Args>() {
+>outer : <A extends Args>() => void
+
+  const h: (...args: A) => void = (kind, x) => {
+>h : (...args: A) => void
+>args : A
+>(kind, x) => {    return;    let y = x;    y = true;  } : (kind: A[0], x: A[1]) => void
+>kind : A[0]
+>x : A[1]
+
+    return;
+    let y = x;
+>y : string | number
+>x : string | number
+
+    y = true;
+>y = true : true
+>y : string | number
+>true : true
+
+  };
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

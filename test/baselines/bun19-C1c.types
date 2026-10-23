@@ -1,0 +1,23 @@
+//// [test/cases/bun19-C1c.ts] ////
+
+=== a.ts ===
+interface I<T> { a: T extends string ? number : number }
+>a : T extends string ? number : number
+
+interface I<T> { b: number }
+>b : number
+
+function g<T>(o: I<T>, x: number) { o.a = x; }
+>g : <T>(o: I<T>, x: number) => void
+>o : I<T>
+>x : number
+>o.a = x : number
+>o.a : T extends string ? number : number
+>o : I<T>
+>a : T extends string ? number : number
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

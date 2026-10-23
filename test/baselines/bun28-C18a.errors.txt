@@ -1,0 +1,17 @@
+a.ts(1,13): error TS1042: 'abstract' modifier cannot be used here.
+a.ts(1,13): error TS1244: Abstract methods can only appear within an abstract class.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    const o = { abstract p() { } };
+                ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

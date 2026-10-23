@@ -1,0 +1,10 @@
+//// [test/cases/bun25-C15.ts] ////
+
+=== a.ts ===
+export class U</*<*/ A, B> {}
+>U : U<A, B>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

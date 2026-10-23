@@ -1,0 +1,20 @@
+before.ts(1,20): error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style2, ":hover">'.
+zafter.ts(2,20): error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style2, ":hover">'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "types": []}, "files": ["before.ts", "zafter.ts"]}
+==== before.ts (1 errors) ====
+    css2({ ':hover': { notAProperty: '1' } });
+                       ~~~~~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style2, ":hover">'.
+    export declare function css2(style: Style2): void;
+    type Pseudos2 = ':hover';
+    export type CSSPseudos2 = { [P in Pseudos2]?: Omit<Style2, Pseudos2> };
+    export type Style2 = CSSPseudos2 & { top?: string };
+==== zafter.ts (1 errors) ====
+    import { css2 } from './before';
+    css2({ ':hover': { notAProperty: '2' } });
+                       ~~~~~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style2, ":hover">'.
+    

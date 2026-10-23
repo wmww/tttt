@@ -1,0 +1,33 @@
+a.ts(4,17): error TS2339: Property '#i' does not exist on type 'any'.
+a.ts(5,19): error TS18016: Private identifiers are not allowed outside class bodies.
+a.ts(6,25): error TS18016: Private identifiers are not allowed outside class bodies.
+a.ts(7,30): error TS18013: Property '#i' is not accessible outside class 'E4' because it has a private identifier.
+a.ts(8,26): error TS18013: Property '#s' is not accessible outside class 'e5' because it has a private identifier.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "esnext.decorators"], "target": "es2022" } }
+==== a.ts (6 errors) ====
+    export {};
+    declare function dec(...x: any[]): (c: any, ctx: any) => void;
+    declare const o: any;
+    const e1 = @dec(#i in o) class { #i = 1; };
+                    ~~
+!!! error TS2339: Property '#i' does not exist on type 'any'.
+    const e2 = @dec(o.#i) class { #i = 1; };
+                      ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    const e3 = @dec(() => o.#i) class { #i = 1; };
+                            ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    const e4 = @dec((x: E4) => x.#i) class E4 { #i = 1; };
+                                 ~~
+!!! error TS18013: Property '#i' is not accessible outside class 'E4' because it has a private identifier.
+    const e5 = @dec(() => e5.#s) class { static #s = 1; };
+                             ~~
+!!! error TS18013: Property '#s' is not accessible outside class 'e5' because it has a private identifier.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

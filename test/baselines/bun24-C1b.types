@@ -1,0 +1,32 @@
+//// [test/cases/bun24-C1b.ts] ////
+
+=== a.ts ===
+declare const big: { p: 1 };
+>big : { p: 1; }
+>p : 1
+
+function f<T>(x: T) { return { a: x, big }; }
+>f : <T>(x: T) => { a: T; big: { p: 1; }; }
+>x : T
+>{ a: x, big } : { a: T; big: { p: 1; }; }
+>a : T
+>x : T
+>big : { p: 1; }
+
+const w: 1 = f(1);
+>w : 1
+>f(1) : { a: number; big: { p: 1; }; }
+>f : <T>(x: T) => { a: T; big: { p: 1; }; }
+>1 : 1
+
+const v: 1 = f(null! as "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+>v : 1
+>f(null! as "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx") : { a: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; big: { p: 1; }; }
+>f : <T>(x: T) => { a: T; big: { p: 1; }; }
+>null! as "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" : "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,61 @@
+//// [test/cases/bun58-L08b.ts] ////
+
+=== aug.ts ===
+export {};
+declare module "./m" {
+>"./m" : Symbol("./m", Decl(m.js, 0, 0), Decl(aug.ts, 0, 10))
+
+  export const c: number;
+>c : Symbol(c, Decl(aug.ts, 2, 14))
+
+  export namespace d { const nd: number }
+>d : Symbol(d, Decl(aug.ts, 2, 25))
+>nd : Symbol(nd, Decl(aug.ts, 3, 28))
+
+  export function f(): void;
+>f : Symbol(f, Decl(aug.ts, 3, 41))
+
+  export class g {}
+>g : Symbol(g, Decl(aug.ts, 4, 28))
+
+  export var h: number;
+>h : Symbol(h, Decl(m.js, 3, 14), Decl(aug.ts, 6, 12))
+
+  export enum i { A }
+>i : Symbol(i, Decl(aug.ts, 6, 23))
+>A : Symbol(i.A, Decl(aug.ts, 7, 17))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(aug.ts, 9, 5))
+
+=== m.js ===
+exports.c = 1;
+>exports.c : Symbol(c, Decl(m.js, 0, 0))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>c : Symbol(c, Decl(m.js, 0, 0))
+
+exports.d = 1;
+>exports.d : Symbol(d, Decl(m.js, 0, 14))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>d : Symbol(d, Decl(m.js, 0, 14))
+
+exports.f = 1;
+>exports.f : Symbol(f, Decl(m.js, 1, 14))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>f : Symbol(f, Decl(m.js, 1, 14))
+
+exports.g = 1;
+>exports.g : Symbol(g, Decl(m.js, 2, 14))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>g : Symbol(g, Decl(m.js, 2, 14))
+
+exports.h = 1;
+>exports.h : Symbol(h, Decl(m.js, 3, 14), Decl(aug.ts, 6, 12))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>h : Symbol(h, Decl(m.js, 3, 14), Decl(aug.ts, 6, 12))
+
+exports.i = 1;
+>exports.i : Symbol(i, Decl(m.js, 4, 14))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>i : Symbol(i, Decl(m.js, 4, 14))
+

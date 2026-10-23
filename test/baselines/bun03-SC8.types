@@ -1,0 +1,39 @@
+//// [test/cases/bun03-SC8.ts] ////
+
+=== a.ts ===
+import { K } from "./m";
+>K : typeof K
+
+export function f1() { const u3 = 1; export { u3 }; }
+>f1 : () => void
+>u3 : 1
+>1 : 1
+>u3 : 1
+
+export function f4() { export { K as KK }; }
+>f4 : () => void
+>K : typeof K
+>KK : typeof K
+
+export function f7() { const u = 1; export default u; }
+>f7 : { (): void; default: 1; }
+>u : 1
+>1 : 1
+>u : 1
+
+export function f8() { export default { a: 1, a: 2 }; }
+>f8 : { (): void; default: { a: number; a: number; }; }
+>{ a: 1, a: 2 } : { a: number; }
+>a : number
+>1 : 1
+>a : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export class K {}
+>K : K
+

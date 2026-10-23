@@ -1,0 +1,15 @@
+//// [test/cases/bun93-P07a.ts] ////
+
+=== a.ts ===
+class B { async a! }
+>B : B
+>a : any
+
+class C { async a!: number }
+>C : C
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

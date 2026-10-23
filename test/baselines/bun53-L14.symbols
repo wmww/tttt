@@ -1,0 +1,30 @@
+//// [test/cases/bun53-L14.ts] ////
+
+=== a.ts ===
+declare class B {}
+>B : Symbol(B, Decl(a.ts, 0, 0))
+
+declare class A2 extends B, (class { m() {} }) {}
+>A2 : Symbol(A2, Decl(a.ts, 0, 18))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>m : Symbol((Anonymous class).m, Decl(a.ts, 1, 36))
+
+declare enum E4 { [(() => { return 1; })()] = 1 }
+>E4 : Symbol(E4, Decl(a.ts, 1, 49))
+>[(() => { return 1; })()] : Symbol(E4[(() => { return 1; })()], Decl(a.ts, 2, 17))
+
+declare namespace N11 { class K extends B extends (class { m() {} }) {} }
+>N11 : Symbol(N11, Decl(a.ts, 2, 49))
+>K : Symbol(K, Decl(a.ts, 3, 23))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>m : Symbol((Anonymous class).m, Decl(a.ts, 3, 58))
+
+declare namespace N12 { enum E { A = 1, [`x${(() => { return 1; })()}`] = 2 } }
+>N12 : Symbol(N12, Decl(a.ts, 3, 73))
+>E : Symbol(E, Decl(a.ts, 4, 23))
+>A : Symbol(E.A, Decl(a.ts, 4, 32))
+>[`x${(() => { return 1; })()}`] : Symbol(E[`x${(() => { return 1; })()}`], Decl(a.ts, 4, 39))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

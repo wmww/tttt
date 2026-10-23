@@ -1,0 +1,43 @@
+//// [test/cases/bun02-C1.ts] ////
+
+=== a.ts ===
+declare function isS(x: unknown): (asserts x is string);
+>isS : (x: unknown) => (asserts x is string)
+>x : unknown
+
+declare const u: unknown;
+>u : unknown
+
+isS(u); u.length;
+>isS(u) : void
+>isS : (x: unknown) => (asserts x is string)
+>u : unknown
+>u.length : any
+>u : unknown
+>length : any
+
+declare class P { m(): (this is Q); }
+>P : P
+>m : () => (this is Q)
+
+declare class Q extends P { q: number }
+>Q : Q
+>P : P
+>q : number
+
+declare const p: P;
+>p : P
+
+if (p.m()) { p.q; }
+>p.m() : boolean
+>p.m : () => (this is Q)
+>p : P
+>m : () => (this is Q)
+>p.q : any
+>p : P
+>q : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

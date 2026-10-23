@@ -1,0 +1,65 @@
+//// [test/cases/bun79-R03b.ts] ////
+
+=== a.ts ===
+type F4<X> = X extends [infer A extends F4<A>] ? A : never;
+>F4 : Symbol(F4, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 8))
+>X : Symbol(X, Decl(a.ts, 0, 8))
+>A : Symbol(A, Decl(a.ts, 0, 29))
+>F4 : Symbol(F4, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 29))
+>A : Symbol(A, Decl(a.ts, 0, 29))
+
+type F6<X> = X extends [infer A extends F6<string>] ? A : never;
+>F6 : Symbol(F6, Decl(a.ts, 0, 59))
+>X : Symbol(X, Decl(a.ts, 1, 8))
+>X : Symbol(X, Decl(a.ts, 1, 8))
+>A : Symbol(A, Decl(a.ts, 1, 29))
+>F6 : Symbol(F6, Decl(a.ts, 0, 59))
+>A : Symbol(A, Decl(a.ts, 1, 29))
+
+type W3<X> = X extends [infer A extends typeof w3] ? A : never; declare const w3: W3<[1]>;
+>W3 : Symbol(W3, Decl(a.ts, 1, 64))
+>X : Symbol(X, Decl(a.ts, 2, 8))
+>X : Symbol(X, Decl(a.ts, 2, 8))
+>A : Symbol(A, Decl(a.ts, 2, 29))
+>w3 : Symbol(w3, Decl(a.ts, 2, 77))
+>A : Symbol(A, Decl(a.ts, 2, 29))
+>w3 : Symbol(w3, Decl(a.ts, 2, 77))
+>W3 : Symbol(W3, Decl(a.ts, 1, 64))
+
+type W6<X> = X extends [infer A extends W7["p"]] ? A : never; interface W7 { p: W6<[1]> }
+>W6 : Symbol(W6, Decl(a.ts, 2, 90))
+>X : Symbol(X, Decl(a.ts, 3, 8))
+>X : Symbol(X, Decl(a.ts, 3, 8))
+>A : Symbol(A, Decl(a.ts, 3, 29))
+>W7 : Symbol(W7, Decl(a.ts, 3, 61))
+>A : Symbol(A, Decl(a.ts, 3, 29))
+>W7 : Symbol(W7, Decl(a.ts, 3, 61))
+>p : Symbol(W7.p, Decl(a.ts, 3, 76))
+>W6 : Symbol(W6, Decl(a.ts, 2, 90))
+
+function fn<X>(x: X extends [infer A extends ReturnType<typeof fn>] ? A : never) { return x; }
+>fn : Symbol(fn, Decl(a.ts, 3, 89))
+>X : Symbol(X, Decl(a.ts, 4, 12))
+>x : Symbol(x, Decl(a.ts, 4, 15))
+>X : Symbol(X, Decl(a.ts, 4, 12))
+>A : Symbol(A, Decl(a.ts, 4, 34))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>fn : Symbol(fn, Decl(a.ts, 3, 89))
+>A : Symbol(A, Decl(a.ts, 4, 34))
+>x : Symbol(x, Decl(a.ts, 4, 15))
+
+class Cl<X> { p!: X extends [infer A extends Cl<A>["p"]] ? A : never; }
+>Cl : Symbol(Cl, Decl(a.ts, 4, 94))
+>X : Symbol(X, Decl(a.ts, 5, 9))
+>p : Symbol(Cl.p, Decl(a.ts, 5, 13))
+>X : Symbol(X, Decl(a.ts, 5, 9))
+>A : Symbol(A, Decl(a.ts, 5, 34))
+>Cl : Symbol(Cl, Decl(a.ts, 4, 94))
+>A : Symbol(A, Decl(a.ts, 5, 34))
+>A : Symbol(A, Decl(a.ts, 5, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

@@ -1,0 +1,19 @@
+a.ts(6,20): error TS2540: Cannot assign to 'count' because it is a read-only property.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Primitive = string | number | boolean | null | undefined;
+    type DeepReadonly<T> = T extends Primitive ? T : { readonly [K in keyof T]: DeepReadonly<T[K]> };
+    class Store<S> { snapshot!: S }
+    class App extends Store<DeepReadonly<App>> { count = 1 }
+    class Other extends Store<Exclude<Other, null | undefined>> { count = 1 }
+    new App().snapshot.count = 2;
+                       ~~~~~
+!!! error TS2540: Cannot assign to 'count' because it is a read-only property.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

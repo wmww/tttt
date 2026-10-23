@@ -1,0 +1,30 @@
+a.ts(1,1): error TS2304: Cannot find name 'x'.
+a.ts(1,6): error TS7019: Rest parameter '(Missing)' implicitly has an 'any[]' type.
+a.ts(1,9): error TS1003: Identifier expected.
+b.ts(1,1): error TS2304: Cannot find name 'x'.
+b.ts(1,12): error TS7019: Rest parameter '(Missing)' implicitly has an 'any[]' type.
+b.ts(1,15): error TS1003: Identifier expected.
+b.ts(2,1): error TS1005: ')' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    x = (...
+    ~
+!!! error TS2304: Cannot find name 'x'.
+         ~~~
+!!! error TS7019: Rest parameter '(Missing)' implicitly has an 'any[]' type.
+            
+!!! error TS1003: Identifier expected.
+==== b.ts (4 errors) ====
+    x = async (... // c
+    ~
+!!! error TS2304: Cannot find name 'x'.
+               ~~~
+!!! error TS7019: Rest parameter '(Missing)' implicitly has an 'any[]' type.
+                  
+!!! error TS1003: Identifier expected.
+    
+    
+!!! error TS1005: ')' expected.

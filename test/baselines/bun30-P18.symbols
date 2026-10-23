@@ -1,0 +1,14 @@
+//// [test/cases/bun30-P18.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+exports.a = void 0;
+>exports.a : Symbol(a, Decl(f.js, 0, 0), Decl(f.js, 1, 4))
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+>a : Symbol(a, Decl(f.js, 0, 0), Decl(f.js, 1, 4))
+
+/** @typedef {number} a */
+

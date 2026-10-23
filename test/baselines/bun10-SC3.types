@@ -1,0 +1,40 @@
+//// [test/cases/bun10-SC3.ts] ////
+
+=== j.js ===
+/** @type {{ new(): {}, a: string[] }} */
+const CE2 = class {};
+>CE2 : { new (): {}; a: string[]; }
+>class {} : typeof CE2
+
+CE2.a = [];
+>CE2.a = [] : never[]
+>CE2.a : string[]
+>CE2 : { new (): {}; a: string[]; }
+>a : string[]
+>[] : never[]
+
+function F() {}
+>F : { (): void; a: { (): void; b: string[]; }; }
+
+/** @type {{ (): void, b: string[] }} */
+F.a = function () {};
+>F.a = function () {} : { (): void; b: never[]; }
+>F.a : { (): void; b: string[]; }
+>F : { (): void; a: { (): void; b: string[]; }; }
+>a : { (): void; b: string[]; }
+>function () {} : { (): void; b: never[]; }
+
+F.a.b = [];
+>F.a.b = [] : never[]
+>F.a.b : string[]
+>F.a : { (): void; b: string[]; }
+>F : { (): void; a: { (): void; b: string[]; }; }
+>a : { (): void; b: string[]; }
+>b : string[]
+>[] : never[]
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

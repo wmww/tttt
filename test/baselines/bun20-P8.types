@@ -1,0 +1,31 @@
+//// [test/cases/bun20-P8.ts] ////
+
+=== a.ts ===
+type U = { kind: "a"; a: number } | { kind: "b"; b: string };
+>U : U
+>kind : "a"
+>a : number
+>kind : "b"
+>b : string
+
+declare function assertA(k: string): asserts k is "a";
+>assertA : (k: string) => asserts k is "a"
+>k : string
+
+function f(x: U) { assertA((x.kind)); x.a; }
+>f : (x: U) => void
+>x : U
+>assertA((x.kind)) : void
+>assertA : (k: string) => asserts k is "a"
+>(x.kind) : "a" | "b"
+>x.kind : "a" | "b"
+>x : U
+>kind : "a" | "b"
+>x.a : any
+>x : U
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

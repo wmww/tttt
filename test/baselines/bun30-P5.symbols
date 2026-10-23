@@ -1,0 +1,16 @@
+//// [test/cases/bun30-P5.ts] ////
+
+=== a.ts ===
+export class T { get a() { return 1 } a() {} }
+>T : Symbol(T, Decl(a.ts, 0, 0))
+>a : Symbol(T.a, Decl(a.ts, 0, 16))
+>a : Symbol(T.a, Decl(a.ts, 0, 37))
+
+new T().a = 3;
+>new T().a : Symbol(T.a, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 0))
+>a : Symbol(T.a, Decl(a.ts, 0, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,17 @@
+a.ts(2,8): error TS2503: Cannot find namespace 'prop'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (2 errors) ====
+    import { prop } from "./v";
+    let t: prop.X;
+           ~~~~
+!!! error TS2503: Cannot find namespace 'prop'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== v.ts (0 errors) ====
+    const v = { prop: { inner: 1 } }; export = v;
+    

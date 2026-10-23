@@ -1,0 +1,21 @@
+//// [test/cases/bun14-P5.ts] ////
+
+=== a.ts ===
+declare function f(...args: [(x: number) => void] | ([(x: string) => void] & { k: "a" } & { k: "b" })): void;
+>f : (...args: [(x: number) => void] | ([(x: string) => void] & { k: "a"; } & { k: "b"; })) => void
+>args : [(x: number) => void]
+>x : number
+>x : string
+>k : "a"
+>k : "b"
+
+f(x => {});
+>f(x => {}) : void
+>f : (...args: [(x: number) => void] | ([(x: string) => void] & { k: "a"; } & { k: "b"; })) => void
+>x => {} : (x: number) => void
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

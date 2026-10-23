@@ -1,0 +1,40 @@
+//// [test/cases/bun04-P5.ts] ////
+
+=== a.ts ===
+declare function both<A, B, C, D>(f: (a: A) => B, g: (c: C) => D): (a: A, c: C) => [B, D];
+>both : <A, B, C, D>(f: (a: A) => B, g: (c: C) => D) => (a: A, c: C) => [B, D]
+>f : (a: A) => B
+>a : A
+>g : (c: C) => D
+>c : C
+>a : A
+>c : C
+
+declare function cst<const T>(x: T): T;
+>cst : <const T>(x: T) => T
+>x : T
+
+const r = both(cst, cst);
+>r : <const T, T1>(a: T, c: T1) => [T, T1]
+>both(cst, cst) : <const T, T1>(a: T, c: T1) => [T, T1]
+>both : <A, B, C, D>(f: (a: A) => B, g: (c: C) => D) => (a: A, c: C) => [B, D]
+>cst : <const T>(x: T) => T
+>cst : <const T>(x: T) => T
+
+const n1: never = r;
+>n1 : never
+>r : <const T, T1>(a: T, c: T1) => [T, T1]
+
+const n2: never = r([1], [1]);
+>n2 : never
+>r([1], [1]) : [readonly [1], number[]]
+>r : <const T, T1>(a: T, c: T1) => [T, T1]
+>[1] : [1]
+>1 : 1
+>[1] : number[]
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

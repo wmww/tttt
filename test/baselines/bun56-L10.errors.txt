@@ -1,0 +1,54 @@
+a.ts(2,1): error TS2347: Untyped function calls may not accept type arguments.
+a.ts(2,8): error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+a.ts(2,19): error TS1005: '?' expected.
+a.ts(3,8): error TS2448: Block-scoped variable 'T' used before its declaration.
+a.ts(3,10): error TS1005: ';' expected.
+a.ts(3,12): error TS2693: 'U' only refers to a type, but is being used as a value here.
+a.ts(4,8): error TS1109: Expression expected.
+a.ts(4,14): error TS7005: Variable 'T' implicitly has an 'any' type.
+a.ts(4,15): error TS1005: ',' expected.
+a.ts(5,1): error TS2347: Untyped function calls may not accept type arguments.
+a.ts(5,8): error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+a.ts(5,19): error TS1005: '?' expected.
+a.ts(5,22): error TS1005: ',' expected.
+a.ts(5,24): error TS2693: 'any' only refers to a type, but is being used as a value here.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (14 errors) ====
+    declare const x: any; declare const async: any; type U = 1;
+    async <T extends U>(x);
+    ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2347: Untyped function calls may not accept type arguments.
+           ~
+!!! error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+                      ~
+!!! error TS1005: '?' expected.
+    async <T = U>(x);
+           ~
+!!! error TS2448: Block-scoped variable 'T' used before its declaration.
+!!! related TS2728 a.ts:4:14: 'T' is declared here.
+             ~
+!!! error TS1005: ';' expected.
+               ~
+!!! error TS2693: 'U' only refers to a type, but is being used as a value here.
+    async <const T>(x);
+           ~~~~~
+!!! error TS1109: Expression expected.
+                 ~
+!!! error TS7005: Variable 'T' implicitly has an 'any' type.
+                  ~
+!!! error TS1005: ',' expected.
+    async <T extends U>(x: any);
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2347: Untyped function calls may not accept type arguments.
+           ~
+!!! error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+                      ~
+!!! error TS1005: '?' expected.
+                         ~
+!!! error TS1005: ',' expected.
+                           ~~~
+!!! error TS2693: 'any' only refers to a type, but is being used as a value here.
+    

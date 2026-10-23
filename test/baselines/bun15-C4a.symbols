@@ -1,0 +1,13 @@
+//// [test/cases/bun15-C4a.ts] ////
+
+=== a.ts ===
+const p1: { 2: (x: number) => void } = { [+2]: x => {} };
+>p1 : Symbol(p1, Decl(a.ts, 0, 5))
+>2 : Symbol(2, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 16))
+>[+2] : Symbol([+2], Decl(a.ts, 0, 40))
+>x : Symbol(x, Decl(a.ts, 0, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

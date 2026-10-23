@@ -1,0 +1,15 @@
+a.ts(1,120): error TS2344: Type 'U' does not satisfy the constraint 'string'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type P3<T extends Record<string, string>> = { [K in keyof T]: T[K] } extends ({ [K in keyof T]: infer U }) ? Uppercase<U> : never;
+                                                                                                                           ~
+!!! error TS2344: Type 'U' does not satisfy the constraint 'string'.
+!!! related TS2208 a.ts:1:103: This type parameter might need an `extends string` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

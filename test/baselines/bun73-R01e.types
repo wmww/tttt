@@ -1,0 +1,121 @@
+//// [test/cases/bun73-R01e.ts] ////
+
+=== a.ts ===
+declare function fail(): never;
+>fail : () => never
+
+declare function c(): boolean;
+>c : () => boolean
+
+declare function use(v: unknown): void;
+>use : (v: unknown) => void
+>v : unknown
+
+declare const arr: number[];
+>arr : number[]
+
+type U = string | number | boolean | null | undefined;
+>U : U
+
+function f4(x: string | number) { fail(); do { try { } finally { x.foo; } } while (true); }
+>f4 : (x: string | number) => void
+>x : string | number
+>fail() : never
+>fail : () => never
+>x.foo : any
+>x : never
+>foo : any
+>true : true
+
+function f7(x: string | number) { fail(); do { try { } finally { try { x.foo; } finally { } } } while (true); }
+>f7 : (x: string | number) => void
+>x : string | number
+>fail() : never
+>fail : () => never
+>x.foo : any
+>x : never
+>foo : any
+>true : true
+
+function plainLoop(x: string | number) { fail(); do { x.foo; } while (true); }
+>plainLoop : (x: string | number) => void
+>x : string | number
+>fail() : never
+>fail : () => never
+>x.foo : any
+>x : never
+>foo : any
+>true : true
+
+function plainFinally(x: string | number) { fail(); try { } finally { x.foo; } }
+>plainFinally : (x: string | number) => void
+>x : string | number
+>fail() : never
+>fail : () => never
+>x.foo : any
+>x : string | number
+>foo : any
+
+// the other way round: tsc reports TS2339 on `never` at the `o.x` of the switch, bun does not
+function f43(o: { x: U }) { fail(); do { try { } catch { try { } catch { use(o.x); } switch (typeof o.x) { } } } while (c() && o.x == null); if (typeof o.x === "boolean") { } }
+>f43 : (o: { x: U; }) => void
+>o : { x: U; }
+>x : U
+>fail() : never
+>fail : () => never
+>use(o.x) : void
+>use : (v: unknown) => void
+>o.x : any
+>o : never
+>x : any
+>typeof o.x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>o.x : any
+>o : never
+>x : any
+>c() && o.x == null : boolean
+>c() : boolean
+>c : () => boolean
+>o.x == null : boolean
+>o.x : any
+>o : never
+>x : any
+>typeof o.x === "boolean" : boolean
+>typeof o.x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>o.x : any
+>o : never
+>x : any
+>"boolean" : "boolean"
+
+// `arr`, a global constant, is `never` in bun (TS2488), not in tsc
+function f140(o: { n: { x: U; y: U } }) { try { fail(); } finally { switch (typeof o.n.y) { case "boolean": do { } while (typeof o.n.x === "boolean"); for (const e of arr) { } } } for (const e of arr) { } }
+>f140 : (o: { n: { x: U; y: U; }; }) => void
+>o : { n: { x: U; y: U; }; }
+>n : { x: U; y: U; }
+>x : U
+>y : U
+>fail() : never
+>fail : () => never
+>typeof o.n.y : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>o.n.y : U
+>o.n : { x: U; y: U; }
+>o : { n: { x: U; y: U; }; }
+>n : { x: U; y: U; }
+>y : U
+>"boolean" : "boolean"
+>typeof o.n.x === "boolean" : boolean
+>typeof o.n.x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>o.n.x : U
+>o.n : { x: U; y: U; }
+>o : { n: { x: U; y: U; }; }
+>n : { x: U; y: U; }
+>x : U
+>"boolean" : "boolean"
+>e : number
+>arr : number[]
+>e : number
+>arr : number[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

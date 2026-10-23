@@ -1,0 +1,17 @@
+//// [test/cases/bun05-C14a.ts] ////
+
+=== a.ts ===
+declare var Symbol: SymbolConstructor;
+>Symbol : SymbolConstructor
+
+const s = Symbol(); const k: number = s;
+>s : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>k : number
+>s : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

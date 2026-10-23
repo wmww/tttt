@@ -1,0 +1,26 @@
+//// [test/cases/bun77-R01a.ts] ////
+
+=== a.ts ===
+const o1 = { set p({ a = null, b = undefined, c = [] }) { } };
+>o1 : { p: any; }
+>{ set p({ a = null, b = undefined, c = [] }) { } } : { p: any; }
+>p : any
+>a : any
+>b : any
+>undefined : undefined
+>c : any[]
+>[] : undefined[]
+
+class C1 { set p({ a = null, b = undefined, c = [] }) { } }
+>C1 : C1
+>p : any
+>a : any
+>b : any
+>undefined : undefined
+>c : any[]
+>[] : undefined[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,62 @@
+//// [test/cases/bun92-R09g.ts] ////
+
+=== a.ts ===
+type Primitive = string | number | boolean | bigint | symbol | null | undefined;
+>Primitive : Primitive
+
+type Json<T> = T extends Primitive ? T : { [K in keyof T]: Json<T[K]> };
+>Json : Json<T>
+
+class Model<Shape> { declare shape: Shape; toJSON(): Shape { return this.shape; } }
+>Model : Model<Shape>
+>shape : Shape
+>toJSON : () => Shape
+>this.shape : Shape
+>this : this
+>shape : Shape
+
+class User extends Model<Json<User>> { name = ""; age = 0; }
+>User : User
+>Model : Model<{ shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }>
+>name : string
+>"" : ""
+>age : number
+>0 : 0
+
+class Post extends Model<Json<Post>> { author = new User(); }
+>Post : Post
+>Model : Model<{ shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }>
+>author : User
+>new User() : User
+>User : typeof User
+
+const u = new User().toJSON(); const n: number = u.name;
+>u : { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }
+>new User().toJSON() : { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }
+>new User().toJSON : () => { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }
+>new User() : User
+>User : typeof User
+>toJSON : () => { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }
+>n : number
+>u.name : string
+>u : { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }
+>name : string
+
+const p = new Post().toJSON().author.age; const q: string = p;
+>p : number
+>new Post().toJSON().author.age : number
+>new Post().toJSON().author : { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }
+>new Post().toJSON() : { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }
+>new Post().toJSON : () => { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }
+>new Post() : Post
+>Post : typeof Post
+>toJSON : () => { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }; toJSON: any; author: any; }
+>author : { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: { shape: any; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }; toJSON: any; name: string; age: number; }
+>age : number
+>q : string
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

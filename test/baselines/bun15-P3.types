@@ -1,0 +1,26 @@
+//// [test/cases/bun15-P3.ts] ////
+
+=== a.tsx ===
+function C(...args: []): JSX.Element { return <div />; }
+>C : () => JSX.Element
+>args : []
+>JSX : any
+><div /> : JSX.Element
+>div : any
+
+const b = <C x={1} />;
+>b : JSX.Element
+><C x={1} /> : JSX.Element
+>C : () => JSX.Element
+>x : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== jsx.d.ts ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } interface IntrinsicAttributes { key?: string } }
+>div : {}
+>key : string | undefined
+

@@ -1,0 +1,30 @@
+//// [test/cases/bun86-R10a.ts] ////
+
+=== index.ts ===
+export * from "./a";
+export * from "./b";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a.ts ===
+import * as sx from "./x";
+>sx : typeof sx
+
+export { sx };
+>sx : typeof sx
+
+=== b.ts ===
+import * as sx from "./x";
+>sx : typeof sx
+
+export { sx };
+>sx : typeof sx
+
+=== x.ts ===
+export const X = 1;
+>X : 1
+>1 : 1
+
+export default 1;
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun07-C12.ts] ////
+
+=== a.ts ===
+export {};
+(function nm() {}, 1);
+>nm : Symbol(nm, Decl(a.ts, 1, 1))
+
+(class Nm {}, 1);
+>Nm : Symbol(Nm, Decl(a.ts, 2, 1))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,22 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+f.js(1,7): error TS2813: Class declaration cannot implement overload list for 'a'.
+f.js(2,10): error TS2814: Function with bodies can only merge with classes that are ambient.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== f.js (2 errors) ====
+    class a {}
+          ~
+!!! error TS2813: Class declaration cannot implement overload list for 'a'.
+!!! related TS6506 f.js:1:7: Consider adding a 'declare' modifier to this class.
+    function a() {}
+             ~
+!!! error TS2814: Function with bodies can only merge with classes that are ambient.
+!!! related TS6506 f.js:1:7: Consider adding a 'declare' modifier to this class.
+    export {};
+    

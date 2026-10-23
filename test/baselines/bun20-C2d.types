@@ -1,0 +1,34 @@
+//// [test/cases/bun20-C2d.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+declare function show<T>(x: T): { show: T };
+>show : <T>(x: T) => { show: T; }
+>x : T
+>show : T
+
+const t: null = show(k());
+>t : null
+>show(k()) : { show: unknown; }
+>show : <T>(x: T) => { show: T; }
+>k() : never
+>k : () => never
+
+function k() { let x: string | null = ""; do { if (cond()) break; } while (x); if (x != null) throw 0; return x; }
+>k : () => never
+>x : string | null
+>"" : ""
+>cond() : boolean
+>cond : () => boolean
+>x : string
+>x != null : boolean
+>x : string
+>0 : 0
+>x : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

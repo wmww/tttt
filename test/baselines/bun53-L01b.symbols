@@ -1,0 +1,42 @@
+//// [test/cases/bun53-L01b.ts] ////
+
+=== a.ts ===
+enum F1 { ["a" as const] = 1, B = 2 }
+>F1 : Symbol(F1, Decl(a.ts, 0, 0))
+>["a" as const] : Symbol(F1["a" as const], Decl(a.ts, 0, 9))
+>const : Symbol(const)
+>B : Symbol(F1.B, Decl(a.ts, 0, 29))
+
+enum F2 { ["a"!] = 1, B = 2 }
+>F2 : Symbol(F2, Decl(a.ts, 0, 37))
+>["a"!] : Symbol(F2["a"!], Decl(a.ts, 1, 9))
+>B : Symbol(F2.B, Decl(a.ts, 1, 21))
+
+enum F3 { ["a" satisfies string] = 1, B = 2 }
+>F3 : Symbol(F3, Decl(a.ts, 1, 29))
+>["a" satisfies string] : Symbol(F3["a" satisfies string], Decl(a.ts, 2, 9))
+>B : Symbol(F3.B, Decl(a.ts, 2, 37))
+
+enum F4 { [<string>"a"] = 1, B = 2 }
+>F4 : Symbol(F4, Decl(a.ts, 2, 45))
+>[<string>"a"] : Symbol(F4[<string>"a"], Decl(a.ts, 3, 9))
+>B : Symbol(F4.B, Decl(a.ts, 3, 28))
+
+enum F5 { [1 as const] = 1, B = 2 }
+>F5 : Symbol(F5, Decl(a.ts, 3, 36))
+>[1 as const] : Symbol(F5[1 as const], Decl(a.ts, 4, 9))
+>const : Symbol(const)
+>B : Symbol(F5.B, Decl(a.ts, 4, 27))
+
+enum F6 { [1!] = 1, B = 2 }
+>F6 : Symbol(F6, Decl(a.ts, 4, 35))
+>[1!] : Symbol(F6[1!], Decl(a.ts, 5, 9))
+>B : Symbol(F6.B, Decl(a.ts, 5, 19))
+
+const k1: keyof typeof F1 = 0;
+>k1 : Symbol(k1, Decl(a.ts, 6, 5))
+>F1 : Symbol(F1, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

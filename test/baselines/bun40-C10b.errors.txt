@@ -1,0 +1,27 @@
+a.ts(2,29): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '0' is not assignable to parameter of type '"extra"'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "dom"], "libReplacement": true } }
+==== a.ts (2 errors) ====
+    interface Order { f(x: "a"): 3 }
+    declare const o: Order; o.f(0);
+                                ~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type '0' is not assignable to parameter of type '"extra"'.
+!!! related TS2771 node_modules/@typescript/lib-dom/extra.d.ts:1:19: The last overload is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@typescript/lib-dom/extra.d.ts (0 errors) ====
+    interface Order { f(x: "extra"): 2 }
+==== node_modules/@typescript/lib-dom/index.d.ts (0 errors) ====
+    /// <reference path="./extra.d.ts" />
+    interface Order { f(x: "dom"): 1 }
+==== node_modules/@typescript/lib-dom/package.json (0 errors) ====
+    {"name":"@typescript/lib-dom","version":"1.0.0","types":"index.d.ts"}
+    

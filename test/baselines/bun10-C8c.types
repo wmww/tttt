@@ -1,0 +1,19 @@
+//// [test/cases/bun10-C8c.ts] ////
+
+=== a.ts ===
+interface I9 extends Array<typeof a9> {}
+>a9 : any
+
+declare const i9: I9;
+>i9 : I9
+
+const a9 = i9.length;
+>a9 : any
+>i9.length : number
+>i9 : I9
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

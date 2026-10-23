@@ -1,0 +1,17 @@
+//// [test/cases/bun36-C11.ts] ////
+
+=== a.ts ===
+import { which } from ".\\x";
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+const x: 0 = which;
+>x : Symbol(x, Decl(a.ts, 1, 5))
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== x.d.ts ===
+export declare const which: "x";
+>which : Symbol(which, Decl(x.d.ts, 0, 20))
+

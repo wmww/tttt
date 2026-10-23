@@ -1,0 +1,11 @@
+//// [test/cases/bun28-P5c.ts] ////
+
+=== a.ts ===
+interface X { default p: number }
+>default : any
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

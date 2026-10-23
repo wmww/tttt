@@ -1,0 +1,14 @@
+//// [test/cases/bun24-C19.ts] ////
+
+=== a.ts ===
+const t: { (a: typeof Symbol.iterator): void; (q: 1): 1 } = {};
+>t : Symbol(t, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>q : Symbol(q, Decl(a.ts, 0, 47))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,21 @@
+a.ts(5,9): error TS2322: Type '1 | 2' is not assignable to type '1'.
+  Type '2' is not assignable to type '1'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type D<X> = X extends PropertyKey ? 1 : 2;
+    type W<X> = X extends number ? [X] : never;
+    function f<T>(w: W<D<keyof T>>, a: D<keyof T>) {
+      const probe: unknown[] = w;
+      const x: 1 = a;
+            ~
+!!! error TS2322: Type '1 | 2' is not assignable to type '1'.
+!!! error TS2322:   Type '2' is not assignable to type '1'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

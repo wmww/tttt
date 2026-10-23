@@ -1,0 +1,18 @@
+//// [test/cases/bun36-C9.ts] ////
+
+=== a.ts ===
+import { which } from "k";
+>which : "index"
+
+const x: 0 = which;
+>x : 0
+>which : "index"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/k/index.d.ts ===
+export declare const which: "index";
+>which : "index"
+

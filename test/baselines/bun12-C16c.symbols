@@ -1,0 +1,20 @@
+//// [test/cases/bun12-C16c.ts] ////
+
+=== a.ts ===
+declare var Keys: K;
+>Keys : Symbol(Keys, Decl(a.ts, 0, 11))
+>K : Symbol(K, Decl(a.ts, 0, 20))
+
+interface K { readonly a: unique symbol }
+>K : Symbol(K, Decl(a.ts, 0, 20))
+>a : Symbol(K.a, Decl(a.ts, 1, 13))
+
+let s: string = Keys.a;
+>s : Symbol(s, Decl(a.ts, 2, 3))
+>Keys.a : Symbol(K.a, Decl(a.ts, 1, 13))
+>Keys : Symbol(Keys, Decl(a.ts, 0, 11))
+>a : Symbol(K.a, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

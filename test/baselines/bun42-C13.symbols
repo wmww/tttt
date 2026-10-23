@@ -1,0 +1,16 @@
+//// [test/cases/bun42-C13.ts] ////
+
+=== a.ts ===
+import * as p from "./p.json" with { type: "json" };
+>p : Symbol(p, Decl(a.ts, 0, 6))
+
+const t: 0 = p;
+>t : Symbol(t, Decl(a.ts, 1, 5))
+>p : Symbol(p, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== p.d.json.ts ===
+
+export {};

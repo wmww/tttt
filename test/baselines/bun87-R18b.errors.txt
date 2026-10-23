@@ -1,0 +1,20 @@
+a.ts(2,26): error TS2322: Type 'false' is not assignable to type '1'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "skipLibCheck": true } }
+==== a.ts (2 errors) ====
+    var use = f2();
+    const fn = () => { const v: 1 = null! as Has<"$m", D8>; };
+                             ~
+!!! error TS2322: Type 'false' is not assignable to type '1'.
+    function f2() { return null! as D8; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== d.d.ts (0 errors) ====
+    type Has<K, T> = K extends keyof T ? true : false;
+    type renamed<T> = { [K in keyof T as `$${K & string}`]: T[K] };
+    interface D8 extends renamed<D8> { m(): void; n: number }
+    

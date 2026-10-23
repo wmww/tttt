@@ -1,0 +1,47 @@
+a.ts(1,10): error TS6133: 'K' is declared but its value is never read.
+a.ts(2,30): error TS6133: 'u3' is declared but its value is never read.
+a.ts(2,38): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(2,47): error TS6133: 'u3' is declared but its value is never read.
+a.ts(3,24): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(3,38): error TS6133: 'KK' is declared but its value is never read.
+a.ts(4,37): error TS1258: A default export must be at the top level of a file or module declaration.
+a.ts(5,24): error TS1258: A default export must be at the top level of a file or module declaration.
+a.ts(5,47): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(6,7): error TS6133: 'sentinel' is declared but its value is never read.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (11 errors) ====
+    import { K } from "./m";
+             ~
+!!! error TS6133: 'K' is declared but its value is never read.
+    export function f1() { const u3 = 1; export { u3 }; }
+                                 ~~
+!!! error TS6133: 'u3' is declared but its value is never read.
+                                         ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                                                  ~~
+!!! error TS6133: 'u3' is declared but its value is never read.
+    export function f4() { export { K as KK }; }
+                           ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                                         ~~
+!!! error TS6133: 'KK' is declared but its value is never read.
+    export function f7() { const u = 1; export default u; }
+                                        ~~~~~~
+!!! error TS1258: A default export must be at the top level of a file or module declaration.
+    export function f8() { export default { a: 1, a: 2 }; }
+                           ~~~~~~
+!!! error TS1258: A default export must be at the top level of a file or module declaration.
+                                                  ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+          ~~~~~~~~
+!!! error TS6133: 'sentinel' is declared but its value is never read.
+==== m.ts (0 errors) ====
+    export class K {}
+    

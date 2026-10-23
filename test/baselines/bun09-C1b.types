@@ -1,0 +1,13 @@
+//// [test/cases/bun09-C1b.ts] ////
+
+=== a.ts ===
+export type Bar<A extends string> = A;
+>Bar : A
+
+type Z4<T> = T extends import("./a").Bar<infer X> ? 1 : never;
+>Z4 : Z4<T>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

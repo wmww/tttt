@@ -1,0 +1,28 @@
+//// [test/cases/bun12-C3.ts] ////
+
+=== a.ts ===
+declare const a: unique symbol;
+>a : Symbol(a, Decl(a.ts, 0, 13))
+
+declare const sym: symbol;
+>sym : Symbol(sym, Decl(a.ts, 1, 13))
+
+const c4: unique symbol = a;
+>c4 : Symbol(c4, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+
+const c6: unique symbol = sym;
+>c6 : Symbol(c6, Decl(a.ts, 3, 5))
+>sym : Symbol(sym, Decl(a.ts, 1, 13))
+
+const c9: unique symbol = 1;
+>c9 : Symbol(c9, Decl(a.ts, 4, 5))
+
+class C { static readonly s: unique symbol = a; }
+>C : Symbol(C, Decl(a.ts, 4, 28))
+>s : Symbol(C.s, Decl(a.ts, 5, 9))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

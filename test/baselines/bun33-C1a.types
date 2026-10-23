@@ -1,0 +1,11 @@
+//// [test/cases/bun33-C1a.ts] ////
+
+=== a.mts ===
+await 1;
+>await 1 : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

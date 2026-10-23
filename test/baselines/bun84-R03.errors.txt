@@ -1,0 +1,51 @@
+a.js(1,17): error TS2713: Cannot access 'A.' because 'A' is a type, but not a namespace. Did you mean to retrieve the type of the property '' in 'A' with 'A[""]'?
+a.js(1,17): error TS1003: Identifier expected.
+a.js(2,23): error TS2713: Cannot access 'A.' because 'A' is a type, but not a namespace. Did you mean to retrieve the type of the property '' in 'A' with 'A[""]'?
+a.js(2,23): error TS1003: Identifier expected.
+a.js(3,28): error TS2694: Namespace '"m".M' has no exported member '(Missing)'.
+a.js(3,28): error TS1003: Identifier expected.
+a.js(4,30): error TS7017: Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+a.js(4,30): error TS1003: Identifier expected.
+a.js(5,21): error TS2341: Property '""' is private and only accessible within class 'P'.
+a.js(5,21): error TS1003: Identifier expected.
+a.js(6,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (11 errors) ====
+    /** @type {NS.A.} */ let y1 = 1;
+                    
+!!! error TS2713: Cannot access 'A.' because 'A' is a type, but not a namespace. Did you mean to retrieve the type of the property '' in 'A' with 'A[""]'?
+                    ~
+!!! error TS1003: Identifier expected.
+    /** @type {Array<NS.A.>} */ let y2 = [1];
+                          
+!!! error TS2713: Cannot access 'A.' because 'A' is a type, but not a namespace. Did you mean to retrieve the type of the property '' in 'A' with 'A[""]'?
+                          ~
+!!! error TS1003: Identifier expected.
+    /** @type {import("./m").M.} */ let y3 = 1;
+                               
+!!! error TS2694: Namespace '"m".M' has no exported member '(Missing)'.
+                               ~
+!!! error TS1003: Identifier expected.
+    /** @type {typeof globalThis.} */ let y4 = 1;
+                                 
+!!! error TS7017: Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+                                 ~
+!!! error TS1003: Identifier expected.
+    /** @type {typeof p.} */ let y5 = 1;
+                        
+!!! error TS2341: Property '""' is private and only accessible within class 'P'.
+                        ~
+!!! error TS1003: Identifier expected.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.d.ts (0 errors) ====
+    export namespace M { interface X {} }
+==== n.d.ts (0 errors) ====
+    declare namespace NS { interface A { a: number } }
+    declare class P { private "": number }
+    declare const p: P;
+    

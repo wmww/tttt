@@ -1,0 +1,48 @@
+//// [test/cases/bun51-L19b.ts] ////
+
+=== a.ts ===
+export type F = ({ a: b }) => void;
+>F : Symbol(F, Decl(a.ts, 0, 0))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 0, 18))
+
+export interface I { m({ a: b }): void }
+>I : Symbol(I, Decl(a.ts, 0, 35))
+>m : Symbol(I.m, Decl(a.ts, 1, 20))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 1, 24))
+
+export declare function f({ a: b }): void;
+>f : Symbol(f, Decl(a.ts, 1, 40))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 2, 27))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 12))
+
+=== b.ts ===
+import { F, I, f } from "./a";
+>F : Symbol(F, Decl(b.ts, 0, 8))
+>I : Symbol(I, Decl(b.ts, 0, 11))
+>f : Symbol(f, Decl(b.ts, 0, 14))
+
+declare const ff: F, i: I;
+>ff : Symbol(ff, Decl(b.ts, 1, 13))
+>F : Symbol(F, Decl(b.ts, 0, 8))
+>i : Symbol(i, Decl(b.ts, 1, 20))
+>I : Symbol(I, Decl(b.ts, 0, 11))
+
+ff({ a: 1 });
+>ff : Symbol(ff, Decl(b.ts, 1, 13))
+>a : Symbol(a, Decl(b.ts, 2, 4))
+
+i.m({ a: 1 });
+>i.m : Symbol(I.m, Decl(a.ts, 1, 20))
+>i : Symbol(i, Decl(b.ts, 1, 20))
+>m : Symbol(I.m, Decl(a.ts, 1, 20))
+>a : Symbol(a, Decl(b.ts, 3, 5))
+
+f({ a: 1 });
+>f : Symbol(f, Decl(b.ts, 0, 14))
+>a : Symbol(a, Decl(b.ts, 4, 3))
+

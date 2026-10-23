@@ -1,0 +1,72 @@
+//// [test/cases/bun73-R06.ts] ////
+
+=== a.ts ===
+const obj = { a: 1, b: { c: 2 } };
+>obj : Symbol(obj, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 19))
+>c : Symbol(c, Decl(a.ts, 0, 24))
+
+const { a: _a, ...rest } = obj;
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>_a : Symbol(_a, Decl(a.ts, 1, 7))
+>rest : Symbol(rest, Decl(a.ts, 1, 14))
+>obj : Symbol(obj, Decl(a.ts, 0, 5))
+
+declare function f1<T>(cb: (x: T) => typeof rest): T;
+>f1 : Symbol(f1, Decl(a.ts, 1, 31))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+>cb : Symbol(cb, Decl(a.ts, 2, 23))
+>x : Symbol(x, Decl(a.ts, 2, 28))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+>rest : Symbol(rest, Decl(a.ts, 1, 14))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+
+function g1(x: number) { return f1(g1); }
+>g1 : Symbol(g1, Decl(a.ts, 2, 53))
+>x : Symbol(x, Decl(a.ts, 3, 12))
+>f1 : Symbol(f1, Decl(a.ts, 1, 31))
+>g1 : Symbol(g1, Decl(a.ts, 2, 53))
+
+declare function f2<T>(x: { a: T, cb: () => typeof rest }): T;
+>f2 : Symbol(f2, Decl(a.ts, 3, 41))
+>T : Symbol(T, Decl(a.ts, 4, 20))
+>x : Symbol(x, Decl(a.ts, 4, 23))
+>a : Symbol(a, Decl(a.ts, 4, 27))
+>T : Symbol(T, Decl(a.ts, 4, 20))
+>cb : Symbol(cb, Decl(a.ts, 4, 33))
+>rest : Symbol(rest, Decl(a.ts, 1, 14))
+>T : Symbol(T, Decl(a.ts, 4, 20))
+
+function g2() { return f2({ a: 1, cb: g2 }); }
+>g2 : Symbol(g2, Decl(a.ts, 4, 62))
+>f2 : Symbol(f2, Decl(a.ts, 3, 41))
+>a : Symbol(a, Decl(a.ts, 5, 27))
+>cb : Symbol(cb, Decl(a.ts, 5, 33))
+>g2 : Symbol(g2, Decl(a.ts, 4, 62))
+
+function h({ a, ...more }: { a: number, z: string }) {
+>h : Symbol(h, Decl(a.ts, 5, 46))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>more : Symbol(more, Decl(a.ts, 6, 15))
+>a : Symbol(a, Decl(a.ts, 6, 28))
+>z : Symbol(z, Decl(a.ts, 6, 39))
+
+  function f3<T>(cb: (x: T) => typeof more): T { throw 0; }
+>f3 : Symbol(f3, Decl(a.ts, 6, 54))
+>T : Symbol(T, Decl(a.ts, 7, 14))
+>cb : Symbol(cb, Decl(a.ts, 7, 17))
+>x : Symbol(x, Decl(a.ts, 7, 22))
+>T : Symbol(T, Decl(a.ts, 7, 14))
+>more : Symbol(more, Decl(a.ts, 6, 15))
+>T : Symbol(T, Decl(a.ts, 7, 14))
+
+  function g3(x: number) { return f3(g3); }
+>g3 : Symbol(g3, Decl(a.ts, 7, 59))
+>x : Symbol(x, Decl(a.ts, 8, 14))
+>f3 : Symbol(f3, Decl(a.ts, 6, 54))
+>g3 : Symbol(g3, Decl(a.ts, 7, 59))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

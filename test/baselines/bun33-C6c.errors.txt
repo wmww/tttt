@@ -1,0 +1,18 @@
+a.js(1,8): error TS2305: Module '"./m"' has no exported member 'a'.
+a.js(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    const [a] = require("./m");
+           ~
+!!! error TS2305: Module '"./m"' has no exported member 'a'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export interface T { a: number }
+    export class C { x = 1 }
+    

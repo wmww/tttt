@@ -1,0 +1,20 @@
+//// [test/cases/bun05-P5.ts] ////
+
+=== a.ts ===
+function tag(s: any) {}
+>tag : (s: any) => void
+>s : any
+
+tag`a`;
+>tag`a` : void
+>tag : (s: any) => void
+>`a` : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+

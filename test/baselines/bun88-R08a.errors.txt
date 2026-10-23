@@ -1,0 +1,17 @@
+a.js(1,30): error TS7017: Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+a.js(1,30): error TS1003: Identifier expected.
+a.js(2,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "esnext", "target": "es2022" } }
+==== a.js (3 errors) ====
+    /** @type {typeof globalThis.} */ var v8 = "x";
+                                 
+!!! error TS7017: Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+                                 ~
+!!! error TS1003: Identifier expected.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

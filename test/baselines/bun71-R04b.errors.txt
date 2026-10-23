@@ -1,0 +1,30 @@
+a.tsx(4,5): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.tsx(5,5): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.tsx(6,5): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.tsx(7,44): error TS2801: This condition will always return true since this 'Promise<string>' is always defined.
+a.tsx(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (5 errors) ====
+    declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; a: {} } }
+    declare function use(...x: any[]): void;
+    function div() {}
+    if (div) { use(<div />); }
+        ~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    if (div) { use(<div></div>); }
+        ~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    use(div && <a><div /></a>);
+        ~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    async function t(a: Promise<string>) { if (a) { use(<a />); } }
+                                               ~
+!!! error TS2801: This condition will always return true since this 'Promise<string>' is always defined.
+!!! related TS2773 a.tsx:7:44: Did you forget to use 'await'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

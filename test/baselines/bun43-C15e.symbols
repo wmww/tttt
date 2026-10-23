@@ -1,0 +1,7 @@
+//// [test/cases/bun43-C15e.ts] ////
+
+=== a.ts ===
+var x = 1.5n\u0061
+>x : Symbol(x, Decl(a.ts, 0, 3))
+>n\u0061 : Symbol(n\u0061, Decl(a.ts, 0, 11))
+

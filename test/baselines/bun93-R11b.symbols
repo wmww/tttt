@@ -1,0 +1,91 @@
+//// [test/cases/bun93-R11b.ts] ////
+
+=== a.ts ===
+declare class D<T> { n<U>(u: U, t: T): T }
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+>n : Symbol(D.n, Decl(a.ts, 0, 20))
+>U : Symbol(U, Decl(a.ts, 0, 23))
+>u : Symbol(u, Decl(a.ts, 0, 26))
+>U : Symbol(U, Decl(a.ts, 0, 23))
+>t : Symbol(t, Decl(a.ts, 0, 31))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+
+const mk = <T,>(d: D<T>) => d.n<2>;
+>mk : Symbol(mk, Decl(a.ts, 1, 5))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>d : Symbol(d, Decl(a.ts, 1, 16))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>d.n : Symbol(D.n, Decl(a.ts, 0, 20))
+>d : Symbol(d, Decl(a.ts, 1, 16))
+>n : Symbol(D.n, Decl(a.ts, 0, 20))
+
+mk(null! as D<string>)(2, "x");
+>mk : Symbol(mk, Decl(a.ts, 1, 5))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+
+const r: string = mk(null! as D<string>)(2, null!);
+>r : Symbol(r, Decl(a.ts, 3, 5))
+>mk : Symbol(mk, Decl(a.ts, 1, 5))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+
+class C<T> {
+>C : Symbol(C, Decl(a.ts, 3, 51))
+>T : Symbol(T, Decl(a.ts, 4, 8))
+
+  n<U>(u: U, t: T) { return t; }
+>n : Symbol(C.n, Decl(a.ts, 4, 12))
+>U : Symbol(U, Decl(a.ts, 5, 4))
+>u : Symbol(u, Decl(a.ts, 5, 7))
+>U : Symbol(U, Decl(a.ts, 5, 4))
+>t : Symbol(t, Decl(a.ts, 5, 12))
+>T : Symbol(T, Decl(a.ts, 4, 8))
+>t : Symbol(t, Decl(a.ts, 5, 12))
+
+  q = this.n<2>;
+>q : Symbol(C.q, Decl(a.ts, 5, 32))
+>this.n : Symbol(C.n, Decl(a.ts, 4, 12))
+>this : Symbol(C, Decl(a.ts, 3, 51))
+>n : Symbol(C.n, Decl(a.ts, 4, 12))
+}
+new C<string>().q(2, "x");
+>new C<string>().q : Symbol(C.q, Decl(a.ts, 5, 32))
+>C : Symbol(C, Decl(a.ts, 3, 51))
+>q : Symbol(C.q, Decl(a.ts, 5, 32))
+
+function dflt<T>(d: D<T>, f = d.n<2>) { return f; }
+>dflt : Symbol(dflt, Decl(a.ts, 8, 26))
+>T : Symbol(T, Decl(a.ts, 9, 14))
+>d : Symbol(d, Decl(a.ts, 9, 17))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 9, 14))
+>f : Symbol(f, Decl(a.ts, 9, 25))
+>d.n : Symbol(D.n, Decl(a.ts, 0, 20))
+>d : Symbol(d, Decl(a.ts, 9, 17))
+>n : Symbol(D.n, Decl(a.ts, 0, 20))
+>f : Symbol(f, Decl(a.ts, 9, 25))
+
+dflt(null! as D<string>)(2, "x");
+>dflt : Symbol(dflt, Decl(a.ts, 8, 26))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+
+// with a block on the way to the type parameter both tools instantiate
+function blk<T>(d: D<T>) { return d.n<2>; }
+>blk : Symbol(blk, Decl(a.ts, 10, 33))
+>T : Symbol(T, Decl(a.ts, 12, 13))
+>d : Symbol(d, Decl(a.ts, 12, 16))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 12, 13))
+>d.n : Symbol(D.n, Decl(a.ts, 0, 20))
+>d : Symbol(d, Decl(a.ts, 12, 16))
+>n : Symbol(D.n, Decl(a.ts, 0, 20))
+
+blk(null! as D<string>)(2, "x");
+>blk : Symbol(blk, Decl(a.ts, 10, 33))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun07-C14a.ts] ////
+
+=== a.ts ===
+export {};
+const a1 = { f: (this) => 1 };
+>a1 : { f: (this: any) => number; }
+>{ f: (this) => 1 } : { f: (this: any) => number; }
+>f : (this: any) => number
+>(this) => 1 : (this: any) => number
+>this : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

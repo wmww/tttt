@@ -1,0 +1,29 @@
+//// [test/cases/bun13-P2c.ts] ////
+
+=== a.ts ===
+interface Array<T> { length: number; [n: number]: T }
+>length : number
+>n : number
+
+interface Boolean {}
+interface CallableFunction {}
+interface Function {}
+interface IArguments {}
+interface NewableFunction {}
+interface Number {}
+interface Object {}
+interface RegExp {}
+interface String {}
+class D { @((t, k, d) => {}) m() {} }
+>D : D
+>((t, k, d) => {}) : (t: D, k: "m", d: {}) => void
+>(t, k, d) => {} : (t: D, k: "m", d: {}) => void
+>t : D
+>k : "m"
+>d : {}
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,1323 @@
+sentinel.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+u0_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u0_named.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u0_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u0_namespace.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u0_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u0_through.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u0_type-only.ts(2,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u0_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u0_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u10_named.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u10_named.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u10_namespace.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u10_namespace.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u10_through.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u10_through.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u10_type-only.ts(2,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u10_type-only.ts(3,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u10_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u11_named.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u11_named.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u11_namespace.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u11_namespace.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u11_through.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u11_through.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u11_type-only.ts(2,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u11_type-only.ts(3,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u11_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u13_named.ts(1,10): error TS2595: 'Chance' can only be imported by using a default import.
+u13_named.ts(2,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u13_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u13_namespace.ts(2,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u13_namespace.ts(2,21): error TS2339: Property 'Chance' does not exist on type '{ default: Static; }'.
+u13_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u13_namespace.ts(3,27): error TS2503: Cannot find namespace 'ns'.
+u13_reexport.ts(1,10): error TS2595: 'Chance' can only be imported by using a default import.
+u13_through.ts(2,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u13_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u13_type-only.ts(1,15): error TS2595: 'Chance' can only be imported by using a default import.
+u13_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u13_type-only.ts(3,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u13_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u16_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u16_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u16_named.ts(3,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u16_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u16_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u16_namespace.ts(3,27): error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+u16_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u16_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u16_through.ts(3,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u16_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u16_type-only.ts(2,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u16_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u16_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u18_named.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u18_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u18_named.ts(3,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u18_namespace.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u18_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u18_namespace.ts(3,27): error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+u18_through.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u18_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u18_through.ts(3,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u18_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u18_type-only.ts(2,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u18_type-only.ts(3,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u18_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u19_named.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u19_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u19_named.ts(3,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u19_namespace.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u19_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u19_namespace.ts(3,27): error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+u19_through.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u19_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u19_through.ts(3,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u19_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u19_type-only.ts(2,27): error TS2709: Cannot use namespace 'Chance' as a type.
+u19_type-only.ts(3,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u19_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u1_named.ts(2,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u1_named.ts(2,18): error TS2693: 'Chance' only refers to a type, but is being used as a value here.
+u1_named.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u1_namespace.ts(2,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u1_namespace.ts(2,21): error TS2339: Property 'Chance' does not exist on type '{ default: Static; }'.
+u1_namespace.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u1_through.ts(2,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u1_through.ts(2,18): error TS2693: 'Chance' only refers to a type, but is being used as a value here.
+u1_through.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u1_type-only.ts(2,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u1_type-only.ts(3,7): error TS2322: Type 'any' is not assignable to type 'never'.
+u1_type-only.ts(3,18): error TS2693: 'Chance' only refers to a type, but is being used as a value here.
+u20_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u20_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u20_named.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u20_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u20_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u20_namespace.ts(3,27): error TS2503: Cannot find namespace 'ns'.
+u20_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u20_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u20_through.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u20_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u20_type-only.ts(2,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u20_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u20_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u24_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u24_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u24_named.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u24_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u24_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u24_namespace.ts(3,27): error TS2503: Cannot find namespace 'ns'.
+u24_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u24_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u24_through.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u24_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u24_type-only.ts(2,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u24_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u24_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u28_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u28_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u28_named.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u28_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u28_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u28_namespace.ts(3,27): error TS2503: Cannot find namespace 'ns'.
+u28_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u28_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u28_through.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u28_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u28_type-only.ts(2,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u28_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u28_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u2_named.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u2_named.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u2_namespace.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u2_namespace.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u2_through.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u2_through.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u2_type-only.ts(2,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u2_type-only.ts(3,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u2_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u32_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u32_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u32_named.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u32_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u32_namespace.ts(3,7): error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+u32_namespace.ts(3,27): error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+u32_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u32_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u32_through.ts(3,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u32_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u32_type-only.ts(2,27): error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+u32_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u32_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u3_named.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u3_named.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u3_namespace.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u3_namespace.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u3_through.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u3_through.ts(3,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u3_type-only.ts(2,7): error TS2322: Type 'Instance' is not assignable to type 'never'.
+u3_type-only.ts(3,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u3_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u4_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u4_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u4_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u4_namespace.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u4_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u4_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u4_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u4_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u4_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u6_named.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u6_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u6_namespace.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u6_namespace.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u6_through.ts(2,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u6_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u6_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u6_type-only.ts(3,7): error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+u6_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u7_named.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u7_named.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u7_namespace.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u7_namespace.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u7_through.ts(2,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u7_through.ts(3,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u7_type-only.ts(2,7): error TS2322: Type 'Chance' is not assignable to type 'never'.
+u7_type-only.ts(3,7): error TS2322: Type '() => Instance' is not assignable to type 'never'.
+u7_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+u8_named.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u8_named.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u8_namespace.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u8_namespace.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u8_through.ts(2,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u8_through.ts(3,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u8_type-only.ts(2,7): error TS2322: Type 'Alias' is not assignable to type 'never'.
+u8_type-only.ts(3,7): error TS2322: Type 'Static' is not assignable to type 'never'.
+u8_type-only.ts(3,18): error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "module": "ESNext", "moduleResolution": "bundler", "target": "ES2022", "types": [], "esModuleInterop": true, "skipLibCheck": true}, "files": ["index.ts", "u0_named.ts", "u0_type-only.ts", "u0_reexport.ts", "u0_namespace.ts", "u0_through.ts", "u1_named.ts", "u1_type-only.ts", "u1_reexport.ts", "u1_namespace.ts", "u1_through.ts", "u2_named.ts", "u2_type-only.ts", "u2_reexport.ts", "u2_namespace.ts", "u2_through.ts", "u3_named.ts", "u3_type-only.ts", "u3_reexport.ts", "u3_namespace.ts", "u3_through.ts", "u4_named.ts", "u4_type-only.ts", "u4_reexport.ts", "u4_namespace.ts", "u4_through.ts", "u6_named.ts", "u6_type-only.ts", "u6_reexport.ts", "u6_namespace.ts", "u6_through.ts", "u7_named.ts", "u7_type-only.ts", "u7_reexport.ts", "u7_namespace.ts", "u7_through.ts", "u8_named.ts", "u8_type-only.ts", "u8_reexport.ts", "u8_namespace.ts", "u8_through.ts", "u10_named.ts", "u10_type-only.ts", "u10_reexport.ts", "u10_namespace.ts", "u10_through.ts", "u11_named.ts", "u11_type-only.ts", "u11_reexport.ts", "u11_namespace.ts", "u11_through.ts", "u13_named.ts", "u13_type-only.ts", "u13_reexport.ts", "u13_namespace.ts", "u13_through.ts", "u16_named.ts", "u16_type-only.ts", "u16_reexport.ts", "u16_namespace.ts", "u16_through.ts", "u18_named.ts", "u18_type-only.ts", "u18_reexport.ts", "u18_namespace.ts", "u18_through.ts", "u19_named.ts", "u19_type-only.ts", "u19_reexport.ts", "u19_namespace.ts", "u19_through.ts", "u20_named.ts", "u20_type-only.ts", "u20_reexport.ts", "u20_namespace.ts", "u20_through.ts", "u24_named.ts", "u24_type-only.ts", "u24_reexport.ts", "u24_namespace.ts", "u24_through.ts", "u28_named.ts", "u28_type-only.ts", "u28_reexport.ts", "u28_namespace.ts", "u28_through.ts", "u32_named.ts", "u32_type-only.ts", "u32_reexport.ts", "u32_namespace.ts", "u32_through.ts", "sentinel.ts"]}
+==== index.ts (0 errors) ====
+    import { Chance } from "lib";
+    
+    export const a = Chance();
+    export const b: Chance = a;
+==== sentinel.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== u0_named.ts (2 errors) ====
+    import { Chance } from "lib-alias-to-interface-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u0_namespace.ts (2 errors) ====
+    import * as ns from "lib-alias-to-interface-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u0_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-interface-property";
+    export {};
+==== u0_through.ts (2 errors) ====
+    import { Chance } from "./u0_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u0_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-alias-to-interface-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u0_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u10_named.ts (2 errors) ====
+    import { Chance } from "lib-alias-to-type-alias-optional";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u10_namespace.ts (2 errors) ====
+    import * as ns from "lib-alias-to-type-alias-optional";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u10_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-type-alias-optional";
+    export {};
+==== u10_through.ts (2 errors) ====
+    import { Chance } from "./u10_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u10_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-alias-to-type-alias-optional";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u10_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u11_named.ts (2 errors) ====
+    import { Chance } from "lib-alias-to-type-alias-method";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u11_namespace.ts (2 errors) ====
+    import * as ns from "lib-alias-to-type-alias-method";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u11_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-type-alias-method";
+    export {};
+==== u11_through.ts (2 errors) ====
+    import { Chance } from "./u11_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u11_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-alias-to-type-alias-method";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u11_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u13_named.ts (3 errors) ====
+    import { Chance } from "lib-alias-to-class-no-property";
+             ~~~~~~
+!!! error TS2595: 'Chance' can only be imported by using a default import.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u13_namespace.ts (4 errors) ====
+    import * as ns from "lib-alias-to-class-no-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                        ~~~~~~
+!!! error TS2339: Property 'Chance' does not exist on type '{ default: Static; }'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~
+!!! error TS2503: Cannot find namespace 'ns'.
+    export {};
+==== u13_reexport.ts (1 errors) ====
+    export { Chance } from "lib-alias-to-class-no-property";
+             ~~~~~~
+!!! error TS2595: 'Chance' can only be imported by using a default import.
+    export {};
+==== u13_through.ts (2 errors) ====
+    import { Chance } from "./u13_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u13_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-alias-to-class-no-property";
+                  ~~~~~~
+!!! error TS2595: 'Chance' can only be imported by using a default import.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u13_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u16_named.ts (3 errors) ====
+    import { Chance } from "lib-alias-to-namespace-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    export {};
+==== u16_namespace.ts (3 errors) ====
+    import * as ns from "lib-alias-to-namespace-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~~~~~~~~
+!!! error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+    export {};
+==== u16_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-namespace-property";
+    export {};
+==== u16_through.ts (3 errors) ====
+    import { Chance } from "./u16_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    export {};
+==== u16_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-alias-to-namespace-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u16_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u18_named.ts (3 errors) ====
+    import { Chance } from "lib-alias-to-namespace-optional";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    export {};
+==== u18_namespace.ts (3 errors) ====
+    import * as ns from "lib-alias-to-namespace-optional";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~~~~~~~~
+!!! error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+    export {};
+==== u18_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-namespace-optional";
+    export {};
+==== u18_through.ts (3 errors) ====
+    import { Chance } from "./u18_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    export {};
+==== u18_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-alias-to-namespace-optional";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u18_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u19_named.ts (3 errors) ====
+    import { Chance } from "lib-alias-to-namespace-method";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    export {};
+==== u19_namespace.ts (3 errors) ====
+    import * as ns from "lib-alias-to-namespace-method";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~~~~~~~~
+!!! error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+    export {};
+==== u19_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-namespace-method";
+    export {};
+==== u19_through.ts (3 errors) ====
+    import { Chance } from "./u19_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    export {};
+==== u19_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-alias-to-namespace-method";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2709: Cannot use namespace 'Chance' as a type.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u19_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u1_named.ts (3 errors) ====
+    import { Chance } from "lib-alias-to-interface-no-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS2693: 'Chance' only refers to a type, but is being used as a value here.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u1_namespace.ts (3 errors) ====
+    import * as ns from "lib-alias-to-interface-no-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                        ~~~~~~
+!!! error TS2339: Property 'Chance' does not exist on type '{ default: Static; }'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u1_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-interface-no-property";
+    export {};
+==== u1_through.ts (3 errors) ====
+    import { Chance } from "./u1_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS2693: 'Chance' only refers to a type, but is being used as a value here.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u1_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-alias-to-interface-no-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS2693: 'Chance' only refers to a type, but is being used as a value here.
+    export {};
+==== u20_named.ts (3 errors) ====
+    import { Chance } from "lib-alias-to-const-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u20_namespace.ts (3 errors) ====
+    import * as ns from "lib-alias-to-const-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~
+!!! error TS2503: Cannot find namespace 'ns'.
+    export {};
+==== u20_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-const-property";
+    export {};
+==== u20_through.ts (3 errors) ====
+    import { Chance } from "./u20_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u20_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-alias-to-const-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u20_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u24_named.ts (3 errors) ====
+    import { Chance } from "lib-alias-of-alias-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u24_namespace.ts (3 errors) ====
+    import * as ns from "lib-alias-of-alias-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~
+!!! error TS2503: Cannot find namespace 'ns'.
+    export {};
+==== u24_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-of-alias-property";
+    export {};
+==== u24_through.ts (3 errors) ====
+    import { Chance } from "./u24_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u24_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-alias-of-alias-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u24_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u28_named.ts (3 errors) ====
+    import { Chance } from "lib-import-equals-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u28_namespace.ts (3 errors) ====
+    import * as ns from "lib-import-equals-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~
+!!! error TS2503: Cannot find namespace 'ns'.
+    export {};
+==== u28_reexport.ts (0 errors) ====
+    export { Chance } from "lib-import-equals-property";
+    export {};
+==== u28_through.ts (3 errors) ====
+    import { Chance } from "./u28_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u28_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-import-equals-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u28_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u2_named.ts (2 errors) ====
+    import { Chance } from "lib-alias-to-interface-optional";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u2_namespace.ts (2 errors) ====
+    import * as ns from "lib-alias-to-interface-optional";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u2_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-interface-optional";
+    export {};
+==== u2_through.ts (2 errors) ====
+    import { Chance } from "./u2_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u2_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-alias-to-interface-optional";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u2_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u32_named.ts (3 errors) ====
+    import { Chance } from "lib-nothing-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u32_namespace.ts (3 errors) ====
+    import * as ns from "lib-nothing-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'ns.Chance' is not assignable to type 'never'.
+                              ~~~~~~~~~
+!!! error TS2749: 'ns.Chance' refers to a value, but is being used as a type here. Did you mean 'typeof ns.Chance'?
+    export {};
+==== u32_reexport.ts (0 errors) ====
+    export { Chance } from "lib-nothing-property";
+    export {};
+==== u32_through.ts (3 errors) ====
+    import { Chance } from "./u32_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    export {};
+==== u32_type-only.ts (4 errors) ====
+    import type { Chance } from "lib-nothing-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+                              ~~~~~~
+!!! error TS2749: 'Chance' refers to a value, but is being used as a type here. Did you mean 'typeof Chance'?
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u32_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u3_named.ts (2 errors) ====
+    import { Chance } from "lib-alias-to-interface-method";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u3_namespace.ts (2 errors) ====
+    import * as ns from "lib-alias-to-interface-method";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u3_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-interface-method";
+    export {};
+==== u3_through.ts (2 errors) ====
+    import { Chance } from "./u3_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    export {};
+==== u3_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-alias-to-interface-method";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Instance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u3_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u4_named.ts (2 errors) ====
+    import { Chance } from "lib-direct-interface-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u4_namespace.ts (2 errors) ====
+    import * as ns from "lib-direct-interface-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u4_reexport.ts (0 errors) ====
+    export { Chance } from "lib-direct-interface-property";
+    export {};
+==== u4_through.ts (2 errors) ====
+    import { Chance } from "./u4_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u4_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-direct-interface-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u4_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u6_named.ts (2 errors) ====
+    import { Chance } from "lib-direct-interface-optional";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u6_namespace.ts (2 errors) ====
+    import * as ns from "lib-direct-interface-optional";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u6_reexport.ts (0 errors) ====
+    export { Chance } from "lib-direct-interface-optional";
+    export {};
+==== u6_through.ts (2 errors) ====
+    import { Chance } from "./u6_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u6_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-direct-interface-optional";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u6_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u7_named.ts (2 errors) ====
+    import { Chance } from "lib-direct-interface-method";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u7_namespace.ts (2 errors) ====
+    import * as ns from "lib-direct-interface-method";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u7_reexport.ts (0 errors) ====
+    export { Chance } from "lib-direct-interface-method";
+    export {};
+==== u7_through.ts (2 errors) ====
+    import { Chance } from "./u7_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    export {};
+==== u7_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-direct-interface-method";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Chance' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type '() => Instance' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u7_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+==== u8_named.ts (2 errors) ====
+    import { Chance } from "lib-alias-to-type-alias-property";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u8_namespace.ts (2 errors) ====
+    import * as ns from "lib-alias-to-type-alias-property";
+    const v: never = ns.Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as ns.Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u8_reexport.ts (0 errors) ====
+    export { Chance } from "lib-alias-to-type-alias-property";
+    export {};
+==== u8_through.ts (2 errors) ====
+    import { Chance } from "./u8_reexport";
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    export {};
+==== u8_type-only.ts (3 errors) ====
+    import type { Chance } from "lib-alias-to-type-alias-property";
+    const t: never = null! as Chance;
+          ~
+!!! error TS2322: Type 'Alias' is not assignable to type 'never'.
+    const v: never = Chance;
+          ~
+!!! error TS2322: Type 'Static' is not assignable to type 'never'.
+                     ~~~~~~
+!!! error TS1361: 'Chance' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 u8_type-only.ts:1:15: 'Chance' was imported here.
+    export {};
+    
+==== node_modules/lib-alias-of-alias-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Instance as Mid }; export { Mid as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-of-alias-property/package.json (0 errors) ====
+    {"name": "lib-alias-of-alias-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-class-no-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance;  }
+    declare var Chance: Static;
+    declare namespace Chance { export { Klass as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-class-no-property/package.json (0 errors) ====
+    {"name": "lib-alias-to-class-no-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-const-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { konst as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-const-property/package.json (0 errors) ====
+    {"name": "lib-alias-to-const-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-interface-method/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance(): Instance; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Instance as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-interface-method/package.json (0 errors) ====
+    {"name": "lib-alias-to-interface-method", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-interface-no-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance;  }
+    declare var Chance: Static;
+    declare namespace Chance { export { Instance as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-interface-no-property/package.json (0 errors) ====
+    {"name": "lib-alias-to-interface-no-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-interface-optional/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance?: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Instance as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-interface-optional/package.json (0 errors) ====
+    {"name": "lib-alias-to-interface-optional", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-interface-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Instance as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-interface-property/package.json (0 errors) ====
+    {"name": "lib-alias-to-interface-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-namespace-method/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance(): Instance; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Inner as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-namespace-method/package.json (0 errors) ====
+    {"name": "lib-alias-to-namespace-method", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-namespace-optional/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance?: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Inner as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-namespace-optional/package.json (0 errors) ====
+    {"name": "lib-alias-to-namespace-optional", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-namespace-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Inner as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-namespace-property/package.json (0 errors) ====
+    {"name": "lib-alias-to-namespace-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-type-alias-method/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance(): Instance; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Alias as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-type-alias-method/package.json (0 errors) ====
+    {"name": "lib-alias-to-type-alias-method", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-type-alias-optional/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance?: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Alias as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-type-alias-optional/package.json (0 errors) ====
+    {"name": "lib-alias-to-type-alias-optional", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-alias-to-type-alias-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export { Alias as Chance }; }
+    export = Chance;
+==== node_modules/lib-alias-to-type-alias-property/package.json (0 errors) ====
+    {"name": "lib-alias-to-type-alias-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-direct-interface-method/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance(): Instance; }
+    declare var Chance: Static;
+    declare namespace Chance { export interface Chance { n: number } }
+    export = Chance;
+==== node_modules/lib-direct-interface-method/package.json (0 errors) ====
+    {"name": "lib-direct-interface-method", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-direct-interface-optional/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance?: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export interface Chance { n: number } }
+    export = Chance;
+==== node_modules/lib-direct-interface-optional/package.json (0 errors) ====
+    {"name": "lib-direct-interface-optional", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-direct-interface-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export interface Chance { n: number } }
+    export = Chance;
+==== node_modules/lib-direct-interface-property/package.json (0 errors) ====
+    {"name": "lib-direct-interface-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-import-equals-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export import Chance = Outer.Deep; }
+    export = Chance;
+==== node_modules/lib-import-equals-property/package.json (0 errors) ====
+    {"name": "lib-import-equals-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib-nothing-property/index.d.ts (0 errors) ====
+    interface Instance { n: number }
+    type Alias = { a: string };
+    declare class Klass { k: boolean }
+    declare namespace Inner { interface T { t: 1 } }
+    declare namespace Outer { namespace Deep { interface D { d: 1 } } }
+    declare const konst: { c: 1 };
+    interface Static { (): Instance; new (): Instance; Chance: Static; }
+    declare var Chance: Static;
+    declare namespace Chance { export interface Other { o: 1 } }
+    export = Chance;
+==== node_modules/lib-nothing-property/package.json (0 errors) ====
+    {"name": "lib-nothing-property", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/lib/index.d.ts (0 errors) ====
+    interface Instance {
+      n: number;
+    }
+    interface Static {
+      (): Instance;
+      new (): Instance;
+      Chance: Static;
+    }
+    declare var Chance: Static;
+    declare namespace Chance {
+      export { Instance as Chance };
+    }
+    export = Chance;
+==== node_modules/lib/package.json (0 errors) ====
+    { "name": "lib", "version": "1.0.0", "types": "index.d.ts" }

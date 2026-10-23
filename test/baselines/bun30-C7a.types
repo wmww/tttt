@@ -1,0 +1,13 @@
+//// [test/cases/bun30-C7a.ts] ////
+
+=== a.ts ===
+export const o = { #constructor: 1 };
+>o : {}
+>{ #constructor: 1 } : {}
+>#constructor : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

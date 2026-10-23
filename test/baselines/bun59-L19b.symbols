@@ -1,0 +1,75 @@
+//// [test/cases/bun59-L19b.ts] ////
+
+=== a.ts ===
+abstract class A<T> { abstract m(): void; abstract p: number; abstract h: T; abstract o: { a: 1 }; abstract arr: number[]; }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 17))
+>m : Symbol(A.m, Decl(a.ts, 0, 21))
+>p : Symbol(A.p, Decl(a.ts, 0, 41))
+>h : Symbol(A.h, Decl(a.ts, 0, 61))
+>T : Symbol(T, Decl(a.ts, 0, 17))
+>o : Symbol(A.o, Decl(a.ts, 0, 76))
+>a : Symbol(a, Decl(a.ts, 0, 90))
+>arr : Symbol(A.arr, Decl(a.ts, 0, 98))
+
+function mixN<T extends abstract new (...a: any[]) => A<number>>(B: T) { abstract class M extends B {} return M; }
+>mixN : Symbol(mixN, Decl(a.ts, 0, 124))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>a : Symbol(a, Decl(a.ts, 1, 38))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 1, 65))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>M : Symbol(M, Decl(a.ts, 1, 72))
+>B : Symbol(B, Decl(a.ts, 1, 65))
+>M : Symbol(M, Decl(a.ts, 1, 72))
+
+function mixA<T extends abstract new (...a: any[]) => A<any>>(B: T) { abstract class M extends B {} return M; }
+>mixA : Symbol(mixA, Decl(a.ts, 1, 114))
+>T : Symbol(T, Decl(a.ts, 2, 14))
+>a : Symbol(a, Decl(a.ts, 2, 38))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 2, 62))
+>T : Symbol(T, Decl(a.ts, 2, 14))
+>M : Symbol(M, Decl(a.ts, 2, 69))
+>B : Symbol(B, Decl(a.ts, 2, 62))
+>M : Symbol(M, Decl(a.ts, 2, 69))
+
+class N1 extends mixN(A<number>) {}
+>N1 : Symbol(N1, Decl(a.ts, 2, 111))
+>mixN : Symbol(mixN, Decl(a.ts, 0, 124))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class A1 extends mixA(A<number>) {}
+>A1 : Symbol(A1, Decl(a.ts, 3, 35))
+>mixA : Symbol(mixA, Decl(a.ts, 1, 114))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+class AA extends mixA(A<any>) {}
+>AA : Symbol(AA, Decl(a.ts, 4, 35))
+>mixA : Symbol(mixA, Decl(a.ts, 1, 114))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+abstract class A2<T> { abstract m(): void; }
+>A2 : Symbol(A2, Decl(a.ts, 5, 32))
+>T : Symbol(T, Decl(a.ts, 6, 18))
+>m : Symbol(A2.m, Decl(a.ts, 6, 22))
+
+function mix2<T extends abstract new (...a: any[]) => A2<any>>(B: T) { abstract class M extends B {} return M; }
+>mix2 : Symbol(mix2, Decl(a.ts, 6, 44))
+>T : Symbol(T, Decl(a.ts, 7, 14))
+>a : Symbol(a, Decl(a.ts, 7, 38))
+>A2 : Symbol(A2, Decl(a.ts, 5, 32))
+>B : Symbol(B, Decl(a.ts, 7, 63))
+>T : Symbol(T, Decl(a.ts, 7, 14))
+>M : Symbol(M, Decl(a.ts, 7, 70))
+>B : Symbol(B, Decl(a.ts, 7, 63))
+>M : Symbol(M, Decl(a.ts, 7, 70))
+
+class E2 extends mix2(A2<number>) {}
+>E2 : Symbol(E2, Decl(a.ts, 7, 112))
+>mix2 : Symbol(mix2, Decl(a.ts, 6, 44))
+>A2 : Symbol(A2, Decl(a.ts, 5, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

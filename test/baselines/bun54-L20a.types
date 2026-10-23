@@ -1,0 +1,122 @@
+//// [test/cases/bun54-L20a.ts] ////
+
+=== a.ts ===
+export {};
+type Action = { kind: 'A', payload: number } | { kind: 'B', payload: string };
+>Action : Action
+>kind : "A"
+>payload : number
+>kind : "B"
+>payload : string
+
+function f1({ kind, payload }?: Action) {
+>f1 : ({ kind, payload }?: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+
+  if (kind === 'A') { const t: null = payload; }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : null
+>payload : number
+}
+function f2([kind, payload]?: ['A', number] | ['B', string]) {
+>f2 : ([kind, payload]?: ['A', number] | ['B', string]) => void
+>kind : "A" | "B"
+>payload : string | number
+
+  if (kind === 'A') { const t: null = payload; }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : null
+>payload : number
+}
+const f3 = function ({ kind, payload }?: Action) {
+>f3 : ({ kind, payload }?: Action) => void
+>function ({ kind, payload }?: Action) {  if (kind === 'A') { const t: null = payload; }} : ({ kind, payload }?: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+
+  if (kind === 'A') { const t: null = payload; }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : null
+>payload : number
+
+};
+class C { m({ kind, payload }?: Action) { if (kind === 'A') { const t: null = payload; } } }
+>C : C
+>m : ({ kind, payload }?: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : null
+>payload : number
+
+function f4({ kind, payload }?: Action | undefined) {
+>f4 : ({ kind, payload }?: Action | undefined) => void
+>kind : any
+>payload : any
+
+  if (kind === 'A') { const t: null = payload; }
+>kind === 'A' : boolean
+>kind : any
+>'A' : "A"
+>t : null
+>payload : any
+}
+function f5({ kind, payload }: Action | undefined) {
+>f5 : ({ kind, payload }: Action | undefined) => void
+>kind : any
+>payload : any
+
+  if (kind === 'A') { const t: null = payload; }
+>kind === 'A' : boolean
+>kind : any
+>'A' : "A"
+>t : null
+>payload : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.js ===
+export {};
+/** @typedef {{ kind: 'A', payload: number } | { kind: 'B', payload: string }} Action */
+/** @param {Action} [p] */
+function f1({ kind, payload }) {
+>f1 : ({ kind, payload }?: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+
+  if (kind === 'A') { /** @type {null} */ const t = payload; }
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>t : number
+>payload : number
+}
+/** @param {Action=} p */
+function f2({ kind, payload }) {
+>f2 : ({ kind, payload }?: Action | undefined) => void
+>kind : any
+>payload : any
+
+  if (kind === 'A') { /** @type {null} */ const t = payload; }
+>kind === 'A' : boolean
+>kind : any
+>'A' : "A"
+>t : any
+>payload : any
+}
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

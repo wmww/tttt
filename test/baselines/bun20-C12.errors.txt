@@ -1,0 +1,17 @@
+a.ts(3,50): error TS2322: Type '"c"' is not assignable to type 'null'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const nv: never;
+    function t6(x: "a" | "b" | "c") {
+        switch (x) { case "a": break; case nv: const a: null = x; break; case "b": break; }
+                                                     ~
+!!! error TS2322: Type '"c"' is not assignable to type 'null'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

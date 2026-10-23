@@ -1,0 +1,34 @@
+a.ts(1,7): error TS2322: Type '"2.9802322387695312e-8"' is not assignable to type '""'.
+a.ts(2,7): error TS2322: Type '2.9802322387695312e-8' is not assignable to type 'never'.
+a.ts(3,7): error TS2322: Type '713680496268224.2' is not assignable to type 'never'.
+a.ts(4,7): error TS2322: Type '258555422826684.62' is not assignable to type 'never'.
+a.ts(5,35): error TS2322: Type '"2.9802322387695312e-8"' is not assignable to type '""'.
+a.ts(6,64): error TS2551: Property '713680496268224.3' does not exist on type '{ 713680496268224.2: number; }'. Did you mean '713680496268224.2'?
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    const a1: "" = `${2 ** -25}`;
+          ~~
+!!! error TS2322: Type '"2.9802322387695312e-8"' is not assignable to type '""'.
+    const a2: never = 2.98023223876953125e-8;
+          ~~
+!!! error TS2322: Type '2.9802322387695312e-8' is not assignable to type 'never'.
+    const a3: never = 713680496268224.25;
+          ~~
+!!! error TS2322: Type '713680496268224.2' is not assignable to type 'never'.
+    const a4: never = 258555422826684.625;
+          ~~
+!!! error TS2322: Type '258555422826684.62' is not assignable to type 'never'.
+    enum E { B = 1 / 33554432 } const a5: "" = `${E.B}`;
+                                      ~~
+!!! error TS2322: Type '"2.9802322387695312e-8"' is not assignable to type '""'.
+    const o = { 713680496268224.25: 1 }; o["713680496268224.2"]; o["713680496268224.3"];
+                                                                   ~~~~~~~~~~~~~~~~~~~
+!!! error TS2551: Property '713680496268224.3' does not exist on type '{ 713680496268224.2: number; }'. Did you mean '713680496268224.2'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

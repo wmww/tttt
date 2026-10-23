@@ -1,0 +1,21 @@
+a.ts(2,9): error TS2322: Type 'T & string' is not assignable to type 'T & { a: 1; }'.
+  Type 'T & string' is not assignable to type '{ a: 1; }'.
+    Property 'a' is missing in type 'string & String' but required in type '{ a: 1; }'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function f<T extends string | undefined>(x: T & string) {
+      const t: T & { a: 1 } = x;
+            ~
+!!! error TS2322: Type 'T & string' is not assignable to type 'T & { a: 1; }'.
+!!! error TS2322:   Type 'T & string' is not assignable to type '{ a: 1; }'.
+!!! error TS2322:     Property 'a' is missing in type 'string & String' but required in type '{ a: 1; }'.
+!!! related TS2728 a.ts:2:18: 'a' is declared here.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

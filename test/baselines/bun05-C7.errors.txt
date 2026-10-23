@@ -1,0 +1,18 @@
+a.ts(1,19): error TS1325: Argument of dynamic import cannot be spread element.
+a.ts(1,19): error TS7036: Dynamic import's specifier must be of type 'string', but here has type 'number'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (3 errors) ====
+    const i5 = import(...[1]);
+                      ~~~~~~
+!!! error TS1325: Argument of dynamic import cannot be spread element.
+                      ~~~~~~
+!!! error TS7036: Dynamic import's specifier must be of type 'string', but here has type 'number'.
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

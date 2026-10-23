@@ -1,0 +1,17 @@
+a.ts(4,1): error TS2322: Type 'P2.E' is not assignable to type 'P1.E'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace P1 { export enum E { N = NaN } }
+    namespace P2 { export enum E { N = NaN } }
+    declare let q1: P1.E, q2: P2.E;
+    q1 = q2;
+    ~~
+!!! error TS2322: Type 'P2.E' is not assignable to type 'P1.E'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

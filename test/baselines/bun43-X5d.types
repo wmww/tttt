@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X5d.ts] ////
+
+=== a.ts ===
+let y = a + b >>= 1;
+>y : any
+>a + b : any
+>a : any
+>b : any
+>1 : 1
+

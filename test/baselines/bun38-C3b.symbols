@@ -1,0 +1,10 @@
+//// [test/cases/bun38-C3b.ts] ////
+
+=== a.ts ===
+/// <reference lib="" />
+export const p = document;
+>p : Symbol(p, Decl(a.ts, 1, 12))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+

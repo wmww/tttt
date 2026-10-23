@@ -1,0 +1,17 @@
+a.ts(1,7): error TS2322: Type '{ get x(this: 1): number; set x(this: 1, v: string); }' is not assignable to type '1'.
+a.ts(1,31): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const b: 1 = null! as { get x(this: 1): number; set x(v: string) };
+          ~
+!!! error TS2322: Type '{ get x(this: 1): number; set x(this: 1, v: string); }' is not assignable to type '1'.
+                                  ~~~~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

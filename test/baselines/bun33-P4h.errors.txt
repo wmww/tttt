@@ -1,0 +1,19 @@
+a.js(1,23): error TS8024: JSDoc '@param' tag has name 'q', but there is no parameter with that name.
+a.js(2,34): error TS2815: 'arguments' cannot be referenced in property initializers or class static initialization blocks.
+a.js(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "target": "es2022" } }
+==== a.js (3 errors) ====
+    /** @param {number[]} q */
+                          ~
+!!! error TS8024: JSDoc '@param' tag has name 'q', but there is no parameter with that name.
+    function f() { class K { ["p"] = arguments } }
+                                     ~~~~~~~~~
+!!! error TS2815: 'arguments' cannot be referenced in property initializers or class static initialization blocks.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,19 @@
+//// [test/cases/bun12-C8c.ts] ////
+
+=== a.ts ===
+let full: string | undefined;
+>full : Symbol(full, Decl(a.ts, 0, 3))
+
+[full] = /a/.exec("a")!;
+>full : Symbol(full, Decl(a.ts, 0, 3))
+>/a/.exec : Symbol(RegExp.exec, Decl(lib.es5.d.ts, --, --))
+>exec : Symbol(RegExp.exec, Decl(lib.es5.d.ts, --, --))
+
+full.length;
+>full.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>full : Symbol(full, Decl(a.ts, 0, 3))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

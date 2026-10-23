@@ -1,0 +1,20 @@
+//// [test/cases/bun01-P1.ts] ////
+
+=== a.ts ===
+interface Array<T, U> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+let a: Array<number>;
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

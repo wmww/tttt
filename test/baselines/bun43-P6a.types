@@ -1,0 +1,19 @@
+//// [test/cases/bun43-P6a.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+<T, U>(x);
+><T, U>(x) : boolean
+><T : T
+> : any
+>U>(x) : boolean
+>U : any
+>(x) : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

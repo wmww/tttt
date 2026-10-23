@@ -1,0 +1,22 @@
+a.ts(3,10): error TS7023: 'c1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(6,10): error TS7023: 'c2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    namespace NS { export let a = 1; }
+    const k1 = c1({});
+    function c1(p: any) { if (p?.[k1].b) {} return (NS satisfies {})["a"]; }
+             ~~
+!!! error TS7023: 'c1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    // without `satisfies`: TS7023 in both
+    const k2 = c2({});
+    function c2(p: any) { if (p?.[k2].b) {} return (NS)["a"]; }
+             ~~
+!!! error TS7023: 'c2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,15 @@
+//// [test/cases/bun43-P6b.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+<T,>(x);
+><T,>(x) : boolean
+><T : T
+> : any
+>>(x) : boolean
+> : any
+>(x) : any
+>x : any
+

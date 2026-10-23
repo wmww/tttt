@@ -1,0 +1,22 @@
+//// [test/cases/bun05-P7.ts] ////
+
+=== a.ts ===
+function d(t: any, c: any) {}
+>d : (t: any, c: any) => void
+>t : any
+>c : any
+
+class X { @d accessor a = 1; }
+>X : X
+>d : (t: any, c: any) => void
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+

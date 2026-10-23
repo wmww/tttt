@@ -1,0 +1,18 @@
+//// [test/cases/bun42-C14a.ts] ////
+
+=== a.ts ===
+interface I { x: number }
+>x : number
+
+interface I$ { x: boolean }
+>x : boolean
+
+class C implements I, I$ { x = ""; }
+>C : C
+>x : string
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

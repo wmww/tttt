@@ -1,0 +1,24 @@
+//// [test/cases/bun54-L02b.ts] ////
+
+=== a.ts ===
+declare module "./t2" { const v: number; }
+>"./t2" : typeof import("./t2")
+>v : number
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== c.ts ===
+declare module "./t2" { type v3 = number; }
+>"./t2" : typeof import("./t2")
+>v3 : number
+
+export {};
+=== t2.d.ts ===
+declare const enum E { A } export = E;
+>E : import("./t2")
+>A : import("./t2").A
+>E : import("./t2")
+

@@ -1,0 +1,15 @@
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    declare const ks: string;
+    class D3 { [ks] = 1; }
+    interface D3 { (): void }
+    declare const d3: D3;
+    const t: { __t: 1 } = d3[ks];
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,20 @@
+//// [test/cases/bun31-P6.ts] ////
+
+=== a.ts ===
+namespace A { export interface I { a: 1 } }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>I : Symbol(I, Decl(a.ts, 0, 13))
+>a : Symbol(I.a, Decl(a.ts, 0, 34))
+
+export namespace N { const A = 1; import foo = A; export let v: foo.I; }
+>N : Symbol(N, Decl(a.ts, 0, 43))
+>A : Symbol(A, Decl(a.ts, 1, 26))
+>foo : Symbol(foo, Decl(a.ts, 1, 33))
+>A : Symbol(foo, Decl(a.ts, 0, 0))
+>v : Symbol(v, Decl(a.ts, 1, 60))
+>foo : Symbol(foo, Decl(a.ts, 1, 33))
+>I : Symbol(foo.I, Decl(a.ts, 0, 13))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+

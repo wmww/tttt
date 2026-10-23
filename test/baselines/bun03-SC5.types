@@ -1,0 +1,19 @@
+//// [test/cases/bun03-SC5.ts] ////
+
+=== a.ts ===
+import "./m";
+declare module "./m" {
+>"./m" : typeof import("./m")
+
+  import z = require("./m");
+>z : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+

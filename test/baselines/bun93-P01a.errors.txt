@@ -1,0 +1,20 @@
+a.ts(7,11): error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "target": "es2022" } }
+==== a.ts (2 errors) ====
+    export {};
+    declare const p: Promise<string>, q: Promise<number>, x: any;
+    const o1 = { [await p]: 1 };
+    const o2 = { [await p]: await q };
+    const o3 = { [await p]: await (q) };
+    const { [await p]: a } = x;
+    class C { [await p] = 1 }
+              ~~~~~~~~~
+!!! error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

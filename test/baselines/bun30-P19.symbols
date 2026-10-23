@@ -1,0 +1,15 @@
+//// [test/cases/bun30-P19.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+module.exports = {};
+>module.exports : Symbol(exports, Decl(f.js, 0, 0))
+>module : Symbol(module, Decl(f.js, 0, 0))
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+
+exports.a = void 0;
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+

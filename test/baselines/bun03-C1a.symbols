@@ -1,0 +1,26 @@
+//// [test/cases/bun03-C1a.ts] ////
+
+=== a.ts ===
+abstract class A { abstract m(): void; }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>m : Symbol(A.m, Decl(a.ts, 0, 18))
+
+function mix<T extends abstract new (...a: any[]) => A>(B: T) { abstract class M extends B {} return M; }
+>mix : Symbol(mix, Decl(a.ts, 0, 40))
+>T : Symbol(T, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 1, 37))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 1, 56))
+>T : Symbol(T, Decl(a.ts, 1, 13))
+>M : Symbol(M, Decl(a.ts, 1, 63))
+>B : Symbol(B, Decl(a.ts, 1, 56))
+>M : Symbol(M, Decl(a.ts, 1, 63))
+
+class D extends mix(A) {}
+>D : Symbol(D, Decl(a.ts, 1, 105))
+>mix : Symbol(mix, Decl(a.ts, 0, 40))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

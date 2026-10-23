@@ -1,0 +1,27 @@
+//// [test/cases/bun13-C9a.ts] ////
+
+=== a.ts ===
+type Brand<T> = { [P in keyof T]: 1 };
+>Brand : Symbol(Brand, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>P : Symbol(P, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+type M<T> = { [K in "a" | "b" as K & Brand<T>]: 1 };
+>M : Symbol(M, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>K : Symbol(K, Decl(a.ts, 1, 15))
+>K : Symbol(K, Decl(a.ts, 1, 15))
+>Brand : Symbol(Brand, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+
+function f<T>() { const x: M<T> = {}; }
+>f : Symbol(f, Decl(a.ts, 1, 52))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>x : Symbol(x, Decl(a.ts, 2, 23))
+>M : Symbol(M, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

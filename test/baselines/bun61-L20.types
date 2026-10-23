@@ -1,0 +1,67 @@
+//// [test/cases/bun61-L20.ts] ////
+
+=== a.ts ===
+export {};
+interface Tree { children: Tree[] }
+>children : Tree[]
+
+let root: Tree | undefined;
+>root : Tree | undefined
+
+function getRoot() { return root ??= build() as Tree; }
+>getRoot : () => any
+>root ??= build() as Tree : Tree
+>root : Tree | undefined
+>build() as Tree : Tree
+>build() : any
+>build : () => any
+
+function build() { return { children: [getRoot()] }; }
+>build : () => any
+>{ children: [getRoot()] } : { children: any[]; }
+>children : any[]
+>[getRoot()] : any[]
+>getRoot() : any
+>getRoot : () => any
+
+let x: number;
+>x : number
+
+function g1() { return x = g1() as number; }
+>g1 : () => any
+>x = g1() as number : number
+>x : number
+>g1() as number : number
+>g1() : any
+>g1 : () => any
+
+function g6() { return [x = g6() as number]; }
+>g6 : () => any
+>[x = g6() as number] : number[]
+>x = g6() as number : number
+>x : number
+>g6() as number : number
+>g6() : any
+>g6 : () => any
+
+function g10() { x = g10() as number; return x; }
+>g10 : () => number
+>x = g10() as number : number
+>x : number
+>g10() as number : number
+>g10() : number
+>g10 : () => number
+>x : number
+
+function f4() { const r = f4() as number; return r; }
+>f4 : () => number
+>r : number
+>f4() as number : number
+>f4() : number
+>f4 : () => number
+>r : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

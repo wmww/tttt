@@ -1,0 +1,24 @@
+//// [test/cases/bun22-C12.ts] ////
+
+=== a.ts ===
+declare function f<T extends unknown[]>(x: { [K in keyof T]: { v: T[K] } }): T;
+>f : <T extends unknown[]>(x: { [K in keyof T]: { v: T[K]; }; }) => T
+>x : { [K in keyof T]: { v: T[K]; }; }
+>v : T[K]
+
+function g<U extends { v: number }[]>(v: [...U]) { f(v)[0].foo; }
+>g : <U extends { v: number; }[]>(v: [...U]) => void
+>v : number
+>v : [...U]
+>f(v)[0].foo : any
+>f(v)[0] : any
+>f(v) : any[]
+>f : <T extends unknown[]>(x: { [K in keyof T]: { v: T[K]; }; }) => T
+>v : [...U]
+>0 : 0
+>foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

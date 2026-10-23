@@ -1,0 +1,9 @@
+//// [test/cases/bun35-P3b.ts] ////
+
+=== a.ts ===
+import * as u from "u";
+>u : Symbol(u, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

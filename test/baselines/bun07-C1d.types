@@ -1,0 +1,52 @@
+//// [test/cases/bun07-C1d.ts] ////
+
+=== a.ts ===
+export {};
+declare function observable<T>(o: T): T;
+>observable : <T>(o: T) => T
+>o : T
+
+const store = observable({
+>store : { items: { done: boolean; }[]; readonly doneItems: any; add(): void; }
+>observable({  items: [{ done: true }],  get doneItems() { return this.items.filter(x => x.done); },  add() { this.items.push({ done: false }); },}) : { items: { done: boolean; }[]; readonly doneItems: any; add(): void; }
+>observable : <T>(o: T) => T
+>{  items: [{ done: true }],  get doneItems() { return this.items.filter(x => x.done); },  add() { this.items.push({ done: false }); },} : { items: { done: true; }[]; readonly doneItems: any; add(): void; }
+
+  items: [{ done: true }],
+>items : { done: true; }[]
+>[{ done: true }] : { done: true; }[]
+>{ done: true } : { done: true; }
+>done : true
+>true : true
+
+  get doneItems() { return this.items.filter(x => x.done); },
+>doneItems : any
+>this.items.filter(x => x.done) : any
+>this.items.filter : { <S extends { done: boolean; }>(predicate: (value: { done: boolean; }, index: number, array: { done: boolean; }[]) => value is S, thisArg?: any): S[]; (predicate: (value: { done: boolean; }, index: number, array: { done: boolean; }[]) => unknown, thisArg?: any): { done: boolean; }[]; }
+>this.items : { done: boolean; }[]
+>this : { items: { done: boolean; }[]; readonly doneItems: any; add(): void; }
+>items : { done: boolean; }[]
+>filter : { <S extends { done: boolean; }>(predicate: (value: { done: boolean; }, index: number, array: { done: boolean; }[]) => value is S, thisArg?: any): S[]; (predicate: (value: { done: boolean; }, index: number, array: { done: boolean; }[]) => unknown, thisArg?: any): { done: boolean; }[]; }
+>x => x.done : (x: any) => any
+>x : any
+>x.done : any
+>x : any
+>done : any
+
+  add() { this.items.push({ done: false }); },
+>add : () => void
+>this.items.push({ done: false }) : number
+>this.items.push : (...items: { done: boolean; }[]) => number
+>this.items : { done: boolean; }[]
+>this : { items: { done: boolean; }[]; readonly doneItems: any; add(): void; }
+>items : { done: boolean; }[]
+>push : (...items: { done: boolean; }[]) => number
+>{ done: false } : { done: false; }
+>done : false
+>false : false
+
+});
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

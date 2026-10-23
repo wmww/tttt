@@ -1,0 +1,76 @@
+//// [test/cases/bun82-R02.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+function f1() {
+>f1 : () => void
+
+  let mode: "r" | "w" = "r";
+>mode : "r" | "w"
+>"r" : "r"
+
+  while (cond()) {
+>cond() : boolean
+>cond : () => boolean
+
+    const [m, n] = [mode, 1];
+>m : "r" | "w"
+>n : number
+>[mode, 1] : ["r" | "w", number]
+>mode : "r" | "w"
+>1 : 1
+
+    switch (m) {
+>m : "r" | "w"
+
+      case "r":
+>"r" : "r"
+
+        mode = "w";
+>mode = "w" : "w"
+>mode : "r" | "w"
+>"w" : "w"
+
+        break;
+    }
+  }
+}
+function f2() {
+>f2 : () => void
+
+  let mode: "r" | "w" = "r";
+>mode : "r" | "w"
+>"r" : "r"
+
+  while (cond()) {
+>cond() : boolean
+>cond : () => boolean
+
+    const { m } = { m: mode };
+>m : "r" | "w"
+>{ m: mode } : { m: "r" | "w"; }
+>m : "r" | "w"
+>mode : "r" | "w"
+
+    switch (m) {
+>m : "r" | "w"
+
+      case "r":
+>"r" : "r"
+
+        mode = "w";
+>mode = "w" : "w"
+>mode : "r" | "w"
+>"w" : "w"
+    }
+    const t: "r" | "w" = m;
+>t : "r" | "w"
+>m : "r" | "w"
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

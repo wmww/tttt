@@ -1,0 +1,23 @@
+a.ts(1,12): error TS2564: Property '[+2]' has no initializer and is not definitely assigned in the constructor.
+a.ts(2,12): error TS2564: Property '[-2]' has no initializer and is not definitely assigned in the constructor.
+a.ts(3,12): error TS2564: Property '[-2]' has no initializer and is not definitely assigned in the constructor.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    class A1 { [+2]: number; constructor() { this["+2"] = 1; } }
+               ~~~~
+!!! error TS2564: Property '[+2]' has no initializer and is not definitely assigned in the constructor.
+    class B5 { [-2]: number; constructor() { this["-2"] = 1; } }
+               ~~~~
+!!! error TS2564: Property '[-2]' has no initializer and is not definitely assigned in the constructor.
+    class B4 { [-2]: number; constructor() { this[-2] = 1; } }
+               ~~~~
+!!! error TS2564: Property '[-2]' has no initializer and is not definitely assigned in the constructor.
+    class A4 { [2]: number; constructor() { this[2] = 1; } }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

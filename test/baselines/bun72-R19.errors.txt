@@ -1,0 +1,144 @@
+a.ts(13,7): error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+a.ts(13,25): error TS2345: Argument of type '<T, U extends T[]>(t: T, u: U) => [T, U]' is not assignable to parameter of type '(t: T1, u: U) => [T1, U]'.
+  Types of parameters 'u' and 'u' are incompatible.
+    Type 'U' is not assignable to type 'T1[]'.
+      Type 'T[]' is not assignable to type 'T1[]'.
+        Type 'T' is not assignable to type 'T1'.
+          'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+a.ts(14,7): error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+a.ts(14,25): error TS2345: Argument of type '<U extends T[], T>(t: T, u: U) => [T, U]' is not assignable to parameter of type '(t: T1, u: U) => [T1, U]'.
+  Types of parameters 'u' and 'u' are incompatible.
+    Type 'U' is not assignable to type 'T1[]'.
+      Type 'T[]' is not assignable to type 'T1[]'.
+        Type 'T' is not assignable to type 'T1'.
+          'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+a.ts(15,7): error TS2322: Type '<T, T1, U = T>(a: [t: T], b: [t: T1, u: U]) => [T, [T1, U]]' is not assignable to type '0'.
+a.ts(16,7): error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+a.ts(16,25): error TS2345: Argument of type '<T, K extends keyof T>(t: T, k: K) => T[K]' is not assignable to parameter of type '(t: T1, k: K) => T1[K]'.
+  Types of parameters 'k' and 'k' are incompatible.
+    Type 'K' is not assignable to type 'keyof T1'.
+      Type 'keyof T' is not assignable to type 'keyof T1'.
+        Type 'string | number | symbol' is not assignable to type 'keyof T1'.
+          Type 'string' is not assignable to type 'keyof T1'.
+a.ts(17,7): error TS2322: Type '<T, U extends T[], T1>(a: [t: T, u: U], b: [t: T1]) => [[T, U], T1]' is not assignable to type '0'.
+a.ts(18,7): error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+a.ts(18,24): error TS2345: Argument of type 'typeof C2' is not assignable to parameter of type 'new (t: T1, u: U) => C2<T1, U>'.
+  Types of parameters 'u' and 'u' are incompatible.
+    Type 'U' is not assignable to type 'T1[]'.
+      Type 'T[]' is not assignable to type 'T1[]'.
+        Type 'T' is not assignable to type 'T1'.
+          'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+a.ts(19,7): error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+a.ts(19,24): error TS2345: Argument of type 'typeof C3' is not assignable to parameter of type 'new (t: T1, u: U) => C3<U, T1>'.
+  Types of parameters 'u' and 'u' are incompatible.
+    Type 'U' is not assignable to type 'T1[]'.
+      Type 'T[]' is not assignable to type 'T1[]'.
+        Type 'T' is not assignable to type 'T1'.
+          'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+a.ts(20,7): error TS2322: Type '<T, T1, U = T>(a: [t: T], b: [t: T1, u: U]) => [C1<T>, C4<T1, U>]' is not assignable to type '0'.
+a.ts(21,7): error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+a.ts(21,24): error TS2345: Argument of type 'typeof C5' is not assignable to parameter of type 'new (t: T1, k: K) => C5<T1, K>'.
+  Types of parameters 'k' and 'k' are incompatible.
+    Type 'K' is not assignable to type 'keyof T1'.
+      Type 'keyof T' is not assignable to type 'keyof T1'.
+        Type 'string | number | symbol' is not assignable to type 'keyof T1'.
+          Type 'string' is not assignable to type 'keyof T1'.
+a.ts(22,7): error TS2322: Type '<T, U extends T[], T1>(a: [t: T, u: U], b: [t: T1]) => [C2<T, U>, C1<T1>]' is not assignable to type '0'.
+a.ts(23,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (17 errors) ====
+    declare function pair<A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S): (a: A, b: B) => [R, S];
+    declare function pairF<A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S): (a: A, b: B) => [R, S];
+    declare function f1<T>(t: T): T;
+    declare function f2<T, U extends T[]>(t: T, u: U): [T, U];
+    declare function f3<U extends T[], T>(t: T, u: U): [T, U];
+    declare function f4<T, U = T>(t: T, u: U): [T, U];
+    declare function f5<T, K extends keyof T>(t: T, k: K): T[K];
+    declare class C1<T> { constructor(t: T) }
+    declare class C2<T, U extends T[]> { constructor(t: T, u: U) }
+    declare class C3<U extends T[], T> { constructor(t: T, u: U) }
+    declare class C4<T, U = T> { constructor(t: T, u: U) }
+    declare class C5<T, K extends keyof T> { constructor(t: T, k: K) }
+    const a1: 0 = pairF(f1, f2);
+          ~~
+!!! error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+                            ~~
+!!! error TS2345: Argument of type '<T, U extends T[]>(t: T, u: U) => [T, U]' is not assignable to parameter of type '(t: T1, u: U) => [T1, U]'.
+!!! error TS2345:   Types of parameters 'u' and 'u' are incompatible.
+!!! error TS2345:     Type 'U' is not assignable to type 'T1[]'.
+!!! error TS2345:       Type 'T[]' is not assignable to type 'T1[]'.
+!!! error TS2345:         Type 'T' is not assignable to type 'T1'.
+!!! error TS2345:           'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+!!! related TS2208 a.ts:4:21: This type parameter might need an `extends T1` constraint.
+    const a2: 0 = pairF(f1, f3);
+          ~~
+!!! error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+                            ~~
+!!! error TS2345: Argument of type '<U extends T[], T>(t: T, u: U) => [T, U]' is not assignable to parameter of type '(t: T1, u: U) => [T1, U]'.
+!!! error TS2345:   Types of parameters 'u' and 'u' are incompatible.
+!!! error TS2345:     Type 'U' is not assignable to type 'T1[]'.
+!!! error TS2345:       Type 'T[]' is not assignable to type 'T1[]'.
+!!! error TS2345:         Type 'T' is not assignable to type 'T1'.
+!!! error TS2345:           'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+!!! related TS2208 a.ts:5:36: This type parameter might need an `extends T1` constraint.
+    const a3: 0 = pairF(f1, f4);
+          ~~
+!!! error TS2322: Type '<T, T1, U = T>(a: [t: T], b: [t: T1, u: U]) => [T, [T1, U]]' is not assignable to type '0'.
+    const a4: 0 = pairF(f1, f5);
+          ~~
+!!! error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+                            ~~
+!!! error TS2345: Argument of type '<T, K extends keyof T>(t: T, k: K) => T[K]' is not assignable to parameter of type '(t: T1, k: K) => T1[K]'.
+!!! error TS2345:   Types of parameters 'k' and 'k' are incompatible.
+!!! error TS2345:     Type 'K' is not assignable to type 'keyof T1'.
+!!! error TS2345:       Type 'keyof T' is not assignable to type 'keyof T1'.
+!!! error TS2345:         Type 'string | number | symbol' is not assignable to type 'keyof T1'.
+!!! error TS2345:           Type 'string' is not assignable to type 'keyof T1'.
+    const a5: 0 = pairF(f2, f1);
+          ~~
+!!! error TS2322: Type '<T, U extends T[], T1>(a: [t: T, u: U], b: [t: T1]) => [[T, U], T1]' is not assignable to type '0'.
+    const b1: 0 = pair(C1, C2);
+          ~~
+!!! error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+                           ~~
+!!! error TS2345: Argument of type 'typeof C2' is not assignable to parameter of type 'new (t: T1, u: U) => C2<T1, U>'.
+!!! error TS2345:   Types of parameters 'u' and 'u' are incompatible.
+!!! error TS2345:     Type 'U' is not assignable to type 'T1[]'.
+!!! error TS2345:       Type 'T[]' is not assignable to type 'T1[]'.
+!!! error TS2345:         Type 'T' is not assignable to type 'T1'.
+!!! error TS2345:           'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+!!! related TS2208 a.ts:9:18: This type parameter might need an `extends T1` constraint.
+    const b2: 0 = pair(C1, C3);
+          ~~
+!!! error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+                           ~~
+!!! error TS2345: Argument of type 'typeof C3' is not assignable to parameter of type 'new (t: T1, u: U) => C3<U, T1>'.
+!!! error TS2345:   Types of parameters 'u' and 'u' are incompatible.
+!!! error TS2345:     Type 'U' is not assignable to type 'T1[]'.
+!!! error TS2345:       Type 'T[]' is not assignable to type 'T1[]'.
+!!! error TS2345:         Type 'T' is not assignable to type 'T1'.
+!!! error TS2345:           'T1' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+!!! related TS2208 a.ts:10:33: This type parameter might need an `extends T1` constraint.
+    const b3: 0 = pair(C1, C4);
+          ~~
+!!! error TS2322: Type '<T, T1, U = T>(a: [t: T], b: [t: T1, u: U]) => [C1<T>, C4<T1, U>]' is not assignable to type '0'.
+    const b4: 0 = pair(C1, C5);
+          ~~
+!!! error TS2322: Type '(a: unknown[], b: unknown[]) => [unknown, unknown]' is not assignable to type '0'.
+                           ~~
+!!! error TS2345: Argument of type 'typeof C5' is not assignable to parameter of type 'new (t: T1, k: K) => C5<T1, K>'.
+!!! error TS2345:   Types of parameters 'k' and 'k' are incompatible.
+!!! error TS2345:     Type 'K' is not assignable to type 'keyof T1'.
+!!! error TS2345:       Type 'keyof T' is not assignable to type 'keyof T1'.
+!!! error TS2345:         Type 'string | number | symbol' is not assignable to type 'keyof T1'.
+!!! error TS2345:           Type 'string' is not assignable to type 'keyof T1'.
+    const b5: 0 = pair(C2, C1);
+          ~~
+!!! error TS2322: Type '<T, U extends T[], T1>(a: [t: T, u: U], b: [t: T1]) => [C2<T, U>, C1<T1>]' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

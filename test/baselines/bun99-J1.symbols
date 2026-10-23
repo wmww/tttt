@@ -1,0 +1,35 @@
+//// [test/cases/bun99-J1.ts] ////
+
+=== imports.ts ===
+import { a } from "./App.TSX";
+>a : Symbol(a, Decl(imports.ts, 0, 8))
+
+import { b } from "./lower.tsx";
+>b : Symbol(b, Decl(imports.ts, 1, 8))
+
+import { b as b2 } from "./lower";
+>b : Symbol(b, Decl(lower.tsx, 0, 12))
+>b2 : Symbol(b2, Decl(imports.ts, 2, 8))
+
+import { c } from "./z.JSX";
+>c : Symbol(c, Decl(imports.ts, 3, 8))
+
+import { d } from "./Mixed";
+>d : Symbol(d, Decl(imports.ts, 4, 8))
+
+export const all = [a, b, b2, c, d];
+>all : Symbol(all, Decl(imports.ts, 5, 12))
+>a : Symbol(a, Decl(imports.ts, 0, 8))
+>b : Symbol(b, Decl(imports.ts, 1, 8))
+>b2 : Symbol(b2, Decl(imports.ts, 2, 8))
+>c : Symbol(c, Decl(imports.ts, 3, 8))
+>d : Symbol(d, Decl(imports.ts, 4, 8))
+
+=== lower.tsx ===
+export const b = <div />;
+>b : Symbol(b, Decl(lower.tsx, 0, 12))
+
+=== s.ts ===
+const sentinel: number = ""; export {};
+>sentinel : Symbol(sentinel, Decl(s.ts, 0, 5))
+

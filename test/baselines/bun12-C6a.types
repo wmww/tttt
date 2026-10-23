@@ -1,0 +1,10 @@
+//// [test/cases/bun12-C6a.ts] ////
+
+=== a.ts ===
+type Z8<T> = { [K in "a" as Z8<T[]>]: 1 };
+>Z8 : Z8<T>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun93-R17a.ts] ////
+
+=== a.ts ===
+import * as r from "./r"; export const v = r.w;
+>r : Symbol(r, Decl(a.ts, 0, 6))
+>v : Symbol(v, Decl(a.ts, 0, 38))
+>r.w : Symbol(r.w, Decl(r.ts, 0, 33))
+>r : Symbol(r, Decl(a.ts, 0, 6))
+>w : Symbol(r.w, Decl(r.ts, 0, 33))
+
+=== r.ts ===
+import { v } from "./a"; export { v as w };
+>v : Symbol(v, Decl(r.ts, 0, 8))
+>v : Symbol(v, Decl(r.ts, 0, 8))
+>w : Symbol(w, Decl(r.ts, 0, 33))
+
+=== zz_sentinel.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(zz_sentinel.ts, 0, 5))
+
+export {};
+

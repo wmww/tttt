@@ -1,0 +1,18 @@
+a.ts(1,22): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(1,64): error TS2322: Type 'T' is not assignable to type 'boolean'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function f<T extends U["a"], U extends { a: T }>(t: T) { const z: boolean = t; }
+                         ~~~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+                                                                   ~
+!!! error TS2322: Type 'T' is not assignable to type 'boolean'.
+!!! related TS2208 a.ts:1:12: This type parameter might need an `extends boolean` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,26 @@
+//// [test/cases/bun90-R17b.ts] ////
+
+=== b1.ts ===
+import { u } from "./a1"; u;
+>u : Symbol(u, Decl(b1.ts, 0, 8))
+>u : Symbol(u, Decl(b1.ts, 0, 8))
+
+export const first = class { static x = 1 }; export const late = class { static x = 2 };
+>first : Symbol(first, Decl(b1.ts, 1, 12))
+>x : Symbol(first.x, Decl(b1.ts, 1, 28))
+>late : Symbol(late, Decl(b1.ts, 1, 57))
+>x : Symbol(late.x, Decl(b1.ts, 1, 72))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b1.ts, 2, 5))
+
+=== a1.ts ===
+import { late } from "./b1"; export const u = new late();
+>late : Symbol(late, Decl(a1.ts, 0, 8))
+>u : Symbol(u, Decl(a1.ts, 0, 41))
+>late : Symbol(late, Decl(a1.ts, 0, 8))
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : Symbol(__nothing, Decl(index.d.ts, 0, 0))
+

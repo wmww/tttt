@@ -1,0 +1,15 @@
+//// [test/cases/bun10-C8.ts] ////
+
+=== a.ts ===
+declare const anyC: any;
+>anyC : Symbol(anyC, Decl(a.ts, 0, 13))
+
+class A7 extends anyC<A7["own"]> { own = 1 }
+>A7 : Symbol(A7, Decl(a.ts, 0, 24))
+>anyC : Symbol(anyC, Decl(a.ts, 0, 13))
+>A7 : Symbol(A7, Decl(a.ts, 0, 24))
+>own : Symbol(A7.own, Decl(a.ts, 1, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

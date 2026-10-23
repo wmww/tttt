@@ -1,0 +1,33 @@
+//// [test/cases/bun07-C1a.ts] ////
+
+=== a.ts ===
+export {};
+declare function id<T>(o: T): T;
+>id : Symbol(id, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>o : Symbol(o, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+const d = id({ a: 1, get g() { return this.a; }, inc() { this.a++; } });
+>d : Symbol(d, Decl(a.ts, 2, 5))
+>id : Symbol(id, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 2, 14))
+>g : Symbol(g, Decl(a.ts, 2, 20))
+>this.a : Symbol(a, Decl(a.ts, 2, 14))
+>this : Symbol(__object, Decl(a.ts, 2, 13))
+>a : Symbol(a, Decl(a.ts, 2, 14))
+>inc : Symbol(inc, Decl(a.ts, 2, 48))
+>this.a : Symbol(a, Decl(a.ts, 2, 14))
+>this : Symbol(__object, Decl(a.ts, 2, 13))
+>a : Symbol(a, Decl(a.ts, 2, 14))
+
+const s1: string = d.g;
+>s1 : Symbol(s1, Decl(a.ts, 3, 5))
+>d.g : Symbol(g, Decl(a.ts, 2, 20))
+>d : Symbol(d, Decl(a.ts, 2, 5))
+>g : Symbol(g, Decl(a.ts, 2, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

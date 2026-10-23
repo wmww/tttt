@@ -1,0 +1,17 @@
+a.ts(1,38): error TS18011: The operand of a 'delete' operator cannot be a private identifier.
+a.ts(1,40): error TS2339: Property '#y' does not exist on type 'E'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class E { "#y" = 1; m(a: E) { delete a.#y; } }
+                                         ~~~~
+!!! error TS18011: The operand of a 'delete' operator cannot be a private identifier.
+                                           ~~
+!!! error TS2339: Property '#y' does not exist on type 'E'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

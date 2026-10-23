@@ -1,0 +1,17 @@
+//// [test/cases/bun26-C7a.ts] ////
+
+=== a.ts ===
+type K<T> = keyof (({ k: T | "b" } & { k: "a" }) | { z: 3 });
+>K : keyof ({ z: 3; } | ({ k: T | "b"; } & { k: "a"; }))
+>k : "b" | T
+>k : "a"
+>z : 3
+
+const a: K<"c"> = "z";
+>a : "z"
+>"z" : "z"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

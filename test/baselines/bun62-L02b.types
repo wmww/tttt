@@ -1,0 +1,81 @@
+//// [test/cases/bun62-L02b.ts] ////
+
+=== a.ts ===
+type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+>X : [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A]
+
+take1(function named(x) {});
+>take1(function named(x) {}) : void
+>take1 : (cb: (x: X<X<X<X<[1]>>>>) => void) => void
+>function named(x) {} : (x: any) => void
+>named : (x: any) => void
+>x : any
+
+take2((x) => {});
+>take2((x) => {}) : void
+>take2 : (cb: (x: X<X<X<X<[2]>>>>) => void) => void
+>(x) => {} : (x: any) => void
+>x : any
+
+declare let o: I3;
+>o : I3
+
+o.m = function named3(x) {};
+>o.m = function named3(x) {} : (x: any) => void
+>o.m : (x: X<X<X<X<[3]>>>>) => void
+>o : I3
+>m : (x: X<X<X<X<[3]>>>>) => void
+>function named3(x) {} : (x: any) => void
+>named3 : (x: any) => void
+>x : any
+
+o.n = function (x) {};
+>o.n = function (x) {} : (x: any) => void
+>o.n : (x: X<X<X<X<[4]>>>>) => void
+>o : I3
+>n : (x: X<X<X<X<[4]>>>>) => void
+>function (x) {} : (x: any) => void
+>x : any
+
+o.k = (x) => {};
+>o.k = (x) => {} : (x: any) => void
+>o.k : (x: X<X<X<X<[5]>>>>) => void
+>o : I3
+>k : (x: X<X<X<X<[5]>>>>) => void
+>(x) => {} : (x: any) => void
+>x : any
+
+const o8: { m: F8 } = { m: function (x) {} };
+>o8 : { m: F8; }
+>m : F8
+>{ m: function (x) {} } : { m: (x: any) => void; }
+>m : (x: any) => void
+>function (x) {} : (x: any) => void
+>x : any
+
+declare function take1(cb: (x: X<X<X<X<[1]>>>>) => void): void;
+>take1 : (cb: (x: X<X<X<X<[1]>>>>) => void) => void
+>cb : (x: X<X<X<X<[1]>>>>) => void
+>x : any
+
+declare function take2(cb: (x: X<X<X<X<[2]>>>>) => void): void;
+>take2 : (cb: (x: X<X<X<X<[2]>>>>) => void) => void
+>cb : (x: X<X<X<X<[2]>>>>) => void
+>x : any
+
+interface I3 { m(x: X<X<X<X<[3]>>>>): void; n(x: X<X<X<X<[4]>>>>): void; k(x: X<X<X<X<[5]>>>>): void }
+>m : (x: X<X<X<X<[3]>>>>) => void
+>x : any
+>n : (x: X<X<X<X<[4]>>>>) => void
+>x : any
+>k : (x: X<X<X<X<[5]>>>>) => void
+>x : any
+
+type F8 = (x: X<X<X<X<[8]>>>>) => void;
+>F8 : F8
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

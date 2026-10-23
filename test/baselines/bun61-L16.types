@@ -1,0 +1,44 @@
+//// [test/cases/bun61-L16.ts] ////
+
+=== p001.ts ===
+interface I { \u0065xport z: 1 }
+>z : 1
+
+=== p002.ts ===
+interface I { \u0069n z: 1 }
+>z : 1
+
+=== p003.ts ===
+interface I { d\u0065fault class: 1 }
+>class : 1
+
+=== p004.ts ===
+interface I { readonly \u0065xport z: 1 }
+>z : 1
+
+=== p005.ts ===
+type T = { \u0065xport z: 1 }
+>T : T
+>z : 1
+
+=== p006.ts ===
+interface I { \u0065xport [k: string]: 1 }
+>k : string
+
+=== p007.ts ===
+class C { \u0065xport z = 1 }
+>C : C
+>z : number
+>1 : 1
+
+=== p008.ts ===
+class C { \u0063onst z = 1 }
+>C : C
+>z : number
+>1 : 1
+
+=== p009.ts ===
+function f(\u0065xport z: number) {}
+>f : (z: number) => void
+>z : number
+

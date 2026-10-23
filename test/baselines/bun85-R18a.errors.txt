@@ -1,0 +1,35 @@
+a.ts(1,10): error TS6133: 'Event' is declared but its value is never read.
+a.ts(1,17): error TS6133: 'Response' is declared but its value is never read.
+a.ts(1,36): error TS6133: 'URL' is declared but its value is never read.
+a.ts(2,15): error TS6196: 'Headers' is declared but never used.
+a.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "dom"], "module": "esnext", "moduleResolution": "bundler", "noUnusedLocals": true } }
+==== a.ts (5 errors) ====
+    import { Event, Response, Request, URL } from "./t";
+             ~~~~~
+!!! error TS6133: 'Event' is declared but its value is never read.
+                    ~~~~~~~~
+!!! error TS6133: 'Response' is declared but its value is never read.
+                                       ~~~
+!!! error TS6133: 'URL' is declared but its value is never read.
+    import type { Headers } from "./t";
+                  ~~~~~~~
+!!! error TS6196: 'Headers' is declared but never used.
+    export const e = new Event("x");
+    export const r = new Response();
+    export const h = new Headers();
+    export const u = new URL("http://x");
+    export function f(q: Request) { return new Request("http://x"); }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== t.ts (0 errors) ====
+    export interface Event { mine: 1 }
+    export type Response = { r: 1 };
+    export interface Request { q: 1 }
+    export interface Headers { h: 1 }
+    export namespace URL { export type Part = string }
+    

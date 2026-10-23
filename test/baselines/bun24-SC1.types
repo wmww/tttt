@@ -1,0 +1,80 @@
+//// [test/cases/bun24-SC1.ts] ////
+
+=== a.ts ===
+const o1 = { get d(): number { return 1 }, set d(v: string | number) {} };
+>o1 : { get d(): number; set d(v: string | number); }
+>{ get d(): number { return 1 }, set d(v: string | number) {} } : { get d(): number; set d(v: string | number); }
+>d : number
+>1 : 1
+>d : number
+>v : string | number
+
+const sp = { ...o1 }; sp.d = "x";
+>sp : { get d(): number; set d(v: string | number); }
+>{ ...o1 } : { get d(): number; set d(v: string | number); }
+>o1 : { get d(): number; set d(v: string | number); }
+>sp.d = "x" : "x"
+>sp.d : string | number
+>sp : { get d(): number; set d(v: string | number); }
+>d : string | number
+>"x" : "x"
+
+const s1: string = sp;
+>s1 : string
+>sp : { get d(): number; set d(v: string | number); }
+
+interface I { get d(): number; set d(v: string | number); r: 1 }
+>d : number
+>d : number
+>v : string | number
+>r : 1
+
+declare const i: I;
+>i : I
+
+const { r, ...rest } = i; rest.d = "x";
+>r : 1
+>rest : { get d(): number; set d(v: string | number); }
+>i : I
+>rest.d = "x" : "x"
+>rest.d : string | number
+>rest : { get d(): number; set d(v: string | number); }
+>d : string | number
+>"x" : "x"
+
+// C8 of the report: the symbol that is handed on also keeps CheckFlagsReverseMapped.
+interface IB { a: { v: number }; b: { v: string } } declare const ib: IB;
+>a : { v: number; }
+>v : number
+>b : { v: string; }
+>v : string
+>ib : IB
+
+declare function un7<T>(b: { [K in keyof T]: { [L in keyof T[K]]: { v: T[K][L] } } }): T;
+>un7 : <T>(b: { [K in keyof T]: { [L in keyof T[K]]: { v: T[K][L]; }; }; }) => T
+>b : { [K in keyof T]: { [L in keyof T[K]]: { v: T[K][L]; }; }; }
+>v : T[K][L]
+
+const e = un7({ p: ib, q: { r: { v: 1 } } });
+>e : { p: { a: any; b: any; }; q: { r: number; }; }
+>un7({ p: ib, q: { r: { v: 1 } } }) : { p: { a: any; b: any; }; q: { r: number; }; }
+>un7 : <T>(b: { [K in keyof T]: { [L in keyof T[K]]: { v: T[K][L]; }; }; }) => T
+>{ p: ib, q: { r: { v: 1 } } } : { p: IB; q: { r: { v: number; }; }; }
+>p : IB
+>ib : IB
+>q : { r: { v: number; }; }
+>{ r: { v: 1 } } : { r: { v: number; }; }
+>r : { v: number; }
+>{ v: 1 } : { v: number; }
+>v : number
+>1 : 1
+
+const r8: string = { ...e };
+>r8 : string
+>{ ...e } : { p: { a: any; b: any; }; q: { r: number; }; }
+>e : { p: { a: any; b: any; }; q: { r: number; }; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

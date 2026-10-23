@@ -1,0 +1,10 @@
+//// [test/cases/bun30-C11.ts] ////
+
+=== a.ts ===
+export function f(a = 1) { return "use strict"; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

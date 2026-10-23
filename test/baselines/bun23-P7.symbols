@@ -1,0 +1,11 @@
+//// [test/cases/bun23-P7.ts] ////
+
+=== a.ts ===
+const p: 1 = null! as <T extends ("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"), U = [1]>() => void;
+>p : Symbol(p, Decl(a.ts, 0, 5))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>U : Symbol(U, Decl(a.ts, 0, 192))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

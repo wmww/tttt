@@ -1,0 +1,13 @@
+//// [test/cases/bun29-P4a.ts] ////
+
+=== a.ts ===
+let n: number = (x: 0xFFn) => 1;
+>n : number
+>(x: 0xFFn) => 1 : (x: 0xffn) => number
+>x : 255n
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

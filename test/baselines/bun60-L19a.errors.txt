@@ -1,0 +1,31 @@
+a.ts(4,19): error TS2322: Type 'G2' is not assignable to type 'number'.
+a.ts(7,29): error TS2322: Type '{}' is not assignable to type 'null'.
+a.ts(8,23): error TS2699: Static property 'prototype' conflicts with built-in property 'Function.prototype' of constructor function 'C4'.
+a.ts(9,7): error TS2322: Type 'number' is not assignable to type 'null'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare class G1 { static get prototype(): number; }
+    const a1: number = G1.prototype;
+    declare class G2 { static set prototype(v: number); }
+    G2.prototype = 1; G2.prototype = new G2();
+                      ~~~~~~~~~~~~
+!!! error TS2322: Type 'G2' is not assignable to type 'number'.
+    declare class G4 { static accessor prototype: number; }
+    const a5: number = G4.prototype;
+    const s1 = { ...G1 }; const a14: null = s1;
+                                ~~~
+!!! error TS2322: Type '{}' is not assignable to type 'null'.
+    class C4 { static get prototype() { return 1; } }
+                          ~~~~~~~~~
+!!! error TS2699: Static property 'prototype' conflicts with built-in property 'Function.prototype' of constructor function 'C4'.
+    const p4: null = C4.prototype;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

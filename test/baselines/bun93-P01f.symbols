@@ -1,0 +1,19 @@
+//// [test/cases/bun93-P01f.ts] ////
+
+=== a.ts ===
+export {};
+declare const p: Promise<string>, q: Promise<number>, x: any;
+>p : Symbol(p, Decl(a.ts, 1, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>q : Symbol(q, Decl(a.ts, 1, 33))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 53))
+
+({ m() {}await  } = x);
+>m : Symbol(m, Decl(a.ts, 2, 2))
+>await : Symbol(await, Decl(a.ts, 2, 9))
+>x : Symbol(x, Decl(a.ts, 1, 53))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun03-C2a.ts] ////
+
+=== a.ts ===
+const obj = { a: 1 };
+>obj : Symbol(obj, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+
+declare const OB: new () => typeof obj;
+>OB : Symbol(OB, Decl(a.ts, 1, 13))
+>obj : Symbol(obj, Decl(a.ts, 0, 5))
+
+class D extends OB { get a() { return 1 } }
+>D : Symbol(D, Decl(a.ts, 1, 39))
+>OB : Symbol(OB, Decl(a.ts, 1, 13))
+>a : Symbol(D.a, Decl(a.ts, 2, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

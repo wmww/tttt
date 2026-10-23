@@ -1,0 +1,23 @@
+//// [test/cases/bun43-C17a.ts] ////
+
+=== a.ts ===
+abstract class A { abstract m(): void; }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>m : Symbol(A.m, Decl(a.ts, 0, 18))
+
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(a.ts, 0, 40))
+>a : Symbol(a, Decl(a.ts, 1, 21))
+
+declare function use(...a: any[]): any;
+>use : Symbol(use, Decl(a.ts, 1, 39))
+>a : Symbol(a, Decl(a.ts, 2, 21))
+
+use(@dec class extends A {});
+>use : Symbol(use, Decl(a.ts, 1, 39))
+>dec : Symbol(dec, Decl(a.ts, 0, 40))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

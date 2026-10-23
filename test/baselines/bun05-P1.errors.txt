@@ -1,0 +1,15 @@
+error TS2318: Cannot find global type 'Promise'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2318: Cannot find global type 'Promise'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2015", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (1 errors) ====
+    const g = async () => 1;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== lib.d.ts (0 errors) ====
+    interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+    

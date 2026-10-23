@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X6e.ts] ////
+
+=== a.ts ===
+function* g() { yield
+>g : Symbol(g, Decl(a.ts, 0, 0))
+
+/a/.nope; }
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

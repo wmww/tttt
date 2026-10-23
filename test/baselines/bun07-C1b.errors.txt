@@ -1,0 +1,16 @@
+a.ts(3,67): error TS2339: Property 'x' does not exist on type '{ readonly i: any; f(): any; }'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    declare function make<D, M>(o: { data: D; methods: M & ThisType<D & M> }): D & M;
+    const m = make({ data: { x: 1 }, methods: { get i() { return this.x; }, f() { return this.i; } } });
+                                                                      ~
+!!! error TS2339: Property 'x' does not exist on type '{ readonly i: any; f(): any; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

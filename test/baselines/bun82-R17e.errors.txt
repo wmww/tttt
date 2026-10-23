@@ -1,0 +1,13 @@
+a.ts(1,1): error TS2304: Cannot find name 'f'.
+a.ts(1,3): error TS1135: Argument expression expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    f(\u0065lse);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~
+!!! error TS1135: Argument expression expected.
+    

@@ -1,0 +1,114 @@
+//// [test/cases/bun62-L04a.ts] ////
+
+=== a.ts ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+class C1 { get foo() { return 1 } set [k](v: number) {} }
+>C1 : C1
+>foo : number
+>1 : 1
+>[k] : number
+>k : "foo"
+>v : number
+
+new C1().foo = 2;
+>new C1().foo = 2 : 2
+>new C1().foo : number
+>new C1() : C1
+>C1 : typeof C1
+>foo : number
+>2 : 2
+
+class C2 { static get foo() { return 1 } static set [k](v: number) {} }
+>C2 : C2
+>foo : number
+>1 : 1
+>[k] : number
+>k : "foo"
+>v : number
+
+C2.foo = 2;
+>C2.foo = 2 : 2
+>C2.foo : number
+>C2 : typeof C2
+>foo : number
+>2 : 2
+
+interface I3 { get foo(): number; set [k](v: number) }
+>foo : number
+>[k] : number
+>k : "foo"
+>v : number
+
+declare const i3: I3; i3.foo = 2;
+>i3 : I3
+>i3.foo = 2 : 2
+>i3.foo : number
+>i3 : I3
+>foo : number
+>2 : 2
+
+type T4 = { get foo(): number; set [k](v: number) };
+>T4 : T4
+>foo : number
+>[k] : number
+>k : "foo"
+>v : number
+
+declare const t4: T4; t4.foo = 2;
+>t4 : T4
+>t4.foo = 2 : 2
+>t4.foo : number
+>t4 : T4
+>foo : number
+>2 : 2
+
+class C6 { set [k](v: number) {} get foo() { return 1 } }
+>C6 : C6
+>[k] : number
+>k : "foo"
+>v : number
+>foo : number
+>1 : 1
+
+new C6().foo = 2;
+>new C6().foo = 2 : 2
+>new C6().foo : number
+>new C6() : C6
+>C6 : typeof C6
+>foo : number
+>2 : 2
+
+class C9 { get foo(): number { return 1 } set [k](v) {} }
+>C9 : C9
+>foo : number
+>1 : 1
+>[k] : number
+>k : "foo"
+>v : number
+
+new C9().foo = "";
+>new C9().foo = "" : ""
+>new C9().foo : number
+>new C9() : C9
+>C9 : typeof C9
+>foo : number
+>"" : ""
+
+type R1 = { [P in keyof C1]: C1[P] };
+>R1 : R1
+
+declare const m1: R1; m1.foo = 1;
+>m1 : R1
+>m1.foo = 1 : 1
+>m1.foo : number
+>m1 : R1
+>foo : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

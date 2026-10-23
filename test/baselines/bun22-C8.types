@@ -1,0 +1,31 @@
+//// [test/cases/bun22-C8.ts] ////
+
+=== a.ts ===
+function mk<T>() { return class { static #p = 1; static v: T } }
+>mk : <T>() => typeof (Anonymous class)
+>class { static #p = 1; static v: T } : typeof (Anonymous class)
+>#p : number
+>1 : 1
+>v : T
+
+declare function fs<T>(x: ReturnType<typeof mk<T>>): T;
+>fs : <T>(x: ReturnType<typeof mk<T>>) => T
+>x : typeof (Anonymous class)
+>mk : <T_1>() => typeof (Anonymous class)
+
+fs(class { static v = 1; static e = 2 }).toFixed();
+>fs(class { static v = 1; static e = 2 }).toFixed() : string
+>fs(class { static v = 1; static e = 2 }).toFixed : (fractionDigits?: number) => string
+>fs(class { static v = 1; static e = 2 }) : number
+>fs : <T>(x: ReturnType<typeof mk<T>>) => T
+>class { static v = 1; static e = 2 } : typeof (Anonymous class)
+>v : number
+>1 : 1
+>e : number
+>2 : 2
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

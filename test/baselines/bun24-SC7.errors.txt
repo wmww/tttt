@@ -1,0 +1,17 @@
+a.ts(3,42): error TS2322: Type '(u: number) => [T[], number]' is not assignable to type 'string'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C<T> {
+      m<U>(u: U): [T, U] { return null! }
+      n() { const c = null! as C<T[]>; const x2: string = c.m<number>; }
+                                             ~~
+!!! error TS2322: Type '(u: number) => [T[], number]' is not assignable to type 'string'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

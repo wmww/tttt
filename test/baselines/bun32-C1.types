@@ -1,0 +1,18 @@
+//// [test/cases/bun32-C1.ts] ////
+
+=== a.ts ===
+class R { readonly x: number = 0; constructor() { (this).x = 1; } }
+>R : R
+>x : number
+>0 : 0
+>(this).x = 1 : 1
+>(this).x : any
+>(this) : this
+>this : this
+>x : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

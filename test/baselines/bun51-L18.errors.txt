@@ -1,0 +1,26 @@
+a.ts(1,24): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(2,30): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(3,44): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(5,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (4 errors) ====
+    export type F1 = ({ a: b }) => void;
+                           ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 a.ts:1:27: We can only write a type for 'a' by adding a type for the entire parameter here.
+    export interface I7 { m({ a: b }): void }
+                                 ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 a.ts:2:33: We can only write a type for 'a' by adding a type for the entire parameter here.
+    export declare class C8 { constructor({ a: b }); }
+                                               ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 a.ts:3:47: We can only write a type for 'a' by adding a type for the entire parameter here.
+    export class P { private a = 1; m() { return this.a; } }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

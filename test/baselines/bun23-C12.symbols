@@ -1,0 +1,18 @@
+//// [test/cases/bun23-C12.ts] ////
+
+=== a.ts ===
+const t1: 1 = null! as <T extends import("./m1").X>(x: T) => void;
+>t1 : Symbol(t1, Decl(a.ts, 0, 5))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+>X : Symbol(X, Decl(m1.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 52))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== m1.ts ===
+export interface X { a: 1 }
+>X : Symbol(X, Decl(m1.ts, 0, 0))
+>a : Symbol(X.a, Decl(m1.ts, 0, 20))
+

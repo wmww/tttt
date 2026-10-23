@@ -1,0 +1,20 @@
+//// [test/cases/bun11-C12.ts] ////
+
+=== a.ts ===
+declare const a: string | number;
+>a : Symbol(a, Decl(a.ts, 0, 13))
+
+function isStr(this: void, x: string | number) { return typeof x === "string"; }
+>isStr : Symbol(isStr, Decl(a.ts, 0, 33))
+>this : Symbol(this, Decl(a.ts, 1, 15))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+
+if (isStr(a)) { a.toUpperCase(); }
+>isStr : Symbol(isStr, Decl(a.ts, 0, 33))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

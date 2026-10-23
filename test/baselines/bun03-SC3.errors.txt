@@ -1,0 +1,19 @@
+a.ts(2,1): error TS2309: An export assignment cannot be used in a module with other exported elements.
+z.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (1 errors) ====
+    const x = 1; type T = 1;
+    export = x;
+    ~~~~~~~~~~~
+!!! error TS2309: An export assignment cannot be used in a module with other exported elements.
+    export { T as Y };
+    export const Y = 1;
+==== z.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+    

@@ -1,0 +1,60 @@
+//// [test/cases/bun89-R15.ts] ////
+
+=== a.ts ===
+class U {
+>U : Symbol(U, Decl(a.ts, 0, 0))
+
+  #p = 1;
+>#p : Symbol(U.#p, Decl(a.ts, 0, 9))
+
+  m(x: U | { [k: string]: string }, y: { [k: string]: string }, z: U & { [k: string]: string }, w: U | Record<string, boolean>, t: U | [string]) {
+>m : Symbol(U.m, Decl(a.ts, 1, 9))
+>x : Symbol(x, Decl(a.ts, 2, 4))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 2, 14))
+>y : Symbol(y, Decl(a.ts, 2, 35))
+>k : Symbol(k, Decl(a.ts, 2, 42))
+>z : Symbol(z, Decl(a.ts, 2, 63))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 2, 74))
+>w : Symbol(w, Decl(a.ts, 2, 95))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>t : Symbol(t, Decl(a.ts, 2, 127))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+
+    const r1: never = x.#p;
+>r1 : Symbol(r1, Decl(a.ts, 3, 9))
+>x.#p : Symbol(U.#p, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 2, 4))
+
+    const r2: never = y.#p;
+>r2 : Symbol(r2, Decl(a.ts, 4, 9))
+>y : Symbol(y, Decl(a.ts, 2, 35))
+
+    const r3: never = z.#p;
+>r3 : Symbol(r3, Decl(a.ts, 5, 9))
+>z.#p : Symbol(U.#p, Decl(a.ts, 0, 9))
+>z : Symbol(z, Decl(a.ts, 2, 63))
+
+    const r4: never = w.#p;
+>r4 : Symbol(r4, Decl(a.ts, 6, 9))
+>w.#p : Symbol(U.#p, Decl(a.ts, 0, 9))
+>w : Symbol(w, Decl(a.ts, 2, 95))
+
+    const r5: never = t.#p;
+>r5 : Symbol(r5, Decl(a.ts, 7, 9))
+>t : Symbol(t, Decl(a.ts, 2, 127))
+
+    x.#p = 1;
+>x.#p : Symbol(U.#p, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 2, 4))
+
+    x.#p = "";
+>x.#p : Symbol(U.#p, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 2, 4))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

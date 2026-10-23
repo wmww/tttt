@@ -1,0 +1,11 @@
+//// [test/cases/bun28-P2a.ts] ////
+
+=== a.ts ===
+const d = { [-0]: 1, 0: 2 };
+>d : Symbol(d, Decl(a.ts, 0, 5))
+>[-0] : Symbol([-0], Decl(a.ts, 0, 11))
+>0 : Symbol(0, Decl(a.ts, 0, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

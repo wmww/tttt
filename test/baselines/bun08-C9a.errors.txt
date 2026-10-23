@@ -1,0 +1,20 @@
+a.js(1,12): error TS2305: Module '"./esm2"' has no exported member 'rest2'.
+a.js(2,8): error TS2305: Module '"./esm2"' has no exported member 'arr2'.
+a.js(3,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.js (3 errors) ====
+    const { ...rest2 } = require("./esm2");
+               ~~~~~
+!!! error TS2305: Module '"./esm2"' has no exported member 'rest2'.
+    const [arr2] = require("./esm2");
+           ~~~~
+!!! error TS2305: Module '"./esm2"' has no exported member 'arr2'.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== esm2.ts (0 errors) ====
+    export const a = 1;
+    

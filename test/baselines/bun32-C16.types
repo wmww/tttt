@@ -1,0 +1,16 @@
+//// [test/cases/bun32-C16.ts] ////
+
+=== a.ts ===
+declare class B { x: number; }
+>B : B
+>x : number
+
+declare class D extends B { declare x; }
+>D : D
+>B : B
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

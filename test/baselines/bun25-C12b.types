@@ -1,0 +1,18 @@
+//// [test/cases/bun25-C12b.ts] ////
+
+=== a.ts ===
+let w: number; const o = { w = 1 }; w.toFixed();
+>w : number
+>o : { w: number; }
+>{ w = 1 } : { w: number; }
+>w : number
+>1 : 1
+>w.toFixed() : string
+>w.toFixed : (fractionDigits?: number) => string
+>w : number
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

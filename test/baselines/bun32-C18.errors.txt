@@ -1,0 +1,15 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+m.js(1,1): error TS7022: 'export=' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.js (1 errors) ====
+    module.exports = [exports];
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: 'export=' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    

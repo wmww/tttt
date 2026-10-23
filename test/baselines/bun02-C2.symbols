@@ -1,0 +1,48 @@
+//// [test/cases/bun02-C2.ts] ////
+
+=== a.ts ===
+interface IFoo<X extends string> { x: X }
+>IFoo : Symbol(IFoo, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 15))
+>x : Symbol(IFoo.x, Decl(a.ts, 0, 34))
+>X : Symbol(X, Decl(a.ts, 0, 15))
+
+type T2<T> = T extends IFoo<infer U extends number> ? U : never;
+>T2 : Symbol(T2, Decl(a.ts, 0, 41))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>IFoo : Symbol(IFoo, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 1, 33))
+>U : Symbol(U, Decl(a.ts, 1, 33))
+
+type Two<A extends string, B extends A> = [A, B];
+>Two : Symbol(Two, Decl(a.ts, 1, 64))
+>A : Symbol(A, Decl(a.ts, 2, 9))
+>B : Symbol(B, Decl(a.ts, 2, 26))
+>A : Symbol(A, Decl(a.ts, 2, 9))
+>A : Symbol(A, Decl(a.ts, 2, 9))
+>B : Symbol(B, Decl(a.ts, 2, 26))
+
+type T9<T> = T extends Two<infer X extends "a", infer Y extends "b"> ? [X, Y] : never;
+>T9 : Symbol(T9, Decl(a.ts, 2, 49))
+>T : Symbol(T, Decl(a.ts, 3, 8))
+>T : Symbol(T, Decl(a.ts, 3, 8))
+>Two : Symbol(Two, Decl(a.ts, 1, 64))
+>X : Symbol(X, Decl(a.ts, 3, 32))
+>Y : Symbol(Y, Decl(a.ts, 3, 53))
+>X : Symbol(X, Decl(a.ts, 3, 32))
+>Y : Symbol(Y, Decl(a.ts, 3, 53))
+
+type T11<T> = T extends [IFoo<infer U>, { n: infer U extends number }] ? U : never;
+>T11 : Symbol(T11, Decl(a.ts, 3, 86))
+>T : Symbol(T, Decl(a.ts, 4, 9))
+>T : Symbol(T, Decl(a.ts, 4, 9))
+>IFoo : Symbol(IFoo, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 4, 35), Decl(a.ts, 4, 50))
+>n : Symbol(n, Decl(a.ts, 4, 41))
+>U : Symbol(U, Decl(a.ts, 4, 35), Decl(a.ts, 4, 50))
+>U : Symbol(U, Decl(a.ts, 4, 35), Decl(a.ts, 4, 50))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

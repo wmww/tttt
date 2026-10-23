@@ -1,0 +1,16 @@
+//// [test/cases/bun13-C2a.ts] ////
+
+=== a.ts ===
+enum E2 { A = 1, H = E2.Z }
+>E2 : E2
+>A : E2.A
+>1 : 1
+>H : E2.H
+>E2.Z : any
+>E2 : typeof E2
+>Z : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

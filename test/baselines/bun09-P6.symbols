@@ -1,0 +1,18 @@
+//// [test/cases/bun09-P6.ts] ////
+
+=== a.js ===
+const k = "foo";
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+class C5 { constructor() { this.foo = 1; } [k]() { return ""; } }
+>C5 : Symbol(C5, Decl(a.js, 0, 16))
+>this.foo : Symbol(C5.foo, Decl(a.js, 1, 26), Decl(a.js, 1, 42))
+>this : Symbol(C5, Decl(a.js, 0, 16))
+>foo : Symbol(C5.foo, Decl(a.js, 1, 26), Decl(a.js, 1, 42))
+>[k] : Symbol(C5.foo, Decl(a.js, 1, 26), Decl(a.js, 1, 42))
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 3, 5))
+

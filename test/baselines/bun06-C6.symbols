@@ -1,0 +1,18 @@
+//// [test/cases/bun06-C6.ts] ////
+
+=== a.ts ===
+declare function ng(x: number): void;
+>ng : Symbol(ng, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+
+const e1 = ng<>;
+>e1 : Symbol(e1, Decl(a.ts, 1, 5))
+>ng : Symbol(ng, Decl(a.ts, 0, 0))
+
+type Q1 = typeof ng<>;
+>Q1 : Symbol(Q1, Decl(a.ts, 1, 16))
+>ng : Symbol(ng, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

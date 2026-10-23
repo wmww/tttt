@@ -1,0 +1,23 @@
+a.ts(1,14): error TS1042: 'abstract' modifier cannot be used here.
+a.ts(1,14): error TS1244: Abstract methods can only appear within an abstract class.
+a.ts(1,27): error TS2676: Accessors must both be abstract or non-abstract.
+a.ts(1,49): error TS2676: Accessors must both be abstract or non-abstract.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    const o3 = { abstract get x() { return 1 }, set x(v) {} };
+                 ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+                 ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+                              ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+                                                    ~
+!!! error TS2676: Accessors must both be abstract or non-abstract.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

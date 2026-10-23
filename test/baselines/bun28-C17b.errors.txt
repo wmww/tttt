@@ -1,0 +1,14 @@
+a.ts(1,16): error TS2462: A rest element must be last in a destructuring pattern.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    const f = ([...a, b]: any) => 1;
+                   ~
+!!! error TS2462: A rest element must be last in a destructuring pattern.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

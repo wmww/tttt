@@ -1,0 +1,6 @@
+//// [test/cases/bun43-P9k.ts] ////
+
+=== a.ts ===
+type T = typeof
+>T : Symbol(T, Decl(a.ts, 0, 0))
+

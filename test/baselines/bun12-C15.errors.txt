@@ -1,0 +1,18 @@
+a.ts(2,25): error TS2322: Type 'Id<T & 1[]>' is not assignable to type '{ never: 1; }'.
+  Property 'never' is missing in type '1[]' but required in type '{ never: 1; }'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Id<T> = { [K in keyof T]: T[K] };
+    function g<T>() { const n: { never: 1 } = null! as Id<T & 1[]>; }
+                            ~
+!!! error TS2322: Type 'Id<T & 1[]>' is not assignable to type '{ never: 1; }'.
+!!! error TS2322:   Property 'never' is missing in type '1[]' but required in type '{ never: 1; }'.
+!!! related TS2728 a.ts:2:30: 'never' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

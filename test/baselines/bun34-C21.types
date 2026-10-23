@@ -1,0 +1,21 @@
+//// [test/cases/bun34-C21.ts] ////
+
+=== a.ts ===
+declare const m: { a: { get(k: string): 1 } }, k: string;
+>m : { a: { get(k: string): 1; }; }
+>a : { get(k: string): 1; }
+>get : (k: string) => 1
+>k : string
+>k : string
+
+m[`a`][k];
+>m[`a`][k] : any
+>m[`a`] : { get(k: string): 1; }
+>m : { a: { get(k: string): 1; }; }
+>`a` : "a"
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

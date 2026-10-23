@@ -1,0 +1,14 @@
+//// [test/cases/bun31-SC4.ts] ////
+
+=== a.ts ===
+export class K<T> {
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 15))
+
+  /** {@link T} */
+  static p = 1
+>p : Symbol(K.p, Decl(a.ts, 0, 19))
+}
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 12))
+

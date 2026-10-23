@@ -1,0 +1,27 @@
+//// [test/cases/bun72-R10b.ts] ////
+
+=== a.ts ===
+type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+>Cond : Cond<T>
+>y : 1
+>z : 1
+
+declare const ctor: new () => Cond<C7>;
+>ctor : new () => Cond<C7>
+
+class C7 extends ctor { x = 1 }
+>C7 : C7
+>ctor : { z: 1; }
+>x : number
+>1 : 1
+
+new C7().z;
+>new C7().z : 1
+>new C7() : C7
+>C7 : typeof C7
+>z : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

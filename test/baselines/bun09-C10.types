@@ -1,0 +1,12 @@
+//// [test/cases/bun09-C10.ts] ////
+
+=== a.ts ===
+declare const f1: ({ a }: { a: 1 } | undefined) => void;
+>f1 : ({ a }: { a: 1; } | undefined) => void
+>a : 1
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

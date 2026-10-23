@@ -1,0 +1,19 @@
+//// [test/cases/bun12-C2a.ts] ////
+
+=== a.ts ===
+function f<T>(x: T) { return ({ a = x }) => a; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 31))
+>x : Symbol(x, Decl(a.ts, 0, 14))
+>a : Symbol(a, Decl(a.ts, 0, 31))
+
+f(1)({ a: 1 });
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 1, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

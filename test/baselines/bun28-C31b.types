@@ -1,0 +1,20 @@
+//// [test/cases/bun28-C31b.ts] ////
+
+=== a.ts ===
+class C { set a(this: number) { } }
+>C : C
+>a : number
+>this : number
+
+new C().a = "";
+>new C().a = "" : ""
+>new C().a : number
+>new C() : C
+>C : typeof C
+>a : number
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

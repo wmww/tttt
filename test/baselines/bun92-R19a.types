@@ -1,0 +1,72 @@
+//// [test/cases/bun92-R19a.ts] ////
+
+=== a.ts ===
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : S<X>
+
+function f1() {} f1[0] = 1; f1["1"] = 2; f1["1.5"] = 3; f1["-1"] = 4; f1["a"] = 5;
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>f1[0] = 1 : 1
+>f1[0] : number
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>0 : 0
+>1 : 1
+>f1["1"] = 2 : 2
+>f1["1"] : number
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>"1" : "1"
+>2 : 2
+>f1["1.5"] = 3 : 3
+>f1["1.5"] : number
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>"1.5" : "1.5"
+>3 : 3
+>f1["-1"] = 4 : 4
+>f1["-1"] : number
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>"-1" : "-1"
+>4 : 4
+>f1["a"] = 5 : 5
+>f1["a"] : number
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>"a" : "a"
+>5 : 5
+
+const f3 = () => {}; f3[0] = 1; f3["1"] = 2;
+>f3 : { (): void; 0: number; "1": number; }
+>() => {} : { (): void; 0: number; "1": number; }
+>f3[0] = 1 : 1
+>f3[0] : number
+>f3 : { (): void; 0: number; "1": number; }
+>0 : 0
+>1 : 1
+>f3["1"] = 2 : 2
+>f3["1"] : number
+>f3 : { (): void; 0: number; "1": number; }
+>"1" : "1"
+>2 : 2
+
+const t1: S<typeof f1> = ["?", -99], t3: S<typeof f3> = ["?", -99];
+>t1 : S<{ (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }>
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+>t3 : S<{ (): void; 0: number; "1": number; }>
+>f3 : { (): void; 0: number; "1": number; }
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+
+type M = { [K in keyof typeof f1]: K }; const m: M = 0;
+>M : M
+>f1 : { (): void; 0: number; "1": number; "1.5": number; "-1": number; a: number; }
+>m : M
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

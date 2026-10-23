@@ -1,0 +1,24 @@
+//// [test/cases/bun81-R03.ts] ////
+
+=== a.ts ===
+export async function e1() {}
+>e1 : () => Promise<void>
+
+export class C { async m() {} }
+>C : C
+>m : () => Promise<void>
+
+async function local() {}
+>local : () => Promise<void>
+
+export { local };
+>local : () => Promise<void>
+
+// not exported: not asked by the declaration emitter either
+async function hidden() {}
+>hidden : () => Promise<void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

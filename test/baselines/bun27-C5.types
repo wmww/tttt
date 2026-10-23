@@ -1,0 +1,27 @@
+//// [test/cases/bun27-C5.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicAttributes { cb?: (x: number) => void } interface IntrinsicElements {} }
+>e : 1
+>cb : ((x: number) => void) | undefined
+>x : number
+
+declare const A: any;
+>A : any
+
+const a = <A cb={x => x.toFixed()} />;
+>a : JSX.Element
+><A cb={x => x.toFixed()} /> : JSX.Element
+>A : any
+>cb : (x: number) => string
+>x => x.toFixed() : (x: number) => string
+>x : number
+>x.toFixed() : string
+>x.toFixed : (fractionDigits?: number) => string
+>x : number
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

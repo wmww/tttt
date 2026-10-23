@@ -1,0 +1,21 @@
+//// [test/cases/bun29-C4a.ts] ////
+
+=== a.ts ===
+enum E { N = -0, M = 1 }
+>E : E
+>N : E.N
+>-0 : 0
+>0 : 0
+>M : E.M
+>1 : 1
+
+let z: 0 = E.N;
+>z : 0
+>E.N : E.N
+>E : typeof E
+>N : E.N
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

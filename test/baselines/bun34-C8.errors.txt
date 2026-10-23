@@ -1,0 +1,15 @@
+a.ts(2,13): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    ({ [-0]: 1, 0: 2 });
+    ({ [-0]: 1, "-0": 2 });
+                ~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

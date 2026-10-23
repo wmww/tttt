@@ -1,0 +1,39 @@
+//// [test/cases/bun99-W6.ts] ////
+
+=== before.ts ===
+css2({ ':hover': { notAProperty: '1' } });
+>css2({ ':hover': { notAProperty: '1' } }) : void
+>css2 : (style: Style2) => void
+>{ ':hover': { notAProperty: '1' } } : { ':hover': { notAProperty: string; }; }
+>':hover' : { notAProperty: string; }
+>{ notAProperty: '1' } : { notAProperty: string; }
+>notAProperty : string
+>'1' : "1"
+
+export declare function css2(style: Style2): void;
+>css2 : (style: Style2) => void
+>style : Style2
+
+type Pseudos2 = ':hover';
+>Pseudos2 : ":hover"
+
+export type CSSPseudos2 = { [P in Pseudos2]?: Omit<Style2, Pseudos2> };
+>CSSPseudos2 : CSSPseudos2
+
+export type Style2 = CSSPseudos2 & { top?: string };
+>Style2 : Style2
+>top : string | undefined
+
+=== zafter.ts ===
+import { css2 } from './before';
+>css2 : (style: import("./before").Style2) => void
+
+css2({ ':hover': { notAProperty: '2' } });
+>css2({ ':hover': { notAProperty: '2' } }) : void
+>css2 : (style: import("./before").Style2) => void
+>{ ':hover': { notAProperty: '2' } } : { ':hover': { notAProperty: string; }; }
+>':hover' : { notAProperty: string; }
+>{ notAProperty: '2' } : { notAProperty: string; }
+>notAProperty : string
+>'2' : "2"
+

@@ -1,0 +1,18 @@
+a.tsx(3,13): error TS2448: Block-scoped variable 'React' used before its declaration.
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.tsx (2 errors) ====
+    export {};
+    declare global { namespace JSX { interface IntrinsicElements { div: any } interface Element {} } }
+    const x1 = <div />;
+                ~~~
+!!! error TS2448: Block-scoped variable 'React' used before its declaration.
+!!! related TS2728 a.tsx:4:7: 'React' is declared here.
+    const React = { createElement(...a: any[]): any {} };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

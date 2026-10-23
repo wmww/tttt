@@ -1,0 +1,27 @@
+//// [test/cases/bun44-C3.ts] ////
+
+=== a.ts ===
+import { Kind } from "./kinds";
+>Kind : typeof Kind
+
+const o = { kind };
+>o : { kind: any; }
+>{ kind } : { kind: any; }
+>kind : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== kinds.ts ===
+export * as Kind from "./kinds_";
+>Kind : typeof import("./kinds_")
+
+export type Kind = "Field";
+>Kind : "Field"
+
+=== kinds_.ts ===
+export const FIELD = "Field";
+>FIELD : "Field"
+>"Field" : "Field"
+

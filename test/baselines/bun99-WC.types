@@ -1,0 +1,73 @@
+//// [test/cases/bun99-WC.ts] ////
+
+=== before.ts ===
+css2({ ':hover': { notAProperty: '1' } });
+>css2({ ':hover': { notAProperty: '1' } }) : void
+>css2 : (style: Style2) => void
+>{ ':hover': { notAProperty: '1' } } : { ':hover': { notAProperty: string; }; }
+>':hover' : { notAProperty: string; }
+>{ notAProperty: '1' } : { notAProperty: string; }
+>notAProperty : string
+>'1' : "1"
+
+export declare function css2(style: Style2): void;
+>css2 : (style: Style2) => void
+>style : Style2
+
+type Pseudos2 = ':hover';
+>Pseudos2 : ":hover"
+
+export type CSSPseudos2 = { [P in Pseudos2]?: Omit<Style2, Pseudos2> };
+>CSSPseudos2 : CSSPseudos2
+
+export type Style2 = CSSPseudos2 & { top?: string };
+>Style2 : Style2
+>top : string | undefined
+
+=== other.ts ===
+import { CSSPseudos2, css2 } from './before';
+>CSSPseudos2 : any
+>css2 : (style: import("./before").Style2) => void
+
+type T = CSSPseudos2 & { x: 1 };
+>T : T
+>x : 1
+
+declare const t: T;
+>t : T
+
+const a: { x: 1 } = t;
+>a : { x: 1; }
+>x : 1
+>t : T
+
+const b: never = t;
+>b : never
+>t : T
+
+css2({ ':hover': { notAProperty: '2' } });
+>css2({ ':hover': { notAProperty: '2' } }) : void
+>css2 : (style: import("./before").Style2) => void
+>{ ':hover': { notAProperty: '2' } } : { ':hover': { notAProperty: string; }; }
+>':hover' : { notAProperty: string; }
+>{ notAProperty: '2' } : { notAProperty: string; }
+>notAProperty : string
+>'2' : "2"
+
+=== zleaf.ts ===
+import { css2 } from './before';
+>css2 : (style: import("./before").Style2) => void
+
+css2({ ':hover': { notAProperty: '3' } });
+>css2({ ':hover': { notAProperty: '3' } }) : void
+>css2 : (style: import("./before").Style2) => void
+>{ ':hover': { notAProperty: '3' } } : { ':hover': { notAProperty: string; }; }
+>':hover' : { notAProperty: string; }
+>{ notAProperty: '3' } : { notAProperty: string; }
+>notAProperty : string
+>'3' : "3"
+
+export const sentinel: number = '';
+>sentinel : number
+>'' : ""
+

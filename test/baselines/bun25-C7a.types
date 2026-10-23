@@ -1,0 +1,28 @@
+//// [test/cases/bun25-C7a.ts] ////
+
+=== a.ts ===
+declare const o: { a?: { b?: string } } | undefined;
+>o : { a?: { b?: string; }; } | undefined
+>a : { b?: string; } | undefined
+>b : string | undefined
+
+if (o?.a!.b) o.a!.b.length;
+>o?.a!.b : string | undefined
+>o?.a! : { b?: string; } | undefined
+>o?.a : { b?: string; } | undefined
+>o : { a?: { b?: string; }; } | undefined
+>a : { b?: string; } | undefined
+>b : string | undefined
+>o.a!.b.length : number
+>o.a!.b : string
+>o.a! : { b?: string; }
+>o.a : { b?: string; }
+>o : { a?: { b?: string; }; }
+>a : { b?: string; }
+>b : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

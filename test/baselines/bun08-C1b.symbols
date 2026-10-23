@@ -1,0 +1,24 @@
+//// [test/cases/bun08-C1b.ts] ////
+
+=== a.ts ===
+import { b } from "./p1";
+>b : Symbol(b, Decl(a.ts, 0, 8))
+
+b.nope;
+>b : Symbol(b, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== p1.ts ===
+import * as b from "./p2"; export { b }; export const av = 1;
+>b : Symbol(b, Decl(p1.ts, 0, 6))
+>b : Symbol(b, Decl(p1.ts, 0, 35))
+>av : Symbol(av, Decl(p1.ts, 0, 53))
+
+=== p2.ts ===
+import * as a from "./p1"; export { a }; export const bv = 1;
+>a : Symbol(a, Decl(p2.ts, 0, 6))
+>a : Symbol(a, Decl(p2.ts, 0, 35))
+>bv : Symbol(bv, Decl(p2.ts, 0, 53))
+

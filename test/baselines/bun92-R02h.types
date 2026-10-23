@@ -1,0 +1,11 @@
+//// [test/cases/bun92-R02h.ts] ////
+
+=== a.ts ===
+declare const a: any, b: any, T: any; a?.<T>`x`;
+>a : any
+>b : any
+>T : any
+>a?.<T>`x` : any
+>a : any
+>`x` : "x"
+

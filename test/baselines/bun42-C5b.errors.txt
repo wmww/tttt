@@ -1,0 +1,20 @@
+a.ts(1,22): error TS6054: File './upper.TS' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.
+a.ts(2,14): error TS2304: Cannot find name 'upperGlobal'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["a.ts"] }
+==== a.ts (3 errors) ====
+    /// <reference path="./upper.TS" />
+                         ~~~~~~~~~~
+!!! error TS6054: File './upper.TS' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.
+    const a: 1 = upperGlobal;
+                 ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'upperGlobal'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== upper.TS (0 errors) ====
+    declare const upperGlobal: 1;
+    

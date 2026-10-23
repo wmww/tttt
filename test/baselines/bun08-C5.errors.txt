@@ -1,0 +1,25 @@
+a.ts(4,17): error TS2300: Duplicate identifier '[k]'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+m.ts(1,22): error TS2300: Duplicate identifier '[k]'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import {} from "./m";
+    declare const k: "k";
+    declare module "./m" {
+      interface I { [k](): void }
+                    ~~~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 m.ts:1:22: '[k]' was also declared here.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (1 errors) ====
+    export interface I { k: number }
+                         ~
+!!! error TS2300: Duplicate identifier '[k]'.
+!!! related TS6203 a.ts:4:17: '[k]' was also declared here.
+    

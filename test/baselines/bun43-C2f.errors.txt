@@ -1,0 +1,10 @@
+a.ts(1,5): error TS1389: 'var' is not allowed as a variable declaration name.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    var v\u0061r;
+        ~~~~~~~~
+!!! error TS1389: 'var' is not allowed as a variable declaration name.
+    

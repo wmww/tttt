@@ -1,0 +1,19 @@
+//// [test/cases/bun27-P6.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { [k: string]: { s?: string } } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+>k : Symbol(k, Decl(a.tsx, 0, 82))
+>s : Symbol(s, Decl(a.tsx, 0, 95))
+
+const a = <toString s="x" />;
+>a : Symbol(a, Decl(a.tsx, 1, 5))
+>toString : Symbol(Object.toString, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(a.tsx, 1, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+

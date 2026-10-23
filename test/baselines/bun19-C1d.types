@@ -1,0 +1,16 @@
+//// [test/cases/bun19-C1d.ts] ////
+
+=== a.ts ===
+type Ignore<X> = number;
+>Ignore : number
+
+function f<T>(x: number, y: T extends string ? Ignore<T> : number = x) {}
+>f : <T>(x: number, y?: T extends string ? Ignore<T> : number) => void
+>x : number
+>y : T extends string ? number : number
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

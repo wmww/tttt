@@ -1,0 +1,26 @@
+//// [test/cases/bun06-P7.ts] ////
+
+=== a.ts ===
+const enum CE { A }
+>CE : CE
+>A : CE.A
+
+declare const t: [typeof CE, number];
+>t : [typeof CE, number]
+>CE : typeof CE
+
+declare function f(a: unknown, b: number): void;
+>f : (a: unknown, b: number) => void
+>a : unknown
+>b : number
+
+f(...t);
+>f(...t) : void
+>f : (a: unknown, b: number) => void
+>...t : number | typeof CE
+>t : [typeof CE, number]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

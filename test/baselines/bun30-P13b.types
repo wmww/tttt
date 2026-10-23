@@ -1,0 +1,15 @@
+//// [test/cases/bun30-P13b.ts] ////
+
+=== a.ts ===
+export function f() { export * from "./m"; }
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const m2 = 2;
+>m2 : 2
+>2 : 2
+

@@ -1,0 +1,86 @@
+u.ts(3,7): error TS2322: Type 'number' is not assignable to type 'string'.
+u.ts(4,7): error TS2322: Type 'number' is not assignable to type 'string'.
+u.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== f0.ts (0 errors) ====
+    export const x = 1;
+==== f1.ts (0 errors) ====
+    export { x } from "./f0";
+==== f10.ts (0 errors) ====
+    export { x } from "./f9";
+==== f11.ts (0 errors) ====
+    export { x } from "./f10";
+==== f12.ts (0 errors) ====
+    export { x } from "./f11";
+==== f13.ts (0 errors) ====
+    export { x } from "./f12";
+==== f14.ts (0 errors) ====
+    export { x } from "./f13";
+==== f15.ts (0 errors) ====
+    export { x } from "./f14";
+==== f16.ts (0 errors) ====
+    export { x } from "./f15";
+==== f17.ts (0 errors) ====
+    export { x } from "./f16";
+==== f18.ts (0 errors) ====
+    export { x } from "./f17";
+==== f19.ts (0 errors) ====
+    export { x } from "./f18";
+==== f2.ts (0 errors) ====
+    export { x } from "./f1";
+==== f20.ts (0 errors) ====
+    export { x } from "./f19";
+==== f21.ts (0 errors) ====
+    export { x } from "./f20";
+==== f22.ts (0 errors) ====
+    export { x } from "./f21";
+==== f23.ts (0 errors) ====
+    export { x } from "./f22";
+==== f24.ts (0 errors) ====
+    export { x } from "./f23";
+==== f25.ts (0 errors) ====
+    export { x } from "./f24";
+==== f26.ts (0 errors) ====
+    export { x } from "./f25";
+==== f27.ts (0 errors) ====
+    export { x } from "./f26";
+==== f28.ts (0 errors) ====
+    export { x } from "./f27";
+==== f29.ts (0 errors) ====
+    export { x } from "./f28";
+==== f3.ts (0 errors) ====
+    export { x } from "./f2";
+==== f30.ts (0 errors) ====
+    export { x } from "./f29";
+==== f31.ts (0 errors) ====
+    export { x } from "./f30";
+==== f32.ts (0 errors) ====
+    export { x } from "./f31";
+==== f4.ts (0 errors) ====
+    export { x } from "./f3";
+==== f5.ts (0 errors) ====
+    export { x } from "./f4";
+==== f6.ts (0 errors) ====
+    export { x } from "./f5";
+==== f7.ts (0 errors) ====
+    export { x } from "./f6";
+==== f8.ts (0 errors) ====
+    export { x } from "./f7";
+==== f9.ts (0 errors) ====
+    export { x } from "./f8";
+==== u.ts (3 errors) ====
+    import { x as x31 } from "./f31";
+    import { x as x32 } from "./f32";
+    const s31: string = x31;
+          ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const s32: string = x32;
+          ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C26f.ts] ////
+
+=== a.ts ===
+declare class C { static { return; } }
+>C : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

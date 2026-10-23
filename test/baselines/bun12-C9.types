@@ -1,0 +1,20 @@
+//// [test/cases/bun12-C9.ts] ////
+
+=== a.ts ===
+interface Array<T> { foo(): { [K in keyof this]: string }; }
+>foo : () => { [K in keyof this]: string; }
+
+const s: string[] = [1, 2, 3].foo();
+>s : string[]
+>[1, 2, 3].foo() : string[]
+>[1, 2, 3].foo : () => string[]
+>[1, 2, 3] : number[]
+>1 : 1
+>2 : 2
+>3 : 3
+>foo : () => string[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

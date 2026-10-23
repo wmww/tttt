@@ -1,0 +1,27 @@
+//// [test/cases/bun92-R07a.ts] ////
+
+=== a.js ===
+/**
+ * @type {{ a: 1; static
+ * {}; b: 2 }}
+ */
+const o = 0;
+>o : { a: 1; "": any; }
+>0 : 0
+
+o.a; o.b; o.nope;
+>o.a : 1
+>o : { a: 1; "": any; }
+>a : 1
+>o.b : any
+>o : { a: 1; "": any; }
+>b : any
+>o.nope : any
+>o : { a: 1; "": any; }
+>nope : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

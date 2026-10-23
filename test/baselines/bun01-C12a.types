@@ -1,0 +1,28 @@
+//// [test/cases/bun01-C12a.ts] ////
+
+=== a.ts ===
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+interface Omit<T, K> {}
+function f2<T extends { a: number }>(o: T) { const { a, ...rest } = o; const n: number = rest; }
+>f2 : <T extends { a: number; }>(o: T) => void
+>a : number
+>o : T
+>a : number
+>rest : any
+>o : T
+>n : number
+>rest : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

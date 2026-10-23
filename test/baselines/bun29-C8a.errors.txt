@@ -1,0 +1,21 @@
+a.ts(4,1): error TS2322: Type '(x: unknown) => x is 1' is not assignable to type '(x: unknown) => x is unique symbol'.
+  Type predicate 'x is 1' is not assignable to 'x is typeof u'.
+    Type '1' is not assignable to type 'unique symbol'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const u: unique symbol;
+    declare let a: (x: unknown) => x is typeof u;
+    declare let b: (x: unknown) => x is 1;
+    a = b;
+    ~
+!!! error TS2322: Type '(x: unknown) => x is 1' is not assignable to type '(x: unknown) => x is unique symbol'.
+!!! error TS2322:   Type predicate 'x is 1' is not assignable to 'x is typeof u'.
+!!! error TS2322:     Type '1' is not assignable to type 'unique symbol'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

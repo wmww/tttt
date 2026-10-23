@@ -1,0 +1,111 @@
+//// [test/cases/bun95-E1.ts] ////
+
+=== a.ts ===
+interface Variance<E> { readonly _E: (_: never) => E }
+>_E : (_: never) => E
+>_ : never
+
+interface Yieldable { readonly id: Variance<this>; }
+>id : Variance<this>
+
+type S<F> = { readonly [K in keyof F]: F[K] };
+>S : S<F>
+
+declare function own<F>(f: F): new () => S<F> & Yieldable;
+>own : <F>(f: F) => new () => S<F> & Yieldable
+>f : F
+
+declare function lib<F>(f: F): new () => Readonly<F> & Yieldable;
+>lib : <F>(f: F) => new () => Readonly<F> & Yieldable
+>f : F
+
+declare function pick<F>(f: F): new () => Pick<F, keyof F> & Yieldable;
+>pick : <F>(f: F) => new () => Pick<F, keyof F> & Yieldable
+>f : F
+
+declare function self<Self>(): <F>(f: F) => new () => S<F> & Yieldable;
+>self : <Self>() => <F>(f: F) => new () => S<F> & Yieldable
+>f : F
+
+export class A extends own({ _tag: "A" as const }) {}
+>A : A
+>own({ _tag: "A" as const }) : S<{ _tag: "A"; }> & Yieldable
+>own : <F>(f: F) => new () => S<F> & Yieldable
+>{ _tag: "A" as const } : { _tag: "A"; }
+>_tag : "A"
+>"A" as const : "A"
+>"A" : "A"
+
+export class B extends lib({ _tag: "B" as const }) {}
+>B : B
+>lib({ _tag: "B" as const }) : Readonly<{ _tag: "B"; }> & Yieldable
+>lib : <F>(f: F) => new () => Readonly<F> & Yieldable
+>{ _tag: "B" as const } : { _tag: "B"; }
+>_tag : "B"
+>"B" as const : "B"
+>"B" : "B"
+
+export class C extends pick({ _tag: "C" as const }) {}
+>C : C
+>pick({ _tag: "C" as const }) : Pick<{ _tag: "C"; }, "_tag"> & Yieldable
+>pick : <F>(f: F) => new () => Pick<F, keyof F> & Yieldable
+>{ _tag: "C" as const } : { _tag: "C"; }
+>_tag : "C"
+>"C" as const : "C"
+>"C" : "C"
+
+export class D extends self<D>()({ _tag: "D" as const }) {}
+>D : D
+>self<D>()({ _tag: "D" as const }) : S<{ _tag: "D"; }> & Yieldable
+>self<D>() : <F>(f: F) => new () => S<F> & Yieldable
+>self : <Self>() => <F>(f: F) => new () => S<F> & Yieldable
+>{ _tag: "D" as const } : { _tag: "D"; }
+>_tag : "D"
+>"D" as const : "D"
+>"D" : "D"
+
+declare const a: A;
+>a : A
+
+// `this` of the inherited member is the class. In a value of the base type it is the intersection.
+const n1: number = a.id;
+>n1 : number
+>a.id : Variance<A>
+>a : A
+>id : Variance<A>
+
+const n2: number = new (own({ _tag: "A" as const }))().id;
+>n2 : number
+>new (own({ _tag: "A" as const }))().id : Variance<S<{ _tag: "A"; }> & Yieldable>
+>new (own({ _tag: "A" as const }))() : S<{ _tag: "A"; }> & Yieldable
+>(own({ _tag: "A" as const })) : new () => S<{ _tag: "A"; }> & Yieldable
+>own({ _tag: "A" as const }) : new () => S<{ _tag: "A"; }> & Yieldable
+>own : <F>(f: F) => new () => S<F> & Yieldable
+>{ _tag: "A" as const } : { _tag: "A"; }
+>_tag : "A"
+>"A" as const : "A"
+>"A" : "A"
+>id : Variance<S<{ _tag: "A"; }> & Yieldable>
+
+export class E extends own({ _tag: "E" as const }) {
+>E : E
+>own({ _tag: "E" as const }) : S<{ _tag: "E"; }> & Yieldable
+>own : <F>(f: F) => new () => S<F> & Yieldable
+>{ _tag: "E" as const } : { _tag: "E"; }
+>_tag : "E"
+>"E" as const : "E"
+>"E" : "E"
+
+  m(): Variance<this> {
+>m : () => Variance<this>
+
+    return this.id;
+>this.id : Variance<this>
+>this : this
+>id : Variance<this>
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,29 @@
+//// [test/cases/bun57-L02b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+@dec interface = 1
+>dec : any
+>1 : 1
+
+=== b.ts ===
+@dec type
+>dec : any
+
+T = 1
+>T : 1
+
+=== c.ts ===
+@dec namespace = 1
+>dec : any
+>1 : 1
+
+=== d.ts ===
+@dec module
+>dec : any
+
+M = 1
+>1 : 1
+

@@ -1,0 +1,33 @@
+a.ts(8,7): error TS2322: Type 'D1[]' is not assignable to type 'D2[]'.
+  Type 'D1' is not assignable to type 'D2'.
+    Types of property 'es' are incompatible.
+      Type 'E1[]' is not assignable to type 'E2[]'.
+        Type 'E1' is not assignable to type 'E2'.
+          Types of property 'x' are incompatible.
+            Type 'number' is not assignable to type 'string'.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function mk1() { return [new A1()]; }
+    function mk2() { return [new A2()]; }
+    class A1 { bs = [new B1()] } class B1 { cs = [new C1()] } class C1 { ds = [new D1()] } class D1 { es = [new E1()] } class E1 { x = 1 }
+    class A2 { bs = [new B2()] } class B2 { cs = [new C2()] } class C2 { ds = [new D2()] } class D2 { es = [new E2()] } class E2 { x = "" }
+    let a1 = mk1(); let a2 = mk2();
+    a2 = a1;
+    const c: C2[] = new B1().cs;
+    const d: D2[] = new C1().ds;
+          ~
+!!! error TS2322: Type 'D1[]' is not assignable to type 'D2[]'.
+!!! error TS2322:   Type 'D1' is not assignable to type 'D2'.
+!!! error TS2322:     Types of property 'es' are incompatible.
+!!! error TS2322:       Type 'E1[]' is not assignable to type 'E2[]'.
+!!! error TS2322:         Type 'E1' is not assignable to type 'E2'.
+!!! error TS2322:           Types of property 'x' are incompatible.
+!!! error TS2322:             Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,50 @@
+//// [test/cases/bun17-SC3.ts] ////
+
+=== a.ts ===
+type A = { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: { [k: string]: string } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } };
+>A : A
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

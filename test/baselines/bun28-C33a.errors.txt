@@ -1,0 +1,17 @@
+a.ts(1,11): error TS1031: 'declare' modifier cannot appear on class elements of this kind.
+a.ts(1,19): error TS2384: Overload signatures must all be ambient or non-ambient.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    class n { declare p(): any; p(): any { } }
+              ~~~~~~~
+!!! error TS1031: 'declare' modifier cannot appear on class elements of this kind.
+                      ~
+!!! error TS2384: Overload signatures must all be ambient or non-ambient.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

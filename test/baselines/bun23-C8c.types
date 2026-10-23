@@ -1,0 +1,25 @@
+//// [test/cases/bun23-C8c.ts] ////
+
+=== a.ts ===
+const cs = "cstr";
+>cs : "cstr"
+>"cstr" : "cstr"
+
+declare let u: { readonly [cs]: 1 } | { readonly [cs]: 2 };
+>u : { readonly cstr: 1; } | { readonly cstr: 2; }
+>[cs] : 1
+>cs : "cstr"
+>[cs] : 2
+>cs : "cstr"
+
+u[cs] = 1;
+>u[cs] = 1 : 1
+>u[cs] : any
+>u : { readonly cstr: 1; } | { readonly cstr: 2; }
+>cs : "cstr"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,27 @@
+//// [test/cases/bun92-R17b.ts] ////
+
+=== a.ts ===
+type M<T> = { [K in keyof T]: 1 };
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>K : Symbol(K, Decl(a.ts, 0, 15))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+
+type Cond<T> = T extends M<A> ? { y: 1 } : { z: 1 };
+>Cond : Symbol(Cond, Decl(a.ts, 0, 34))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 1, 52))
+>y : Symbol(y, Decl(a.ts, 1, 33))
+>z : Symbol(z, Decl(a.ts, 1, 44))
+
+interface A extends Cond<A> { x: number }
+>A : Symbol(A, Decl(a.ts, 1, 52))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 34))
+>A : Symbol(A, Decl(a.ts, 1, 52))
+>x : Symbol(A.x, Decl(a.ts, 2, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

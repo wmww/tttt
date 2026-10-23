@@ -1,0 +1,39 @@
+//// [test/cases/bun61-L04.ts] ////
+
+=== a.ts ===
+export const o1 = { m(this, a: number): void {} };
+>o1 : Symbol(o1, Decl(a.ts, 0, 12))
+>m : Symbol(m, Decl(a.ts, 0, 19))
+>this : Symbol(this, Decl(a.ts, 0, 22))
+>a : Symbol(a, Decl(a.ts, 0, 27))
+
+export const f1 = function (this, a: number): void {};
+>f1 : Symbol(f1, Decl(a.ts, 1, 12))
+>this : Symbol(this, Decl(a.ts, 1, 28))
+>a : Symbol(a, Decl(a.ts, 1, 33))
+
+export function g1(this, a: number): void {}
+>g1 : Symbol(g1, Decl(a.ts, 1, 54))
+>this : Symbol(this, Decl(a.ts, 2, 19))
+>a : Symbol(a, Decl(a.ts, 2, 24))
+
+export class C { m(this, a: number): void {} }
+>C : Symbol(C, Decl(a.ts, 2, 44))
+>m : Symbol(C.m, Decl(a.ts, 3, 16))
+>this : Symbol(this, Decl(a.ts, 3, 19))
+>a : Symbol(a, Decl(a.ts, 3, 24))
+
+export interface I { m(this, a: number): void }
+>I : Symbol(I, Decl(a.ts, 3, 46))
+>m : Symbol(I.m, Decl(a.ts, 4, 20))
+>this : Symbol(this, Decl(a.ts, 4, 23))
+>a : Symbol(a, Decl(a.ts, 4, 28))
+
+export const f2 = function (this: string, a: number): void {};
+>f2 : Symbol(f2, Decl(a.ts, 5, 12))
+>this : Symbol(this, Decl(a.ts, 5, 28))
+>a : Symbol(a, Decl(a.ts, 5, 41))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

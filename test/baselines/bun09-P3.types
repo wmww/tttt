@@ -1,0 +1,26 @@
+//// [test/cases/bun09-P3.ts] ////
+
+=== a.js ===
+var p = r;
+>p : any
+>r : any
+
+var r = [r, module];
+>r : any
+>[r, module] : any[]
+>r : any
+>module : { exports: { p: any; }; }
+
+module.exports = { p };
+>module.exports = { p } : { p: any; }
+>module.exports : { p: any; }
+>module : { exports: { p: any; }; }
+>exports : { p: any; }
+>{ p } : { p: any; }
+>p : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

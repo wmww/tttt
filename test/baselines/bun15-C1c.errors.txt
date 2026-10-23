@@ -1,0 +1,17 @@
+a.ts(1,40): error TS2322: Type '[...T]' is not assignable to type 'string | number | bigint | boolean | null | undefined'.
+a.ts(1,58): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function t<T extends unknown[]>(a: `a${[...T]}`) { const x1: number = a; }
+                                           ~~~~~~
+!!! error TS2322: Type '[...T]' is not assignable to type 'string | number | bigint | boolean | null | undefined'.
+                                                             ~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

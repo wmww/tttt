@@ -1,0 +1,21 @@
+//// [test/cases/bun15-C8b.ts] ////
+
+=== a.ts ===
+const o = Object.freeze({ *[Symbol.iterator]() { yield 1; } });
+>o : Readonly<{ [Symbol.iterator](): Generator<number, void, unknown>; }>
+>Object.freeze({ *[Symbol.iterator]() { yield 1; } }) : Readonly<{ [Symbol.iterator](): Generator<number, void, unknown>; }>
+>Object.freeze : { <T extends Function>(f: T): T; <T extends { [idx: string]: U | null | undefined | object; }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>; <T>(o: T): Readonly<T>; }
+>Object : ObjectConstructor
+>freeze : { <T extends Function>(f: T): T; <T extends { [idx: string]: U | null | undefined | object; }, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>; <T>(o: T): Readonly<T>; }
+>{ *[Symbol.iterator]() { yield 1; } } : { [Symbol.iterator](): Generator<number, void, unknown>; }
+>[Symbol.iterator] : () => Generator<number, void, unknown>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>yield 1 : unknown
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

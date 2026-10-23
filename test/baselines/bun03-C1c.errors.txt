@@ -1,0 +1,16 @@
+a.ts(3,30): error TS2423: Class 'mix.M & A' defines instance member function 'c', but extended class 'D' defines it as instance member accessor.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class A { c() {} }
+    function mix<T extends new (...a: any[]) => A>(B: T) { return class M extends B {}; }
+    class D extends mix(A) { get c() { return () => {} } }
+                                 ~
+!!! error TS2423: Class 'mix.M & A' defines instance member function 'c', but extended class 'D' defines it as instance member accessor.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

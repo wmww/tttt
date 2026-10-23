@@ -1,0 +1,20 @@
+a.ts(1,19): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(1,21): error TS1221: Generators are not allowed in an ambient context.
+a.ts(1,26): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (4 errors) ====
+    declare const o = { *g() {} };
+                      ~~~~~~~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+                        ~
+!!! error TS1221: Generators are not allowed in an ambient context.
+                             ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

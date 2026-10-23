@@ -1,0 +1,49 @@
+//// [test/cases/bun60-L02.ts] ////
+
+=== a.ts ===
+export function f(this, a: number): void {}
+>f : (this: any, a: number) => void
+>this : any
+>a : number
+
+export const g = function (this, a: number): void {};
+>g : (this: any, a: number) => void
+>function (this, a: number): void {} : (this: any, a: number) => void
+>this : any
+>a : number
+
+export class A { m(this, v: number): void {} static n(this): void {} }
+>A : A
+>m : (this: any, v: number) => void
+>this : any
+>v : number
+>n : (this: any) => void
+>this : any
+
+export interface I { m(this, v: number): void; (this): void; }
+>m : (this: any, v: number) => void
+>this : any
+>v : number
+>this : any
+
+export type T = (this, a: number) => void;
+>T : T
+>this : any
+>a : number
+
+export const o = { m(this, a: number): void {} };
+>o : { m(this: { m(this: any, a: number): void; }, a: number): void; }
+>{ m(this, a: number): void {} } : { m(this: { m(this: any, a: number): void; }, a: number): void; }
+>m : (this: { m(this: any, a: number): void; }, a: number) => void
+>this : { m(this: any, a: number): void; }
+>a : number
+
+export function h(b, a: number): void {}
+>h : (b: any, a: number) => void
+>b : any
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

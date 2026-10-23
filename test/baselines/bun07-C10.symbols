@@ -1,0 +1,18 @@
+//// [test/cases/bun07-C10.ts] ////
+
+=== b.js ===
+/**
+ * @type {(this: { a: number }) => void}
+ * @this {{ b: number }}
+ */
+function both() { this.a; this.b; }
+>both : Symbol(both, Decl(b.js, 0, 0))
+>this.a : Symbol(a, Decl(b.js, 1, 18))
+>this : Symbol((Missing), Decl(b.js, 2, 4))
+>a : Symbol(a, Decl(b.js, 1, 18))
+>this : Symbol((Missing), Decl(b.js, 2, 4))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 6, 5))
+

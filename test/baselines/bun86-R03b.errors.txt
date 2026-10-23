@@ -1,0 +1,15 @@
+c.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true }, "files": ["a.d.ts", "b.js", "c.ts"] }
+==== a.d.ts (0 errors) ====
+    declare namespace C { interface x { j: 1 } }
+==== b.js (0 errors) ====
+    class C {}
+    C.x = "s";
+==== c.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

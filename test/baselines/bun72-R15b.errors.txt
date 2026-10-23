@@ -1,0 +1,122 @@
+a.ts(2,27): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(3,27): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(5,24): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(6,10): error TS7023: 'g3' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(8,28): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(10,32): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(13,24): error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+a.ts(14,10): error TS7023: 'g7' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(14,32): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(15,24): error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+a.ts(16,10): error TS7023: 'g8' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(18,32): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(19,81): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(20,26): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(20,56): error TS7023: 'n' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(21,24): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(23,7): error TS7022: 'o14' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(25,34): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(27,37): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+a.ts(28,36): error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(29,10): error TS7023: 'g17' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(31,34): error TS2345: Argument of type '(x: string) => void' is not assignable to parameter of type '(x: number) => void'.
+  Types of parameters 'x' and 'x' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+a.ts(32,39): error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(33,10): error TS7023: 'g19' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(33,43): error TS2339: Property 'nope' does not exist on type 'number'.
+a.ts(34,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (26 errors) ====
+    function f1(a: number, b = g1()) { return a; }
+    function g1() { return f1("wrong", 1); }
+                              ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function g2() { return f2("wrong", 1); }
+                              ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function f2(a: number, b = g2()) { return a; }
+    function f3(a: number, b = g3()) { return a; }
+                           ~~~~~~~~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function g3() { return f3(1, 1); }
+             ~~
+!!! error TS7023: 'g3' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function f4(a: number, b = g4()) { return a; }
+    function g4() { return [f4("wrong", [])]; }
+                               ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function f5(a: number, b = g5()) { return a; }
+    function g5() { return { r: f5("wrong") }; }
+                                   ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function f6(a: number, b = g6()) { return a; }
+    function g6() { return { r: f6(1) }; }
+    function f7(a: number, b: ReturnType<typeof g7>) { return a; }
+                           ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+    function g7() { return { r: f7("wrong", null!) }; }
+             ~~
+!!! error TS7023: 'g7' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+                                   ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function f8(a: number, b: ReturnType<typeof g8>) { return a; }
+                           ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+    function g8() { return { r: f8(1, null!) }; }
+             ~~
+!!! error TS7023: 'g8' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function f9(a: number, b = g9().r) { return [a]; }
+    function g9() { return { r: f9("wrong", []) }; }
+                                   ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    class C10 { m(a: number, b = this.n()) { return [a]; } n() { return { r: this.m("wrong", null!) }; } }
+                                                                                    ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    class C11 { m(a: number, b = this.n()) { return [a]; } n() { return { r: this.m(1, null!) }; } }
+                             ~~~~~~~~~~~~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                           ~
+!!! error TS7023: 'n' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    class C12 { p = this.m("wrong", null!); m(a: number, b = this.p) { return [a]; } }
+                           ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    class C13 { p = this.m(1, null!); m(a: number, b = this.p) { return [a]; } }
+    const o14 = { m(a: number, b = o14.n()) { return [a]; }, n() { return { r: o14.m("wrong", null!) }; } };
+          ~~~
+!!! error TS7022: 'o14' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function f15(a: number, b = g15(), c = 1) { return [a]; }
+    function g15() { return { r: f15("wrong", null!, "also wrong") }; }
+                                     ~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function f16(a: number, b: string, c = g16()) { return [a]; }
+    function g16() { return { r: f16(1, 2, null!) }; }
+                                        ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    function f17(a: number, b: string, c = g17()) { return [a]; }
+                                       ~~~~~~~~~
+!!! error TS7022: 'c' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function g17() { return { r: f17(1, "", null!) }; }
+             ~~~
+!!! error TS7023: 'g17' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function f18(cb: (x: number) => void, b = g18()) { return [cb]; }
+    function g18() { return { r: f18((x: string) => {}, null!) }; }
+                                     ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '(x: string) => void' is not assignable to parameter of type '(x: number) => void'.
+!!! error TS2345:   Types of parameters 'x' and 'x' are incompatible.
+!!! error TS2345:     Type 'number' is not assignable to type 'string'.
+    function f19(cb: (x: number) => void, b = g19()) { return [cb]; }
+                                          ~~~~~~~~~
+!!! error TS7022: 'b' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function g19() { return { r: f19(x => { x.nope }, null!) }; }
+             ~~~
+!!! error TS7023: 'g19' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+                                              ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

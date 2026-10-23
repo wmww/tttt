@@ -1,0 +1,81 @@
+//// [test/cases/bun54-L08.ts] ////
+
+=== a.ts ===
+import { A1, A2, A3, A4, A5, A6, A7, A8 } from "./p";
+>A1 : typeof A1
+>A2 : typeof A2
+>A3 : typeof A3
+>A4 : typeof A4
+>A5 : typeof A5
+>A6 : typeof A6
+>A7 : typeof A7
+>A8 : typeof A8
+
+export type Range = [
+>Range : Range
+
+  /** The start, see {@link A1} */
+  start: number,
+  /** {@link A2} */
+  end?: number,
+  /** {@link A3} */
+  ...rest: string[],
+];
+export function f(t: [
+>f : (t: [a: string]) => [a: string]
+>t : [a: string]
+
+  /** {@link A4} */
+  a: string,
+]) { return t; }
+>t : [a: string]
+
+export type Unnamed = [
+>Unnamed : Unnamed
+
+  /** {@link A5} */
+  string,
+];
+export type Same = [ /** {@link A6} */ a: string ];
+>Same : Same
+
+export type Nested = { p: readonly [
+>Nested : Nested
+>p : readonly [a: string]
+
+  /** @see {@link A7} */
+  a: string,
+] };
+export type Generic<T> = [
+>Generic : Generic<T>
+
+  /** {@link T} {@link A8} */
+  a: T,
+];
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== p.ts ===
+export class A1 {} export class A2 {} export class A3 {} export class A4 {} export class A5 {} export class A6 {} export class A7 {} export class A8 {} export class A9 {}
+>A1 : A1
+>A2 : A2
+>A3 : A3
+>A4 : A4
+>A5 : A5
+>A6 : A6
+>A7 : A7
+>A8 : A8
+>A9 : A9
+
+export class B1 {} export class B2 {} export class B3 {} export class B4 {} export class B5 {} export class B6 {} export class B7 {} export class B8 {} export class B9 {}
+>B1 : B1
+>B2 : B2
+>B3 : B3
+>B4 : B4
+>B5 : B5
+>B6 : B6
+>B7 : B7
+>B8 : B8
+>B9 : B9
+

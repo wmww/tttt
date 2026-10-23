@@ -1,0 +1,25 @@
+//// [test/cases/bun06-P3.ts] ////
+
+=== a.ts ===
+class A { get r(): string { return "" } set r(v: string | number) { } }
+>A : A
+>r : string
+>"" : ""
+>r : string
+>v : string | number
+
+declare const a: A;
+>a : A
+
+a.r! = 1;
+>a.r! = 1 : 1
+>a.r! : string
+>a.r : string
+>a : A
+>r : string
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

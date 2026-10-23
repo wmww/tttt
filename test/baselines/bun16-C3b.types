@@ -1,0 +1,20 @@
+//// [test/cases/bun16-C3b.ts] ////
+
+=== a.ts ===
+const H: string = () => {};
+>H : string
+>() => {} : { (): void; charAt: (x: any) => string; }
+
+H.charAt = x => "";
+>H.charAt = x => "" : (x: any) => string
+>H.charAt : (pos: number) => string
+>H : string
+>charAt : (pos: number) => string
+>x => "" : (x: any) => string
+>x : any
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

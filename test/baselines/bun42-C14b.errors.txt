@@ -1,0 +1,31 @@
+a.ts(2,1): error TS2883: The inferred type of 'default' cannot be named without a reference to 'B' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+a.ts(2,1): error TS2883: The inferred type of 'default' cannot be named without a reference to 'A' from 'outer/node_modules/inner/zz/deep'. This is likely not portable. A type annotation is necessary.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "declaration": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (3 errors) ====
+    import { a, b } from "outer";
+    export default { x: b(), y: a() };
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2883: The inferred type of 'default' cannot be named without a reference to 'B' from 'outer/node_modules/inner'. This is likely not portable. A type annotation is necessary.
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2883: The inferred type of 'default' cannot be named without a reference to 'A' from 'outer/node_modules/inner/zz/deep'. This is likely not portable. A type annotation is necessary.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/outer/index.d.ts (0 errors) ====
+    import { B } from "inner";
+    import { A } from "inner/zz/deep";
+    export declare function b(): B;
+    export declare function a(): A;
+==== node_modules/outer/node_modules/inner/index.d.ts (0 errors) ====
+    export interface B { b: 1 }
+==== node_modules/outer/node_modules/inner/package.json (0 errors) ====
+    { "name": "inner", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/outer/node_modules/inner/zz/deep.d.ts (0 errors) ====
+    export interface A { a: 1 }
+==== node_modules/outer/package.json (0 errors) ====
+    { "name": "outer", "version": "1.0.0", "types": "index.d.ts" }
+    

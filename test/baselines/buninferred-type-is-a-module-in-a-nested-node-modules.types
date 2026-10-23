@@ -1,0 +1,54 @@
+//// [test/cases/buninferred-type-is-a-module-in-a-nested-node-modules.ts] ////
+
+=== a.ts ===
+import { K, viaImportType, viaNamespace } from "outer";
+>K : typeof K
+>viaImportType : () => typeof import("outer/node_modules/inner")
+>viaNamespace : () => typeof import("outer/node_modules/inner")
+
+export const a = viaImportType();
+>a : typeof import("outer/node_modules/inner")
+>viaImportType() : typeof import("outer/node_modules/inner")
+>viaImportType : () => typeof import("outer/node_modules/inner")
+
+export const b = viaNamespace();
+>b : typeof import("outer/node_modules/inner")
+>viaNamespace() : typeof import("outer/node_modules/inner")
+>viaNamespace : () => typeof import("outer/node_modules/inner")
+
+export const c = new K().m;
+>c : (x: import("outer/node_modules/inner").Inner) => typeof import("outer/node_modules/inner")
+>new K().m : (x: import("outer/node_modules/inner").Inner) => typeof import("outer/node_modules/inner")
+>new K() : K
+>K : typeof K
+>m : (x: import("outer/node_modules/inner").Inner) => typeof import("outer/node_modules/inner")
+
+export class D { m(x: typeof import("outer/node_modules/inner")) { return x; } }
+>D : D
+>m : (x: typeof import("outer/node_modules/inner")) => typeof import("outer/node_modules/inner")
+>x : typeof import("outer/node_modules/inner")
+>x : typeof import("outer/node_modules/inner")
+
+=== node_modules/outer/index.d.ts ===
+import * as inner from "inner";
+>inner : typeof inner
+
+export declare function viaImportType(): typeof import("inner");
+>viaImportType : () => typeof import("inner")
+
+export declare function viaNamespace(): typeof inner;
+>viaNamespace : () => typeof inner
+>inner : typeof inner
+
+export declare class K { m(x: import("inner").Inner): typeof import("inner"); }
+>K : K
+>m : (x: import("inner").Inner) => typeof import("inner")
+>x : inner.Inner
+
+=== node_modules/outer/node_modules/inner/index.d.ts ===
+export interface Inner { a: number }
+>a : number
+
+export declare const value: number;
+>value : number
+

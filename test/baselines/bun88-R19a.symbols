@@ -1,0 +1,26 @@
+//// [test/cases/bun88-R19a.ts] ////
+
+=== src/a.ts ===
+import { f } from "dep";
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+export const x = f();
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/dep/index.d.ts ===
+import { T } from "./internal";
+>T : Symbol(T, Decl(index.d.ts, 0, 8))
+
+export declare function f(): T;
+>f : Symbol(f, Decl(index.d.ts, 0, 31))
+>T : Symbol(T, Decl(index.d.ts, 0, 8))
+
+=== node_modules/dep/internal.d.ts ===
+export interface T { a: 1 }
+>T : Symbol(T, Decl(internal.d.ts, 0, 0))
+>a : Symbol(T.a, Decl(internal.d.ts, 0, 20))
+

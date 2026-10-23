@@ -1,0 +1,7 @@
+//// [test/cases/bun43-P9b.ts] ////
+
+=== a.ts ===
+enum
+
+> : Symbol((Missing), Decl(a.ts, 0, 0))
+

@@ -1,0 +1,29 @@
+//// [test/cases/bun87-R17c.ts] ////
+
+=== a.ts ===
+var globalThis: number;
+>globalThis : number
+
+var x1 = 1;
+>x1 : number
+>1 : 1
+
+const r1: 0 = globalThis;
+>r1 : 0
+>globalThis : typeof globalThis
+
+const r2: 0 = globalThis.x1;
+>r2 : 0
+>globalThis.x1 : number
+>globalThis : typeof globalThis
+>x1 : number
+
+const r3: typeof globalThis = 1;
+>r3 : typeof globalThis
+>globalThis : typeof globalThis
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

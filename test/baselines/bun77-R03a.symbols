@@ -1,0 +1,39 @@
+//// [test/cases/bun77-R03a.ts] ////
+
+=== a.ts ===
+declare const u: Unresolved<number>;
+>u : Symbol(u, Decl(a.ts, 0, 13))
+>Unresolved : Symbol(Unresolved)
+
+function* g1() { const r = yield* u; const t: never = r; }
+>g1 : Symbol(g1, Decl(a.ts, 0, 36))
+>r : Symbol(r, Decl(a.ts, 1, 22))
+>u : Symbol(u, Decl(a.ts, 0, 13))
+>t : Symbol(t, Decl(a.ts, 1, 42))
+>r : Symbol(r, Decl(a.ts, 1, 22))
+
+async function* g2() { const r = yield* u; const t: never = r; }
+>g2 : Symbol(g2, Decl(a.ts, 1, 58))
+>r : Symbol(r, Decl(a.ts, 2, 28))
+>u : Symbol(u, Decl(a.ts, 0, 13))
+>t : Symbol(t, Decl(a.ts, 2, 48))
+>r : Symbol(r, Decl(a.ts, 2, 28))
+
+function* g3(): Generator<number> { const r = yield* u; const t: never = r; }
+>g3 : Symbol(g3, Decl(a.ts, 2, 64))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>r : Symbol(r, Decl(a.ts, 3, 41))
+>u : Symbol(u, Decl(a.ts, 0, 13))
+>t : Symbol(t, Decl(a.ts, 3, 61))
+>r : Symbol(r, Decl(a.ts, 3, 41))
+
+function* g4() { for (const x of u) { const t: never = x; } }
+>g4 : Symbol(g4, Decl(a.ts, 3, 77))
+>x : Symbol(x, Decl(a.ts, 4, 27))
+>u : Symbol(u, Decl(a.ts, 0, 13))
+>t : Symbol(t, Decl(a.ts, 4, 43))
+>x : Symbol(x, Decl(a.ts, 4, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

@@ -1,0 +1,16 @@
+a.ts(3,7): error TS2322: Type '1' is not assignable to type '3'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function lo2(x: string): 1;
+    declare function lo2(x: ("a")): 2;
+    const lr2: 3 = lo2("a");
+          ~~~
+!!! error TS2322: Type '1' is not assignable to type '3'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

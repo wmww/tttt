@@ -1,0 +1,15 @@
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "lib": ["es2022"], "types": [], "jsx": "react", "jsxFactory": "" }, "extends": "./A.json", "files": ["a.tsx"] }
+==== a.tsx (1 errors) ====
+    declare namespace JSX { interface IntrinsicElements { div: {} } }
+    declare function h(...a: any[]): any;
+    const e = <div/>;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== A.json (0 errors) ====
+    { "compilerOptions": { "jsxFactory": "h" } }

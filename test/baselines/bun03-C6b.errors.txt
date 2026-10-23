@@ -1,0 +1,19 @@
+a.ts(4,11): error TS2320: Interface 'X' cannot simultaneously extend types 'A' and 'B'.
+  Named property 'constructor' of types 'A' and 'B' are not identical.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface A { constructor: number }
+    interface B { constructor: string }
+    class X { constructor() {} }
+    interface X extends A, B {}
+              ~
+!!! error TS2320: Interface 'X' cannot simultaneously extend types 'A' and 'B'.
+!!! error TS2320:   Named property 'constructor' of types 'A' and 'B' are not identical.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

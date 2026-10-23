@@ -1,0 +1,18 @@
+//// [test/cases/bun20-P4.ts] ////
+
+=== a.ts ===
+declare let h: ReturnType<typeof k>;
+>h : any
+>k : (p: () => void) => any
+
+function k(p: () => void) { h(); return p; }
+>k : (p: () => void) => any
+>p : () => void
+>h() : any
+>h : any
+>p : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,17 @@
+//// [test/cases/bun32-C14a.ts] ////
+
+=== a.ts ===
+function f(x: string | number) { if (typeof x === "string") { () => x.length; class D extends (x = 1, Object) {} } }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(a.ts, 0, 77))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

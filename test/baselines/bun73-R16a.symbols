@@ -1,0 +1,202 @@
+//// [test/cases/bun73-R16a.ts] ////
+
+=== a.ts ===
+type J<T, S> = S & { k: 1 };
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>S : Symbol(S, Decl(a.ts, 0, 9))
+>S : Symbol(S, Decl(a.ts, 0, 9))
+>k : Symbol(k, Decl(a.ts, 0, 20))
+
+namespace N18 { export type J = I037 & { k: 1 }; }
+>N18 : Symbol(N18, Decl(a.ts, 0, 28))
+>J : Symbol(J, Decl(a.ts, 1, 15))
+>I037 : Symbol(I037, Decl(a.ts, 14, 25))
+>k : Symbol(k, Decl(a.ts, 1, 40))
+
+namespace N27 { export type J = I055 & { k: 1 }; }
+>N27 : Symbol(N27, Decl(a.ts, 1, 50))
+>J : Symbol(J, Decl(a.ts, 2, 15))
+>I055 : Symbol(I055, Decl(a.ts, 16, 25))
+>k : Symbol(k, Decl(a.ts, 2, 40))
+
+namespace N36 { export type J = I073 & { k: 1 }; }
+>N36 : Symbol(N36, Decl(a.ts, 2, 50))
+>J : Symbol(J, Decl(a.ts, 3, 15))
+>I073 : Symbol(I073, Decl(a.ts, 17, 25))
+>k : Symbol(k, Decl(a.ts, 3, 40))
+
+namespace N38 { export type J = I077 & { k: 1 }; }
+>N38 : Symbol(N38, Decl(a.ts, 3, 50))
+>J : Symbol(J, Decl(a.ts, 4, 15))
+>I077 : Symbol(I077, Decl(a.ts, 18, 25))
+>k : Symbol(k, Decl(a.ts, 4, 40))
+
+namespace N40 { export type J = I081 & { k: 1 }; }
+>N40 : Symbol(N40, Decl(a.ts, 4, 50))
+>J : Symbol(J, Decl(a.ts, 5, 15))
+>I081 : Symbol(I081, Decl(a.ts, 19, 25))
+>k : Symbol(k, Decl(a.ts, 5, 40))
+
+namespace N61 { export type J = I123 & { k: 1 }; }
+>N61 : Symbol(N61, Decl(a.ts, 5, 50))
+>J : Symbol(J, Decl(a.ts, 6, 15))
+>I123 : Symbol(I123, Decl(a.ts, 21, 25))
+>k : Symbol(k, Decl(a.ts, 6, 40))
+
+namespace N77 { export type J = I155 & { k: 1 }; }
+>N77 : Symbol(N77, Decl(a.ts, 6, 50))
+>J : Symbol(J, Decl(a.ts, 7, 15))
+>I155 : Symbol(I155, Decl(a.ts, 23, 26))
+>k : Symbol(k, Decl(a.ts, 7, 40))
+
+namespace N92 { export type J = I185 & { k: 1 }; }
+>N92 : Symbol(N92, Decl(a.ts, 7, 50))
+>J : Symbol(J, Decl(a.ts, 8, 15))
+>I185 : Symbol(I185, Decl(a.ts, 24, 26))
+>k : Symbol(k, Decl(a.ts, 8, 40))
+
+namespace N105 { export type J = I211 & { k: 1 }; }
+>N105 : Symbol(N105, Decl(a.ts, 8, 50))
+>J : Symbol(J, Decl(a.ts, 9, 16))
+>I211 : Symbol(I211, Decl(a.ts, 28, 26))
+>k : Symbol(k, Decl(a.ts, 9, 41))
+
+namespace N112 { export type J = I225 & { k: 1 }; }
+>N112 : Symbol(N112, Decl(a.ts, 9, 51))
+>J : Symbol(J, Decl(a.ts, 10, 16))
+>I225 : Symbol(I225, Decl(a.ts, 30, 26))
+>k : Symbol(k, Decl(a.ts, 10, 41))
+
+interface I002 { p2: 1 }
+>I002 : Symbol(I002, Decl(a.ts, 10, 51))
+>p2 : Symbol(I002.p2, Decl(a.ts, 11, 16))
+
+interface I008 { p8: 1 }
+>I008 : Symbol(I008, Decl(a.ts, 11, 24))
+>p8 : Symbol(I008.p8, Decl(a.ts, 12, 16))
+
+interface I026 { p26: 1 }
+>I026 : Symbol(I026, Decl(a.ts, 12, 24))
+>p26 : Symbol(I026.p26, Decl(a.ts, 13, 16))
+
+interface I028 { p28: 1 }
+>I028 : Symbol(I028, Decl(a.ts, 13, 25))
+>p28 : Symbol(I028.p28, Decl(a.ts, 14, 16))
+
+interface I037 { p37: 1 }
+>I037 : Symbol(I037, Decl(a.ts, 14, 25))
+>p37 : Symbol(I037.p37, Decl(a.ts, 15, 16))
+
+interface I044 { p44: 1 }
+>I044 : Symbol(I044, Decl(a.ts, 15, 25))
+>p44 : Symbol(I044.p44, Decl(a.ts, 16, 16))
+
+interface I055 { p55: 1 }
+>I055 : Symbol(I055, Decl(a.ts, 16, 25))
+>p55 : Symbol(I055.p55, Decl(a.ts, 17, 16))
+
+interface I073 { p73: 1 }
+>I073 : Symbol(I073, Decl(a.ts, 17, 25))
+>p73 : Symbol(I073.p73, Decl(a.ts, 18, 16))
+
+interface I077 { p77: 1 }
+>I077 : Symbol(I077, Decl(a.ts, 18, 25))
+>p77 : Symbol(I077.p77, Decl(a.ts, 19, 16))
+
+interface I081 { p81: 1 }
+>I081 : Symbol(I081, Decl(a.ts, 19, 25))
+>p81 : Symbol(I081.p81, Decl(a.ts, 20, 16))
+
+interface I098 { p98: 1 }
+>I098 : Symbol(I098, Decl(a.ts, 20, 25))
+>p98 : Symbol(I098.p98, Decl(a.ts, 21, 16))
+
+interface I123 { p123: 1 }
+>I123 : Symbol(I123, Decl(a.ts, 21, 25))
+>p123 : Symbol(I123.p123, Decl(a.ts, 22, 16))
+
+interface I128 { p128: 1 }
+>I128 : Symbol(I128, Decl(a.ts, 22, 26))
+>p128 : Symbol(I128.p128, Decl(a.ts, 23, 16))
+
+interface I155 { p155: 1 }
+>I155 : Symbol(I155, Decl(a.ts, 23, 26))
+>p155 : Symbol(I155.p155, Decl(a.ts, 24, 16))
+
+interface I185 { p185: 1 }
+>I185 : Symbol(I185, Decl(a.ts, 24, 26))
+>p185 : Symbol(I185.p185, Decl(a.ts, 25, 16))
+
+interface I200 { p200: 1 }
+>I200 : Symbol(I200, Decl(a.ts, 25, 26))
+>p200 : Symbol(I200.p200, Decl(a.ts, 26, 16))
+
+interface I204 { p204: 1 }
+>I204 : Symbol(I204, Decl(a.ts, 26, 26))
+>p204 : Symbol(I204.p204, Decl(a.ts, 27, 16))
+
+interface I206 { p206: 1 }
+>I206 : Symbol(I206, Decl(a.ts, 27, 26))
+>p206 : Symbol(I206.p206, Decl(a.ts, 28, 16))
+
+interface I211 { p211: 1 }
+>I211 : Symbol(I211, Decl(a.ts, 28, 26))
+>p211 : Symbol(I211.p211, Decl(a.ts, 29, 16))
+
+interface I214 { p214: 1 }
+>I214 : Symbol(I214, Decl(a.ts, 29, 26))
+>p214 : Symbol(I214.p214, Decl(a.ts, 30, 16))
+
+interface I225 { p225: 1 }
+>I225 : Symbol(I225, Decl(a.ts, 30, 26))
+>p225 : Symbol(I225.p225, Decl(a.ts, 31, 16))
+
+declare const v42: N27.J | N61.J | J<55, I128> | N77.J | J<19, I200> | N40.J | J<12, I214> | N38.J | N18.J | J<105, I028> | N36.J | J<106, I026> | J<16, I206> | J<70, I098> | J<17, I204> | N92.J | J<118, I002> | N105.J | J<115, I008> | J<97, I044> | N112.J;
+>v42 : Symbol(v42, Decl(a.ts, 32, 13))
+>N27 : Symbol(N27, Decl(a.ts, 1, 50))
+>J : Symbol(N27.J, Decl(a.ts, 2, 15))
+>N61 : Symbol(N61, Decl(a.ts, 5, 50))
+>J : Symbol(N61.J, Decl(a.ts, 6, 15))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I128 : Symbol(I128, Decl(a.ts, 22, 26))
+>N77 : Symbol(N77, Decl(a.ts, 6, 50))
+>J : Symbol(N77.J, Decl(a.ts, 7, 15))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I200 : Symbol(I200, Decl(a.ts, 25, 26))
+>N40 : Symbol(N40, Decl(a.ts, 4, 50))
+>J : Symbol(N40.J, Decl(a.ts, 5, 15))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I214 : Symbol(I214, Decl(a.ts, 29, 26))
+>N38 : Symbol(N38, Decl(a.ts, 3, 50))
+>J : Symbol(N38.J, Decl(a.ts, 4, 15))
+>N18 : Symbol(N18, Decl(a.ts, 0, 28))
+>J : Symbol(N18.J, Decl(a.ts, 1, 15))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I028 : Symbol(I028, Decl(a.ts, 13, 25))
+>N36 : Symbol(N36, Decl(a.ts, 2, 50))
+>J : Symbol(N36.J, Decl(a.ts, 3, 15))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I026 : Symbol(I026, Decl(a.ts, 12, 24))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I206 : Symbol(I206, Decl(a.ts, 27, 26))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I098 : Symbol(I098, Decl(a.ts, 20, 25))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I204 : Symbol(I204, Decl(a.ts, 26, 26))
+>N92 : Symbol(N92, Decl(a.ts, 7, 50))
+>J : Symbol(N92.J, Decl(a.ts, 8, 15))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I002 : Symbol(I002, Decl(a.ts, 10, 51))
+>N105 : Symbol(N105, Decl(a.ts, 8, 50))
+>J : Symbol(N105.J, Decl(a.ts, 9, 16))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I008 : Symbol(I008, Decl(a.ts, 11, 24))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>I044 : Symbol(I044, Decl(a.ts, 15, 25))
+>N112 : Symbol(N112, Decl(a.ts, 9, 51))
+>J : Symbol(N112.J, Decl(a.ts, 10, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 33, 5))
+

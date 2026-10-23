@@ -1,0 +1,47 @@
+//// [test/cases/bun10-SC9.ts] ////
+
+=== m.js ===
+Object.defineProperty(exports, "p6", { value: undefined });
+>Object.defineProperty(exports, "p6", { value: undefined }) : typeof import("./m")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./m")
+>"p6" : "p6"
+>{ value: undefined } : { value: undefined; }
+>value : undefined
+>undefined : undefined
+
+Object.defineProperty(exports, "p7", { get() { return null; } });
+>Object.defineProperty(exports, "p7", { get() { return null; } }) : typeof import("./m")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./m")
+>"p7" : "p7"
+>{ get() { return null; } } : { get(): null; }
+>get : () => null
+
+=== u.ts ===
+import m = require("./m");
+>m : typeof m
+
+declare let n: never;
+>n : never
+
+n = m.p6; n = m.p7;
+>n = m.p6 : any
+>n : never
+>m.p6 : any
+>m : typeof m
+>p6 : any
+>n = m.p7 : any
+>n : never
+>m.p7 : any
+>m : typeof m
+>p7 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

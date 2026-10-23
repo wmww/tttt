@@ -1,0 +1,22 @@
+//// [test/cases/bun25-C16.ts] ////
+
+=== a.ts ===
+namespace A { export class K { a = 1 } } namespace B { export type K = [1] }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 13))
+>a : Symbol(K.a, Decl(a.ts, 0, 30))
+>B : Symbol(B, Decl(a.ts, 0, 40))
+>K : Symbol(K, Decl(a.ts, 0, 54))
+
+declare let v: A.K | B.K; const n: number = v;
+>v : Symbol(v, Decl(a.ts, 1, 11))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>K : Symbol(A.K, Decl(a.ts, 0, 13))
+>B : Symbol(B, Decl(a.ts, 0, 40))
+>K : Symbol(B.K, Decl(a.ts, 0, 54))
+>n : Symbol(n, Decl(a.ts, 1, 31))
+>v : Symbol(v, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

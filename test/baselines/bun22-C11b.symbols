@@ -1,0 +1,32 @@
+//// [test/cases/bun22-C11b.ts] ////
+
+=== a.ts ===
+declare function f<T>(a: T, b: [x: T]): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>b : Symbol(b, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+declare const a2: { m(x: string): void };
+>a2 : Symbol(a2, Decl(a.ts, 1, 13))
+>m : Symbol(m, Decl(a.ts, 1, 19))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+
+declare const t2: [x: { m(x: string | number): void }];
+>t2 : Symbol(t2, Decl(a.ts, 2, 13))
+>m : Symbol(m, Decl(a.ts, 2, 23))
+>x : Symbol(x, Decl(a.ts, 2, 26))
+
+f(a2, t2).m(1);
+>f(a2, t2).m : Symbol(m, Decl(a.ts, 2, 23))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>a2 : Symbol(a2, Decl(a.ts, 1, 13))
+>t2 : Symbol(t2, Decl(a.ts, 2, 13))
+>m : Symbol(m, Decl(a.ts, 2, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

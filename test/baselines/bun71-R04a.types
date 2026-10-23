@@ -1,0 +1,39 @@
+//// [test/cases/bun71-R04a.ts] ////
+
+=== a.ts ===
+declare function use(...x: any[]): void;
+>use : (...x: any[]) => void
+>x : any[]
+
+function F(this: any) { if (F) { use(new.target); } }
+>F : (this: any) => void
+>this : any
+>F : (this: any) => void
+>use(new.target) : void
+>use : (...x: any[]) => void
+>new.target : (this: any) => void
+>target : (this: any) => void
+
+function G(this: any) { return G && new.target; }
+>G : (this: any) => typeof G
+>this : any
+>G && new.target : (this: any) => typeof G
+>G : (this: any) => typeof G
+>new.target : (this: any) => typeof G
+>target : (this: any) => typeof G
+
+const h = function H(this: any) { if (H) { use(new.target); } };
+>h : (this: any) => void
+>function H(this: any) { if (H) { use(new.target); } } : (this: any) => void
+>H : (this: any) => void
+>this : any
+>H : (this: any) => void
+>use(new.target) : void
+>use : (...x: any[]) => void
+>new.target : (this: any) => void
+>target : (this: any) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

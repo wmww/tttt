@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C16f.ts] ////
+
+=== a.ts ===
+const f = (in x: any) => 1;
+>f : (x: any) => number
+>(in x: any) => 1 : (x: any) => number
+>x : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

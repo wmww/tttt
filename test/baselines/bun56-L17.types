@@ -1,0 +1,48 @@
+//// [test/cases/bun56-L17.ts] ////
+
+=== a.ts ===
+export {};
+declare const p: Promise<string>, q: Promise<number>;
+>p : Promise<string>
+>q : Promise<number>
+
+const o = { [await (p)]: await (q) };
+>o : { [x: string]: number; }
+>{ [await (p)]: await (q) } : { [x: string]: number; }
+>[await (p)] : number
+>await (p) : string
+>(p) : Promise<string>
+>p : Promise<string>
+>await (q) : number
+>(q) : Promise<number>
+>q : Promise<number>
+
+const o2 = [await (q), { [await (p)]: 1 }];
+>o2 : (number | { [x: string]: number; })[]
+>[await (q), { [await (p)]: 1 }] : (number | { [x: string]: number; })[]
+>await (q) : number
+>(q) : Promise<number>
+>q : Promise<number>
+>{ [await (p)]: 1 } : { [x: string]: number; }
+>[await (p)] : number
+>await (p) : string
+>(p) : Promise<string>
+>p : Promise<string>
+>1 : 1
+
+const o3 = { [(await (p))]: await (q) };
+>o3 : { [x: string]: number; }
+>{ [(await (p))]: await (q) } : { [x: string]: number; }
+>[(await (p))] : number
+>(await (p)) : string
+>await (p) : string
+>(p) : Promise<string>
+>p : Promise<string>
+>await (q) : number
+>(q) : Promise<number>
+>q : Promise<number>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

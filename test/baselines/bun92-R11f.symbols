@@ -1,0 +1,49 @@
+//// [test/cases/bun92-R11f.ts] ////
+
+=== a.ts ===
+type D = 0|1|2|3|4|5|6|7|8|9;
+>D : Symbol(D, Decl(a.ts, 0, 0))
+
+type G<X extends string, Y extends number = D> = `${Y}${Y}${Y}${Y}${Y}${Y}${X}`;
+>G : Symbol(G, Decl(a.ts, 0, 29))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>D : Symbol(D, Decl(a.ts, 0, 0))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>Y : Symbol(Y, Decl(a.ts, 1, 24))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+
+declare function f<T>(x?: any): T;
+>f : Symbol(f, Decl(a.ts, 1, 80))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>x : Symbol(x, Decl(a.ts, 2, 22))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+
+declare class K<T> { k: T }
+>K : Symbol(K, Decl(a.ts, 2, 34))
+>T : Symbol(T, Decl(a.ts, 3, 16))
+>k : Symbol(K.k, Decl(a.ts, 3, 20))
+>T : Symbol(T, Decl(a.ts, 3, 16))
+
+declare const e: any;
+>e : Symbol(e, Decl(a.ts, 4, 13))
+
+interface IG<T> { g: T }
+>IG : Symbol(IG, Decl(a.ts, 4, 21))
+>T : Symbol(T, Decl(a.ts, 5, 13))
+>g : Symbol(IG.g, Decl(a.ts, 5, 17))
+>T : Symbol(T, Decl(a.ts, 5, 13))
+
+function h({ a = e as G<"1"> } = {}) {}
+>h : Symbol(h, Decl(a.ts, 5, 24))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>e : Symbol(e, Decl(a.ts, 4, 13))
+>G : Symbol(G, Decl(a.ts, 0, 29))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 12))
+

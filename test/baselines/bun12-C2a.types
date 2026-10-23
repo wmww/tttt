@@ -1,0 +1,24 @@
+//// [test/cases/bun12-C2a.ts] ////
+
+=== a.ts ===
+function f<T>(x: T) { return ({ a = x }) => a; }
+>f : <T>(x: T) => ({ a }: { a?: T | undefined; }) => T
+>x : T
+>({ a = x }) => a : ({ a }: { a?: T | undefined; }) => T
+>a : T
+>x : T
+>a : T
+
+f(1)({ a: 1 });
+>f(1)({ a: 1 }) : number
+>f(1) : ({ a }: { a?: T | undefined; }) => number
+>f : <T>(x: T) => ({ a }: { a?: T | undefined; }) => T
+>1 : 1
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

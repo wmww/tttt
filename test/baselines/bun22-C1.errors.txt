@@ -1,0 +1,20 @@
+a.ts(5,10): error TS2339: Property 'length' does not exist on type 'string | number'.
+  Property 'length' does not exist on type 'number'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class K<T> { constructor(x: T) {} }
+    class D<T> extends K<T> {}
+    declare function f<T>(a: typeof D<T>, b: T): T;
+    declare const s: new (x: string | number) => any;
+    f(s, "").length;
+             ~~~~~~
+!!! error TS2339: Property 'length' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'length' does not exist on type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

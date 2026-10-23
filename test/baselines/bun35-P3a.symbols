@@ -1,0 +1,35 @@
+//// [test/cases/bun35-P3a.ts] ////
+
+=== a.ts ===
+import { A } from "noname";
+>A : Symbol(A, Decl(a.ts, 0, 8))
+
+import { a } from "dep";
+>a : Symbol(a, Decl(a.ts, 1, 8))
+
+a(new A());
+>a : Symbol(a, Decl(a.ts, 1, 8))
+>A : Symbol(A, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== node_modules/dep/index.d.ts ===
+import { A } from "noname";
+>A : Symbol(A, Decl(index.d.ts, 0, 8))
+
+export declare function a(c: A): void;
+>a : Symbol(a, Decl(index.d.ts, 0, 27))
+>c : Symbol(c, Decl(index.d.ts, 1, 26))
+>A : Symbol(A, Decl(index.d.ts, 0, 8))
+
+=== node_modules/dep/node_modules/noname/index.d.ts ===
+export declare class A { private p; }
+>A : Symbol(A, Decl(index.d.ts, 0, 0))
+>p : Symbol(A.p, Decl(index.d.ts, 0, 24))
+
+=== node_modules/noname/index.d.ts ===
+export declare class A { private p; }
+>A : Symbol(A, Decl(index.d.ts, 0, 0))
+>p : Symbol(A.p, Decl(index.d.ts, 0, 24))
+

@@ -1,0 +1,19 @@
+a.ts(4,7): error TS2322: Type '{}' is not assignable to type '(p: [A.X<{ [G.u]: 1; }>, B.X<1>]) => void'.
+  Type '{}' provides no match for the signature '(p: [A.X<{ [G<T>.u]: 1; }>, B.X<1>]): void'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class G<T> { static readonly u: unique symbol = Symbol(); g!: T }
+    namespace A { export class X<Q> { a!: Q } }
+    namespace B { export class X<Q> { b!: Q } }
+    const s: { (p: [A.X<{ [K in typeof G.u]: 1 }>, B.X<1>]): void } = {};
+          ~
+!!! error TS2322: Type '{}' is not assignable to type '(p: [A.X<{ [G.u]: 1; }>, B.X<1>]) => void'.
+!!! error TS2322:   Type '{}' provides no match for the signature '(p: [A.X<{ [G<T>.u]: 1; }>, B.X<1>]): void'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

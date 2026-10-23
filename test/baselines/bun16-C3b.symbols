@@ -1,0 +1,15 @@
+//// [test/cases/bun16-C3b.ts] ////
+
+=== a.ts ===
+const H: string = () => {};
+>H : Symbol(H, Decl(a.ts, 0, 5))
+
+H.charAt = x => "";
+>H.charAt : Symbol(String.charAt, Decl(lib.es5.d.ts, --, --))
+>H : Symbol(H, Decl(a.ts, 0, 5))
+>charAt : Symbol(String.charAt, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,16 @@
+src/a.ts(1,8): error TS2882: Cannot find module or type declarations for side-effect import of '../SRC/foo.ts'.
+src/a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler", "rewriteRelativeImportExtensions": true }, "files": ["src/a.ts"] }
+==== src/a.ts (2 errors) ====
+    import "../SRC/foo.ts";
+           ~~~~~~~~~~~~~~~
+!!! error TS2882: Cannot find module or type declarations for side-effect import of '../SRC/foo.ts'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== src/foo.ts.ts (0 errors) ====
+    export {};
+    

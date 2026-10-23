@@ -1,0 +1,19 @@
+//// [test/cases/bun24-C6c.ts] ////
+
+=== a.ts ===
+class G { static #q() { return G.#q; } static t() { const z: 1 = { c: G.#q }; } }
+>G : G
+>#q : () => any
+>G.#q : () => any
+>G : typeof G
+>t : () => void
+>z : 1
+>{ c: G.#q } : { c: () => any; }
+>c : () => any
+>G.#q : () => any
+>G : typeof G
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

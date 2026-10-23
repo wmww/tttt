@@ -1,0 +1,21 @@
+//// [test/cases/bun11-C8.ts] ////
+
+=== a.ts ===
+declare function id<T>(x: T): T;
+>id : Symbol(id, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+>x : Symbol(x, Decl(a.ts, 0, 23))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+>T : Symbol(T, Decl(a.ts, 0, 20))
+
+const g1 = id(function* () { yield 1; });
+>g1 : Symbol(g1, Decl(a.ts, 1, 5))
+>id : Symbol(id, Decl(a.ts, 0, 0))
+
+const t1: string = g1;
+>t1 : Symbol(t1, Decl(a.ts, 2, 5))
+>g1 : Symbol(g1, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

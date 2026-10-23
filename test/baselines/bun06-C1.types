@@ -1,0 +1,24 @@
+//// [test/cases/bun06-C1.ts] ////
+
+=== a.ts ===
+async function* a1() { yield { then(x: number) { } }; }
+>a1 : () => AsyncGenerator<never, void, unknown>
+>yield { then(x: number) { } } : any
+>{ then(x: number) { } } : { then(x: number): void; }
+>then : (x: number) => void
+>x : number
+
+declare const abad: AsyncIterable<{ then(x: number): void }>;
+>abad : AsyncIterable<{ then(x: number): void; }>
+>then : (x: number) => void
+>x : number
+
+async function* a2() { yield* abad; }
+>a2 : () => AsyncGenerator<never, void, any>
+>yield* abad : any
+>abad : AsyncIterable<{ then(x: number): void; }>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

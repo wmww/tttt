@@ -1,0 +1,71 @@
+later.ts(3,70): error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  Property 'toUpperCase' does not exist on type 'number'.
+main.ts(3,58): error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  Property 'toUpperCase' does not exist on type 'number'.
+main.ts(7,70): error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  Property 'toUpperCase' does not exist on type 'number'.
+main.ts(8,64): error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  Property 'toUpperCase' does not exist on type 'number'.
+main.ts(9,66): error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  Property 'toUpperCase' does not exist on type 'number'.
+main.ts(11,42): error TS2322: Type 'string' is not assignable to type 'never'.
+main.ts(11,90): error TS2322: Type 'string' is not assignable to type 'never'.
+main.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "module": "esnext", "lib": ["esnext"], "types": []}, "files": ["globals.ts", "script.ts", "main.ts", "later.ts"]}
+==== globals.ts (0 errors) ====
+    export {}
+    declare global {
+      let counter: string | number
+      var legacy: string | number
+      const fixed: string | number
+      let assignedHere: string | number
+      let assignedThere: string | number
+      namespace Space { let inside: string | number }
+    }
+    assignedHere = 1
+==== later.ts (1 errors) ====
+    export {}
+    if (typeof counter === 'string') { const f = () => counter.toUpperCase() }
+    if (typeof assignedHere === 'string') { const f = () => assignedHere.toUpperCase() }
+                                                                         ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toUpperCase' does not exist on type 'number'.
+    counter = 3
+==== main.ts (7 errors) ====
+    export {}
+    if (typeof counter === 'string') { const f = () => counter.toUpperCase() }
+    if (typeof legacy === 'string') { const f = () => legacy.toUpperCase() }
+                                                             ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toUpperCase' does not exist on type 'number'.
+    if (typeof fixed === 'string') { const f = () => fixed.toUpperCase() }
+    if (typeof assignedHere === 'string') { const f = () => assignedHere.toUpperCase() }
+    if (typeof assignedThere === 'string') { const f = () => assignedThere.toUpperCase() }
+    if (typeof Space.inside === 'string') { const f = () => Space.inside.toUpperCase() }
+                                                                         ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toUpperCase' does not exist on type 'number'.
+    if (typeof scriptLet === 'string') { const f = () => scriptLet.toUpperCase() }
+                                                                   ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toUpperCase' does not exist on type 'number'.
+    if (typeof counter === 'string') { function g() { return counter.toUpperCase() } }
+                                                                     ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toUpperCase' does not exist on type 'number'.
+    if (typeof counter === 'string') { const o = { m() { return counter.toUpperCase() } } }
+    if (typeof counter === 'string') { const probe: never = counter; const f = () => { const inner: never = counter } }
+                                             ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+                                                                                             ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+    assignedThere = 2
+    export const sentinel: number = ''
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== script.ts (0 errors) ====
+    let scriptLet: string | number = 1
+    

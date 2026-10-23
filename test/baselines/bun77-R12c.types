@@ -1,0 +1,25 @@
+//// [test/cases/bun77-R12c.ts] ////
+
+=== a.js ===
+/** @param {number} a @param {number} extra */
+function g3(a) { return class { arguments = 1; constructor(arguments) {} }; }
+>g3 : (a: number) => typeof (Anonymous class)
+>a : number
+>class { arguments = 1; constructor(arguments) {} } : typeof (Anonymous class)
+>arguments : number
+>1 : 1
+>arguments : any
+
+/** @param {number} a @param {number} extra */
+function g1(a) { return class { arguments = 1; }; }
+>g1 : (a: number) => typeof (Anonymous class)
+>a : number
+>class { arguments = 1; } : typeof (Anonymous class)
+>arguments : number
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

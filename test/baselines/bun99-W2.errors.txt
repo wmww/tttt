@@ -1,0 +1,454 @@
+around_v1.ts(8,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+around_v1.ts(8,47): error TS2322: Type '<C extends Comp<any>>(a: C) => Comp<M<GetProps<C> & {}>>' is not assignable to type 'never'.
+around_v1.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v10.ts(8,73): error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+around_v10.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v2.ts(8,66): error TS2322: Type '[unknown, unknown]' is not assignable to type 'never'.
+around_v2.ts(8,81): error TS2345: Argument of type 'Enh<{}, {}>' is not assignable to parameter of type '(b: unknown) => Comp<never>'.
+  Types of parameters 'c' and 'b' are incompatible.
+    Type 'unknown' is not assignable to type 'Comp<never>'.
+around_v2.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v3.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v4.ts(8,71): error TS2322: Type '<C extends Comp<any>>(c: C) => C' is not assignable to type 'never'.
+around_v4.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v5.ts(8,14): error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+around_v5.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v6.ts(8,14): error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+around_v6.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v7.ts(8,57): error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+around_v7.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v8.ts(8,59): error TS2322: Type 'C' is not assignable to type 'never'.
+  Type 'Comp<GetProps<C>>' is not assignable to type 'never'.
+around_v8.ts(8,79): error TS2322: Type 'GetProps<C>' is not assignable to type 'never'.
+  Type 'C extends new () => 0 ? unknown : never' is not assignable to type 'never'.
+    Type 'unknown' is not assignable to type 'never'.
+around_v8.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+around_v9.ts(8,73): error TS2322: Type '<C extends Comp<GetProps<C>>>(a: C) => Comp<M<GetProps<C> & {}>>' is not assignable to type 'never'.
+around_v9.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+issue_index.nodirective.ts(10,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+part_enh_not_alias.ts(7,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+part_enh_not_alias.ts(8,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_enh_other_name.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_enh_plain_constraint.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_flow_enh_first.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_flow_enh_twice.ts(8,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+part_flow_enh_twice.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_flow_hoc_twice.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_flow_two_params.ts(8,23): error TS2345: Argument of type '<C extends Comp<any>>(c: C) => C' is not assignable to parameter of type '(a: unknown) => Comp<any>'.
+  Types of parameters 'c' and 'a' are incompatible.
+    Type 'unknown' is not assignable to type 'Comp<any>'.
+part_flow_two_params.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_hoc_not_generic.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_hoc_other_name.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_hoc_unconstrained.ts(8,28): error TS2345: Argument of type 'Enh<{}, {}>' is not assignable to parameter of type '(b: C) => Comp<never>'.
+  Types of parameters 'c' and 'b' are incompatible.
+    Type 'C' is not assignable to type 'Comp<GetProps<C>>'.
+part_hoc_unconstrained.ts(8,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+part_hoc_unconstrained.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_no_M.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_no_N.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_original.ts(8,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+part_original.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_return_C.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_return_getprops.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_self_constraint_only.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+part_simple_getprops.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "types": [], "moduleDetection": "force"}, "files": ["around_v1.ts", "around_v10.ts", "around_v2.ts", "around_v3.ts", "around_v4.ts", "around_v5.ts", "around_v6.ts", "around_v7.ts", "around_v8.ts", "around_v9.ts", "issue_index.nodirective.ts", "issue_index.ts", "part_enh_not_alias.ts", "part_enh_other_name.ts", "part_enh_plain_constraint.ts", "part_flow_enh_first.ts", "part_flow_enh_twice.ts", "part_flow_hoc_twice.ts", "part_flow_two_params.ts", "part_hoc_not_generic.ts", "part_hoc_other_name.ts", "part_hoc_unconstrained.ts", "part_no_M.ts", "part_no_N.ts", "part_original.ts", "part_return_C.ts", "part_return_getprops.ts", "part_self_constraint_only.ts", "part_simple_getprops.ts"]}
+==== around_v1.ts (3 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh); export const p: never = R;
+                               ~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+                                                  ~
+!!! error TS2322: Type '<C extends Comp<any>>(a: C) => Comp<M<GetProps<C> & {}>>' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v10.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    declare function two<B, C>(f: () => B, g: (b: B) => C): C; export const p: never = two(() => hoc, enh);
+                                                                            ~
+!!! error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v2.ts (3 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    declare function one<B, C>(g: (b: B) => C): [B, C]; export const p: never = one(enh);
+                                                                     ~
+!!! error TS2322: Type '[unknown, unknown]' is not assignable to type 'never'.
+                                                                                    ~~~
+!!! error TS2345: Argument of type 'Enh<{}, {}>' is not assignable to parameter of type '(b: unknown) => Comp<never>'.
+!!! error TS2345:   Types of parameters 'c' and 'b' are incompatible.
+!!! error TS2345:     Type 'unknown' is not assignable to type 'Comp<never>'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v3.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    declare function ctx(g: (b: Comp<{}>) => unknown): void; ctx(enh);
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v4.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    declare function ctx2<B>(b: B, g: (b: B) => unknown): B; export const p: never = ctx2(hoc, enh);
+                                                                          ~
+!!! error TS2322: Type '<C extends Comp<any>>(c: C) => C' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v5.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const p: never = enh(null! as Comp<{}>);
+                 ~
+!!! error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v6.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const p: never = enh(hoc);
+                 ~
+!!! error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v7.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    declare const x: Comp<GetProps<Comp<{}>>>; export const p: never = x;
+                                                            ~
+!!! error TS2322: Type 'Comp<never>' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v8.ts (3 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    function inner<C extends Comp<GetProps<C>>>(c: C) { const p: never = c; const q: never = null! as GetProps<C>; }
+                                                              ~
+!!! error TS2322: Type 'C' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Comp<GetProps<C>>' is not assignable to type 'never'.
+                                                                                  ~
+!!! error TS2322: Type 'GetProps<C>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'C extends new () => 0 ? unknown : never' is not assignable to type 'never'.
+!!! error TS2322:     Type 'unknown' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== around_v9.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    declare function flow1<A, B>(f: (a: A) => B): (a: A) => B; export const p: never = flow1(enh);
+                                                                            ~
+!!! error TS2322: Type '<C extends Comp<GetProps<C>>>(a: C) => Comp<M<GetProps<C> & {}>>' is not assignable to type 'never'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== issue_index.nodirective.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    
+    export const R = flow(hoc, enh);
+                               ~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+==== issue_index.ts (0 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    
+    // @ts-expect-error
+    export const R = flow(hoc, enh);
+==== part_enh_not_alias.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & {}>>;
+    export const R = flow(hoc, enh);
+                               ~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_enh_other_name.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <E extends Comp<GetProps<E>>>(c: E) => Comp<M<GetProps<E> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_enh_plain_constraint.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<any>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_flow_enh_first.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(enh, hoc);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_flow_enh_twice.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(enh, enh);
+                               ~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_flow_hoc_twice.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, hoc);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_flow_two_params.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B>(f: (a: A) => B, g: (b: B) => unknown): A;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+                          ~~~
+!!! error TS2345: Argument of type '<C extends Comp<any>>(c: C) => C' is not assignable to parameter of type '(a: unknown) => Comp<any>'.
+!!! error TS2345:   Types of parameters 'c' and 'a' are incompatible.
+!!! error TS2345:     Type 'unknown' is not assignable to type 'Comp<any>'.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_hoc_not_generic.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: (c: Comp<{}>) => Comp<{}>;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_hoc_other_name.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <D extends Comp<any>>(c: D) => D;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_hoc_unconstrained.ts (3 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+                               ~~~
+!!! error TS2345: Argument of type 'Enh<{}, {}>' is not assignable to parameter of type '(b: C) => Comp<never>'.
+!!! error TS2345:   Types of parameters 'c' and 'b' are incompatible.
+!!! error TS2345:     Type 'C' is not assignable to type 'Comp<GetProps<C>>'.
+!!! related TS2208 part_hoc_unconstrained.ts:6:21: This type parameter might need an `extends Comp<GetProps<C>>` constraint.
+                               ~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_no_M.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<GetProps<C> & N>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_no_N.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C>>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_original.ts (2 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+                               ~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_return_C.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => C;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_return_getprops.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => GetProps<C>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_self_constraint_only.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? P : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => C;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== part_simple_getprops.ts (1 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends Comp<infer P> ? P : never;
+    type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends Comp<any>>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,19 @@
+a.ts(2,1): error TS2693: 'OnlyT' only refers to a type, but is being used as a value here.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (2 errors) ====
+    import { OnlyT } from "./real";
+    OnlyT;
+    ~~~~~
+!!! error TS2693: 'OnlyT' only refers to a type, but is being used as a value here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== real.ts (0 errors) ====
+    namespace g2 { export interface OnlyT { t: 1 } }
+    const g2 = { v: 1 };
+    export = g2;
+    

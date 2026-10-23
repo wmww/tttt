@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '{ k: { get a(): 1; set a(v: 2); }; fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: 1; p0: 1; p1: 1; p2: 1; p3: 1; p4: 1; p5: 1; p6: 1; p7: 1; p8: 1; p9: 1; }' is not assignable to type 'string'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const o: { get a(): 1; set a(v: 2) };
+    const v: string = null! as { k: typeof o; fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: 1; p0: 1; p1: 1; p2: 1; p3: 1; p4: 1; p5: 1; p6: 1; p7: 1; p8: 1; p9: 1 };
+          ~
+!!! error TS2322: Type '{ k: { get a(): 1; set a(v: 2); }; fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: 1; p0: 1; p1: 1; p2: 1; p3: 1; p4: 1; p5: 1; p6: 1; p7: 1; p8: 1; p9: 1; }' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

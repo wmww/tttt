@@ -1,0 +1,10 @@
+//// [test/cases/bun43-C14b.ts] ////
+
+=== a.ts ===
+var s = f<"abc
+>s : any
+>f<"abc>() : any
+>f : any
+
+>();
+

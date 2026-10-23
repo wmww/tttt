@@ -1,0 +1,117 @@
+//// [test/cases/bun83-R13a.ts] ////
+
+=== d01.ts ===
+function w() { var v = (a, ...) => 1; }
+>w : { (): void; (q?: any, ...: any[]): any; }
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+>1 : 1
+
+=== d03.ts ===
+var v = (a, ...);
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+
+=== d07.ts ===
+var v = <T>(a, ...) => 1;
+>v : any
+><T>(a, : T
+>(a, : any
+>a, : any
+>a : any
+> : any
+>1 : 1
+
+=== d08.ts ===
+var v = (a, ...,) => 1;
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+>1 : 1
+
+=== d09.ts ===
+var v = (a, ... = 1) => 1;
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+>1 : 1
+>1 : 1
+
+=== d10.ts ===
+var v = (a, ...: any) => 1;
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+>any : any
+>1 : 1
+
+=== d12.ts ===
+var v = (a, ...1) => 1;
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+>1 : 1
+>1 : 1
+
+=== d15.ts ===
+var v = (a, ...) => { };
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+
+=== d16.ts ===
+f((a, ...) => 1);
+>f((a, ...) : any
+>f : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+>... : any
+> : any
+>1 : 1
+
+=== e061.ts ===
+(a, ...) => 1;
+>(a, : any
+>a, : any
+>a : any
+> : any
+>1 : 1
+
+=== p061.ts ===
+async function w(q = (a, ...) => 1) {}
+>w : { (): void; (q?: any, ...: any[]): any; }
+>q : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+> : any[]
+>1 : 1
+
+=== s061.ts ===
+var v = (a, ...) => 1;
+>v : any
+>(a, : any
+>a, : any
+>a : any
+> : any
+>1 : 1
+

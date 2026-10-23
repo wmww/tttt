@@ -1,0 +1,12 @@
+//// [test/cases/bun32-C23.ts] ////
+
+=== a.ts ===
+class A { set r(this: string) {} }
+>A : A
+>r : string
+>this : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

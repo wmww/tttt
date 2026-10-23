@@ -1,0 +1,39 @@
+//// [test/cases/bun72-R10a.ts] ////
+
+=== a.ts ===
+type Primitive = string | number | boolean | null | undefined;
+>Primitive : Primitive
+
+type DeepReadonly<T> = T extends Primitive ? T : { readonly [K in keyof T]: DeepReadonly<T[K]> };
+>DeepReadonly : DeepReadonly<T>
+
+class Store<S> { snapshot!: S }
+>Store : Store<S>
+>snapshot : S
+
+class App extends Store<DeepReadonly<App>> { count = 1 }
+>App : App
+>Store : Store<{ readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: any; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }>
+>count : number
+>1 : 1
+
+class Other extends Store<Exclude<Other, null | undefined>> { count = 1 }
+>Other : Other
+>Store : Store<Other>
+>count : number
+>1 : 1
+
+new App().snapshot.count = 2;
+>new App().snapshot.count = 2 : 2
+>new App().snapshot.count : any
+>new App().snapshot : { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: any; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }
+>new App() : App
+>App : typeof App
+>snapshot : { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: { readonly snapshot: any; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }; readonly count: number; }
+>count : any
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

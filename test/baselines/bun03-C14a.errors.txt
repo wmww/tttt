@@ -1,0 +1,15 @@
+a.ts(1,42): error TS2512: Overload signatures must all be abstract or non-abstract.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    abstract class A { foo(): void; abstract foo(x: number): void; }
+                                             ~~~
+!!! error TS2512: Overload signatures must all be abstract or non-abstract.
+    class D extends A {}
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

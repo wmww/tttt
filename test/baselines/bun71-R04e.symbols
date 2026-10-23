@@ -1,0 +1,153 @@
+//// [test/cases/bun71-R04e.ts] ////
+
+=== a.ts ===
+export {};
+declare function use(...x: any[]): void;
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>x : Symbol(x, Decl(a.ts, 1, 21))
+
+class G<T> { f() {} g(): void {} h(x: T): T { return x; } }
+>G : Symbol(G, Decl(a.ts, 1, 40))
+>T : Symbol(T, Decl(a.ts, 2, 8))
+>f : Symbol(G.f, Decl(a.ts, 2, 12))
+>g : Symbol(G.g, Decl(a.ts, 2, 19))
+>h : Symbol(G.h, Decl(a.ts, 2, 32))
+>x : Symbol(x, Decl(a.ts, 2, 35))
+>T : Symbol(T, Decl(a.ts, 2, 8))
+>T : Symbol(T, Decl(a.ts, 2, 8))
+>x : Symbol(x, Decl(a.ts, 2, 35))
+
+class A { f() {} g(): void {} p = () => {};
+>A : Symbol(A, Decl(a.ts, 2, 59))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+>g : Symbol(A.g, Decl(a.ts, 3, 16))
+>p : Symbol(A.p, Decl(a.ts, 3, 29))
+
+  m(other: A) {
+>m : Symbol(A.m, Decl(a.ts, 3, 43))
+>other : Symbol(other, Decl(a.ts, 4, 4))
+>A : Symbol(A, Decl(a.ts, 2, 59))
+
+    use(this.f && other.f());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>this.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>this : Symbol(A, Decl(a.ts, 2, 59))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+>other.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>other : Symbol(other, Decl(a.ts, 4, 4))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+
+    use(this.p && other.p());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>this.p : Symbol(A.p, Decl(a.ts, 3, 29))
+>this : Symbol(A, Decl(a.ts, 2, 59))
+>p : Symbol(A.p, Decl(a.ts, 3, 29))
+>other.p : Symbol(A.p, Decl(a.ts, 3, 29))
+>other : Symbol(other, Decl(a.ts, 4, 4))
+>p : Symbol(A.p, Decl(a.ts, 3, 29))
+
+    use(other.f && this.f());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>other.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>other : Symbol(other, Decl(a.ts, 4, 4))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+>this.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>this : Symbol(A, Decl(a.ts, 2, 59))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+
+    use(this.g && other.g());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>this.g : Symbol(A.g, Decl(a.ts, 3, 16))
+>this : Symbol(A, Decl(a.ts, 2, 59))
+>g : Symbol(A.g, Decl(a.ts, 3, 16))
+>other.g : Symbol(A.g, Decl(a.ts, 3, 16))
+>other : Symbol(other, Decl(a.ts, 4, 4))
+>g : Symbol(A.g, Decl(a.ts, 3, 16))
+
+    use(this.f && this.f());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>this.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>this : Symbol(A, Decl(a.ts, 2, 59))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+>this.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>this : Symbol(A, Decl(a.ts, 2, 59))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+  }
+}
+declare const g1: G<number>, g2: G<string>, g3: G<number>;
+>g1 : Symbol(g1, Decl(a.ts, 12, 13))
+>G : Symbol(G, Decl(a.ts, 1, 40))
+>g2 : Symbol(g2, Decl(a.ts, 12, 28))
+>G : Symbol(G, Decl(a.ts, 1, 40))
+>g3 : Symbol(g3, Decl(a.ts, 12, 43))
+>G : Symbol(G, Decl(a.ts, 1, 40))
+
+use(g1.f && g2.f());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>g1.f : Symbol(G.f, Decl(a.ts, 2, 12))
+>g1 : Symbol(g1, Decl(a.ts, 12, 13))
+>f : Symbol(G.f, Decl(a.ts, 2, 12))
+>g2.f : Symbol(G.f, Decl(a.ts, 2, 12))
+>g2 : Symbol(g2, Decl(a.ts, 12, 28))
+>f : Symbol(G.f, Decl(a.ts, 2, 12))
+
+use(g1.g && g2.g());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>g1.g : Symbol(G.g, Decl(a.ts, 2, 19))
+>g1 : Symbol(g1, Decl(a.ts, 12, 13))
+>g : Symbol(G.g, Decl(a.ts, 2, 19))
+>g2.g : Symbol(G.g, Decl(a.ts, 2, 19))
+>g2 : Symbol(g2, Decl(a.ts, 12, 28))
+>g : Symbol(G.g, Decl(a.ts, 2, 19))
+
+use(g1.h && g2.h(""));
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>g1.h : Symbol(G.h, Decl(a.ts, 2, 32))
+>g1 : Symbol(g1, Decl(a.ts, 12, 13))
+>h : Symbol(G.h, Decl(a.ts, 2, 32))
+>g2.h : Symbol(G.h, Decl(a.ts, 2, 32))
+>g2 : Symbol(g2, Decl(a.ts, 12, 28))
+>h : Symbol(G.h, Decl(a.ts, 2, 32))
+
+use(g1.f && g3.f());
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>g1.f : Symbol(G.f, Decl(a.ts, 2, 12))
+>g1 : Symbol(g1, Decl(a.ts, 12, 13))
+>f : Symbol(G.f, Decl(a.ts, 2, 12))
+>g3.f : Symbol(G.f, Decl(a.ts, 2, 12))
+>g3 : Symbol(g3, Decl(a.ts, 12, 43))
+>f : Symbol(G.f, Decl(a.ts, 2, 12))
+
+function tp<T extends A>(t: T, a: A) { use(t.f && a.f()); use(t.g && a.g()); use(t.f && t.f()); }
+>tp : Symbol(tp, Decl(a.ts, 16, 20))
+>T : Symbol(T, Decl(a.ts, 17, 12))
+>A : Symbol(A, Decl(a.ts, 2, 59))
+>t : Symbol(t, Decl(a.ts, 17, 25))
+>T : Symbol(T, Decl(a.ts, 17, 12))
+>a : Symbol(a, Decl(a.ts, 17, 30))
+>A : Symbol(A, Decl(a.ts, 2, 59))
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>t.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>t : Symbol(t, Decl(a.ts, 17, 25))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+>a.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>a : Symbol(a, Decl(a.ts, 17, 30))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>t.g : Symbol(A.g, Decl(a.ts, 3, 16))
+>t : Symbol(t, Decl(a.ts, 17, 25))
+>g : Symbol(A.g, Decl(a.ts, 3, 16))
+>a.g : Symbol(A.g, Decl(a.ts, 3, 16))
+>a : Symbol(a, Decl(a.ts, 17, 30))
+>g : Symbol(A.g, Decl(a.ts, 3, 16))
+>use : Symbol(use, Decl(a.ts, 0, 10))
+>t.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>t : Symbol(t, Decl(a.ts, 17, 25))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+>t.f : Symbol(A.f, Decl(a.ts, 3, 9))
+>t : Symbol(t, Decl(a.ts, 17, 25))
+>f : Symbol(A.f, Decl(a.ts, 3, 9))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

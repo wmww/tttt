@@ -1,0 +1,20 @@
+//// [test/cases/bun07-C16.ts] ////
+
+=== a.ts ===
+export {};
+declare let onu: { n: number } | undefined;
+>onu : { n: number; } | undefined
+>n : number
+
+const r5: null = (({}) = onu);
+>r5 : null
+>(({}) = onu) : { n: number; } | undefined
+>({}) = onu : { n: number; } | undefined
+>({}) : {}
+>{} : {}
+>onu : { n: number; } | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

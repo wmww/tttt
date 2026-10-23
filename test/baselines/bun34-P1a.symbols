@@ -1,0 +1,12 @@
+//// [test/cases/bun34-P1a.ts] ////
+
+=== a.ts ===
+interface X {}
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+class C implements (X) {}
+>C : Symbol(C, Decl(a.ts, 0, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun10-C7.ts] ////
+
+=== a.ts ===
+function f1() { return g1(); }
+>f1 : () => never
+>g1() : never
+>g1 : () => never
+
+const g1 = f1;
+>g1 : () => never
+>f1 : () => never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

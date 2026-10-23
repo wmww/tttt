@@ -1,0 +1,18 @@
+//// [test/cases/bun03-C14b.ts] ////
+
+=== a.ts ===
+abstract class A { get x(): number { return 1 } abstract set x(v: number); }
+>A : A
+>x : number
+>1 : 1
+>x : number
+>v : number
+
+class D extends A {}
+>D : D
+>A : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

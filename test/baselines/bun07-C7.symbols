@@ -1,0 +1,16 @@
+//// [test/cases/bun07-C7.ts] ////
+
+=== a.ts ===
+export {};
+const o3 = { ...s3, a: (() => s3)() }; var s3 = { z: o3.a };
+>o3 : Symbol(o3, Decl(a.ts, 1, 5))
+>s3 : Symbol(s3, Decl(a.ts, 1, 42))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+>s3 : Symbol(s3, Decl(a.ts, 1, 42))
+>s3 : Symbol(s3, Decl(a.ts, 1, 42))
+>z : Symbol(z, Decl(a.ts, 1, 49))
+>o3 : Symbol(o3, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

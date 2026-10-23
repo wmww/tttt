@@ -1,0 +1,15 @@
+a.tsx(2,80): error TS2746: This JSX tag's 'children' prop expects a single child of type 'P["children"]', but multiple children were provided.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    function W<P extends { children: number }>(C: (p: P) => JSX.Element) { return <C>{"a"}{"b"}</C>; }
+                                                                                   ~
+!!! error TS2746: This JSX tag's 'children' prop expects a single child of type 'P["children"]', but multiple children were provided.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

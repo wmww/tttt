@@ -1,0 +1,143 @@
+//// [test/cases/bun72-R19.ts] ////
+
+=== a.ts ===
+declare function pair<A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S): (a: A, b: B) => [R, S];
+>pair : <A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S) => (a: A, b: B) => [R, S]
+>f : new (...a: A) => R
+>a : A
+>g : new (...b: B) => S
+>b : B
+>a : A
+>b : B
+
+declare function pairF<A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S): (a: A, b: B) => [R, S];
+>pairF : <A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S) => (a: A, b: B) => [R, S]
+>f : (...a: A) => R
+>a : A
+>g : (...b: B) => S
+>b : B
+>a : A
+>b : B
+
+declare function f1<T>(t: T): T;
+>f1 : <T>(t: T) => T
+>t : T
+
+declare function f2<T, U extends T[]>(t: T, u: U): [T, U];
+>f2 : <T, U extends T[]>(t: T, u: U) => [T, U]
+>t : T
+>u : U
+
+declare function f3<U extends T[], T>(t: T, u: U): [T, U];
+>f3 : <U extends T[], T>(t: T, u: U) => [T, U]
+>t : T
+>u : U
+
+declare function f4<T, U = T>(t: T, u: U): [T, U];
+>f4 : <T, U = T>(t: T, u: U) => [T, U]
+>t : T
+>u : U
+
+declare function f5<T, K extends keyof T>(t: T, k: K): T[K];
+>f5 : <T, K extends keyof T>(t: T, k: K) => T[K]
+>t : T
+>k : K
+
+declare class C1<T> { constructor(t: T) }
+>C1 : C1<T>
+>t : T
+
+declare class C2<T, U extends T[]> { constructor(t: T, u: U) }
+>C2 : C2<T, U>
+>t : T
+>u : U
+
+declare class C3<U extends T[], T> { constructor(t: T, u: U) }
+>C3 : C3<U, T>
+>t : T
+>u : U
+
+declare class C4<T, U = T> { constructor(t: T, u: U) }
+>C4 : C4<T, U>
+>t : T
+>u : U
+
+declare class C5<T, K extends keyof T> { constructor(t: T, k: K) }
+>C5 : C5<T, K>
+>t : T
+>k : K
+
+const a1: 0 = pairF(f1, f2);
+>a1 : 0
+>pairF(f1, f2) : (a: unknown[], b: unknown[]) => [unknown, unknown]
+>pairF : <A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S) => (a: A, b: B) => [R, S]
+>f1 : <T>(t: T) => T
+>f2 : <T, U extends T[]>(t: T, u: U) => [T, U]
+
+const a2: 0 = pairF(f1, f3);
+>a2 : 0
+>pairF(f1, f3) : (a: unknown[], b: unknown[]) => [unknown, unknown]
+>pairF : <A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S) => (a: A, b: B) => [R, S]
+>f1 : <T>(t: T) => T
+>f3 : <U extends T[], T>(t: T, u: U) => [T, U]
+
+const a3: 0 = pairF(f1, f4);
+>a3 : 0
+>pairF(f1, f4) : <T, T1, U = T_1>(a: [t: T], b: [t: T1, u: U]) => [T, [T1, U]]
+>pairF : <A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S) => (a: A, b: B) => [R, S]
+>f1 : <T>(t: T) => T
+>f4 : <T, U = T>(t: T, u: U) => [T, U]
+
+const a4: 0 = pairF(f1, f5);
+>a4 : 0
+>pairF(f1, f5) : (a: unknown[], b: unknown[]) => [unknown, unknown]
+>pairF : <A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S) => (a: A, b: B) => [R, S]
+>f1 : <T>(t: T) => T
+>f5 : <T, K extends keyof T>(t: T, k: K) => T[K]
+
+const a5: 0 = pairF(f2, f1);
+>a5 : 0
+>pairF(f2, f1) : <T, U extends T[], T1>(a: [t: T, u: U], b: [t: T1]) => [[T, U], T1]
+>pairF : <A extends unknown[], R, B extends unknown[], S>(f: (...a: A) => R, g: (...b: B) => S) => (a: A, b: B) => [R, S]
+>f2 : <T, U extends T[]>(t: T, u: U) => [T, U]
+>f1 : <T>(t: T) => T
+
+const b1: 0 = pair(C1, C2);
+>b1 : 0
+>pair(C1, C2) : (a: unknown[], b: unknown[]) => [unknown, unknown]
+>pair : <A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S) => (a: A, b: B) => [R, S]
+>C1 : typeof C1
+>C2 : typeof C2
+
+const b2: 0 = pair(C1, C3);
+>b2 : 0
+>pair(C1, C3) : (a: unknown[], b: unknown[]) => [unknown, unknown]
+>pair : <A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S) => (a: A, b: B) => [R, S]
+>C1 : typeof C1
+>C3 : typeof C3
+
+const b3: 0 = pair(C1, C4);
+>b3 : 0
+>pair(C1, C4) : <T, T1, U = T_1>(a: [t: T], b: [t: T1, u: U]) => [C1<T>, C4<T1, U>]
+>pair : <A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S) => (a: A, b: B) => [R, S]
+>C1 : typeof C1
+>C4 : typeof C4
+
+const b4: 0 = pair(C1, C5);
+>b4 : 0
+>pair(C1, C5) : (a: unknown[], b: unknown[]) => [unknown, unknown]
+>pair : <A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S) => (a: A, b: B) => [R, S]
+>C1 : typeof C1
+>C5 : typeof C5
+
+const b5: 0 = pair(C2, C1);
+>b5 : 0
+>pair(C2, C1) : <T, U extends T[], T1>(a: [t: T, u: U], b: [t: T1]) => [C2<T, U>, C1<T1>]
+>pair : <A extends unknown[], R, B extends unknown[], S>(f: new (...a: A) => R, g: new (...b: B) => S) => (a: A, b: B) => [R, S]
+>C2 : typeof C2
+>C1 : typeof C1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

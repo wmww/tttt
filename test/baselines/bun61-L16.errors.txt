@@ -1,0 +1,64 @@
+p001.ts(1,15): error TS1260: Keywords cannot contain escape characters.
+p001.ts(1,27): error TS2687: All declarations of 'z' must have identical modifiers.
+p002.ts(1,15): error TS1260: Keywords cannot contain escape characters.
+p003.ts(1,15): error TS1260: Keywords cannot contain escape characters.
+p004.ts(1,24): error TS1260: Keywords cannot contain escape characters.
+p004.ts(1,36): error TS2687: All declarations of 'z' must have identical modifiers.
+p005.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+p006.ts(1,15): error TS1260: Keywords cannot contain escape characters.
+p007.ts(1,7): error TS2300: Duplicate identifier 'C'.
+p007.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+p008.ts(1,7): error TS2300: Duplicate identifier 'C'.
+p008.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+p009.ts(1,12): error TS1260: Keywords cannot contain escape characters.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== p001.ts (2 errors) ====
+    interface I { \u0065xport z: 1 }
+                  ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                              ~
+!!! error TS2687: All declarations of 'z' must have identical modifiers.
+==== p002.ts (1 errors) ====
+    interface I { \u0069n z: 1 }
+                  ~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== p003.ts (1 errors) ====
+    interface I { d\u0065fault class: 1 }
+                  ~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== p004.ts (2 errors) ====
+    interface I { readonly \u0065xport z: 1 }
+                           ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                                       ~
+!!! error TS2687: All declarations of 'z' must have identical modifiers.
+==== p005.ts (1 errors) ====
+    type T = { \u0065xport z: 1 }
+               ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== p006.ts (1 errors) ====
+    interface I { \u0065xport [k: string]: 1 }
+                  ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== p007.ts (2 errors) ====
+    class C { \u0065xport z = 1 }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 p008.ts:1:7: 'C' was also declared here.
+              ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== p008.ts (2 errors) ====
+    class C { \u0063onst z = 1 }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 p007.ts:1:7: 'C' was also declared here.
+              ~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== p009.ts (1 errors) ====
+    function f(\u0065xport z: number) {}
+               ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

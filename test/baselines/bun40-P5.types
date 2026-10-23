@@ -1,0 +1,15 @@
+//// [test/cases/bun40-P5.ts] ////
+
+=== __inferred type names__.ts ===
+declare const c: 1;
+>c : 1
+
+=== a.ts ===
+const f: 0 = foo;
+>f : 0
+>foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

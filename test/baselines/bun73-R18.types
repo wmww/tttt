@@ -1,0 +1,70 @@
+//// [test/cases/bun73-R18.ts] ////
+
+=== a.ts ===
+type Props = Readonly<{ x: number }>;
+>Props : Readonly<{ x: number; }>
+>x : number
+
+interface Box<T> { p: Props; v: T }
+>p : Readonly<{ x: number; }>
+>v : T
+
+type GA<T> = { p: Props; t: T };
+>GA : GA<T>
+>p : Readonly<{ x: number; }>
+>t : T
+
+declare const b: Box<number>;
+>b : Box<number>
+
+declare const u0: Props | Box<number>["p"]; const n0: never = u0;
+>u0 : Readonly<{ x: number; }> | Readonly<{ x: number; }>
+>n0 : never
+>u0 : Readonly<{ x: number; }> | Readonly<{ x: number; }>
+
+declare const u1: [Props] | [typeof b.p]; const n1: never = u1;
+>u1 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+>b.p : Readonly<{ x: number; }>
+>b : Box<number>
+>p : Readonly<{ x: number; }>
+>n1 : never
+>u1 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+
+declare const u2: [Props] | [Box<number>["p"]]; const n2: never = u2;
+>u2 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+>n2 : never
+>u2 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+
+declare const u3: [Props] | [GA<number>["p"]]; const n3: never = u3;
+>u3 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+>n3 : never
+>u3 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+
+declare const u4: Props & Box<number>["p"]; const n4: never = u4;
+>u4 : Readonly<{ x: number; }> & Readonly<{ x: number; }>
+>n4 : never
+>u4 : Readonly<{ x: number; }> & Readonly<{ x: number; }>
+
+// right since batch 1: the return type of a generic function, an element of a generic tuple alias
+declare function g<T>(t: T): Props; const r = g(1); declare const u5: [Props] | [typeof r]; const n5: never = u5;
+>g : <T>(t: T) => Props
+>t : T
+>r : Readonly<{ x: number; }>
+>g(1) : Readonly<{ x: number; }>
+>g : <T>(t: T) => Props
+>1 : 1
+>u5 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+>r : Readonly<{ x: number; }>
+>n5 : never
+>u5 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+
+type GT<T> = [Props, T]; declare const u6: [Props] | [GT<1>[0]]; const n6: never = u6;
+>GT : GT<T>
+>u6 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+>n6 : never
+>u6 : [Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

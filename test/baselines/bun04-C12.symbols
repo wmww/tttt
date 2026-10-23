@@ -1,0 +1,19 @@
+//// [test/cases/bun04-C12.ts] ////
+
+=== a.ts ===
+import { K } from "./m";
+>K : Symbol(K, Decl(a.ts, 0, 8), Decl(a.ts, 0, 24))
+
+export namespace K {}
+>K : Symbol(K, Decl(a.ts, 0, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+class K {}
+>K : Symbol(K, Decl(m.ts, 0, 0))
+
+export type { K };
+>K : Symbol(K, Decl(m.ts, 1, 13))
+

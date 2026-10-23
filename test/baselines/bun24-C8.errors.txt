@@ -1,0 +1,17 @@
+a.ts(2,7): error TS2322: Type '{}' is not assignable to type '{ (a: { [G.s]: 1; }): void; (q: 1): 1; }'.
+  Type '{}' provides no match for the signature '(a: { [G<T>.s]: 1; }): void'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class G<T> { static readonly s: unique symbol; }
+    const t: { (a: { [G.s]: 1 }): void; (q: 1): 1 } = {};
+          ~
+!!! error TS2322: Type '{}' is not assignable to type '{ (a: { [G.s]: 1; }): void; (q: 1): 1; }'.
+!!! error TS2322:   Type '{}' provides no match for the signature '(a: { [G<T>.s]: 1; }): void'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

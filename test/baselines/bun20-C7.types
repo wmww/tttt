@@ -1,0 +1,28 @@
+//// [test/cases/bun20-C7.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+function q1() { let x: string | number = ""; while (cond()) { try { if (cond()) { x = 1; throw 0; } } finally { if (cond()) continue; } x.length; } }
+>q1 : () => void
+>x : string | number
+>"" : ""
+>cond() : boolean
+>cond : () => boolean
+>cond() : boolean
+>cond : () => boolean
+>x = 1 : 1
+>x : string | number
+>1 : 1
+>0 : 0
+>cond() : boolean
+>cond : () => boolean
+>x.length : number
+>x : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

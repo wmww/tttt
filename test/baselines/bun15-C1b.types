@@ -1,0 +1,13 @@
+//// [test/cases/bun15-C1b.ts] ////
+
+=== a.ts ===
+function k<T extends unknown[]>(a: Uppercase<string & [...T]>) { const x1: number = a; }
+>k : <T extends unknown[]>(a: Uppercase<string & [...T]>) => void
+>a : Uppercase<`${string & [...T]}`>
+>x1 : number
+>a : Uppercase<`${string & [...T]}`>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun10-C1c.ts] ////
+
+=== a.ts ===
+function i3<T>(x: T, y = i3(x, 1 as any)) { return y; }
+>i3 : Symbol(i3, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 15))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>y : Symbol(y, Decl(a.ts, 0, 20))
+>i3 : Symbol(i3, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 15))
+>y : Symbol(y, Decl(a.ts, 0, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

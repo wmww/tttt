@@ -1,0 +1,16 @@
+a.tsx(1,57): error TS2608: The global type 'JSX.ElementAttributesProperty' may not have more than one property.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } type ElementAttributesProperty = string; interface IntrinsicElements {} }
+                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2608: The global type 'JSX.ElementAttributesProperty' may not have more than one property.
+    class K { constructor(p: { c: number }) {} }
+    const a = <K c={1} />;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

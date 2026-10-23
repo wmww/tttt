@@ -1,0 +1,10 @@
+//// [test/cases/bun42-C5b.ts] ////
+
+=== a.ts ===
+/// <reference path="./upper.TS" />
+const a: 1 = upperGlobal;
+>a : Symbol(a, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

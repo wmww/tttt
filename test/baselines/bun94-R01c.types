@@ -1,0 +1,41 @@
+//// [test/cases/bun94-R01c.ts] ////
+
+=== b.ts ===
+import { a, a2 } from "./a";
+>a : any
+>a2 : any
+
+const o = { foo2: a2, foo: a };
+>o : any
+>{ foo2: a2, foo: a } : { foo2: any; foo: any; }
+>foo2 : any
+>a2 : any
+>foo : any
+>a : any
+
+export = o;
+>o : any
+
+=== a.ts ===
+import * as ns from "./b";
+>ns : any
+
+import * as ns2 from "./b";
+>ns2 : any
+
+export const a2 = ns.foo2;
+>a2 : any
+>ns.foo2 : any
+>ns : any
+>foo2 : any
+
+export const a = ns2.foo;
+>a : any
+>ns2.foo : any
+>ns2 : any
+>foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

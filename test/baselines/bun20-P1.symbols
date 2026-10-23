@@ -1,0 +1,26 @@
+//// [test/cases/bun20-P1.ts] ////
+
+=== a.ts ===
+interface H { a?: number; hasOwnProperty(k: string): this is H; }
+>H : Symbol(H, Decl(a.ts, 0, 0))
+>a : Symbol(H.a, Decl(a.ts, 0, 13))
+>hasOwnProperty : Symbol(H.hasOwnProperty, Decl(a.ts, 0, 25))
+>k : Symbol(k, Decl(a.ts, 0, 41))
+>H : Symbol(H, Decl(a.ts, 0, 0))
+
+function f(x: H) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+>f : Symbol(f, Decl(a.ts, 0, 65))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>H : Symbol(H, Decl(a.ts, 0, 0))
+>x.hasOwnProperty : Symbol(H.hasOwnProperty, Decl(a.ts, 0, 25))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>hasOwnProperty : Symbol(H.hasOwnProperty, Decl(a.ts, 0, 25))
+>x.a.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x.a : Symbol(H.a, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 1, 11))
+>a : Symbol(H.a, Decl(a.ts, 0, 13))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

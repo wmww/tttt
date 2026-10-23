@@ -1,0 +1,24 @@
+//// [test/cases/bun19-C3b.ts] ////
+
+=== a.ts ===
+import * as m4 from "./m4";
+>m4 : typeof m4
+
+const t: { a?: string } = m4;
+>t : { a?: string; }
+>a : string | undefined
+>m4 : typeof m4
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+
+=== m4.ts ===
+
+export type * from "./m1";
+

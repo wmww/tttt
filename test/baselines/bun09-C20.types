@@ -1,0 +1,27 @@
+//// [test/cases/bun09-C20.ts] ////
+
+=== a.ts ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+interface I6 { [k](): number }
+>[k] : () => number
+>k : "foo"
+
+interface I6 { foo: string }
+>foo : string
+
+declare const i6: I6;
+>i6 : I6
+
+const a6: never = i6.foo;
+>a6 : never
+>i6.foo : string
+>i6 : I6
+>foo : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

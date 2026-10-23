@@ -1,0 +1,20 @@
+//// [test/cases/bun10-C16b.ts] ////
+
+=== a.ts ===
+class P { y = 1; constructor(...args: any[]) {} }
+>P : P
+>y : number
+>1 : 1
+>args : any[]
+
+function f2<T extends typeof P>(base: T) { class D extends base<string> { } }
+>f2 : <T extends typeof P>(base: T) => void
+>P : typeof P
+>base : T
+>D : D
+>base : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

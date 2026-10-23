@@ -1,0 +1,15 @@
+//// [test/cases/bun03-C2d.ts] ////
+
+=== a.ts ===
+declare const TB: new () => [() => void];
+>TB : new () => [() => void]
+
+class D extends TB { 0() {} }
+>D : D
+>TB : [() => void]
+>0 : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

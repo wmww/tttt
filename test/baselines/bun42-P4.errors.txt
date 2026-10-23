@@ -1,0 +1,29 @@
+a.ts(2,14): error TS2883: The inferred type of 'v' cannot be named without a reference to 'T' from 'outer/node_modules/Binner'. This is likely not portable. A type annotation is necessary.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "declaration": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (2 errors) ====
+    import { mk } from "outer";
+    export const v = mk();
+                 ~
+!!! error TS2883: The inferred type of 'v' cannot be named without a reference to 'T' from 'outer/node_modules/Binner'. This is likely not portable. A type annotation is necessary.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/outer/index.d.ts (0 errors) ====
+    import { T } from "Binner";
+    import { T as T2 } from "ainner";
+    export declare function mk(): T;
+==== node_modules/outer/node_modules/Binner/index.d.ts (0 errors) ====
+    export interface T { t: 1 }
+==== node_modules/outer/node_modules/Binner/package.json (0 errors) ====
+    { "name": "inner", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/outer/node_modules/ainner/index.d.ts (0 errors) ====
+    export interface T { t: 1 }
+==== node_modules/outer/node_modules/ainner/package.json (0 errors) ====
+    { "name": "inner", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/outer/package.json (0 errors) ====
+    { "name": "outer", "version": "1.0.0", "types": "index.d.ts" }
+    

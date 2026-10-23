@@ -1,0 +1,34 @@
+//// [test/cases/bun17-C6b.ts] ////
+
+=== a.ts ===
+class BA { constructor(x: { a: 1 }) {} }
+>BA : BA
+>x : { a: 1; }
+>a : 1
+
+class DA extends BA {}
+>DA : DA
+>BA : BA
+
+class BD { constructor(x: { a: 1; d: 1 }) {} }
+>BD : BD
+>x : { a: 1; d: 1; }
+>a : 1
+>d : 1
+
+declare const cnd: boolean;
+>cnd : boolean
+
+(cnd ? DA : BD).nope;
+>(cnd ? DA : BD).nope : any
+>(cnd ? DA : BD) : typeof DA
+>cnd ? DA : BD : typeof DA
+>cnd : boolean
+>DA : typeof DA
+>BD : typeof BD
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

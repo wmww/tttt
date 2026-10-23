@@ -1,0 +1,20 @@
+a.ts(1,37): error TS2313: Type parameter 'K' has a circular constraint.
+a.ts(1,53): error TS2536: Type 'K' cannot be used to index type 'T'.
+a.ts(1,72): error TS2536: Type 'K' cannot be used to index type 'T'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    export type PickByType<T> = { [K in keyof T extends T[K] ? K : never]: T[K] };
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2313: Type parameter 'K' has a circular constraint.
+                                                        ~~~~
+!!! error TS2536: Type 'K' cannot be used to index type 'T'.
+                                                                           ~~~~
+!!! error TS2536: Type 'K' cannot be used to index type 'T'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

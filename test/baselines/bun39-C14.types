@@ -1,0 +1,15 @@
+//// [test/cases/bun39-C14.ts] ////
+
+=== a.ts ===
+// @ts-nocheck
+export function* g() { yield 1; }
+>g : () => {}
+>yield 1 : any
+>1 : 1
+
+=== b.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

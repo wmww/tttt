@@ -1,0 +1,24 @@
+//// [test/cases/bun02-C24.ts] ////
+
+=== a.ts ===
+let v1: B32;
+>v1 : Symbol(v1, Decl(a.ts, 0, 3))
+>B32 : Symbol(B32, Decl(a.ts, 0, 12))
+
+interface B32<T = B33> { x: T }
+>B32 : Symbol(B32, Decl(a.ts, 0, 12))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>B33 : Symbol(B33, Decl(a.ts, 1, 31))
+>x : Symbol(B32.x, Decl(a.ts, 1, 24))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+
+interface B33<T = B32> { x: T }
+>B33 : Symbol(B33, Decl(a.ts, 1, 31))
+>T : Symbol(T, Decl(a.ts, 2, 14))
+>B32 : Symbol(B32, Decl(a.ts, 0, 12))
+>x : Symbol(B33.x, Decl(a.ts, 2, 24))
+>T : Symbol(T, Decl(a.ts, 2, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

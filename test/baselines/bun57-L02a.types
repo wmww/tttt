@@ -1,0 +1,16 @@
+//// [test/cases/bun57-L02a.ts] ////
+
+=== a.ts ===
+declare const a: any, b: any;
+>a : any
+>b : any
+
+@a default @b class C {}
+>a : any
+>b : any
+>C : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

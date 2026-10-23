@@ -1,0 +1,16 @@
+//// [test/cases/bun28-C20a.ts] ////
+
+=== a.ts ===
+function* g() { const h = (a = yield 1) => 1; }
+>g : () => Generator<never, void, unknown>
+>h : (a?: any) => number
+>(a = yield 1) => 1 : (a?: any) => number
+>a : any
+>yield 1 : any
+>1 : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

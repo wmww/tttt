@@ -1,0 +1,22 @@
+//// [test/cases/bun31-C11.ts] ////
+
+=== a.ts ===
+class A { assertStr(x: unknown): asserts x is string {} }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>assertStr : Symbol(A.assertStr, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+
+function m(a: A | undefined, x: unknown) { a?.assertStr(x); }
+>m : Symbol(m, Decl(a.ts, 0, 57))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 28))
+>a?.assertStr : Symbol(A.assertStr, Decl(a.ts, 0, 9))
+>a : Symbol(a, Decl(a.ts, 1, 11))
+>assertStr : Symbol(A.assertStr, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 1, 28))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

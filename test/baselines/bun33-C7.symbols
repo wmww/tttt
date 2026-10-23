@@ -1,0 +1,17 @@
+//// [test/cases/bun33-C7.ts] ////
+
+=== a.ts ===
+declare const h: { a(x: unknown): asserts x } | undefined;
+>h : Symbol(h, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+
+h?.a(1);
+>h?.a : Symbol(a, Decl(a.ts, 0, 18))
+>h : Symbol(h, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

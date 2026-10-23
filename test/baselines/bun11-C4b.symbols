@@ -1,0 +1,13 @@
+//// [test/cases/bun11-C4b.ts] ////
+
+=== a.ts ===
+function f11(n: number) { if (n) return 1; return (f11)(n - 1); }
+>f11 : Symbol(f11, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 0, 13))
+>n : Symbol(n, Decl(a.ts, 0, 13))
+>f11 : Symbol(f11, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

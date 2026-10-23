@@ -1,0 +1,24 @@
+//// [test/cases/bun20-C13a.ts] ////
+
+=== a.ts ===
+declare function assert(x: unknown): asserts x;
+>assert : (x: unknown) => asserts x
+>x : unknown
+
+function p2(x: string) { if (typeof x !== "string") { assert(false); const b: null = x; } }
+>p2 : (x: string) => void
+>x : string
+>typeof x !== "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+>assert(false) : void
+>assert : (x: unknown) => asserts x
+>false : false
+>b : null
+>x : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

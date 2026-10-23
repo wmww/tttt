@@ -1,0 +1,33 @@
+//// [test/cases/bun29-P2.ts] ////
+
+=== a.ts ===
+import { mk } from "pkg";
+>mk : Symbol(mk, Decl(a.ts, 0, 8))
+
+export const v = mk();
+>v : Symbol(v, Decl(a.ts, 1, 12))
+>mk : Symbol(mk, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== sub/reexp.ts ===
+import { Inner } from "../node_modules/pkg/node_modules/inner";
+>Inner : Symbol(Inner, Decl(reexp.ts, 0, 8))
+
+export default Inner;
+>Inner : Symbol(Inner, Decl(reexp.ts, 0, 8))
+
+=== node_modules/pkg/index.d.ts ===
+import { Inner } from "inner";
+>Inner : Symbol(Inner, Decl(index.d.ts, 0, 8))
+
+export declare function mk(): Inner;
+>mk : Symbol(mk, Decl(index.d.ts, 0, 30))
+>Inner : Symbol(Inner, Decl(index.d.ts, 0, 8))
+
+=== node_modules/pkg/node_modules/inner/index.d.ts ===
+export interface Inner { x: 1 }
+>Inner : Symbol(Inner, Decl(index.d.ts, 0, 0))
+>x : Symbol(Inner.x, Decl(index.d.ts, 0, 24))
+

@@ -1,0 +1,86 @@
+//// [test/cases/bun59-L18.ts] ////
+
+=== a.ts ===
+const k = "k";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+const j = "j";
+>j : Symbol(j, Decl(a.ts, 1, 5))
+
+type T1 = { get k(); set [k](v: string) };
+>T1 : Symbol(T1, Decl(a.ts, 1, 14))
+>k : Symbol(k, Decl(a.ts, 2, 11), Decl(a.ts, 2, 20))
+>[k] : Symbol(k, Decl(a.ts, 2, 11), Decl(a.ts, 2, 20))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 2, 29))
+
+type T2 = { set [k](v: string); get k() };
+>T2 : Symbol(T2, Decl(a.ts, 2, 42))
+>[k] : Symbol(k, Decl(a.ts, 3, 31), Decl(a.ts, 3, 11))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 3, 20))
+>k : Symbol(k, Decl(a.ts, 3, 31), Decl(a.ts, 3, 11))
+
+type T3 = { set k(v); get [k](): string };
+>T3 : Symbol(T3, Decl(a.ts, 3, 42))
+>k : Symbol(k, Decl(a.ts, 4, 11), Decl(a.ts, 4, 21))
+>v : Symbol(v, Decl(a.ts, 4, 18))
+>[k] : Symbol(k, Decl(a.ts, 4, 11), Decl(a.ts, 4, 21))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+type T4 = { get [k](): string; set k(v) };
+>T4 : Symbol(T4, Decl(a.ts, 4, 42))
+>[k] : Symbol(k, Decl(a.ts, 5, 30), Decl(a.ts, 5, 11))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>k : Symbol(k, Decl(a.ts, 5, 30), Decl(a.ts, 5, 11))
+>v : Symbol(v, Decl(a.ts, 5, 37))
+
+function f(p: { get k(); set [k](v: string) }) {}
+>f : Symbol(f, Decl(a.ts, 5, 42))
+>p : Symbol(p, Decl(a.ts, 6, 11))
+>k : Symbol(k, Decl(a.ts, 6, 15), Decl(a.ts, 6, 24))
+>[k] : Symbol(k, Decl(a.ts, 6, 15), Decl(a.ts, 6, 24))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 6, 33))
+
+// The members are resolved before the type literal is checked, or by an earlier late-bound member.
+let before: T5["k"];
+>before : Symbol(before, Decl(a.ts, 8, 3))
+>T5 : Symbol(T5, Decl(a.ts, 8, 20))
+
+type T5 = { get k(); set [k](v: string) };
+>T5 : Symbol(T5, Decl(a.ts, 8, 20))
+>k : Symbol(k, Decl(a.ts, 9, 11), Decl(a.ts, 9, 20))
+>[k] : Symbol(k, Decl(a.ts, 9, 11), Decl(a.ts, 9, 20))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 9, 29))
+
+type T6 = { get k(); set [k](v: string); get j(); set [j](v: string) };
+>T6 : Symbol(T6, Decl(a.ts, 9, 42))
+>k : Symbol(k, Decl(a.ts, 10, 11), Decl(a.ts, 10, 20))
+>[k] : Symbol(k, Decl(a.ts, 10, 11), Decl(a.ts, 10, 20))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 10, 29))
+>j : Symbol(j, Decl(a.ts, 10, 40), Decl(a.ts, 10, 49))
+>[j] : Symbol(j, Decl(a.ts, 10, 40), Decl(a.ts, 10, 49))
+>j : Symbol(j, Decl(a.ts, 1, 5))
+>v : Symbol(v, Decl(a.ts, 10, 58))
+
+// `checkIndexConstraints` resolves the members of these before they are checked.
+interface I1 { get k(); set [k](v: string) }
+>I1 : Symbol(I1, Decl(a.ts, 10, 71))
+>k : Symbol(I1.k, Decl(a.ts, 12, 14), Decl(a.ts, 12, 23))
+>[k] : Symbol(I1.k, Decl(a.ts, 12, 14), Decl(a.ts, 12, 23))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 12, 32))
+
+declare class C1 { get k(); set [k](v: string) }
+>C1 : Symbol(C1, Decl(a.ts, 12, 44))
+>k : Symbol(C1.k, Decl(a.ts, 13, 18), Decl(a.ts, 13, 27))
+>[k] : Symbol(C1.k, Decl(a.ts, 13, 18), Decl(a.ts, 13, 27))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 13, 36))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+

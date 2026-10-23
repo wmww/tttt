@@ -1,0 +1,29 @@
+//// [test/cases/bun23-P4.ts] ////
+
+=== a.ts ===
+class G<T extends "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"> { g!: T } namespace G { export class X { a = 1 } }
+>G : Symbol(G, Decl(a.ts, 0, 0), Decl(a.ts, 0, 181))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>g : Symbol(G.g, Decl(a.ts, 0, 173))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>G : Symbol(G, Decl(a.ts, 0, 0), Decl(a.ts, 0, 181))
+>X : Symbol(X, Decl(a.ts, 0, 195))
+>a : Symbol(X.a, Decl(a.ts, 0, 212))
+
+namespace H { export class X { b = 1 } }
+>H : Symbol(H, Decl(a.ts, 0, 222))
+>X : Symbol(X, Decl(a.ts, 1, 13))
+>b : Symbol(X.b, Decl(a.ts, 1, 30))
+
+const s: { (p: [G.X, H.X], q: [1]): void } = {};
+>s : Symbol(s, Decl(a.ts, 2, 5))
+>p : Symbol(p, Decl(a.ts, 2, 12))
+>G : Symbol(G, Decl(a.ts, 0, 0), Decl(a.ts, 0, 181))
+>X : Symbol(G.X, Decl(a.ts, 0, 195))
+>H : Symbol(H, Decl(a.ts, 0, 222))
+>X : Symbol(H.X, Decl(a.ts, 1, 13))
+>q : Symbol(q, Decl(a.ts, 2, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,26 @@
+//// [test/cases/bun17-C7b.ts] ////
+
+=== a.ts ===
+namespace N1 { export enum Z { A = -0 } }
+>N1 : Symbol(N1, Decl(a.ts, 0, 0))
+>Z : Symbol(Z, Decl(a.ts, 0, 14))
+>A : Symbol(Z.A, Decl(a.ts, 0, 30))
+
+namespace N2 { export enum Z { A = 0 } }
+>N2 : Symbol(N2, Decl(a.ts, 0, 41))
+>Z : Symbol(Z, Decl(a.ts, 1, 14))
+>A : Symbol(Z.A, Decl(a.ts, 1, 30))
+
+let n1: N1.Z = N2.Z.A;
+>n1 : Symbol(n1, Decl(a.ts, 2, 3))
+>N1 : Symbol(N1, Decl(a.ts, 0, 0))
+>Z : Symbol(N1.Z, Decl(a.ts, 0, 14))
+>N2.Z.A : Symbol(N2.Z.A, Decl(a.ts, 1, 30))
+>N2.Z : Symbol(N2.Z, Decl(a.ts, 1, 14))
+>N2 : Symbol(N2, Decl(a.ts, 0, 41))
+>Z : Symbol(N2.Z, Decl(a.ts, 1, 14))
+>A : Symbol(N2.Z.A, Decl(a.ts, 1, 30))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

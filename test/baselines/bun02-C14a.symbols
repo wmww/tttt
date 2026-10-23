@@ -1,0 +1,14 @@
+//// [test/cases/bun02-C14a.ts] ////
+
+=== a.ts ===
+interface I1 { static prototype: number }
+>I1 : Symbol(I1, Decl(a.ts, 0, 0))
+>prototype : Symbol(I1.prototype, Decl(a.ts, 0, 14))
+
+type L1 = { static prototype: number };
+>L1 : Symbol(L1, Decl(a.ts, 0, 41))
+>prototype : Symbol(prototype, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

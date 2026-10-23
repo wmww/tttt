@@ -1,0 +1,20 @@
+a.mts(1,16): error TS1543: Importing a JSON file into an ECMAScript module requires a 'type: "json"' import attribute when 'module' is set to 'NodeNext'.
+a.mts(1,16): error TS6263: Module './typed.json' was resolved to 'typed.d.json.ts', but '--allowArbitraryExtensions' is not set.
+a.mts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext" } }
+==== a.mts (3 errors) ====
+    import t1 from "./typed.json";
+                   ~~~~~~~~~~~~~~
+!!! error TS1543: Importing a JSON file into an ECMAScript module requires a 'type: "json"' import attribute when 'module' is set to 'NodeNext'.
+                   ~~~~~~~~~~~~~~
+!!! error TS6263: Module './typed.json' was resolved to 'typed.d.json.ts', but '--allowArbitraryExtensions' is not set.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== typed.d.json.ts (0 errors) ====
+    declare const v: { k: number };
+    export default v;
+    

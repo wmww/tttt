@@ -1,0 +1,18 @@
+//// [test/cases/bun16-C9b.ts] ////
+
+=== a.ts ===
+namespace N { export function nf() {}
+>N : typeof N
+>nf : () => void
+
+  if (nf) { N.nf(); } }
+>nf : () => void
+>N.nf() : void
+>N.nf : () => void
+>N : typeof N
+>nf : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

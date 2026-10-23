@@ -1,0 +1,23 @@
+//// [test/cases/bun74-R16a.ts] ////
+
+=== a.tsx ===
+switch (<a>
+><a> : any
+>a : any
+
+<<<<<<< x
+</a>) {}
+> : any
+>a> : boolean
+>a : any
+> : any
+
+=== b.tsx ===
+switch (<a>
+><a> : any
+>a : any
+
+<<<<<<< x) {}
+
+> : any
+

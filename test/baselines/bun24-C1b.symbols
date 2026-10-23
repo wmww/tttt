@@ -1,0 +1,27 @@
+//// [test/cases/bun24-C1b.ts] ////
+
+=== a.ts ===
+declare const big: { p: 1 };
+>big : Symbol(big, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 20))
+
+function f<T>(x: T) { return { a: x, big }; }
+>f : Symbol(f, Decl(a.ts, 0, 28))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>x : Symbol(x, Decl(a.ts, 1, 14))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 30))
+>x : Symbol(x, Decl(a.ts, 1, 14))
+>big : Symbol(big, Decl(a.ts, 1, 36))
+
+const w: 1 = f(1);
+>w : Symbol(w, Decl(a.ts, 2, 5))
+>f : Symbol(f, Decl(a.ts, 0, 28))
+
+const v: 1 = f(null! as "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+>v : Symbol(v, Decl(a.ts, 3, 5))
+>f : Symbol(f, Decl(a.ts, 0, 28))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun10-C3.ts] ////
+
+=== a.ts ===
+declare const o: { z: 1 };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>z : Symbol(z, Decl(a.ts, 0, 18))
+
+const s2 = { get h() { return s2; }, ...o };
+>s2 : Symbol(s2, Decl(a.ts, 1, 5))
+>h : Symbol(h, Decl(a.ts, 1, 12))
+>s2 : Symbol(s2, Decl(a.ts, 1, 5))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

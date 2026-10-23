@@ -1,0 +1,11 @@
+//// [test/cases/bun33-C18b.ts] ////
+
+=== a.ts ===
+import.foo<1>("./m");
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== m.ts ===
+export const m = 1;
+>m : Symbol(m, Decl(m.ts, 0, 12))
+

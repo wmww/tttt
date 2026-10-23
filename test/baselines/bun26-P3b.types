@@ -1,0 +1,25 @@
+//// [test/cases/bun26-P3b.ts] ////
+
+=== a.ts ===
+class C { x; constructor() { this.x = this; } }
+>C : C
+>x : this
+>this.x = this : this
+>this.x : this
+>this : this
+>x : this
+>this : this
+
+new C().x = new C();
+>new C().x = new C() : C
+>new C().x : this
+>new C() : C
+>C : typeof C
+>x : this
+>new C() : C
+>C : typeof C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

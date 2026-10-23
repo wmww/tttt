@@ -1,0 +1,17 @@
+a.ts(4,7): error TS4104: The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Tail<T> = T extends (a: any, ...args: infer P) => any ? P : never;
+    type X1 = Tail<(...args: readonly [number, ...string[]]) => void>;
+    declare const ro: readonly string[];
+    const x1: X1 = ro;
+          ~~
+!!! error TS4104: The type 'readonly string[]' is 'readonly' and cannot be assigned to the mutable type 'string[]'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

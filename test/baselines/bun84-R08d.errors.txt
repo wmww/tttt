@@ -1,0 +1,14 @@
+a.ts(2,13): error TS1109: Expression expected.
+a.ts(2,13): error TS1141: String literal expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function dec2(...x: any[]): any;
+    @dec2 import.meta;
+                ~
+!!! error TS1109: Expression expected.
+                ~~~~~
+!!! error TS1141: String literal expected.
+    

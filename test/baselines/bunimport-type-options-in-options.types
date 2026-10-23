@@ -1,0 +1,223 @@
+//// [test/cases/bunimport-type-options-in-options.ts] ////
+
+=== before-stmt.ts ===
+import data from "./d.json" with { type: "json" };
+>data : any
+>type : any
+
+type N = import("./a", { with: { k: 0 as import("./c", { with: { inner: 1 } }), outer: 2 } });
+>N : any
+>k : any
+>0 as import("./c", { with: { inner: 1 } }) : any
+>0 : 0
+>inner : any
+>outer : any
+
+export type { N };
+>N : any
+
+export { data };
+>data : any
+
+=== doc.js ===
+/** @type {import("./j", { with: { a: (p) => p, b: 0 } })} */
+export let a, b;
+>a : any
+>b : any
+
+/**
+ * @param {import("./k", { with: { "resolution-mode": "import" } })} x
+ * @param {import("./k", { with: { k: import("./kk", { with: { z: "1" } }) } })} y
+ */
+export function g(x, y) { return [x, y]; }
+>g : (x: import("./k", { with: { "resolution-mode": "import" } }), y: import("./k", { with: { k: import("./kk", { with: { z: "1" } }) } })) => any[]
+>x : any
+>y : any
+>[x, y] : any[]
+>x : any
+>y : any
+
+=== export-nested.ts ===
+export * from "./d" with { type: 0 as import("./c", { with: { inner: 1 } }), outer: 2 };
+>type : any
+>0 as import("./c", { with: { inner: 1 } }) : any
+>0 : 0
+>inner : any
+>outer : any
+
+export { z } from "./e" with { a: "b" };
+>z : any
+>a : any
+
+=== in-function.ts ===
+type T = import("./m", { with: { a: () => { let u: import("./n", { with: { b: { x: 1 }, c: () => 2 } }); return u; } } });
+>T : any
+>a : any
+>() => { let u: import("./n", { with: { b: { x: 1 }, c: () => 2 } }); return u; } : () => any
+>u : any
+>b : any
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+>c : any
+>() => 2 : () => number
+>2 : 2
+>u : any
+
+export type { T };
+>T : any
+
+=== mode.ts ===
+type A = import("./a", { with: { "resolution-mode": 0 as import("./c", { with: { "resolution-mode": "require" } }) } });
+>A : any
+>0 as import("./c", { with: { "resolution-mode": "require" } }) : any
+>0 : 0
+
+type C<X> = import("./g", { with: { a: 0 as X, b: (unused: number) => { const local = 1; } } });
+>C : any
+>a : any
+>0 as X : X
+>0 : 0
+>b : any
+>(unused: number) => { const local = 1; } : (unused: number) => void
+>unused : number
+>local : 1
+>1 : 1
+
+function f(p: number) { let u: import("./n", { with: { c: () => p, d: undeclared } }); return u; }
+>f : (p: number) => any
+>p : number
+>u : any
+>c : any
+>() => p : () => number
+>p : number
+>d : any
+>undeclared : any
+>u : any
+
+export { f };
+>f : (p: number) => any
+
+export type { A, C };
+>A : any
+>C : any
+
+=== nested-outer-first.ts ===
+type N = import("./a", { with: { outer: 2, k: 0 as import("./c", { with: { inner: 1 } }) } });
+>N : any
+>outer : any
+>k : any
+>0 as import("./c", { with: { inner: 1 } }) : any
+>0 : 0
+>inner : any
+
+export type { N };
+>N : any
+
+=== nested.ts ===
+type N = import("./a", { with: { k: 0 as import("./c", { with: { inner: 1 } }), outer: 2 } });
+>N : any
+>k : any
+>0 as import("./c", { with: { inner: 1 } }) : any
+>0 : 0
+>inner : any
+>outer : any
+
+export type { N };
+>N : any
+
+=== quoted.ts ===
+type N = import("./a", { with: { "k": 0 as import("./c", { with: { "inner": "v1" } }), "outer": "v2" } });
+>N : any
+>0 as import("./c", { with: { "inner": "v1" } }) : any
+>0 : 0
+
+export type { N };
+>N : any
+
+=== scope.ts ===
+type T = import("./m", { with: { a: (p: number) => { let u: import("./n", { with: { c: () => p } }); return u; } } });
+>T : any
+>a : any
+>(p: number) => { let u: import("./n", { with: { c: () => p } }); return u; } : (p: number) => any
+>p : number
+>u : any
+>c : any
+>() => p : () => number
+>p : number
+>u : any
+
+type G<X> = import("./g", { with: { a: 0 as X } });
+>G : any
+>a : any
+>0 as X : X
+>0 : 0
+
+export type { T, G };
+>T : any
+>G : any
+
+=== stmt-nested.ts ===
+import data from "./d.json" with { type: 0 as import("./c", { with: { inner: 1 } }), outer: 2 };
+>data : any
+>type : any
+>0 as import("./c", { with: { inner: 1 } }) : any
+>0 : 0
+>inner : any
+>outer : any
+
+export { data };
+>data : any
+
+=== three-deep.ts ===
+const q = 1;
+>q : 1
+>1 : 1
+
+type T = import("./m", { with: { a: 0 as import("./n", { with: { x: 0 as import("./o", { with: { y: () => q } }), x2: () => q } }), c: () => q } });
+>T : any
+>a : any
+>0 as import("./n", { with: { x: 0 as import("./o", { with: { y: () => q } }), x2: () => q } }) : any
+>0 : 0
+>x : any
+>0 as import("./o", { with: { y: () => q } }) : any
+>0 : 0
+>y : any
+>() => q : () => number
+>q : 1
+>x2 : any
+>() => q : () => number
+>q : 1
+>c : any
+>() => q : () => number
+>q : 1
+
+export type { T };
+>T : any
+
+=== two-inner.ts ===
+const q = 1;
+>q : 1
+>1 : 1
+
+type T = import("./m", { with: { a: 0 as import("./n", { with: { x: () => q } }), b: 0 as import("./o", { with: { y: () => q } }), c: () => q } });
+>T : any
+>a : any
+>0 as import("./n", { with: { x: () => q } }) : any
+>0 : 0
+>x : any
+>() => q : () => number
+>q : 1
+>b : any
+>0 as import("./o", { with: { y: () => q } }) : any
+>0 : 0
+>y : any
+>() => q : () => number
+>q : 1
+>c : any
+>() => q : () => number
+>q : 1
+
+export type { T };
+>T : any
+

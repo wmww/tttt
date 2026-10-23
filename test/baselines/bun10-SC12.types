@@ -1,0 +1,12 @@
+//// [test/cases/bun10-SC12.ts] ////
+
+=== a.ts ===
+type F1 = (this, string) => void;
+>F1 : F1
+>this : any
+>string : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

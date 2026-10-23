@@ -1,0 +1,23 @@
+//// [test/cases/bun62-L12.ts] ////
+
+=== a.ts ===
+declare const dec: any; class A {} class B {}
+>dec : any
+>A : A
+>B : B
+
+@dec export default @dec class<> extends A, B {}
+>dec : any
+>dec : any
+>A : A
+>B : A
+
+namespace N { export default class<> extends A, B {} }
+>N : typeof N
+>A : A
+>B : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

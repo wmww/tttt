@@ -1,0 +1,18 @@
+//// [test/cases/bun01-C6a.ts] ////
+
+=== a.ts ===
+export {};
+global { interface FromUndeclared { a: number } }
+>global : Symbol(global, Decl(a.ts, 0, 10))
+>FromUndeclared : Symbol(FromUndeclared, Decl(a.ts, 1, 8))
+>a : Symbol(FromUndeclared.a, Decl(a.ts, 1, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+export {};
+let x: FromUndeclared;
+>x : Symbol(x, Decl(b.ts, 1, 3))
+>FromUndeclared : Symbol(FromUndeclared)
+

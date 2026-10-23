@@ -1,0 +1,22 @@
+//// [test/cases/bun18-C7.ts] ////
+
+=== a.ts ===
+declare const oz: { z: 1 };
+>oz : Symbol(oz, Decl(a.ts, 0, 13))
+>z : Symbol(z, Decl(a.ts, 0, 19))
+
+function f<T extends { a: number }>() { const x1: Partial<T> = oz; const x2: Partial<T> = 1; }
+>f : Symbol(f, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 22))
+>x1 : Symbol(x1, Decl(a.ts, 1, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>oz : Symbol(oz, Decl(a.ts, 0, 13))
+>x2 : Symbol(x2, Decl(a.ts, 1, 72))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun30-C14b.ts] ////
+
+=== a.ts ===
+export class C<T> { private T = 1; m() { return this.T } }
+>C : C<T>
+>T : number
+>1 : 1
+>m : () => number
+>this.T : number
+>this : this
+>T : number
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

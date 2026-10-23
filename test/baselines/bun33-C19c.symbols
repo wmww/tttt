@@ -1,0 +1,14 @@
+//// [test/cases/bun33-C19c.ts] ////
+
+=== a.ts ===
+declare const o: {};
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+class P { #x = o[#x] }
+>P : Symbol(P, Decl(a.ts, 0, 20))
+>#x : Symbol(P.#x, Decl(a.ts, 1, 9))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

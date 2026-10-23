@@ -1,0 +1,27 @@
+//// [test/cases/bun16-C3a.ts] ////
+
+=== a.ts ===
+function g<T extends { (): void; id: (x: number) => void }>() {
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>id : Symbol(id, Decl(a.ts, 0, 32))
+>x : Symbol(x, Decl(a.ts, 0, 38))
+
+  const F: T = () => {};
+>F : Symbol(F, Decl(a.ts, 1, 7))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+  F.id = x => {};
+>F.id : Symbol(id, Decl(a.ts, 0, 32))
+>F : Symbol(F, Decl(a.ts, 1, 7))
+>id : Symbol(id, Decl(a.ts, 0, 32))
+>x : Symbol(x, Decl(a.ts, 2, 8))
+
+  F["id"] = x => {};
+>F : Symbol(F, Decl(a.ts, 1, 7))
+>"id" : Symbol(id, Decl(a.ts, 0, 32))
+>x : Symbol(x, Decl(a.ts, 3, 11))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

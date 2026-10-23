@@ -1,0 +1,10 @@
+//// [test/cases/bun53-L16b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+x = ({ @dec b }) => 1;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 1, 6))
+

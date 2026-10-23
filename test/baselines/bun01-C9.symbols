@@ -1,0 +1,25 @@
+//// [test/cases/bun01-C9.ts] ////
+
+=== a_umd.d.ts ===
+export const v: number; export as namespace UX; export as namespace UC;
+>v : Symbol(v, Decl(a_umd.d.ts, 0, 12))
+>UX : Symbol(UX, Decl(a_umd.d.ts, 0, 23))
+>UC : Symbol(UC, Decl(a_umd.d.ts, 0, 47))
+
+=== b_glob.d.ts ===
+declare namespace UX { const extra: number; } declare namespace UC { const other: number; }
+>UX : Symbol(UX, Decl(a_umd.d.ts, 0, 0), Decl(b_glob.d.ts, 0, 0))
+>extra : Symbol(extra, Decl(b_glob.d.ts, 0, 28))
+>UC : Symbol(UC, Decl(a_umd.d.ts, 0, 0), Decl(b_glob.d.ts, 0, 45))
+>other : Symbol(other, Decl(b_glob.d.ts, 0, 74))
+
+=== c.ts ===
+UX.extra; UC.extra;
+>UX.extra : Symbol(extra, Decl(b_glob.d.ts, 0, 28))
+>UX : Symbol(UX, Decl(a_umd.d.ts, 0, 0), Decl(b_glob.d.ts, 0, 0))
+>extra : Symbol(extra, Decl(b_glob.d.ts, 0, 28))
+>UC : Symbol(UC, Decl(a_umd.d.ts, 0, 0), Decl(b_glob.d.ts, 0, 45))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(c.ts, 1, 5))
+

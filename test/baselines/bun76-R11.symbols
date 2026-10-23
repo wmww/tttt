@@ -1,0 +1,90 @@
+//// [test/cases/bun76-R11.ts] ////
+
+=== a.ts ===
+export {};
+declare const anyV: any;
+>anyV : Symbol(anyV, Decl(a.ts, 1, 13))
+
+declare function pair<A>(a: A, b: A): [A, A];
+>pair : Symbol(pair, Decl(a.ts, 1, 24))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>a : Symbol(a, Decl(a.ts, 2, 25))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>b : Symbol(b, Decl(a.ts, 2, 30))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+>A : Symbol(A, Decl(a.ts, 2, 22))
+
+// an omitted element is a plain `any`: a candidate for A beside `[any, any]`, so A is `any` in the return mapper and the literals are arrays
+const [, [p1, q1]] = pair([1, "a"], [2, "b"]);
+>p1 : Symbol(p1, Decl(a.ts, 4, 10))
+>q1 : Symbol(q1, Decl(a.ts, 4, 13))
+>pair : Symbol(pair, Decl(a.ts, 1, 24))
+
+p1.toFixed();
+>p1 : Symbol(p1, Decl(a.ts, 4, 10))
+
+let [, [p2, q2]] = pair([1, "a"], [2, "b"]);
+>p2 : Symbol(p2, Decl(a.ts, 6, 8))
+>q2 : Symbol(q2, Decl(a.ts, 6, 11))
+>pair : Symbol(pair, Decl(a.ts, 1, 24))
+
+q2 = 5;
+>q2 : Symbol(q2, Decl(a.ts, 6, 11))
+
+// a default of type `any`
+const [a3 = anyV, [p3, q3]] = pair([1, "a"], [2, "b"]);
+>a3 : Symbol(a3, Decl(a.ts, 9, 7))
+>anyV : Symbol(anyV, Decl(a.ts, 1, 13))
+>p3 : Symbol(p3, Decl(a.ts, 9, 19))
+>q3 : Symbol(q3, Decl(a.ts, 9, 22))
+>pair : Symbol(pair, Decl(a.ts, 1, 24))
+
+p3.toFixed();
+>p3 : Symbol(p3, Decl(a.ts, 9, 19))
+
+declare function both<A>(a: A): { p: A; q: A };
+>both : Symbol(both, Decl(a.ts, 10, 13))
+>A : Symbol(A, Decl(a.ts, 11, 22))
+>a : Symbol(a, Decl(a.ts, 11, 25))
+>A : Symbol(A, Decl(a.ts, 11, 22))
+>p : Symbol(p, Decl(a.ts, 11, 33))
+>A : Symbol(A, Decl(a.ts, 11, 22))
+>q : Symbol(q, Decl(a.ts, 11, 39))
+>A : Symbol(A, Decl(a.ts, 11, 22))
+
+const { p: p4 = anyV, q: [r4, s4] } = both([1, "a"]);
+>p : Symbol(p, Decl(a.ts, 11, 33))
+>p4 : Symbol(p4, Decl(a.ts, 12, 7))
+>anyV : Symbol(anyV, Decl(a.ts, 1, 13))
+>q : Symbol(q, Decl(a.ts, 11, 39))
+>r4 : Symbol(r4, Decl(a.ts, 12, 26))
+>s4 : Symbol(s4, Decl(a.ts, 12, 29))
+>both : Symbol(both, Decl(a.ts, 10, 13))
+
+r4.toFixed();
+>r4 : Symbol(r4, Decl(a.ts, 12, 26))
+
+function f5([, [r, s]] = pair([1, "a"], [2, "b"])) { r.toFixed(); }
+>f5 : Symbol(f5, Decl(a.ts, 13, 13))
+>r : Symbol(r, Decl(a.ts, 14, 16))
+>s : Symbol(s, Decl(a.ts, 14, 18))
+>pair : Symbol(pair, Decl(a.ts, 1, 24))
+>r : Symbol(r, Decl(a.ts, 14, 16))
+
+// only names: the two agree, the literals are tuples
+const [a6, [p6, q6]] = pair([1, "a"], [2, "b"]);
+>a6 : Symbol(a6, Decl(a.ts, 16, 7))
+>p6 : Symbol(p6, Decl(a.ts, 16, 12))
+>q6 : Symbol(q6, Decl(a.ts, 16, 15))
+>pair : Symbol(pair, Decl(a.ts, 1, 24))
+
+p6.toFixed(); q6.toFixed();
+>p6.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>p6 : Symbol(p6, Decl(a.ts, 16, 12))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>q6 : Symbol(q6, Decl(a.ts, 16, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

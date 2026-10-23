@@ -1,0 +1,13 @@
+//// [test/cases/bun44-P1.ts] ////
+
+=== a.ts ===
+type N<T extends never, K> = T[K];
+>N : Symbol(N, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>K : Symbol(K, Decl(a.ts, 0, 23))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>K : Symbol(K, Decl(a.ts, 0, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

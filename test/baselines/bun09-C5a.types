@@ -1,0 +1,10 @@
+//// [test/cases/bun09-C5a.ts] ////
+
+=== a.ts ===
+type P2<T extends Record<string, string>> = ({ [K in keyof T]: T[K] }) extends { [K in keyof T]: infer U } ? Uppercase<U> : never;
+>P2 : P2<T>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

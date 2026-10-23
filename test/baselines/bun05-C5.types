@@ -1,0 +1,21 @@
+//// [test/cases/bun05-C5.ts] ////
+
+=== a.ts ===
+declare const arr: number[];
+>arr : number[]
+
+function ff() {}
+>ff : () => void
+
+for (ff in arr) { const x: number = arr[ff]; }
+>ff : any
+>arr : number[]
+>x : number
+>arr[ff] : any
+>arr : number[]
+>ff : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

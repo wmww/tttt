@@ -1,0 +1,68 @@
+error TS6054: File 'App.TSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+error TS6054: File 'b.Tsx' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+error TS6054: File 'z.JSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+c.tsx(1,18): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+c.tsx(1,18): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+s.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS6054: File 'App.TSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:18:3: File is matched by 'files' list specified here.
+!!! error TS6054: File 'b.Tsx' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:19:3: File is matched by 'files' list specified here.
+!!! error TS6054: File 'z.JSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:20:3: File is matched by 'files' list specified here.
+==== tsconfig.json (0 errors) ====
+    {
+     "compilerOptions": {
+      "strict": true,
+      "noEmit": true,
+      "target": "esnext",
+      "module": "esnext",
+      "moduleResolution": "bundler",
+      "lib": [
+       "esnext"
+      ],
+      "types": [],
+      "skipLibCheck": true,
+      "jsx": "react-jsx",
+      "allowJs": true,
+      "checkJs": true
+     },
+     "files": [
+      "App.TSX",
+      "b.Tsx",
+      "z.JSX",
+      "c.tsx",
+      "s.ts"
+     ]
+    }
+==== App.TSX (0 errors) ====
+    export const e = <div />;
+==== b.Tsx (0 errors) ====
+    export const e = <div />;
+==== c.tsx (2 errors) ====
+    export const e = <div />;
+                     ~~~~~~~
+!!! error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+                     ~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+==== s.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== z.JSX (0 errors) ====
+    export const e = <div />;
+    

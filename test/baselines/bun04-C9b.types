@@ -1,0 +1,30 @@
+//// [test/cases/bun04-C9b.ts] ////
+
+=== a.ts ===
+type Bad2 = { [Symbol.iterator](): { next(): { done: boolean } } };
+>Bad2 : Bad2
+>[Symbol.iterator] : () => { next(): { done: boolean; }; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => { done: boolean; }
+>done : boolean
+
+declare const bad2: Bad2;
+>bad2 : Bad2
+
+const q: Bad2 | number[] = [1];
+>q : number[] | Bad2
+>[1] : number[]
+>1 : 1
+
+const sp2 = [...bad2];
+>sp2 : any[]
+>[...bad2] : any[]
+>...bad2 : any
+>bad2 : Bad2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

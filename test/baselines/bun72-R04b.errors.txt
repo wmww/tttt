@@ -1,0 +1,32 @@
+a.ts(3,6): error TS2345: Argument of type 'import("node_modules/old/index").C' is not assignable to parameter of type 'import("node_modules/dep/node_modules/old/index").C'.
+  Types have separate declarations of a private property 'p'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler"}}
+==== a.ts (2 errors) ====
+    import { C } from "./node_modules/old";
+    import { take } from "dep";
+    take(new C());
+         ~~~~~~~
+!!! error TS2345: Argument of type 'import("node_modules/old/index").C' is not assignable to parameter of type 'import("node_modules/dep/node_modules/old/index").C'.
+!!! error TS2345:   Types have separate declarations of a private property 'p'.
+    declare module "old" { interface X { x: 1 } }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/dep/index.d.ts (0 errors) ====
+    import { C } from "old";
+    export declare function take(c: C): void;
+==== node_modules/dep/node_modules/old/index.d.ts (0 errors) ====
+    export declare class C { private p; }
+==== node_modules/dep/node_modules/old/package.json (0 errors) ====
+    { "name": "old", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/dep/package.json (0 errors) ====
+    { "name": "dep", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/old/index.d.ts (0 errors) ====
+    export declare class C { private p; }
+==== node_modules/old/package.json (0 errors) ====
+    { "name": "old", "version": "1.0.0", "types": "index.d.ts" }
+    

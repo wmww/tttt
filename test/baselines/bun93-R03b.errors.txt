@@ -1,0 +1,20 @@
+a.ts(5,7): error TS2322: Type 'B & C & D & (X | Y)' is not assignable to type 'number'.
+  Type 'B & C & D & X' is not assignable to type 'number'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type X={x:1};type Y={y:1};type B={b:1};type C={c:1};type D={d:1};
+    type BCD = B & C & D;
+    type T2 = B & C & D & (X|Y);
+    declare let v4: BCD & (X|Y);
+    const e4: number = v4;
+          ~~
+!!! error TS2322: Type 'B & C & D & (X | Y)' is not assignable to type 'number'.
+!!! error TS2322:   Type 'B & C & D & X' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,11 @@
+//// [test/cases/bun43-P8a.ts] ////
+
+=== a.ts ===
+var x: typeof #a;
+>x : any
+>#a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

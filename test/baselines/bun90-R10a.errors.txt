@@ -1,0 +1,31 @@
+a.ts(1,10): error TS2866: Import 'GC' conflicts with global value used in this file, so must be declared with a type-only import when 'isolatedModules' is enabled.
+a.ts(1,20): error TS2866: Import 'GN' conflicts with global value used in this file, so must be declared with a type-only import when 'isolatedModules' is enabled.
+a.ts(2,12): error TS2702: 'GC' only refers to a type, but is being used as a namespace here.
+a.ts(3,15): error TS2694: Namespace 'GN' has no exported member 'nope'.
+a.ts(5,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "isolatedModules": true, "esModuleInterop": true } }
+==== a.ts (5 errors) ====
+    import { G1 as GC, G1 as GN } from "./t";
+             ~~~~~~~~
+!!! error TS2866: Import 'GC' conflicts with global value used in this file, so must be declared with a type-only import when 'isolatedModules' is enabled.
+                       ~~~~~~~~
+!!! error TS2866: Import 'GN' conflicts with global value used in this file, so must be declared with a type-only import when 'isolatedModules' is enabled.
+    import c = GC.v;
+               ~~
+!!! error TS2702: 'GC' only refers to a type, but is being used as a namespace here.
+    import d = GN.nope;
+                  ~~~~
+!!! error TS2694: Namespace 'GN' has no exported member 'nope'.
+    c; d;
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== g.d.ts (0 errors) ====
+    declare class GC { static v: number }
+    declare namespace GN { const v: number }
+==== t.ts (0 errors) ====
+    export interface G1 { x: 1 }
+    

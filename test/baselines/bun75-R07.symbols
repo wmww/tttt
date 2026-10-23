@@ -1,0 +1,420 @@
+//// [test/cases/bun75-R07.ts] ////
+
+=== main.ts ===
+import { n1 } from "./p1";
+>n1 : Symbol(n1, Decl(main.ts, 0, 8))
+
+n1.nope;
+>n1 : Symbol(n1, Decl(main.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(main.ts, 2, 5))
+
+=== p1.ts ===
+import * as n1 from "./p2"; export { n1 };
+>n1 : Symbol(n1, Decl(p1.ts, 0, 6))
+>n1 : Symbol(n1, Decl(p1.ts, 0, 36))
+
+export const v1 = 1;
+>v1 : Symbol(v1, Decl(p1.ts, 1, 12))
+
+=== p10.ts ===
+import * as n10 from "./p11"; export { n10 };
+>n10 : Symbol(n10, Decl(p10.ts, 0, 6))
+>n10 : Symbol(n10, Decl(p10.ts, 0, 38))
+
+export const v10 = 10;
+>v10 : Symbol(v10, Decl(p10.ts, 1, 12))
+
+=== p11.ts ===
+import * as n11 from "./p12"; export { n11 };
+>n11 : Symbol(n11, Decl(p11.ts, 0, 6))
+>n11 : Symbol(n11, Decl(p11.ts, 0, 38))
+
+export const v11 = 11;
+>v11 : Symbol(v11, Decl(p11.ts, 1, 12))
+
+=== p12.ts ===
+import * as n12 from "./p13"; export { n12 };
+>n12 : Symbol(n12, Decl(p12.ts, 0, 6))
+>n12 : Symbol(n12, Decl(p12.ts, 0, 38))
+
+export const v12 = 12;
+>v12 : Symbol(v12, Decl(p12.ts, 1, 12))
+
+=== p13.ts ===
+import * as n13 from "./p14"; export { n13 };
+>n13 : Symbol(n13, Decl(p13.ts, 0, 6))
+>n13 : Symbol(n13, Decl(p13.ts, 0, 38))
+
+export const v13 = 13;
+>v13 : Symbol(v13, Decl(p13.ts, 1, 12))
+
+=== p14.ts ===
+import * as n14 from "./p15"; export { n14 };
+>n14 : Symbol(n14, Decl(p14.ts, 0, 6))
+>n14 : Symbol(n14, Decl(p14.ts, 0, 38))
+
+export const v14 = 14;
+>v14 : Symbol(v14, Decl(p14.ts, 1, 12))
+
+=== p15.ts ===
+import * as n15 from "./p16"; export { n15 };
+>n15 : Symbol(n15, Decl(p15.ts, 0, 6))
+>n15 : Symbol(n15, Decl(p15.ts, 0, 38))
+
+export const v15 = 15;
+>v15 : Symbol(v15, Decl(p15.ts, 1, 12))
+
+=== p16.ts ===
+import * as n16 from "./p17"; export { n16 };
+>n16 : Symbol(n16, Decl(p16.ts, 0, 6))
+>n16 : Symbol(n16, Decl(p16.ts, 0, 38))
+
+export const v16 = 16;
+>v16 : Symbol(v16, Decl(p16.ts, 1, 12))
+
+=== p17.ts ===
+import * as n17 from "./p18"; export { n17 };
+>n17 : Symbol(n17, Decl(p17.ts, 0, 6))
+>n17 : Symbol(n17, Decl(p17.ts, 0, 38))
+
+export const v17 = 17;
+>v17 : Symbol(v17, Decl(p17.ts, 1, 12))
+
+=== p18.ts ===
+import * as n18 from "./p19"; export { n18 };
+>n18 : Symbol(n18, Decl(p18.ts, 0, 6))
+>n18 : Symbol(n18, Decl(p18.ts, 0, 38))
+
+export const v18 = 18;
+>v18 : Symbol(v18, Decl(p18.ts, 1, 12))
+
+=== p19.ts ===
+import * as n19 from "./p20"; export { n19 };
+>n19 : Symbol(n19, Decl(p19.ts, 0, 6))
+>n19 : Symbol(n19, Decl(p19.ts, 0, 38))
+
+export const v19 = 19;
+>v19 : Symbol(v19, Decl(p19.ts, 1, 12))
+
+=== p2.ts ===
+import * as n2 from "./p3"; export { n2 };
+>n2 : Symbol(n2, Decl(p2.ts, 0, 6))
+>n2 : Symbol(n2, Decl(p2.ts, 0, 36))
+
+export const v2 = 2;
+>v2 : Symbol(v2, Decl(p2.ts, 1, 12))
+
+=== p20.ts ===
+import * as n20 from "./p21"; export { n20 };
+>n20 : Symbol(n20, Decl(p20.ts, 0, 6))
+>n20 : Symbol(n20, Decl(p20.ts, 0, 38))
+
+export const v20 = 20;
+>v20 : Symbol(v20, Decl(p20.ts, 1, 12))
+
+=== p21.ts ===
+import * as n21 from "./p22"; export { n21 };
+>n21 : Symbol(n21, Decl(p21.ts, 0, 6))
+>n21 : Symbol(n21, Decl(p21.ts, 0, 38))
+
+export const v21 = 21;
+>v21 : Symbol(v21, Decl(p21.ts, 1, 12))
+
+=== p22.ts ===
+import * as n22 from "./p23"; export { n22 };
+>n22 : Symbol(n22, Decl(p22.ts, 0, 6))
+>n22 : Symbol(n22, Decl(p22.ts, 0, 38))
+
+export const v22 = 22;
+>v22 : Symbol(v22, Decl(p22.ts, 1, 12))
+
+=== p23.ts ===
+import * as n23 from "./p24"; export { n23 };
+>n23 : Symbol(n23, Decl(p23.ts, 0, 6))
+>n23 : Symbol(n23, Decl(p23.ts, 0, 38))
+
+export const v23 = 23;
+>v23 : Symbol(v23, Decl(p23.ts, 1, 12))
+
+=== p24.ts ===
+import * as n24 from "./p25"; export { n24 };
+>n24 : Symbol(n24, Decl(p24.ts, 0, 6))
+>n24 : Symbol(n24, Decl(p24.ts, 0, 38))
+
+export const v24 = 24;
+>v24 : Symbol(v24, Decl(p24.ts, 1, 12))
+
+=== p25.ts ===
+import * as n25 from "./p26"; export { n25 };
+>n25 : Symbol(n25, Decl(p25.ts, 0, 6))
+>n25 : Symbol(n25, Decl(p25.ts, 0, 38))
+
+export const v25 = 25;
+>v25 : Symbol(v25, Decl(p25.ts, 1, 12))
+
+=== p26.ts ===
+import * as n26 from "./p27"; export { n26 };
+>n26 : Symbol(n26, Decl(p26.ts, 0, 6))
+>n26 : Symbol(n26, Decl(p26.ts, 0, 38))
+
+export const v26 = 26;
+>v26 : Symbol(v26, Decl(p26.ts, 1, 12))
+
+=== p27.ts ===
+import * as n27 from "./p28"; export { n27 };
+>n27 : Symbol(n27, Decl(p27.ts, 0, 6))
+>n27 : Symbol(n27, Decl(p27.ts, 0, 38))
+
+export const v27 = 27;
+>v27 : Symbol(v27, Decl(p27.ts, 1, 12))
+
+=== p28.ts ===
+import * as n28 from "./p29"; export { n28 };
+>n28 : Symbol(n28, Decl(p28.ts, 0, 6))
+>n28 : Symbol(n28, Decl(p28.ts, 0, 38))
+
+export const v28 = 28;
+>v28 : Symbol(v28, Decl(p28.ts, 1, 12))
+
+=== p29.ts ===
+import * as n29 from "./p30"; export { n29 };
+>n29 : Symbol(n29, Decl(p29.ts, 0, 6))
+>n29 : Symbol(n29, Decl(p29.ts, 0, 38))
+
+export const v29 = 29;
+>v29 : Symbol(v29, Decl(p29.ts, 1, 12))
+
+=== p3.ts ===
+import * as n3 from "./p4"; export { n3 };
+>n3 : Symbol(n3, Decl(p3.ts, 0, 6))
+>n3 : Symbol(n3, Decl(p3.ts, 0, 36))
+
+export const v3 = 3;
+>v3 : Symbol(v3, Decl(p3.ts, 1, 12))
+
+=== p30.ts ===
+import * as n30 from "./p31"; export { n30 };
+>n30 : Symbol(n30, Decl(p30.ts, 0, 6))
+>n30 : Symbol(n30, Decl(p30.ts, 0, 38))
+
+export const v30 = 30;
+>v30 : Symbol(v30, Decl(p30.ts, 1, 12))
+
+=== p31.ts ===
+import * as n31 from "./p32"; export { n31 };
+>n31 : Symbol(n31, Decl(p31.ts, 0, 6))
+>n31 : Symbol(n31, Decl(p31.ts, 0, 38))
+
+export const v31 = 31;
+>v31 : Symbol(v31, Decl(p31.ts, 1, 12))
+
+=== p32.ts ===
+import * as n32 from "./p33"; export { n32 };
+>n32 : Symbol(n32, Decl(p32.ts, 0, 6))
+>n32 : Symbol(n32, Decl(p32.ts, 0, 38))
+
+export const v32 = 32;
+>v32 : Symbol(v32, Decl(p32.ts, 1, 12))
+
+=== p33.ts ===
+import * as n33 from "./p34"; export { n33 };
+>n33 : Symbol(n33, Decl(p33.ts, 0, 6))
+>n33 : Symbol(n33, Decl(p33.ts, 0, 38))
+
+export const v33 = 33;
+>v33 : Symbol(v33, Decl(p33.ts, 1, 12))
+
+=== p34.ts ===
+import * as n34 from "./p35"; export { n34 };
+>n34 : Symbol(n34, Decl(p34.ts, 0, 6))
+>n34 : Symbol(n34, Decl(p34.ts, 0, 38))
+
+export const v34 = 34;
+>v34 : Symbol(v34, Decl(p34.ts, 1, 12))
+
+=== p35.ts ===
+import * as n35 from "./p36"; export { n35 };
+>n35 : Symbol(n35, Decl(p35.ts, 0, 6))
+>n35 : Symbol(n35, Decl(p35.ts, 0, 38))
+
+export const v35 = 35;
+>v35 : Symbol(v35, Decl(p35.ts, 1, 12))
+
+=== p36.ts ===
+import * as n36 from "./p37"; export { n36 };
+>n36 : Symbol(n36, Decl(p36.ts, 0, 6))
+>n36 : Symbol(n36, Decl(p36.ts, 0, 38))
+
+export const v36 = 36;
+>v36 : Symbol(v36, Decl(p36.ts, 1, 12))
+
+=== p37.ts ===
+import * as n37 from "./p38"; export { n37 };
+>n37 : Symbol(n37, Decl(p37.ts, 0, 6))
+>n37 : Symbol(n37, Decl(p37.ts, 0, 38))
+
+export const v37 = 37;
+>v37 : Symbol(v37, Decl(p37.ts, 1, 12))
+
+=== p38.ts ===
+import * as n38 from "./p39"; export { n38 };
+>n38 : Symbol(n38, Decl(p38.ts, 0, 6))
+>n38 : Symbol(n38, Decl(p38.ts, 0, 38))
+
+export const v38 = 38;
+>v38 : Symbol(v38, Decl(p38.ts, 1, 12))
+
+=== p39.ts ===
+import * as n39 from "./p40"; export { n39 };
+>n39 : Symbol(n39, Decl(p39.ts, 0, 6))
+>n39 : Symbol(n39, Decl(p39.ts, 0, 38))
+
+export const v39 = 39;
+>v39 : Symbol(v39, Decl(p39.ts, 1, 12))
+
+=== p4.ts ===
+import * as n4 from "./p5"; export { n4 };
+>n4 : Symbol(n4, Decl(p4.ts, 0, 6))
+>n4 : Symbol(n4, Decl(p4.ts, 0, 36))
+
+export const v4 = 4;
+>v4 : Symbol(v4, Decl(p4.ts, 1, 12))
+
+=== p40.ts ===
+import * as n40 from "./p41"; export { n40 };
+>n40 : Symbol(n40, Decl(p40.ts, 0, 6))
+>n40 : Symbol(n40, Decl(p40.ts, 0, 38))
+
+export const v40 = 40;
+>v40 : Symbol(v40, Decl(p40.ts, 1, 12))
+
+=== p41.ts ===
+import * as n41 from "./p42"; export { n41 };
+>n41 : Symbol(n41, Decl(p41.ts, 0, 6))
+>n41 : Symbol(n41, Decl(p41.ts, 0, 38))
+
+export const v41 = 41;
+>v41 : Symbol(v41, Decl(p41.ts, 1, 12))
+
+=== p42.ts ===
+import * as n42 from "./p43"; export { n42 };
+>n42 : Symbol(n42, Decl(p42.ts, 0, 6))
+>n42 : Symbol(n42, Decl(p42.ts, 0, 38))
+
+export const v42 = 42;
+>v42 : Symbol(v42, Decl(p42.ts, 1, 12))
+
+=== p43.ts ===
+import * as n43 from "./p44"; export { n43 };
+>n43 : Symbol(n43, Decl(p43.ts, 0, 6))
+>n43 : Symbol(n43, Decl(p43.ts, 0, 38))
+
+export const v43 = 43;
+>v43 : Symbol(v43, Decl(p43.ts, 1, 12))
+
+=== p44.ts ===
+import * as n44 from "./p45"; export { n44 };
+>n44 : Symbol(n44, Decl(p44.ts, 0, 6))
+>n44 : Symbol(n44, Decl(p44.ts, 0, 38))
+
+export const v44 = 44;
+>v44 : Symbol(v44, Decl(p44.ts, 1, 12))
+
+=== p45.ts ===
+import * as n45 from "./p46"; export { n45 };
+>n45 : Symbol(n45, Decl(p45.ts, 0, 6))
+>n45 : Symbol(n45, Decl(p45.ts, 0, 38))
+
+export const v45 = 45;
+>v45 : Symbol(v45, Decl(p45.ts, 1, 12))
+
+=== p46.ts ===
+import * as n46 from "./p47"; export { n46 };
+>n46 : Symbol(n46, Decl(p46.ts, 0, 6))
+>n46 : Symbol(n46, Decl(p46.ts, 0, 38))
+
+export const v46 = 46;
+>v46 : Symbol(v46, Decl(p46.ts, 1, 12))
+
+=== p47.ts ===
+import * as n47 from "./p48"; export { n47 };
+>n47 : Symbol(n47, Decl(p47.ts, 0, 6))
+>n47 : Symbol(n47, Decl(p47.ts, 0, 38))
+
+export const v47 = 47;
+>v47 : Symbol(v47, Decl(p47.ts, 1, 12))
+
+=== p48.ts ===
+import * as n48 from "./p49"; export { n48 };
+>n48 : Symbol(n48, Decl(p48.ts, 0, 6))
+>n48 : Symbol(n48, Decl(p48.ts, 0, 38))
+
+export const v48 = 48;
+>v48 : Symbol(v48, Decl(p48.ts, 1, 12))
+
+=== p49.ts ===
+import * as n49 from "./p50"; export { n49 };
+>n49 : Symbol(n49, Decl(p49.ts, 0, 6))
+>n49 : Symbol(n49, Decl(p49.ts, 0, 38))
+
+export const v49 = 49;
+>v49 : Symbol(v49, Decl(p49.ts, 1, 12))
+
+=== p5.ts ===
+import * as n5 from "./p6"; export { n5 };
+>n5 : Symbol(n5, Decl(p5.ts, 0, 6))
+>n5 : Symbol(n5, Decl(p5.ts, 0, 36))
+
+export const v5 = 5;
+>v5 : Symbol(v5, Decl(p5.ts, 1, 12))
+
+=== p50.ts ===
+import * as n50 from "./p51"; export { n50 };
+>n50 : Symbol(n50, Decl(p50.ts, 0, 6))
+>n50 : Symbol(n50, Decl(p50.ts, 0, 38))
+
+export const v50 = 50;
+>v50 : Symbol(v50, Decl(p50.ts, 1, 12))
+
+=== p51.ts ===
+import * as n51 from "./p1"; export { n51 };
+>n51 : Symbol(n51, Decl(p51.ts, 0, 6))
+>n51 : Symbol(n51, Decl(p51.ts, 0, 37))
+
+export const v51 = 51;
+>v51 : Symbol(v51, Decl(p51.ts, 1, 12))
+
+=== p6.ts ===
+import * as n6 from "./p7"; export { n6 };
+>n6 : Symbol(n6, Decl(p6.ts, 0, 6))
+>n6 : Symbol(n6, Decl(p6.ts, 0, 36))
+
+export const v6 = 6;
+>v6 : Symbol(v6, Decl(p6.ts, 1, 12))
+
+=== p7.ts ===
+import * as n7 from "./p8"; export { n7 };
+>n7 : Symbol(n7, Decl(p7.ts, 0, 6))
+>n7 : Symbol(n7, Decl(p7.ts, 0, 36))
+
+export const v7 = 7;
+>v7 : Symbol(v7, Decl(p7.ts, 1, 12))
+
+=== p8.ts ===
+import * as n8 from "./p9"; export { n8 };
+>n8 : Symbol(n8, Decl(p8.ts, 0, 6))
+>n8 : Symbol(n8, Decl(p8.ts, 0, 36))
+
+export const v8 = 8;
+>v8 : Symbol(v8, Decl(p8.ts, 1, 12))
+
+=== p9.ts ===
+import * as n9 from "./p10"; export { n9 };
+>n9 : Symbol(n9, Decl(p9.ts, 0, 6))
+>n9 : Symbol(n9, Decl(p9.ts, 0, 37))
+
+export const v9 = 9;
+>v9 : Symbol(v9, Decl(p9.ts, 1, 12))
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun17-C8a.ts] ////
+
+=== a.ts ===
+const b: boolean = { valueOf: 1 };
+>b : boolean
+>{ valueOf: 1 } : { valueOf: number; }
+>valueOf : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,33 @@
+//// [test/cases/bun16-C12.ts] ////
+
+=== a.ts ===
+declare function decN(target: any, context: { name: 0 }): void;
+>decN : (target: any, context: { name: 0; }) => void
+>target : any
+>context : { name: 0; }
+>name : 0
+
+class C {
+>C : C
+
+  @decN [1]() {}
+>decN : (target: any, context: { name: 0; }) => void
+>[1] : () => void
+>1 : 1
+
+  @decN [2] = 1;
+>decN : (target: any, context: { name: 0; }) => void
+>[2] : number
+>2 : 2
+>1 : 1
+
+  @decN get [3]() { return 1 }
+>decN : (target: any, context: { name: 0; }) => void
+>[3] : number
+>3 : 3
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,47 @@
+//// [test/cases/bun93-R04a.ts] ////
+
+=== a.ts ===
+const a = { m() { return this.z; }, f() { return this.z; }, g() { return (1 + {}); } };
+>a : Symbol(a, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 11))
+>this : Symbol(a, Decl(a.ts, 0, 9))
+>f : Symbol(f, Decl(a.ts, 0, 35))
+>this : Symbol(a, Decl(a.ts, 0, 9))
+>g : Symbol(g, Decl(a.ts, 0, 59))
+
+const b = { m() { return this.z; }, f() { return this.z; }, g: () => { return ([2 + {}]); } };
+>b : Symbol(b, Decl(a.ts, 1, 5))
+>m : Symbol(m, Decl(a.ts, 1, 11))
+>this : Symbol(b, Decl(a.ts, 1, 9))
+>f : Symbol(f, Decl(a.ts, 1, 35))
+>this : Symbol(b, Decl(a.ts, 1, 9))
+>g : Symbol(g, Decl(a.ts, 1, 59))
+
+const c = { m() { return this.z; }, f() { return this.z; }, get g() { return (3 + {}, 1); } };
+>c : Symbol(c, Decl(a.ts, 2, 5))
+>m : Symbol(m, Decl(a.ts, 2, 11))
+>this : Symbol(c, Decl(a.ts, 2, 9))
+>f : Symbol(f, Decl(a.ts, 2, 35))
+>this : Symbol(c, Decl(a.ts, 2, 9))
+>g : Symbol(g, Decl(a.ts, 2, 59))
+
+const d = { m() { return this.z; }, f() { return this.z; }, g: function () { return ((4 + {}) as any); } };
+>d : Symbol(d, Decl(a.ts, 3, 5))
+>m : Symbol(m, Decl(a.ts, 3, 11))
+>this : Symbol(d, Decl(a.ts, 3, 9))
+>f : Symbol(f, Decl(a.ts, 3, 35))
+>this : Symbol(d, Decl(a.ts, 3, 9))
+>g : Symbol(g, Decl(a.ts, 3, 59))
+
+// without the parentheses both tools lose the error
+const e = { m() { return this.z; }, f() { return this.z; }, g() { return 5 + {}; } };
+>e : Symbol(e, Decl(a.ts, 5, 5))
+>m : Symbol(m, Decl(a.ts, 5, 11))
+>this : Symbol(e, Decl(a.ts, 5, 9))
+>f : Symbol(f, Decl(a.ts, 5, 35))
+>this : Symbol(e, Decl(a.ts, 5, 9))
+>g : Symbol(g, Decl(a.ts, 5, 59))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

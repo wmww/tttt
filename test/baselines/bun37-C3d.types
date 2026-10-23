@@ -1,0 +1,10 @@
+//// [test/cases/bun37-C3d.ts] ////
+
+=== a.ts ===
+let n: number = null;
+>n : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

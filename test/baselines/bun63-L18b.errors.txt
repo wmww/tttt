@@ -1,0 +1,17 @@
+a.ts(1,19): error TS2307: Cannot find module './café' or its corresponding type declarations.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import { x } from "./café";
+                      ~~~~~~~~
+!!! error TS2307: Cannot find module './café' or its corresponding type declarations.
+    x;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== café.ts (0 errors) ====
+    export const x = 1;
+    

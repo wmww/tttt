@@ -1,0 +1,16 @@
+//// [test/cases/bun39-C12b.ts] ////
+
+=== a.ts ===
+// @ts-expect-error
+let x;
+>x : any
+
+=== c.ts ===
+function f() { return x; }
+>f : () => any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

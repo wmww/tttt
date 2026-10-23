@@ -1,0 +1,137 @@
+//// [test/cases/bun96-ARKTYPE2.ts] ////
+
+=== a.ts ===
+type In<t> = t extends string ? string : never
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 0, 8))
+>t : Symbol(t, Decl(a.ts, 0, 8))
+
+// arktype's `attest(actual).satisfies(def)`: an error in `actual` makes `expected` the error type
+type overlaps<l, r> = l & r extends never ? false : true
+>overlaps : Symbol(overlaps, Decl(a.ts, 0, 46))
+>l : Symbol(l, Decl(a.ts, 3, 14))
+>r : Symbol(r, Decl(a.ts, 3, 16))
+>l : Symbol(l, Decl(a.ts, 3, 14))
+>r : Symbol(r, Decl(a.ts, 3, 16))
+
+type Assertions<expected> = { satisfies: <def>(def: overlaps<expected, In<def>> extends true ? unknown : "no overlap") => void }
+>Assertions : Symbol(Assertions, Decl(a.ts, 3, 56))
+>expected : Symbol(expected, Decl(a.ts, 4, 16))
+>satisfies : Symbol(satisfies, Decl(a.ts, 4, 29))
+>def : Symbol(def, Decl(a.ts, 4, 42), Decl(a.ts, 4, 47))
+>def : Symbol(def, Decl(a.ts, 4, 42), Decl(a.ts, 4, 47))
+>overlaps : Symbol(overlaps, Decl(a.ts, 0, 46))
+>expected : Symbol(expected, Decl(a.ts, 4, 16))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>def : Symbol(def, Decl(a.ts, 4, 42), Decl(a.ts, 4, 47))
+
+declare function attest<expected>(actual: expected): Assertions<expected>
+>attest : Symbol(attest, Decl(a.ts, 4, 128))
+>expected : Symbol(expected, Decl(a.ts, 5, 24))
+>actual : Symbol(actual, Decl(a.ts, 5, 34))
+>expected : Symbol(expected, Decl(a.ts, 5, 24))
+>Assertions : Symbol(Assertions, Decl(a.ts, 3, 56))
+>expected : Symbol(expected, Decl(a.ts, 5, 24))
+
+declare const n: never
+>n : Symbol(n, Decl(a.ts, 6, 13))
+
+attest(n.foo).satisfies(1)
+>attest(n.foo).satisfies : Symbol(satisfies, Decl(a.ts, 4, 29))
+>attest : Symbol(attest, Decl(a.ts, 4, 128))
+>n : Symbol(n, Decl(a.ts, 6, 13))
+>satisfies : Symbol(satisfies, Decl(a.ts, 4, 29))
+
+// the same with a plain `any`
+interface C<T> {
+>C : Symbol(C, Decl(a.ts, 7, 26))
+>T : Symbol(T, Decl(a.ts, 10, 12))
+
+	m<U>(x: T & In<U>): void
+>m : Symbol(C.m, Decl(a.ts, 10, 16))
+>U : Symbol(U, Decl(a.ts, 11, 3))
+>x : Symbol(x, Decl(a.ts, 11, 6))
+>T : Symbol(T, Decl(a.ts, 10, 12))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 11, 3))
+
+	p1<U>(y: T & In<U>, x: U): void
+>p1 : Symbol(C.p1, Decl(a.ts, 11, 25))
+>U : Symbol(U, Decl(a.ts, 12, 4))
+>y : Symbol(y, Decl(a.ts, 12, 7))
+>T : Symbol(T, Decl(a.ts, 10, 12))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 12, 4))
+>x : Symbol(x, Decl(a.ts, 12, 20))
+>U : Symbol(U, Decl(a.ts, 12, 4))
+
+	p2<U>(y: T & In<U>, x: U): void
+>p2 : Symbol(C.p2, Decl(a.ts, 12, 32))
+>U : Symbol(U, Decl(a.ts, 13, 4))
+>y : Symbol(y, Decl(a.ts, 13, 7))
+>T : Symbol(T, Decl(a.ts, 10, 12))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 13, 4))
+>x : Symbol(x, Decl(a.ts, 13, 20))
+>U : Symbol(U, Decl(a.ts, 13, 4))
+}
+declare const c: C<any>
+>c : Symbol(c, Decl(a.ts, 15, 13))
+>C : Symbol(C, Decl(a.ts, 7, 26))
+
+c.m(1)
+>c.m : Symbol(C.m, Decl(a.ts, 10, 16))
+>c : Symbol(c, Decl(a.ts, 15, 13))
+>m : Symbol(C.m, Decl(a.ts, 10, 16))
+
+c.m<number>(1)
+>c.m : Symbol(C.m, Decl(a.ts, 10, 16))
+>c : Symbol(c, Decl(a.ts, 15, 13))
+>m : Symbol(C.m, Decl(a.ts, 10, 16))
+
+c.p1(2, 1)
+>c.p1 : Symbol(C.p1, Decl(a.ts, 11, 25))
+>c : Symbol(c, Decl(a.ts, 15, 13))
+>p1 : Symbol(C.p1, Decl(a.ts, 11, 25))
+
+c.p1<number>(2, 1)
+>c.p1 : Symbol(C.p1, Decl(a.ts, 11, 25))
+>c : Symbol(c, Decl(a.ts, 15, 13))
+>p1 : Symbol(C.p1, Decl(a.ts, 11, 25))
+
+// nothing has asked for the type of `y` of `C<any>.p2` before it is instantiated: 'never' in both
+c.p2<number>(2, 1)
+>c.p2 : Symbol(C.p2, Decl(a.ts, 12, 32))
+>c : Symbol(c, Decl(a.ts, 15, 13))
+>p2 : Symbol(C.p2, Decl(a.ts, 12, 32))
+
+class K<T> { m<U>(x: T & In<U>): void {} }
+>K : Symbol(K, Decl(a.ts, 21, 18))
+>T : Symbol(T, Decl(a.ts, 22, 8))
+>m : Symbol(K.m, Decl(a.ts, 22, 12))
+>U : Symbol(U, Decl(a.ts, 22, 15))
+>x : Symbol(x, Decl(a.ts, 22, 18))
+>T : Symbol(T, Decl(a.ts, 22, 8))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 22, 15))
+
+new K<any>().m(1)
+>new K<any>().m : Symbol(K.m, Decl(a.ts, 22, 12))
+>K : Symbol(K, Decl(a.ts, 21, 18))
+>m : Symbol(K.m, Decl(a.ts, 22, 12))
+
+declare function f<T>(): <U>(x: T & In<U>) => void
+>f : Symbol(f, Decl(a.ts, 23, 17))
+>T : Symbol(T, Decl(a.ts, 24, 19))
+>U : Symbol(U, Decl(a.ts, 24, 26))
+>x : Symbol(x, Decl(a.ts, 24, 29))
+>T : Symbol(T, Decl(a.ts, 24, 19))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 24, 26))
+
+f<any>()(1)
+>f : Symbol(f, Decl(a.ts, 23, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 26, 5))
+

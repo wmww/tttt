@@ -1,0 +1,19 @@
+//// [test/cases/bun32-C17.ts] ////
+
+=== a.ts ===
+const s = (Symbol)();
+>s : symbol
+>(Symbol)() : symbol
+>(Symbol) : SymbolConstructor
+>Symbol : SymbolConstructor
+
+const t: typeof s = Symbol();
+>t : symbol
+>s : symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

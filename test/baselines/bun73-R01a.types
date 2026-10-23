@@ -1,0 +1,70 @@
+//// [test/cases/bun73-R01a.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : () => boolean
+
+function minimal() {
+>minimal : () => void
+
+  let y: string | number = "";
+>y : string | number
+>"" : ""
+
+  while (c()) {
+>c() : boolean
+>c : () => boolean
+
+    if (y === 1) { }
+>y === 1 : boolean
+>y : string | number
+>1 : 1
+
+    switch (y) { case 0: y = 0; }
+>y : string | number
+>0 : 0
+>y = 0 : 0
+>y : string | number
+>0 : 0
+  }
+}
+function likely(a: string[]) {
+>likely : (a: string[]) => void
+>a : string[]
+
+  let v: string | number = "";
+>v : string | number
+>"" : ""
+
+  for (const e of a) {
+>e : string
+>a : string[]
+
+    if (v === 1) { c(); }
+>v === 1 : boolean
+>v : string | number
+>1 : 1
+>c() : boolean
+>c : () => boolean
+
+    switch (v) {
+>v : string | number
+
+      case 0: v = 1; break;
+>0 : 0
+>v = 1 : 1
+>v : string | number
+>1 : 1
+
+      case "": v = 0; break;
+>"" : ""
+>v = 0 : 0
+>v : string | number
+>0 : 0
+    }
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

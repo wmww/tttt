@@ -1,0 +1,25 @@
+m.ts(1,10): error TS2303: Circular definition of import alias 'p'.
+m.ts(3,7): error TS7022: 'obj' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+m.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+mid.ts(1,10): error TS2303: Circular definition of import alias 'p'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "module": "commonjs", "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["m.ts", "mid.ts"] }
+==== m.ts (3 errors) ====
+    import { p } from "./mid";
+             ~
+!!! error TS2303: Circular definition of import alias 'p'.
+    namespace obj { export interface p { t: 1 } }
+    const obj = { p: 1, q: p };
+          ~~~
+!!! error TS7022: 'obj' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    export = obj;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== mid.ts (1 errors) ====
+    export { p } from "./m";
+             ~
+!!! error TS2303: Circular definition of import alias 'p'.
+    

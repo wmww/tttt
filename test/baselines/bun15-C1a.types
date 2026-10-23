@@ -1,0 +1,16 @@
+//// [test/cases/bun15-C1a.ts] ////
+
+=== a.ts ===
+type Tagged<K extends string> = Uppercase<string & { [P in K]: 1 }>;
+>Tagged : Uppercase<`${string & { [P in K]: 1; }}`>
+
+function q<K extends string>(x: Tagged<K> extends Uppercase<infer U> ? U : never) { const y: { [P in K]: 1 } = x; }
+>q : <K extends string>(x: Tagged<K> extends Uppercase<infer U> ? U : never) => void
+>x : `${string & { [P in K]: 1; }}`
+>y : { [P in K]: 1; }
+>x : `${string & { [P in K]: 1; }}`
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

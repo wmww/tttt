@@ -1,0 +1,19 @@
+a.ts(4,7): error TS2322: Type 'U' is not assignable to type 'never'.
+  Type '(a: number) => number[]' is not assignable to type 'never'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function mk<A>(a: A): A[];
+    function g<T>() { return mk<number>; }
+    type U = ReturnType<typeof g<1>> | ReturnType<typeof g<2>>;
+    const n: never = null! as U;
+          ~
+!!! error TS2322: Type 'U' is not assignable to type 'never'.
+!!! error TS2322:   Type '(a: number) => number[]' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

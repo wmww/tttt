@@ -1,0 +1,29 @@
+//// [test/cases/bun21-C22.ts] ////
+
+=== a.ts ===
+type A = { rest: any; k: 1 };
+>A : A
+>rest : any
+>k : 1
+
+declare const u: { rest: A; k: 1 } | { rest: A; k: 2 };
+>u : { rest: A; k: 1; } | { rest: A; k: 2; }
+>rest : A
+>k : 1
+>rest : A
+>k : 2
+
+const { ...rest } = u;
+>rest : { rest: A; k: 1; } | { rest: A; k: 2; }
+>u : { rest: A; k: 1; } | { rest: A; k: 2; }
+
+const one: 1 = rest.k;
+>one : 1
+>rest.k : 1
+>rest : { rest: A; k: 1; }
+>k : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,29 @@
+//// [test/cases/bun22-C9.ts] ////
+
+=== a.ts ===
+class D { x = 1 }
+>D : D
+>x : number
+>1 : 1
+
+class D2 extends D { static s = 1 }
+>D2 : D2
+>D : D
+>s : number
+>1 : 1
+
+declare function f<T>(a: D | T, b: T): T;
+>f : <T>(a: D | T, b: T) => T
+>a : T | D
+>b : T
+
+f(D, D2);
+>f(D, D2) : typeof D2
+>f : <T>(a: D | T, b: T) => T
+>D : typeof D
+>D2 : typeof D2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

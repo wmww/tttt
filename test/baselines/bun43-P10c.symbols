@@ -1,0 +1,11 @@
+//// [test/cases/bun43-P10c.ts] ////
+
+=== a.ts ===
+type M<T> = T extends infer U ? ;
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+> : Symbol(unknown)
+> : Symbol(unknown)
+

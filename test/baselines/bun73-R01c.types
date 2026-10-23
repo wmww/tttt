@@ -1,0 +1,106 @@
+//// [test/cases/bun73-R01c.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : () => boolean
+
+type U = string | boolean;
+>U : U
+
+function afterLoop(x: U) {
+>afterLoop : (x: U) => void
+>x : U
+
+  if (x) { x = true; }
+>x : U
+>x = true : true
+>x : U
+>true : true
+
+  while (c()) { c(); }
+>c() : boolean
+>c : () => boolean
+>c() : boolean
+>c : () => boolean
+
+  const p: number = x;
+>p : number
+>x : string | boolean
+}
+function afterIf(x: U) {
+>afterIf : (x: U) => void
+>x : U
+
+  if (x) { x = true; }
+>x : U
+>x = true : true
+>x : U
+>true : true
+
+  if (c()) { c(); }
+>c() : boolean
+>c : () => boolean
+>c() : boolean
+>c : () => boolean
+
+  const p: number = x;
+>p : number
+>x : string | boolean
+}
+function afterTry(x: U) {
+>afterTry : (x: U) => void
+>x : U
+
+  if (x) { x = true; }
+>x : U
+>x = true : true
+>x : U
+>true : true
+
+  try { c(); } catch { }
+>c() : boolean
+>c : () => boolean
+
+  const p: number = x;
+>p : number
+>x : string | boolean
+}
+interface Options { verbose?: Flag }
+>verbose : Flag
+
+type Flag = boolean | "auto" | undefined;
+>Flag : Flag
+
+function likely(o: Options, args: string[]) {
+>likely : (o: Options, args: string[]) => void
+>o : Options
+>args : string[]
+
+  let verbose: Flag = o.verbose;
+>verbose : Flag
+>o.verbose : Flag
+>o : Options
+>verbose : Flag
+
+  if (verbose === "auto") { verbose = false; }
+>verbose === "auto" : boolean
+>verbose : Flag
+>"auto" : "auto"
+>verbose = false : false
+>verbose : Flag
+>false : false
+
+  for (const a of args) { c(); }
+>a : string
+>args : string[]
+>c() : boolean
+>c : () => boolean
+
+  const n: number = verbose;
+>n : number
+>verbose : boolean | undefined
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

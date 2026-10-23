@@ -1,0 +1,83 @@
+//// [test/cases/bun54-L08.ts] ////
+
+=== a.ts ===
+import { A1, A2, A3, A4, A5, A6, A7, A8 } from "./p";
+>A1 : Symbol(A1, Decl(a.ts, 0, 8))
+>A2 : Symbol(A2, Decl(a.ts, 0, 12))
+>A3 : Symbol(A3, Decl(a.ts, 0, 16))
+>A4 : Symbol(A4, Decl(a.ts, 0, 20))
+>A5 : Symbol(A5, Decl(a.ts, 0, 24))
+>A6 : Symbol(A6, Decl(a.ts, 0, 28))
+>A7 : Symbol(A7, Decl(a.ts, 0, 32))
+>A8 : Symbol(A8, Decl(a.ts, 0, 36))
+
+export type Range = [
+>Range : Symbol(Range, Decl(a.ts, 0, 53))
+
+  /** The start, see {@link A1} */
+  start: number,
+  /** {@link A2} */
+  end?: number,
+  /** {@link A3} */
+  ...rest: string[],
+];
+export function f(t: [
+>f : Symbol(f, Decl(a.ts, 8, 2))
+>t : Symbol(t, Decl(a.ts, 9, 18))
+
+  /** {@link A4} */
+  a: string,
+]) { return t; }
+>t : Symbol(t, Decl(a.ts, 9, 18))
+
+export type Unnamed = [
+>Unnamed : Symbol(Unnamed, Decl(a.ts, 12, 16))
+
+  /** {@link A5} */
+  string,
+];
+export type Same = [ /** {@link A6} */ a: string ];
+>Same : Symbol(Same, Decl(a.ts, 16, 2))
+
+export type Nested = { p: readonly [
+>Nested : Symbol(Nested, Decl(a.ts, 17, 51))
+>p : Symbol(p, Decl(a.ts, 18, 22))
+
+  /** @see {@link A7} */
+  a: string,
+] };
+export type Generic<T> = [
+>Generic : Symbol(Generic, Decl(a.ts, 21, 4))
+>T : Symbol(T, Decl(a.ts, 22, 20))
+
+  /** {@link T} {@link A8} */
+  a: T,
+>T : Symbol(T, Decl(a.ts, 22, 20))
+
+];
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 26, 12))
+
+=== p.ts ===
+export class A1 {} export class A2 {} export class A3 {} export class A4 {} export class A5 {} export class A6 {} export class A7 {} export class A8 {} export class A9 {}
+>A1 : Symbol(A1, Decl(p.ts, 0, 0))
+>A2 : Symbol(A2, Decl(p.ts, 0, 18))
+>A3 : Symbol(A3, Decl(p.ts, 0, 37))
+>A4 : Symbol(A4, Decl(p.ts, 0, 56))
+>A5 : Symbol(A5, Decl(p.ts, 0, 75))
+>A6 : Symbol(A6, Decl(p.ts, 0, 94))
+>A7 : Symbol(A7, Decl(p.ts, 0, 113))
+>A8 : Symbol(A8, Decl(p.ts, 0, 132))
+>A9 : Symbol(A9, Decl(p.ts, 0, 151))
+
+export class B1 {} export class B2 {} export class B3 {} export class B4 {} export class B5 {} export class B6 {} export class B7 {} export class B8 {} export class B9 {}
+>B1 : Symbol(B1, Decl(p.ts, 0, 170))
+>B2 : Symbol(B2, Decl(p.ts, 1, 18))
+>B3 : Symbol(B3, Decl(p.ts, 1, 37))
+>B4 : Symbol(B4, Decl(p.ts, 1, 56))
+>B5 : Symbol(B5, Decl(p.ts, 1, 75))
+>B6 : Symbol(B6, Decl(p.ts, 1, 94))
+>B7 : Symbol(B7, Decl(p.ts, 1, 113))
+>B8 : Symbol(B8, Decl(p.ts, 1, 132))
+>B9 : Symbol(B9, Decl(p.ts, 1, 151))
+

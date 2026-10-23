@@ -1,0 +1,100 @@
+a.ts(1,31): error TS2307: Cannot find module './typesx' or its corresponding type declarations.
+a.ts(5,19): error TS7053: Element implicitly has an 'any' type because expression of type 'AppState' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+a.ts(5,42): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(4,43): error TS2304: Cannot find name 'Nope'.
+b.ts(6,16): error TS2304: Cannot find name 'Nope'.
+b.ts(6,82): error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+b.ts(6,91): error TS2345: Argument of type 'Nope' is not assignable to parameter of type 'never'.
+b.ts(7,30): error TS2304: Cannot find name 'Nope'.
+b.ts(7,109): error TS7053: Element implicitly has an 'any' type because expression of type 'Nope<string>' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(7,118): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(8,105): error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(8,112): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(9,16): error TS2304: Cannot find name 'Nope'.
+b.ts(9,79): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(10,16): error TS2304: Cannot find name 'Nope'.
+b.ts(10,92): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(10,107): error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(12,16): error TS2304: Cannot find name 'Nope'.
+b.ts(12,88): error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(12,95): error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(13,16): error TS2304: Cannot find name 'Nope'.
+b.ts(13,97): error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+b.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    import type { AppState } from "./typesx";
+                                  ~~~~~~~~~~
+!!! error TS2307: Cannot find module './typesx' or its corresponding type declarations.
+    const GridLineColor = { light: 1, dark: 2 } as const;
+    function strokeGrid(theme: AppState["theme"], gridStep: number, x: number) {
+      const isBold = gridStep > 1 && x % gridStep === 0;
+      return isBold ? GridLineColor[theme] : GridLineColor[theme];
+                      ~~~~~~~~~~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'AppState' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+                                             ~~~~~~~~~~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (20 errors) ====
+    // The neighbours: every place where `narrowType` meets `&&` (assumed false) or `||` (assumed true) in a test that does not mention the reference.
+    const G = { light: 1, dark: 2 } as const;
+    declare function nev(x: never): void;
+    declare function isNope(x: unknown): x is Nope;
+                                              ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+    declare function assert(x: unknown): asserts x;
+    function f1(t: Nope, a: number, b: number) { const c = a > 1 || b === 0; c ? nev(t) : nev(t); }
+                   ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+                                                                                     ~
+!!! error TS2345: Argument of type 'any' is not assignable to parameter of type 'never'.
+                                                                                              ~
+!!! error TS2345: Argument of type 'Nope' is not assignable to parameter of type 'never'.
+    function f2(o: { readonly t: Nope<string> }, a: number, b: number) { const c = a > 1 && b === 0; return c ? G[o.t] : G[o.t]; }
+                                 ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+                                                                                                                ~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'Nope<string>' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+                                                                                                                         ~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+    function f3(x: unknown, a: number, b: number) { const c = a > 1 && b === 0; if (isNope(x)) { return c ? G[x] : G[x]; } return 0; }
+                                                                                                            ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+                                                                                                                   ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+    function f4(t: Nope, a: number, b: number) { assert(a > 1 || b === 0); return G[t]; }
+                   ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+                                                                                  ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+    function f5(t: Nope, a: number, b: number) { switch (true) { case a > 1 || b === 0: return G[t]; } return G[t]; }
+                   ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+                                                                                               ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+                                                                                                              ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+    // The same in both: an assigned parameter is no constant reference; the first antecedent of a join is the declared type.
+    function g1(t: Nope, a: number, b: number) { const c = a > 1 && b === 0; const r = c ? G[t] : G[t]; t = r; return r; }
+                   ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+                                                                                           ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+                                                                                                  ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+    function g2(t: Nope, a: number, b: number) { const c = a > 1 && b === 0; if (c) { a++; } return G[t]; }
+                   ~~~~
+!!! error TS2304: Cannot find name 'Nope'.
+                                                                                                    ~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'Nope' can't be used to index type '{ readonly light: 1; readonly dark: 2; }'.
+    const sentinel2: number = "";
+          ~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

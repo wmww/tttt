@@ -1,0 +1,15 @@
+//// [test/cases/bun43-C16g.ts] ////
+
+=== a.ts ===
+({ #p: 1, #p: 2 });
+>({ #p: 1, #p: 2 }) : {}
+>{ #p: 1, #p: 2 } : {}
+>#p : number
+>1 : 1
+>#p : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

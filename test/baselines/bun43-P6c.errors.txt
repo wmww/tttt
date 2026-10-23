@@ -1,0 +1,17 @@
+a.ts(2,2): error TS2304: Cannot find name 'T'.
+a.ts(2,12): error TS2304: Cannot find name 'U'.
+a.ts(2,13): error TS1005: '?' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare var x: any;
+    <T extends U>(x);
+     ~
+!!! error TS2304: Cannot find name 'T'.
+               ~
+!!! error TS2304: Cannot find name 'U'.
+                ~
+!!! error TS1005: '?' expected.
+    

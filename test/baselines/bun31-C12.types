@@ -1,0 +1,13 @@
+//// [test/cases/bun31-C12.ts] ////
+
+=== a.ts ===
+const c = class T<T> { a!: T; };
+>c : typeof T
+>class T<T> { a!: T; } : typeof T
+>T : typeof T
+>a : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

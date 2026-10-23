@@ -1,0 +1,19 @@
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "esModuleInterop": true, "module": "commonjs" } }
+==== a.ts (1 errors) ====
+    import * as ns from "./m";
+    import fn = require("./m");
+    declare function f<T>(p: typeof fn | T, q: T): T;
+    declare const c: typeof ns & { more: 1 };
+    f(ns, c);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.d.ts (0 errors) ====
+    declare function fn(x: number): string;
+    declare namespace fn { const extra: number }
+    export = fn;
+    

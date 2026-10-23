@@ -1,0 +1,17 @@
+//// [test/cases/bun23-C12.ts] ////
+
+=== a.ts ===
+const t1: 1 = null! as <T extends import("./m1").X>(x: T) => void;
+>t1 : 1
+>null! as <T extends import("./m1").X>(x: T) => void : <T extends import("./m1").X>(x: T) => void
+>null! : never
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+export interface X { a: 1 }
+>a : 1
+

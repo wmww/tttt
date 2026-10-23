@@ -1,0 +1,138 @@
+a.ts(2,6): error TS6196: 'Keys' is declared but never used.
+a.ts(3,7): error TS6196: 'C1' is declared but never used.
+a.ts(3,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(3,30): error TS2564: Property '[P in Keys]' has no initializer and is not definitely assigned in the constructor.
+a.ts(3,31): error TS2304: Cannot find name 'P'.
+a.ts(3,36): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(4,7): error TS6196: 'C2' is declared but never used.
+a.ts(4,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(4,45): error TS2304: Cannot find name 'P'.
+a.ts(4,50): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(5,7): error TS6196: 'C3' is declared but never used.
+a.ts(5,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(5,31): error TS2304: Cannot find name 'P'.
+a.ts(5,36): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(6,7): error TS6196: 'C4' is declared but never used.
+a.ts(6,12): error TS7061: A mapped type may not declare properties or methods.
+a.ts(6,39): error TS2564: Property '[P in Keys]' has no initializer and is not definitely assigned in the constructor.
+a.ts(6,40): error TS2304: Cannot find name 'P'.
+a.ts(6,45): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(7,7): error TS6196: 'C5' is declared but never used.
+a.ts(7,31): error TS2304: Cannot find name 'P'.
+a.ts(7,36): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(8,7): error TS6196: 'C6' is declared but never used.
+a.ts(8,34): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+a.ts(8,35): error TS2304: Cannot find name 'P'.
+a.ts(8,40): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(9,7): error TS6133: 'E7' is declared but its value is never read.
+a.ts(9,20): error TS7061: A mapped type may not declare properties or methods.
+a.ts(9,38): error TS2564: Property '[P in Keys]' has no initializer and is not definitely assigned in the constructor.
+a.ts(9,39): error TS2304: Cannot find name 'P'.
+a.ts(9,44): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(10,20): error TS7061: A mapped type may not declare properties or methods.
+a.ts(10,39): error TS2304: Cannot find name 'P'.
+a.ts(10,44): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(11,16): error TS6196: 'C9' is declared but never used.
+a.ts(11,21): error TS7061: A mapped type may not declare properties or methods.
+a.ts(11,49): error TS2304: Cannot find name 'P'.
+a.ts(11,54): error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(12,7): error TS6133: 'sentinel' is declared but its value is never read.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (40 errors) ====
+    export {};
+    type Keys = "a" | "b";
+         ~~~~
+!!! error TS6196: 'Keys' is declared but never used.
+    class C1 { [k: string]: any; [P in Keys]: number }
+          ~~
+!!! error TS6196: 'C1' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                 ~~~~~~~~~~~
+!!! error TS2564: Property '[P in Keys]' has no initializer and is not definitely assigned in the constructor.
+                                  ~
+!!! error TS2304: Cannot find name 'P'.
+                                       ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    class C2 { static [k: string]: any; static [P in Keys]: number }
+          ~~
+!!! error TS6196: 'C2' is declared but never used.
+               ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                                ~
+!!! error TS2304: Cannot find name 'P'.
+                                                     ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    class C3 { [k: string]: any; [P in Keys]?: number }
+          ~~
+!!! error TS6196: 'C3' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                  ~
+!!! error TS2304: Cannot find name 'P'.
+                                       ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    class C4 { [k: string]: any; readonly [P in Keys]: number }
+          ~~
+!!! error TS6196: 'C4' is declared but never used.
+               ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                          ~~~~~~~~~~~
+!!! error TS2564: Property '[P in Keys]' has no initializer and is not definitely assigned in the constructor.
+                                           ~
+!!! error TS2304: Cannot find name 'P'.
+                                                ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    class C5 { [k: number]: any; [P in Keys]() {} }
+          ~~
+!!! error TS6196: 'C5' is declared but never used.
+                                  ~
+!!! error TS2304: Cannot find name 'P'.
+                                       ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    class C6 { [k: symbol]: any; get [P in Keys]() { return 1 } }
+          ~~
+!!! error TS6196: 'C6' is declared but never used.
+                                     ~~~~~~~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+                                      ~
+!!! error TS2304: Cannot find name 'P'.
+                                           ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    const E7 = class { [k: string]: any; [P in Keys]: number };
+          ~~
+!!! error TS6133: 'E7' is declared but its value is never read.
+                       ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                         ~~~~~~~~~~~
+!!! error TS2564: Property '[P in Keys]' has no initializer and is not definitely assigned in the constructor.
+                                          ~
+!!! error TS2304: Cannot find name 'P'.
+                                               ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    declare class C8 { [k: string]: any; [P in Keys]: number }
+                       ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                          ~
+!!! error TS2304: Cannot find name 'P'.
+                                               ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    abstract class C9 { [k: string]: any; abstract [P in Keys]: number }
+                   ~~
+!!! error TS6196: 'C9' is declared but never used.
+                        ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                                    ~
+!!! error TS2304: Cannot find name 'P'.
+                                                         ~~~~
+!!! error TS2693: 'Keys' only refers to a type, but is being used as a value here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+          ~~~~~~~~
+!!! error TS6133: 'sentinel' is declared but its value is never read.
+    

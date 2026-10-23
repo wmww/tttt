@@ -1,0 +1,18 @@
+a.ts(1,19): error TS2877: This import uses a '.ts' extension to resolve to an input TypeScript file, but will not be rewritten during emit because it is not a relative path.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler", "rewriteRelativeImportExtensions": true, "noEmit": true }, "files": ["node_modules/pk/src.ts", "a.ts"] }
+==== a.ts (2 errors) ====
+    import { b } from "pk/src.ts";
+                      ~~~~~~~~~~~
+!!! error TS2877: This import uses a '.ts' extension to resolve to an input TypeScript file, but will not be rewritten during emit because it is not a relative path.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/pk/src.ts (0 errors) ====
+    export const b = 1;
+    
+==== node_modules/pk/package.json (0 errors) ====
+    { "name": "pk", "version": "1.0.0" }

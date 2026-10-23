@@ -1,0 +1,16 @@
+a.tsx(3,37): error TS2663: Cannot find name 'React'. Did you mean the instance member 'this.React'?
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.tsx (2 errors) ====
+    export {};
+    declare global { namespace JSX { interface IntrinsicElements { div: any } interface Element {} } }
+    class K { React: any; m() { return <React />; } }
+                                        ~~~~~
+!!! error TS2663: Cannot find name 'React'. Did you mean the instance member 'this.React'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

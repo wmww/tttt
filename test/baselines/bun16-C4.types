@@ -1,0 +1,21 @@
+//// [test/cases/bun16-C4.ts] ////
+
+=== a.ts ===
+function nu<T extends number | undefined, U extends string>(o: { p: T | `a${U}` | Uppercase<U> }) {
+>nu : <T extends number | undefined, U extends string>(o: { p: T | `a${U}` | Uppercase<U>; }) => void
+>o : { p: T | `a${U}` | Uppercase<U>; }
+>p : T | `a${U}` | Uppercase<U>
+
+  const { p = 1 } = o;
+>p : number | `a${string}` | Uppercase<string>
+>1 : 1
+>o : { p: T | `a${U}` | Uppercase<U>; }
+
+  const back: number | `a${U}` | Uppercase<U> = p;
+>back : number | `a${U}` | Uppercase<U>
+>p : number | `a${string}` | Uppercase<string>
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,16 @@
+a.ts(1,1): error TS2660: 'super' can only be referenced in members of derived classes or object literal expressions.
+a.ts(1,6): error TS1003: Identifier expected.
+a.ts(2,1): error TS1034: 'super' must be followed by an argument list or member access.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    super
+    ~~~~~
+!!! error TS2660: 'super' can only be referenced in members of derived classes or object literal expressions.
+         
+!!! error TS1003: Identifier expected.
+    
+    
+!!! error TS1034: 'super' must be followed by an argument list or member access.

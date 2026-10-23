@@ -1,0 +1,99 @@
+//// [test/cases/bun93-R04a.ts] ////
+
+=== a.ts ===
+const a = { m() { return this.z; }, f() { return this.z; }, g() { return (1 + {}); } };
+>a : { m(): any; f(): any; g(): any; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return (1 + {}); } } : { m(): any; f(): any; g(): any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>g : () => any
+>(1 + {}) : any
+>1 + {} : any
+>1 : 1
+>{} : {}
+
+const b = { m() { return this.z; }, f() { return this.z; }, g: () => { return ([2 + {}]); } };
+>b : { m(): any; f(): any; g: () => any[]; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => { return ([2 + {}]); } } : { m(): any; f(): any; g: () => any[]; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any[]; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any[]; }
+>z : any
+>g : () => any[]
+>() => { return ([2 + {}]); } : () => any[]
+>([2 + {}]) : any[]
+>[2 + {}] : any[]
+>2 + {} : any
+>2 : 2
+>{} : {}
+
+const c = { m() { return this.z; }, f() { return this.z; }, get g() { return (3 + {}, 1); } };
+>c : { m(): any; f(): any; readonly g: number; }
+>{ m() { return this.z; }, f() { return this.z; }, get g() { return (3 + {}, 1); } } : { m(): any; f(): any; readonly g: number; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; readonly g: number; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; readonly g: number; }
+>z : any
+>g : number
+>(3 + {}, 1) : 1
+>3 + {}, 1 : 1
+>3 + {} : any
+>3 : 3
+>{} : {}
+>1 : 1
+
+const d = { m() { return this.z; }, f() { return this.z; }, g: function () { return ((4 + {}) as any); } };
+>d : { m(): any; f(): any; g: () => any; }
+>{ m() { return this.z; }, f() { return this.z; }, g: function () { return ((4 + {}) as any); } } : { m(): any; f(): any; g: () => any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>g : () => any
+>function () { return ((4 + {}) as any); } : () => any
+>((4 + {}) as any) : any
+>(4 + {}) as any : any
+>(4 + {}) : any
+>4 + {} : any
+>4 : 4
+>{} : {}
+
+// without the parentheses both tools lose the error
+const e = { m() { return this.z; }, f() { return this.z; }, g() { return 5 + {}; } };
+>e : { m(): any; f(): any; g(): any; }
+>{ m() { return this.z; }, f() { return this.z; }, g() { return 5 + {}; } } : { m(): any; f(): any; g(): any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g(): any; }
+>z : any
+>g : () => any
+>5 + {} : any
+>5 : 5
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

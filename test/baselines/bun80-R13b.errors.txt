@@ -1,0 +1,31 @@
+a.ts(2,16): error TS2304: Cannot find name 'Missing'.
+b.ts(1,16): error TS2304: Cannot find name 'Missing'.
+b.ts(1,16): error TS2552: Cannot find name 'Missing'. Did you mean 'Missin'?
+c.ts(2,10): error TS2304: Cannot find name 'Missing'.
+s.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "commonjs", "esModuleInterop": true } }
+==== a.ts (1 errors) ====
+    import Missin from "./a";
+    export default Missing;
+                   ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+==== b.ts (2 errors) ====
+    export default Missing;
+                   ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+                   ~~~~~~~
+!!! error TS2552: Cannot find name 'Missing'. Did you mean 'Missin'?
+    import Missin from "./b";
+==== c.ts (1 errors) ====
+    import Missin = require("./c");
+    export = Missing;
+             ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+==== s.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

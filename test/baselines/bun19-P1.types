@@ -1,0 +1,30 @@
+//// [test/cases/bun19-P1.ts] ////
+
+=== a.ts ===
+import * as m4 from "./m4";
+>m4 : typeof m4
+
+const o: typeof m4 = { fn: x => x };
+>o : typeof m4
+>m4 : typeof m4
+>{ fn: x => x } : { fn: (x: any) => any; }
+>fn : (x: any) => any
+>x => x : (x: any) => any
+>x : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+export const fn = (x: number) => x;
+>fn : (x: number) => number
+>(x: number) => x : (x: number) => number
+>x : number
+>x : number
+
+=== m4.ts ===
+
+export type * from "./m1";
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun35-C11b.ts] ////
+
+=== a.ts ===
+import * as m16 from "./node_modules/loose";
+>m16 : Symbol(m16, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/loose.d.ts ===
+export const v: 1;
+>v : Symbol(v, Decl(loose.d.ts, 0, 12))
+

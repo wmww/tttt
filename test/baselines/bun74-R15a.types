@@ -1,0 +1,63 @@
+//// [test/cases/bun74-R15a.ts] ////
+
+=== a.ts ===
+export const e1: 0 = (a: unknown): a is string => true;
+>e1 : 0
+>(a: unknown): a is string => true : (a: unknown) => a is string
+>a : unknown
+>true : true
+
+export const e2: 0 = <T>(a: T): asserts a is T => {};
+>e2 : 0
+><T>(a: T): asserts a is T => {} : <T>(a: T) => asserts a is T
+>a : T
+
+export const e3: 0 = { f(a: unknown): a is string { return true; } };
+>e3 : 0
+>{ f(a: unknown): a is string { return true; } } : { f(a: unknown): a is string; }
+>f : (a: unknown) => a is string
+>a : unknown
+>true : true
+
+declare function take(n: 0): void; take(function (a: unknown, b: unknown): b is string { return true; });
+>take : (n: 0) => void
+>n : 0
+>take(function (a: unknown, b: unknown): b is string { return true; }) : void
+>take : (n: 0) => void
+>function (a: unknown, b: unknown): b is string { return true; } : (a: unknown, b: unknown) => b is string
+>a : unknown
+>b : unknown
+>true : true
+
+export const e5: (a: unknown) => a is number = (a: unknown): a is string => true;
+>e5 : (a: unknown) => a is number
+>a : unknown
+>(a: unknown): a is string => true : (a: unknown) => a is string
+>a : unknown
+>true : true
+
+// controls: tsc reports these too
+export const c1 = (a: unknown): a is string => true;
+>c1 : (a: unknown) => a is string
+>(a: unknown): a is string => true : (a: unknown) => a is string
+>a : unknown
+>true : true
+
+export const c2: 0 = [(a: unknown): a is string => true];
+>c2 : 0
+>[(a: unknown): a is string => true] : ((a: unknown) => a is string)[]
+>(a: unknown): a is string => true : (a: unknown) => a is string
+>a : unknown
+>true : true
+
+export function c3(a: unknown): a is string { return true; } export const c4: 0 = c3;
+>c3 : (a: unknown) => a is string
+>a : unknown
+>true : true
+>c4 : 0
+>c3 : (a: unknown) => a is string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

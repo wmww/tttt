@@ -1,0 +1,45 @@
+//// [test/cases/bun55-L19.ts] ////
+
+=== a.ts ===
+declare let n: null;
+>n : Symbol(n, Decl(a.ts, 0, 11))
+
+function f1({ range: [lo, hi] = n || [0, 1] }) {}
+>f1 : Symbol(f1, Decl(a.ts, 0, 20))
+>range : Symbol(range)
+>lo : Symbol(lo, Decl(a.ts, 1, 22))
+>hi : Symbol(hi, Decl(a.ts, 1, 25))
+>n : Symbol(n, Decl(a.ts, 0, 11))
+
+f1({ range: [1, 2, 3] });
+>f1 : Symbol(f1, Decl(a.ts, 0, 20))
+>range : Symbol(range, Decl(a.ts, 2, 4))
+
+function f2([[a, b] = n ?? [1, "x"]]) {}
+>f2 : Symbol(f2, Decl(a.ts, 2, 25))
+>a : Symbol(a, Decl(a.ts, 3, 14))
+>b : Symbol(b, Decl(a.ts, 3, 16))
+>n : Symbol(n, Decl(a.ts, 0, 11))
+
+f2([["x", 1]]);
+>f2 : Symbol(f2, Decl(a.ts, 2, 25))
+
+let z = f2;
+>z : Symbol(z, Decl(a.ts, 5, 3))
+>f2 : Symbol(f2, Decl(a.ts, 2, 25))
+
+z = true;
+>z : Symbol(z, Decl(a.ts, 5, 3))
+
+// without `??` the default is a tuple in both
+function f3([[a, b] = [1, "x"]]) {}
+>f3 : Symbol(f3, Decl(a.ts, 6, 9))
+>a : Symbol(a, Decl(a.ts, 8, 14))
+>b : Symbol(b, Decl(a.ts, 8, 16))
+
+f3([["x", 1]]);
+>f3 : Symbol(f3, Decl(a.ts, 6, 9))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

@@ -1,0 +1,28 @@
+//// [test/cases/bun18-C4a.ts] ////
+
+=== a.ts ===
+type Tail<T> = T extends (a: any, ...args: infer P) => any ? P : never;
+>Tail : Symbol(Tail, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 0, 26))
+>args : Symbol(args, Decl(a.ts, 0, 33))
+>P : Symbol(P, Decl(a.ts, 0, 48))
+>P : Symbol(P, Decl(a.ts, 0, 48))
+
+type X1 = Tail<(...args: readonly [number, ...string[]]) => void>;
+>X1 : Symbol(X1, Decl(a.ts, 0, 71))
+>Tail : Symbol(Tail, Decl(a.ts, 0, 0))
+>args : Symbol(args, Decl(a.ts, 1, 16))
+
+declare const ro: readonly string[];
+>ro : Symbol(ro, Decl(a.ts, 2, 13))
+
+const x1: X1 = ro;
+>x1 : Symbol(x1, Decl(a.ts, 3, 5))
+>X1 : Symbol(X1, Decl(a.ts, 0, 71))
+>ro : Symbol(ro, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

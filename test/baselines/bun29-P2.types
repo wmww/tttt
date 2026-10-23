@@ -1,0 +1,33 @@
+//// [test/cases/bun29-P2.ts] ////
+
+=== a.ts ===
+import { mk } from "pkg";
+>mk : () => import("@re").default
+
+export const v = mk();
+>v : import("@re").default
+>mk() : import("@re").default
+>mk : () => import("@re").default
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== sub/reexp.ts ===
+import { Inner } from "../node_modules/pkg/node_modules/inner";
+>Inner : any
+
+export default Inner;
+>Inner : Inner
+
+=== node_modules/pkg/index.d.ts ===
+import { Inner } from "inner";
+>Inner : any
+
+export declare function mk(): Inner;
+>mk : () => Inner
+
+=== node_modules/pkg/node_modules/inner/index.d.ts ===
+export interface Inner { x: 1 }
+>x : 1
+

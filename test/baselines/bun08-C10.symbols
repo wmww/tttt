@@ -1,0 +1,15 @@
+//// [test/cases/bun08-C10.ts] ////
+
+=== a.ts ===
+const k = "k";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+interface B3 { k: number; readonly [k]: number }
+>B3 : Symbol(B3, Decl(a.ts, 0, 14))
+>k : Symbol(B3.k, Decl(a.ts, 1, 14), Decl(a.ts, 1, 25))
+>[k] : Symbol(B3.k, Decl(a.ts, 1, 14), Decl(a.ts, 1, 25))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

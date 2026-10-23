@@ -1,0 +1,19 @@
+a.js(1,12): error TS2503: Cannot find namespace 'a'.
+a.js(1,14): error TS1003: Identifier expected.
+b.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    /** @type {a.} */
+               ~
+!!! error TS2503: Cannot find namespace 'a'.
+                 ~
+!!! error TS1003: Identifier expected.
+    var x = 1;
+==== b.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

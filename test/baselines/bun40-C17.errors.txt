@@ -1,0 +1,19 @@
+a.ts(2,23): error TS2688: Cannot find type definition file for 'Bar'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["a.ts"] }
+==== a.ts (2 errors) ====
+    /// <reference types="bar" />
+    /// <reference types="Bar" />
+                          ~~~
+!!! error TS2688: Cannot find type definition file for 'Bar'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/bar/index.d.ts (0 errors) ====
+    declare const bar: 1;
+==== node_modules/bar/package.json (0 errors) ====
+    {"name":"bar","version":"4.5.6","types":"index.d.ts"}
+    

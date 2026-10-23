@@ -1,0 +1,13 @@
+//// [test/cases/bun40-C5.ts] ////
+
+=== a.ts ===
+/// <reference lib="" />
+/// <reference lib="esnext.full" />
+const d: Document = 1;
+>d : Document
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

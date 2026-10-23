@@ -1,0 +1,17 @@
+//// [test/cases/bun16-P2b.ts] ////
+
+=== a.ts ===
+declare function d2(target: any, key: number): any;
+>d2 : (target: any, key: number) => any
+>target : any
+>key : number
+
+class C { @d2 1n() {} }
+>C : C
+>d2 : (target: any, key: number) => any
+>1n : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

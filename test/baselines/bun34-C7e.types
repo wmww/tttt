@@ -1,0 +1,8 @@
+//// [test/cases/bun34-C7e.ts] ////
+
+=== a.ts ===
+class C { c\u006fnstructor() {} } const sentinel: number = "";
+>C : C
+>sentinel : number
+>"" : ""
+

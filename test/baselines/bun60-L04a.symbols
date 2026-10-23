@@ -1,0 +1,57 @@
+//// [test/cases/bun60-L04a.ts] ////
+
+=== a.js ===
+function f() { const s = Symbol(); return { [s]: 1 }; }
+>f : Symbol(f, Decl(a.js, 0, 0))
+>s : Symbol(s, Decl(a.js, 0, 20))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>[s] : Symbol([s], Decl(a.js, 0, 43))
+>s : Symbol(s, Decl(a.js, 0, 20))
+
+export class C0 { constructor() { this.x = f(); } }
+>C0 : Symbol(C0, Decl(a.js, 0, 55))
+>this.x : Symbol(C0.x, Decl(a.js, 1, 33))
+>this : Symbol(C0, Decl(a.js, 0, 55))
+>x : Symbol(C0.x, Decl(a.js, 1, 33))
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+export class C1 { [+1]() {} constructor() { this[1] = f(); } }
+>C1 : Symbol(C1, Decl(a.js, 1, 51))
+>[+1] : Symbol(C1[+1], Decl(a.js, 2, 17))
+>this : Symbol(C1, Decl(a.js, 1, 51))
+>1 : Symbol(C1[1], Decl(a.js, 2, 43))
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+export class C2 { 1() {} constructor() { this[1] = f(); } }
+>C2 : Symbol(C2, Decl(a.js, 2, 62))
+>1 : Symbol(C2[1], Decl(a.js, 3, 17))
+>this : Symbol(C2, Decl(a.js, 2, 62))
+>1 : Symbol(C2[1], Decl(a.js, 3, 17))
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+export class C3 { [1]() {} constructor() { this[1] = f(); } }
+>C3 : Symbol(C3, Decl(a.js, 3, 59))
+>[1] : Symbol(C3[1], Decl(a.js, 4, 17))
+>1 : Symbol(C3[1], Decl(a.js, 4, 17))
+>this : Symbol(C3, Decl(a.js, 3, 59))
+>1 : Symbol(C3[1], Decl(a.js, 4, 17))
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+export class C4 { [-1]() {} constructor() { this["-1"] = f(); } }
+>C4 : Symbol(C4, Decl(a.js, 4, 61))
+>[-1] : Symbol(C4[-1], Decl(a.js, 5, 17))
+>this : Symbol(C4, Decl(a.js, 4, 61))
+>"-1" : Symbol(C4[-1], Decl(a.js, 5, 17))
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+export class C5 { [+1]() {} constructor() { this["+1"] = f(); } }
+>C5 : Symbol(C5, Decl(a.js, 5, 65))
+>[+1] : Symbol(C5[+1], Decl(a.js, 6, 17))
+>this : Symbol(C5, Decl(a.js, 5, 65))
+>"+1" : Symbol(C5[+1], Decl(a.js, 6, 17))
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 8, 5))
+

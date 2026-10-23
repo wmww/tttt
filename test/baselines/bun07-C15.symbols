@@ -1,0 +1,14 @@
+//// [test/cases/bun07-C15.ts] ////
+
+=== a.ts ===
+export {};
+const r4 = { a = [1] } as const; const r4n: null = r4;
+>r4 : Symbol(r4, Decl(a.ts, 1, 5))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>const : Symbol(const)
+>r4n : Symbol(r4n, Decl(a.ts, 1, 38))
+>r4 : Symbol(r4, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

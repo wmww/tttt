@@ -1,0 +1,32 @@
+//// [test/cases/bun92-R14a.ts] ////
+
+=== a.ts ===
+import * as ns from "./d.json";
+>ns : { module: any; "": { a: number; }; }
+
+import d from "./d.json";
+>d : { module: any; "": { a: number; }; }
+
+const n: 0 = d; const m: 0 = ns;
+>n : 0
+>d : { module: any; "": { a: number; }; }
+>m : 0
+>ns : { module: any; "": { a: number; }; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== d.json ===
+module.exports = { "a": 1 }
+>module.exports = { "a": 1 } : { module: any; "": { a: number; }; }
+>module : any
+> : { a: number; }
+>.exports = { "a": 1 } : { a: number; }
+>.exports : any
+> : any
+>exports : any
+>{ "a": 1 } : { a: number; }
+>"a" : number
+>1 : 1
+

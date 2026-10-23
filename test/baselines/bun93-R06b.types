@@ -1,0 +1,37 @@
+//// [test/cases/bun93-R06b.ts] ////
+
+=== a.ts ===
+interface Base<T> { base: T }
+>base : T
+
+interface A extends Base<typeof arr> { x: number }
+>arr : any
+>x : number
+
+interface C { x: number }
+>x : number
+
+declare let c: C; declare let a: A;
+>c : C
+>a : A
+
+const arr = [a, c];
+>arr : any
+>[a, c] : A[]
+>a : A
+>c : C
+
+const arr2 = [a, c];
+>arr2 : A[]
+>[a, c] : A[]
+>a : A
+>c : C
+
+const n2: number = arr2;
+>n2 : number
+>arr2 : A[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,10 @@
+//// [test/cases/bun04-C11.ts] ////
+
+=== a.ts ===
+export type A1<T = U<number>, U = 1> = [T, U];
+>A1 : A1<T, U>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

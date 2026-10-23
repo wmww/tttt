@@ -1,0 +1,12 @@
+//// [test/cases/bun38-C12b.ts] ////
+
+=== a.tsx ===
+export const el = <div />;
+>el : any
+><div /> : any
+>div : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

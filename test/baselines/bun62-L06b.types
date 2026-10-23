@@ -1,0 +1,53 @@
+//// [test/cases/bun62-L06b.ts] ////
+
+=== a.js ===
+const k = "x";
+>k : "x"
+>"x" : "x"
+
+const o = { [k]: 1, m() { this.x = 2; } };
+>o : { m(): void; x: number; }
+>{ [k]: 1, m() { this.x = 2; } } : { m(): void; x: number; }
+>[k] : number
+>k : "x"
+>1 : 1
+>m : () => void
+>this.x = 2 : 2
+>this.x : number
+>this : { m(): void; x: number; }
+>x : number
+>2 : 2
+
+/** @type {boolean} */ const a = o;
+>a : boolean
+>o : { m(): void; x: number; }
+
+const o2 = { [k]: 1, n: 1, get g() { this.x = 2; return 1; } };
+>o2 : { n: number; readonly g: number; x: number; }
+>{ [k]: 1, n: 1, get g() { this.x = 2; return 1; } } : { n: number; readonly g: number; x: number; }
+>[k] : number
+>k : "x"
+>1 : 1
+>n : number
+>1 : 1
+>g : number
+>this.x = 2 : 2
+>this.x : number
+>this : { n: number; readonly g: number; x: number; }
+>x : number
+>2 : 2
+>1 : 1
+
+/** @type {boolean} */ const d = o2;
+>d : boolean
+>o2 : { n: number; readonly g: number; x: number; }
+
+/** @type {{ m(): void, x: string, n: string }} */ const e = o2;
+>e : { m(): void; x: string; n: string; }
+>o2 : { n: number; readonly g: number; x: number; }
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

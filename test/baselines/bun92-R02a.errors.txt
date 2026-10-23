@@ -1,0 +1,13 @@
+a.ts(1,51): error TS1003: Identifier expected.
+a.ts(1,52): error TS1005: ';' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const a: any, b: any, x: any, f: any; (a?.!);
+                                                      ~
+!!! error TS1003: Identifier expected.
+                                                       ~
+!!! error TS1005: ';' expected.
+    

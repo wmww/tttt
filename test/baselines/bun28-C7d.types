@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C7d.ts] ////
+
+=== a.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+await using a = null;
+>a : null
+

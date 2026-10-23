@@ -1,0 +1,280 @@
+//// [test/cases/bun96-TSPATTERN1.ts] ////
+
+=== a.ts ===
+// As in ts-pattern: the typo makes `matcher` an `any`, so `[matcher]` is a name that cannot be bound.
+const matcher = Symbol.forX("m");
+>matcher : any
+>Symbol.forX("m") : any
+>Symbol.forX : any
+>Symbol : SymbolConstructor
+>forX : any
+>"m" : "m"
+
+interface Matcher { [matcher](): { match: (value: string) => boolean } }
+>[matcher] : () => { match: (value: string) => boolean; }
+>matcher : any
+>match : (value: string) => boolean
+>value : string
+
+declare function chainable<P extends Matcher>(p: P): P;
+>chainable : <P extends Matcher>(p: P) => P
+>p : P
+
+chainable({ [matcher]: () => ({ match: (value) => true }) });
+>chainable({ [matcher]: () => ({ match: (value) => true }) }) : { [matcher]: () => { match: (value: string) => true; }; }
+>chainable : <P extends Matcher>(p: P) => P
+>{ [matcher]: () => ({ match: (value) => true }) } : { [matcher]: () => { match: (value: string) => true; }; }
+>[matcher] : () => { match: (value: string) => true; }
+>matcher : any
+>() => ({ match: (value) => true }) : () => { match: (value: string) => true; }
+>({ match: (value) => true }) : { match: (value: string) => true; }
+>{ match: (value) => true } : { match: (value: string) => true; }
+>match : (value: string) => true
+>(value) => true : (value: string) => true
+>value : string
+>true : true
+
+chainable({ [matcher]() { return { match: (value) => true } } });
+>chainable({ [matcher]() { return { match: (value) => true } } }) : { [matcher]: () => { match: (value: string) => true; }; }
+>chainable : <P extends Matcher>(p: P) => P
+>{ [matcher]() { return { match: (value) => true } } } : { [matcher]: () => { match: (value: string) => true; }; }
+>[matcher] : () => { match: (value: string) => true; }
+>matcher : any
+>{ match: (value) => true } : { match: (value: string) => true; }
+>match : (value: string) => true
+>(value) => true : (value: string) => true
+>value : string
+>true : true
+
+// The same without any mistake.
+declare const key: string;
+>key : string
+
+declare function handlers<P extends Record<string, (value: string) => unknown>>(p: P): P;
+>handlers : <P extends Record<string, (value: string) => unknown>>(p: P) => P
+>value : string
+>p : P
+
+handlers({ [key]: (value) => value.nope });
+>handlers({ [key]: (value) => value.nope }) : { [key]: (value: string) => any; }
+>handlers : <P extends Record<string, (value: string) => unknown>>(p: P) => P
+>{ [key]: (value) => value.nope } : { [key]: (value: string) => any; }
+>[key] : (value: string) => any
+>key : string
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+handlers({ [`on${key}`]: (value) => value.nope });
+>handlers({ [`on${key}`]: (value) => value.nope }) : { [x: string]: (value: string) => any; }
+>handlers : <P extends Record<string, (value: string) => unknown>>(p: P) => P
+>{ [`on${key}`]: (value) => value.nope } : { [x: string]: (value: string) => any; }
+>[`on${key}`] : (value: string) => any
+>`on${key}` : string
+>key : string
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+// A context sensitive member with an ordinary name beside it hides the difference.
+handlers({ [key]: (value) => value.nope, a: (value) => value.nope });
+>handlers({ [key]: (value) => value.nope, a: (value) => value.nope }) : { [key]: (value: string) => any; a: (value: string) => any; }
+>handlers : <P extends Record<string, (value: string) => unknown>>(p: P) => P
+>{ [key]: (value) => value.nope, a: (value) => value.nope } : { [key]: (value: string) => any; a: (value: string) => any; }
+>[key] : (value: string) => any
+>key : string
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+>a : (value: string) => any
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+// Neighbours: EVERY member propagates its flags in `checkObjectLiteral`, also one that leaves no property in the type.
+export {};
+declare const key: string;
+>key : string
+
+declare const num: number;
+>num : number
+
+declare const sym: symbol;
+>sym : symbol
+
+declare const obj: {};
+>obj : {}
+
+type Fn = (value: string) => unknown;
+>Fn : Fn
+>value : string
+
+declare function f<P extends Record<string | symbol, Fn>>(p: P): P;
+>f : <P extends Record<string | symbol, Fn>>(p: P) => P
+>p : P
+
+f({ [num]: (value) => value.nope });
+>f({ [num]: (value) => value.nope }) : { [num]: (value: string) => any; }
+>f : <P extends Record<string | symbol, Fn>>(p: P) => P
+>{ [num]: (value) => value.nope } : { [num]: (value: string) => any; }
+>[num] : (value: string) => any
+>num : number
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+f({ [sym]: (value) => value.nope });
+>f({ [sym]: (value) => value.nope }) : { [sym]: (value: string) => any; }
+>f : <P extends Record<string | symbol, Fn>>(p: P) => P
+>{ [sym]: (value) => value.nope } : { [sym]: (value: string) => any; }
+>[sym] : (value: string) => any
+>sym : symbol
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+f({ [key](value) { return value.nope } });
+>f({ [key](value) { return value.nope } }) : { [key]: (value: string) => any; }
+>f : <P extends Record<string | symbol, Fn>>(p: P) => P
+>{ [key](value) { return value.nope } } : { [key]: (value: string) => any; }
+>[key] : (value: string) => any
+>key : string
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+f({ ...{}, [key]: (value) => value.nope });
+>f({ ...{}, [key]: (value) => value.nope }) : {}
+>f : <P extends Record<string | symbol, Fn>>(p: P) => P
+>{ ...{}, [key]: (value) => value.nope } : {}
+>{} : {}
+>[key] : (value: string) => any
+>key : string
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+declare function nested<P extends { a: Record<string, Fn> }>(p: P): P;
+>nested : <P extends { a: Record<string, Fn>; }>(p: P) => P
+>a : Record<string, Fn>
+>p : P
+
+nested({ a: { [key]: (value) => value.nope } });
+>nested({ a: { [key]: (value) => value.nope } }) : { a: { [key]: (value: string) => any; }; }
+>nested : <P extends { a: Record<string, Fn>; }>(p: P) => P
+>{ a: { [key]: (value) => value.nope } } : { a: { [key]: (value: string) => any; }; }
+>a : { [key]: (value: string) => any; }
+>{ [key]: (value) => value.nope } : { [key]: (value: string) => any; }
+>[key] : (value: string) => any
+>key : string
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+declare function list<P extends Record<string, Fn>>(...p: P[]): P;
+>list : <P extends Record<string, Fn>>(...p: P[]) => P
+>p : P[]
+
+list({ [key]: (value) => value.nope });
+>list({ [key]: (value) => value.nope }) : { [key]: (value: string) => any; }
+>list : <P extends Record<string, Fn>>(...p: P[]) => P
+>{ [key]: (value) => value.nope } : { [key]: (value: string) => any; }
+>[key] : (value: string) => any
+>key : string
+>(value) => value.nope : (value: string) => any
+>value : string
+>value.nope : any
+>value : string
+>nope : any
+
+// What is inferred: nothing in the first pass, so `P` comes from the return type.
+declare function g<P>(p: P, q: (p: P) => void): P;
+>g : <P>(p: P, q: (p: P) => void) => P
+>p : P
+>q : (p: P) => void
+>p : P
+
+const r1: number = g({ [key]: (value: any) => true, b: () => 1 }, (p) => {});
+>r1 : number
+>g({ [key]: (value: any) => true, b: () => 1 }, (p) => {}) : { [key]: (value: any) => boolean; b: () => number; }
+>g : <P>(p: P, q: (p: P) => void) => P
+>{ [key]: (value: any) => true, b: () => 1 } : { [key]: (value: any) => boolean; b: () => number; }
+>[key] : (value: any) => boolean
+>key : string
+>(value: any) => true : (value: any) => boolean
+>value : any
+>true : true
+>b : () => number
+>() => 1 : () => number
+>1 : 1
+>(p) => {} : (p: { [key]: (value: any) => boolean; b: () => number; }) => void
+>p : { [key]: (value: any) => boolean; b: () => number; }
+
+const r2: number = g({ [key]: (value) => true }, (p) => {});
+>r2 : number
+>g({ [key]: (value) => true }, (p) => {}) : number
+>g : <P>(p: P, q: (p: P) => void) => P
+>{ [key]: (value) => true } : { [key]: (value: any) => boolean; }
+>[key] : (value: any) => boolean
+>key : string
+>(value) => true : (value: any) => boolean
+>value : any
+>true : true
+>(p) => {} : (p: number) => void
+>p : number
+
+const r3: number = g({ a: (value) => true, a: 1 }, (p) => {});
+>r3 : number
+>g({ a: (value) => true, a: 1 }, (p) => {}) : number
+>g : <P>(p: P, q: (p: P) => void) => P
+>{ a: (value) => true, a: 1 } : { a: number; }
+>a : (value: any) => boolean
+>(value) => true : (value: any) => boolean
+>value : any
+>true : true
+>a : (value: any) => boolean
+>1 : 1
+>(p) => {} : (p: number) => void
+>p : number
+
+const r4: number = g({ [obj]: (value) => true, b: 1 }, (p) => {});
+>r4 : number
+>g({ [obj]: (value) => true, b: 1 }, (p) => {}) : number
+>g : <P>(p: P, q: (p: P) => void) => P
+>{ [obj]: (value) => true, b: 1 } : { b: number; }
+>[obj] : (value: any) => boolean
+>obj : {}
+>(value) => true : (value: any) => boolean
+>value : any
+>true : true
+>b : number
+>1 : 1
+>(p) => {} : (p: number) => void
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

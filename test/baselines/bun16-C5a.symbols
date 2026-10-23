@@ -1,0 +1,28 @@
+//// [test/cases/bun16-C5a.ts] ////
+
+=== a.ts ===
+function n(x: never) {}
+>n : Symbol(n, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+namespace N { const x = 1; }
+>N : Symbol(N, Decl(a.ts, 0, 23))
+>x : Symbol(x, Decl(a.ts, 1, 19))
+
+const nn = N;
+>nn : Symbol(nn, Decl(a.ts, 2, 5))
+>N : Symbol(N, Decl(a.ts, 0, 23))
+
+if (typeof nn !== "object") n(nn);
+>nn : Symbol(nn, Decl(a.ts, 2, 5))
+>n : Symbol(n, Decl(a.ts, 0, 0))
+>nn : Symbol(nn, Decl(a.ts, 2, 5))
+
+if (!nn) n(nn);
+>nn : Symbol(nn, Decl(a.ts, 2, 5))
+>n : Symbol(n, Decl(a.ts, 0, 0))
+>nn : Symbol(nn, Decl(a.ts, 2, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

@@ -1,0 +1,17 @@
+//// [test/cases/bun02-C16.ts] ////
+
+=== a.ts ===
+import { T1 } from "./b";
+>T1 : Symbol(T1, Decl(a.ts, 0, 8))
+
+export const /** {@link T1} */ v1 = 1;
+>v1 : Symbol(v1, Decl(a.ts, 1, 12))
+
+const sentinel: number = ""; sentinel;
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+export class T1 {}
+>T1 : Symbol(T1, Decl(b.ts, 0, 0))
+

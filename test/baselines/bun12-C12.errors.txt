@@ -1,0 +1,18 @@
+a.ts(5,7): error TS2322: Type '(x?: number) => void' is not assignable to type 'never'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C<T> {
+      m1(x = 1): void {}
+    }
+    type U = C<string>["m1"] | C<number>["m1"];
+    const n: never = null! as U;
+          ~
+!!! error TS2322: Type '(x?: number) => void' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

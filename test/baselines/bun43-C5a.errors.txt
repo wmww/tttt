@@ -1,0 +1,13 @@
+a.tsx(1,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+a.tsx(1,19): error TS1487: Octal escape sequences are not allowed. Use the syntax '\x01'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    var v = <a b=/**/"\1" />;
+            ~~~~~~~~~~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+                      ~~
+!!! error TS1487: Octal escape sequences are not allowed. Use the syntax '\x01'.
+    

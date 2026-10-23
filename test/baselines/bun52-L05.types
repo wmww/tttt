@@ -1,0 +1,35 @@
+//// [test/cases/bun52-L05.ts] ////
+
+=== a.ts ===
+declare const {} = miss1;
+>miss1 : any
+
+declare const [] = miss2;
+>miss2 : any
+
+declare let {} = miss3;
+>miss3 : any
+
+declare const {}: {} = miss4;
+>miss4 : any
+
+declare namespace N { const {} = miss5; }
+>N : typeof N
+>miss5 : any
+
+declare const {} = class { declare x = 1 };
+>class { declare x = 1 } : typeof {}
+>x : number
+>1 : 1
+
+declare const {} = (() => { const q: number = ""; })();
+>(() => { const q: number = ""; })() : void
+>(() => { const q: number = ""; }) : () => void
+>() => { const q: number = ""; } : () => void
+>q : number
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

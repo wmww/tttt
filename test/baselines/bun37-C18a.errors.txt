@@ -1,0 +1,13 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,24): error TS5025: Unknown compiler option 'strct'. Did you mean 'strict'?
+
+
+==== tsconfig.json (1 errors) ====
+    { "compilerOptions": { "strct": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+                           ~~~~~~~
+!!! error TS5025: Unknown compiler option 'strct'. Did you mean 'strict'?
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

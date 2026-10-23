@@ -1,0 +1,17 @@
+a.ts(2,1): error TS2322: Type 'C' is not assignable to type 'this'.
+  'C' is assignable to the constraint of type 'this', but 'this' could be instantiated with a different subtype of constraint 'C'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C { x; constructor() { this.x = this; } }
+    new C().x = new C();
+    ~~~~~~~~~
+!!! error TS2322: Type 'C' is not assignable to type 'this'.
+!!! error TS2322:   'C' is assignable to the constraint of type 'this', but 'this' could be instantiated with a different subtype of constraint 'C'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

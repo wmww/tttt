@@ -1,0 +1,9 @@
+//// [test/cases/bun35-C10.ts] ////
+
+=== b.cts ===
+import u1 = require("untyped");
+>u1 : Symbol(u1, Decl(b.cts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.cts, 1, 5))
+

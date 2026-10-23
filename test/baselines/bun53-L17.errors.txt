@@ -1,0 +1,47 @@
+a.js(2,1): error TS1206: Decorators are not valid here.
+a.js(2,1): error TS1206: Decorators are not valid here.
+a.js(3,1): error TS1206: Decorators are not valid here.
+a.js(3,1): error TS1206: Decorators are not valid here.
+a.js(4,1): error TS1206: Decorators are not valid here.
+a.js(4,1): error TS1206: Decorators are not valid here.
+a.js(5,2): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+  This expression is not callable.
+    Type 'Number' has no call signatures.
+a.js(5,13): error TS8038: Decorators may not appear after 'export' or 'export default' if they also appear before 'export'.
+a.js(5,14): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+  This expression is not callable.
+    Type 'Number' has no call signatures.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "allowJs": true, "checkJs": true } }
+==== a.js (9 errors) ====
+    const dec = 0, dec2 = 0;
+    @dec export @dec2 function f1() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+    ~~~~
+!!! error TS1206: Decorators are not valid here.
+    @dec export @dec2 const x2 = 1;
+    ~
+!!! error TS1206: Decorators are not valid here.
+    ~~~~
+!!! error TS1206: Decorators are not valid here.
+    @dec export @dec2 async function f3() {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+    ~~~~
+!!! error TS1206: Decorators are not valid here.
+    @dec export @dec2 class C4 {}
+     ~~~
+!!! error TS1238: Unable to resolve signature of class decorator when called as an expression.
+!!! error TS1238:   This expression is not callable.
+!!! error TS1238:     Type 'Number' has no call signatures.
+                ~~~~~
+!!! error TS8038: Decorators may not appear after 'export' or 'export default' if they also appear before 'export'.
+!!! related TS1486 a.js:5:1: Decorator used before 'export' here.
+                 ~~~~
+!!! error TS1238: Unable to resolve signature of class decorator when called as an expression.
+!!! error TS1238:   This expression is not callable.
+!!! error TS1238:     Type 'Number' has no call signatures.
+    

@@ -1,0 +1,9 @@
+//// [test/cases/bun32-C10b.ts] ////
+
+=== a.ts ===
+({ async async m() {} });
+>m : Symbol(m, Decl(a.ts, 0, 2))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

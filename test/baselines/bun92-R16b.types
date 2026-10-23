@@ -1,0 +1,26 @@
+//// [test/cases/bun92-R16b.ts] ////
+
+=== a.ts ===
+type A = { [K in "a"]: B[K & keyof B] };
+>A : A
+
+declare const a: A; a.a;
+>a : A
+>a.a : any
+>a : A
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+type B = { [K in "a"]: A[K & keyof A] };
+>B : B
+
+declare const b: B; b.a;
+>b : B
+>b.a : any
+>b : B
+>a : any
+

@@ -1,0 +1,30 @@
+//// [test/cases/bun71-R07c.ts] ////
+
+=== a.ts ===
+import { a2 } from "./b";
+>a2 : any
+
+export const other = 1;
+>other : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import { a2 } from "./a";
+>a2 : any
+
+export const other = 1;
+>other : 1
+>1 : 1
+
+=== c.ts ===
+import { s2 } from "./c";
+>s2 : any
+
+export { s2 as other };
+>s2 : any
+>other : any
+

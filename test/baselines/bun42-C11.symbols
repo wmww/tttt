@@ -1,0 +1,13 @@
+//// [test/cases/bun42-C11.ts] ////
+
+=== a.ts ===
+import a from "./dir.d.x\\foo.ts";
+>a : Symbol(a, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== dir.d.x/foo.ts ===
+
+export default 1;
+

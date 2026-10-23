@@ -1,0 +1,17 @@
+//// [test/cases/bun22-P5.ts] ////
+
+=== a.ts ===
+interface I { me: this }
+>me : this
+
+function g<T>(t: T & I): T & I { return t.me; }
+>g : <T>(t: T & I) => T & I
+>t : T & I
+>t.me : T & I
+>t : T & I
+>me : T & I
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

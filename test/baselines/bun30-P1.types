@@ -1,0 +1,22 @@
+//// [test/cases/bun30-P1.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+export class C { static m() { this[k] = 1; } static foo() {} }
+>C : C
+>m : () => void
+>this[k] = 1 : 1
+>this[k] : any
+>this : typeof C
+>k : "foo"
+>1 : 1
+>foo : any
+

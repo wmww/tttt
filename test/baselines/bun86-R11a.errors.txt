@@ -1,0 +1,22 @@
+a.ts(1,1): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(1,43): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "dom"], "libReplacement": true, "skipLibCheck": true }, "files": ["a.ts"] }
+==== a.ts (3 errors) ====
+    document.title = 2; const d: Document = { title: 3 };
+    ~~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+                                              ~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@typescript/lib-dom/index.ts (0 errors) ====
+    interface Document { title: string }
+    var document: Document = { title: 1 };
+==== node_modules/@typescript/lib-dom/package.json (0 errors) ====
+    {"name":"@typescript/lib-dom","version":"1.0.0","types":"index.ts"}
+    

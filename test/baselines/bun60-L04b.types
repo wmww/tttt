@@ -1,0 +1,64 @@
+//// [test/cases/bun60-L04b.ts] ////
+
+=== a.ts ===
+function f() { const s = Symbol(); return { [s]: 1 }; }
+>f : () => { [s]: number; }
+>s : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>{ [s]: 1 } : { [s]: number; }
+>[s] : number
+>s : unique symbol
+>1 : 1
+
+export function g() {}
+>g : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; 1: { [s]: number; }; }
+
+g["ab"] = f();
+>g["ab"] = f() : { [s]: number; }
+>g["ab"] : { [s]: number; }
+>g : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; 1: { [s]: number; }; }
+>"ab" : "ab"
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+g.cd = f();
+>g.cd = f() : { [s]: number; }
+>g.cd : { [s]: number; }
+>g : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; 1: { [s]: number; }; }
+>cd : { [s]: number; }
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+g[1] = f();
+>g[1] = f() : { [s]: number; }
+>g[1] : { [s]: number; }
+>g : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; 1: { [s]: number; }; }
+>1 : 1
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+export const h = () => {};
+>h : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; }
+>() => {} : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; }
+
+h["ab"] = f();
+>h["ab"] = f() : { [s]: number; }
+>h["ab"] : { [s]: number; }
+>h : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; }
+>"ab" : "ab"
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+h.cd = f();
+>h.cd = f() : { [s]: number; }
+>h.cd : { [s]: number; }
+>h : { (): void; ab: { [s]: number; }; cd: { [s]: number; }; }
+>cd : { [s]: number; }
+>f() : { [s]: number; }
+>f : () => { [s]: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

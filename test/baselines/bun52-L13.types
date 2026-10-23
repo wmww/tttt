@@ -1,0 +1,21 @@
+//// [test/cases/bun52-L13.ts] ////
+
+=== a.ts ===
+declare function count(o: { A: number }): number;
+>count : (o: { A: number; }) => number
+>o : { A: number; }
+>A : number
+
+enum E { A = 1, B = count(E) }
+>E : E
+>A : E.A
+>1 : 1
+>B : E.B
+>count(E) : number
+>count : (o: { A: number; }) => number
+>E : typeof E
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

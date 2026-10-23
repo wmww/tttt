@@ -1,0 +1,129 @@
+//// [test/cases/bun83-R20a.ts] ////
+
+=== a01.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+async function f() { interface I { m(@await y: any): void } }
+>f : () => Promise<void>
+>m : (y: any) => void
+> : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a02.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+async function f() { interface I { (@await y: any): void } }
+>f : () => Promise<void>
+> : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a03.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+async function f() { interface I { new (@await y: any): void } }
+>f : () => Promise<void>
+> : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a11.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+interface I { m(@await y: any): void }
+>m : (y: any) => void
+> : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a14.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+async function f() { interface I { set s(@await y: any) } }
+>f : () => Promise<void>
+>s : any
+> : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a16.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+async function f() { interface I { m(a: (@await y: any) => void): void; n(a: new (@await y: any) => void): void } }
+>f : () => Promise<void>
+>m : (a: (any), y: any) => void
+>a : any
+> : any
+>y : any
+>void : any
+>n : (a: new (@awaity: any) => void) => void
+>a : new (y: any) => void
+>await : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a17.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+async function f() { interface I { m(@await.x y: any): void; n(@await() y: any): void } }
+>f : () => Promise<void>
+>m : (y: any) => void
+>await.x : any
+> : any
+>x : any
+>y : any
+>n : (y: any) => void
+>await() : any
+> : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a19.ts ===
+export {}; declare const dec: any;
+>dec : any
+
+class K { static { interface I { m(@await y: any): void; n(@dec(await 1) y: any): void } } }
+>K : K
+>m : (y: any) => void
+> : any
+>y : any
+>n : (y: any) => void
+>dec(await 1) : any
+>dec : any
+>await 1 : 1
+>1 : 1
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

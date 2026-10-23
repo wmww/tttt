@@ -1,0 +1,30 @@
+//// [test/cases/bun10-C7e.ts] ////
+
+=== a.ts ===
+declare function memoize<T>(f: T): T;
+>memoize : <T>(f: T) => T
+>f : T
+
+function count(n: number) { if (n > 0) return cached(n - 1); return 0; }
+>count : (n: number) => number
+>n : number
+>n > 0 : boolean
+>n : number
+>0 : 0
+>cached(n - 1) : number
+>cached : (n: number) => number
+>n - 1 : number
+>n : number
+>1 : 1
+>0 : 0
+
+const cached = memoize(count);
+>cached : (n: number) => number
+>memoize(count) : (n: number) => number
+>memoize : <T>(f: T) => T
+>count : (n: number) => number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

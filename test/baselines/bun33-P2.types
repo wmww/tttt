@@ -1,0 +1,28 @@
+//// [test/cases/bun33-P2.ts] ////
+
+=== a.ts ===
+function f() {}
+>f : typeof f
+
+f.x = "";
+>f.x = "" : ""
+>f.x : string
+>f : typeof f
+>x : string
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+declare namespace Y { let v: string }
+>Y : typeof Y
+>v : string
+
+declare namespace f { export import x = Y.v; }
+>f : typeof f
+>x : string
+>Y : typeof Y
+>v : string
+

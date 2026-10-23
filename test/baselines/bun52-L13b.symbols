@@ -1,0 +1,20 @@
+//// [test/cases/bun52-L13b.ts] ////
+
+=== a.ts ===
+const k = "kk";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+function F() {}
+>F : Symbol(F, Decl(a.ts, 0, 15))
+
+F[k] = { a: F.kk };
+>F : Symbol(F, Decl(a.ts, 0, 15))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 2, 8))
+>F.kk : Symbol(F[F[k]], Decl(a.ts, 1, 15))
+>F : Symbol(F, Decl(a.ts, 0, 15))
+>kk : Symbol(F[F[k]], Decl(a.ts, 1, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

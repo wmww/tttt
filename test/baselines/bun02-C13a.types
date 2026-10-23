@@ -1,0 +1,15 @@
+//// [test/cases/bun02-C13a.ts] ////
+
+=== a.ts ===
+const o1 = { private get x() { return 1 }, set x(v) {} };
+>o1 : { x: number; }
+>{ private get x() { return 1 }, set x(v) {} } : { x: number; }
+>x : number
+>1 : 1
+>x : number
+>v : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

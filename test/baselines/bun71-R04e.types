@@ -1,0 +1,181 @@
+//// [test/cases/bun71-R04e.ts] ////
+
+=== a.ts ===
+export {};
+declare function use(...x: any[]): void;
+>use : (...x: any[]) => void
+>x : any[]
+
+class G<T> { f() {} g(): void {} h(x: T): T { return x; } }
+>G : G<T>
+>f : () => void
+>g : () => void
+>h : (x: T) => T
+>x : T
+>x : T
+
+class A { f() {} g(): void {} p = () => {};
+>A : A
+>f : () => void
+>g : () => void
+>p : () => void
+>() => {} : () => void
+
+  m(other: A) {
+>m : (other: A) => void
+>other : A
+
+    use(this.f && other.f());
+>use(this.f && other.f()) : void
+>use : (...x: any[]) => void
+>this.f && other.f() : void
+>this.f : () => void
+>this : this
+>f : () => void
+>other.f() : void
+>other.f : () => void
+>other : A
+>f : () => void
+
+    use(this.p && other.p());
+>use(this.p && other.p()) : void
+>use : (...x: any[]) => void
+>this.p && other.p() : void
+>this.p : () => void
+>this : this
+>p : () => void
+>other.p() : void
+>other.p : () => void
+>other : A
+>p : () => void
+
+    use(other.f && this.f());
+>use(other.f && this.f()) : void
+>use : (...x: any[]) => void
+>other.f && this.f() : void
+>other.f : () => void
+>other : A
+>f : () => void
+>this.f() : void
+>this.f : () => void
+>this : this
+>f : () => void
+
+    use(this.g && other.g());
+>use(this.g && other.g()) : void
+>use : (...x: any[]) => void
+>this.g && other.g() : void
+>this.g : () => void
+>this : this
+>g : () => void
+>other.g() : void
+>other.g : () => void
+>other : A
+>g : () => void
+
+    use(this.f && this.f());
+>use(this.f && this.f()) : void
+>use : (...x: any[]) => void
+>this.f && this.f() : void
+>this.f : () => void
+>this : this
+>f : () => void
+>this.f() : void
+>this.f : () => void
+>this : this
+>f : () => void
+  }
+}
+declare const g1: G<number>, g2: G<string>, g3: G<number>;
+>g1 : G<number>
+>g2 : G<string>
+>g3 : G<number>
+
+use(g1.f && g2.f());
+>use(g1.f && g2.f()) : void
+>use : (...x: any[]) => void
+>g1.f && g2.f() : void
+>g1.f : () => void
+>g1 : G<number>
+>f : () => void
+>g2.f() : void
+>g2.f : () => void
+>g2 : G<string>
+>f : () => void
+
+use(g1.g && g2.g());
+>use(g1.g && g2.g()) : void
+>use : (...x: any[]) => void
+>g1.g && g2.g() : void
+>g1.g : () => void
+>g1 : G<number>
+>g : () => void
+>g2.g() : void
+>g2.g : () => void
+>g2 : G<string>
+>g : () => void
+
+use(g1.h && g2.h(""));
+>use(g1.h && g2.h("")) : void
+>use : (...x: any[]) => void
+>g1.h && g2.h("") : string
+>g1.h : (x: number) => number
+>g1 : G<number>
+>h : (x: number) => number
+>g2.h("") : string
+>g2.h : (x: string) => string
+>g2 : G<string>
+>h : (x: string) => string
+>"" : ""
+
+use(g1.f && g3.f());
+>use(g1.f && g3.f()) : void
+>use : (...x: any[]) => void
+>g1.f && g3.f() : void
+>g1.f : () => void
+>g1 : G<number>
+>f : () => void
+>g3.f() : void
+>g3.f : () => void
+>g3 : G<number>
+>f : () => void
+
+function tp<T extends A>(t: T, a: A) { use(t.f && a.f()); use(t.g && a.g()); use(t.f && t.f()); }
+>tp : <T extends A>(t: T, a: A) => void
+>t : T
+>a : A
+>use(t.f && a.f()) : void
+>use : (...x: any[]) => void
+>t.f && a.f() : void
+>t.f : () => void
+>t : T
+>f : () => void
+>a.f() : void
+>a.f : () => void
+>a : A
+>f : () => void
+>use(t.g && a.g()) : void
+>use : (...x: any[]) => void
+>t.g && a.g() : void
+>t.g : () => void
+>t : T
+>g : () => void
+>a.g() : void
+>a.g : () => void
+>a : A
+>g : () => void
+>use(t.f && t.f()) : void
+>use : (...x: any[]) => void
+>t.f && t.f() : void
+>t.f : () => void
+>t : T
+>f : () => void
+>t.f() : void
+>t.f : () => void
+>t : T
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

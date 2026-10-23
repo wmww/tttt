@@ -1,0 +1,22 @@
+//// [test/cases/bun61-L05c.ts] ////
+
+=== a.tsx ===
+export const a = <div />;
+>a : any
+><div /> : any
+>div : any
+
+export const b = <div />;
+>b : any
+><div /> : any
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== x/jsx-runtime.ts ===
+export namespace JSX { export interface IntrinsicElements { div: {} } export interface Element {} } export function jsx(): void {}
+>div : {}
+>jsx : () => void
+

@@ -1,0 +1,29 @@
+error TS6054: File 'x.TSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+error TS6054: File 'z.JSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS6054: File 'x.TSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:153: File is matched by 'files' list specified here.
+!!! error TS6054: File 'z.JSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:162: File is matched by 'files' list specified here.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "jsx": "preserve" }, "files": ["x.TSX", "z.JSX", "a.ts"] }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== x.TSX (0 errors) ====
+    declare namespace JSX { interface IntrinsicElements { div: { id?: string } } }
+    const el = <div id={1} />;
+==== z.JSX (0 errors) ====
+    const el2 = <div id={2} />;
+    

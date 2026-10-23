@@ -1,0 +1,10 @@
+//// [test/cases/bun13-C5.ts] ////
+
+=== a.ts ===
+type M12 = { [K in keyof M12 as K]: number };
+>M12 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

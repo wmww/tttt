@@ -1,0 +1,14 @@
+a.ts(1,29): error TS2322: Type 'Z3<T>' is not assignable to type 'string | number | symbol'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Z3<T> = { [K in "a" as Z3<T>]: 1 };
+                                ~~~~~
+!!! error TS2322: Type 'Z3<T>' is not assignable to type 'string | number | symbol'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

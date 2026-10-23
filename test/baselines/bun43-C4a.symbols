@@ -1,0 +1,6 @@
+//// [test/cases/bun43-C4a.ts] ////
+
+=== a.tsx ===
+var v = <a>< /a>;
+>v : Symbol(v, Decl(a.tsx, 0, 3))
+

@@ -1,0 +1,81 @@
+a.ts(2,23): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(2,76): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(2,86): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(3,29): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(3,75): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(3,85): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(4,28): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(4,78): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(4,88): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(5,24): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(5,87): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(5,97): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(6,27): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(6,83): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(6,93): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(7,27): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(7,81): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(7,91): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(8,26): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(8,82): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(8,92): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (22 errors) ====
+    declare function c(): boolean;
+    function call() { let x = []; for (; true; x.push("")) { if (Array.isArray(x)) { if (x) break; } } }
+                          ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                                               ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+                                                                                         ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+    function callOfName() { let x = []; for (; true; x()) { if (Array.isArray(x)) { if (x) break; } } }
+                                ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                                              ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+                                                                                        ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+    function construct() { let x = []; for (; true; new x()) { if (Array.isArray(x)) { if (x) break; } } }
+                               ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                                                 ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+                                                                                           ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+    function chain() { let x = []; for (; true; x.push("").toFixed()) { if (Array.isArray(x)) { if (x) break; } } }
+                           ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                                                          ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+                                                                                                    ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+    function callback() { let x = []; for (; true; x.map(e => e)) { if (Array.isArray(x)) { if (x) break; } } }
+                              ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                                                      ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+                                                                                                ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+    function optional() { let x = []; for (; true; x?.push("")) { if (Array.isArray(x)) { if (x) break; } } }
+                              ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                                                    ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+                                                                                              ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+    function element() { let x = []; for (; true; x["push"]("")) { if (Array.isArray(x)) { if (x) break; } } }
+                             ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                                                     ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+                                                                                               ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

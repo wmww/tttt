@@ -1,0 +1,24 @@
+//// [test/cases/bun02-C6b.ts] ////
+
+=== a.ts ===
+class K { foo() {}
+>K : K
+>foo : () => void
+
+  m() { if (this.foo) { (function (this: K) { this.foo(); }); } }
+>m : () => void
+>this.foo : () => void
+>this : this
+>foo : () => void
+>(function (this: K) { this.foo(); }) : (this: K) => void
+>function (this: K) { this.foo(); } : (this: K) => void
+>this : K
+>this.foo() : void
+>this.foo : () => void
+>this : K
+>foo : () => void
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

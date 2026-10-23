@@ -1,0 +1,34 @@
+a.ts(1,24): error TS2339: Property 'w' does not exist on type 'I10'.
+a.ts(5,22): error TS2339: Property 'w' does not exist on type 'I10'.
+a.ts(6,14): error TS2339: Property 'w' does not exist on type 'I10'.
+a.ts(8,7): error TS2322: Type '"w"' is not assignable to type '"v"'.
+a.ts(9,20): error TS2353: Object literal may only specify known properties, and 'w' does not exist in type 'I10'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    declare const k10: I10[typeof k10b];
+                           ~~~~~~~~~~~
+!!! error TS2339: Property 'w' does not exist on type 'I10'.
+    declare const k10b: "w";
+    interface I10 { [k10]: 2; [k10b]: "v"; }
+    declare const i: I10;
+    const p: boolean = i.w;
+                         ~
+!!! error TS2339: Property 'w' does not exist on type 'I10'.
+    type T = I10["w"];
+                 ~~~
+!!! error TS2339: Property 'w' does not exist on type 'I10'.
+    type K = keyof I10;
+    const kk: K = "w";
+          ~~
+!!! error TS2322: Type '"w"' is not assignable to type '"v"'.
+    const lit: I10 = { w: "v" };
+                       ~
+!!! error TS2353: Object literal may only specify known properties, and 'w' does not exist in type 'I10'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

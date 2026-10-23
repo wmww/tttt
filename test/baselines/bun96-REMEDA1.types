@@ -1,0 +1,23 @@
+//// [test/cases/bun96-REMEDA1.ts] ////
+
+=== a.ts ===
+type NTuple<T, N extends number, R extends unknown[] = []> = R["length"] extends N ? R : NTuple<T, N, [...R, T]>;
+>NTuple : NTuple<T, N, R>
+
+class Base<T extends readonly never[]> { x!: T }
+>Base : Base<T>
+>x : T
+
+class Derived<N extends number> extends Base<[never, ...NTuple<never, N>]> {}
+>Derived : Derived<N>
+>Base : Base<[never, ...NTuple<never, N, []>]>
+
+function f<N extends number>() { return class extends Base<[never, never, ...NTuple<never, N>]> {}; }
+>f : <N extends number>() => typeof (Anonymous class)
+>class extends Base<[never, never, ...NTuple<never, N>]> {} : typeof (Anonymous class)
+>Base : Base<[never, never, ...NTuple<never, N, []>]>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

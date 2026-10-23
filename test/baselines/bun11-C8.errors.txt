@@ -1,0 +1,16 @@
+a.ts(3,7): error TS2322: Type '() => Generator<number, void, unknown>' is not assignable to type 'string'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function id<T>(x: T): T;
+    const g1 = id(function* () { yield 1; });
+    const t1: string = g1;
+          ~~
+!!! error TS2322: Type '() => Generator<number, void, unknown>' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

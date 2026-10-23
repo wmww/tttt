@@ -1,0 +1,38 @@
+//// [test/cases/bun27-C4b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+
+declare function D<T>(p: { v: T; f: (x: T) => void }): JSX.Element;
+>D : Symbol(D, Decl(a.tsx, 0, 83))
+>T : Symbol(T, Decl(a.tsx, 1, 19))
+>p : Symbol(p, Decl(a.tsx, 1, 22))
+>v : Symbol(v, Decl(a.tsx, 1, 26))
+>T : Symbol(T, Decl(a.tsx, 1, 19))
+>f : Symbol(f, Decl(a.tsx, 1, 32))
+>x : Symbol(x, Decl(a.tsx, 1, 37))
+>T : Symbol(T, Decl(a.tsx, 1, 19))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+declare const s: unique symbol;
+>s : Symbol(s, Decl(a.tsx, 2, 13))
+
+const m = <D v={s as typeof s} f={x => { const t: never = x; }} />;
+>m : Symbol(m, Decl(a.tsx, 3, 5))
+>D : Symbol(D, Decl(a.tsx, 0, 83))
+>v : Symbol(v, Decl(a.tsx, 3, 12))
+>s : Symbol(s, Decl(a.tsx, 2, 13))
+>s : Symbol(s, Decl(a.tsx, 2, 13))
+>f : Symbol(f, Decl(a.tsx, 3, 30))
+>x : Symbol(x, Decl(a.tsx, 3, 34))
+>t : Symbol(t, Decl(a.tsx, 3, 46))
+>x : Symbol(x, Decl(a.tsx, 3, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 4, 5))
+

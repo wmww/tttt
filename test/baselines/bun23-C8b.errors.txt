@@ -1,0 +1,16 @@
+a.ts(2,29): error TS2741: Property 'cstr' is missing in type '{}' but required in type '{ cstr: { n: number; }; }'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const cs = "cstr";
+    let o = { [cs]: { n: 1 } }; o = {};
+                                ~
+!!! error TS2741: Property 'cstr' is missing in type '{}' but required in type '{ cstr: { n: number; }; }'.
+!!! related TS2728 a.ts:2:11: 'cstr' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

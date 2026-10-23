@@ -1,0 +1,15 @@
+//// [test/cases/bun43-P4b.ts] ////
+
+=== a.ts ===
+import { Foo } from "./p";
+>Foo : typeof Foo
+
+/** {@link Foo—x} */
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== p.ts ===
+export class Foo {}
+>Foo : Foo
+

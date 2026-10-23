@@ -1,0 +1,15 @@
+//// [test/cases/bun09-C19.ts] ////
+
+=== a.ts ===
+function rf([...ra, rb]) {}
+>rf : Symbol(rf, Decl(a.ts, 0, 0))
+>ra : Symbol(ra, Decl(a.ts, 0, 13))
+>rb : Symbol(rb, Decl(a.ts, 0, 19))
+
+const trf: never = rf;
+>trf : Symbol(trf, Decl(a.ts, 1, 5))
+>rf : Symbol(rf, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

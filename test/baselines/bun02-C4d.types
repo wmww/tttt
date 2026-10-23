@@ -1,0 +1,10 @@
+//// [test/cases/bun02-C4d.ts] ////
+
+=== a.ts ===
+interface A11<T = { [K in keyof A11]: 1 }> { x: T }
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

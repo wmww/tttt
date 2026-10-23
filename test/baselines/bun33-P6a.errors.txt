@@ -1,0 +1,20 @@
+a.ts(1,26): error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+a.ts(1,27): error TS1163: A 'yield' expression is only allowed in a generator body.
+a.ts(1,27): error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022" } }
+==== a.ts (4 errors) ====
+    function* g() { let x: { [yield 1]: 1 }; }
+                             ~~~~~~~~~
+!!! error TS1170: A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                              ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+                              ~~~~~
+!!! error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

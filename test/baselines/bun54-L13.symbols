@@ -1,0 +1,75 @@
+//// [test/cases/bun54-L13.ts] ////
+
+=== a.tsx ===
+namespace N {
+>N : Symbol(N, Decl(a.tsx, 0, 0))
+
+  namespace React {
+>React : Symbol(React, Decl(a.tsx, 0, 13))
+
+    export declare function createElement(...a: any[]): any;
+>createElement : Symbol(createElement, Decl(a.tsx, 1, 19))
+>a : Symbol(a, Decl(a.tsx, 2, 42))
+
+    export namespace JSX {
+>JSX : Symbol(JSX, Decl(a.tsx, 2, 60))
+
+      export interface Element {}
+>Element : Symbol(Element, Decl(a.tsx, 3, 26))
+
+      export interface IntrinsicAttributes { key?: string }
+>IntrinsicAttributes : Symbol(IntrinsicAttributes, Decl(a.tsx, 4, 33))
+>key : Symbol(IntrinsicAttributes.key, Decl(a.tsx, 5, 44))
+
+      export interface IntrinsicClassAttributes<T> { ref?: T }
+>IntrinsicClassAttributes : Symbol(IntrinsicClassAttributes, Decl(a.tsx, 5, 59))
+>T : Symbol(T, Decl(a.tsx, 6, 48))
+>ref : Symbol(IntrinsicClassAttributes.ref, Decl(a.tsx, 6, 52))
+>T : Symbol(T, Decl(a.tsx, 6, 48))
+
+      export interface IntrinsicElements { div: {} }
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 6, 62))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 7, 42))
+    }
+  }
+  function C(props: { x: string }) { return null as any; }
+>C : Symbol(C, Decl(a.tsx, 9, 3))
+>props : Symbol(props, Decl(a.tsx, 10, 13))
+>x : Symbol(x, Decl(a.tsx, 10, 21))
+
+  export const e1 = <C x={1} />;
+>e1 : Symbol(e1, Decl(a.tsx, 11, 14))
+>C : Symbol(C, Decl(a.tsx, 9, 3))
+>x : Symbol(x, Decl(a.tsx, 11, 22))
+
+  export const e2 = <C />;
+>e2 : Symbol(e2, Decl(a.tsx, 12, 14))
+>C : Symbol(C, Decl(a.tsx, 9, 3))
+
+  export const e3 = <C x="a" y={1} />;
+>e3 : Symbol(e3, Decl(a.tsx, 13, 14))
+>C : Symbol(C, Decl(a.tsx, 9, 3))
+>x : Symbol(x, Decl(a.tsx, 13, 22))
+>y : Symbol(y, Decl(a.tsx, 13, 28))
+
+  class K { props!: { x: string }; constructor(p: { x: string }) {} render() { return null as any; } }
+>K : Symbol(K, Decl(a.tsx, 13, 38))
+>props : Symbol(K.props, Decl(a.tsx, 14, 11))
+>x : Symbol(x, Decl(a.tsx, 14, 21))
+>p : Symbol(p, Decl(a.tsx, 14, 47))
+>x : Symbol(x, Decl(a.tsx, 14, 51))
+>render : Symbol(K.render, Decl(a.tsx, 14, 67))
+
+  export const e4 = <K />;
+>e4 : Symbol(e4, Decl(a.tsx, 15, 14))
+>K : Symbol(K, Decl(a.tsx, 13, 38))
+
+  export const e5 = <K x="a" y={1} />;
+>e5 : Symbol(e5, Decl(a.tsx, 16, 14))
+>K : Symbol(K, Decl(a.tsx, 13, 38))
+>x : Symbol(x, Decl(a.tsx, 16, 22))
+>y : Symbol(y, Decl(a.tsx, 16, 28))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 18, 5))
+

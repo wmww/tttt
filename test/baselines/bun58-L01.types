@@ -1,0 +1,47 @@
+//// [test/cases/bun58-L01.ts] ////
+
+=== a.ts ===
+class C3 { get x(this) { return 1 } set x(v) { this.nope; } }
+>C3 : C3
+>x : number
+>this : any
+>1 : 1
+>x : number
+>v : number
+>this.nope : any
+>this : any
+>nope : any
+
+class C4 { get x() { this.nope; return 1 } set x(this, v) { this.nope2 } }
+>C4 : C4
+>x : number
+>this.nope : any
+>this : any
+>nope : any
+>1 : 1
+>x : number
+>this : any
+>v : number
+>this.nope2 : any
+>this : any
+>nope2 : any
+
+const o4 = { get x() { this.nope; return 1 }, set x(this, v) { this.nope2 } };
+>o4 : { x: number; }
+>{ get x() { this.nope; return 1 }, set x(this, v) { this.nope2 } } : { x: number; }
+>x : number
+>this.nope : any
+>this : any
+>nope : any
+>1 : 1
+>x : number
+>this : any
+>v : number
+>this.nope2 : any
+>this : any
+>nope2 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

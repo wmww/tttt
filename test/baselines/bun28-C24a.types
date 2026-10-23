@@ -1,0 +1,17 @@
+//// [test/cases/bun28-C24a.ts] ////
+
+=== a.ts ===
+const o = { get a() { return 1 }, get a() { return 1 }, public b: 1 };
+>o : { readonly a: number; b: number; }
+>{ get a() { return 1 }, get a() { return 1 }, public b: 1 } : { readonly a: number; b: number; }
+>a : number
+>1 : 1
+>a : number
+>1 : 1
+>b : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

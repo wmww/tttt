@@ -1,0 +1,17 @@
+a.ts(4,30): error TS4127: This member cannot have an 'override' modifier because its name is dynamic.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function mk(): symbol;
+    class K { static readonly k = mk(); }
+    class B {}
+    class D extends B { override [K.k]() {} }
+                                 ~~~~~
+!!! error TS4127: This member cannot have an 'override' modifier because its name is dynamic.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,458 @@
+function_array.ts(1,1): error TS2304: Cannot find name 'x'.
+function_array.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+function_array2.ts(1,1): error TS2304: Cannot find name 'x'.
+function_array2.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+function_arrow.ts(1,1): error TS2304: Cannot find name 'x'.
+function_arrow.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+function_call.ts(1,1): error TS2304: Cannot find name 'f'.
+function_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+function_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+function_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+function_new.ts(1,5): error TS2304: Cannot find name 'X'.
+function_new.ts(1,7): error TS1260: Keywords cannot contain escape characters.
+function_opt.ts(1,1): error TS2304: Cannot find name 'f'.
+function_opt.ts(1,5): error TS1260: Keywords cannot contain escape characters.
+function_targ.ts(1,1): error TS2304: Cannot find name 'f'.
+function_targ.ts(1,3): error TS2304: Cannot find name 'T'.
+function_targ.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+import_array.ts(1,1): error TS2304: Cannot find name 'x'.
+import_array.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+import_array.ts(1,18): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+import_array2.ts(1,1): error TS2304: Cannot find name 'x'.
+import_array2.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+import_array2.ts(1,21): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+import_arrow.ts(1,1): error TS2304: Cannot find name 'x'.
+import_arrow.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+import_arrow.ts(1,23): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+import_call.ts(1,1): error TS2304: Cannot find name 'f'.
+import_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+import_call.ts(1,15): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+import_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+import_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+import_call2.ts(1,18): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+import_new.ts(1,5): error TS2304: Cannot find name 'X'.
+import_new.ts(1,7): error TS1260: Keywords cannot contain escape characters.
+import_new.ts(1,19): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+import_opt.ts(1,1): error TS2304: Cannot find name 'f'.
+import_opt.ts(1,5): error TS1260: Keywords cannot contain escape characters.
+import_opt.ts(1,17): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+import_targ.ts(1,1): error TS2304: Cannot find name 'f'.
+import_targ.ts(1,3): error TS2304: Cannot find name 'T'.
+import_targ.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+import_targ.ts(1,18): error TS2307: Cannot find module 'x' or its corresponding type declarations.
+new_array.ts(1,1): error TS2304: Cannot find name 'x'.
+new_array.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+new_array.ts(1,15): error TS2304: Cannot find name 'X'.
+new_array2.ts(1,1): error TS2304: Cannot find name 'x'.
+new_array2.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+new_array2.ts(1,18): error TS2304: Cannot find name 'X'.
+new_arrow.ts(1,1): error TS2304: Cannot find name 'x'.
+new_arrow.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+new_arrow.ts(1,20): error TS2304: Cannot find name 'X'.
+new_call.ts(1,1): error TS2304: Cannot find name 'f'.
+new_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+new_call.ts(1,12): error TS2304: Cannot find name 'X'.
+new_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+new_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+new_call2.ts(1,15): error TS2304: Cannot find name 'X'.
+new_new.ts(1,5): error TS2304: Cannot find name 'X'.
+new_new.ts(1,7): error TS1260: Keywords cannot contain escape characters.
+new_new.ts(1,16): error TS2304: Cannot find name 'X'.
+new_opt.ts(1,1): error TS2304: Cannot find name 'f'.
+new_opt.ts(1,5): error TS1260: Keywords cannot contain escape characters.
+new_opt.ts(1,14): error TS2304: Cannot find name 'X'.
+new_targ.ts(1,1): error TS2304: Cannot find name 'f'.
+new_targ.ts(1,3): error TS2304: Cannot find name 'T'.
+new_targ.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+new_targ.ts(1,15): error TS2304: Cannot find name 'X'.
+null_array.ts(1,1): error TS2304: Cannot find name 'x'.
+null_array.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+null_array2.ts(1,1): error TS2304: Cannot find name 'x'.
+null_array2.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+null_arrow.ts(1,1): error TS2304: Cannot find name 'x'.
+null_arrow.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+null_call.ts(1,1): error TS2304: Cannot find name 'f'.
+null_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+null_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+null_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+null_new.ts(1,5): error TS2304: Cannot find name 'X'.
+null_new.ts(1,7): error TS1260: Keywords cannot contain escape characters.
+null_opt.ts(1,1): error TS2304: Cannot find name 'f'.
+null_opt.ts(1,5): error TS1260: Keywords cannot contain escape characters.
+null_targ.ts(1,1): error TS2304: Cannot find name 'f'.
+null_targ.ts(1,3): error TS2304: Cannot find name 'T'.
+null_targ.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+this_array.ts(1,1): error TS2304: Cannot find name 'x'.
+this_array.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+this_array2.ts(1,1): error TS2304: Cannot find name 'x'.
+this_array2.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+this_arrow.ts(1,1): error TS2304: Cannot find name 'x'.
+this_arrow.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+this_arrow.ts(1,11): error TS7041: The containing arrow function captures the global value of 'this'.
+this_call.ts(1,1): error TS2304: Cannot find name 'f'.
+this_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+this_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+this_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+this_new.ts(1,5): error TS2304: Cannot find name 'X'.
+this_new.ts(1,7): error TS1260: Keywords cannot contain escape characters.
+this_opt.ts(1,1): error TS2304: Cannot find name 'f'.
+this_opt.ts(1,5): error TS1260: Keywords cannot contain escape characters.
+this_targ.ts(1,1): error TS2304: Cannot find name 'f'.
+this_targ.ts(1,3): error TS2304: Cannot find name 'T'.
+this_targ.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+void_array.ts(1,1): error TS2304: Cannot find name 'x'.
+void_array.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+void_array2.ts(1,1): error TS2304: Cannot find name 'x'.
+void_array2.ts(1,9): error TS1260: Keywords cannot contain escape characters.
+void_arrow.ts(1,1): error TS2304: Cannot find name 'x'.
+void_arrow.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+void_call.ts(1,1): error TS2304: Cannot find name 'f'.
+void_call.ts(1,3): error TS1260: Keywords cannot contain escape characters.
+void_call2.ts(1,1): error TS2304: Cannot find name 'f'.
+void_call2.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+void_new.ts(1,5): error TS2304: Cannot find name 'X'.
+void_new.ts(1,7): error TS1260: Keywords cannot contain escape characters.
+void_opt.ts(1,1): error TS2304: Cannot find name 'f'.
+void_opt.ts(1,5): error TS1260: Keywords cannot contain escape characters.
+void_targ.ts(1,1): error TS2304: Cannot find name 'f'.
+void_targ.ts(1,3): error TS2304: Cannot find name 'T'.
+void_targ.ts(1,6): error TS1260: Keywords cannot contain escape characters.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== function_array.ts (2 errors) ====
+    x = [f\u0075nction () {}];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+         ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== function_array2.ts (2 errors) ====
+    x = [1, f\u0075nction () {}];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+            ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== function_arrow.ts (2 errors) ====
+    x = () => f\u0075nction () {};
+    ~
+!!! error TS2304: Cannot find name 'x'.
+              ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== function_call.ts (2 errors) ====
+    f(f\u0075nction () {});
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== function_call2.ts (2 errors) ====
+    f(1, f\u0075nction () {});
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== function_new.ts (2 errors) ====
+    new X(f\u0075nction () {});
+        ~
+!!! error TS2304: Cannot find name 'X'.
+          ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== function_opt.ts (2 errors) ====
+    f?.(f\u0075nction () {});
+    ~
+!!! error TS2304: Cannot find name 'f'.
+        ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== function_targ.ts (3 errors) ====
+    f<T>(f\u0075nction () {});
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~
+!!! error TS2304: Cannot find name 'T'.
+         ~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== import_array.ts (3 errors) ====
+    x = [i\u006dport("x")];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+         ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                     ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== import_array2.ts (3 errors) ====
+    x = [1, i\u006dport("x")];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+            ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                        ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== import_arrow.ts (3 errors) ====
+    x = () => i\u006dport("x");
+    ~
+!!! error TS2304: Cannot find name 'x'.
+              ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                          ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== import_call.ts (3 errors) ====
+    f(i\u006dport("x"));
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                  ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== import_call2.ts (3 errors) ====
+    f(1, i\u006dport("x"));
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                     ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== import_new.ts (3 errors) ====
+    new X(i\u006dport("x"));
+        ~
+!!! error TS2304: Cannot find name 'X'.
+          ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                      ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== import_opt.ts (3 errors) ====
+    f?.(i\u006dport("x"));
+    ~
+!!! error TS2304: Cannot find name 'f'.
+        ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                    ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== import_targ.ts (4 errors) ====
+    f<T>(i\u006dport("x"));
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~
+!!! error TS2304: Cannot find name 'T'.
+         ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                     ~~~
+!!! error TS2307: Cannot find module 'x' or its corresponding type declarations.
+==== new_array.ts (3 errors) ====
+    x = [n\u0065w X()];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+         ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                  ~
+!!! error TS2304: Cannot find name 'X'.
+==== new_array2.ts (3 errors) ====
+    x = [1, n\u0065w X()];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+            ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                     ~
+!!! error TS2304: Cannot find name 'X'.
+==== new_arrow.ts (3 errors) ====
+    x = () => n\u0065w X();
+    ~
+!!! error TS2304: Cannot find name 'x'.
+              ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                       ~
+!!! error TS2304: Cannot find name 'X'.
+==== new_call.ts (3 errors) ====
+    f(n\u0065w X());
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+               ~
+!!! error TS2304: Cannot find name 'X'.
+==== new_call2.ts (3 errors) ====
+    f(1, n\u0065w X());
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                  ~
+!!! error TS2304: Cannot find name 'X'.
+==== new_new.ts (3 errors) ====
+    new X(n\u0065w X());
+        ~
+!!! error TS2304: Cannot find name 'X'.
+          ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                   ~
+!!! error TS2304: Cannot find name 'X'.
+==== new_opt.ts (3 errors) ====
+    f?.(n\u0065w X());
+    ~
+!!! error TS2304: Cannot find name 'f'.
+        ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                 ~
+!!! error TS2304: Cannot find name 'X'.
+==== new_targ.ts (4 errors) ====
+    f<T>(n\u0065w X());
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~
+!!! error TS2304: Cannot find name 'T'.
+         ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                  ~
+!!! error TS2304: Cannot find name 'X'.
+==== null_array.ts (2 errors) ====
+    x = [n\u0075ll];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_array2.ts (2 errors) ====
+    x = [1, n\u0075ll];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+            ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_arrow.ts (2 errors) ====
+    x = () => n\u0075ll;
+    ~
+!!! error TS2304: Cannot find name 'x'.
+              ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_call.ts (2 errors) ====
+    f(n\u0075ll);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_call2.ts (2 errors) ====
+    f(1, n\u0075ll);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_new.ts (2 errors) ====
+    new X(n\u0075ll);
+        ~
+!!! error TS2304: Cannot find name 'X'.
+          ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_opt.ts (2 errors) ====
+    f?.(n\u0075ll);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+        ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== null_targ.ts (3 errors) ====
+    f<T>(n\u0075ll);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~
+!!! error TS2304: Cannot find name 'T'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_array.ts (2 errors) ====
+    x = [t\u0068is];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_array2.ts (2 errors) ====
+    x = [1, t\u0068is];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+            ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_arrow.ts (3 errors) ====
+    x = () => t\u0068is;
+    ~
+!!! error TS2304: Cannot find name 'x'.
+              ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+              ~~~~~~~~~
+!!! error TS7041: The containing arrow function captures the global value of 'this'.
+==== this_call.ts (2 errors) ====
+    f(t\u0068is);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_call2.ts (2 errors) ====
+    f(1, t\u0068is);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_new.ts (2 errors) ====
+    new X(t\u0068is);
+        ~
+!!! error TS2304: Cannot find name 'X'.
+          ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_opt.ts (2 errors) ====
+    f?.(t\u0068is);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+        ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== this_targ.ts (3 errors) ====
+    f<T>(t\u0068is);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~
+!!! error TS2304: Cannot find name 'T'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_array.ts (2 errors) ====
+    x = [v\u006fid 0];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_array2.ts (2 errors) ====
+    x = [1, v\u006fid 0];
+    ~
+!!! error TS2304: Cannot find name 'x'.
+            ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_arrow.ts (2 errors) ====
+    x = () => v\u006fid 0;
+    ~
+!!! error TS2304: Cannot find name 'x'.
+              ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_call.ts (2 errors) ====
+    f(v\u006fid 0);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_call2.ts (2 errors) ====
+    f(1, v\u006fid 0);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_new.ts (2 errors) ====
+    new X(v\u006fid 0);
+        ~
+!!! error TS2304: Cannot find name 'X'.
+          ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_opt.ts (2 errors) ====
+    f?.(v\u006fid 0);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+        ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== void_targ.ts (3 errors) ====
+    f<T>(v\u006fid 0);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+      ~
+!!! error TS2304: Cannot find name 'T'.
+         ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

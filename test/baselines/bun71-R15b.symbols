@@ -1,0 +1,58 @@
+//// [test/cases/bun71-R15b.ts] ////
+
+=== a.ts ===
+export {};
+type Ctor<T = {}> = new (...a: any[]) => T;
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>a : Symbol(a, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+
+function g4<T extends Ctor, U extends { s: string }>(B: T & U) { return class extends B { static s = 1; }; }
+>g4 : Symbol(g4, Decl(a.ts, 1, 43))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>U : Symbol(U, Decl(a.ts, 2, 27))
+>s : Symbol(s, Decl(a.ts, 2, 39))
+>B : Symbol(B, Decl(a.ts, 2, 53))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>U : Symbol(U, Decl(a.ts, 2, 27))
+>B : Symbol(B, Decl(a.ts, 2, 53))
+>s : Symbol((Anonymous class).s, Decl(a.ts, 2, 89))
+
+function g5<T extends Ctor>(B: T & { s: string; f(): void }) { return class extends B { static s = 1; static f = 1; }; }
+>g5 : Symbol(g5, Decl(a.ts, 2, 108))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>B : Symbol(B, Decl(a.ts, 3, 28))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>s : Symbol(s, Decl(a.ts, 3, 36))
+>f : Symbol(f, Decl(a.ts, 3, 47))
+>B : Symbol(B, Decl(a.ts, 3, 28))
+>s : Symbol((Anonymous class).s, Decl(a.ts, 3, 87))
+>f : Symbol((Anonymous class).f, Decl(a.ts, 3, 101))
+
+function g7<T extends Ctor>(B: T & { [k: string]: number }) { return class extends B { static s = "x"; }; }
+>g7 : Symbol(g7, Decl(a.ts, 3, 120))
+>T : Symbol(T, Decl(a.ts, 4, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>B : Symbol(B, Decl(a.ts, 4, 28))
+>T : Symbol(T, Decl(a.ts, 4, 12))
+>k : Symbol(k, Decl(a.ts, 4, 38))
+>B : Symbol(B, Decl(a.ts, 4, 28))
+>s : Symbol((Anonymous class).s, Decl(a.ts, 4, 86))
+
+function h14<T extends Ctor, K extends string>(B: T & Record<K, number>) { return class extends B {}; }
+>h14 : Symbol(h14, Decl(a.ts, 4, 107))
+>T : Symbol(T, Decl(a.ts, 5, 13))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>K : Symbol(K, Decl(a.ts, 5, 28))
+>B : Symbol(B, Decl(a.ts, 5, 47))
+>T : Symbol(T, Decl(a.ts, 5, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(a.ts, 5, 28))
+>B : Symbol(B, Decl(a.ts, 5, 47))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

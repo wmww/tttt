@@ -1,0 +1,178 @@
+//// [test/cases/bun96-H2.ts] ////
+
+=== a.ts ===
+import { A } from "./d1";
+>A : Symbol(A, Decl(a.ts, 0, 8))
+
+import { B } from "./d2";
+>B : Symbol(B, Decl(a.ts, 1, 8))
+
+import D from "./d3";
+>D : Symbol(D, Decl(a.ts, 2, 6))
+
+import { C } from "./d4";
+>C : Symbol(C, Decl(a.ts, 3, 8))
+
+import { F, G, I } from "./d5";
+>F : Symbol(F, Decl(a.ts, 4, 8))
+>G : Symbol(G, Decl(a.ts, 4, 11))
+>I : Symbol(I, Decl(a.ts, 4, 14))
+
+import { H } from "./d6";
+>H : Symbol(H, Decl(a.ts, 5, 8))
+
+import { X } from "./d7";
+>X : Symbol(X, Decl(a.ts, 6, 8))
+
+import { Y } from "./d8";
+>Y : Symbol(Y, Decl(a.ts, 7, 8))
+
+import L, { N } from "./d9";
+>L : Symbol(L, Decl(a.ts, 8, 6))
+>N : Symbol(N, Decl(a.ts, 8, 11))
+
+import { K } from "amb";
+>K : Symbol(K, Decl(a.ts, 9, 8))
+
+import * as d4 from "./d4";
+>d4 : Symbol(d4, Decl(a.ts, 10, 6))
+
+const a: string = A;
+>a : Symbol(a, Decl(a.ts, 11, 5))
+>A : Symbol(A, Decl(a.ts, 0, 8))
+
+const b: string = B;
+>b : Symbol(b, Decl(a.ts, 12, 5))
+>B : Symbol(B, Decl(a.ts, 1, 8))
+
+const d: string = D;
+>d : Symbol(d, Decl(a.ts, 13, 5))
+>D : Symbol(D, Decl(a.ts, 2, 6))
+
+const c: string = C;
+>c : Symbol(c, Decl(a.ts, 14, 5))
+>C : Symbol(C, Decl(a.ts, 3, 8))
+
+const f: string = F, g: string = G;
+>f : Symbol(f, Decl(a.ts, 15, 5))
+>F : Symbol(F, Decl(a.ts, 4, 8))
+>g : Symbol(g, Decl(a.ts, 15, 20))
+>G : Symbol(G, Decl(a.ts, 4, 11))
+
+let i: I;
+>i : Symbol(i, Decl(a.ts, 16, 3))
+>I : Symbol(I, Decl(a.ts, 4, 14))
+
+const h: string = H;
+>h : Symbol(h, Decl(a.ts, 17, 5))
+>H : Symbol(H, Decl(a.ts, 5, 8))
+
+const x: string = X;
+>x : Symbol(x, Decl(a.ts, 18, 5))
+>X : Symbol(X, Decl(a.ts, 6, 8))
+
+const y: string = Y;
+>y : Symbol(y, Decl(a.ts, 19, 5))
+>Y : Symbol(Y, Decl(a.ts, 7, 8))
+
+const l: string = L, j: string = N.J, k: string = K;
+>l : Symbol(l, Decl(a.ts, 20, 5))
+>L : Symbol(L, Decl(a.ts, 8, 6))
+>j : Symbol(j, Decl(a.ts, 20, 20))
+>N.J : Symbol(N.J, Decl(d9.ts, 2, 10))
+>N : Symbol(N, Decl(a.ts, 8, 11))
+>J : Symbol(N.J, Decl(d9.ts, 2, 10))
+>k : Symbol(k, Decl(a.ts, 20, 37))
+>K : Symbol(K, Decl(a.ts, 9, 8))
+
+d4.C;
+>d4.C : Symbol(d4.C, Decl(d4.ts, 1, 8))
+>d4 : Symbol(d4, Decl(a.ts, 10, 6))
+>C : Symbol(d4.C, Decl(d4.ts, 1, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 22, 5))
+
+=== amb.d.ts ===
+declare module "amb" {
+>"amb" : Symbol("amb", Decl(amb.d.ts, 0, 0))
+
+  export { K } from 123;
+>K : Symbol(K, Decl(amb.d.ts, 1, 10))
+}
+=== d1.ts ===
+export { A } from 123;
+>A : Symbol(A, Decl(d1.ts, 0, 8))
+
+export { A } from 456;
+>A : Symbol(A, Decl(d1.ts, 1, 8))
+
+=== d2.ts ===
+export const B = 1;
+>B : Symbol(B, Decl(d2.ts, 0, 12), Decl(d2.ts, 1, 8))
+
+export { B } from 123;
+>B : Symbol(B, Decl(d2.ts, 0, 12), Decl(d2.ts, 1, 8))
+
+=== d3.ts ===
+export { default } from 123;
+>default : Symbol(default, Decl(d3.ts, 0, 8))
+
+export default 1;
+=== d4.ts ===
+const C = 1;
+>C : Symbol(C, Decl(d4.ts, 0, 5))
+
+export { C } from 123;
+>C : Symbol(C, Decl(d4.ts, 1, 8))
+
+=== d5.ts ===
+declare const name: string;
+>name : Symbol(name, Decl(d5.ts, 0, 13))
+
+export { E as F } from name;
+>F : Symbol(F, Decl(d5.ts, 1, 8))
+
+export * as G from `./other`;
+>G : Symbol(G, Decl(d5.ts, 2, 6))
+
+export { type I } from (name);
+>I : Symbol(I, Decl(d5.ts, 3, 8))
+>name : Symbol(name, Decl(d5.ts, 0, 13))
+
+=== d6.ts ===
+export * as H from 123;
+>H : Symbol(H, Decl(d6.ts, 0, 6), Decl(d6.ts, 1, 12))
+
+export const H = 1;
+>H : Symbol(H, Decl(d6.ts, 0, 6), Decl(d6.ts, 1, 12))
+
+=== d7.ts ===
+export { X } from "./other";
+>X : Symbol(X, Decl(d7.ts, 0, 8))
+
+export { X } from 123;
+>X : Symbol(X, Decl(d7.ts, 1, 8))
+
+=== d8.ts ===
+export * from "./other";
+export { Y } from 123;
+>Y : Symbol(Y, Decl(d8.ts, 1, 8))
+
+=== d9.ts ===
+export { default } from 123;
+>default : Symbol(default, Decl(d9.ts, 0, 8))
+
+export namespace N {
+>N : Symbol(N, Decl(d9.ts, 0, 28))
+
+  export { J } from 123;
+>J : Symbol(J, Decl(d9.ts, 2, 10))
+}
+=== other.ts ===
+export const X = 1;
+>X : Symbol(X, Decl(other.ts, 0, 12))
+
+export const Y = 1;
+>Y : Symbol(Y, Decl(other.ts, 1, 12))
+

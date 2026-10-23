@@ -1,0 +1,29 @@
+//// [test/cases/bun30-P2.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+const k = "foo";
+>k : "foo"
+>"foo" : "foo"
+
+export class C { static m() { this[k] = 1; } }
+>C : C
+>m : () => void
+>this[k] = 1 : 1
+>this[k] : number
+>this : typeof C
+>k : "foo"
+>1 : 1
+
+C.foo.toFixed();
+>C.foo.toFixed() : string
+>C.foo.toFixed : (fractionDigits?: number) => string
+>C.foo : number
+>C : typeof C
+>foo : number
+>toFixed : (fractionDigits?: number) => string
+

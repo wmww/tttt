@@ -1,0 +1,10 @@
+//// [test/cases/bun97-J1.ts] ////
+
+=== c.tsx ===
+export const e = <div />;
+>e : Symbol(e, Decl(c.tsx, 0, 12))
+
+=== s.ts ===
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(s.ts, 0, 12))
+

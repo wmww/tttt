@@ -1,0 +1,52 @@
+a.ts(2,7): error TS2322: Type '{ a: number; }' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to '{ a: number; }'.
+a.ts(3,7): error TS2322: Type 'number[]' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'number[]'.
+a.ts(4,7): error TS2322: Type '{ a: number; z: number; }' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to '{ a: number; z: number; }'.
+a.ts(7,11): error TS2322: Type '{ a: number; }' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to '{ a: number; }'.
+a.ts(9,18): error TS2322: Type 'number' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'number'.
+a.ts(11,13): error TS2322: Type '{ n: number; }' is not assignable to type 'U'.
+  'U' could be instantiated with an arbitrary type which could be unrelated to '{ n: number; }'.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    declare function call<T>(f: (x: T) => void, v: T): T;
+    call(({ a } = { a: 1 }) => {}, { a: 2 });
+          ~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to '{ a: number; }'.
+    call(([a] = [1]) => {}, [2]);
+          ~~~~~~~~~
+!!! error TS2322: Type 'number[]' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to 'number[]'.
+    call(({ a } = { a: 1, z: 1 }) => {}, { a: 2, y: 3 });
+          ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ a: number; z: number; }' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to '{ a: number; z: number; }'.
+    call((x = { a: 1 }) => {}, { a: 2 });
+    declare function call3<T>(o: { f: (x: T) => void, v: T }): T;
+    call3({ f({ a } = { a: 1 }) {}, v: { a: 2 } });
+              ~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to '{ a: number; }'.
+    declare function call6<T>(f: (x: { p: T }) => void, v: T): T;
+    call6(({ p } = { p: 1 }) => {}, 2);
+                     ~
+!!! error TS2322: Type 'number' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to 'number'.
+!!! related TS6500 a.ts:8:36: The expected type comes from property 'p' which is declared here on type '{ p: T; }'
+    [{ a: 1 }].map(({ a } = { a: 1 }) => a);
+    [1].reduce(({ n } = { n: 0 }, x) => ({ n: n + x }), { n: 0 });
+                ~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '{ n: number; }' is not assignable to type 'U'.
+!!! error TS2322:   'U' could be instantiated with an arbitrary type which could be unrelated to '{ n: number; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

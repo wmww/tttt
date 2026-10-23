@@ -1,0 +1,39 @@
+a.ts(3,17): error TS7033: Property 'k' implicitly has type 'any', because its get accessor lacks a return type annotation.
+a.ts(5,17): error TS7032: Property 'k' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+a.ts(5,19): error TS7006: Parameter 'v' implicitly has an 'any' type.
+a.ts(7,21): error TS7033: Property 'k' implicitly has type 'any', because its get accessor lacks a return type annotation.
+a.ts(11,17): error TS7033: Property 'k' implicitly has type 'any', because its get accessor lacks a return type annotation.
+a.ts(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    const k = "k";
+    const j = "j";
+    type T1 = { get k(); set [k](v: string) };
+                    ~
+!!! error TS7033: Property 'k' implicitly has type 'any', because its get accessor lacks a return type annotation.
+    type T2 = { set [k](v: string); get k() };
+    type T3 = { set k(v); get [k](): string };
+                    ~
+!!! error TS7032: Property 'k' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+                      ~
+!!! error TS7006: Parameter 'v' implicitly has an 'any' type.
+    type T4 = { get [k](): string; set k(v) };
+    function f(p: { get k(); set [k](v: string) }) {}
+                        ~
+!!! error TS7033: Property 'k' implicitly has type 'any', because its get accessor lacks a return type annotation.
+    // The members are resolved before the type literal is checked, or by an earlier late-bound member.
+    let before: T5["k"];
+    type T5 = { get k(); set [k](v: string) };
+    type T6 = { get k(); set [k](v: string); get j(); set [j](v: string) };
+                    ~
+!!! error TS7033: Property 'k' implicitly has type 'any', because its get accessor lacks a return type annotation.
+    // `checkIndexConstraints` resolves the members of these before they are checked.
+    interface I1 { get k(); set [k](v: string) }
+    declare class C1 { get k(); set [k](v: string) }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

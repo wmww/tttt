@@ -1,0 +1,14 @@
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    type Bad2 = { [Symbol.iterator](): { next(): { done: boolean } } };
+    declare const bad2: Bad2;
+    const q: Bad2 | number[] = [1];
+    const sp2 = [...bad2];
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

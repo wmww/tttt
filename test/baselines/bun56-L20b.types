@@ -1,0 +1,31 @@
+//// [test/cases/bun56-L20b.ts] ////
+
+=== a.js ===
+/** @type {<>() => void} */
+let a;
+>a : () => void
+
+/** @type {<>} */
+let b;
+>b : () => any
+
+/** @type {Array<<>>} */
+let c;
+>c : (() => any)[]
+
+/** @template T */
+class A { /** @type {T | undefined} */ x = undefined; }
+>A : A<T>
+>x : undefined
+>undefined : undefined
+
+/** @augments {A<<>} */
+class E extends A {}
+>E : E
+>A : A<() => any>
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

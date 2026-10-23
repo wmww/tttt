@@ -1,0 +1,20 @@
+a.ts(3,1): error TS2322: Type '(a: number, b: string) => void' is not assignable to type '(arg_0: number, arg_1: number) => void'.
+  Types of parameters 'b' and 'arg_1' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare let p8: (...{ length }: [number, number]) => void;
+    declare let p4: (a: number, b: string) => void;
+    p8 = p4;
+    ~~
+!!! error TS2322: Type '(a: number, b: string) => void' is not assignable to type '(arg_0: number, arg_1: number) => void'.
+!!! error TS2322:   Types of parameters 'b' and 'arg_1' are incompatible.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

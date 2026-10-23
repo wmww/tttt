@@ -1,0 +1,9 @@
+//// [test/cases/bun43-C5a.ts] ////
+
+=== a.tsx ===
+var v = <a b=/**/"\1" />;
+>v : any
+><a b=/**/"\1" /> : any
+>a : any
+>b : string
+

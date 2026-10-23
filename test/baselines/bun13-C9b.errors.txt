@@ -1,0 +1,13 @@
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    type Brand<T> = { [P in keyof T]: 1 };
+    type M2<T> = { [K in ("a" & Brand<T>) | "b"]: 1 };
+    function g<T>() { const x: M2<T> = { b: 1 }; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

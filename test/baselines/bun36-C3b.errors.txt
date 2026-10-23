@@ -1,0 +1,16 @@
+a.ts(1,21): error TS7042: Module '@data' was resolved to 'data.json', but '--resolveJsonModule' is not used.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "node16", "paths": { "@data": ["./data.json"] } }, "files": ["a.ts"] }
+==== a.ts (2 errors) ====
+    import w1 = require("@data");
+                        ~~~~~~~
+!!! error TS7042: Module '@data' was resolved to 'data.json', but '--resolveJsonModule' is not used.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== data.json (0 errors) ====
+    {"a":1}
+    

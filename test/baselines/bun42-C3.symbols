@@ -1,0 +1,15 @@
+//// [test/cases/bun42-C3.ts] ////
+
+=== a.ts ===
+1 << E.A;
+>E.A : Symbol(E.A, Decl(a.ts, 1, 14))
+>E : Symbol(E, Decl(a.ts, 0, 9))
+>A : Symbol(E.A, Decl(a.ts, 1, 14))
+
+const enum E { A }
+>E : Symbol(E, Decl(a.ts, 0, 9))
+>A : Symbol(E.A, Decl(a.ts, 1, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

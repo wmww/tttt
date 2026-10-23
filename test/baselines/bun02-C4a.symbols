@@ -1,0 +1,29 @@
+//// [test/cases/bun02-C4a.ts] ////
+
+=== a.ts ===
+interface A3<T = A3 extends infer U ? U : never> { x: T }
+>A3 : Symbol(A3, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>A3 : Symbol(A3, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 33))
+>U : Symbol(U, Decl(a.ts, 0, 33))
+>x : Symbol(A3.x, Decl(a.ts, 0, 50))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+
+interface A19<T = string extends string ? A19 : never> { x: T }
+>A19 : Symbol(A19, Decl(a.ts, 0, 57))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+>A19 : Symbol(A19, Decl(a.ts, 0, 57))
+>x : Symbol(A19.x, Decl(a.ts, 1, 56))
+>T : Symbol(T, Decl(a.ts, 1, 14))
+
+interface A20<T = string extends A20 ? 1 : never> { x: T }
+>A20 : Symbol(A20, Decl(a.ts, 1, 63))
+>T : Symbol(T, Decl(a.ts, 2, 14))
+>A20 : Symbol(A20, Decl(a.ts, 1, 63))
+>x : Symbol(A20.x, Decl(a.ts, 2, 51))
+>T : Symbol(T, Decl(a.ts, 2, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

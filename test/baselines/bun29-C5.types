@@ -1,0 +1,22 @@
+//// [test/cases/bun29-C5.ts] ////
+
+=== a.ts ===
+type T = { readonly a: unique symbol; readonly b: unique symbol };
+>T : T
+>a : unique symbol
+>b : unique symbol
+
+let n: number = null! as T["a"];
+>n : number
+>null! as T["a"] : unique symbol
+>null! : never
+
+let p: T["a"] = null! as T["b"];
+>p : unique symbol
+>null! as T["b"] : unique symbol
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

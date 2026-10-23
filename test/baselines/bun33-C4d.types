@@ -1,0 +1,26 @@
+//// [test/cases/bun33-C4d.ts] ////
+
+=== a.ts ===
+declare const d: any;
+>d : any
+
+class O { x = 1; m() { class I { @d((z: this) => z.x) p = 1 } } }
+>O : O
+>x : number
+>1 : 1
+>m : () => void
+>I : I
+>d((z: this) => z.x) : any
+>d : any
+>(z: this) => z.x : (z: this) => number
+>z : this
+>z.x : number
+>z : this
+>x : number
+>p : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,28 @@
+a.ts(7,23): error TS2322: Type '<T>(a: T | undefined) => a is T' is not assignable to type 'never'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    declare function isT<T>(x: T | undefined): x is T;
+    declare function wrap<A, B extends A>(f: (a: A) => a is B): (a: A) => a is B;
+    const g = wrap(isT);
+    declare const v: "a" | undefined;
+    if (g(v)) { v.length; }
+    declare let n: never; n = g;
+                          ~
+!!! error TS2322: Type '<T>(a: T | undefined) => a is T' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    export {};
+    declare function mk<A, B extends A>(): (a: A) => a is B;
+    const f: <T>(x: T | undefined) => x is T = mk();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

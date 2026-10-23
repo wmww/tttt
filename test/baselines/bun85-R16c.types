@@ -1,0 +1,33 @@
+//// [test/cases/bun85-R16c.ts] ////
+
+=== a.ts ===
+import { p } from "./m";
+>p : any
+
+export function g() { return [p]; }
+>g : () => any
+>[p] : any[]
+>p : any
+
+const t: never = g;
+>t : never
+>g : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+import { g } from "./a";
+>g : () => any
+
+const v = { get p() { return g(); } };
+>v : { readonly p: any; }
+>{ get p() { return g(); } } : { readonly p: any; }
+>p : any
+>g() : any
+>g : () => any
+
+export = v;
+>v : { readonly p: any; }
+

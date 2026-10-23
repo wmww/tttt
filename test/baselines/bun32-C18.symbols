@@ -1,0 +1,13 @@
+//// [test/cases/bun32-C18.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== m.js ===
+module.exports = [exports];
+>module.exports : Symbol(exports, Decl(m.js, 0, 0))
+>module : Symbol(module, Decl(m.js, 0, 0))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+>exports : Symbol(exports, Decl(m.js, 0, 0))
+

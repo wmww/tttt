@@ -1,0 +1,15 @@
+//// [test/cases/bun11-C11.ts] ////
+
+=== a.ts ===
+interface I1 { get x(); }
+>x : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+interface I1 { set x(v: string); }
+>x : string
+>v : string
+

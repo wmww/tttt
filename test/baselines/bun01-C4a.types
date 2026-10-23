@@ -1,0 +1,19 @@
+//// [test/cases/bun01-C4a.ts] ////
+
+=== a.ts ===
+interface Array<T, U> {}
+type Object = {};
+>Object : Object
+
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

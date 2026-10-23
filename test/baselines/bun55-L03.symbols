@@ -1,0 +1,84 @@
+//// [test/cases/bun55-L03.ts] ////
+
+=== a.ts ===
+declare function box<T extends { a: string | number }>(o: T): T;
+>box : Symbol(box, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>a : Symbol(a, Decl(a.ts, 0, 32))
+>o : Symbol(o, Decl(a.ts, 0, 55))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+
+declare function both<T>(o: T & { a: string | number }): T;
+>both : Symbol(both, Decl(a.ts, 0, 64))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>o : Symbol(o, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>a : Symbol(a, Decl(a.ts, 1, 33))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+
+declare function key<K extends PropertyKey>(o: { key: K }): K;
+>key : Symbol(key, Decl(a.ts, 1, 59))
+>K : Symbol(K, Decl(a.ts, 2, 21))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(a.ts, 2, 44))
+>key : Symbol(key, Decl(a.ts, 2, 48))
+>K : Symbol(K, Decl(a.ts, 2, 21))
+>K : Symbol(K, Decl(a.ts, 2, 21))
+
+class C {
+>C : Symbol(C, Decl(a.ts, 2, 62))
+
+  r!: string | number;
+>r : Symbol(C.r, Decl(a.ts, 3, 9))
+
+  m(x: this["r"]) {
+>m : Symbol(C.m, Decl(a.ts, 4, 22))
+>x : Symbol(x, Decl(a.ts, 5, 4))
+
+    let u = both({ a: x });
+>u : Symbol(u, Decl(a.ts, 6, 7))
+>both : Symbol(both, Decl(a.ts, 0, 64))
+>a : Symbol(a, Decl(a.ts, 6, 18))
+>x : Symbol(x, Decl(a.ts, 5, 4))
+
+    u = 1;
+>u : Symbol(u, Decl(a.ts, 6, 7))
+
+    if (typeof x === "string") return;
+>x : Symbol(x, Decl(a.ts, 5, 4))
+
+    const n: number = box({ a: x }).a;
+>n : Symbol(n, Decl(a.ts, 9, 9))
+>box({ a: x }).a : Symbol(a, Decl(a.ts, 9, 27))
+>box : Symbol(box, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 9, 27))
+>x : Symbol(x, Decl(a.ts, 5, 4))
+>a : Symbol(a, Decl(a.ts, 9, 27))
+
+    let v = box({ a: x });
+>v : Symbol(v, Decl(a.ts, 10, 7))
+>box : Symbol(box, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 10, 17))
+>x : Symbol(x, Decl(a.ts, 5, 4))
+
+    v = 1;
+>v : Symbol(v, Decl(a.ts, 10, 7))
+  }
+  n(name: keyof this) {
+>n : Symbol(C.n, Decl(a.ts, 12, 3))
+>name : Symbol(name, Decl(a.ts, 13, 4))
+
+    let got = key({ key: name });
+>got : Symbol(got, Decl(a.ts, 14, 7))
+>key : Symbol(key, Decl(a.ts, 1, 59))
+>key : Symbol(key, Decl(a.ts, 14, 19))
+>name : Symbol(name, Decl(a.ts, 13, 4))
+
+    got = 1;
+>got : Symbol(got, Decl(a.ts, 14, 7))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

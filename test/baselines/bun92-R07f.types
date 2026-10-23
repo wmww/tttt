@@ -1,0 +1,21 @@
+//// [test/cases/bun92-R07f.ts] ////
+
+=== a.js ===
+/** @type {{ a: 1; [}} */
+const o = 0;
+>o : { [x: number]: any; a: 1; }
+>0 : 0
+
+o.a; o.nope;
+>o.a : 1
+>o : { [x: number]: any; a: 1; }
+>a : 1
+>o.nope : any
+>o : { [x: number]: any; a: 1; }
+>nope : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

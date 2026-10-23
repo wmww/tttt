@@ -1,0 +1,24 @@
+//// [test/cases/bun25-C5a.ts] ////
+
+=== a.ts ===
+const a = { m() { return this.z; }, f() { return this.z; }, g: () => 1 + {} };
+>a : { m(): any; f(): any; g: () => any; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => 1 + {} } : { m(): any; f(): any; g: () => any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>g : () => any
+>() => 1 + {} : () => any
+>1 + {} : any
+>1 : 1
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun32-C6b.ts] ////
+
+=== a.ts ===
+async function g() { return await await g(); }
+>g : () => any
+>await await g() : any
+>await g() : any
+>g() : any
+>g : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

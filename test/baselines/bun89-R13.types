@@ -1,0 +1,291 @@
+//// [test/cases/bun89-R13.ts] ////
+
+=== a.ts ===
+// 1 an independent late name first: it starts the binding (getLateBoundSymbol), the key after it is typed in the meantime
+declare const j1: "x";
+>j1 : "x"
+
+class C1 { a: "b" = "b"; [j1]: string = ""; [k1]: number = 1 }
+>C1 : C1
+>a : "b"
+>"b" : "b"
+>[j1] : string
+>j1 : "x"
+>"" : ""
+>[k1] : number
+>k1 : "b"
+>1 : 1
+
+declare const k1: C1["a"];
+>k1 : "b"
+
+new C1().x; new C1().b; new C1().a;
+>new C1().x : any
+>new C1() : C1
+>C1 : typeof C1
+>x : any
+>new C1().b : any
+>new C1() : C1
+>C1 : typeof C1
+>b : any
+>new C1().a : "b"
+>new C1() : C1
+>C1 : typeof C1
+>a : "b"
+
+// 2 the circular key first
+declare const j2: "x";
+>j2 : "x"
+
+class C2 { a: "b" = "b"; [k2]: number = 1; [j2]: string = "" }
+>C2 : C2
+>a : "b"
+>"b" : "b"
+>[k2] : number
+>k2 : "b"
+>1 : 1
+>[j2] : string
+>j2 : "x"
+>"" : ""
+
+declare const k2: C2["a"];
+>k2 : "b"
+
+new C2().x; new C2().b; new C2().a;
+>new C2().x : string
+>new C2() : C2
+>C2 : typeof C2
+>x : string
+>new C2().b : any
+>new C2() : C2
+>C2 : typeof C2
+>b : any
+>new C2().a : "b"
+>new C2() : C2
+>C2 : typeof C2
+>a : "b"
+
+// 3 unique symbol first
+declare const s3: unique symbol;
+>s3 : unique symbol
+
+class C3 { a: "b" = "b"; [s3]: string = ""; [k3]: number = 1 }
+>C3 : C3
+>a : "b"
+>"b" : "b"
+>[s3] : string
+>s3 : unique symbol
+>"" : ""
+>[k3] : number
+>k3 : "b"
+>1 : 1
+
+declare const k3: C3["a"];
+>k3 : "b"
+
+new C3()[s3]; new C3().b;
+>new C3()[s3] : any
+>new C3() : C3
+>C3 : typeof C3
+>s3 : unique symbol
+>new C3().b : any
+>new C3() : C3
+>C3 : typeof C3
+>b : any
+
+// 4 Symbol.iterator first
+class C4 { a: "b" = "b"; *[Symbol.iterator]() { yield 1; } [k4]: number = 1 }
+>C4 : C4
+>a : "b"
+>"b" : "b"
+>[Symbol.iterator] : () => Generator<number, void, unknown>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>yield 1 : any
+>1 : 1
+>[k4] : number
+>k4 : "b"
+>1 : 1
+
+declare const k4: C4["a"];
+>k4 : "b"
+
+for (const x of new C4()) {} new C4().b;
+>x : any
+>new C4() : C4
+>C4 : typeof C4
+>new C4().b : any
+>new C4() : C4
+>C4 : typeof C4
+>b : any
+
+// 5 static side
+declare const j5: "x";
+>j5 : "x"
+
+class C5 { static a: "b" = "b"; static [j5]: string = ""; static [k5]: number = 1 }
+>C5 : C5
+>a : "b"
+>"b" : "b"
+>[j5] : string
+>j5 : "x"
+>"" : ""
+>[k5] : number
+>k5 : "b"
+>1 : 1
+
+declare const k5: (typeof C5)["a"];
+>k5 : "b"
+>C5 : typeof C5
+
+C5.x; C5.b;
+>C5.x : any
+>C5 : typeof C5
+>x : any
+>C5.b : any
+>C5 : typeof C5
+>b : any
+
+// 6 interface
+declare const j6: "x";
+>j6 : "x"
+
+interface I6 { a: "b"; [j6]: string; [k6]: number }
+>a : "b"
+>[j6] : string
+>j6 : "x"
+>[k6] : number
+>k6 : "b"
+
+declare const k6: I6["a"];
+>k6 : "b"
+
+declare const i6: I6; i6.x; i6.b;
+>i6 : I6
+>i6.x : string
+>i6 : I6
+>x : string
+>i6.b : number
+>i6 : I6
+>b : number
+
+// 7 declare class
+declare const j7: "x";
+>j7 : "x"
+
+declare class C7 { a: "b"; [j7]: string; [k7]: number }
+>C7 : C7
+>a : "b"
+>[j7] : string
+>j7 : "x"
+>[k7] : number
+>k7 : "b"
+
+declare const k7: C7["a"];
+>k7 : "b"
+
+new C7().x; new C7().b;
+>new C7().x : any
+>new C7() : C7
+>C7 : typeof C7
+>x : any
+>new C7().b : any
+>new C7() : C7
+>C7 : typeof C7
+>b : any
+
+// 8 subclass sees it?
+declare const j8: "x";
+>j8 : "x"
+
+class C8 { a: "b" = "b"; [j8]: string = ""; [k8]: number = 1 }
+>C8 : C8
+>a : "b"
+>"b" : "b"
+>[j8] : string
+>j8 : "x"
+>"" : ""
+>[k8] : number
+>k8 : "b"
+>1 : 1
+
+declare const k8: C8["a"];
+>k8 : "b"
+
+class D8 extends C8 {}
+>D8 : D8
+>C8 : C8
+
+new D8().x; new D8().b;
+>new D8().x : any
+>new D8() : D8
+>D8 : typeof D8
+>x : any
+>new D8().b : any
+>new D8() : D8
+>D8 : typeof D8
+>b : any
+
+// 9 generic class, other instantiation
+declare const j9: "x";
+>j9 : "x"
+
+class C9<T> { a: "b" = "b"; [j9]: string = ""; [k9]: number = 1; t!: T }
+>C9 : C9<T>
+>a : "b"
+>"b" : "b"
+>[j9] : string
+>j9 : "x"
+>"" : ""
+>[k9] : number
+>k9 : "b"
+>1 : 1
+>t : T
+
+declare const k9: C9<1>["a"];
+>k9 : "b"
+
+new C9<1>().x; new C9<2>().x; new C9<2>().b;
+>new C9<1>().x : any
+>new C9<1>() : C9<1>
+>C9 : typeof C9
+>x : any
+>new C9<2>().x : any
+>new C9<2>() : C9<2>
+>C9 : typeof C9
+>x : any
+>new C9<2>().b : any
+>new C9<2>() : C9<2>
+>C9 : typeof C9
+>b : any
+
+// 10 type of `this` inside
+declare const j10: "x";
+>j10 : "x"
+
+class C10 { a: "b" = "b"; [j10]: string = ""; [k10]: number = 1; m() { this.x; this.b; } }
+>C10 : C10
+>a : "b"
+>"b" : "b"
+>[j10] : string
+>j10 : "x"
+>"" : ""
+>[k10] : number
+>k10 : "b"
+>1 : 1
+>m : () => void
+>this.x : any
+>this : this
+>x : any
+>this.b : any
+>this : this
+>b : any
+
+declare const k10: C10["a"];
+>k10 : "b"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

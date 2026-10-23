@@ -1,0 +1,25 @@
+//// [test/cases/bun24-C2.ts] ////
+
+=== a.ts ===
+const o = { m<A>(a: A) { class L { a!: A } return new L(); } };
+>o : { m<A>(a: A): L; }
+>{ m<A>(a: A) { class L { a!: A } return new L(); } } : { m<A>(a: A): L; }
+>m : <A>(a: A) => L
+>a : A
+>L : L
+>a : A
+>new L() : L
+>L : typeof L
+
+const v: 1 = o.m(1);
+>v : 1
+>o.m(1) : o.m.L
+>o.m : <A>(a: A) => L
+>o : { m<A>(a: A): L; }
+>m : <A>(a: A) => L
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun15-P4.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+((p = { f: 1, h: z => {} }) => {})(cond ? { f: 1, h: (z: number) => {} } : { g: 1, h: (z: string) => {} });
+>p : Symbol(p, Decl(a.ts, 1, 2))
+>f : Symbol(f, Decl(a.ts, 1, 7))
+>h : Symbol(h, Decl(a.ts, 1, 13))
+>z : Symbol(z, Decl(a.ts, 1, 16))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 1, 43))
+>h : Symbol(h, Decl(a.ts, 1, 49))
+>z : Symbol(z, Decl(a.ts, 1, 54))
+>g : Symbol(g, Decl(a.ts, 1, 76))
+>h : Symbol(h, Decl(a.ts, 1, 82))
+>z : Symbol(z, Decl(a.ts, 1, 87))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

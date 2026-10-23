@@ -1,0 +1,29 @@
+//// [test/cases/bun14-C9c.ts] ////
+
+=== a.ts ===
+namespace M { const x = 1; }
+>M : typeof M
+>x : 1
+>1 : 1
+
+declare let m1: typeof M;
+>m1 : typeof M
+>M : typeof M
+
+m1.toString;
+>m1.toString : () => string
+>m1 : typeof M
+>toString : () => string
+
+declare let m2: typeof M & string;
+>m2 : string
+>M : typeof M
+
+const e4: number = m2;
+>e4 : number
+>m2 : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

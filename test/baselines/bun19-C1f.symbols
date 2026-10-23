@@ -1,0 +1,15 @@
+//// [test/cases/bun19-C1f.ts] ////
+
+=== a.ts ===
+class K { p!: this extends string ? this : this; m() { this.p = this; } }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>p : Symbol(K.p, Decl(a.ts, 0, 9))
+>m : Symbol(K.m, Decl(a.ts, 0, 48))
+>this.p : Symbol(K.p, Decl(a.ts, 0, 9))
+>this : Symbol(K, Decl(a.ts, 0, 0))
+>p : Symbol(K.p, Decl(a.ts, 0, 9))
+>this : Symbol(K, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

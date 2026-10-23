@@ -1,0 +1,24 @@
+//// [test/cases/bun15-C2.ts] ////
+
+=== a.ts ===
+type F1 = (x: number) => void; type F2 = (y: string) => void;
+>F1 : F1
+>x : number
+>F2 : F2
+>y : string
+
+function h1<T extends [F1, F2]>(t: T) { const [a = x => {}, b = y => {}] = t; }
+>h1 : <T extends [F1, F2]>(t: T) => void
+>t : T
+>a : F1
+>x => {} : (x: any) => void
+>x : any
+>b : F2
+>y => {} : (y: any) => void
+>y : any
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

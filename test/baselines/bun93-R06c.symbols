@@ -1,0 +1,28 @@
+//// [test/cases/bun93-R06c.ts] ////
+
+=== a.ts ===
+type M = { [K in "x" | "p"]: K extends "p" ? typeof arr : number };
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 12))
+>K : Symbol(K, Decl(a.ts, 0, 12))
+>arr : Symbol(arr, Decl(a.ts, 3, 5))
+
+interface C { x: number; p: any }
+>C : Symbol(C, Decl(a.ts, 0, 67))
+>x : Symbol(C.x, Decl(a.ts, 1, 13))
+>p : Symbol(C.p, Decl(a.ts, 1, 24))
+
+declare let m: M; declare let c: C;
+>m : Symbol(m, Decl(a.ts, 2, 11))
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>c : Symbol(c, Decl(a.ts, 2, 29))
+>C : Symbol(C, Decl(a.ts, 0, 67))
+
+const arr = [m, c];
+>arr : Symbol(arr, Decl(a.ts, 3, 5))
+>m : Symbol(m, Decl(a.ts, 2, 11))
+>c : Symbol(c, Decl(a.ts, 2, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

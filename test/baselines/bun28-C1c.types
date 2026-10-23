@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C1c.ts] ////
+
+=== a.ts ===
+interface I { out [k: string]: number }
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

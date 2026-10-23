@@ -1,0 +1,21 @@
+a.ts(3,5): error TS2322: Type '() => X' is not assignable to type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import { X } from "./m";
+    type X = string;
+    let n: number = () => mkX();
+        ~
+!!! error TS2322: Type '() => X' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== g.d.ts (0 errors) ====
+    interface X { gx: number }
+    declare function mkX(): X;
+==== m.ts (0 errors) ====
+    export const X = 1;
+    

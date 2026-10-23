@@ -1,0 +1,46 @@
+a.ts(2,15): error TS1070: 'default' modifier cannot appear on a type member.
+a.ts(2,56): error TS2339: Property 'class' does not exist on type 'I'.
+a.ts(3,12): error TS1070: 'default' modifier cannot appear on a type member.
+a.ts(3,57): error TS2339: Property 'function' does not exist on type 'T'.
+a.ts(4,11): error TS1029: 'export' modifier must precede 'default' modifier.
+a.ts(4,53): error TS2339: Property 'class' does not exist on type 'C'.
+a.ts(5,15): error TS1070: 'default' modifier cannot appear on a type member.
+a.ts(5,23): error TS2300: Duplicate identifier 'class'.
+a.ts(5,33): error TS2300: Duplicate identifier 'class'.
+a.ts(5,33): error TS2717: Subsequent property declarations must have the same type.  Property 'default' must be of type '1', but here has type '2'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (11 errors) ====
+    export {};
+    interface I { default class: 1 } declare const i: I; i.class; i.default;
+                  ~~~~~~~
+!!! error TS1070: 'default' modifier cannot appear on a type member.
+                                                           ~~~~~
+!!! error TS2339: Property 'class' does not exist on type 'I'.
+    type T = { default function: 1 }; declare const t: T; t.function; t.default;
+               ~~~~~~~
+!!! error TS1070: 'default' modifier cannot appear on a type member.
+                                                            ~~~~~~~~
+!!! error TS2339: Property 'function' does not exist on type 'T'.
+    class C { default class = 1 } declare const c: C; c.class; c.default;
+              ~~~~~~~
+!!! error TS1029: 'export' modifier must precede 'default' modifier.
+                                                        ~~~~~
+!!! error TS2339: Property 'class' does not exist on type 'C'.
+    interface L { default class: 1; default: 2 }
+                  ~~~~~~~
+!!! error TS1070: 'default' modifier cannot appear on a type member.
+                          ~~~~~
+!!! error TS2300: Duplicate identifier 'class'.
+                                    ~~~~~~~
+!!! error TS2300: Duplicate identifier 'class'.
+                                    ~~~~~~~
+!!! error TS2717: Subsequent property declarations must have the same type.  Property 'default' must be of type '1', but here has type '2'.
+!!! related TS6203 a.ts:5:23: 'default' was also declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

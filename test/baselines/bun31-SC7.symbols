@@ -1,0 +1,52 @@
+//// [test/cases/bun31-SC7.ts] ////
+
+=== a.ts ===
+declare function use(...a: any[]): void;
+>use : Symbol(use, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+
+type O = { b?: number } | undefined;
+>O : Symbol(O, Decl(a.ts, 0, 40))
+>b : Symbol(b, Decl(a.ts, 1, 10))
+
+function y1(o: O): number { o?.b ??= 1; }
+>y1 : Symbol(y1, Decl(a.ts, 1, 36))
+>o : Symbol(o, Decl(a.ts, 2, 12))
+>O : Symbol(O, Decl(a.ts, 0, 40))
+>o?.b : Symbol(b, Decl(a.ts, 1, 10))
+>o : Symbol(o, Decl(a.ts, 2, 12))
+>b : Symbol(b, Decl(a.ts, 1, 10))
+
+function y2(o: O) { let x: number; o?.b ||= 1; use(x); }
+>y2 : Symbol(y2, Decl(a.ts, 2, 41))
+>o : Symbol(o, Decl(a.ts, 3, 12))
+>O : Symbol(O, Decl(a.ts, 0, 40))
+>x : Symbol(x, Decl(a.ts, 3, 23))
+>o?.b : Symbol(b, Decl(a.ts, 1, 10))
+>o : Symbol(o, Decl(a.ts, 3, 12))
+>b : Symbol(b, Decl(a.ts, 1, 10))
+>use : Symbol(use, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 3, 23))
+
+function y3(o: O, s: string | number) { if (typeof s === "string") { o?.b &&= 1; const n: never = s; } }
+>y3 : Symbol(y3, Decl(a.ts, 3, 56))
+>o : Symbol(o, Decl(a.ts, 4, 12))
+>O : Symbol(O, Decl(a.ts, 0, 40))
+>s : Symbol(s, Decl(a.ts, 4, 17))
+>s : Symbol(s, Decl(a.ts, 4, 17))
+>o?.b : Symbol(b, Decl(a.ts, 1, 10))
+>o : Symbol(o, Decl(a.ts, 4, 12))
+>b : Symbol(b, Decl(a.ts, 1, 10))
+>n : Symbol(n, Decl(a.ts, 4, 86))
+>s : Symbol(s, Decl(a.ts, 4, 17))
+
+class Y4 { a: number; constructor(o: O) { o?.["b"] ??= 1; } }
+>Y4 : Symbol(Y4, Decl(a.ts, 4, 104))
+>a : Symbol(Y4.a, Decl(a.ts, 5, 10))
+>o : Symbol(o, Decl(a.ts, 5, 34))
+>O : Symbol(O, Decl(a.ts, 0, 40))
+>o : Symbol(o, Decl(a.ts, 5, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

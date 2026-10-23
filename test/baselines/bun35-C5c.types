@@ -1,0 +1,11 @@
+//// [test/cases/bun35-C5c.ts] ////
+
+=== a.ts ===
+import "e3/a";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/e3/a.d.ts ===
+
+export {};

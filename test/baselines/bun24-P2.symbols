@@ -1,0 +1,26 @@
+//// [test/cases/bun24-P2.ts] ////
+
+=== a.ts ===
+declare const ks: string; declare const tlv: { a: 1 };
+>ks : Symbol(ks, Decl(a.ts, 0, 13))
+>tlv : Symbol(tlv, Decl(a.ts, 0, 39))
+>a : Symbol(a, Decl(a.ts, 0, 46))
+
+const v: 1 = {
+>v : Symbol(v, Decl(a.ts, 1, 5))
+
+    [ks]: 1,
+>[ks] : Symbol([ks], Decl(a.ts, 1, 14))
+>ks : Symbol(ks, Decl(a.ts, 0, 13))
+
+    z: null! as "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+>z : Symbol(z, Decl(a.ts, 2, 12))
+
+    last: tlv,
+>last : Symbol(last, Decl(a.ts, 3, 154))
+>tlv : Symbol(tlv, Decl(a.ts, 0, 39))
+
+};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

@@ -1,0 +1,19 @@
+a.ts(2,7): error TS2322: Type 'typeof import("p.d.json")' is not assignable to type '0'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext", "allowArbitraryExtensions": true } }
+==== a.ts (2 errors) ====
+    import * as p from "./p.json" with { type: "json" };
+    const t: 0 = p;
+          ~
+!!! error TS2322: Type 'typeof import("p.d.json")' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== p.d.json.ts (0 errors) ====
+    export {};
+==== package.json (0 errors) ====
+    { "type": "module" }
+    

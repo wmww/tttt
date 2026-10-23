@@ -1,0 +1,31 @@
+//// [test/cases/bun20-C14b.ts] ////
+
+=== a.ts ===
+type Show<T> = { show: T };
+>Show : Symbol(Show, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>show : Symbol(show, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+
+declare function show<T>(x: T): Show<T>;
+>show : Symbol(show, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>x : Symbol(x, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>Show : Symbol(Show, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+
+function f<TU extends unknown>(x: TU) { if (x instanceof Object) { const b: number = show(x); } }
+>f : Symbol(f, Decl(a.ts, 1, 40))
+>TU : Symbol(TU, Decl(a.ts, 2, 11))
+>x : Symbol(x, Decl(a.ts, 2, 31))
+>TU : Symbol(TU, Decl(a.ts, 2, 11))
+>x : Symbol(x, Decl(a.ts, 2, 31))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>b : Symbol(b, Decl(a.ts, 2, 72))
+>show : Symbol(show, Decl(a.ts, 0, 27))
+>x : Symbol(x, Decl(a.ts, 2, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

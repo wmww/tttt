@@ -1,0 +1,22 @@
+//// [test/cases/bun61-L05.ts] ////
+
+=== a.tsx ===
+export const a = <div />;
+>a : import("pre/jsx-runtime", { with: { "resolution-mode": "import" } }).JSX.Element
+><div /> : import("pre/jsx-runtime", { with: { "resolution-mode": "import" } }).JSX.Element
+>div : any
+
+export const b = <div />;
+>b : import("pre/jsx-runtime", { with: { "resolution-mode": "import" } }).JSX.Element
+><div /> : import("pre/jsx-runtime", { with: { "resolution-mode": "import" } }).JSX.Element
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/pre/jsx-runtime.d.ts ===
+export namespace JSX { interface IntrinsicElements { div: {} } interface Element {} } export function jsx(): void;
+>div : {}
+>jsx : () => void
+

@@ -1,0 +1,18 @@
+//// [test/cases/bun33-C14b.ts] ////
+
+=== j.js ===
+exports.a = 1;
+>exports.a = 1 : 1
+>exports.a : 1
+>exports : typeof import("./j")
+>a : 1
+>1 : 1
+
+declare module "zz" { }
+>"zz" : typeof import("zz")
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

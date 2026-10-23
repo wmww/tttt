@@ -1,0 +1,22 @@
+//// [test/cases/bun09-C15a.ts] ////
+
+=== a.ts ===
+type G<A extends B[], B> = [A, B];
+>G : G<A, B>
+
+type E2<T> = T extends G<infer X, infer Y> ? X : never;
+>E2 : E2<T>
+
+function fe<T>(y: E2<T>) { y.includes(1); }
+>fe : <T>(y: E2<T>) => void
+>y : E2<T>
+>y.includes(1) : boolean
+>y.includes : (searchElement: unknown, fromIndex?: number) => boolean
+>y : E2<T>
+>includes : (searchElement: unknown, fromIndex?: number) => boolean
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,27 @@
+//// [test/cases/bun12-C8a.ts] ////
+
+=== a.ts ===
+interface TL extends Array<string | number> { 0: string }
+>TL : Symbol(TL, Decl(a.ts, 0, 0))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>0 : Symbol(TL[0], Decl(a.ts, 0, 45))
+
+declare const tl: TL;
+>tl : Symbol(tl, Decl(a.ts, 1, 13))
+>TL : Symbol(TL, Decl(a.ts, 0, 0))
+
+let a: string | number;
+>a : Symbol(a, Decl(a.ts, 2, 3))
+
+[a] = tl;
+>a : Symbol(a, Decl(a.ts, 2, 3))
+>tl : Symbol(tl, Decl(a.ts, 1, 13))
+
+a.toUpperCase();
+>a.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 2, 3))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

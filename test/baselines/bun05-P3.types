@@ -1,0 +1,22 @@
+//// [test/cases/bun05-P3.ts] ////
+
+=== a.ts ===
+import type { Promise } from "./ty";
+>Promise : Promise<T>
+
+new Promise(resolve => resolve());
+>new Promise(resolve => resolve()) : globalThis.Promise<unknown>
+>Promise : PromiseConstructor
+>resolve => resolve() : (resolve: (value: unknown) => void) => void
+>resolve : (value: unknown) => void
+>resolve() : void
+>resolve : (value: unknown) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== ty.ts ===
+export interface Promise<T> { q: T }
+>q : T
+

@@ -1,0 +1,48 @@
+//// [test/cases/bun04-P5.ts] ////
+
+=== a.ts ===
+declare function both<A, B, C, D>(f: (a: A) => B, g: (c: C) => D): (a: A, c: C) => [B, D];
+>both : Symbol(both, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+>B : Symbol(B, Decl(a.ts, 0, 24))
+>C : Symbol(C, Decl(a.ts, 0, 27))
+>D : Symbol(D, Decl(a.ts, 0, 30))
+>f : Symbol(f, Decl(a.ts, 0, 34))
+>a : Symbol(a, Decl(a.ts, 0, 38))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+>B : Symbol(B, Decl(a.ts, 0, 24))
+>g : Symbol(g, Decl(a.ts, 0, 49))
+>c : Symbol(c, Decl(a.ts, 0, 54))
+>C : Symbol(C, Decl(a.ts, 0, 27))
+>D : Symbol(D, Decl(a.ts, 0, 30))
+>a : Symbol(a, Decl(a.ts, 0, 68))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+>c : Symbol(c, Decl(a.ts, 0, 73))
+>C : Symbol(C, Decl(a.ts, 0, 27))
+>B : Symbol(B, Decl(a.ts, 0, 24))
+>D : Symbol(D, Decl(a.ts, 0, 30))
+
+declare function cst<const T>(x: T): T;
+>cst : Symbol(cst, Decl(a.ts, 0, 90))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+>x : Symbol(x, Decl(a.ts, 1, 30))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+
+const r = both(cst, cst);
+>r : Symbol(r, Decl(a.ts, 2, 5))
+>both : Symbol(both, Decl(a.ts, 0, 0))
+>cst : Symbol(cst, Decl(a.ts, 0, 90))
+>cst : Symbol(cst, Decl(a.ts, 0, 90))
+
+const n1: never = r;
+>n1 : Symbol(n1, Decl(a.ts, 3, 5))
+>r : Symbol(r, Decl(a.ts, 2, 5))
+
+const n2: never = r([1], [1]);
+>n2 : Symbol(n2, Decl(a.ts, 4, 5))
+>r : Symbol(r, Decl(a.ts, 2, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

@@ -1,0 +1,43 @@
+a.js(5,1): error TS1042: 'async' modifier cannot be used here.
+a.js(7,1): error TS1044: 'static' modifier cannot appear on a module or namespace element.
+a.js(9,8): error TS1030: 'export' modifier already seen.
+a.js(11,1): error TS1275: 'accessor' modifier can only appear on a property declaration.
+a.js(13,1): error TS1042: 'async' modifier cannot be used here.
+a.js(15,8): error TS1042: 'async' modifier cannot be used here.
+a.js(16,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "allowJs": true, "checkJs": true } }
+==== a.js (7 errors) ====
+    class B {} class C {}
+    /** @augments B */
+    class A0 extends C {}
+    /** @augments B */
+    async class A1 extends C {}
+    ~~~~~
+!!! error TS1042: 'async' modifier cannot be used here.
+    /** @augments B */
+    static class A2 extends C {}
+    ~~~~~~
+!!! error TS1044: 'static' modifier cannot appear on a module or namespace element.
+    /** @augments B */
+    export export class A3 extends C {}
+           ~~~~~~
+!!! error TS1030: 'export' modifier already seen.
+    /** @augments B */
+    accessor class A4 extends C {}
+    ~~~~~~~~
+!!! error TS1275: 'accessor' modifier can only appear on a property declaration.
+    /** @extends B */
+    async class A5 extends C {}
+    ~~~~~
+!!! error TS1042: 'async' modifier cannot be used here.
+    /** @augments B */
+    export async class A6 extends C {}
+           ~~~~~
+!!! error TS1042: 'async' modifier cannot be used here.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

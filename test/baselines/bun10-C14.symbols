@@ -1,0 +1,21 @@
+//// [test/cases/bun10-C14.ts] ////
+
+=== a.ts ===
+declare const k: string;
+>k : Symbol(k, Decl(a.ts, 0, 13))
+
+type T19 = C17["q"];
+>T19 : Symbol(T19, Decl(a.ts, 0, 24))
+>C17 : Symbol(C17, Decl(a.ts, 1, 20))
+
+class C17 { [k] = 1; p: T19 = 1; q = 1 }
+>C17 : Symbol(C17, Decl(a.ts, 1, 20))
+>[k] : Symbol(C17[k], Decl(a.ts, 2, 11))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>p : Symbol(C17.p, Decl(a.ts, 2, 20))
+>T19 : Symbol(T19, Decl(a.ts, 0, 24))
+>q : Symbol(C17.q, Decl(a.ts, 2, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun22-P5.ts] ////
+
+=== a.ts ===
+interface I { me: this }
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>me : Symbol(I.me, Decl(a.ts, 0, 13))
+
+function g<T>(t: T & I): T & I { return t.me; }
+>g : Symbol(g, Decl(a.ts, 0, 24))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>t : Symbol(t, Decl(a.ts, 1, 14))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>t.me : Symbol(I.me, Decl(a.ts, 0, 13))
+>t : Symbol(t, Decl(a.ts, 1, 14))
+>me : Symbol(I.me, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

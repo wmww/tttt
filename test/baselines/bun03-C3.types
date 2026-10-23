@@ -1,0 +1,16 @@
+//// [test/cases/bun03-C3.ts] ////
+
+=== a.ts ===
+declare const X: (new () => { a: number }) & { [k: string]: number };
+>X : (new () => { a: number; }) & { [k: string]: number; }
+>a : number
+>k : string
+
+class S extends X {}
+>S : S
+>X : { a: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

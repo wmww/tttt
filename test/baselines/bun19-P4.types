@@ -1,0 +1,37 @@
+//// [test/cases/bun19-P4.ts] ////
+
+=== a.ts ===
+type N26 = 1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26;
+>N26 : N26
+
+type U = { a: 1, z: typeof v } | { a: 2, z: string };
+>U : U
+>a : 1
+>z : any
+>v : any
+>a : 2
+>z : string
+
+declare function take(u: U): number;
+>take : { (u: U): number; (u: unknown): string; }
+>u : U
+
+declare function take(u: unknown): string;
+>take : { (u: U): number; (u: unknown): string; }
+>u : unknown
+
+declare const src: { a: N26, z: string };
+>src : { a: N26; z: string; }
+>a : N26
+>z : string
+
+const v = take(src);
+>v : any
+>take(src) : string
+>take : { (u: U): number; (u: unknown): string; }
+>src : { a: N26; z: string; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

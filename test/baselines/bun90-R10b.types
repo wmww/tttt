@@ -1,0 +1,94 @@
+//// [test/cases/bun90-R10b.ts] ////
+
+=== a.ts ===
+import c = K.v; c; class K { static v = 1 }
+>c : any
+>K : any
+>v : any
+>c : any
+>K : K
+>v : number
+>1 : 1
+
+import d = L.v; d; let L = { v: 1 };
+>d : any
+>L : any
+>v : any
+>d : any
+>L : { v: number; }
+>{ v: 1 } : { v: number; }
+>v : number
+>1 : 1
+
+import e = En.X.y; e; enum En { X }
+>e : any
+>En : En
+>X : any
+>y : any
+>e : any
+>En : En
+>X : En.X
+
+import type { G1 as TO } from "./t";
+>G1 : any
+>TO : TO
+
+import f = TO.v; f;
+>f : any
+>TO : any
+>v : any
+>f : any
+
+function fn(p = g) { } import g = P.v; const P = { v: 1 };
+>fn : (p?: any) => void
+>p : any
+>g : any
+>g : any
+>P : any
+>v : any
+>P : { v: number; }
+>{ v: 1 } : { v: number; }
+>v : number
+>1 : 1
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== t.ts ===
+export interface Reflect { x: 1 }
+>x : 1
+
+export interface Intl { x: 1 }
+>x : 1
+
+export interface G1 { x: 1 }
+>x : 1
+
+export interface G2 { x: 1 }
+>x : 1
+
+export interface G3 { x: 1 }
+>x : 1
+
+export interface G4 { x: 1 }
+>x : 1
+
+export interface G5 { x: 1 }
+>x : 1
+
+export interface G6 { x: 1 }
+>x : 1
+
+export interface G7 { x: 1 }
+>x : 1
+
+export interface G8 { x: 1 }
+>x : 1
+
+export type G9 = 1;
+>G9 : 1
+
+export default interface GD { x: 1 }
+>x : 1
+

@@ -1,0 +1,16 @@
+a.ts(1,10): error TS2305: Module '"./\u00E9"' has no exported member 'nope'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import { nope } from "./é";
+             ~~~~
+!!! error TS2305: Module '"./\u00E9"' has no exported member 'nope'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== é.ts (0 errors) ====
+    export const value = 1;
+    

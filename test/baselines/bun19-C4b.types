@@ -1,0 +1,33 @@
+//// [test/cases/bun19-C4b.ts] ////
+
+=== a.ts ===
+interface I { p: this extends { z: 1 } ? 1 : 2 }
+>p : this extends { z: 1; } ? 1 : 2
+>z : 1
+
+interface A extends I { z: 1 }
+>z : 1
+
+interface B extends I { y: 1 }
+>y : 1
+
+function f<T extends I>(t: T) { return t.p; }
+>f : <T extends I>(t: T) => T extends { z: 1; } ? 1 : 2
+>t : T
+>t.p : T extends { z: 1; } ? 1 : 2
+>t : T
+>p : T extends { z: 1; } ? 1 : 2
+
+declare let ab: A | B;
+>ab : A | B
+
+const bad: 2 = f(ab);
+>bad : 2
+>f(ab) : 1 | 2
+>f : <T extends I>(t: T) => T extends { z: 1; } ? 1 : 2
+>ab : A | B
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

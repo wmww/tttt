@@ -1,0 +1,29 @@
+//// [test/cases/bun96-H5.ts] ////
+
+=== a.ts ===
+function f() {
+>f : () => void
+
+  import { A } from 123;
+>A : any
+}
+{
+  import * as B from 123;
+>B : any
+
+  import C from 123;
+>C : any
+
+  import type { D } from 123;
+>D : any
+}
+namespace N {
+  import { E } from 123;
+>E : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export {};
+

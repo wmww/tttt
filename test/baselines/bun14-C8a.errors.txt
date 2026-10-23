@@ -1,0 +1,20 @@
+a.ts(1,22): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(1,26): error TS2574: A rest element type must be an array type.
+a.ts(1,39): error TS2370: A rest parameter must be of an array type.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    function f<T extends [1, ...T]>(t: T, ...r: T) { }
+                         ~~~~~~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+                             ~~~~
+!!! error TS2574: A rest element type must be an array type.
+                                          ~~~~~~~
+!!! error TS2370: A rest parameter must be of an array type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,21 @@
+//// [test/cases/bun08-C13d.ts] ////
+
+=== a.ts ===
+declare const k10: I10[typeof k10b];
+>k10 : Symbol(k10, Decl(a.ts, 0, 13))
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+>k10b : Symbol(k10b, Decl(a.ts, 1, 13))
+
+declare const k10b: "w";
+>k10b : Symbol(k10b, Decl(a.ts, 1, 13))
+
+interface I10 { [k10b]: "v"; [k10]: 2 }
+>I10 : Symbol(I10, Decl(a.ts, 1, 24))
+>[k10b] : Symbol(I10[k10b], Decl(a.ts, 2, 15))
+>k10b : Symbol(k10b, Decl(a.ts, 1, 13))
+>[k10] : Symbol(I10[k10], Decl(a.ts, 2, 28))
+>k10 : Symbol(k10, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,60 @@
+//// [test/cases/bun55-L08.ts] ////
+
+=== a.ts ===
+type U = { kind: 0; a: string } | { kind: 1; b: number };
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 0, 19))
+>kind : Symbol(kind, Decl(a.ts, 0, 35))
+>b : Symbol(b, Decl(a.ts, 0, 44))
+
+function f1(x: U, v: 0 | 1) {
+>f1 : Symbol(f1, Decl(a.ts, 0, 57))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>v : Symbol(v, Decl(a.ts, 1, 17))
+
+  if ((x.kind) = v) {
+>x.kind : Symbol(kind, Decl(a.ts, 0, 10), Decl(a.ts, 0, 35))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>kind : Symbol(kind, Decl(a.ts, 0, 10), Decl(a.ts, 0, 35))
+>v : Symbol(v, Decl(a.ts, 1, 17))
+
+    x.b;
+>x : Symbol(x, Decl(a.ts, 1, 12))
+
+  } else {
+    x.a;
+>x : Symbol(x, Decl(a.ts, 1, 12))
+  }
+  if ((x["kind"]) ||= v) {
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>"kind" : Symbol(kind, Decl(a.ts, 0, 10), Decl(a.ts, 0, 35))
+>v : Symbol(v, Decl(a.ts, 1, 17))
+
+    x.b;
+>x : Symbol(x, Decl(a.ts, 1, 12))
+  }
+}
+// without the parentheses both narrow
+function f2(x: U, v: 0 | 1) {
+>f2 : Symbol(f2, Decl(a.ts, 10, 1))
+>x : Symbol(x, Decl(a.ts, 12, 12))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>v : Symbol(v, Decl(a.ts, 12, 17))
+
+  if (x.kind = v) {
+>x.kind : Symbol(kind, Decl(a.ts, 0, 10), Decl(a.ts, 0, 35))
+>x : Symbol(x, Decl(a.ts, 12, 12))
+>kind : Symbol(kind, Decl(a.ts, 0, 10), Decl(a.ts, 0, 35))
+>v : Symbol(v, Decl(a.ts, 12, 17))
+
+    x.b;
+>x.b : Symbol(b, Decl(a.ts, 0, 44))
+>x : Symbol(x, Decl(a.ts, 12, 12))
+>b : Symbol(b, Decl(a.ts, 0, 44))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 17, 5))
+

@@ -1,0 +1,15 @@
+a.ts(1,7): error TS2741: Property '2' is missing in type 'typeof C1' but required in type '{ new (): {}; 2: number; }'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const C1: { new(): {}; 2: number } = class { static [+2] = 1; };
+          ~~
+!!! error TS2741: Property '2' is missing in type 'typeof C1' but required in type '{ new (): {}; 2: number; }'.
+!!! related TS2728 a.ts:1:24: '2' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

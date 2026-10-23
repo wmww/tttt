@@ -1,0 +1,6 @@
+//// [test/cases/bun43-C2f.ts] ////
+
+=== a.ts ===
+
+var v\u0061r;
+

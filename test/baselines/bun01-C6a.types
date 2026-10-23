@@ -1,0 +1,17 @@
+//// [test/cases/bun01-C6a.ts] ////
+
+=== a.ts ===
+export {};
+global { interface FromUndeclared { a: number } }
+>global : any
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export {};
+let x: FromUndeclared;
+>x : FromUndeclared
+

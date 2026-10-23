@@ -1,0 +1,18 @@
+a.ts(1,72): error TS2322: Type 'Uppercase<`${string & [...T]}`>' is not assignable to type 'number'.
+  Type 'Uppercase<`${string & unknown[]}`>' is not assignable to type 'number'.
+    Type 'string' is not assignable to type 'number'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function k<T extends unknown[]>(a: Uppercase<string & [...T]>) { const x1: number = a; }
+                                                                           ~~
+!!! error TS2322: Type 'Uppercase<`${string & [...T]}`>' is not assignable to type 'number'.
+!!! error TS2322:   Type 'Uppercase<`${string & unknown[]}`>' is not assignable to type 'number'.
+!!! error TS2322:     Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

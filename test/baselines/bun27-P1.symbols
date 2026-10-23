@@ -1,0 +1,26 @@
+//// [test/cases/bun27-P1.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(a.tsx, 0, 50))
+>children : Symbol(ElementChildrenAttribute.children, Decl(a.tsx, 0, 87))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 102))
+
+declare function L(p: { children: ("x" | "y")[] }): JSX.Element;
+>L : Symbol(L, Decl(a.tsx, 0, 135))
+>p : Symbol(p, Decl(a.tsx, 1, 19))
+>children : Symbol(children, Decl(a.tsx, 1, 23))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+const t = <L>{true}{"x"}</L>;
+>t : Symbol(t, Decl(a.tsx, 2, 5))
+>L : Symbol(L, Decl(a.tsx, 0, 135))
+>L : Symbol(L, Decl(a.tsx, 0, 135))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

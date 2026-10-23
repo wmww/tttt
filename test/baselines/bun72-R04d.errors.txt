@@ -1,0 +1,42 @@
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler"}}
+==== a.ts (1 errors) ====
+    import { T } from "./node_modules/third";
+    import "old";
+    import "dep";
+    import { take3 } from "dep3";
+    take3(new T());
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/dep/index.d.ts (0 errors) ====
+    import "old";
+    export {};
+==== node_modules/dep/node_modules/old/index.d.ts (0 errors) ====
+    import "third";
+    export declare class C { private p; }
+==== node_modules/dep/node_modules/old/package.json (0 errors) ====
+    { "name": "old", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/dep/package.json (0 errors) ====
+    { "name": "dep", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/dep3/index.d.ts (0 errors) ====
+    import { T } from "third";
+    export declare function take3(t: T): void;
+==== node_modules/dep3/node_modules/third/index.d.ts (0 errors) ====
+    export declare class T { private t; }
+==== node_modules/dep3/node_modules/third/package.json (0 errors) ====
+    { "name": "third", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/dep3/package.json (0 errors) ====
+    { "name": "dep3", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/old/index.d.ts (0 errors) ====
+    export declare class C { private p; }
+==== node_modules/old/package.json (0 errors) ====
+    { "name": "old", "version": "1.0.0", "types": "index.d.ts" }
+==== node_modules/third/index.d.ts (0 errors) ====
+    export declare class T { private t; }
+==== node_modules/third/package.json (0 errors) ====
+    { "name": "third", "version": "1.0.0", "types": "index.d.ts" }
+    

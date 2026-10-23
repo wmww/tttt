@@ -1,0 +1,21 @@
+//// [test/cases/bun29-C7a.ts] ////
+
+=== a.ts ===
+namespace NS { namespace P { export interface J { j: 1 } } export declare function mk(): P.J; }
+>NS : Symbol(NS, Decl(a.ts, 0, 0))
+>P : Symbol(P, Decl(a.ts, 0, 14))
+>J : Symbol(J, Decl(a.ts, 0, 28))
+>j : Symbol(J.j, Decl(a.ts, 0, 49))
+>mk : Symbol(mk, Decl(a.ts, 0, 58))
+>P : Symbol(P, Decl(a.ts, 0, 14))
+>J : Symbol(P.J, Decl(a.ts, 0, 28))
+
+export const e = NS.mk();
+>e : Symbol(e, Decl(a.ts, 1, 12))
+>NS.mk : Symbol(NS.mk, Decl(a.ts, 0, 58))
+>NS : Symbol(NS, Decl(a.ts, 0, 0))
+>mk : Symbol(NS.mk, Decl(a.ts, 0, 58))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

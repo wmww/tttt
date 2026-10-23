@@ -1,0 +1,19 @@
+//// [test/cases/bun37-C11b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { div: {} } }
+>div : {}
+
+declare function h(...a: any[]): any;
+>h : (...a: any[]) => any
+>a : any[]
+
+const e = <div/>;
+>e : any
+><div/> : any
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

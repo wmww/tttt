@@ -1,0 +1,15 @@
+a.ts(2,28): error TS1194: Export declarations are not permitted in a namespace.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    namespace N { const a = 1; export { a as b }; b; }
+                               ~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

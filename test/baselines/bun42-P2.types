@@ -1,0 +1,15 @@
+//// [test/cases/bun42-P2.ts] ////
+
+=== a.ts ===
+import { sub } from "pkg//sub";
+>sub : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== sub.ts ===
+export const sub = 2;
+>sub : 2
+>2 : 2
+

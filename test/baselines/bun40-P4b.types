@@ -1,0 +1,43 @@
+//// [test/cases/bun40-P4b.ts] ////
+
+=== src/a.ts ===
+/// <reference path="./b.ts" />
+import { p } from "p";
+>p : 1
+
+const q: 0 = p;
+>q : 0
+>p : 1
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/p/index.js ===
+const u = require("./util");
+>u : typeof u
+>require("./util") : typeof u
+>require : any
+>"./util" : "./util"
+
+exports.p = u.u;
+>exports.p = u.u : 1
+>exports.p : 1
+>exports : typeof import("p")
+>p : 1
+>u.u : 1
+>u : typeof u
+>u : 1
+
+=== node_modules/p/util.js ===
+exports.u = 1;
+>exports.u = 1 : 1
+>exports.u : 1
+>exports : typeof import("p/util")
+>u : 1
+>1 : 1
+
+=== src/b.ts ===
+
+/// <reference path="../node_modules/p/index.js" />
+

@@ -1,0 +1,29 @@
+//// [test/cases/bun24-SC6.ts] ////
+
+=== a.ts ===
+const o = { x: 1, m(a: typeof this) { return a.x }, n(a: typeof this.x) { return a } };
+>o : { x: number; m(a: typeof this): number; n(a: typeof this.x): number; }
+>{ x: 1, m(a: typeof this) { return a.x }, n(a: typeof this.x) { return a } } : { x: number; m(a: typeof this): number; n(a: typeof this.x): number; }
+>x : number
+>1 : 1
+>m : (a: typeof this) => number
+>a : { x: number; m(a: typeof this): number; n(a: typeof this.x): number; }
+>this : { x: number; m(a: typeof this): number; n(a: typeof this.x): number; }
+>a.x : number
+>a : { x: number; m(a: typeof this): number; n(a: typeof this.x): number; }
+>x : number
+>n : (a: typeof this.x) => number
+>a : number
+>this.x : number
+>this : { x: number; m(a: typeof this): number; n(a: typeof this.x): number; }
+>x : number
+>a : number
+
+const q1: number = o;
+>q1 : number
+>o : { x: number; m(a: typeof this): number; n(a: typeof this.x): number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

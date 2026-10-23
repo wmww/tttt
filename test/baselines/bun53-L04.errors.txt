@@ -1,0 +1,51 @@
+a.ts(4,4): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(4,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(5,4): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(5,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(6,8): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(7,10): error TS2339: Property 'a' does not exist on type 'Number'.
+a.ts(8,8): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(9,12): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(11,4): error TS2341: Property '"1n"' is private and only accessible within class 'P'.
+a.ts(11,8): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (11 errors) ====
+    let x: any;
+    let s: string = "";
+    declare const o: { "1n": number; a: number };
+    ({ 1n: x } = {});
+       ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    ({ 1n: x } = [1, 2]);
+       ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    ({ 1n: s } = o);
+           ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    ({ 1n: { a: s } } = o);
+             ~
+!!! error TS2339: Property 'a' does not exist on type 'Number'.
+    ({ 1n: s = 1 } = o);
+           ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    for ({ 1n: s } of [o]) {}
+               ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    class P { private "1n" = 1; }
+    ({ 1n: s } = new P());
+       ~~
+!!! error TS2341: Property '"1n"' is private and only accessible within class 'P'.
+           ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

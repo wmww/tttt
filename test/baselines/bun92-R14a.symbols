@@ -1,0 +1,24 @@
+//// [test/cases/bun92-R14a.ts] ////
+
+=== a.ts ===
+import * as ns from "./d.json";
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+
+import d from "./d.json";
+>d : Symbol(d, Decl(a.ts, 1, 6))
+
+const n: 0 = d; const m: 0 = ns;
+>n : Symbol(n, Decl(a.ts, 2, 5))
+>d : Symbol(d, Decl(a.ts, 1, 6))
+>m : Symbol(m, Decl(a.ts, 2, 21))
+>ns : Symbol(ns, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== d.json ===
+module.exports = { "a": 1 }
+>module : Symbol(module, Decl(d.json, 0, 0))
+> : Symbol((Missing), Decl(d.json, 0, 6))
+>"a" : Symbol("a", Decl(d.json, 0, 18))
+

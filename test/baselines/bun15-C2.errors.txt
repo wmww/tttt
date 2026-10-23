@@ -1,0 +1,18 @@
+a.ts(2,52): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(2,65): error TS7006: Parameter 'y' implicitly has an 'any' type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type F1 = (x: number) => void; type F2 = (y: string) => void;
+    function h1<T extends [F1, F2]>(t: T) { const [a = x => {}, b = y => {}] = t; }
+                                                       ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                                                                    ~
+!!! error TS7006: Parameter 'y' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

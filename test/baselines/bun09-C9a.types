@@ -1,0 +1,27 @@
+//// [test/cases/bun09-C9a.ts] ////
+
+=== a.ts ===
+class C {
+>C : C
+
+  a = 1;
+>a : number
+>1 : 1
+
+  m(): this extends { a: number } ? string : number { return null as any; }
+>m : () => this extends { a: number; } ? string : number
+>a : number
+>null as any : any
+
+  t() { const s: string = this.m(); }
+>t : () => void
+>s : string
+>this.m() : this extends { a: number; } ? string : number
+>this.m : () => this extends { a: number; } ? string : number
+>this : this
+>m : () => this extends { a: number; } ? string : number
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

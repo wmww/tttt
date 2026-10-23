@@ -1,0 +1,132 @@
+//// [test/cases/bun62-L19.ts] ////
+
+=== a.ts ===
+const l1 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 1 + {} }) };
+>l1 : { m(): any; f(): any; g: () => { a: any; }; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 1 + {} }) } : { m(): any; f(): any; g: () => { a: any; }; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>g : () => { a: any; }
+>() => ({ a: 1 + {} }) : () => { a: any; }
+>({ a: 1 + {} }) : { a: any; }
+>{ a: 1 + {} } : { a: any; }
+>a : any
+>1 + {} : any
+>1 : 1
+>{} : {}
+
+const l2 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: { b: 2 + {} } }) };
+>l2 : { m(): any; f(): any; g: () => { a: { b: any; }; }; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => ({ a: { b: 2 + {} } }) } : { m(): any; f(): any; g: () => { a: { b: any; }; }; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: { b: any; }; }; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: { b: any; }; }; }
+>z : any
+>g : () => { a: { b: any; }; }
+>() => ({ a: { b: 2 + {} } }) : () => { a: { b: any; }; }
+>({ a: { b: 2 + {} } }) : { a: { b: any; }; }
+>{ a: { b: 2 + {} } } : { a: { b: any; }; }
+>a : { b: any; }
+>{ b: 2 + {} } : { b: any; }
+>b : any
+>2 + {} : any
+>2 : 2
+>{} : {}
+
+const l3 = { m() { return this.z; }, f() { return this.z; }, g: () => [{ a: 3 + {} }] };
+>l3 : { m(): any; f(): any; g: () => { a: any; }[]; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => [{ a: 3 + {} }] } : { m(): any; f(): any; g: () => { a: any; }[]; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }[]; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }[]; }
+>z : any
+>g : () => { a: any; }[]
+>() => [{ a: 3 + {} }] : () => { a: any; }[]
+>[{ a: 3 + {} }] : { a: any; }[]
+>{ a: 3 + {} } : { a: any; }
+>a : any
+>3 + {} : any
+>3 : 3
+>{} : {}
+
+const l4 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ ["a"]: 4 + {} }) };
+>l4 : { m(): any; f(): any; g: () => { a: any; }; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => ({ ["a"]: 4 + {} }) } : { m(): any; f(): any; g: () => { a: any; }; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>g : () => { a: any; }
+>() => ({ ["a"]: 4 + {} }) : () => { a: any; }
+>({ ["a"]: 4 + {} }) : { a: any; }
+>{ ["a"]: 4 + {} } : { a: any; }
+>["a"] : any
+>"a" : "a"
+>4 + {} : any
+>4 : 4
+>{} : {}
+
+const l5 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 5 + {}, ...{} }) };
+>l5 : { m(): any; f(): any; g: () => { a: any; }; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 5 + {}, ...{} }) } : { m(): any; f(): any; g: () => { a: any; }; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>g : () => { a: any; }
+>() => ({ a: 5 + {}, ...{} }) : () => { a: any; }
+>({ a: 5 + {}, ...{} }) : { a: any; }
+>{ a: 5 + {}, ...{} } : { a: any; }
+>a : any
+>5 + {} : any
+>5 : 5
+>{} : {}
+>{} : {}
+
+const l8 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: [8 + {}] }) };
+>l8 : { m(): any; f(): any; g: () => { a: any[]; }; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => ({ a: [8 + {}] }) } : { m(): any; f(): any; g: () => { a: any[]; }; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any[]; }; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any[]; }; }
+>z : any
+>g : () => { a: any[]; }
+>() => ({ a: [8 + {}] }) : () => { a: any[]; }
+>({ a: [8 + {}] }) : { a: any[]; }
+>{ a: [8 + {}] } : { a: any[]; }
+>a : any[]
+>[8 + {}] : any[]
+>8 + {} : any
+>8 : 8
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

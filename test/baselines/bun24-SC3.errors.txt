@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '{ w: { w: { w: { w: { w: { w: { w: { w: { w: { w: { w: any; }; }; }; }; }; }; }; }; }; }; }' is not assignable to type 'string'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const w2 = <T,>(t: T) => ({ ...{}, w: t });
+    const d2: string = w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(w2(1))))))))))))));
+          ~~
+!!! error TS2322: Type '{ w: { w: { w: { w: { w: { w: { w: { w: { w: { w: { w: any; }; }; }; }; }; }; }; }; }; }; }' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

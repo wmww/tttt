@@ -1,0 +1,7 @@
+//// [test/cases/bun37-P8.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

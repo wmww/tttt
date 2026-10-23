@@ -1,0 +1,26 @@
+//// [test/cases/bun24-SC7.ts] ////
+
+=== a.ts ===
+class C<T> {
+>C : C<T>
+
+  m<U>(u: U): [T, U] { return null! }
+>m : <U>(u: U) => [T, U]
+>u : U
+>null! : never
+
+  n() { const c = null! as C<T[]>; const x2: string = c.m<number>; }
+>n : () => void
+>c : C<T[]>
+>null! as C<T[]> : C<T[]>
+>null! : never
+>x2 : string
+>c.m<number> : (u: number) => [T[], number]
+>c.m : <U>(u: U) => [T[][], U]
+>c : C<T[]>
+>m : <U>(u: U) => [T[][], U]
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

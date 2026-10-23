@@ -1,0 +1,24 @@
+//// [test/cases/bun34-C16.ts] ////
+
+=== a.ts ===
+export {};
+declare const dec: any;
+>dec : any
+
+@dec class Q { @dec get x(): number; @dec set x(v: number) {} }
+>dec : any
+>Q : Q
+>dec : any
+>x : number
+>dec : any
+>x : number
+>v : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : () => void
+

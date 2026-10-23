@@ -1,0 +1,18 @@
+a.ts(1,1): error TS1242: 'abstract' modifier can only appear on a class, method, or property declaration.
+a.ts(1,19): error TS2512: Overload signatures must all be abstract or non-abstract.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    abstract function n(): void;
+    ~~~~~~~~
+!!! error TS1242: 'abstract' modifier can only appear on a class, method, or property declaration.
+                      ~
+!!! error TS2512: Overload signatures must all be abstract or non-abstract.
+    function n() {}
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

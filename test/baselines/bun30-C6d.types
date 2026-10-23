@@ -1,0 +1,12 @@
+//// [test/cases/bun30-C6d.ts] ////
+
+=== a.ts ===
+@(yield) function f() {}
+>(yield) : any
+>yield : any
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

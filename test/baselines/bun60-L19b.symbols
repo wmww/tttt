@@ -1,0 +1,54 @@
+//// [test/cases/bun60-L19b.ts] ////
+
+=== a.ts ===
+declare class G6 { static readonly prototype: G6; }
+>G6 : Symbol(G6, Decl(a.ts, 0, 0))
+>prototype : Symbol(G6.prototype, Decl(a.ts, 0, 18))
+>G6 : Symbol(G6, Decl(a.ts, 0, 0))
+
+G6.prototype = new G6();
+>G6.prototype : Symbol(G6.prototype, Decl(a.ts, 0, 18))
+>G6 : Symbol(G6, Decl(a.ts, 0, 0))
+>prototype : Symbol(G6.prototype, Decl(a.ts, 0, 18))
+>G6 : Symbol(G6, Decl(a.ts, 0, 0))
+
+declare class G7 { private static prototype: G7; }
+>G7 : Symbol(G7, Decl(a.ts, 1, 24))
+>prototype : Symbol(G7.prototype, Decl(a.ts, 2, 18))
+>G7 : Symbol(G7, Decl(a.ts, 1, 24))
+
+G7.prototype;
+>G7.prototype : Symbol(G7.prototype, Decl(a.ts, 2, 18))
+>G7 : Symbol(G7, Decl(a.ts, 1, 24))
+>prototype : Symbol(G7.prototype, Decl(a.ts, 2, 18))
+
+type K7 = keyof typeof G7; const a13: null = null! as K7;
+>K7 : Symbol(K7, Decl(a.ts, 3, 13))
+>G7 : Symbol(G7, Decl(a.ts, 1, 24))
+>a13 : Symbol(a13, Decl(a.ts, 4, 32))
+>K7 : Symbol(K7, Decl(a.ts, 3, 13))
+
+declare class G9 { protected static prototype: G9; }
+>G9 : Symbol(G9, Decl(a.ts, 4, 57))
+>prototype : Symbol(G9.prototype, Decl(a.ts, 5, 18))
+>G9 : Symbol(G9, Decl(a.ts, 4, 57))
+
+G9.prototype;
+>G9.prototype : Symbol(G9.prototype, Decl(a.ts, 5, 18))
+>G9 : Symbol(G9, Decl(a.ts, 4, 57))
+>prototype : Symbol(G9.prototype, Decl(a.ts, 5, 18))
+
+declare class G5 { static prototype: G5; }
+>G5 : Symbol(G5, Decl(a.ts, 6, 13))
+>prototype : Symbol(G5.prototype, Decl(a.ts, 7, 18))
+>G5 : Symbol(G5, Decl(a.ts, 6, 13))
+
+G5.prototype = new G5();
+>G5.prototype : Symbol(G5.prototype, Decl(a.ts, 7, 18))
+>G5 : Symbol(G5, Decl(a.ts, 6, 13))
+>prototype : Symbol(G5.prototype, Decl(a.ts, 7, 18))
+>G5 : Symbol(G5, Decl(a.ts, 6, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

@@ -1,0 +1,62 @@
+//// [test/cases/bun91-R12a.ts] ////
+
+=== a.ts ===
+import { C, v } from "./m";
+>C : typeof C
+>v : 1
+
+declare const o: any;
+>o : any
+
+const local1 = 1;
+>local1 : 1
+>1 : 1
+
+function fn1() {}
+>fn1 : () => void
+
+with (o) { var a1 = new C(), a2 = v + local1, a3 = fn1(); }
+>o : any
+>a1 : any
+>new C() : any
+>C : any
+>a2 : any
+>v + local1 : any
+>v : any
+>local1 : any
+>a3 : any
+>fn1() : any
+>fn1 : any
+
+a1; a2; a3;
+>a1 : C
+>a2 : number
+>a3 : void
+
+with (o) { var a4 = function (x: number, z: number) { let q = 1, r = 2; return x + q; }; }
+>o : any
+>a4 : any
+>function (x: number, z: number) { let q = 1, r = 2; return x + q; } : any
+>x : any
+>z : any
+>q : any
+>1 : any
+>r : any
+>2 : any
+>x + q : any
+>x : any
+>q : any
+
+a4;
+>a4 : (x: number, z: number) => number
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export class C {} export const v = 1;
+>C : C
+>v : 1
+>1 : 1
+

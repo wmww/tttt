@@ -1,0 +1,39 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+// @filename: a.ts
+interface L0 extends L1 { q0: 1 }
+interface L1 extends L2 { q1: 1 }
+interface L2 extends L3 { q2: 1 }
+interface L3 extends L4 { q3: 1 }
+interface L4 extends L5 { q4: 1 }
+interface L5 extends L6 { q5: 1 }
+interface L6 extends L7 { q6: 1 }
+interface L7 extends L8 { q7: 1 }
+interface L8 extends L9 { q8: 1 }
+interface L9 extends L10 { q9: 1 }
+interface L10 extends L11 { q10: 1 }
+interface L11 extends L12 { q11: 1 }
+interface L12 extends L13 { q12: 1 }
+interface L13 extends L14 { q13: 1 }
+interface L14 extends L15 { q14: 1 }
+interface L15 extends L16 { q15: 1 }
+interface L16 extends L17 { q16: 1 }
+interface L17 extends L18 { q17: 1 }
+interface L18 extends L19 { q18: 1 }
+interface L19 extends L20 { q19: 1 }
+interface L20 extends L21 { q20: 1 }
+interface L21 extends L22 { q21: 1 }
+interface L22 extends L23 { q22: 1 }
+interface L23 extends L24 { q23: 1 }
+interface L24 extends L25 { q24: 1 }
+interface L25 extends L26 { q25: 1 }
+interface L26 extends L27 { q26: 1 }
+interface L27 extends L28 { q27: 1 }
+interface L28 extends L29 { q28: 1 }
+interface L29 extends L30 { q29: 1 }
+interface L30 extends L31 { q30: 1 }
+interface L31 extends L32 { q31: 1 }
+interface L32 extends L33 { q32: 1 }
+interface L33 extends M { }
+type M = L0 & { z: 1 };
+const sentinel: number = "";

@@ -1,0 +1,277 @@
+//// [test/cases/bunvalue-named-like-a-type-parameter-and-a-member-of-the-class.ts] ////
+
+=== a.ts ===
+import { Decode, Plain } from "./b";
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>Plain : (a: number, b: number, c: number) => number
+
+export class V1<Decode extends unknown = number> { public Decode(value: unknown): Decode { const r = Decode(1, 2, 3); return r as never; } }
+>V1 : V1<Decode>
+>Decode : (value: unknown) => Decode
+>value : unknown
+>r : number
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+>r as never : never
+>r : number
+
+export class V2<T = number> { public Decode(value: unknown): T { const r = Decode(1, 2, 3); return r as never; } }
+>V2 : V2<T>
+>Decode : (value: unknown) => T
+>value : unknown
+>r : number
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+>r as never : never
+>r : number
+
+export class V3<Decode = number> { public other(value: unknown): Decode { const r = Decode(1, 2, 3); return r as never; } }
+>V3 : V3<Decode>
+>other : (value: unknown) => Decode
+>value : unknown
+>r : number
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+>r as never : never
+>r : number
+
+export class V4<Plain = number> { public Plain(value: unknown): Plain { const r = Plain(1, 2, 3); return r as never; } }
+>V4 : V4<Plain>
+>Plain : (value: unknown) => Plain
+>value : unknown
+>r : number
+>Plain(1, 2, 3) : number
+>Plain : (a: number, b: number, c: number) => number
+>1 : 1
+>2 : 2
+>3 : 3
+>r as never : never
+>r : number
+
+export class V5<Decode = number> { hasCodec = true; Parse(v: unknown): Decode { return v as never; } public Decode(value: unknown): Decode { const result = this.hasCodec ? Decode(1, 2, 3) : this.Parse(value); return result as never; } }
+>V5 : V5<Decode>
+>hasCodec : boolean
+>true : true
+>Parse : (v: unknown) => Decode
+>v : unknown
+>v as never : never
+>v : unknown
+>Decode : (value: unknown) => Decode
+>value : unknown
+>result : number | Decode
+>this.hasCodec ? Decode(1, 2, 3) : this.Parse(value) : number | Decode
+>this.hasCodec : boolean
+>this : this
+>hasCodec : boolean
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+>this.Parse(value) : Decode
+>this.Parse : (v: unknown) => Decode
+>this : this
+>Parse : (v: unknown) => Decode
+>value : unknown
+>result as never : never
+>result : number | Decode
+
+export function f6<Decode>(x: Decode) { return Decode(1, 2, 3); }
+>f6 : <Decode>(x: Decode) => number
+>x : Decode
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export class W1<Decode = number> { Decode(v: unknown): Decode { return v as never; } field = Decode(1, 2, 3); }
+>W1 : W1<Decode>
+>Decode : (v: unknown) => Decode
+>v : unknown
+>v as never : never
+>v : unknown
+>field : number
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+
+export class W2<Decode = number> { Decode(v: unknown): Decode { return v as never; } static s = Decode(1, 2, 3); }
+>W2 : W2<Decode>
+>Decode : (v: unknown) => Decode
+>v : unknown
+>v as never : never
+>v : unknown
+>s : number
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+
+export class W3<Decode = number> { Decode(v: unknown): Decode { const g = () => Decode(1, 2, 3); return g() as never; } }
+>W3 : W3<Decode>
+>Decode : (v: unknown) => Decode
+>v : unknown
+>g : () => number
+>() => Decode(1, 2, 3) : () => number
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+>g() as never : never
+>g() : number
+>g : () => number
+
+export class W4<Decode = number> { Decode(v: unknown): Decode { type Q = typeof Decode; const q: Q = Decode; return q(1, 2, 3) as never; } }
+>W4 : W4<Decode>
+>Decode : (v: unknown) => Decode
+>v : unknown
+>Q : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>q : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>q(1, 2, 3) as never : never
+>q(1, 2, 3) : number
+>q : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+
+export class W5<Decode = number> { Decode = 1; m(): Decode { return Decode(1, 2, 3) as never; } }
+>W5 : W5<Decode>
+>Decode : number
+>1 : 1
+>m : () => Decode
+>Decode(1, 2, 3) as never : never
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+
+export class W6<Decode = number> { get Decode(): Decode { return Decode(1, 2, 3) as never; } }
+>W6 : W6<Decode>
+>Decode : Decode
+>Decode(1, 2, 3) as never : never
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+
+export class W7<Decode = number> { Decode(v: unknown, d = Decode(1, 2, 3)): Decode { return d as never; } }
+>W7 : W7<Decode>
+>Decode : (v: unknown, d?: number) => Decode
+>v : unknown
+>d : number
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+>d as never : never
+>d : number
+
+export class W8<Decode = number> { [Decode(1, 2)](): Decode { return 1 as never; } Decode(): void {} }
+>W8 : W8<Decode>
+>[Decode(1, 2)] : () => Decode
+>Decode(1, 2) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>1 as never : never
+>1 : 1
+>Decode : () => void
+
+export const W9 = class Named<Decode = number> { Decode(v: unknown): Decode { Named; return Decode(1, 2, 3) as never; } };
+>W9 : typeof Named
+>class Named<Decode = number> { Decode(v: unknown): Decode { Named; return Decode(1, 2, 3) as never; } } : typeof Named
+>Named : typeof Named
+>Decode : (v: unknown) => Decode
+>v : unknown
+>Named : typeof Named
+>Decode(1, 2, 3) as never : never
+>Decode(1, 2, 3) : number
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>1 : 1
+>2 : 2
+>3 : 3
+
+export interface I1<Decode = number> { Decode(v: unknown): Decode; q: typeof Decode; }
+>Decode : (v: unknown) => Decode
+>v : unknown
+>q : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+
+export function g1<T>(T: number) { return T + 1; }
+>g1 : <T>(T: number) => number
+>T : number
+>T + 1 : number
+>T : number
+>1 : 1
+
+export function g2<Decode>(Decode: (a: number) => number, x: Decode) { return Decode(1); }
+>g2 : <Decode>(Decode: (a: number) => number, x: Decode) => number
+>Decode : (a: number) => number
+>a : number
+>x : Decode
+>Decode(1) : number
+>Decode : (a: number) => number
+>1 : 1
+
+export class X1<Missing = number> { Missing(v: unknown): Missing { return Missing(1) as never; } }
+>X1 : X1<Missing>
+>Missing : (v: unknown) => Missing
+>v : unknown
+>Missing(1) as never : never
+>Missing(1) : any
+>Missing : any
+>1 : 1
+
+=== b.ts ===
+export function Decode(a: number, b: number): number;
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>a : number
+>b : number
+
+export function Decode(a: number, b: number, c: number): number;
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>a : number
+>b : number
+>c : number
+
+export function Decode(...args: number[]): number { return args.length; }
+>Decode : { (a: number, b: number): number; (a: number, b: number, c: number): number; }
+>args : number[]
+>args.length : number
+>args : number[]
+>length : number
+
+export function Plain(a: number, b: number, c: number): number { return a + b + c; }
+>Plain : (a: number, b: number, c: number) => number
+>a : number
+>b : number
+>c : number
+>a + b + c : number
+>a + b : number
+>a : number
+>b : number
+>c : number
+

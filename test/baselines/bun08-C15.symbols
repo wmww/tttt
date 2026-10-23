@@ -1,0 +1,26 @@
+//// [test/cases/bun08-C15.ts] ////
+
+=== a.cts ===
+import m1 from "./esm.mjs";
+>m1 : Symbol(m1, Decl(a.cts, 0, 6))
+
+import { default as m2 } from "./esm.mjs";
+>default : Symbol("module.exports", Decl(esm.mts, 1, 8))
+>m2 : Symbol(m2, Decl(a.cts, 1, 8))
+
+export { default as m3 } from "./esm.mjs";
+>default : Symbol("module.exports", Decl(esm.mts, 1, 8))
+>m3 : Symbol(m3, Decl(a.cts, 2, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.cts, 3, 5))
+
+=== esm.mts ===
+const me = { q: 1 };
+>me : Symbol(me, Decl(esm.mts, 0, 5))
+>q : Symbol(q, Decl(esm.mts, 0, 12))
+
+export { me as "module.exports" };
+>me : Symbol(me, Decl(esm.mts, 0, 5))
+>"module.exports" : Symbol("module.exports", Decl(esm.mts, 1, 8))
+

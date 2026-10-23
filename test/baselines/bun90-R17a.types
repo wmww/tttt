@@ -1,0 +1,52 @@
+//// [test/cases/bun90-R17a.ts] ////
+
+=== a.ts ===
+export {};
+declare const key: string; declare const dec: any; declare function use(...a: any[]): void;
+>key : string
+>dec : any
+>use : (...a: any[]) => void
+>a : any[]
+
+export @dec class P { static y = 1; [key] = class { static x = 1 } }
+>dec : any
+>P : P
+>y : number
+>1 : 1
+>[key] : typeof (Anonymous class)
+>key : string
+>class { static x = 1 } : typeof (Anonymous class)
+>x : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export {};
+declare const key: string; declare const dec: any; declare function use(...a: any[]): void;
+>key : string
+>dec : any
+>use : (...a: any[]) => void
+>a : any[]
+
+export default @dec class P { static y = 1; [key] = class { static x = 1 } }
+>dec : any
+>P : P
+>y : number
+>1 : 1
+>[key] : typeof (Anonymous class)
+>key : string
+>class { static x = 1 } : typeof (Anonymous class)
+>x : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : () => void
+

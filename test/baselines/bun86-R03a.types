@@ -1,0 +1,27 @@
+//// [test/cases/bun86-R03a.ts] ////
+
+=== a.d.ts ===
+declare namespace f { interface x { j: 1 } }
+>j : 1
+
+=== b.ts ===
+function f() {}
+>f : { (): void; x: string; }
+
+f.x = "s";
+>f.x = "s" : "s"
+>f.x : string
+>f : { (): void; x: string; }
+>x : string
+>"s" : "s"
+
+const p: number = f.x;
+>p : number
+>f.x : string
+>f : { (): void; x: string; }
+>x : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

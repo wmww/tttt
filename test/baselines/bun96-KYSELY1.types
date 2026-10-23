@@ -1,0 +1,35 @@
+//// [test/cases/bun96-KYSELY1.ts] ////
+
+=== a.ts ===
+declare class K<D> {
+>K : K<D>
+
+  d: D
+>d : D
+
+  p(): K<D>
+>p : () => K<D>
+
+  e<T>(): K<[D, T]>
+>e : <T>() => K<[D, T]>
+
+  x(): string
+>x : () => string
+}
+declare class R<D> extends K<D> {
+>R : R<D>
+>K : K<D>
+
+  p(): R<D>
+>p : () => R<D>
+
+  e<T>(): R<[D, T]>
+>e : <T>() => R<[D, T]>
+
+  x(): unknown
+>x : () => unknown
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

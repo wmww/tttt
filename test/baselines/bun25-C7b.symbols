@@ -1,0 +1,21 @@
+//// [test/cases/bun25-C7b.ts] ////
+
+=== a.ts ===
+declare const o: { a?: { b?: string } } | undefined;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+>b : Symbol(b, Decl(a.ts, 0, 24))
+
+if (o?.a!?.b) o.a;
+>o?.a!?.b : Symbol(b, Decl(a.ts, 0, 24))
+>o?.a : Symbol(a, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+>b : Symbol(b, Decl(a.ts, 0, 24))
+>o.a : Symbol(a, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

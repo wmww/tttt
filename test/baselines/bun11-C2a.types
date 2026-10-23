@@ -1,0 +1,11 @@
+//// [test/cases/bun11-C2a.ts] ////
+
+=== a.ts ===
+type B2<T = B2 extends string ? 1 : 2> = { x: T };
+>B2 : B2<T>
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

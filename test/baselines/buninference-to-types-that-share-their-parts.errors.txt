@@ -1,0 +1,201 @@
+conditional.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+function.ts(54,14): error TS2322: Type 'string' is not assignable to type 'number'.
+inline.ts(7,14): error TS2322: Type 'string' is not assignable to type 'number'.
+object.ts(54,14): error TS2322: Type 'string' is not assignable to type 'number'.
+union.ts(54,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "target": "es2022", "types": [], "lib": ["es2022"] }, "files": ["object.ts", "inline.ts", "function.ts", "union.ts", "conditional.ts"] }
+==== object.ts (1 errors) ====
+    type Pair<A, B> = { a: A; b: B };
+    type P0 = Pair<string, number>;
+    type P1 = Pair<P0, P0>;
+    type P2 = Pair<P1, P1>;
+    type P3 = Pair<P2, P2>;
+    type P4 = Pair<P3, P3>;
+    type P5 = Pair<P4, P4>;
+    type P6 = Pair<P5, P5>;
+    type P7 = Pair<P6, P6>;
+    type P8 = Pair<P7, P7>;
+    type P9 = Pair<P8, P8>;
+    type P10 = Pair<P9, P9>;
+    type P11 = Pair<P10, P10>;
+    type P12 = Pair<P11, P11>;
+    type P13 = Pair<P12, P12>;
+    type P14 = Pair<P13, P13>;
+    type P15 = Pair<P14, P14>;
+    type P16 = Pair<P15, P15>;
+    type P17 = Pair<P16, P16>;
+    type P18 = Pair<P17, P17>;
+    type P19 = Pair<P18, P18>;
+    type P20 = Pair<P19, P19>;
+    type P21 = Pair<P20, P20>;
+    type P22 = Pair<P21, P21>;
+    type P23 = Pair<P22, P22>;
+    type P24 = Pair<P23, P23>;
+    type P25 = Pair<P24, P24>;
+    type P26 = Pair<P25, P25>;
+    type P27 = Pair<P26, P26>;
+    type P28 = Pair<P27, P27>;
+    type P29 = Pair<P28, P28>;
+    type P30 = Pair<P29, P29>;
+    type P31 = Pair<P30, P30>;
+    type P32 = Pair<P31, P31>;
+    type P33 = Pair<P32, P32>;
+    type P34 = Pair<P33, P33>;
+    type P35 = Pair<P34, P34>;
+    type P36 = Pair<P35, P35>;
+    type P37 = Pair<P36, P36>;
+    type P38 = Pair<P37, P37>;
+    type P39 = Pair<P38, P38>;
+    type P40 = Pair<P39, P39>;
+    type P41 = Pair<P40, P40>;
+    type P42 = Pair<P41, P41>;
+    type P43 = Pair<P42, P42>;
+    type P44 = Pair<P43, P43>;
+    type P45 = Pair<P44, P44>;
+    type P46 = Pair<P45, P45>;
+    type P47 = Pair<P46, P46>;
+    type P48 = Pair<P47, P47>;
+    declare const v: P48;
+    declare function f<X>(x: X, y: P48): X;
+    export const a: number = f(1, v);
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== inline.ts (1 errors) ====
+    type Pair<A, B> = { a: A; b: B };
+    type Up<T> = Pair<T, T>;
+    type Q = Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<Up<string>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+    declare const v: Q;
+    declare function f<X>(x: X, y: Q): X;
+    export const a: number = f(1, v);
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== function.ts (1 errors) ====
+    type Fn<A, B> = (a: A) => B;
+    type P0 = Fn<string, number>;
+    type P1 = Fn<P0, P0>;
+    type P2 = Fn<P1, P1>;
+    type P3 = Fn<P2, P2>;
+    type P4 = Fn<P3, P3>;
+    type P5 = Fn<P4, P4>;
+    type P6 = Fn<P5, P5>;
+    type P7 = Fn<P6, P6>;
+    type P8 = Fn<P7, P7>;
+    type P9 = Fn<P8, P8>;
+    type P10 = Fn<P9, P9>;
+    type P11 = Fn<P10, P10>;
+    type P12 = Fn<P11, P11>;
+    type P13 = Fn<P12, P12>;
+    type P14 = Fn<P13, P13>;
+    type P15 = Fn<P14, P14>;
+    type P16 = Fn<P15, P15>;
+    type P17 = Fn<P16, P16>;
+    type P18 = Fn<P17, P17>;
+    type P19 = Fn<P18, P18>;
+    type P20 = Fn<P19, P19>;
+    type P21 = Fn<P20, P20>;
+    type P22 = Fn<P21, P21>;
+    type P23 = Fn<P22, P22>;
+    type P24 = Fn<P23, P23>;
+    type P25 = Fn<P24, P24>;
+    type P26 = Fn<P25, P25>;
+    type P27 = Fn<P26, P26>;
+    type P28 = Fn<P27, P27>;
+    type P29 = Fn<P28, P28>;
+    type P30 = Fn<P29, P29>;
+    type P31 = Fn<P30, P30>;
+    type P32 = Fn<P31, P31>;
+    type P33 = Fn<P32, P32>;
+    type P34 = Fn<P33, P33>;
+    type P35 = Fn<P34, P34>;
+    type P36 = Fn<P35, P35>;
+    type P37 = Fn<P36, P36>;
+    type P38 = Fn<P37, P37>;
+    type P39 = Fn<P38, P38>;
+    type P40 = Fn<P39, P39>;
+    type P41 = Fn<P40, P40>;
+    type P42 = Fn<P41, P41>;
+    type P43 = Fn<P42, P42>;
+    type P44 = Fn<P43, P43>;
+    type P45 = Fn<P44, P44>;
+    type P46 = Fn<P45, P45>;
+    type P47 = Fn<P46, P46>;
+    type P48 = Fn<P47, P47>;
+    declare const v: P48;
+    declare function f<X>(x: X, y: P48): X;
+    export const a: number = f(1, v);
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== union.ts (1 errors) ====
+    type U<A, B> = { a: A } | { b: B };
+    type P0 = U<string, number>;
+    type P1 = U<P0, P0>;
+    type P2 = U<P1, P1>;
+    type P3 = U<P2, P2>;
+    type P4 = U<P3, P3>;
+    type P5 = U<P4, P4>;
+    type P6 = U<P5, P5>;
+    type P7 = U<P6, P6>;
+    type P8 = U<P7, P7>;
+    type P9 = U<P8, P8>;
+    type P10 = U<P9, P9>;
+    type P11 = U<P10, P10>;
+    type P12 = U<P11, P11>;
+    type P13 = U<P12, P12>;
+    type P14 = U<P13, P13>;
+    type P15 = U<P14, P14>;
+    type P16 = U<P15, P15>;
+    type P17 = U<P16, P16>;
+    type P18 = U<P17, P17>;
+    type P19 = U<P18, P18>;
+    type P20 = U<P19, P19>;
+    type P21 = U<P20, P20>;
+    type P22 = U<P21, P21>;
+    type P23 = U<P22, P22>;
+    type P24 = U<P23, P23>;
+    type P25 = U<P24, P24>;
+    type P26 = U<P25, P25>;
+    type P27 = U<P26, P26>;
+    type P28 = U<P27, P27>;
+    type P29 = U<P28, P28>;
+    type P30 = U<P29, P29>;
+    type P31 = U<P30, P30>;
+    type P32 = U<P31, P31>;
+    type P33 = U<P32, P32>;
+    type P34 = U<P33, P33>;
+    type P35 = U<P34, P34>;
+    type P36 = U<P35, P35>;
+    type P37 = U<P36, P36>;
+    type P38 = U<P37, P37>;
+    type P39 = U<P38, P38>;
+    type P40 = U<P39, P39>;
+    type P41 = U<P40, P40>;
+    type P42 = U<P41, P41>;
+    type P43 = U<P42, P42>;
+    type P44 = U<P43, P43>;
+    type P45 = U<P44, P44>;
+    type P46 = U<P45, P45>;
+    type P47 = U<P46, P46>;
+    type P48 = U<P47, P47>;
+    declare const v: P48;
+    declare function f<X>(x: X, y: P48): X;
+    export const a: number = f(1, v);
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== conditional.ts (1 errors) ====
+    type Pair<A, B> = { a: A; b: B };
+    type Build<T, N extends unknown[]> = N extends [unknown, ...infer R] ? Build<Pair<T, T>, R> : T;
+    type Q = Build<string, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]>;
+    declare const v: Q;
+    declare function f<X>(x: X, y: Q): X;
+    export const a: number = f(1, v);
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

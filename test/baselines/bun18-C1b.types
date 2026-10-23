@@ -1,0 +1,40 @@
+//// [test/cases/bun18-C1b.ts] ////
+
+=== a.ts ===
+type S = (p: string | number) => void;
+>S : S
+>p : string | number
+
+type T = (p: string) => void;
+>T : T
+>p : string
+
+interface Foo<X> { m<U>(a: X, b: U): void; m<U>(a: X, b: U, c: U): void }
+>m : { <U>(a: X, b: U): void; <U_1>(a: X, b: U_1, c: U_1): void; }
+>a : X
+>b : U
+>m : { <U_1>(a: X, b: U_1): void; <U>(a: X, b: U, c: U): void; }
+>a : X
+>b : U
+>c : U
+
+interface Bar { m<U>(a: T, b: U): void; m<U>(a: T, b: U, c: U): void }
+>m : { <U>(a: T, b: U): void; <U_1>(a: T, b: U_1, c: U_1): void; }
+>a : T
+>b : U
+>m : { <U_1>(a: T, b: U_1): void; <U>(a: T, b: U, c: U): void; }
+>a : T
+>b : U
+>c : U
+
+declare let foo: Foo<S>;
+>foo : Foo<S>
+
+let bar: Bar = foo;
+>bar : Bar
+>foo : Foo<S>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

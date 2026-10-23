@@ -1,0 +1,18 @@
+//// [test/cases/bun87-R20a.ts] ////
+
+=== a.ts ===
+export async function f() {}
+>f : () => Promise<void>
+
+=== b.ts ===
+import { f } from "./a";
+>f : () => Promise<void>
+
+f();
+>f() : Promise<void>
+>f : () => Promise<void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

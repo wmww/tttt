@@ -1,0 +1,14 @@
+a.ts(1,31): error TS5114: Instantiations of type 'E' appear infinitely circular.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type E<T> = { [K in keyof T]: E<T[]> };
+                                  ~~~~~~
+!!! error TS5114: Instantiations of type 'E' appear infinitely circular.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

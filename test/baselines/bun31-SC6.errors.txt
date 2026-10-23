@@ -1,0 +1,17 @@
+a.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noImplicitAny": false, "noUnusedLocals": true, "noUnusedParameters": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    import { Foo } from "./b"; import { Bar } from "./b"; import { Baz } from "./b";
+    export type F1 = (Foo) => void;
+    export interface F2 { m(Bar): void; (Baz): void }
+    export type F4 = <T>(T) => void;
+    export type F9 = (Local) => void; type Local = 1;
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    export interface Foo { } export interface Bar { } export interface Baz { }
+    

@@ -1,0 +1,17 @@
+error TS6059: File 'src/a.ts' is not under 'rootDir' 'ſrc'. 'rootDir' is expected to contain all source files.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+src/a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS6059: File 'src/a.ts' is not under 'rootDir' 'ſrc'. 'rootDir' is expected to contain all source files.
+!!! error TS6059:   The file is in the program because:
+!!! error TS6059:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:120: File is matched by 'files' list specified here.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "rootDir": "./ſrc", "types": [], "lib": ["es2022"] }, "files": ["src/a.ts"] }
+==== src/a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

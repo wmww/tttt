@@ -1,0 +1,12 @@
+//// [test/cases/bun34-P6d.ts] ////
+
+=== a.ts ===
+type T = (this: any = 1) => void;
+>T : T
+>this : any
+> : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

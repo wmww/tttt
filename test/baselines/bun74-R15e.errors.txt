@@ -1,0 +1,23 @@
+a.ts(2,7): error TS1109: Expression expected.
+a.ts(2,9): error TS2693: 'number' only refers to a type, but is being used as a value here.
+b.ts(2,10): error TS1109: Expression expected.
+b.ts(2,13): error TS1005: ':' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const x: any; type T = any;
+    <T>(x?: number);
+          ~
+!!! error TS1109: Expression expected.
+            ~~~~~~
+!!! error TS2693: 'number' only refers to a type, but is being used as a value here.
+==== b.ts (2 errors) ====
+    declare const x2: any, y2: any; type T2 = any;
+    <T2>(x2? = 1);
+             ~
+!!! error TS1109: Expression expected.
+                ~
+!!! error TS1005: ':' expected.
+    

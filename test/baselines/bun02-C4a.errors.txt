@@ -1,0 +1,22 @@
+a.ts(1,18): error TS2716: Type parameter 'T' has a circular default.
+a.ts(2,19): error TS2716: Type parameter 'T' has a circular default.
+a.ts(3,19): error TS2716: Type parameter 'T' has a circular default.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    interface A3<T = A3 extends infer U ? U : never> { x: T }
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2716: Type parameter 'T' has a circular default.
+    interface A19<T = string extends string ? A19 : never> { x: T }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2716: Type parameter 'T' has a circular default.
+    interface A20<T = string extends A20 ? 1 : never> { x: T }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2716: Type parameter 'T' has a circular default.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

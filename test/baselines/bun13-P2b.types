@@ -1,0 +1,31 @@
+//// [test/cases/bun13-P2b.ts] ////
+
+=== a.ts ===
+interface Array<T> { length: number; [n: number]: T }
+>length : number
+>n : number
+
+interface Boolean {}
+interface CallableFunction {}
+interface Function {}
+interface IArguments {}
+interface NewableFunction {}
+interface Number {}
+interface Object {}
+interface RegExp {}
+interface String {}
+declare function dec(target: any, context: any): any;
+>dec : (target: any, context: any) => any
+>target : any
+>context : any
+
+class C { @dec accessor a = 1; }
+>C : C
+>dec : (target: any, context: any) => any
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

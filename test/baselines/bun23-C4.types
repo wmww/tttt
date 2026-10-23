@@ -1,0 +1,28 @@
+//// [test/cases/bun23-C4.ts] ////
+
+=== a.ts ===
+export namespace Q { namespace H2 { export enum P { A, B } } export const v = H2.P.A as H2.P; }
+>Q : typeof Q
+>H2 : typeof H2
+>P : P
+>A : P.A
+>B : P.B
+>v : H2.P
+>H2.P.A as H2.P : H2.P
+>H2.P.A : H2.P.A
+>H2.P : typeof H2.P
+>H2 : typeof H2
+>P : typeof H2.P
+>A : H2.P.A
+>H2 : any
+
+export const l1 = Q.v;
+>l1 : H2.P
+>Q.v : H2.P
+>Q : typeof Q
+>v : H2.P
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

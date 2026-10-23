@@ -1,0 +1,76 @@
+//// [test/cases/bun59-L02.ts] ////
+
+=== a.ts ===
+import j from "./e.json";
+>j : {}
+
+const m1: Record<string, unknown> = j;
+>m1 : Record<string, unknown>
+>j : {}
+
+declare function values<T>(r: Record<string, T>): T[];
+>values : <T>(r: Record<string, T>) => T[]
+>r : Record<string, T>
+
+function f2(x: unknown, c: Function) {
+>f2 : (x: unknown, c: Function) => void
+>x : unknown
+>c : Function
+
+    if (x instanceof c) {
+>x instanceof c : boolean
+>x : unknown
+>c : Function
+
+        const m2: Record<string, unknown> = x;
+>m2 : Record<string, unknown>
+>x : {}
+
+        const m3: { [k: string]: number } = x;
+>m3 : { [k: string]: number; }
+>k : string
+>x : {}
+
+        const m4: Record<string, any> = x;
+>m4 : Record<string, any>
+>x : {}
+
+        values(x);
+>values(x) : unknown[]
+>values : <T>(r: Record<string, T>) => T[]
+>x : {}
+    }
+}
+function f5(x: { a: 1 } | string, c: Function) {
+>f5 : (x: { a: 1; } | string, c: Function) => void
+>x : string | { a: 1; }
+>a : 1
+>c : Function
+
+    if (x instanceof c) {
+>x instanceof c : boolean
+>x : string | { a: 1; }
+>c : Function
+
+        const m5: Record<string, unknown> = x;
+>m5 : Record<string, unknown>
+>x : { a: 1; }
+    }
+}
+const { a, ...rest } = { a: 1 };
+>a : number
+>rest : {}
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+const m6: Record<string, unknown> = rest;
+>m6 : Record<string, unknown>
+>rest : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== e.json ===
+

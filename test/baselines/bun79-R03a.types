@@ -1,0 +1,16 @@
+//// [test/cases/bun79-R03a.ts] ////
+
+=== a.ts ===
+type F3<X> = X extends (infer A extends F3<A>) ? A : never;
+>F3 : any
+
+type F8<X> = X extends [infer A extends F8<A>[]] ? A : never;
+>F8 : any
+
+type H4<X> = X extends [infer A extends keyof H4<A>] ? A : never;
+>H4 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X4.ts] ////
+
+=== a.ts ===
+const k: number = null! as keyof { 1e400: 1 };
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>1e400 : Symbol(1e400, Decl(a.ts, 0, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

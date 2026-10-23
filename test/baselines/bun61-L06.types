@@ -1,0 +1,22 @@
+//// [test/cases/bun61-L06.ts] ////
+
+=== a.ts ===
+declare function f1({ a: \u0062 }: any): void;
+>f1 : ({ a: b }: any) => void
+>a : any
+>\u0062 : any
+
+type T7 = ({ a: \u{62}c }: any) => void;
+>T7 : T7
+>a : any
+>\u{62}c : any
+
+type T8 = ({ \u0061: b }: any) => void;
+>T8 : T8
+>\u0061 : any
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun04-P2.ts] ////
+
+=== a.ts ===
+declare const u1: string | { a: number } | { a: number; b: string };
+>u1 : Symbol(u1, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 28))
+>a : Symbol(a, Decl(a.ts, 0, 44))
+>b : Symbol(b, Decl(a.ts, 0, 55))
+
+for (const x of u1) {}
+>x : Symbol(x, Decl(a.ts, 1, 10))
+>u1 : Symbol(u1, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

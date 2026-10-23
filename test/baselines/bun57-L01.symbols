@@ -1,0 +1,42 @@
+//// [test/cases/bun57-L01.ts] ////
+
+=== a.ts ===
+declare const a: any, b: any;
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+
+@a export export @b class C1 {}
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>C1 : Symbol(C1, Decl(a.ts, 0, 29))
+
+@a public export @b class C2 {}
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>C2 : Symbol(C2, Decl(a.ts, 1, 31))
+
+@a declare export @b class C3 {}
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>C3 : Symbol(C3, Decl(a.ts, 2, 31))
+
+function f() { @a export @b class C4 {} }
+>f : Symbol(f, Decl(a.ts, 3, 32))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>C4 : Symbol(C4, Decl(a.ts, 4, 14))
+
+namespace N { export @a default class C5 {} }
+>N : Symbol(N, Decl(a.ts, 4, 41))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>C5 : Symbol(C5, Decl(a.ts, 5, 13))
+
+namespace M { @a export default @b class C6 {} }
+>M : Symbol(M, Decl(a.ts, 5, 45))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>C6 : Symbol(C6, Decl(a.ts, 6, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

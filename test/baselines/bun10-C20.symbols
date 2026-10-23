@@ -1,0 +1,11 @@
+//// [test/cases/bun10-C20.ts] ////
+
+=== a.ts ===
+const o7 = { 1n: 1, "1n": 3 };
+>o7 : Symbol(o7, Decl(a.ts, 0, 5))
+>1n : Symbol(1n, Decl(a.ts, 0, 12))
+>"1n" : Symbol("1n", Decl(a.ts, 0, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

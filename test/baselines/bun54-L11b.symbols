@@ -1,0 +1,62 @@
+//// [test/cases/bun54-L11b.ts] ////
+
+=== a.ts ===
+class C2 { get a(): number { return 1 } set a(v: string | number) {} a = 2; }
+>C2 : Symbol(C2, Decl(a.ts, 0, 0))
+>a : Symbol(C2.a, Decl(a.ts, 0, 10), Decl(a.ts, 0, 39), Decl(a.ts, 0, 68))
+>a : Symbol(C2.a, Decl(a.ts, 0, 10), Decl(a.ts, 0, 39), Decl(a.ts, 0, 68))
+>v : Symbol(v, Decl(a.ts, 0, 46))
+>a : Symbol(C2.a, Decl(a.ts, 0, 10), Decl(a.ts, 0, 39), Decl(a.ts, 0, 68))
+
+new C2().a = "s";
+>new C2().a : Symbol(C2.a, Decl(a.ts, 0, 10), Decl(a.ts, 0, 39), Decl(a.ts, 0, 68))
+>C2 : Symbol(C2, Decl(a.ts, 0, 0))
+>a : Symbol(C2.a, Decl(a.ts, 0, 10), Decl(a.ts, 0, 39), Decl(a.ts, 0, 68))
+
+declare const t1: { get a(): number; set a(v: string | number); a: number };
+>t1 : Symbol(t1, Decl(a.ts, 2, 13))
+>a : Symbol(a, Decl(a.ts, 2, 19), Decl(a.ts, 2, 36), Decl(a.ts, 2, 63))
+>a : Symbol(a, Decl(a.ts, 2, 19), Decl(a.ts, 2, 36), Decl(a.ts, 2, 63))
+>v : Symbol(v, Decl(a.ts, 2, 43))
+>a : Symbol(a, Decl(a.ts, 2, 19), Decl(a.ts, 2, 36), Decl(a.ts, 2, 63))
+
+t1.a = "s";
+>t1.a : Symbol(a, Decl(a.ts, 2, 19), Decl(a.ts, 2, 36), Decl(a.ts, 2, 63))
+>t1 : Symbol(t1, Decl(a.ts, 2, 13))
+>a : Symbol(a, Decl(a.ts, 2, 19), Decl(a.ts, 2, 36), Decl(a.ts, 2, 63))
+
+const p1: boolean = t1;
+>p1 : Symbol(p1, Decl(a.ts, 4, 5))
+>t1 : Symbol(t1, Decl(a.ts, 2, 13))
+
+interface I2 { get a(): number; set a(v: string | number); a: number }
+>I2 : Symbol(I2, Decl(a.ts, 4, 23))
+>a : Symbol(I2.a, Decl(a.ts, 5, 14), Decl(a.ts, 5, 31), Decl(a.ts, 5, 58))
+>a : Symbol(I2.a, Decl(a.ts, 5, 14), Decl(a.ts, 5, 31), Decl(a.ts, 5, 58))
+>v : Symbol(v, Decl(a.ts, 5, 38))
+>a : Symbol(I2.a, Decl(a.ts, 5, 14), Decl(a.ts, 5, 31), Decl(a.ts, 5, 58))
+
+declare const i2: I2;
+>i2 : Symbol(i2, Decl(a.ts, 6, 13))
+>I2 : Symbol(I2, Decl(a.ts, 4, 23))
+
+i2.a = "s";
+>i2.a : Symbol(I2.a, Decl(a.ts, 5, 14), Decl(a.ts, 5, 31), Decl(a.ts, 5, 58))
+>i2 : Symbol(i2, Decl(a.ts, 6, 13))
+>a : Symbol(I2.a, Decl(a.ts, 5, 14), Decl(a.ts, 5, 31), Decl(a.ts, 5, 58))
+
+class C1 { a = 2; get a(): number { return 1 } set a(v: string | number) {} }
+>C1 : Symbol(C1, Decl(a.ts, 7, 11))
+>a : Symbol(C1.a, Decl(a.ts, 8, 10), Decl(a.ts, 8, 17), Decl(a.ts, 8, 46))
+>a : Symbol(C1.a, Decl(a.ts, 8, 10), Decl(a.ts, 8, 17), Decl(a.ts, 8, 46))
+>a : Symbol(C1.a, Decl(a.ts, 8, 10), Decl(a.ts, 8, 17), Decl(a.ts, 8, 46))
+>v : Symbol(v, Decl(a.ts, 8, 53))
+
+new C1().a = "s";
+>new C1().a : Symbol(C1.a, Decl(a.ts, 8, 10), Decl(a.ts, 8, 17), Decl(a.ts, 8, 46))
+>C1 : Symbol(C1, Decl(a.ts, 7, 11))
+>a : Symbol(C1.a, Decl(a.ts, 8, 10), Decl(a.ts, 8, 17), Decl(a.ts, 8, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

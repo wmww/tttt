@@ -1,0 +1,14 @@
+//// [test/cases/bun14-C13.ts] ////
+
+=== a.ts ===
+declare const mi: Map<string, number> & { x: 1 };
+>mi : Symbol(mi, Decl(a.ts, 0, 13))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 41))
+
+mi["a"];
+>mi : Symbol(mi, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

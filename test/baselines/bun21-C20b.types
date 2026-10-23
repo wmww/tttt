@@ -1,0 +1,33 @@
+//// [test/cases/bun21-C20b.ts] ////
+
+=== a.ts ===
+function f(c: boolean): number {
+>f : (c: boolean) => number
+>c : boolean
+
+  let y: 1 | 2 = 1;
+>y : 1 | 2
+>1 : 1
+
+  while (c) {
+>c : boolean
+
+    switch (y) { case 1: return 1; case 2: return 2; }
+>y : 1 | 2
+>1 : 1
+>1 : 1
+>2 : 2
+>2 : 2
+
+    y = 2;
+>y = 2 : 2
+>y : 1 | 2
+>2 : 2
+  }
+  return 0;
+>0 : 0
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

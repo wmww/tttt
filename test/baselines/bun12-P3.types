@@ -1,0 +1,20 @@
+//// [test/cases/bun12-P3.ts] ////
+
+=== a.ts ===
+class C<T> { p!: { a: T<1> } }
+>C : C<T>
+>p : { a: T<1>; }
+>a : any
+
+type U = C<1>["p"] | C<2>["p"];
+>U : { a: T<1>; }
+
+const n: never = null! as U;
+>n : never
+>null! as U : { a: T<1>; }
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun92-R07b.ts] ////
+
+=== a.js ===
+/**
+ * @param {{ a: 1; static
+ * {}; b: 2 }} o
+ */
+function f(o) { o.a; o.b; o.nope; }
+>f : (o: { a: 1; static : any; }) => void
+>o : { a: 1; "": any; }
+>o.a : 1
+>o : { a: 1; "": any; }
+>a : 1
+>o.b : any
+>o : { a: 1; "": any; }
+>b : any
+>o.nope : any
+>o : { a: 1; "": any; }
+>nope : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

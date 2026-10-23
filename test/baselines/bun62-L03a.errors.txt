@@ -1,0 +1,30 @@
+a.ts(2,2): error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+a.ts(3,2): error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+a.ts(4,1): error TS2365: Operator '+=' cannot be applied to types '[{ a?: number; }]' and 'number'.
+a.ts(5,2): error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+a.ts(5,14): error TS2501: A rest element cannot contain a binding pattern.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    declare let a: number; declare let b: number;
+    ({ a = 1 } += 1);
+     ~~~~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+    ({ a: b = 1 } += 1);
+     ~~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+    [{ a = 1 }] += 1;
+    ~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types '[{ a?: number; }]' and 'number'.
+    ({ a = 1, ...{} } += 1);
+     ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+                 ~~
+!!! error TS2501: A rest element cannot contain a binding pattern.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

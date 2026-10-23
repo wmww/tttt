@@ -1,0 +1,33 @@
+//// [test/cases/bun12-C2b.ts] ////
+
+=== a.ts ===
+declare function pipe1<A, B>(f: (a: A) => B): { (a: A): B };
+>pipe1 : <A, B>(f: (a: A) => B) => { (a: A): B; }
+>f : (a: A) => B
+>a : A
+>a : A
+
+function outer<Q>(q: Q) { return pipe1(<T,>(x: T) => [x, q] as [T, Q]); }
+>outer : <Q>(q: Q) => <T>(a: T) => [T, Q]
+>q : Q
+>pipe1(<T,>(x: T) => [x, q] as [T, Q]) : <T>(a: T) => [T, Q]
+>pipe1 : <A, B>(f: (a: A) => B) => { (a: A): B; }
+><T,>(x: T) => [x, q] as [T, Q] : <T>(x: T) => [T, Q]
+>x : T
+>[x, q] as [T, Q] : [T, Q]
+>[x, q] : [T, Q]
+>x : T
+>q : Q
+
+const r: [string, number] = outer(1)("");
+>r : [string, number]
+>outer(1)("") : [string, Q]
+>outer(1) : <T>(a: T) => [T, Q]
+>outer : <Q>(q: Q) => <T>(a: T) => [T, Q]
+>1 : 1
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

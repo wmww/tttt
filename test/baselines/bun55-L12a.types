@@ -1,0 +1,106 @@
+//// [test/cases/bun55-L12a.ts] ////
+
+=== a.ts ===
+const key = compute({ a: 1 }, {}, "a");
+>key : number
+>compute({ a: 1 }, {}, "a") : number
+>compute : (o: { a: number; }, p: any, i: "a") => number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{} : {}
+>"a" : "a"
+
+function compute(o: { a: number }, p: any, i: "a") { p[key] = 1; return o[i]; }
+>compute : (o: { a: number; }, p: any, i: "a") => number
+>o : { a: number; }
+>a : number
+>p : any
+>i : "a"
+>p[key] = 1 : 1
+>p[key] : any
+>p : any
+>key : number
+>1 : 1
+>o[i] : number
+>o : { a: number; }
+>i : "a"
+
+const key2 = compute2({ a: 1 }, {}, "a");
+>key2 : number
+>compute2({ a: 1 }, {}, "a") : number
+>compute2 : (o: { a: number; }, p: any, i: "a") => number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{} : {}
+>"a" : "a"
+
+function compute2(o: { a: number }, p: any, i: "a") { if (p[key2]) {} return o[i]; }
+>compute2 : (o: { a: number; }, p: any, i: "a") => number
+>o : { a: number; }
+>a : number
+>p : any
+>i : "a"
+>p[key2] : any
+>p : any
+>key2 : number
+>o[i] : number
+>o : { a: number; }
+>i : "a"
+
+const key3 = compute3({ a: 1 }, {});
+>key3 : number
+>compute3({ a: 1 }, {}) : number
+>compute3 : (o: { a: number; }, p: any) => number
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{} : {}
+
+function compute3(o: { a: number }, p: any) { let i: "a" = "a"; p[key3] = 1; return o[i]; }
+>compute3 : (o: { a: number; }, p: any) => number
+>o : { a: number; }
+>a : number
+>p : any
+>i : "a"
+>"a" : "a"
+>p[key3] = 1 : 1
+>p[key3] : any
+>p : any
+>key3 : number
+>1 : 1
+>o[i] : number
+>o : { a: number; }
+>i : "a"
+
+// a key with a name: TS7023 in both
+const key4 = compute4({ a: 1 }, {});
+>key4 : any
+>compute4({ a: 1 }, {}) : any
+>compute4 : (o: { a: number; }, p: any) => any
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>{} : {}
+
+function compute4(o: { a: number }, p: any) { const i = "a"; p[key4] = 1; return o[i]; }
+>compute4 : (o: { a: number; }, p: any) => any
+>o : { a: number; }
+>a : number
+>p : any
+>i : "a"
+>"a" : "a"
+>p[key4] = 1 : 1
+>p[key4] : any
+>p : any
+>key4 : any
+>1 : 1
+>o[i] : number
+>o : { a: number; }
+>i : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,88 @@
+//// [test/cases/bun55-L16a.ts] ////
+
+=== a.ts ===
+function mk<U>(u: U, x: { k: 1 }) { return { u, ...x }; }
+>mk : Symbol(mk, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 12))
+>u : Symbol(u, Decl(a.ts, 0, 15))
+>U : Symbol(U, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>k : Symbol(k, Decl(a.ts, 0, 25))
+>u : Symbol(u, Decl(a.ts, 0, 44))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+
+const a = mk(1, { k: 1 });
+>a : Symbol(a, Decl(a.ts, 1, 5))
+>mk : Symbol(mk, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 1, 17))
+
+const b = mk("", { k: 1 });
+>b : Symbol(b, Decl(a.ts, 2, 5))
+>mk : Symbol(mk, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 2, 18))
+
+declare function f<T>(p: typeof b | T, q: T): T;
+>f : Symbol(f, Decl(a.ts, 2, 27))
+>T : Symbol(T, Decl(a.ts, 3, 19))
+>p : Symbol(p, Decl(a.ts, 3, 22))
+>b : Symbol(b, Decl(a.ts, 2, 5))
+>T : Symbol(T, Decl(a.ts, 3, 19))
+>q : Symbol(q, Decl(a.ts, 3, 38))
+>T : Symbol(T, Decl(a.ts, 3, 19))
+>T : Symbol(T, Decl(a.ts, 3, 19))
+
+declare const c: { u: number; k: 1; more: 1 };
+>c : Symbol(c, Decl(a.ts, 4, 13))
+>u : Symbol(u, Decl(a.ts, 4, 18))
+>k : Symbol(k, Decl(a.ts, 4, 29))
+>more : Symbol(more, Decl(a.ts, 4, 35))
+
+f(a, c);
+>f : Symbol(f, Decl(a.ts, 2, 27))
+>a : Symbol(a, Decl(a.ts, 1, 5))
+>c : Symbol(c, Decl(a.ts, 4, 13))
+
+f(a, { z: 1 });
+>f : Symbol(f, Decl(a.ts, 2, 27))
+>a : Symbol(a, Decl(a.ts, 1, 5))
+>z : Symbol(z, Decl(a.ts, 6, 6))
+
+// without the spread both agree
+function mk2<U>(u: U) { return { u }; }
+>mk2 : Symbol(mk2, Decl(a.ts, 6, 15))
+>U : Symbol(U, Decl(a.ts, 8, 13))
+>u : Symbol(u, Decl(a.ts, 8, 16))
+>U : Symbol(U, Decl(a.ts, 8, 13))
+>u : Symbol(u, Decl(a.ts, 8, 32))
+
+const a2 = mk2(1);
+>a2 : Symbol(a2, Decl(a.ts, 9, 5))
+>mk2 : Symbol(mk2, Decl(a.ts, 6, 15))
+
+const b2 = mk2("");
+>b2 : Symbol(b2, Decl(a.ts, 10, 5))
+>mk2 : Symbol(mk2, Decl(a.ts, 6, 15))
+
+declare function f2<T>(p: typeof b2 | T, q: T): T;
+>f2 : Symbol(f2, Decl(a.ts, 10, 19))
+>T : Symbol(T, Decl(a.ts, 11, 20))
+>p : Symbol(p, Decl(a.ts, 11, 23))
+>b2 : Symbol(b2, Decl(a.ts, 10, 5))
+>T : Symbol(T, Decl(a.ts, 11, 20))
+>q : Symbol(q, Decl(a.ts, 11, 40))
+>T : Symbol(T, Decl(a.ts, 11, 20))
+>T : Symbol(T, Decl(a.ts, 11, 20))
+
+declare const c2: { u: number; more: 1 };
+>c2 : Symbol(c2, Decl(a.ts, 12, 13))
+>u : Symbol(u, Decl(a.ts, 12, 19))
+>more : Symbol(more, Decl(a.ts, 12, 30))
+
+f2(a2, c2);
+>f2 : Symbol(f2, Decl(a.ts, 10, 19))
+>a2 : Symbol(a2, Decl(a.ts, 9, 5))
+>c2 : Symbol(c2, Decl(a.ts, 12, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+

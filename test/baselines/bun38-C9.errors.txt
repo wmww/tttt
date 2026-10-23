@@ -1,0 +1,17 @@
+a.ts(2,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "extends": ["./x.json", "./y.json"], "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    function implicitAny(x) { return x; }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== x.json (0 errors) ====
+    { "compilerOptions": { "strict": false } }
+==== y.json (0 errors) ====
+    { "extends": "./z.json" }
+==== z.json (0 errors) ====
+    { "compilerOptions": { "strict": null } }
+    

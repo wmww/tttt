@@ -1,0 +1,24 @@
+//// [test/cases/bun21-C14a.ts] ////
+
+=== a.ts ===
+const assertIsString = (x: unknown): asserts x is string => {};
+>assertIsString : (x: unknown) => asserts x is string
+>(x: unknown): asserts x is string => {} : (x: unknown) => asserts x is string
+>x : unknown
+
+function f(x: unknown) { assertIsString(x), 0; x.length; }
+>f : (x: unknown) => void
+>x : unknown
+>assertIsString(x), 0 : 0
+>assertIsString(x) : void
+>assertIsString : (x: unknown) => asserts x is string
+>x : unknown
+>0 : 0
+>x.length : number
+>x : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

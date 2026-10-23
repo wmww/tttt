@@ -1,0 +1,20 @@
+//// [test/cases/bun12-C16b.ts] ////
+
+=== a.ts ===
+type TL = { readonly u: unique symbol };
+>TL : Symbol(TL, Decl(a.ts, 0, 0))
+>u : Symbol(u, Decl(a.ts, 0, 11))
+
+declare let tl: TL;
+>tl : Symbol(tl, Decl(a.ts, 1, 11))
+>TL : Symbol(TL, Decl(a.ts, 0, 0))
+
+let s13: string = tl.u;
+>s13 : Symbol(s13, Decl(a.ts, 2, 3))
+>tl.u : Symbol(u, Decl(a.ts, 0, 11))
+>tl : Symbol(tl, Decl(a.ts, 1, 11))
+>u : Symbol(u, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,101 @@
+//// [test/cases/bun96-ARKTYPE3.ts] ////
+
+=== a.ts ===
+type In<t> = t extends string ? string : never
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 0, 8))
+>t : Symbol(t, Decl(a.ts, 0, 8))
+
+type Any<t> = t extends string ? string : any
+>Any : Symbol(Any, Decl(a.ts, 0, 46))
+>t : Symbol(t, Decl(a.ts, 1, 9))
+>t : Symbol(t, Decl(a.ts, 1, 9))
+
+interface C<T> {
+>C : Symbol(C, Decl(a.ts, 1, 45))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+
+	r<U>(x: U): T & In<U>
+>r : Symbol(C.r, Decl(a.ts, 2, 16))
+>U : Symbol(U, Decl(a.ts, 3, 3))
+>x : Symbol(x, Decl(a.ts, 3, 6))
+>U : Symbol(U, Decl(a.ts, 3, 3))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 3, 3))
+
+	u<U>(x: U): T | Any<U>
+>u : Symbol(C.u, Decl(a.ts, 3, 22))
+>U : Symbol(U, Decl(a.ts, 4, 3))
+>x : Symbol(x, Decl(a.ts, 4, 6))
+>U : Symbol(U, Decl(a.ts, 4, 3))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>Any : Symbol(Any, Decl(a.ts, 0, 46))
+>U : Symbol(U, Decl(a.ts, 4, 3))
+
+	g<U>(x: unknown, y: U): x is T & In<U>
+>g : Symbol(C.g, Decl(a.ts, 4, 23))
+>U : Symbol(U, Decl(a.ts, 5, 3))
+>x : Symbol(x, Decl(a.ts, 5, 6))
+>y : Symbol(y, Decl(a.ts, 5, 17))
+>U : Symbol(U, Decl(a.ts, 5, 3))
+>x : Symbol(x, Decl(a.ts, 5, 6))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>In : Symbol(In, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 5, 3))
+}
+declare const c: C<any>
+>c : Symbol(c, Decl(a.ts, 7, 13))
+>C : Symbol(C, Decl(a.ts, 1, 45))
+
+c.r(1).foo
+>c.r : Symbol(C.r, Decl(a.ts, 2, 16))
+>c : Symbol(c, Decl(a.ts, 7, 13))
+>r : Symbol(C.r, Decl(a.ts, 2, 16))
+
+c.r<number>(1).foo
+>c.r : Symbol(C.r, Decl(a.ts, 2, 16))
+>c : Symbol(c, Decl(a.ts, 7, 13))
+>r : Symbol(C.r, Decl(a.ts, 2, 16))
+
+declare const d: C<unknown>
+>d : Symbol(d, Decl(a.ts, 10, 13))
+>C : Symbol(C, Decl(a.ts, 1, 45))
+
+const e1: number = d.u(1)
+>e1 : Symbol(e1, Decl(a.ts, 11, 5))
+>d.u : Symbol(C.u, Decl(a.ts, 3, 22))
+>d : Symbol(d, Decl(a.ts, 10, 13))
+>u : Symbol(C.u, Decl(a.ts, 3, 22))
+
+const e2: number = d.u<number>(1)
+>e2 : Symbol(e2, Decl(a.ts, 12, 5))
+>d.u : Symbol(C.u, Decl(a.ts, 3, 22))
+>d : Symbol(d, Decl(a.ts, 10, 13))
+>u : Symbol(C.u, Decl(a.ts, 3, 22))
+
+declare const x: string | number
+>x : Symbol(x, Decl(a.ts, 13, 13))
+
+if (c.g(x, 1)) { x.foo }
+>c.g : Symbol(C.g, Decl(a.ts, 4, 23))
+>c : Symbol(c, Decl(a.ts, 7, 13))
+>g : Symbol(C.g, Decl(a.ts, 4, 23))
+>x : Symbol(x, Decl(a.ts, 13, 13))
+>x : Symbol(x, Decl(a.ts, 13, 13))
+
+// the type arguments that the port does take in two steps
+c.r<never>(1 as never).foo
+>c.r : Symbol(C.r, Decl(a.ts, 2, 16))
+>c : Symbol(c, Decl(a.ts, 7, 13))
+>r : Symbol(C.r, Decl(a.ts, 2, 16))
+
+const e3: number = d.u<any>(1)
+>e3 : Symbol(e3, Decl(a.ts, 17, 5))
+>d.u : Symbol(C.u, Decl(a.ts, 3, 22))
+>d : Symbol(d, Decl(a.ts, 10, 13))
+>u : Symbol(C.u, Decl(a.ts, 3, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

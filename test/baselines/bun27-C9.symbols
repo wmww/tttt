@@ -1,0 +1,33 @@
+//// [test/cases/bun27-C9.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { g: 1 } interface IntrinsicElements { div: { g: string } } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>g : Symbol(Element.g, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 0, 80))
+>g : Symbol(g, Decl(a.tsx, 0, 87))
+
+namespace Outer {
+>Outer : Symbol(Outer, Decl(a.tsx, 0, 103))
+
+  namespace React { export declare function createElement(...a: any[]): any; export namespace JSX { export interface Element { l: 1 } export interface IntrinsicElements { div: { l: number } } } }
+>React : Symbol(React, Decl(a.tsx, 1, 17))
+>createElement : Symbol(createElement, Decl(a.tsx, 2, 19))
+>a : Symbol(a, Decl(a.tsx, 2, 58))
+>JSX : Symbol(JSX, Decl(a.tsx, 2, 76))
+>Element : Symbol(Element, Decl(a.tsx, 2, 99))
+>l : Symbol(Element.l, Decl(a.tsx, 2, 126))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 2, 133))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 2, 170))
+>l : Symbol(l, Decl(a.tsx, 2, 177))
+
+  export const a = <div l={1} />;
+>a : Symbol(a, Decl(a.tsx, 3, 14))
+>div : Symbol(React.JSX.IntrinsicElements.div, Decl(a.tsx, 2, 170))
+>l : Symbol(l, Decl(a.tsx, 3, 23))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 5, 5))
+

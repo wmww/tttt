@@ -1,0 +1,19 @@
+//// [test/cases/bun33-C7.ts] ////
+
+=== a.ts ===
+declare const h: { a(x: unknown): asserts x } | undefined;
+>h : { a(x: unknown): asserts x; } | undefined
+>a : (x: unknown) => asserts x
+>x : unknown
+
+h?.a(1);
+>h?.a(1) : void | undefined
+>h?.a : ((x: unknown) => asserts x) | undefined
+>h : { a(x: unknown): asserts x; } | undefined
+>a : ((x: unknown) => asserts x) | undefined
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

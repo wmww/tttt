@@ -1,0 +1,49 @@
+index.ts(2,19): error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style, ":hover">'.
+index.ts(6,7): error TS2322: Type 'Omit<Style, ":hover"> | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+index.ts(7,7): error TS2322: Type 'string | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+index.ts(8,7): error TS2741: Property '":hover"' is missing in type '{ top: string; }' but required in type 'Required<Style>'.
+index.ts(9,7): error TS2322: Type '":hover" | "top"' is not assignable to type 'never'.
+  Type '":hover"' is not assignable to type 'never'.
+index.ts(10,24): error TS2353: Object literal may only specify known properties, and 'tpo' does not exist in type 'Style'.
+index.ts(11,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "types": [], "skipLibCheck": true}, "files": ["index.ts"]}
+==== index.ts (7 errors) ====
+    import { css, Style } from './lib';
+    css({ ':hover': { notAProperty: '1' } });
+                      ~~~~~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'notAProperty' does not exist in type 'Omit<Style, ":hover">'.
+    const p: Partial<Style> = { ':hover': {} };
+    declare const style: Style;
+    const spread = { ...style };
+    const hover: never = spread[':hover'];
+          ~~~~~
+!!! error TS2322: Type 'Omit<Style, ":hover"> | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const top: never = spread.top;
+          ~~~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    const required: Required<Style> = { top: '' };
+          ~~~~~~~~
+!!! error TS2741: Property '":hover"' is missing in type '{ top: string; }' but required in type 'Required<Style>'.
+    const picked: never = null! as keyof Partial<Style>;
+          ~~~~~~
+!!! error TS2322: Type '":hover" | "top"' is not assignable to type 'never'.
+!!! error TS2322:   Type '":hover"' is not assignable to type 'never'.
+    const wrong: Style = { tpo: '' };
+                           ~~~
+!!! error TS2353: Object literal may only specify known properties, and 'tpo' does not exist in type 'Style'.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== lib.d.ts (0 errors) ====
+    type Pseudos = ':hover';
+    export type CSSPseudos = { [P in Pseudos]?: Omit<Style, Pseudos> };
+    export type Style = CSSPseudos & { top?: string };
+    export declare function css(style: Style): void;
+    

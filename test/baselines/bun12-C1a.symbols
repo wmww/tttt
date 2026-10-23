@@ -1,0 +1,33 @@
+//// [test/cases/bun12-C1a.ts] ////
+
+=== a.ts ===
+function pick<T, U>(t: T, u: U): { [K in keyof T]: U } {
+>pick : Symbol(pick, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>U : Symbol(U, Decl(a.ts, 0, 16))
+>t : Symbol(t, Decl(a.ts, 0, 20))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>u : Symbol(u, Decl(a.ts, 0, 25))
+>U : Symbol(U, Decl(a.ts, 0, 16))
+>K : Symbol(K, Decl(a.ts, 0, 36))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>U : Symbol(U, Decl(a.ts, 0, 16))
+
+  const r = pick(u, t);
+>r : Symbol(r, Decl(a.ts, 1, 7))
+>pick : Symbol(pick, Decl(a.ts, 0, 0))
+>u : Symbol(u, Decl(a.ts, 0, 25))
+>t : Symbol(t, Decl(a.ts, 0, 20))
+
+  const ok: { [K in keyof U]: T } = r;
+>ok : Symbol(ok, Decl(a.ts, 2, 7))
+>K : Symbol(K, Decl(a.ts, 2, 15))
+>U : Symbol(U, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>r : Symbol(r, Decl(a.ts, 1, 7))
+
+  return null!;
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

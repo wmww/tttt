@@ -1,0 +1,9 @@
+//// [test/cases/bun43-P8e.ts] ////
+
+=== a.tsx ===
+var v = <#a />;
+>v : Symbol(v, Decl(a.tsx, 0, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 1, 5))
+

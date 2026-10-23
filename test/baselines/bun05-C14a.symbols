@@ -1,0 +1,16 @@
+//// [test/cases/bun05-C14a.ts] ////
+
+=== a.ts ===
+declare var Symbol: SymbolConstructor;
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --), Decl(a.ts, 0, 11))
+>SymbolConstructor : Symbol(SymbolConstructor, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.asynciterable.d.ts, --, --), Decl(lib.es2020.symbol.wellknown.d.ts, --, --))
+
+const s = Symbol(); const k: number = s;
+>s : Symbol(s, Decl(a.ts, 1, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --), Decl(a.ts, 0, 11))
+>k : Symbol(k, Decl(a.ts, 1, 25))
+>s : Symbol(s, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

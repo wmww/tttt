@@ -1,0 +1,34 @@
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+node_modules/@types/foo/index.d.ts(2,24): error TS2451: Cannot redeclare block-scoped variable 'fooGlobal'.
+node_modules/y/node_modules/@types/foo/index.d.ts(2,24): error TS2451: Cannot redeclare block-scoped variable 'fooGlobal'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": ["foo"], "lib": ["es2022"] }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    import "y";
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@types/foo/index.d.ts (1 errors) ====
+    export {};
+    declare global { const fooGlobal: 1; }
+                           ~~~~~~~~~
+!!! error TS2451: Cannot redeclare block-scoped variable 'fooGlobal'.
+!!! related TS6203 node_modules/y/node_modules/@types/foo/index.d.ts:2:24: 'fooGlobal' was also declared here.
+==== node_modules/@types/foo/package.json (0 errors) ====
+    {"name":"@types/foo","version":"1.0.0","types":"index.d.ts"}
+==== node_modules/y/index.d.ts (0 errors) ====
+    import "foo";
+    export declare const y: 1;
+==== node_modules/y/node_modules/@types/foo/index.d.ts (1 errors) ====
+    export {};
+    declare global { const fooGlobal: 1; }
+                           ~~~~~~~~~
+!!! error TS2451: Cannot redeclare block-scoped variable 'fooGlobal'.
+!!! related TS6203 node_modules/@types/foo/index.d.ts:2:24: 'fooGlobal' was also declared here.
+==== node_modules/y/node_modules/@types/foo/package.json (0 errors) ====
+    {"name":"@types/foo","version":"1.0.0","types":"index.d.ts"}
+==== node_modules/y/package.json (0 errors) ====
+    {"name":"y","version":"1.0.0","types":"index.d.ts"}
+    

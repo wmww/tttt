@@ -1,0 +1,14 @@
+//// [test/cases/bun10-C9.ts] ////
+
+=== a.ts ===
+const a1 = [{ p: { get g() { return a1; } } }, { p: { b: 1 } }];
+>a1 : Symbol(a1, Decl(a.ts, 0, 5))
+>p : Symbol(p, Decl(a.ts, 0, 13))
+>g : Symbol(g, Decl(a.ts, 0, 18))
+>a1 : Symbol(a1, Decl(a.ts, 0, 5))
+>p : Symbol(p, Decl(a.ts, 0, 48))
+>b : Symbol(b, Decl(a.ts, 0, 53))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

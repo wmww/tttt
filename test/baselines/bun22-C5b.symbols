@@ -1,0 +1,17 @@
+//// [test/cases/bun22-C5b.ts] ////
+
+=== a.ts ===
+function mk<X>() { return class<T extends X> { y!: T } }
+>mk : Symbol(mk, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 12))
+>T : Symbol(T, Decl(a.ts, 0, 32))
+>X : Symbol(X, Decl(a.ts, 0, 12))
+>y : Symbol((Anonymous class).y, Decl(a.ts, 0, 46))
+>T : Symbol(T, Decl(a.ts, 0, 32))
+
+new (mk<string>())<"a">();
+>mk : Symbol(mk, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

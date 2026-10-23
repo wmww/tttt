@@ -1,0 +1,10 @@
+//// [test/cases/bun12-C5.ts] ////
+
+=== a.ts ===
+type E<T> = { [K in keyof T]: E<T[]> };
+>E : E<T>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

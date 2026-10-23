@@ -1,0 +1,14 @@
+//// [test/cases/bun02-C17.ts] ////
+
+=== a.ts ===
+declare function f<X>(): X;
+>f : <X>() => X
+
+let q10: typeof f.<number>;
+>q10 : typeof f<number>
+>f : <X>() => X
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

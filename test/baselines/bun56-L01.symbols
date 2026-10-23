@@ -1,0 +1,34 @@
+//// [test/cases/bun56-L01.ts] ////
+
+=== a.js ===
+/** @template T */
+class A { /** @type {T | undefined} */ x = undefined; }
+>A : Symbol(A, Decl(a.js, 0, 0))
+>x : Symbol(A.x, Decl(a.js, 1, 9))
+>undefined : Symbol(undefined)
+
+/** @augments {A<=} */
+class B extends A {}
+>B : Symbol(B, Decl(a.js, 1, 55))
+>A : Symbol(A, Decl(a.js, 0, 0))
+
+/** @augments {A<<=} */
+class C extends A {}
+>C : Symbol(C, Decl(a.js, 3, 20))
+>A : Symbol(A, Decl(a.js, 0, 0))
+
+/** @augments A<= */
+class D extends A {}
+>D : Symbol(D, Decl(a.js, 5, 20))
+>A : Symbol(A, Decl(a.js, 0, 0))
+
+/** @implements {A<=} */
+class E { x = undefined }
+>E : Symbol(E, Decl(a.js, 7, 20))
+>x : Symbol(E.x, Decl(a.js, 9, 9))
+>undefined : Symbol(undefined)
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 11, 5))
+

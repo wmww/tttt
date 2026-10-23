@@ -1,0 +1,17 @@
+a.ts(3,3): error TS2741: Property 'zzz' is missing in type 'typeof A' but required in type '{ a: number; zzz: string; prototype: any; }'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class A { static #p = 1; static a: number = 1; }
+    declare function f<T>(x: { a: T; zzz: string; prototype: any }): T;
+    f(A);
+      ~
+!!! error TS2741: Property 'zzz' is missing in type 'typeof A' but required in type '{ a: number; zzz: string; prototype: any; }'.
+!!! related TS2728 a.ts:2:34: 'zzz' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,46 @@
+a.ts(6,7): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(9,7): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(9,22): error TS2339: Property 's' does not exist on type 'typeof L3'.
+a.ts(11,25): error TS2449: Class 'L2' used before its declaration.
+a.ts(13,7): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    import { L3 } from "./b";
+    declare const u: unknown;
+    // an ambient class: no TS2449
+    const k1 = u instanceof L1 ? "s" : "s";
+    declare class L1 { static [k1]: number; i: number }
+    const p1: never = L1.s;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    // a class in another file
+    export const k3 = u instanceof L3 ? "s" : "s";
+    const p3: never = L3.s;
+          ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                         ~
+!!! error TS2339: Property 's' does not exist on type 'typeof L3'.
+    // with TS2449
+    const k2 = u instanceof L2 ? "s" : "s";
+                            ~~
+!!! error TS2449: Class 'L2' used before its declaration.
+!!! related TS2728 a.ts:12:7: 'L2' is declared here.
+    class L2 { static [k2] = 1; i = 1 }
+    const p2: never = L2.s;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    import { k3 } from "./a";
+    export class L3 { static [k3] = 1; i = 1 }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

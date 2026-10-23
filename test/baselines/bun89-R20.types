@@ -1,0 +1,111 @@
+//// [test/cases/bun89-R20.ts] ////
+
+=== a.ts ===
+interface Options { a?: number }
+>a : number | undefined
+
+declare const defaults: Options;
+>defaults : Options
+
+declare function take(o: Options): void;
+>take : (o: Options) => void
+>o : Options
+
+// Valid in tsc: getSpreadSymbol makes a NEW symbol, without a value declaration, for a get-only accessor (it is read-only, the copy is not).
+const o1: Options = { ...defaults, get extra() { return 1; } };
+>o1 : Options
+>{ ...defaults, get extra() { return 1; } } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+
+const o2: Options = { get extra() { return 1; }, ...defaults };
+>o2 : Options
+>{ get extra() { return 1; }, ...defaults } : { a?: number; extra: number; }
+>extra : number
+>1 : 1
+>defaults : Options
+
+take({ ...defaults, get extra() { return 1; } });
+>take({ ...defaults, get extra() { return 1; } }) : void
+>take : (o: Options) => void
+>{ ...defaults, get extra() { return 1; } } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+
+const o3: { n: Options }[] = [{ n: { ...defaults, get extra() { return 1; } } }];
+>o3 : { n: Options; }[]
+>n : Options
+>[{ n: { ...defaults, get extra() { return 1; } } }] : { n: { a?: number; extra: number; }; }[]
+>{ n: { ...defaults, get extra() { return 1; } } } : { n: { a?: number; extra: number; }; }
+>n : { a?: number; extra: number; }
+>{ ...defaults, get extra() { return 1; } } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+
+function ret(): Options { return { ...defaults, get extra() { return 1; } }; }
+>ret : () => Options
+>{ ...defaults, get extra() { return 1; } } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+
+const o4: Readonly<Options> = { ...defaults, get extra() { return 1; } };
+>o4 : Readonly<Options>
+>{ ...defaults, get extra() { return 1; } } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+
+// another error in place of TS2353
+const o5: Options = { ...{}, get extra() { return 1; } };
+>o5 : Options
+>{ ...{}, get extra() { return 1; } } : { extra: number; }
+>{} : {}
+>extra : number
+>1 : 1
+
+const o6: { b: number } = { ...defaults, get extra() { return 1; } };
+>o6 : { b: number; }
+>b : number
+>{ ...defaults, get extra() { return 1; } } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+
+// the two agree: TS2353 for a property, a method, a getter with a setter; none for a setter alone
+const p1: Options = { ...defaults, extra: 1 };
+>p1 : Options
+>{ ...defaults, extra: 1 } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+
+const p2: Options = { ...defaults, extra() {} };
+>p2 : Options
+>{ ...defaults, extra() {} } : { a?: number; extra(): void; }
+>defaults : Options
+>extra : () => void
+
+const p3: Options = { ...defaults, get extra() { return 1; }, set extra(v) {} };
+>p3 : Options
+>{ ...defaults, get extra() { return 1; }, set extra(v) {} } : { a?: number; extra: number; }
+>defaults : Options
+>extra : number
+>1 : 1
+>extra : number
+>v : number
+
+const p4: Options = { ...defaults, set extra(v: number) {} };
+>p4 : Options
+>{ ...defaults, set extra(v: number) {} } : { a?: number; extra: undefined; }
+>defaults : Options
+>extra : number
+>v : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

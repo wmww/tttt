@@ -1,0 +1,30 @@
+//// [test/cases/bun53-L17.ts] ////
+
+=== a.js ===
+const dec = 0, dec2 = 0;
+>dec : 0
+>0 : 0
+>dec2 : 0
+>0 : 0
+
+@dec export @dec2 function f1() {}
+>dec : 0
+>dec2 : 0
+>f1 : () => void
+
+@dec export @dec2 const x2 = 1;
+>dec : 0
+>dec2 : 0
+>x2 : 1
+>1 : 1
+
+@dec export @dec2 async function f3() {}
+>dec : 0
+>dec2 : 0
+>f3 : () => Promise<void>
+
+@dec export @dec2 class C4 {}
+>dec : 0
+>dec2 : 0
+>C4 : C4
+

@@ -1,0 +1,23 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,78): error TS1109: Expression expected.
+tsconfig.json(1,78): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+tsconfig.json(1,83): error TS1005: '}' expected.
+tsconfig.json(1,83): error TS1010: '*/' expected.
+
+
+==== tsconfig.json (4 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] }, "a": /* }
+                                                                                 
+!!! error TS1109: Expression expected.
+                                                                                 
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+                                                                                      
+!!! error TS1005: '}' expected.
+!!! related TS1007 tsconfig.json:1:1: The parser expected to find a '}' to match the '{' token here.
+                                                                                      
+!!! error TS1010: '*/' expected.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,56 @@
+//// [test/cases/bun57-L15.ts] ////
+
+=== a.js ===
+function f() {}
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+f.a = (f.a, exports);
+>f.a : Symbol(f.a, Decl(a.js, 0, 15))
+>f : Symbol(f, Decl(a.js, 0, 0))
+>a : Symbol(f.a, Decl(a.js, 0, 15))
+>f.a : Symbol(f.a, Decl(a.js, 0, 15))
+>f : Symbol(f, Decl(a.js, 0, 0))
+>a : Symbol(f.a, Decl(a.js, 0, 15))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+
+exports.b = 1;
+>exports.b : Symbol(b, Decl(a.js, 1, 21))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>b : Symbol(b, Decl(a.js, 1, 21))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 4, 5))
+
+=== b.js ===
+class C {
+>C : Symbol(C, Decl(b.js, 0, 0))
+
+  x = (new C().x, module);
+>x : Symbol(C.x, Decl(b.js, 0, 9))
+>new C().x : Symbol(C.x, Decl(b.js, 0, 9))
+>C : Symbol(C, Decl(b.js, 0, 0))
+>x : Symbol(C.x, Decl(b.js, 0, 9))
+>module : Symbol(module, Decl(b.js, 0, 0))
+}
+exports.a = 1;
+>exports.a : Symbol(a, Decl(b.js, 2, 1))
+>exports : Symbol(exports, Decl(b.js, 0, 0))
+>a : Symbol(a, Decl(b.js, 2, 1))
+
+=== c.js ===
+class C {
+>C : Symbol(C, Decl(c.js, 0, 0))
+
+  static x = (C.x, exports);
+>x : Symbol(C.x, Decl(c.js, 0, 9))
+>C.x : Symbol(C.x, Decl(c.js, 0, 9))
+>C : Symbol(C, Decl(c.js, 0, 0))
+>x : Symbol(C.x, Decl(c.js, 0, 9))
+>exports : Symbol(exports, Decl(c.js, 0, 0))
+}
+exports.a = 1;
+>exports.a : Symbol(a, Decl(c.js, 2, 1))
+>exports : Symbol(exports, Decl(c.js, 0, 0))
+>a : Symbol(a, Decl(c.js, 2, 1))
+

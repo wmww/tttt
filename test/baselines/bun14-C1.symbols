@@ -1,0 +1,26 @@
+//// [test/cases/bun14-C1.ts] ////
+
+=== a.ts ===
+interface Box<T> { v: T }
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>v : Symbol(Box.v, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+
+function f<T extends Box<T["v"]>>(t: T) {
+>f : Symbol(f, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>t : Symbol(t, Decl(a.ts, 1, 34))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+
+  const z: boolean = t.v;
+>z : Symbol(z, Decl(a.ts, 2, 7))
+>t.v : Symbol(Box.v, Decl(a.ts, 0, 18))
+>t : Symbol(t, Decl(a.ts, 1, 34))
+>v : Symbol(Box.v, Decl(a.ts, 0, 18))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

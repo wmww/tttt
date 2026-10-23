@@ -1,0 +1,15 @@
+//// [test/cases/bun10-C7b.ts] ////
+
+=== a.ts ===
+class C { m() { return m(); } }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>m : Symbol(C.m, Decl(a.ts, 0, 9))
+>m : Symbol(m, Decl(a.ts, 1, 13))
+
+declare const m: C["m"];
+>m : Symbol(m, Decl(a.ts, 1, 13))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

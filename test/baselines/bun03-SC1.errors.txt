@@ -1,0 +1,19 @@
+a.ts(2,34): error TS2411: Property '[f()]' of type '() => void' is not assignable to 'string' index type 'number'.
+a.ts(3,38): error TS2411: Property '[f()]' of type 'string' is not assignable to 'string' index type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function f(): "a";
+    class C14 { [k: string]: number; [f()]() {} }
+                                     ~~~~~
+!!! error TS2411: Property '[f()]' of type '() => void' is not assignable to 'string' index type 'number'.
+    class C15 { [k: string]: number; get [f()]() { return ""; } }
+                                         ~~~~~
+!!! error TS2411: Property '[f()]' of type 'string' is not assignable to 'string' index type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

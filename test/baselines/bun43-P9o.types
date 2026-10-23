@@ -1,0 +1,7 @@
+//// [test/cases/bun43-P9o.ts] ////
+
+=== a.ts ===
+export as namespace
+
+> : any
+

@@ -1,0 +1,40 @@
+//// [test/cases/bun35-C1f.ts] ////
+
+=== a.ts ===
+import { Sub } from "old";
+>Sub : typeof Sub
+
+import { sub } from "dep";
+>sub : (c: import("dep/node_modules/old/sub").Sub) => void
+
+sub(new Sub());
+>sub(new Sub()) : void
+>sub : (c: import("dep/node_modules/old/sub").Sub) => void
+>new Sub() : Sub
+>Sub : typeof Sub
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/dep/index.d.ts ===
+import { Sub } from "old/sub";
+>Sub : typeof Sub
+
+export declare function sub(c: Sub): void;
+>sub : (c: Sub) => void
+>c : Sub
+
+=== node_modules/dep/node_modules/old/sub/index.d.ts ===
+export declare class Sub { private p; }
+>Sub : Sub
+>p : any
+
+=== node_modules/old/index.d.ts ===
+
+export * from "./sub";
+=== node_modules/old/sub/index.d.ts ===
+export declare class Sub { private p; }
+>Sub : Sub
+>p : any
+

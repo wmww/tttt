@@ -1,0 +1,38 @@
+//// [test/cases/bun51-L12.ts] ////
+
+=== a.ts ===
+export type A1 = typeof import("./m").f<>;
+>A1 : Symbol(A1, Decl(a.ts, 0, 0))
+>f : Symbol(f, Decl(m.ts, 0, 0))
+
+export type A2 = typeof import("./m").g<>;
+>A2 : Symbol(A2, Decl(a.ts, 0, 42))
+>g : Symbol(g, Decl(m.ts, 0, 43))
+
+export type A3 = typeof import("./m").v<>;
+>A3 : Symbol(A3, Decl(a.ts, 1, 42))
+>v : Symbol(v, Decl(m.ts, 2, 12))
+
+export type A4 = typeof import("./m")<>;
+>A4 : Symbol(A4, Decl(a.ts, 2, 42))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 12))
+
+=== m.ts ===
+export function f<T>(x: T): T { return x; }
+>f : Symbol(f, Decl(m.ts, 0, 0))
+>T : Symbol(T, Decl(m.ts, 0, 18))
+>x : Symbol(x, Decl(m.ts, 0, 21))
+>T : Symbol(T, Decl(m.ts, 0, 18))
+>T : Symbol(T, Decl(m.ts, 0, 18))
+>x : Symbol(x, Decl(m.ts, 0, 21))
+
+export function g(x: number): number { return x; }
+>g : Symbol(g, Decl(m.ts, 0, 43))
+>x : Symbol(x, Decl(m.ts, 1, 18))
+>x : Symbol(x, Decl(m.ts, 1, 18))
+
+export const v = 1;
+>v : Symbol(v, Decl(m.ts, 2, 12))
+

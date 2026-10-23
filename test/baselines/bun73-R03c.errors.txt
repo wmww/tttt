@@ -1,0 +1,26 @@
+a.ts(3,7): error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a.ts(7,18): error TS7005: Variable 'x' implicitly has an 'any[]' type.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function c(): boolean;
+    function f() {
+      let x = []; const y = [];
+          ~
+!!! error TS7034: Variable 'x' implicitly has type 'any[]' in some locations where its type cannot be determined.
+      while (c()) {
+        do {
+          if (x.length) { for (y.push(0); (x = []); ) { } }
+          else { if (x === y) return; }
+                     ~
+!!! error TS7005: Variable 'x' implicitly has an 'any[]' type.
+        } while (x.push(1));
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

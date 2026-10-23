@@ -1,0 +1,41 @@
+a.js(2,1): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.js(2,3): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.js(2,16): error TS2729: Property 'x' is used before its initialization.
+c.js(2,10): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+c.js(2,17): error TS2729: Property 'x' is used before its initialization.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.js (2 errors) ====
+    function f() {}
+    f.a = (f.a, exports);
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    exports.b = 1;
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.js (2 errors) ====
+    class C {
+      x = (new C().x, module);
+      ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                   ~
+!!! error TS2729: Property 'x' is used before its initialization.
+!!! related TS2728 b.js:2:3: 'x' is declared here.
+    }
+    exports.a = 1;
+==== c.js (2 errors) ====
+    class C {
+      static x = (C.x, exports);
+             ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                    ~
+!!! error TS2729: Property 'x' is used before its initialization.
+!!! related TS2728 c.js:2:10: 'x' is declared here.
+    }
+    exports.a = 1;
+    

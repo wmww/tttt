@@ -1,0 +1,15 @@
+//// [test/cases/bun28-C23.ts] ////
+
+=== a.ts ===
+class A {}
+>A : A
+
+class B<> extends A extends A {}
+>B : B
+>A : A
+>A : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,30 @@
+//// [test/cases/bun12-C1c.ts] ////
+
+=== a.ts ===
+class C<T, U> {
+>C : C<T, U>
+
+  m(): { [K in keyof T]: U } { return null! }
+>m : () => { [K in keyof T]: U; }
+>null! : never
+
+  n(c: C<U, { a: 1 }>) {
+>n : (c: C<U, { a: 1; }>) => void
+>c : C<U, { a: 1; }>
+>a : 1
+
+    const a: { a: 1 } = c.m().a;
+>a : { a: 1; }
+>a : 1
+>c.m().a : { a: 1; }
+>c.m() : { a: { a: 1; }; }
+>c.m : () => { a: { a: 1; }; }
+>c : C<U, { a: 1; }>
+>m : () => { a: { a: 1; }; }
+>a : { a: 1; }
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

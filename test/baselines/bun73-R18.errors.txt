@@ -1,0 +1,55 @@
+a.ts(5,51): error TS2322: Type 'Readonly<{ x: number; }> | Readonly<{ x: number; }>' is not assignable to type 'never'.
+  Type 'Readonly<{ x: number; }>' is not assignable to type 'never'.
+a.ts(6,49): error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+  Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+a.ts(7,55): error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+  Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+a.ts(8,54): error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+  Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+a.ts(9,51): error TS2322: Type 'Readonly<{ x: number; }> & Readonly<{ x: number; }>' is not assignable to type 'never'.
+a.ts(11,99): error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+  Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+a.ts(12,72): error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+  Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    type Props = Readonly<{ x: number }>;
+    interface Box<T> { p: Props; v: T }
+    type GA<T> = { p: Props; t: T };
+    declare const b: Box<number>;
+    declare const u0: Props | Box<number>["p"]; const n0: never = u0;
+                                                      ~~
+!!! error TS2322: Type 'Readonly<{ x: number; }> | Readonly<{ x: number; }>' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Readonly<{ x: number; }>' is not assignable to type 'never'.
+    declare const u1: [Props] | [typeof b.p]; const n1: never = u1;
+                                                    ~~
+!!! error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+!!! error TS2322:   Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+    declare const u2: [Props] | [Box<number>["p"]]; const n2: never = u2;
+                                                          ~~
+!!! error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+!!! error TS2322:   Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+    declare const u3: [Props] | [GA<number>["p"]]; const n3: never = u3;
+                                                         ~~
+!!! error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+!!! error TS2322:   Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+    declare const u4: Props & Box<number>["p"]; const n4: never = u4;
+                                                      ~~
+!!! error TS2322: Type 'Readonly<{ x: number; }> & Readonly<{ x: number; }>' is not assignable to type 'never'.
+    // right since batch 1: the return type of a generic function, an element of a generic tuple alias
+    declare function g<T>(t: T): Props; const r = g(1); declare const u5: [Props] | [typeof r]; const n5: never = u5;
+                                                                                                      ~~
+!!! error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+!!! error TS2322:   Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+    type GT<T> = [Props, T]; declare const u6: [Props] | [GT<1>[0]]; const n6: never = u6;
+                                                                           ~~
+!!! error TS2322: Type '[Readonly<{ x: number; }>] | [Readonly<{ x: number; }>]' is not assignable to type 'never'.
+!!! error TS2322:   Type '[Readonly<{ x: number; }>]' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

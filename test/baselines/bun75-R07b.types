@@ -1,0 +1,422 @@
+//// [test/cases/bun75-R07b.ts] ////
+
+=== main.ts ===
+namespace M { export const v = 1; }
+>M : typeof M
+>v : 1
+>1 : 1
+
+import a1 = a2;
+>a1 : any
+>a2 : any
+
+import a2 = a3;
+>a2 : any
+>a3 : any
+
+import a3 = a4;
+>a3 : any
+>a4 : any
+
+import a4 = a5;
+>a4 : any
+>a5 : any
+
+import a5 = a6;
+>a5 : any
+>a6 : any
+
+import a6 = a7;
+>a6 : any
+>a7 : any
+
+import a7 = a8;
+>a7 : any
+>a8 : any
+
+import a8 = a9;
+>a8 : any
+>a9 : any
+
+import a9 = a10;
+>a9 : any
+>a10 : any
+
+import a10 = a11;
+>a10 : any
+>a11 : any
+
+import a11 = a12;
+>a11 : any
+>a12 : any
+
+import a12 = a13;
+>a12 : any
+>a13 : any
+
+import a13 = a14;
+>a13 : any
+>a14 : any
+
+import a14 = a15;
+>a14 : any
+>a15 : any
+
+import a15 = a16;
+>a15 : any
+>a16 : any
+
+import a16 = a17;
+>a16 : any
+>a17 : any
+
+import a17 = a18;
+>a17 : any
+>a18 : any
+
+import a18 = a19;
+>a18 : any
+>a19 : any
+
+import a19 = a20;
+>a19 : any
+>a20 : any
+
+import a20 = a21;
+>a20 : any
+>a21 : any
+
+import a21 = a22;
+>a21 : any
+>a22 : any
+
+import a22 = a23;
+>a22 : any
+>a23 : any
+
+import a23 = a24;
+>a23 : any
+>a24 : any
+
+import a24 = a25;
+>a24 : any
+>a25 : any
+
+import a25 = a26;
+>a25 : any
+>a26 : any
+
+import a26 = a27;
+>a26 : any
+>a27 : any
+
+import a27 = a28;
+>a27 : any
+>a28 : any
+
+import a28 = a29;
+>a28 : any
+>a29 : any
+
+import a29 = a30;
+>a29 : any
+>a30 : any
+
+import a30 = a31;
+>a30 : any
+>a31 : any
+
+import a31 = a32;
+>a31 : any
+>a32 : any
+
+import a32 = a33;
+>a32 : any
+>a33 : any
+
+import a33 = a34;
+>a33 : any
+>a34 : any
+
+import a34 = a35;
+>a34 : any
+>a35 : any
+
+import a35 = a36;
+>a35 : any
+>a36 : any
+
+import a36 = a37;
+>a36 : any
+>a37 : any
+
+import a37 = a38;
+>a37 : any
+>a38 : any
+
+import a38 = a39;
+>a38 : any
+>a39 : any
+
+import a39 = a40;
+>a39 : any
+>a40 : any
+
+import a40 = a41;
+>a40 : any
+>a41 : any
+
+import a41 = a42;
+>a41 : any
+>a42 : any
+
+import a42 = a43;
+>a42 : any
+>a43 : any
+
+import a43 = a44;
+>a43 : any
+>a44 : any
+
+import a44 = a45;
+>a44 : any
+>a45 : any
+
+import a45 = a46;
+>a45 : any
+>a46 : any
+
+import a46 = a47;
+>a46 : any
+>a47 : any
+
+import a47 = a48;
+>a47 : any
+>a48 : any
+
+import a48 = a49;
+>a48 : any
+>a49 : any
+
+import a49 = a50;
+>a49 : any
+>a50 : any
+
+import a50 = a51;
+>a50 : any
+>a51 : any
+
+import a51 = a52;
+>a51 : any
+>a52 : any
+
+import a52 = a53;
+>a52 : any
+>a53 : any
+
+import a53 = a54;
+>a53 : any
+>a54 : any
+
+import a54 = a55;
+>a54 : any
+>a55 : any
+
+import a55 = a56;
+>a55 : any
+>a56 : any
+
+import a56 = a57;
+>a56 : any
+>a57 : any
+
+import a57 = a58;
+>a57 : any
+>a58 : any
+
+import a58 = a59;
+>a58 : any
+>a59 : any
+
+import a59 = a60;
+>a59 : any
+>a60 : any
+
+import a60 = a61;
+>a60 : any
+>a61 : any
+
+import a61 = a62;
+>a61 : any
+>a62 : any
+
+import a62 = a63;
+>a62 : any
+>a63 : any
+
+import a63 = a64;
+>a63 : any
+>a64 : any
+
+import a64 = a65;
+>a64 : any
+>a65 : any
+
+import a65 = a66;
+>a65 : any
+>a66 : any
+
+import a66 = a67;
+>a66 : any
+>a67 : any
+
+import a67 = a68;
+>a67 : any
+>a68 : any
+
+import a68 = a69;
+>a68 : any
+>a69 : any
+
+import a69 = a70;
+>a69 : any
+>a70 : any
+
+import a70 = a71;
+>a70 : any
+>a71 : any
+
+import a71 = a72;
+>a71 : any
+>a72 : any
+
+import a72 = a73;
+>a72 : any
+>a73 : any
+
+import a73 = a74;
+>a73 : any
+>a74 : any
+
+import a74 = a75;
+>a74 : any
+>a75 : any
+
+import a75 = a76;
+>a75 : any
+>a76 : any
+
+import a76 = a77;
+>a76 : any
+>a77 : any
+
+import a77 = a78;
+>a77 : any
+>a78 : any
+
+import a78 = a79;
+>a78 : any
+>a79 : any
+
+import a79 = a80;
+>a79 : any
+>a80 : any
+
+import a80 = a81;
+>a80 : any
+>a81 : any
+
+import a81 = a82;
+>a81 : any
+>a82 : any
+
+import a82 = a83;
+>a82 : any
+>a83 : any
+
+import a83 = a84;
+>a83 : any
+>a84 : any
+
+import a84 = a85;
+>a84 : any
+>a85 : any
+
+import a85 = a86;
+>a85 : any
+>a86 : any
+
+import a86 = a87;
+>a86 : any
+>a87 : any
+
+import a87 = a88;
+>a87 : any
+>a88 : any
+
+import a88 = a89;
+>a88 : any
+>a89 : any
+
+import a89 = a90;
+>a89 : any
+>a90 : any
+
+import a90 = a91;
+>a90 : any
+>a91 : any
+
+import a91 = a92;
+>a91 : any
+>a92 : any
+
+import a92 = a93;
+>a92 : any
+>a93 : any
+
+import a93 = a94;
+>a93 : any
+>a94 : any
+
+import a94 = a95;
+>a94 : any
+>a95 : any
+
+import a95 = a96;
+>a95 : any
+>a96 : any
+
+import a96 = a97;
+>a96 : any
+>a97 : any
+
+import a97 = a98;
+>a97 : any
+>a98 : any
+
+import a98 = a99;
+>a98 : any
+>a99 : any
+
+import a99 = a100;
+>a99 : any
+>a100 : any
+
+import a100 = a101;
+>a100 : any
+>a101 : any
+
+import a101 = a1;
+>a101 : any
+>a1 : any
+
+a1.nope;
+>a1.nope : any
+>a1 : any
+>nope : any
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

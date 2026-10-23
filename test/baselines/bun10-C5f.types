@@ -1,0 +1,23 @@
+//// [test/cases/bun10-C5f.ts] ////
+
+=== a.ts ===
+import e = require("./e");
+>e : any
+
+export const ye = e;
+>ye : any
+>e : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== e.ts ===
+import * as a from "./a";
+>a : typeof a
+
+export = a.ye;
+>a.ye : any
+>a : typeof a
+>ye : any
+

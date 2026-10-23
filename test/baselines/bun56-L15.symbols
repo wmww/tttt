@@ -1,0 +1,39 @@
+//// [test/cases/bun56-L15.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x``y`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x`.b`y`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x${1}``y${2}`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x`()`y`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x`[0]`y`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x`!`y`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+(o?.a`x`)`y`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a`x`.b.c;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+o?.a<string>`x``y`;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

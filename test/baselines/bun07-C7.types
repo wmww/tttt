@@ -1,0 +1,24 @@
+//// [test/cases/bun07-C7.ts] ////
+
+=== a.ts ===
+export {};
+const o3 = { ...s3, a: (() => s3)() }; var s3 = { z: o3.a };
+>o3 : any
+>{ ...s3, a: (() => s3)() } : any
+>s3 : any
+>a : any
+>(() => s3)() : any
+>(() => s3) : () => any
+>() => s3 : () => any
+>s3 : any
+>s3 : any
+>{ z: o3.a } : { z: any; }
+>z : any
+>o3.a : any
+>o3 : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

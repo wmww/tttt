@@ -1,0 +1,21 @@
+a.tsx(1,71): error TS2304: Cannot find name 'Undefined'.
+a.tsx(3,12): error TS2786: 'F' cannot be used as a JSX component.
+  Its return type 'number' is not a valid JSX element.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } type ElementType = Undefined; interface IntrinsicElements {} }
+                                                                          ~~~~~~~~~
+!!! error TS2304: Cannot find name 'Undefined'.
+    function F(): number { return 1; }
+    const a = <F />;
+               ~
+!!! error TS2786: 'F' cannot be used as a JSX component.
+!!! error TS2786:   Its return type 'number' is not a valid JSX element.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

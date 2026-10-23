@@ -1,0 +1,16 @@
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.d.ts(1,24): error TS1221: Generators are not allowed in an ambient context.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (1 errors) ====
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.d.ts (1 errors) ====
+    export default function* (): any;
+                           ~
+!!! error TS1221: Generators are not allowed in an ambient context.
+    

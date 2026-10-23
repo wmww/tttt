@@ -1,0 +1,18 @@
+//// [test/cases/bun28-C33g.ts] ////
+
+=== a.ts ===
+import("./zz", ...[{}]);
+>import("./zz", ...[{}]) : Promise<typeof import("./zz")>
+>"./zz" : "./zz"
+>...[{}] : {}
+>[{}] : [{}]
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== zz.ts ===
+
+export {};
+

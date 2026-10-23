@@ -1,0 +1,28 @@
+//// [test/cases/bun19-C6b.ts] ////
+
+=== a.ts ===
+declare const Ctor: new () => [number, string];
+>Ctor : new () => [number, string]
+
+function f(x: [string, number] | Date) {
+>f : (x: [string, number] | Date) => string | number
+>x : Date | [string, number]
+
+  if (x instanceof Ctor) return x[0];
+>x instanceof Ctor : boolean
+>x : Date | [string, number]
+>Ctor : new () => [number, string]
+>x[0] : string
+>x : [string, number]
+>0 : 0
+
+  return x.getTime();
+>x.getTime() : number
+>x.getTime : () => number
+>x : Date
+>getTime : () => number
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,9 @@
+//// [test/cases/bun03-C8c.ts] ////
+
+=== a.ts ===
+import defer D from "./missing";
+>D : Symbol(D, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

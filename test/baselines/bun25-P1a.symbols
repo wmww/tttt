@@ -1,0 +1,21 @@
+//// [test/cases/bun25-P1a.ts] ////
+
+=== a.ts ===
+class I<T> { m!: T extends string ? 1 : 2; k<U>(a: [I<T>["m"] | I<U>["m"]]) { const n: never = a; } }
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>m : Symbol(I.m, Decl(a.ts, 0, 12))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>k : Symbol(I.k, Decl(a.ts, 0, 42))
+>U : Symbol(U, Decl(a.ts, 0, 45))
+>a : Symbol(a, Decl(a.ts, 0, 48))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 45))
+>n : Symbol(n, Decl(a.ts, 0, 83))
+>a : Symbol(a, Decl(a.ts, 0, 48))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

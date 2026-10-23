@@ -1,0 +1,50 @@
+//// [test/cases/bun05-C2.ts] ////
+
+=== a.ts ===
+interface AL<T> extends Array<T> {
+>AL : Symbol(AL, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>T : Symbol(T, Decl(a.ts, 0, 13))
+
+  filter(cb: (x: T, i: number, a: T[]) => unknown, thisArg?: any): AL<T>;
+>filter : Symbol(AL.filter, Decl(a.ts, 0, 34), Decl(a.ts, 1, 73))
+>cb : Symbol(cb, Decl(a.ts, 1, 9))
+>x : Symbol(x, Decl(a.ts, 1, 14))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>i : Symbol(i, Decl(a.ts, 1, 19))
+>a : Symbol(a, Decl(a.ts, 1, 30))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>thisArg : Symbol(thisArg, Decl(a.ts, 1, 50))
+>AL : Symbol(AL, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+
+  filter<S extends T>(cb: (x: T, i: number, a: T[]) => x is S, thisArg?: any): AL<S>;
+>filter : Symbol(AL.filter, Decl(a.ts, 0, 34), Decl(a.ts, 1, 73))
+>S : Symbol(S, Decl(a.ts, 2, 9))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>cb : Symbol(cb, Decl(a.ts, 2, 22))
+>x : Symbol(x, Decl(a.ts, 2, 27))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>i : Symbol(i, Decl(a.ts, 2, 32))
+>a : Symbol(a, Decl(a.ts, 2, 43))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 2, 27))
+>S : Symbol(S, Decl(a.ts, 2, 9))
+>thisArg : Symbol(thisArg, Decl(a.ts, 2, 62))
+>AL : Symbol(AL, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 2, 9))
+}
+declare const u8: AL<number> | string[];
+>u8 : Symbol(u8, Decl(a.ts, 4, 13))
+>AL : Symbol(AL, Decl(a.ts, 0, 0))
+
+u8.filter(x => true);
+>u8.filter : Symbol(filter, Decl(a.ts, 0, 34), Decl(a.ts, 1, 73), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>u8 : Symbol(u8, Decl(a.ts, 4, 13))
+>filter : Symbol(filter, Decl(a.ts, 0, 34), Decl(a.ts, 1, 73), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 5, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

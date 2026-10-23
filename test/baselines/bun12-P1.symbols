@@ -1,0 +1,38 @@
+//// [test/cases/bun12-P1.ts] ////
+
+=== a.ts ===
+interface C { kind: string; m(): this extends { kind: "a" } ? 1 : 2 }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>kind : Symbol(C.kind, Decl(a.ts, 0, 13))
+>m : Symbol(C.m, Decl(a.ts, 0, 27))
+>kind : Symbol(kind, Decl(a.ts, 0, 47))
+
+interface A extends C { kind: "a" }
+>A : Symbol(A, Decl(a.ts, 0, 69))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>kind : Symbol(A.kind, Decl(a.ts, 1, 23))
+
+interface B extends C { kind: "b" }
+>B : Symbol(B, Decl(a.ts, 1, 35))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>kind : Symbol(B.kind, Decl(a.ts, 2, 23))
+
+function f<T extends C>(t: T) { return t.m(); }
+>f : Symbol(f, Decl(a.ts, 2, 35))
+>T : Symbol(T, Decl(a.ts, 3, 11))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 3, 24))
+>T : Symbol(T, Decl(a.ts, 3, 11))
+>t.m : Symbol(C.m, Decl(a.ts, 0, 27))
+>t : Symbol(t, Decl(a.ts, 3, 24))
+>m : Symbol(C.m, Decl(a.ts, 0, 27))
+
+const r: 1 | 2 = f(null! as A | B);
+>r : Symbol(r, Decl(a.ts, 4, 5))
+>f : Symbol(f, Decl(a.ts, 2, 35))
+>A : Symbol(A, Decl(a.ts, 0, 69))
+>B : Symbol(B, Decl(a.ts, 1, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

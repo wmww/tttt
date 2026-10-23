@@ -1,0 +1,46 @@
+//// [test/cases/bun81-R04.ts] ////
+
+=== a.ts ===
+const s1 = { set a(v: typeof s1.a) {} };
+>s1 : Symbol(s1, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+>v : Symbol(v, Decl(a.ts, 0, 19))
+>s1.a : Symbol(a, Decl(a.ts, 0, 12))
+>s1 : Symbol(s1, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+
+const r1: null = s1;
+>r1 : Symbol(r1, Decl(a.ts, 1, 5))
+>s1 : Symbol(s1, Decl(a.ts, 0, 5))
+
+const s7 = { set a(v: typeof s7.b) {}, set b(v: typeof s7.a) {} };
+>s7 : Symbol(s7, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 2, 12))
+>v : Symbol(v, Decl(a.ts, 2, 19))
+>s7.b : Symbol(b, Decl(a.ts, 2, 38))
+>s7 : Symbol(s7, Decl(a.ts, 2, 5))
+>b : Symbol(b, Decl(a.ts, 2, 38))
+>b : Symbol(b, Decl(a.ts, 2, 38))
+>v : Symbol(v, Decl(a.ts, 2, 45))
+>s7.a : Symbol(a, Decl(a.ts, 2, 12))
+>s7 : Symbol(s7, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 2, 12))
+
+const r7: null = s7;
+>r7 : Symbol(r7, Decl(a.ts, 3, 5))
+>s7 : Symbol(s7, Decl(a.ts, 2, 5))
+
+const s31 = { get a(): typeof s31.a { return 1 } };
+>s31 : Symbol(s31, Decl(a.ts, 4, 5))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>s31.a : Symbol(a, Decl(a.ts, 4, 13))
+>s31 : Symbol(s31, Decl(a.ts, 4, 5))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+
+const r31: null = s31;
+>r31 : Symbol(r31, Decl(a.ts, 5, 5))
+>s31 : Symbol(s31, Decl(a.ts, 4, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

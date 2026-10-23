@@ -1,0 +1,20 @@
+//// [test/cases/bun06-C6.ts] ////
+
+=== a.ts ===
+declare function ng(x: number): void;
+>ng : (x: number) => void
+>x : number
+
+const e1 = ng<>;
+>e1 : {}
+>ng<> : {}
+>ng : (x: number) => void
+
+type Q1 = typeof ng<>;
+>Q1 : typeof ng
+>ng : (x: number) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

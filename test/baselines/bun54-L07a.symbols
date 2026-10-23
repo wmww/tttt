@@ -1,0 +1,60 @@
+//// [test/cases/bun54-L07a.ts] ////
+
+=== a.ts ===
+import * as a from "./m";
+>a : Symbol(a, Decl(a.ts, 0, 6))
+
+import * as b from "./m";
+>b : Symbol(b, Decl(a.ts, 1, 6))
+
+import * as c from "./m";
+>c : Symbol(c, Decl(a.ts, 2, 6))
+
+import * as d from "./m";
+>d : Symbol(d, Decl(a.ts, 3, 6))
+
+import * as e from "./m";
+>e : Symbol(e, Decl(a.ts, 4, 6))
+
+export function f() {
+>f : Symbol(f, Decl(a.ts, 4, 25))
+
+  const a = 1;
+>a : Symbol(a, Decl(a.ts, 6, 7))
+
+  const b = 1;
+>b : Symbol(b, Decl(a.ts, 7, 7))
+
+  const c = 1;
+>c : Symbol(c, Decl(a.ts, 8, 7))
+
+  const d = 1;
+>d : Symbol(d, Decl(a.ts, 9, 7))
+
+  const e = 1;
+>e : Symbol(e, Decl(a.ts, 10, 7))
+
+  /** {@link a#delete} {@link b#foo} {@link c#default} {@link d#of} {@link e.delete} */
+  const q = 2;
+>q : Symbol(q, Decl(a.ts, 12, 7))
+
+  return q;
+>q : Symbol(q, Decl(a.ts, 12, 7))
+}
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 15, 12))
+
+=== m.ts ===
+const x = 1;
+>x : Symbol(x, Decl(m.ts, 0, 5))
+
+export { x as delete, x as foo, x as default, x as of };
+>x : Symbol(x, Decl(m.ts, 0, 5))
+>delete : Symbol(delete, Decl(m.ts, 1, 8))
+>x : Symbol(x, Decl(m.ts, 0, 5))
+>foo : Symbol(foo, Decl(m.ts, 1, 21))
+>x : Symbol(x, Decl(m.ts, 0, 5))
+>default : Symbol(default, Decl(m.ts, 1, 31))
+>x : Symbol(x, Decl(m.ts, 0, 5))
+>of : Symbol(of, Decl(m.ts, 1, 45))
+

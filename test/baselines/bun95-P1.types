@@ -1,0 +1,46 @@
+//// [test/cases/bun95-P1.ts] ////
+
+=== a.ts ===
+import x from "/c:/x";
+>x : any
+
+import y from "/^/y";
+>y : any
+
+type T = "/a:/b";
+>T : "/a:/b"
+
+const t: T = "/q:/r";
+>t : "/a:/b"
+>"/q:/r" : "/q:/r"
+
+type U = `/z:/${string}`;
+>U : `/z:/${string}`
+
+const u: U = "no";
+>u : `/z:/${string}`
+>"no" : "no"
+
+const o = { "/k:/p": 1 };
+>o : { "/k:/p": number; }
+>{ "/k:/p": 1 } : { "/k:/p": number; }
+>"/k:/p" : number
+>1 : 1
+
+o["/m:/n"];
+>o["/m:/n"] : any
+>o : { "/k:/p": number; }
+>"/m:/n" : "/m:/n"
+
+export const all = [x, y, t, u];
+>all : any[]
+>[x, y, t, u] : any[]
+>x : any
+>y : any
+>t : "/a:/b"
+>u : `/z:/${string}`
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

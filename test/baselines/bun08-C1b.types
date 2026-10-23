@@ -1,0 +1,29 @@
+//// [test/cases/bun08-C1b.ts] ////
+
+=== a.ts ===
+import { b } from "./p1";
+>b : any
+
+b.nope;
+>b.nope : any
+>b : any
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== p1.ts ===
+import * as b from "./p2"; export { b }; export const av = 1;
+>b : any
+>b : any
+>av : 1
+>1 : 1
+
+=== p2.ts ===
+import * as a from "./p1"; export { a }; export const bv = 1;
+>a : any
+>a : any
+>bv : 1
+>1 : 1
+

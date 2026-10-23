@@ -1,0 +1,47 @@
+//// [test/cases/bun71-R15a.ts] ////
+
+=== a.ts ===
+export {};
+type Ctor<T = {}> = new (...a: any[]) => T;
+>Ctor : Ctor<T>
+>a : any[]
+
+function h1<T extends Ctor, U extends { s: string }>(B: T & U) { return class extends B { static s = "ok"; }; }
+>h1 : <T extends Ctor, U extends { s: string; }>(B: T & U) => { new (...a: any[]): (Anonymous class); s: string; prototype: h1.(Anonymous class); } & T
+>s : string
+>B : T & U
+>class extends B { static s = "ok"; } : { new (...a: any[]): (Anonymous class); s: string; prototype: h1.(Anonymous class); } & T
+>B : {}
+>s : string
+>"ok" : "ok"
+
+function h2<T extends Ctor, U extends { s: string }>(B: T & U) { return class extends B {}; }
+>h2 : <T extends Ctor, U extends { s: string; }>(B: T & U) => { new (...a: any[]): (Anonymous class); s: string; prototype: h2.(Anonymous class); } & T
+>s : string
+>B : T & U
+>class extends B {} : { new (...a: any[]): (Anonymous class); s: string; prototype: h2.(Anonymous class); } & T
+>B : {}
+
+function h5<T extends Ctor, U extends object>(B: T & U) { return class extends B {}; }
+>h5 : <T extends Ctor, U extends object>(B: T & U) => { new (...a: any[]): (Anonymous class); prototype: h5.(Anonymous class); } & T
+>B : T & U
+>class extends B {} : { new (...a: any[]): (Anonymous class); prototype: h5.(Anonymous class); } & T
+>B : {}
+
+function h7<T extends Ctor, U extends Ctor>(B: T & U) { return class extends B {}; }
+>h7 : <T extends Ctor, U extends Ctor>(B: T & U) => { new (...a: any[]): (Anonymous class); prototype: h7.(Anonymous class); } & T
+>B : T & U
+>class extends B {} : { new (...a: any[]): (Anonymous class); prototype: h7.(Anonymous class); } & T
+>B : {}
+
+function h9<U extends { s: string }, T extends Ctor>(B: U & T) { return class extends B {}; }
+>h9 : <U extends { s: string; }, T extends Ctor>(B: U & T) => { new (...a: any[]): (Anonymous class); s: string; prototype: h9.(Anonymous class); } & U
+>s : string
+>B : U & T
+>class extends B {} : { new (...a: any[]): (Anonymous class); s: string; prototype: h9.(Anonymous class); } & U
+>B : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

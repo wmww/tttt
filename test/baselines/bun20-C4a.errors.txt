@@ -1,0 +1,15 @@
+a.ts(2,46): error TS2454: Variable 'a' is used before being assigned.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function cond(): boolean;
+    function t8b() { if (cond()) { var a = []; } a.push(1); return a; }
+                                                 ~
+!!! error TS2454: Variable 'a' is used before being assigned.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,21 @@
+w*d/a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["w*d/a.ts"] }
+==== w*d/a.ts (1 errors) ====
+    import { x } from "pkg/x";
+    import { x as x2 } from "pkg/dir/x.d.ts";
+    import { y } from "#i/y";
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== w*d/node_modules/pkg/lib/x.d.ts (0 errors) ====
+    export const x: 1;
+==== w*d/node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "exports": { "./*": "./lib/*.d.ts", "./dir/": "./lib/" } }
+==== w*d/package.json (0 errors) ====
+    { "name": "self", "imports": { "#i/*": "./src/*.ts" } }
+==== w*d/src/y.ts (0 errors) ====
+    export const y = 1;
+    

@@ -1,0 +1,21 @@
+//// [test/cases/bun07-C10.ts] ////
+
+=== b.js ===
+/**
+ * @type {(this: { a: number }) => void}
+ * @this {{ b: number }}
+ */
+function both() { this.a; this.b; }
+>both : (this: { a: number; }) => void
+>this.a : number
+>this : { a: number; }
+>a : number
+>this.b : any
+>this : { a: number; }
+>b : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

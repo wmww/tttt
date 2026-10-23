@@ -1,0 +1,16 @@
+a.ts(2,13): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class K { foo() {}
+      m() { if (this.foo) { (function (this: K) { this.foo(); }); } }
+                ~~~~~~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

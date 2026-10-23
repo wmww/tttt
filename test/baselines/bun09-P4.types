@@ -1,0 +1,26 @@
+//// [test/cases/bun09-P4.ts] ////
+
+=== a.ts ===
+type D<X> = X extends PropertyKey ? 1 : 2;
+>D : D<X>
+
+type W<X> = X extends number ? [X] : never;
+>W : W<X>
+
+function f<T>(w: W<D<keyof T>>, a: D<keyof T>) {
+>f : <T>(w: W<D<keyof T>>, a: D<keyof T>) => void
+>w : W<D<keyof T>>
+>a : D<keyof T>
+
+  const probe: unknown[] = w;
+>probe : unknown[]
+>w : [1] | [2]
+
+  const x: 1 = a;
+>x : 1
+>a : 1 | 2
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

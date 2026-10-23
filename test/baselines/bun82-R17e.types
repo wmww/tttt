@@ -1,0 +1,7 @@
+//// [test/cases/bun82-R17e.ts] ////
+
+=== a.ts ===
+f(\u0065lse);
+>f(\u0065lse) : any
+>f : any
+

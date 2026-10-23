@@ -1,0 +1,68 @@
+//// [test/cases/bunloop-back-edge-error-in-a-function-that-other-files-call.ts] ////
+
+=== a.ts ===
+interface P { k: "p"; next: P | Q | null } interface Q { k: "q"; next: P | Q | null }
+>P : Symbol(P, Decl(a.ts, 0, 0))
+>k : Symbol(P.k, Decl(a.ts, 0, 13))
+>next : Symbol(P.next, Decl(a.ts, 0, 21))
+>P : Symbol(P, Decl(a.ts, 0, 0))
+>Q : Symbol(Q, Decl(a.ts, 0, 42))
+>Q : Symbol(Q, Decl(a.ts, 0, 42))
+>k : Symbol(Q.k, Decl(a.ts, 0, 56))
+>next : Symbol(Q.next, Decl(a.ts, 0, 64))
+>P : Symbol(P, Decl(a.ts, 0, 0))
+>Q : Symbol(Q, Decl(a.ts, 0, 42))
+
+declare const more: boolean; declare const p: P; declare const q: Q;
+>more : Symbol(more, Decl(a.ts, 1, 13))
+>p : Symbol(p, Decl(a.ts, 1, 42))
+>P : Symbol(P, Decl(a.ts, 0, 0))
+>q : Symbol(q, Decl(a.ts, 1, 62))
+>Q : Symbol(Q, Decl(a.ts, 0, 42))
+
+export function build() {
+>build : Symbol(build, Decl(a.ts, 1, 68))
+
+  let last: P | Q | null = null;
+>last : Symbol(last, Decl(a.ts, 3, 5))
+>P : Symbol(P, Decl(a.ts, 0, 0))
+>Q : Symbol(Q, Decl(a.ts, 0, 42))
+
+  while (more) {
+>more : Symbol(more, Decl(a.ts, 1, 13))
+
+    if (last === null) last = more ? p : q;
+>last : Symbol(last, Decl(a.ts, 3, 5))
+>last : Symbol(last, Decl(a.ts, 3, 5))
+>more : Symbol(more, Decl(a.ts, 1, 13))
+>p : Symbol(p, Decl(a.ts, 1, 42))
+>q : Symbol(q, Decl(a.ts, 1, 62))
+
+    else last = last.next = more ? q : p;
+>last : Symbol(last, Decl(a.ts, 3, 5))
+>last.next : Symbol(next, Decl(a.ts, 0, 21), Decl(a.ts, 0, 64))
+>last : Symbol(last, Decl(a.ts, 3, 5))
+>next : Symbol(next, Decl(a.ts, 0, 21), Decl(a.ts, 0, 64))
+>more : Symbol(more, Decl(a.ts, 1, 13))
+>q : Symbol(q, Decl(a.ts, 1, 62))
+>p : Symbol(p, Decl(a.ts, 1, 42))
+  }
+  return last;
+>last : Symbol(last, Decl(a.ts, 3, 5))
+}
+=== b.ts ===
+import { build } from "./a";
+>build : Symbol(build, Decl(b.ts, 0, 8))
+
+export const x = build();
+>x : Symbol(x, Decl(b.ts, 1, 12))
+>build : Symbol(build, Decl(b.ts, 0, 8))
+
+=== c.ts ===
+import { build } from "./a";
+>build : Symbol(build, Decl(c.ts, 0, 8))
+
+export const y = [build()];
+>y : Symbol(y, Decl(c.ts, 1, 12))
+>build : Symbol(build, Decl(c.ts, 0, 8))
+

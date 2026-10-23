@@ -1,0 +1,19 @@
+//// [test/cases/bun75-R06.ts] ////
+
+=== p1.ts ===
+import * as n1 from "./p2"; export { n1, n1 as m1 }; export default 1;
+>n1 : Symbol(n1, Decl(p1.ts, 0, 6))
+>n1 : Symbol(n1, Decl(p1.ts, 0, 36))
+>n1 : Symbol(n1, Decl(p1.ts, 0, 6))
+>m1 : Symbol(m1, Decl(p1.ts, 0, 40))
+
+=== p2.ts ===
+import * as n2 from "./p1"; import * as o2 from "./p1"; export { n2, o2 };
+>n2 : Symbol(n2, Decl(p2.ts, 0, 6))
+>o2 : Symbol(o2, Decl(p2.ts, 0, 34))
+>n2 : Symbol(n2, Decl(p2.ts, 0, 64))
+>o2 : Symbol(o2, Decl(p2.ts, 0, 68))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(p2.ts, 1, 5))
+

@@ -1,0 +1,27 @@
+//// [test/cases/bun71-R07c.ts] ////
+
+=== a.ts ===
+import { a2 } from "./b";
+>a2 : Symbol(a2, Decl(a.ts, 0, 8))
+
+export const other = 1;
+>other : Symbol(other, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+import { a2 } from "./a";
+>a2 : Symbol(a2, Decl(b.ts, 0, 8))
+
+export const other = 1;
+>other : Symbol(other, Decl(b.ts, 1, 12))
+
+=== c.ts ===
+import { s2 } from "./c";
+>s2 : Symbol(s2, Decl(c.ts, 0, 8))
+
+export { s2 as other };
+>s2 : Symbol(s2, Decl(c.ts, 0, 8))
+>other : Symbol(other, Decl(c.ts, 1, 8))
+

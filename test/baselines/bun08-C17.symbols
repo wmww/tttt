@@ -1,0 +1,19 @@
+//// [test/cases/bun08-C17.ts] ////
+
+=== a.ts ===
+import {} from "./r4";
+declare module "./r4" { var w: number; }
+>"./r4" : Symbol("./r4", Decl(r4.ts, 0, 0), Decl(a.ts, 0, 22))
+>w : Symbol(w, Decl(n.ts, 0, 10), Decl(a.ts, 1, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== n.ts ===
+export var w = 1;
+>w : Symbol(w, Decl(n.ts, 0, 10), Decl(a.ts, 1, 27))
+
+=== r4.ts ===
+export { w } from "./n";
+>w : Symbol(w, Decl(r4.ts, 0, 8))
+

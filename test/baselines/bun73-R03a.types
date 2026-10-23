@@ -1,0 +1,128 @@
+//// [test/cases/bun73-R03a.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : () => boolean
+
+function call() { let x = []; for (; true; x.push("")) { if (Array.isArray(x)) { if (x) break; } } }
+>call : () => void
+>x : any[]
+>[] : never[]
+>true : true
+>x.push("") : never
+>x.push : any
+>x : never
+>push : any
+>"" : ""
+>Array.isArray(x) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>x : any[]
+>x : any[]
+
+function callOfName() { let x = []; for (; true; x()) { if (Array.isArray(x)) { if (x) break; } } }
+>callOfName : () => void
+>x : any[]
+>[] : never[]
+>true : true
+>x() : never
+>x : never
+>Array.isArray(x) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>x : any[]
+>x : any[]
+
+function construct() { let x = []; for (; true; new x()) { if (Array.isArray(x)) { if (x) break; } } }
+>construct : () => void
+>x : any[]
+>[] : never[]
+>true : true
+>new x() : never
+>x : never
+>Array.isArray(x) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>x : any[]
+>x : any[]
+
+function chain() { let x = []; for (; true; x.push("").toFixed()) { if (Array.isArray(x)) { if (x) break; } } }
+>chain : () => void
+>x : any[]
+>[] : never[]
+>true : true
+>x.push("").toFixed() : never
+>x.push("").toFixed : never
+>x.push("") : never
+>x.push : any
+>x : never
+>push : any
+>"" : ""
+>toFixed : never
+>Array.isArray(x) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>x : any[]
+>x : any[]
+
+function callback() { let x = []; for (; true; x.map(e => e)) { if (Array.isArray(x)) { if (x) break; } } }
+>callback : () => void
+>x : any[]
+>[] : never[]
+>true : true
+>x.map(e => e) : never
+>x.map : any
+>x : never
+>map : any
+>e => e : (e: any) => any
+>e : any
+>e : any
+>Array.isArray(x) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>x : any[]
+>x : any[]
+
+function optional() { let x = []; for (; true; x?.push("")) { if (Array.isArray(x)) { if (x) break; } } }
+>optional : () => void
+>x : any[]
+>[] : never[]
+>true : true
+>x?.push("") : never
+>x?.push : any
+>x : never
+>push : any
+>"" : ""
+>Array.isArray(x) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>x : any[]
+>x : any[]
+
+function element() { let x = []; for (; true; x["push"]("")) { if (Array.isArray(x)) { if (x) break; } } }
+>element : () => void
+>x : any[]
+>[] : never[]
+>true : true
+>x["push"]("") : never
+>x["push"] : never
+>x : never
+>"push" : "push"
+>"" : ""
+>Array.isArray(x) : boolean
+>Array.isArray : (arg: any) => arg is any[]
+>Array : ArrayConstructor
+>isArray : (arg: any) => arg is any[]
+>x : any[]
+>x : any[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

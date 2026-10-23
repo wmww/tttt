@@ -1,0 +1,41 @@
+//// [test/cases/bun85-R03b.ts] ////
+
+=== f.js ===
+var v = mk().x;
+>v : any
+>mk().x : any
+>mk() : C
+>mk : () => C
+>x : any
+
+function mk() { return new C(); }
+>mk : () => C
+>new C() : C
+>C : typeof C
+
+class C { get x() { return [module, this.x]; } }
+>C : C
+>x : any
+>[module, this.x] : any[]
+>module : { exports: typeof C; }
+>this.x : any
+>this : this
+>x : any
+
+v.nope;
+>v.nope : any
+>v : any
+>nope : any
+
+module.exports = C;
+>module.exports = C : typeof C
+>module.exports : typeof C
+>module : { exports: typeof C; }
+>exports : typeof C
+>C : typeof C
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

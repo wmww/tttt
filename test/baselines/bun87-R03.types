@@ -1,0 +1,151 @@
+//// [test/cases/bun87-R03.ts] ////
+
+=== a.ts ===
+function h1({ a = 1 }) {}
+>h1 : ({ a }: { a?: number | undefined; }) => void
+>a : number
+>1 : 1
+
+function h2({ a = 1 }) {}
+>h2 : ({ a }: { a?: number | undefined; }) => void
+>a : number
+>1 : 1
+
+function f1({}) {}
+>f1 : ({}: {}) => void
+
+function f2({}) {}
+>f2 : ({}: {}) => void
+
+type H1 = Parameters<typeof h1>[0]; type H2 = Parameters<typeof h2>[0];
+>H1 : { a?: number | undefined; }
+>h1 : ({ a }: { a?: number | undefined; }) => void
+>H2 : { a?: number | undefined; }
+>h2 : ({ a }: { a?: number | undefined; }) => void
+
+type F1 = Parameters<typeof f1>[0]; type F2 = Parameters<typeof f2>[0];
+>F1 : {}
+>f1 : ({}: {}) => void
+>F2 : {}
+>f2 : ({}: {}) => void
+
+declare let u1: H1 | H2; const e1: 0 = u1;
+>u1 : { a?: number | undefined; } | { a?: number | undefined; }
+>e1 : 0
+>u1 : { a?: number | undefined; } | { a?: number | undefined; }
+
+declare let u2: F1 | F2; const e2: 0 = u2;
+>u2 : {} | {}
+>e2 : 0
+>u2 : {} | {}
+
+declare let u3: H1 & H2; const e3: 0 = u3;
+>u3 : { a?: number | undefined; } & { a?: number | undefined; }
+>e3 : 0
+>u3 : { a?: number | undefined; } & { a?: number | undefined; }
+
+declare let u4: F1 & F2; const e4: 0 = u4;
+>u4 : {}
+>e4 : 0
+>u4 : {}
+
+declare const o: { a?: number; z: 1 }; const { z, ...r1 } = o; const { z: zz, ...r2 } = o;
+>o : { a?: number; z: 1; }
+>a : number | undefined
+>z : 1
+>z : 1
+>r1 : { a?: number; }
+>o : { a?: number; z: 1; }
+>z : any
+>zz : 1
+>r2 : { a?: number; }
+>o : { a?: number; z: 1; }
+
+declare let u5: typeof r1 | typeof r2; const e5: 0 = u5;
+>u5 : { a?: number; } | { a?: number; }
+>r1 : { a?: number; }
+>r2 : { a?: number; }
+>e5 : 0
+>u5 : { a?: number; } | { a?: number; }
+
+declare const p: { z: 1 }; const { z: z3, ...r3 } = p; const { z: z4, ...r4 } = p;
+>p : { z: 1; }
+>z : 1
+>z : any
+>z3 : 1
+>r3 : {}
+>p : { z: 1; }
+>z : any
+>z4 : 1
+>r4 : {}
+>p : { z: 1; }
+
+declare let u6: typeof r3 | typeof r4; const e6: 0 = u6;
+>u6 : {} | {}
+>r3 : {}
+>r4 : {}
+>e6 : 0
+>u6 : {} | {}
+
+declare let u7: typeof r3 & typeof r4; const e7: 0 = u7;
+>u7 : {}
+>r3 : {}
+>r4 : {}
+>e7 : 0
+>u7 : {}
+
+const s1 = { ...r3 }, s2 = { ...r4 };
+>s1 : {}
+>{ ...r3 } : {}
+>r3 : {}
+>s2 : {}
+>{ ...r4 } : {}
+>r4 : {}
+
+declare let u8: typeof s1 | typeof s2; const e8: 0 = u8;
+>u8 : {} | {}
+>s1 : {}
+>s2 : {}
+>e8 : 0
+>u8 : {} | {}
+
+const l1 = {}, l2 = {};
+>l1 : {}
+>{} : {}
+>l2 : {}
+>{} : {}
+
+declare let u9: typeof l1 | typeof l2; const e9: 0 = u9;
+>u9 : {} | {}
+>l1 : {}
+>l2 : {}
+>e9 : 0
+>u9 : {} | {}
+
+function g({ a = 1 }, { a: b = 1 }) {}
+>g : ({ a }: { a?: number | undefined; }, { a: b }: { a?: number | undefined; }) => void
+>a : number
+>1 : 1
+>a : any
+>b : number
+>1 : 1
+
+declare let u10: Parameters<typeof g>[number]; const e10: 0 = u10;
+>u10 : { a?: number | undefined; } | { a?: number | undefined; }
+>g : ({ a }: { a?: number | undefined; }, { a: b }: { a?: number | undefined; }) => void
+>e10 : 0
+>u10 : { a?: number | undefined; } | { a?: number | undefined; }
+
+const [{ k = 1 }, { k: k2 = 1 }] = null! as any[];
+>k : any
+>1 : 1
+>k : any
+>k2 : any
+>1 : 1
+>null! as any[] : any[]
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

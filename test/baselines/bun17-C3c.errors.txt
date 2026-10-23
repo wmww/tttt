@@ -1,0 +1,27 @@
+a.ts(4,1): error TS2352: Conversion of type 'Foo<(x: string) => void>' to type 'Bar<(x: number) => void>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Types of property 'm' are incompatible.
+    Type '<U>(cb: (x: string) => void, u: U) => void' is not comparable to type '<U>(cb: (x: number) => void, u: U) => void'.
+      Types of parameters 'cb' and 'cb' are incompatible.
+        Types of parameters 'x' and 'x' are incompatible.
+          Type 'string' is not comparable to type 'number'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface Foo<T> { m<U>(cb: T, u: U): void }
+    interface Bar<T> { m<U>(cb: T, u: U): void }
+    declare let f: Foo<(x: string) => void>;
+    f as Bar<(x: number) => void>;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2352: Conversion of type 'Foo<(x: string) => void>' to type 'Bar<(x: number) => void>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+!!! error TS2352:   Types of property 'm' are incompatible.
+!!! error TS2352:     Type '<U>(cb: (x: string) => void, u: U) => void' is not comparable to type '<U>(cb: (x: number) => void, u: U) => void'.
+!!! error TS2352:       Types of parameters 'cb' and 'cb' are incompatible.
+!!! error TS2352:         Types of parameters 'x' and 'x' are incompatible.
+!!! error TS2352:           Type 'string' is not comparable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

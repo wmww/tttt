@@ -1,0 +1,15 @@
+a.ts(2,60): error TS2314: Generic type 'G<T>' requires 1 type argument(s).
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class G<T> { x!: T; constructor(...args: any[]) {} }
+    function f1<T extends typeof G>(base: T) { class D extends base { } }
+                                                               ~~~~
+!!! error TS2314: Generic type 'G<T>' requires 1 type argument(s).
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,17 @@
+//// [test/cases/bun33-C19d.ts] ////
+
+=== a.ts ===
+class P { #x = 1; m() { const r: bigint = { [#x]: 1 }; } }
+>P : P
+>#x : number
+>1 : 1
+>m : () => void
+>r : bigint
+>{ [#x]: 1 } : { [x: number]: number; }
+>[#x] : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

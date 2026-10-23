@@ -1,0 +1,14 @@
+//// [test/cases/bun14-C12.ts] ////
+
+=== a.ts ===
+function f0<T>() {
+>f0 : <T>() => void
+
+  type A = { a: 1 }[{ [K in keyof T]: 1 }];
+>A : any
+>a : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

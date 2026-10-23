@@ -1,0 +1,25 @@
+//// [test/cases/bun03-SC1.ts] ////
+
+=== a.ts ===
+declare function f(): "a";
+>f : () => "a"
+
+class C14 { [k: string]: number; [f()]() {} }
+>C14 : C14
+>k : string
+>[f()] : () => void
+>f() : "a"
+>f : () => "a"
+
+class C15 { [k: string]: number; get [f()]() { return ""; } }
+>C15 : C15
+>k : string
+>[f()] : string
+>f() : "a"
+>f : () => "a"
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

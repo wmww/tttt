@@ -1,0 +1,17 @@
+//// [test/cases/bun61-L17.ts] ////
+
+=== a.js ===
+/** @overload */
+function () {}
+> : { (): any; (a: string): any; (a: number): any; }
+
+=== b.js ===
+/**
+ * @overload
+ * @param {string} a
+ * @overload
+ * @param {number} a
+ */
+function   () {}
+> : { (): any; (a: string): any; (a: number): any; }
+

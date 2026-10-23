@@ -1,0 +1,24 @@
+//// [test/cases/bun14-C11b.ts] ////
+
+=== a.ts ===
+declare const o: { 0: number; z: number };
+>o : { 0: number; z: number; }
+>0 : number
+>z : number
+
+const { [/*c*/ 0]: a0, ...rest } = o;
+>0 : 0
+>a0 : number
+>rest : { z: number; }
+>o : { 0: number; z: number; }
+
+const r: { z: number; x: 1 } = rest;
+>r : { z: number; x: 1; }
+>z : number
+>x : 1
+>rest : { z: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

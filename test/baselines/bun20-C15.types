@@ -1,0 +1,29 @@
+//// [test/cases/bun20-C15.ts] ////
+
+=== a.ts ===
+class A { a = 1 } class C { c = 3; static s = 1 }
+>A : A
+>a : number
+>1 : 1
+>C : C
+>c : number
+>3 : 3
+>s : number
+>1 : 1
+
+function o2(x: typeof C | A) { if (x.constructor === C) { const _: null = x; } }
+>o2 : (x: typeof C | A) => void
+>x : A | typeof C
+>C : typeof C
+>x.constructor === C : boolean
+>x.constructor : Function
+>x : A | typeof C
+>constructor : Function
+>C : typeof C
+>_ : null
+>x : typeof C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

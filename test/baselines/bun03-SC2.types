@@ -1,0 +1,16 @@
+//// [test/cases/bun03-SC2.ts] ////
+
+=== a.d.ts ===
+declare enum E { A }
+>E : E
+>A : E.A
+
+=== b.ts ===
+enum E { B }
+>E : E
+>B : E.B
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

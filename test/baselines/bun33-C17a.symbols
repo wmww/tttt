@@ -1,0 +1,19 @@
+//// [test/cases/bun33-C17a.ts] ////
+
+=== a.ts ===
+const o = { get x() { return 1 }, get x() { return "" }, set x(v) {} };
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 11), Decl(a.ts, 0, 56))
+>x : Symbol(x, Decl(a.ts, 0, 33))
+>x : Symbol(x, Decl(a.ts, 0, 11), Decl(a.ts, 0, 56))
+>v : Symbol(v, Decl(a.ts, 0, 63))
+
+const r: bigint = o.x;
+>r : Symbol(r, Decl(a.ts, 1, 5))
+>o.x : Symbol(x, Decl(a.ts, 0, 11), Decl(a.ts, 0, 56))
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 11), Decl(a.ts, 0, 56))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,18 @@
+a.ts(3,7): error TS2322: Type '{}' is not assignable to type '(p: [G.X, H.X], q: [1]) => void'.
+  Type '{}' provides no match for the signature '(p: [G.X, H.X], q: ...): void'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class G<T extends "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"> { g!: T } namespace G { export class X { a = 1 } }
+    namespace H { export class X { b = 1 } }
+    const s: { (p: [G.X, H.X], q: [1]): void } = {};
+          ~
+!!! error TS2322: Type '{}' is not assignable to type '(p: [G.X, H.X], q: [1]) => void'.
+!!! error TS2322:   Type '{}' provides no match for the signature '(p: [G.X, H.X], q: ...): void'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

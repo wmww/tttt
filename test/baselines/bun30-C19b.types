@@ -1,0 +1,19 @@
+//// [test/cases/bun30-C19b.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+export class C { m() { return { [this.g = "k"]() {} } } }
+>C : C
+>m : () => { k(): void; }
+>{ [this.g = "k"]() {} } : { k(): void; }
+>[this.g = "k"] : () => void
+>this.g = "k" : "k"
+>this.g : any
+>this : this
+>g : any
+>"k" : "k"
+

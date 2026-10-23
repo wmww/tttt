@@ -1,0 +1,13 @@
+error TS18003: No inputs were found in config file 'tsconfig.json'. Specified 'include' paths were '[1e+21,1e-7]' and 'exclude' paths were '[]'.
+tsconfig.json(1,86): error TS5024: Compiler option 'include' requires a value of type string.
+tsconfig.json(1,92): error TS5024: Compiler option 'include' requires a value of type string.
+
+
+!!! error TS18003: No inputs were found in config file 'tsconfig.json'. Specified 'include' paths were '[1e+21,1e-7]' and 'exclude' paths were '[]'.
+==== tsconfig.json (2 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] }, "include": [1e21, 1e-7] }
+                                                                                         ~~~~
+!!! error TS5024: Compiler option 'include' requires a value of type string.
+                                                                                               ~~~~
+!!! error TS5024: Compiler option 'include' requires a value of type string.
+    

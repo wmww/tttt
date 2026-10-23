@@ -1,0 +1,28 @@
+//// [test/cases/bun86-R10a.ts] ////
+
+=== index.ts ===
+export * from "./a";
+export * from "./b";
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(index.ts, 2, 5))
+
+=== a.ts ===
+import * as sx from "./x";
+>sx : Symbol(sx, Decl(a.ts, 0, 6))
+
+export { sx };
+>sx : Symbol(sx, Decl(a.ts, 1, 8))
+
+=== b.ts ===
+import * as sx from "./x";
+>sx : Symbol(sx, Decl(b.ts, 0, 6))
+
+export { sx };
+>sx : Symbol(sx, Decl(b.ts, 1, 8))
+
+=== x.ts ===
+export const X = 1;
+>X : Symbol(X, Decl(x.ts, 0, 12))
+
+export default 1;
+

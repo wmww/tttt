@@ -1,0 +1,25 @@
+a.tsx(4,12): error TS2746: This JSX tag's 'children' prop expects a single child of type 'number', but multiple children were provided.
+a.tsx(4,12): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    This JSX tag's 'children' prop expects a single child of type 'number', but multiple children were provided.
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    declare function One(p: { children: number }): JSX.Element;
+    declare function One(p: { children: number; x: 1 }): JSX.Element;
+    const a = <One>{1}{2}</One>;
+               ~~~
+!!! error TS2746: This JSX tag's 'children' prop expects a single child of type 'number', but multiple children were provided.
+               ~~~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     This JSX tag's 'children' prop expects a single child of type 'number', but multiple children were provided.
+!!! related TS2771 a.tsx:3:18: The last overload is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

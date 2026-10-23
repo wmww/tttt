@@ -1,0 +1,18 @@
+//// [test/cases/bun96-H1.ts] ////
+
+=== a.ts ===
+import type { T } from "./m";
+>T : Symbol(T, Decl(a.ts, 0, 13))
+
+type U = T<{ a: string }>;
+>U : Symbol(U, Decl(a.ts, 0, 29))
+>T : Symbol(T, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+export type { T } from 123;
+>T : Symbol(T, Decl(m.ts, 0, 13))
+

@@ -1,0 +1,198 @@
+//// [test/cases/bun96-REDUX1.ts] ////
+
+=== a.ts ===
+interface Store<S, T> { getState(): S & T }
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+>getState : Symbol(Store.getState, Decl(a.ts, 0, 23))
+>S : Symbol(S, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+
+// redux, src/createStore.ts: X has no inference site but the contextual return type
+declare function createStore<S, E, X>(reducer: S, enhancer: E): Store<S, X> & E
+>createStore : Symbol(createStore, Decl(a.ts, 0, 43))
+>S : Symbol(S, Decl(a.ts, 3, 29))
+>E : Symbol(E, Decl(a.ts, 3, 31))
+>X : Symbol(X, Decl(a.ts, 3, 34))
+>reducer : Symbol(reducer, Decl(a.ts, 3, 38))
+>S : Symbol(S, Decl(a.ts, 3, 29))
+>enhancer : Symbol(enhancer, Decl(a.ts, 3, 49))
+>E : Symbol(E, Decl(a.ts, 3, 31))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 3, 29))
+>X : Symbol(X, Decl(a.ts, 3, 34))
+>E : Symbol(E, Decl(a.ts, 3, 31))
+
+function legacy_createStore<S, E extends {}, X>(reducer: S, enhancer: E): Store<S, X> & E {
+>legacy_createStore : Symbol(legacy_createStore, Decl(a.ts, 3, 79))
+>S : Symbol(S, Decl(a.ts, 4, 28))
+>E : Symbol(E, Decl(a.ts, 4, 30))
+>X : Symbol(X, Decl(a.ts, 4, 44))
+>reducer : Symbol(reducer, Decl(a.ts, 4, 48))
+>S : Symbol(S, Decl(a.ts, 4, 28))
+>enhancer : Symbol(enhancer, Decl(a.ts, 4, 59))
+>E : Symbol(E, Decl(a.ts, 4, 30))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 4, 28))
+>X : Symbol(X, Decl(a.ts, 4, 44))
+>E : Symbol(E, Decl(a.ts, 4, 30))
+
+  return createStore(reducer, enhancer)
+>createStore : Symbol(createStore, Decl(a.ts, 0, 43))
+>reducer : Symbol(reducer, Decl(a.ts, 4, 48))
+>enhancer : Symbol(enhancer, Decl(a.ts, 4, 59))
+}
+// with redux's conditional type, defaults and NoInfer: the words of the project's error
+type UnknownIfNonSpecific<T> = {} extends T ? unknown : T
+>UnknownIfNonSpecific : Symbol(UnknownIfNonSpecific, Decl(a.ts, 6, 1))
+>T : Symbol(T, Decl(a.ts, 8, 26))
+>T : Symbol(T, Decl(a.ts, 8, 26))
+>T : Symbol(T, Decl(a.ts, 8, 26))
+
+declare function createStore2<S, Ext extends {} = {}, StateExt extends {} = {}>(reducer: S, enhancer?: Ext): Store<S, UnknownIfNonSpecific<StateExt>> & NoInfer<Ext>
+>createStore2 : Symbol(createStore2, Decl(a.ts, 8, 57))
+>S : Symbol(S, Decl(a.ts, 9, 30))
+>Ext : Symbol(Ext, Decl(a.ts, 9, 32))
+>StateExt : Symbol(StateExt, Decl(a.ts, 9, 53))
+>reducer : Symbol(reducer, Decl(a.ts, 9, 80))
+>S : Symbol(S, Decl(a.ts, 9, 30))
+>enhancer : Symbol(enhancer, Decl(a.ts, 9, 91))
+>Ext : Symbol(Ext, Decl(a.ts, 9, 32))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 9, 30))
+>UnknownIfNonSpecific : Symbol(UnknownIfNonSpecific, Decl(a.ts, 6, 1))
+>StateExt : Symbol(StateExt, Decl(a.ts, 9, 53))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Ext : Symbol(Ext, Decl(a.ts, 9, 32))
+
+function legacy_createStore2<S, Ext extends {} = {}, StateExt extends {} = {}>(reducer: S, enhancer?: Ext): Store<S, UnknownIfNonSpecific<StateExt>> & Ext {
+>legacy_createStore2 : Symbol(legacy_createStore2, Decl(a.ts, 9, 164))
+>S : Symbol(S, Decl(a.ts, 10, 29))
+>Ext : Symbol(Ext, Decl(a.ts, 10, 31))
+>StateExt : Symbol(StateExt, Decl(a.ts, 10, 52))
+>reducer : Symbol(reducer, Decl(a.ts, 10, 79))
+>S : Symbol(S, Decl(a.ts, 10, 29))
+>enhancer : Symbol(enhancer, Decl(a.ts, 10, 90))
+>Ext : Symbol(Ext, Decl(a.ts, 10, 31))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 10, 29))
+>UnknownIfNonSpecific : Symbol(UnknownIfNonSpecific, Decl(a.ts, 6, 1))
+>StateExt : Symbol(StateExt, Decl(a.ts, 10, 52))
+>Ext : Symbol(Ext, Decl(a.ts, 10, 31))
+
+  return createStore2(reducer, enhancer)
+>createStore2 : Symbol(createStore2, Decl(a.ts, 8, 57))
+>reducer : Symbol(reducer, Decl(a.ts, 10, 79))
+>enhancer : Symbol(enhancer, Decl(a.ts, 10, 90))
+}
+
+// the same from an argument; `object`; what is inferred
+declare function stateOf<S, X>(store: Store<S, X>): [S, X]
+>stateOf : Symbol(stateOf, Decl(a.ts, 12, 1))
+>S : Symbol(S, Decl(a.ts, 15, 25))
+>X : Symbol(X, Decl(a.ts, 15, 27))
+>store : Symbol(store, Decl(a.ts, 15, 31))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>S : Symbol(S, Decl(a.ts, 15, 25))
+>X : Symbol(X, Decl(a.ts, 15, 27))
+>S : Symbol(S, Decl(a.ts, 15, 25))
+>X : Symbol(X, Decl(a.ts, 15, 27))
+
+function f1<E extends {}>(store: Store<string, { a: 1 }> & E) { return stateOf(store)[0].length }
+>f1 : Symbol(f1, Decl(a.ts, 15, 58))
+>E : Symbol(E, Decl(a.ts, 16, 12))
+>store : Symbol(store, Decl(a.ts, 16, 26))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 16, 48))
+>E : Symbol(E, Decl(a.ts, 16, 12))
+>stateOf(store)[0].length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>stateOf : Symbol(stateOf, Decl(a.ts, 12, 1))
+>store : Symbol(store, Decl(a.ts, 16, 26))
+>0 : Symbol(0)
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+function f2<E extends object>(store: Store<string, { a: 1 }> & E) { const v: null = stateOf(store) }
+>f2 : Symbol(f2, Decl(a.ts, 16, 97))
+>E : Symbol(E, Decl(a.ts, 17, 12))
+>store : Symbol(store, Decl(a.ts, 17, 30))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 17, 52))
+>E : Symbol(E, Decl(a.ts, 17, 12))
+>v : Symbol(v, Decl(a.ts, 17, 73))
+>stateOf : Symbol(stateOf, Decl(a.ts, 12, 1))
+>store : Symbol(store, Decl(a.ts, 17, 30))
+
+// both tools agree on these two: `Store & unknown` is a reference in both, `Store & { c: 3 }` in neither
+function f3<E>(store: Store<string, { a: 1 }> & E) { const v: null = stateOf(store) }
+>f3 : Symbol(f3, Decl(a.ts, 17, 100))
+>E : Symbol(E, Decl(a.ts, 19, 12))
+>store : Symbol(store, Decl(a.ts, 19, 15))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 19, 37))
+>E : Symbol(E, Decl(a.ts, 19, 12))
+>v : Symbol(v, Decl(a.ts, 19, 58))
+>stateOf : Symbol(stateOf, Decl(a.ts, 12, 1))
+>store : Symbol(store, Decl(a.ts, 19, 15))
+
+function f4<E extends { c: 3 }>(store: Store<string, { a: 1 }> & E) { const v: null = stateOf(store) }
+>f4 : Symbol(f4, Decl(a.ts, 19, 85))
+>E : Symbol(E, Decl(a.ts, 20, 12))
+>c : Symbol(c, Decl(a.ts, 20, 23))
+>store : Symbol(store, Decl(a.ts, 20, 32))
+>Store : Symbol(Store, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 20, 54))
+>E : Symbol(E, Decl(a.ts, 20, 12))
+>v : Symbol(v, Decl(a.ts, 20, 75))
+>stateOf : Symbol(stateOf, Decl(a.ts, 12, 1))
+>store : Symbol(store, Decl(a.ts, 20, 32))
+
+// other generic types whose type arguments cannot be read off the members
+interface Pair<A, B> { either: A | B }
+>Pair : Symbol(Pair, Decl(a.ts, 20, 102))
+>A : Symbol(A, Decl(a.ts, 23, 15))
+>B : Symbol(B, Decl(a.ts, 23, 17))
+>either : Symbol(Pair.either, Decl(a.ts, 23, 22))
+>A : Symbol(A, Decl(a.ts, 23, 15))
+>B : Symbol(B, Decl(a.ts, 23, 17))
+
+declare function pair<A, B>(p: Pair<A, B>): [A, B]
+>pair : Symbol(pair, Decl(a.ts, 23, 38))
+>A : Symbol(A, Decl(a.ts, 24, 22))
+>B : Symbol(B, Decl(a.ts, 24, 24))
+>p : Symbol(p, Decl(a.ts, 24, 28))
+>Pair : Symbol(Pair, Decl(a.ts, 20, 102))
+>A : Symbol(A, Decl(a.ts, 24, 22))
+>B : Symbol(B, Decl(a.ts, 24, 24))
+>A : Symbol(A, Decl(a.ts, 24, 22))
+>B : Symbol(B, Decl(a.ts, 24, 24))
+
+declare function tuple<T extends unknown[]>(t: [...T]): T
+>tuple : Symbol(tuple, Decl(a.ts, 24, 50))
+>T : Symbol(T, Decl(a.ts, 25, 23))
+>t : Symbol(t, Decl(a.ts, 25, 44))
+>T : Symbol(T, Decl(a.ts, 25, 23))
+>T : Symbol(T, Decl(a.ts, 25, 23))
+
+function f5<E extends {}>(p: Pair<1, 2> & E) { const v: null = pair(p) }
+>f5 : Symbol(f5, Decl(a.ts, 25, 57))
+>E : Symbol(E, Decl(a.ts, 26, 12))
+>p : Symbol(p, Decl(a.ts, 26, 26))
+>Pair : Symbol(Pair, Decl(a.ts, 20, 102))
+>E : Symbol(E, Decl(a.ts, 26, 12))
+>v : Symbol(v, Decl(a.ts, 26, 52))
+>pair : Symbol(pair, Decl(a.ts, 23, 38))
+>p : Symbol(p, Decl(a.ts, 26, 26))
+
+function f6<E extends {}>(t: [1, 2] & E) { const v: null = tuple(t) }
+>f6 : Symbol(f6, Decl(a.ts, 26, 72))
+>E : Symbol(E, Decl(a.ts, 27, 12))
+>t : Symbol(t, Decl(a.ts, 27, 26))
+>E : Symbol(E, Decl(a.ts, 27, 12))
+>v : Symbol(v, Decl(a.ts, 27, 48))
+>tuple : Symbol(tuple, Decl(a.ts, 24, 50))
+>t : Symbol(t, Decl(a.ts, 27, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 28, 5))
+

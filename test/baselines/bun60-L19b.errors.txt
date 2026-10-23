@@ -1,0 +1,28 @@
+a.ts(2,4): error TS2540: Cannot assign to 'prototype' because it is a read-only property.
+a.ts(4,4): error TS2341: Property 'prototype' is private and only accessible within class 'G7'.
+a.ts(7,4): error TS2445: Property 'prototype' is protected and only accessible within class 'G9' and its subclasses.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare class G6 { static readonly prototype: G6; }
+    G6.prototype = new G6();
+       ~~~~~~~~~
+!!! error TS2540: Cannot assign to 'prototype' because it is a read-only property.
+    declare class G7 { private static prototype: G7; }
+    G7.prototype;
+       ~~~~~~~~~
+!!! error TS2341: Property 'prototype' is private and only accessible within class 'G7'.
+    type K7 = keyof typeof G7; const a13: null = null! as K7;
+    declare class G9 { protected static prototype: G9; }
+    G9.prototype;
+       ~~~~~~~~~
+!!! error TS2445: Property 'prototype' is protected and only accessible within class 'G9' and its subclasses.
+    declare class G5 { static prototype: G5; }
+    G5.prototype = new G5();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

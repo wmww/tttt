@@ -1,0 +1,28 @@
+//// [test/cases/bun27-P2.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+declare function T(p: { children: [number, string?] }): JSX.Element;
+>T : (p: { children: [number, string?]; }) => JSX.Element
+>p : { children: [number, string?]; }
+>children : [number, string?]
+>JSX : any
+
+declare const nu: number | undefined;
+>nu : number | undefined
+
+const a = <T>{1}{nu}</T>;
+>a : JSX.Element
+><T>{1}{nu}</T> : JSX.Element
+>T : (p: { children: [number, string?]; }) => JSX.Element
+>1 : 1
+>nu : number | undefined
+>T : (p: { children: [number, string?]; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

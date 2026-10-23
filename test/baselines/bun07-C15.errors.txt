@@ -1,0 +1,18 @@
+a.ts(2,16): error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+a.ts(2,40): error TS2322: Type '{ readonly a: readonly [1]; }' is not assignable to type 'null'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    const r4 = { a = [1] } as const; const r4n: null = r4;
+                   ~
+!!! error TS1312: Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.
+                                           ~~~
+!!! error TS2322: Type '{ readonly a: readonly [1]; }' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

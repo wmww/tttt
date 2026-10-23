@@ -1,0 +1,13 @@
+//// [test/cases/bun23-C2c.ts] ////
+
+=== a.ts ===
+function f<A, B>() { const p: 1 = null! as { [K in (keyof (A | B))]: K }; }
+>f : <A, B>() => void
+>p : 1
+>null! as { [K in (keyof (A | B))]: K } : { [K in keyof A & keyof B]: K; }
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

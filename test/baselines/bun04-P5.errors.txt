@@ -1,0 +1,21 @@
+a.ts(4,7): error TS2322: Type '<const T, T1>(a: T, c: T1) => [T, T1]' is not assignable to type 'never'.
+a.ts(5,7): error TS2322: Type '[readonly [1], number[]]' is not assignable to type 'never'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function both<A, B, C, D>(f: (a: A) => B, g: (c: C) => D): (a: A, c: C) => [B, D];
+    declare function cst<const T>(x: T): T;
+    const r = both(cst, cst);
+    const n1: never = r;
+          ~~
+!!! error TS2322: Type '<const T, T1>(a: T, c: T1) => [T, T1]' is not assignable to type 'never'.
+    const n2: never = r([1], [1]);
+          ~~
+!!! error TS2322: Type '[readonly [1], number[]]' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

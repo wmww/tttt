@@ -1,0 +1,39 @@
+//// [test/cases/bun20-P2.ts] ////
+
+=== a.ts ===
+type U = { kind: "a"; a: number } | { kind: "b"; b: string };
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+>kind : Symbol(kind, Decl(a.ts, 0, 37))
+>b : Symbol(b, Decl(a.ts, 0, 48))
+
+interface O { v: U; isA(k: string): k is "a"; }
+>O : Symbol(O, Decl(a.ts, 0, 61))
+>v : Symbol(O.v, Decl(a.ts, 1, 13))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>isA : Symbol(O.isA, Decl(a.ts, 1, 19))
+>k : Symbol(k, Decl(a.ts, 1, 24))
+>k : Symbol(k, Decl(a.ts, 1, 24))
+
+function g(o: O) { if (o.isA(o.v.kind)) { o.v.a; } }
+>g : Symbol(g, Decl(a.ts, 1, 47))
+>o : Symbol(o, Decl(a.ts, 2, 11))
+>O : Symbol(O, Decl(a.ts, 0, 61))
+>o.isA : Symbol(O.isA, Decl(a.ts, 1, 19))
+>o : Symbol(o, Decl(a.ts, 2, 11))
+>isA : Symbol(O.isA, Decl(a.ts, 1, 19))
+>o.v.kind : Symbol(kind, Decl(a.ts, 0, 10), Decl(a.ts, 0, 37))
+>o.v : Symbol(O.v, Decl(a.ts, 1, 13))
+>o : Symbol(o, Decl(a.ts, 2, 11))
+>v : Symbol(O.v, Decl(a.ts, 1, 13))
+>kind : Symbol(kind, Decl(a.ts, 0, 10), Decl(a.ts, 0, 37))
+>o.v.a : Symbol(a, Decl(a.ts, 0, 21))
+>o.v : Symbol(O.v, Decl(a.ts, 1, 13))
+>o : Symbol(o, Decl(a.ts, 2, 11))
+>v : Symbol(O.v, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

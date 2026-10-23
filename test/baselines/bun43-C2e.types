@@ -1,0 +1,11 @@
+//// [test/cases/bun43-C2e.ts] ////
+
+=== a.ts ===
+export {};
+declare glob\u0061l {}
+>glob\u0061l : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

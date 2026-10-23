@@ -1,0 +1,16 @@
+//// [test/cases/bun61-L17b.ts] ////
+
+=== a.js ===
+function f() => 1
+>f : Symbol(f, Decl(a.js, 0, 0))
+
+=== b.js ===
+function 1() {}
+> : Symbol((Missing), Decl(b.js, 0, 0))
+
+=== c.js ===
+class C { m() 1 }
+>C : Symbol(C, Decl(c.js, 0, 0))
+>m : Symbol(C.m, Decl(c.js, 0, 9))
+>1 : Symbol(C[1], Decl(c.js, 0, 13))
+

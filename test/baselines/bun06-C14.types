@@ -1,0 +1,18 @@
+//// [test/cases/bun06-C14.ts] ////
+
+=== a.ts ===
+declare function g(a: any): number;
+>g : (a: any) => number
+>a : any
+
+function f1(x: number | undefined = g(x)) { }
+>f1 : (x?: number | undefined) => void
+>x : number | undefined
+>g(x) : number
+>g : (a: any) => number
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

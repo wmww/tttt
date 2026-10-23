@@ -1,0 +1,31 @@
+//// [test/cases/bun89-R18b.ts] ////
+
+=== a.ts ===
+import { a1 } from "./v";
+>a1 : any
+
+export interface I1 extends Array<typeof a1> {}
+>a1 : any
+
+export declare class Base<T> { inherited: T }
+>Base : Base<T>
+>inherited : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== v.ts ===
+// Before a.ts in program order: tsc types the variable first, as with the variable above the interface in one file. No TS2339.
+import type { I1 } from "./a";
+>I1 : I1
+
+declare const i1: I1;
+>i1 : I1
+
+export const a1 = i1.length;
+>a1 : any
+>i1.length : number
+>i1 : I1
+>length : number
+

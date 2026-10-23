@@ -1,0 +1,19 @@
+//// [test/cases/bun23-P5.ts] ////
+
+=== a.ts ===
+declare const o: { readonly k: unique symbol };
+>o : { readonly k: unique symbol; }
+>k : unique symbol
+
+({})[o.k];
+>({})[o.k] : any
+>({}) : {}
+>{} : {}
+>o.k : unique symbol
+>o : { readonly k: unique symbol; }
+>k : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

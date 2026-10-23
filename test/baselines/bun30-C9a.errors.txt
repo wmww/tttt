@@ -1,0 +1,23 @@
+a.ts(1,33): error TS2300: Duplicate identifier '#a'.
+a.ts(1,33): error TS18024: An enum member cannot be named with a private identifier.
+a.ts(1,37): error TS2300: Duplicate identifier '#a'.
+a.ts(1,37): error TS18024: An enum member cannot be named with a private identifier.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    export class C { m() { enum E { #a, #a } } }
+                                    ~~
+!!! error TS2300: Duplicate identifier '#a'.
+                                    ~~
+!!! error TS18024: An enum member cannot be named with a private identifier.
+                                        ~~
+!!! error TS2300: Duplicate identifier '#a'.
+                                        ~~
+!!! error TS18024: An enum member cannot be named with a private identifier.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

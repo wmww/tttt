@@ -1,0 +1,22 @@
+//// [test/cases/bun07-C13.ts] ////
+
+=== a.ts ===
+export {};
+declare const oa: { a: number; b: string };
+>oa : { a: number; b: string; }
+>a : number
+>b : string
+
+({ a: 1, a: 2, ...oa });
+>({ a: 1, a: 2, ...oa }) : { a: number; b: string; }
+>{ a: 1, a: 2, ...oa } : { a: number; b: string; }
+>a : number
+>1 : 1
+>a : number
+>2 : 2
+>oa : { a: number; b: string; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

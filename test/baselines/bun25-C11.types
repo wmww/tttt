@@ -1,0 +1,18 @@
+//// [test/cases/bun25-C11.ts] ////
+
+=== a.ts ===
+abstract class A { abstract p: number; constructor() { let p; ({ p } = (this)); } }
+>A : A
+>p : number
+>p : any
+>({ p } = (this)) : this
+>{ p } = (this) : this
+>{ p } : { p: any; }
+>p : any
+>(this) : this
+>this : this
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

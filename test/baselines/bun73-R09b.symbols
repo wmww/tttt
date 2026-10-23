@@ -1,0 +1,48 @@
+//// [test/cases/bun73-R09b.ts] ////
+
+=== a.ts ===
+declare function f2<K extends string, X>(x: { [P in K]: X }): [K, X];
+>f2 : Symbol(f2, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 20))
+>X : Symbol(X, Decl(a.ts, 0, 37))
+>x : Symbol(x, Decl(a.ts, 0, 41))
+>P : Symbol(P, Decl(a.ts, 0, 47))
+>K : Symbol(K, Decl(a.ts, 0, 20))
+>X : Symbol(X, Decl(a.ts, 0, 37))
+>K : Symbol(K, Decl(a.ts, 0, 20))
+>X : Symbol(X, Decl(a.ts, 0, 37))
+
+function g<T, S extends unknown, W extends { a: 1 }>(ts: T & S, tw: T & W, to: T & { b: 1 }) {
+>g : Symbol(g, Decl(a.ts, 0, 69))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>S : Symbol(S, Decl(a.ts, 1, 13))
+>W : Symbol(W, Decl(a.ts, 1, 32))
+>a : Symbol(a, Decl(a.ts, 1, 44))
+>ts : Symbol(ts, Decl(a.ts, 1, 53))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>S : Symbol(S, Decl(a.ts, 1, 13))
+>tw : Symbol(tw, Decl(a.ts, 1, 63))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>W : Symbol(W, Decl(a.ts, 1, 32))
+>to : Symbol(to, Decl(a.ts, 1, 74))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>b : Symbol(b, Decl(a.ts, 1, 84))
+
+  const k1: never = f2(ts);
+>k1 : Symbol(k1, Decl(a.ts, 2, 7))
+>f2 : Symbol(f2, Decl(a.ts, 0, 0))
+>ts : Symbol(ts, Decl(a.ts, 1, 53))
+
+  const k4: never = f2(tw);
+>k4 : Symbol(k4, Decl(a.ts, 3, 7))
+>f2 : Symbol(f2, Decl(a.ts, 0, 0))
+>tw : Symbol(tw, Decl(a.ts, 1, 63))
+
+  const k5: never = f2(to);
+>k5 : Symbol(k5, Decl(a.ts, 4, 7))
+>f2 : Symbol(f2, Decl(a.ts, 0, 0))
+>to : Symbol(to, Decl(a.ts, 1, 74))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

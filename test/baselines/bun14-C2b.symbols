@@ -1,0 +1,17 @@
+//// [test/cases/bun14-C2b.ts] ////
+
+=== a.ts ===
+function f<T extends Uppercase<string> | number>(t: T) {
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>Uppercase : Symbol(Uppercase, Decl(lib.es5.d.ts, --, --))
+>t : Symbol(t, Decl(a.ts, 0, 49))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+  const n: boolean = t;
+>n : Symbol(n, Decl(a.ts, 1, 7))
+>t : Symbol(t, Decl(a.ts, 0, 49))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,24 @@
+//// [test/cases/bun35-C1g.ts] ////
+
+=== a.ts ===
+import "dep";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@types/foo/index.d.ts ===
+export {};
+declare global { const foo: 1; }
+>global : typeof global
+>foo : 1
+
+=== node_modules/dep/index.d.ts ===
+
+import "foo";
+export {};
+=== node_modules/dep/node_modules/@types/foo/index.d.ts ===
+export {};
+declare global { const foo: 1; }
+>global : typeof global
+>foo : 1
+

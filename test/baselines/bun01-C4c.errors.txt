@@ -1,0 +1,36 @@
+a.ts(11,11): error TS2317: Global type 'Promise' must have 1 type parameter(s).
+a.ts(12,6): error TS2317: Global type 'Omit' must have 2 type parameter(s).
+a.ts(13,11): error TS2317: Global type 'TemplateStringsArray' must have 0 type parameter(s).
+a.ts(18,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true } }
+==== a.ts (4 errors) ====
+    interface Array<T> {}
+    interface Object {}
+    interface Function {}
+    interface String {}
+    interface Number {}
+    interface Boolean {}
+    interface RegExp {}
+    interface IArguments {}
+    interface CallableFunction {}
+    interface NewableFunction {}
+    interface Promise {}
+              ~~~~~~~
+!!! error TS2317: Global type 'Promise' must have 1 type parameter(s).
+    type Omit<T> = T;
+         ~~~~
+!!! error TS2317: Global type 'Omit' must have 2 type parameter(s).
+    interface TemplateStringsArray<T> {}
+              ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2317: Global type 'TemplateStringsArray' must have 0 type parameter(s).
+    async function f1() { return 1; }
+    function tag(x: any) {}
+    tag`a`;
+    function f5<T extends { a: number }>(o: T) { const { a, ...rest } = o; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

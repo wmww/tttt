@@ -1,0 +1,11 @@
+//// [test/cases/bun40-C10a.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/index.d.ts ===
+declare const wrong: Nope;
+>wrong : Nope
+

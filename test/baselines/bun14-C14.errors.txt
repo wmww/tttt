@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2820: Type '"active"' is not assignable to type 'Status'. Did you mean 'Status.Active'?
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    enum Status { Active = "ACTIVE", Done = "DONE" }
+    const s: Status = "active";
+          ~
+!!! error TS2820: Type '"active"' is not assignable to type 'Status'. Did you mean 'Status.Active'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

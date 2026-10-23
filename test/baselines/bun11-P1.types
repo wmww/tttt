@@ -1,0 +1,25 @@
+//// [test/cases/bun11-P1.ts] ////
+
+=== a.ts ===
+interface Promise<T> { then<R>(ok: (value: T) => R): Promise<R>; }
+>then : <R>(ok: (value: T) => R) => Promise<R>
+>ok : (value: T) => R
+>value : T
+
+async function f(): Promise<(x: number) => void> { return x => {}; }
+>f : () => Promise<(x: number) => void>
+>x : number
+>x => {} : (x: any) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+interface Array<T> { length: number; [n: number]: T } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { }
+>length : number
+>n : number
+
+interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+

@@ -1,0 +1,19 @@
+a.ts(3,15): error TS1194: Export declarations are not permitted in a namespace.
+a.ts(3,24): error TS2303: Circular definition of import alias 'v'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    const v = 1;
+    namespace N { export { v }; }
+                  ~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                           ~
+!!! error TS2303: Circular definition of import alias 'v'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

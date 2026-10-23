@@ -1,0 +1,35 @@
+//// [test/cases/bun51-L19c.ts] ////
+
+=== a.ts ===
+export declare function p({ a: b }): typeof b;
+>p : ({ a: b }: { a: any; }) => typeof b
+>a : any
+>b : any
+>b : any
+
+export declare function p2({ a: b }, c: typeof b): void;
+>p2 : ({ a: b }: { a: any; }, c: typeof b) => void
+>a : any
+>b : any
+>c : any
+>b : any
+
+export namespace NS { export declare function q({ a: b }): void; }
+>NS : typeof NS
+>q : ({ a: b }: { a: any; }) => void
+>a : any
+>b : any
+
+NS.q({ a: 1 });
+>NS.q({ a: 1 }) : void
+>NS.q : ({ a: b }: { a: any; }) => void
+>NS : typeof NS
+>q : ({ a: b }: { a: any; }) => void
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

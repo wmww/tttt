@@ -1,0 +1,13 @@
+//// [test/cases/bun52-L01b.ts] ////
+
+=== a.ts ===
+export {};
+type F = ({ ...rest }: { x: number }) => void;
+>F : F
+>rest : { x: number; }
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

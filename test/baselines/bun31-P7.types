@@ -1,0 +1,45 @@
+//// [test/cases/bun31-P7.ts] ////
+
+=== a.ts ===
+declare const o: { x: { y: boolean }; [k: string]: any };
+>o : { [k: string]: any; x: { y: boolean; }; }
+>x : { y: boolean; }
+>y : boolean
+>k : string
+
+function g() { return q; }
+>g : () => any
+>q : any
+
+const k = g() ? "a" : "b";
+>k : "a" | "b"
+>g() ? "a" : "b" : "a" | "b"
+>g() : any
+>g : () => any
+>"a" : "a"
+>"b" : "b"
+
+o[k] = true;
+>o[k] = true : true
+>o[k] : any
+>o : { [k: string]: any; x: { y: boolean; }; }
+>k : "a" | "b"
+>true : true
+
+const q = (o.x = { y: true }).y;
+>q : any
+>(o.x = { y: true }).y : true
+>(o.x = { y: true }) : { y: true; }
+>o.x = { y: true } : { y: true; }
+>o.x : { y: boolean; }
+>o : { [k: string]: any; x: { y: boolean; }; }
+>x : { y: boolean; }
+>{ y: true } : { y: true; }
+>y : true
+>true : true
+>y : true
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

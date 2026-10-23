@@ -1,0 +1,50 @@
+//// [test/cases/bun93-R18a.ts] ////
+
+=== a.ts ===
+interface Bad { then(): void }
+>then : () => void
+
+declare const p: Promise<string | Bad>; declare const u: string | Bad;
+>p : Promise<string | Bad>
+>u : string | Bad
+
+async function f() { await p; await u; }
+>f : () => Promise<void>
+>await p : string
+>p : Promise<string | Bad>
+>await u : string
+>u : string | Bad
+
+interface Bad2 { then(): void; x: 1 }
+>then : () => void
+>x : 1
+
+declare const p2: Promise<string | Bad2>; declare const u2: string | Bad2;
+>p2 : Promise<string | Bad2>
+>u2 : string | Bad2
+
+async function g() { await u2; await p2; }
+>g : () => Promise<void>
+>await u2 : string
+>u2 : string | Bad2
+>await p2 : string
+>p2 : Promise<string | Bad2>
+
+type S = string | Promise<S>;
+>S : S
+
+declare const s: S; declare const ps: Promise<S>;
+>s : S
+>ps : Promise<S>
+
+async function h() { await ps; await s; }
+>h : () => Promise<void>
+>await ps : string
+>ps : Promise<S>
+>await s : string
+>s : S
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

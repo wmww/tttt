@@ -1,0 +1,25 @@
+//// [test/cases/bun33-P2.ts] ////
+
+=== a.ts ===
+function f() {}
+>f : Symbol(f, Decl(a.ts, 0, 0), Decl(b.ts, 0, 37))
+
+f.x = "";
+>f.x : Symbol(f.x, Decl(a.ts, 0, 15), Decl(b.ts, 1, 21))
+>f : Symbol(f, Decl(a.ts, 0, 0), Decl(b.ts, 0, 37))
+>x : Symbol(f.x, Decl(a.ts, 0, 15), Decl(b.ts, 1, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+declare namespace Y { let v: string }
+>Y : Symbol(Y, Decl(b.ts, 0, 0))
+>v : Symbol(v, Decl(b.ts, 0, 25))
+
+declare namespace f { export import x = Y.v; }
+>f : Symbol(f, Decl(a.ts, 0, 0), Decl(b.ts, 0, 37))
+>x : Symbol(x, Decl(a.ts, 0, 15), Decl(b.ts, 1, 21))
+>Y : Symbol(Y, Decl(b.ts, 0, 0))
+>v : Symbol(x, Decl(b.ts, 0, 25))
+

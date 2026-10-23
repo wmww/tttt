@@ -1,0 +1,33 @@
+a.mts(4,29): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '0' is not assignable to parameter of type '"cjs"'.
+a.mts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "node16" }, "files": ["a.mts"] }
+==== a.mts (2 errors) ====
+    import { kind as k1 } from "dual";
+    import { b } from "./b.mjs";
+    import k2 = require("dual");
+    declare const o: Order; o.f(0);
+                                ~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type '0' is not assignable to parameter of type '"cjs"'.
+!!! related TS2771 node_modules/dual/cjs.d.cts:2:36: The last overload is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.mts (0 errors) ====
+    export const b = 1;
+    declare global { interface Order { f(x: "b"): 3 } }
+==== node_modules/dual/cjs.d.cts (0 errors) ====
+    export declare const kind: "cjs";
+    declare global { interface Order { f(x: "cjs"): 2 } }
+==== node_modules/dual/esm.d.mts (0 errors) ====
+    export declare const kind: "esm";
+    declare global { interface Order { f(x: "esm"): 1 } }
+==== node_modules/dual/package.json (0 errors) ====
+    {"name":"dual","version":"1.0.0","exports":{".":{"import":{"types":"./esm.d.mts"},"require":{"types":"./cjs.d.cts"}}}}
+    

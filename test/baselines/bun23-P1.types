@@ -1,0 +1,13 @@
+//// [test/cases/bun23-P1.ts] ////
+
+=== a.ts ===
+const s: { (x: { readonly k: unique symbol }): void } = {};
+>s : (x: { readonly k: unique symbol; }) => void
+>x : { readonly k: unique symbol; }
+>k : unique symbol
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,14 @@
+a.ts(1,18): error TS2716: Type parameter 'T' has a circular default.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface A4<T = `${A4 & string}`> { x: T }
+                     ~~~~~~~~~~~~~~~~
+!!! error TS2716: Type parameter 'T' has a circular default.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

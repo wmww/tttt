@@ -1,0 +1,15 @@
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "isolatedModules": true, "experimentalDecorators": true, "emitDecoratorMetadata": true, "module": "esnext" } }
+==== a.ts (1 errors) ====
+    import { A } from "./m";
+    declare const dec: any;
+    class C { @dec m(...a: (A[])) {} }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export interface A {}
+    

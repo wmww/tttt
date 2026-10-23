@@ -1,0 +1,32 @@
+//// [test/cases/bun35-C11a.ts] ////
+
+=== a.ts ===
+import * as m1 from "./node_modules/loose";
+>m1 : Symbol(m1, Decl(a.ts, 0, 6))
+
+import * as m2 from "./node_modules/x/node_modules/moose";
+>m2 : Symbol(m2, Decl(a.ts, 1, 6))
+
+const s1: 0 = m1.v;
+>s1 : Symbol(s1, Decl(a.ts, 2, 5))
+>m1.v : Symbol(m1.v, Decl(loose.d.ts, 0, 12))
+>m1 : Symbol(m1, Decl(a.ts, 0, 6))
+>v : Symbol(m1.v, Decl(loose.d.ts, 0, 12))
+
+const s2: 0 = m2.v;
+>s2 : Symbol(s2, Decl(a.ts, 3, 5))
+>m2.v : Symbol(m2.v, Decl(moose.d.ts, 0, 12))
+>m2 : Symbol(m2, Decl(a.ts, 1, 6))
+>v : Symbol(m2.v, Decl(moose.d.ts, 0, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+
+=== node_modules/loose.d.ts ===
+export const v: 'loose';
+>v : Symbol(v, Decl(loose.d.ts, 0, 12))
+
+=== node_modules/x/node_modules/moose.d.ts ===
+export const v: 'moose';
+>v : Symbol(v, Decl(moose.d.ts, 0, 12))
+

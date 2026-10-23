@@ -1,0 +1,27 @@
+//// [test/cases/bun03-C1c.ts] ////
+
+=== a.ts ===
+class A { c() {} }
+>A : A
+>c : () => void
+
+function mix<T extends new (...a: any[]) => A>(B: T) { return class M extends B {}; }
+>mix : <T extends new (...a: any[]) => A>(B: T) => { new (...a: any[]): M; prototype: mix.M; } & T
+>a : any[]
+>B : T
+>class M extends B {} : { new (...a: any[]): M; prototype: mix.M; } & T
+>M : { new (...a: any[]): M; prototype: mix.M; } & T
+>B : A
+
+class D extends mix(A) { get c() { return () => {} } }
+>D : D
+>mix(A) : mix.M & A
+>mix : <T extends new (...a: any[]) => A>(B: T) => { new (...a: any[]): M; prototype: mix.M; } & T
+>A : typeof A
+>c : () => void
+>() => {} : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

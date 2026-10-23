@@ -1,0 +1,32 @@
+a.ts(4,4): error TS1136: Property assignment expected.
+a.ts(5,8): error TS1136: Property assignment expected.
+a.ts(6,4): error TS1136: Property assignment expected.
+a.ts(7,4): error TS1136: Property assignment expected.
+a.ts(7,5): error TS2304: Cannot find name 'r3'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    export {};
+    declare let on: { n: number; m(): void };
+    declare function f(): "m";
+    ({ [r1]() {} } = on);
+       ~~~~
+!!! error TS1136: Property assignment expected.
+    ({ get [r2]() { return 1; } } = on);
+           ~~~~
+!!! error TS1136: Property assignment expected.
+    ({ [f(1)]() {} } = on);
+       ~~~~~~
+!!! error TS1136: Property assignment expected.
+    ({ [r3]() {} } = { m() {} });
+       ~~~~
+!!! error TS1136: Property assignment expected.
+        ~~
+!!! error TS2304: Cannot find name 'r3'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

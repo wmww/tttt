@@ -1,0 +1,39 @@
+//// [test/cases/bun32-C7.ts] ////
+
+=== a.ts ===
+function f(o: { a?: string }) { if (o.hasOwnProperty(("a"))) o.a.length; }
+>f : (o: { a?: string; }) => void
+>o : { a?: string; }
+>a : string | undefined
+>o.hasOwnProperty(("a")) : boolean
+>o.hasOwnProperty : (v: PropertyKey) => boolean
+>o : { a?: string; }
+>hasOwnProperty : (v: PropertyKey) => boolean
+>("a") : "a"
+>"a" : "a"
+>o.a.length : number
+>o.a : string | undefined
+>o : { a?: string; }
+>a : string | undefined
+>length : number
+
+function g(o: { a?: string }) { if ((o.hasOwnProperty)("a")) o.a.length; }
+>g : (o: { a?: string; }) => void
+>o : { a?: string; }
+>a : string | undefined
+>(o.hasOwnProperty)("a") : boolean
+>(o.hasOwnProperty) : (v: PropertyKey) => boolean
+>o.hasOwnProperty : (v: PropertyKey) => boolean
+>o : { a?: string; }
+>hasOwnProperty : (v: PropertyKey) => boolean
+>"a" : "a"
+>o.a.length : number
+>o.a : string | undefined
+>o : { a?: string; }
+>a : string | undefined
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

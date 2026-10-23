@@ -1,0 +1,15 @@
+//// [test/cases/bun31-SC4.ts] ////
+
+=== a.ts ===
+export class K<T> {
+>K : K<T>
+
+  /** {@link T} */
+  static p = 1
+>p : number
+>1 : 1
+}
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

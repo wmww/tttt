@@ -1,0 +1,103 @@
+a.ts(6,9): error TS2322: Type '0' is not assignable to type 'never'.
+a.ts(7,9): error TS2322: Type 'M' is not assignable to type 'never'.
+a.ts(8,9): error TS2322: Type '0' is not assignable to type 'never'.
+a.ts(9,9): error TS2322: Type 'M' is not assignable to type 'never'.
+a.ts(10,9): error TS2322: Type '0' is not assignable to type 'never'.
+a.ts(11,9): error TS2322: Type 'M' is not assignable to type 'never'.
+a.ts(12,47): error TS2552: Cannot find name 'FromDep1'. Did you mean 'FromDep0'?
+a.ts(12,75): error TS2552: Cannot find name 'FromDep2'. Did you mean 'FromDep0'?
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "module": "esnext", "moduleResolution": "bundler", "preserveSymlinks": true}}
+==== a.ts (9 errors) ====
+    import { b0, m0 } from "p0";
+    import { b1, m1 } from "p1";
+    import { b2, m2 } from "p2";
+    let b = b0; b = b1; b = b2;
+    let m = m0; m = m1; m = m2;
+    { const probe: never = b0.d; }
+            ~~~~~
+!!! error TS2322: Type '0' is not assignable to type 'never'.
+    { const probe: never = m0; }
+            ~~~~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+    { const probe: never = b1.d; }
+            ~~~~~
+!!! error TS2322: Type '0' is not assignable to type 'never'.
+    { const probe: never = m1; }
+            ~~~~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+    { const probe: never = b2.d; }
+            ~~~~~
+!!! error TS2322: Type '0' is not assignable to type 'never'.
+    { const probe: never = m2; }
+            ~~~~~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+    declare const g0: FromDep0; declare const g1: FromDep1; declare const g2: FromDep2;
+                                                  ~~~~~~~~
+!!! error TS2552: Cannot find name 'FromDep1'. Did you mean 'FromDep0'?
+                                                                              ~~~~~~~~
+!!! error TS2552: Cannot find name 'FromDep2'. Did you mean 'FromDep0'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/p0/index.d.ts (0 errors) ====
+    import { Big, M } from "big";
+    export declare const b0: Big;
+    export declare const m0: M;
+==== node_modules/p0/node_modules/big/index.d.ts (0 errors) ====
+    import type { D } from "dep";
+    export * from "./m";
+    export declare class Big { #secret: number; d: D; }
+==== node_modules/p0/node_modules/big/m.d.ts (0 errors) ====
+    export interface M { m: number }
+==== node_modules/p0/node_modules/big/package.json (0 errors) ====
+    {"name": "big", "version": "1.2.3", "types": "index.d.ts"}
+==== node_modules/p0/node_modules/dep/index.d.ts (0 errors) ====
+    export type D = 0;
+    declare global { interface FromDep0 { k: 0 } }
+==== node_modules/p0/node_modules/dep/package.json (0 errors) ====
+    {"name": "dep", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/p0/package.json (0 errors) ====
+    {"name": "p0", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/p1/index.d.ts (0 errors) ====
+    import { Big, M } from "big";
+    export declare const b1: Big;
+    export declare const m1: M;
+==== node_modules/p1/node_modules/big/index.d.ts (0 errors) ====
+    import type { D } from "dep";
+    export * from "./m";
+    export declare class Big { #secret: number; d: D; }
+==== node_modules/p1/node_modules/big/m.d.ts (0 errors) ====
+    export interface M { m: number }
+==== node_modules/p1/node_modules/big/package.json (0 errors) ====
+    {"name": "big", "version": "1.2.3", "types": "index.d.ts"}
+==== node_modules/p1/node_modules/dep/index.d.ts (0 errors) ====
+    export type D = 1;
+    declare global { interface FromDep1 { k: 1 } }
+==== node_modules/p1/node_modules/dep/package.json (0 errors) ====
+    {"name": "dep", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/p1/package.json (0 errors) ====
+    {"name": "p1", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/p2/index.d.ts (0 errors) ====
+    import { Big, M } from "big";
+    export declare const b2: Big;
+    export declare const m2: M;
+==== node_modules/p2/node_modules/big/index.d.ts (0 errors) ====
+    import type { D } from "dep";
+    export * from "./m";
+    export declare class Big { #secret: number; d: D; }
+==== node_modules/p2/node_modules/big/m.d.ts (0 errors) ====
+    export interface M { m: number }
+==== node_modules/p2/node_modules/big/package.json (0 errors) ====
+    {"name": "big", "version": "1.2.3", "types": "index.d.ts"}
+==== node_modules/p2/node_modules/dep/index.d.ts (0 errors) ====
+    export type D = 2;
+    declare global { interface FromDep2 { k: 2 } }
+==== node_modules/p2/node_modules/dep/package.json (0 errors) ====
+    {"name": "dep", "version": "1.0.0", "types": "index.d.ts"}
+==== node_modules/p2/package.json (0 errors) ====
+    {"name": "p2", "version": "1.0.0", "types": "index.d.ts"}
+    

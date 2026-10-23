@@ -1,0 +1,10 @@
+a.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    class C { st\u0061tic x = 1; }
+              ~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

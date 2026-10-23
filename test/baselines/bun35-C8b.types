@@ -1,0 +1,12 @@
+//// [test/cases/bun35-C8b.ts] ////
+
+=== a.ts ===
+import "modroot/.";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== types/modroot/index.d.ts ===
+
+export {};
+

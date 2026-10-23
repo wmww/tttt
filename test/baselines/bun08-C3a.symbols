@@ -1,0 +1,13 @@
+//// [test/cases/bun08-C3a.ts] ////
+
+=== a.ts ===
+import d from "./lib/types";
+>d : Symbol(d, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== lib/types.d.ts ===
+export declare const a: number;
+>a : Symbol(a, Decl(types.d.ts, 0, 20))
+

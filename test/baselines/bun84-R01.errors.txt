@@ -1,0 +1,45 @@
+b.js(1,13): error TS1206: Decorators are not valid here.
+b.js(2,13): error TS1090: 'export' modifier cannot appear on a parameter.
+b.js(2,13): error TS8012: Parameter modifiers can only be used in TypeScript files.
+b.js(2,19): error TS1206: Decorators are not valid here.
+b.js(3,13): error TS1090: 'export' modifier cannot appear on a parameter.
+b.js(3,13): error TS8012: Parameter modifiers can only be used in TypeScript files.
+b.js(3,27): error TS1206: Decorators are not valid here.
+b.js(4,16): error TS1090: 'export' modifier cannot appear on a parameter.
+b.js(4,16): error TS8012: Parameter modifiers can only be used in TypeScript files.
+b.js(4,22): error TS1206: Decorators are not valid here.
+z.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true } }
+==== b.js (10 errors) ====
+    function h1(@dec x) {}
+                ~~~~
+!!! error TS1206: Decorators are not valid here.
+    function h2(export @dec x) {}
+                ~~~~~~
+!!! error TS1090: 'export' modifier cannot appear on a parameter.
+                ~~~~~~~~~~~
+!!! error TS8012: Parameter modifiers can only be used in TypeScript files.
+                      ~~~~~
+!!! error TS1206: Decorators are not valid here.
+    function h3(export default @dec x) {}
+                ~~~~~~
+!!! error TS1090: 'export' modifier cannot appear on a parameter.
+                ~~~~~~~~~~~~~~~~~~~
+!!! error TS8012: Parameter modifiers can only be used in TypeScript files.
+                              ~~~~~
+!!! error TS1206: Decorators are not valid here.
+    class K { m(a, export @dec y) {} }
+                   ~~~~~~
+!!! error TS1090: 'export' modifier cannot appear on a parameter.
+                   ~~~~~~~~~~~
+!!! error TS8012: Parameter modifiers can only be used in TypeScript files.
+                         ~~~~~
+!!! error TS1206: Decorators are not valid here.
+==== z.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

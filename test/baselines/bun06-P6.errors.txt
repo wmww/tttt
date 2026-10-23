@@ -1,0 +1,21 @@
+a.ts(1,31): error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+a.ts(1,31): error TS7031: Binding element 'yield' implicitly has an 'any' type.
+a.ts(2,36): error TS7031: Binding element 'await' implicitly has an 'any' type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    function* z3() { const f = ({ yield }) => { }; }
+                                  ~~~~~
+!!! error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+                                  ~~~~~
+!!! error TS7031: Binding element 'yield' implicitly has an 'any' type.
+    async function w3() { const f = ({ await }) => { }; }
+                                       ~~~~~
+!!! error TS7031: Binding element 'await' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,56 @@
+//// [test/cases/bun60-L19a.ts] ////
+
+=== a.ts ===
+declare class G1 { static get prototype(): number; }
+>G1 : Symbol(G1, Decl(a.ts, 0, 0))
+>prototype : Symbol(G1.prototype, Decl(a.ts, 0, 18))
+
+const a1: number = G1.prototype;
+>a1 : Symbol(a1, Decl(a.ts, 1, 5))
+>G1.prototype : Symbol(G1.prototype, Decl(a.ts, 0, 18))
+>G1 : Symbol(G1, Decl(a.ts, 0, 0))
+>prototype : Symbol(G1.prototype, Decl(a.ts, 0, 18))
+
+declare class G2 { static set prototype(v: number); }
+>G2 : Symbol(G2, Decl(a.ts, 1, 32))
+>prototype : Symbol(G2.prototype, Decl(a.ts, 2, 18))
+>v : Symbol(v, Decl(a.ts, 2, 40))
+
+G2.prototype = 1; G2.prototype = new G2();
+>G2.prototype : Symbol(G2.prototype, Decl(a.ts, 2, 18))
+>G2 : Symbol(G2, Decl(a.ts, 1, 32))
+>prototype : Symbol(G2.prototype, Decl(a.ts, 2, 18))
+>G2.prototype : Symbol(G2.prototype, Decl(a.ts, 2, 18))
+>G2 : Symbol(G2, Decl(a.ts, 1, 32))
+>prototype : Symbol(G2.prototype, Decl(a.ts, 2, 18))
+>G2 : Symbol(G2, Decl(a.ts, 1, 32))
+
+declare class G4 { static accessor prototype: number; }
+>G4 : Symbol(G4, Decl(a.ts, 3, 42))
+>prototype : Symbol(G4.prototype, Decl(a.ts, 4, 18))
+
+const a5: number = G4.prototype;
+>a5 : Symbol(a5, Decl(a.ts, 5, 5))
+>G4.prototype : Symbol(G4.prototype, Decl(a.ts, 4, 18))
+>G4 : Symbol(G4, Decl(a.ts, 3, 42))
+>prototype : Symbol(G4.prototype, Decl(a.ts, 4, 18))
+
+const s1 = { ...G1 }; const a14: null = s1;
+>s1 : Symbol(s1, Decl(a.ts, 6, 5))
+>G1 : Symbol(G1, Decl(a.ts, 0, 0))
+>a14 : Symbol(a14, Decl(a.ts, 6, 27))
+>s1 : Symbol(s1, Decl(a.ts, 6, 5))
+
+class C4 { static get prototype() { return 1; } }
+>C4 : Symbol(C4, Decl(a.ts, 6, 43))
+>prototype : Symbol(C4.prototype, Decl(a.ts, 7, 10))
+
+const p4: null = C4.prototype;
+>p4 : Symbol(p4, Decl(a.ts, 8, 5))
+>C4.prototype : Symbol(C4.prototype, Decl(a.ts, 7, 10))
+>C4 : Symbol(C4, Decl(a.ts, 6, 43))
+>prototype : Symbol(C4.prototype, Decl(a.ts, 7, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

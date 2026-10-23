@@ -1,0 +1,12 @@
+//// [test/cases/bun30-C22.ts] ////
+
+=== a.ts ===
+class { static m() { const a: number = this; } }
+>m : () => void
+>a : number
+>this : typeof __missing
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

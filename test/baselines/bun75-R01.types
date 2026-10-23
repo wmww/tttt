@@ -1,0 +1,80 @@
+//// [test/cases/bun75-R01.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: T): T;
+>f : <T>(x: T) => T
+>x : T
+
+declare const v1: (typeof f<string>);
+>v1 : typeof f<string>
+>f : <T>(x: T) => T
+
+const n1: number = v1;
+>n1 : number
+>v1 : typeof f<string>
+
+declare const v2: { a: (typeof f<string>) };
+>v2 : { a: (typeof f<string>); }
+>a : typeof f<string>
+>f : <T>(x: T) => T
+
+const n2: number = v2;
+>n2 : number
+>v2 : { a: (typeof f<string>); }
+
+type Q = (typeof f<string>) | null;
+>Q : Q
+>f : <T>(x: T) => T
+
+declare const v3: Q;
+>v3 : Q
+
+const n3: number = v3;
+>n3 : number
+>v3 : Q
+
+declare const v4: (typeof f<string>) | null;
+>v4 : typeof f<string> | null
+>f : <T>(x: T) => T
+
+const n4: number = v4;
+>n4 : number
+>v4 : typeof f<string> | null
+
+declare const v5: (typeof f<string>)[];
+>v5 : (typeof f<string>)[]
+>f : <T>(x: T) => T
+
+const n5: number = v5;
+>n5 : number
+>v5 : (typeof f<string>)[]
+
+declare const v6: ( /* c */ typeof f<string> );
+>v6 : typeof f<string>
+>f : <T>(x: T) => T
+
+const n6: number = v6;
+>n6 : number
+>v6 : typeof f<string>
+
+function g(p: (typeof f<string>) | undefined) { const n7: number = p; }
+>g : (p: (typeof f<string>) | undefined) => void
+>p : typeof f<string> | undefined
+>f : <T>(x: T) => T
+>n7 : number
+>p : typeof f<string> | undefined
+
+let v8 = null! as (typeof f<number>);
+>v8 : typeof f<number>
+>null! as (typeof f<number>) : typeof f<number>
+>null! : never
+>f : <T>(x: T) => T
+
+const n8: number = v8;
+>n8 : number
+>v8 : typeof f<number>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C7c.ts] ////
+
+=== a.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== b.ts ===
+for await (const x of []) {}
+>x : Symbol(x, Decl(b.ts, 0, 16))
+

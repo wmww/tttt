@@ -1,0 +1,23 @@
+//// [test/cases/bun09-C13.ts] ////
+
+=== a.ts ===
+type AB = { a: 1 } | { b: 2 };
+>AB : Symbol(AB, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 22))
+
+function f2<T extends AB>(t: T, { ...r } = t) { const x: T = r; }
+>f2 : Symbol(f2, Decl(a.ts, 0, 30))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>AB : Symbol(AB, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 1, 26))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>r : Symbol(r, Decl(a.ts, 1, 33))
+>t : Symbol(t, Decl(a.ts, 1, 26))
+>x : Symbol(x, Decl(a.ts, 1, 53))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>r : Symbol(r, Decl(a.ts, 1, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

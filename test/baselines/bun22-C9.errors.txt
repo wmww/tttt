@@ -1,0 +1,21 @@
+a.ts(4,3): error TS2345: Argument of type 'typeof D' is not assignable to parameter of type 'D | typeof D2'.
+  Property 's' is missing in type 'typeof D' but required in type 'typeof D2'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class D { x = 1 }
+    class D2 extends D { static s = 1 }
+    declare function f<T>(a: D | T, b: T): T;
+    f(D, D2);
+      ~
+!!! error TS2345: Argument of type 'typeof D' is not assignable to parameter of type 'D | typeof D2'.
+!!! error TS2345:   Property 's' is missing in type 'typeof D' but required in type 'typeof D2'.
+!!! related TS2728 a.ts:2:29: 's' is declared here.
+!!! related TS6213 a.ts:4:3: Did you mean to use 'new' with this expression?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

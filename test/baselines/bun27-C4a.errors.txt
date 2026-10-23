@@ -1,0 +1,16 @@
+a.tsx(3,36): error TS2322: Type 'number' is not assignable to type '1'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    declare function C<const T>(p: { v: T; f: (x: T) => void }): JSX.Element;
+    const m = <C v={1} f={x => { const one: 1 = x; }} />;
+                                       ~~~
+!!! error TS2322: Type 'number' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

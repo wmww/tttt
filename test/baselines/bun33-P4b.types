@@ -1,0 +1,14 @@
+//// [test/cases/bun33-P4b.ts] ////
+
+=== a.js ===
+/** @param {number[]} q */
+function f() { /** @type {typeof arguments} */ (0); }
+>f : () => void
+>(0) : IArguments
+>0 : 0
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

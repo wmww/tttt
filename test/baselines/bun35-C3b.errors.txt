@@ -1,0 +1,16 @@
+a.ts(1,20): error TS7042: Module 'j' was resolved to 'd.json', but '--resolveJsonModule' is not used.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "node16", "paths": { "j": ["./d.json"] } } }
+==== a.ts (2 errors) ====
+    import j = require("j");
+                       ~~~
+!!! error TS7042: Module 'j' was resolved to 'd.json', but '--resolveJsonModule' is not used.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== d.json (0 errors) ====
+    {}
+    

@@ -1,0 +1,39 @@
+//// [test/cases/bun31-P5.ts] ////
+
+=== a.ts ===
+declare const o: { y: boolean };
+>o : { y: boolean; }
+>y : boolean
+
+declare const a: Record<string, number>;
+>a : Record<string, number>
+
+function g() { return q; }
+>g : () => any
+>q : any
+
+const k = g() ? "a" : "b";
+>k : "a" | "b"
+>g() ? "a" : "b" : "a" | "b"
+>g() : any
+>g : () => any
+>"a" : "a"
+>"b" : "b"
+
+a[k] = 1;
+>a[k] = 1 : 1
+>a[k] : number
+>a : Record<string, number>
+>k : "a" | "b"
+>1 : 1
+
+const q = o.y;
+>q : any
+>o.y : boolean
+>o : { y: boolean; }
+>y : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

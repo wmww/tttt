@@ -1,0 +1,16 @@
+//// [test/cases/bun86-R13b.ts] ////
+
+=== a.ts ===
+Foob;
+>Foob : Symbol(Foob, Decl(u.d.ts, 0, 0))
+
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== u.d.ts ===
+export as namespace Foob;
+>Foob : Symbol(Foob, Decl(u.d.ts, 0, 0))
+
+export = nothing;
+

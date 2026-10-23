@@ -1,0 +1,29 @@
+//// [test/cases/bun63-L08.ts] ////
+
+=== a.ts ===
+declare const bad: { [Symbol.iterator](): { next(): { done: boolean; value: number }; return: number } };
+>bad : Symbol(bad, Decl(a.ts, 0, 13))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 0, 20))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>next : Symbol(next, Decl(a.ts, 0, 43))
+>done : Symbol(done, Decl(a.ts, 0, 53))
+>value : Symbol(value, Decl(a.ts, 0, 68))
+>return : Symbol(return, Decl(a.ts, 0, 85))
+
+declare function f(...a: number[]): void;
+>f : Symbol(f, Decl(a.ts, 0, 105))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+
+f(...bad);
+>f : Symbol(f, Decl(a.ts, 0, 105))
+>bad : Symbol(bad, Decl(a.ts, 0, 13))
+
+const arr = [...bad];
+>arr : Symbol(arr, Decl(a.ts, 3, 5))
+>bad : Symbol(bad, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

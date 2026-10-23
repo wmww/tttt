@@ -1,0 +1,21 @@
+//// [test/cases/bun14-P11.ts] ////
+
+=== a.ts ===
+async function run<T extends () => unknown>(f: T): Promise<Awaited<ReturnType<T>>> {
+>run : Symbol(run, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>f : Symbol(f, Decl(a.ts, 0, 44))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+  return await (f() as ReturnType<T>);
+>f : Symbol(f, Decl(a.ts, 0, 44))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

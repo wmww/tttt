@@ -1,0 +1,10 @@
+//// [test/cases/bun43-P6b.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+<T,>(x);
+>T : Symbol(T)
+>x : Symbol(x, Decl(a.ts, 0, 11))
+

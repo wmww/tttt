@@ -1,0 +1,12 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    interface MyAsyncIter { next(v: string): Promise<IteratorResult<Promise<number>, void>>; [Symbol.asyncIterator](): MyAsyncIter }
+    const f: () => MyAsyncIter | AsyncGenerator<number, void, boolean> = async function* () { const x = yield 1; const b: boolean = x; };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

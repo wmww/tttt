@@ -1,0 +1,27 @@
+//// [test/cases/bun15-P1.ts] ////
+
+=== a.ts ===
+type G1 = () => Generator<number, void, string>;
+>G1 : G1
+
+type G2 = () => Generator<number, void, boolean>;
+>G2 : G2
+
+declare function f(...args: [...G1[], G2]): void;
+>f : (...args: [...G1[], G2]) => void
+>args : [...G1[], G2]
+
+f(function* () { const x = yield 1; const b: boolean = x; });
+>f(function* () { const x = yield 1; const b: boolean = x; }) : void
+>f : (...args: [...G1[], G2]) => void
+>function* () { const x = yield 1; const b: boolean = x; } : () => Generator<number, void, boolean>
+>x : string | boolean
+>yield 1 : string | boolean
+>1 : 1
+>b : boolean
+>x : string | boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

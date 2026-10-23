@@ -1,0 +1,40 @@
+//// [test/cases/bun58-L17.ts] ////
+
+=== a.ts ===
+const o = 1; const v = "";
+>o : 1
+>1 : 1
+>v : ""
+>"" : ""
+
+namespace N { export { v as o }; const t: boolean = o; }
+>N : typeof N
+>v : ""
+>o : ""
+>t : boolean
+>o : ""
+
+namespace M { const w = true; export { w as o }; const t: null = o; function f() { const u: null = o; } }
+>M : typeof M
+>w : true
+>true : true
+>w : true
+>o : true
+>t : null
+>o : true
+>f : () => void
+>u : null
+>o : true
+
+namespace P { export { v as o }; export namespace Q { const t: null = o; } }
+>P : typeof P
+>v : ""
+>o : ""
+>Q : typeof Q
+>t : null
+>o : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun27-P1.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+declare function L(p: { children: ("x" | "y")[] }): JSX.Element;
+>L : (p: { children: ("x" | "y")[]; }) => JSX.Element
+>p : { children: ("x" | "y")[]; }
+>children : ("x" | "y")[]
+>JSX : any
+
+const t = <L>{true}{"x"}</L>;
+>t : JSX.Element
+><L>{true}{"x"}</L> : JSX.Element
+>L : (p: { children: ("x" | "y")[]; }) => JSX.Element
+>true : true
+>"x" : "x"
+>L : (p: { children: ("x" | "y")[]; }) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

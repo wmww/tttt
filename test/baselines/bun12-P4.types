@@ -1,0 +1,32 @@
+//// [test/cases/bun12-P4.ts] ////
+
+=== a.ts ===
+enum E { Two = 2 }
+>E : E
+>Two : E.Two
+>2 : 2
+
+interface AL extends ReadonlyArray<string | number> { length: E.Two }
+>length : E
+>E : any
+
+declare function f<T extends AL>(x: T): T;
+>f : <T extends AL>(x: T) => T
+>x : T
+
+const r = f([1, "a"]);
+>r : [number, string]
+>f([1, "a"]) : [number, string]
+>f : <T extends AL>(x: T) => T
+>[1, "a"] : [number, string]
+>1 : 1
+>"a" : "a"
+
+const t: [number, string] = r;
+>t : [number, string]
+>r : [number, string]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

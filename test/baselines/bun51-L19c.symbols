@@ -1,0 +1,31 @@
+//// [test/cases/bun51-L19c.ts] ////
+
+=== a.ts ===
+export declare function p({ a: b }): typeof b;
+>p : Symbol(p, Decl(a.ts, 0, 0))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 0, 27))
+>b : Symbol(b, Decl(a.ts, 0, 27))
+
+export declare function p2({ a: b }, c: typeof b): void;
+>p2 : Symbol(p2, Decl(a.ts, 0, 46))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 1, 28))
+>c : Symbol(c, Decl(a.ts, 1, 36))
+>b : Symbol(b, Decl(a.ts, 1, 28))
+
+export namespace NS { export declare function q({ a: b }): void; }
+>NS : Symbol(NS, Decl(a.ts, 1, 56))
+>q : Symbol(q, Decl(a.ts, 2, 21))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 2, 49))
+
+NS.q({ a: 1 });
+>NS.q : Symbol(NS.q, Decl(a.ts, 2, 21))
+>NS : Symbol(NS, Decl(a.ts, 1, 56))
+>q : Symbol(NS.q, Decl(a.ts, 2, 21))
+>a : Symbol(a, Decl(a.ts, 3, 6))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 12))
+

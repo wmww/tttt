@@ -1,0 +1,11 @@
+//// [test/cases/bun93-P03a.ts] ////
+
+=== a.ts ===
+({` #p: 1, #p: 2 });
+>({` #p: 1, #p: 2 });const sentinel: number = ""; : any
+>{` #p: 1, #p: 2 });const sentinel: number = ""; : any
+>{ : {}
+>` #p: 1, #p: 2 });const sentinel: number = ""; : " #p: 1, #p: 2 });\nconst sentinel: number = \"\";\n"
+
+const sentinel: number = "";
+

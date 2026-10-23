@@ -1,0 +1,42 @@
+a.js(1,12): error TS1098: Type parameter list cannot be empty.
+a.js(3,12): error TS1098: Type parameter list cannot be empty.
+a.js(3,14): error TS1005: '(' expected.
+a.js(5,18): error TS1098: Type parameter list cannot be empty.
+a.js(5,20): error TS1005: '(' expected.
+a.js(9,18): error TS1098: Type parameter list cannot be empty.
+a.js(9,20): error TS1005: '(' expected.
+a.js(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (8 errors) ====
+    /** @type {<>() => void} */
+               ~~
+!!! error TS1098: Type parameter list cannot be empty.
+    let a;
+    /** @type {<>} */
+               ~~
+!!! error TS1098: Type parameter list cannot be empty.
+                 ~
+!!! error TS1005: '(' expected.
+    let b;
+    /** @type {Array<<>>} */
+                     ~~
+!!! error TS1098: Type parameter list cannot be empty.
+                       ~
+!!! error TS1005: '(' expected.
+    let c;
+    /** @template T */
+    class A { /** @type {T | undefined} */ x = undefined; }
+    /** @augments {A<<>} */
+                     ~~
+!!! error TS1098: Type parameter list cannot be empty.
+                       ~
+!!! error TS1005: '(' expected.
+    class E extends A {}
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

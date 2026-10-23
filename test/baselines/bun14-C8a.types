@@ -1,0 +1,12 @@
+//// [test/cases/bun14-C8a.ts] ////
+
+=== a.ts ===
+function f<T extends [1, ...T]>(t: T, ...r: T) { }
+>f : <T>(t: T, ...r: T) => void
+>t : T
+>r : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

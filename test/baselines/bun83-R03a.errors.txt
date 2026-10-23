@@ -1,0 +1,224 @@
+a01.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a01.ts(1,17): error TS1005: ';' expected.
+a01.ts(1,32): error TS1125: Hexadecimal digit expected.
+a03.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a03.ts(1,17): error TS1005: ';' expected.
+a03.ts(1,31): error TS6189: Multiple consecutive numeric separators are not permitted.
+a04.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a04.ts(1,17): error TS1005: ';' expected.
+a04.ts(1,29): error TS7008: Member '"x' implicitly has an 'any' type.
+a04.ts(1,31): error TS1002: Unterminated string literal.
+a05.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a05.ts(1,17): error TS1005: ';' expected.
+a05.ts(2,1): error TS1185: Merge conflict marker encountered.
+a06.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a06.ts(1,17): error TS1005: ';' expected.
+a06.ts(1,32): error TS1125: Hexadecimal digit expected.
+a08.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a08.ts(1,17): error TS1005: ';' expected.
+a08.ts(1,29): error TS1125: Hexadecimal digit expected.
+a10.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a10.ts(1,17): error TS1005: ';' expected.
+a10.ts(1,31): error TS1125: Hexadecimal digit expected.
+a15.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a15.ts(1,17): error TS1005: ';' expected.
+a15.ts(1,29): error TS1489: Decimals with leading zeros are not allowed.
+a19.ts(1,7): error TS2300: Duplicate identifier 'C'.
+a19.ts(1,17): error TS1005: ';' expected.
+a19.ts(2,1): error TS1185: Merge conflict marker encountered.
+a20.ts(1,16): error TS1005: ',' expected.
+a20.ts(1,28): error TS1125: Hexadecimal digit expected.
+a22.ts(1,5): error TS2403: Subsequent variable declarations must have the same type.  Variable 'o' must be of type '{ a: number; readonly "\\x": number; }', but here has type '{ a: number; "\\x"(): Promise<void>; }'.
+a22.ts(1,16): error TS1005: ',' expected.
+a22.ts(1,30): error TS1125: Hexadecimal digit expected.
+a23.ts(1,5): error TS2403: Subsequent variable declarations must have the same type.  Variable 'o' must be of type '{ a: number; readonly "\\x": number; }', but here has type '{ a: number; readonly b: number; }'.
+a23.ts(1,16): error TS1005: ',' expected.
+a23.ts(2,1): error TS1185: Merge conflict marker encountered.
+a29.ts(1,3): error TS1005: ';' expected.
+a29.ts(2,1): error TS1185: Merge conflict marker encountered.
+a38.ts(1,3): error TS1005: ';' expected.
+a38.ts(1,15): error TS2436: Ambient module declaration cannot specify relative module name.
+a38.ts(1,18): error TS1125: Hexadecimal digit expected.
+a39.ts(1,3): error TS1005: ';' expected.
+a39.ts(1,23): error TS2436: Ambient module declaration cannot specify relative module name.
+a39.ts(1,26): error TS1125: Hexadecimal digit expected.
+b36.ts(1,7): error TS2300: Duplicate identifier 'C'.
+b36.ts(1,17): error TS1005: ';' expected.
+b36.ts(2,1): error TS1185: Merge conflict marker encountered.
+b37.ts(1,7): error TS2300: Duplicate identifier 'C'.
+b37.ts(1,17): error TS1005: ';' expected.
+b37.ts(2,1): error TS1185: Merge conflict marker encountered.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a01.ts (3 errors) ====
+    class C { a = 1 st\u0061tic "\x" = 2 }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a03.ts:1:7: 'C' was also declared here.
+!!! related TS6203 a04.ts:1:7: 'C' was also declared here.
+!!! related TS6203 a05.ts:1:7: 'C' was also declared here.
+!!! related TS6203 a06.ts:1:7: 'C' was also declared here.
+!!! related TS6203 a08.ts:1:7: 'C' was also declared here.
+!!! related TS6203 a10.ts:1:7: 'C' was also declared here.
+!!! related TS6203 a15.ts:1:7: 'C' was also declared here.
+!!! related TS6203 a19.ts:1:7: 'C' was also declared here.
+!!! related TS6203 b36.ts:1:7: 'C' was also declared here.
+!!! related TS6203 b37.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                                   
+!!! error TS1125: Hexadecimal digit expected.
+==== a03.ts (3 errors) ====
+    class C { a = 1 st\u0061tic 1__0 = 2 }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                                  ~
+!!! error TS6189: Multiple consecutive numeric separators are not permitted.
+==== a04.ts (4 errors) ====
+    class C { a = 1 st\u0061tic "x
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                                ~~
+!!! error TS7008: Member '"x' implicitly has an 'any' type.
+                                  
+!!! error TS1002: Unterminated string literal.
+    }
+==== a05.ts (3 errors) ====
+    class C { a = 1 st\u0061tic
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    b = 2 }
+==== a06.ts (3 errors) ====
+    class C { a = 1 publi\u0063 "\x" = 2 }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                                   
+!!! error TS1125: Hexadecimal digit expected.
+==== a08.ts (3 errors) ====
+    class C { a = 1 g\u0065t "\x"() { return 1 } }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~
+!!! error TS1005: ';' expected.
+                                
+!!! error TS1125: Hexadecimal digit expected.
+==== a10.ts (3 errors) ====
+    class C { a = 1 \u0061sync "\x"() { } }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                                  
+!!! error TS1125: Hexadecimal digit expected.
+==== a15.ts (3 errors) ====
+    class C { a = 1 st\u0061tic 08 = 2 }
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                                ~~
+!!! error TS1489: Decimals with leading zeros are not allowed.
+==== a19.ts (3 errors) ====
+    class C { a = 1 g\u0065t
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~
+!!! error TS1005: ';' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    b() { return 1 } }
+==== a20.ts (2 errors) ====
+    var o = { a: 1 g\u0065t "\x"() { return 1 } }
+                   ~~~~~~~~
+!!! error TS1005: ',' expected.
+                               
+!!! error TS1125: Hexadecimal digit expected.
+==== a22.ts (3 errors) ====
+    var o = { a: 1 \u0061sync "\x"() { } }
+        ~
+!!! error TS2403: Subsequent variable declarations must have the same type.  Variable 'o' must be of type '{ a: number; readonly "\\x": number; }', but here has type '{ a: number; "\\x"(): Promise<void>; }'.
+!!! related TS6203 a20.ts:1:5: 'o' was also declared here.
+                   ~~~~~~~~~~
+!!! error TS1005: ',' expected.
+                                 
+!!! error TS1125: Hexadecimal digit expected.
+==== a23.ts (3 errors) ====
+    var o = { a: 1 g\u0065t
+        ~
+!!! error TS2403: Subsequent variable declarations must have the same type.  Variable 'o' must be of type '{ a: number; readonly "\\x": number; }', but here has type '{ a: number; readonly b: number; }'.
+!!! related TS6203 a20.ts:1:5: 'o' was also declared here.
+                   ~~~~~~~~
+!!! error TS1005: ',' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    b() { return 1 } }
+==== a29.ts (2 errors) ====
+    1 l\u0065t
+      ~~~~~~~~
+!!! error TS1005: ';' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    y = 1
+==== a38.ts (3 errors) ====
+    1 modul\u0065 "\x" {}
+      ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                  ~~~~
+!!! error TS2436: Ambient module declaration cannot specify relative module name.
+                     
+!!! error TS1125: Hexadecimal digit expected.
+==== a39.ts (3 errors) ====
+    1 d\u0065clare module "\x" {}
+      ~~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+                          ~~~~
+!!! error TS2436: Ambient module declaration cannot specify relative module name.
+                             
+!!! error TS1125: Hexadecimal digit expected.
+==== b36.ts (3 errors) ====
+    class C { a = 1 st\u0061tic
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    { } }
+==== b37.ts (3 errors) ====
+    class C { a = 1 c\u006fnstructor
+          ~
+!!! error TS2300: Duplicate identifier 'C'.
+!!! related TS6203 a01.ts:1:7: 'C' was also declared here.
+                    ~~~~~~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    () { } }
+    

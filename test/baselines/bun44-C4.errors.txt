@@ -1,0 +1,21 @@
+a.ts(4,9): error TS2322: Type 'T' is not assignable to type '{ q: 1; }'.
+  Property 'q' is missing in type 'A' but required in type '{ q: 1; }'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface I { a: 1 }
+    type A = I & { p: 1 };
+    function f<T extends A>(t: T) {
+      const x: { q: 1 } = t;
+            ~
+!!! error TS2322: Type 'T' is not assignable to type '{ q: 1; }'.
+!!! error TS2322:   Property 'q' is missing in type 'A' but required in type '{ q: 1; }'.
+!!! related TS2728 a.ts:4:14: 'q' is declared here.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

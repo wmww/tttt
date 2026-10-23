@@ -1,0 +1,26 @@
+//// [test/cases/bun17-C2a.ts] ////
+
+=== a.ts ===
+type Opt<T> = { [K in keyof T]?: number };
+>Opt : Symbol(Opt, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+>K : Symbol(K, Decl(a.ts, 0, 17))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+
+function g<T extends { a: string }>(x: Opt<T>, y: { c: number }) {
+>g : Symbol(g, Decl(a.ts, 0, 42))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>a : Symbol(a, Decl(a.ts, 1, 22))
+>x : Symbol(x, Decl(a.ts, 1, 36))
+>Opt : Symbol(Opt, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>y : Symbol(y, Decl(a.ts, 1, 46))
+>c : Symbol(c, Decl(a.ts, 1, 51))
+
+  x = y;
+>x : Symbol(x, Decl(a.ts, 1, 36))
+>y : Symbol(y, Decl(a.ts, 1, 46))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

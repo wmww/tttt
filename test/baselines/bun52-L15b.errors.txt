@@ -1,0 +1,18 @@
+a.ts(1,15): error TS2651: A member initializer in a enum declaration cannot reference members declared after it, including members defined in other enums.
+a.ts(2,15): error TS2651: A member initializer in a enum declaration cannot reference members declared after it, including members defined in other enums.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    enum E1 { A = E1["z"] } namespace E1 { export const z = 1; }
+                  ~~~~~~~
+!!! error TS2651: A member initializer in a enum declaration cannot reference members declared after it, including members defined in other enums.
+    enum E2 { A = E2["z"] } namespace E2 { export function z() {} }
+                  ~~~~~~~
+!!! error TS2651: A member initializer in a enum declaration cannot reference members declared after it, including members defined in other enums.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

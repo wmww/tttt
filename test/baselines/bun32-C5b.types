@@ -1,0 +1,24 @@
+//// [test/cases/bun32-C5b.ts] ////
+
+=== a.ts ===
+function g(o?: { a?: { b: 1 } }) { if ((o?.a)?.b === 1) o.a; }
+>g : (o?: { a?: { b: 1; }; }) => void
+>o : { a?: { b: 1; }; } | undefined
+>a : { b: 1; } | undefined
+>b : 1
+>(o?.a)?.b === 1 : boolean
+>(o?.a)?.b : 1 | undefined
+>(o?.a) : { b: 1; } | undefined
+>o?.a : { b: 1; } | undefined
+>o : { a?: { b: 1; }; } | undefined
+>a : { b: 1; } | undefined
+>b : 1 | undefined
+>1 : 1
+>o.a : { b: 1; }
+>o : { a?: { b: 1; }; } | undefined
+>a : { b: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

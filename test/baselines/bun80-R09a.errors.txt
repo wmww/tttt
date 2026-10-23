@@ -1,0 +1,38 @@
+a.ts(1,16): error TS7031: Binding element 'a' implicitly has an 'any' type.
+a.ts(1,18): error TS1005: ',' expected.
+a.ts(1,18): error TS7031: Binding element 'b' implicitly has an 'any' type.
+b.ts(1,15): error TS7031: Binding element 'a' implicitly has an 'any' type.
+b.ts(1,17): error TS1005: ',' expected.
+b.ts(1,17): error TS7031: Binding element 'b' implicitly has an 'any' type.
+c.ts(1,16): error TS7031: Binding element 'a' implicitly has an 'any' type.
+c.ts(1,18): error TS1005: ',' expected.
+c.ts(1,18): error TS7031: Binding element 'b' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022" } }
+==== a.ts (3 errors) ====
+    let t1: new ({ a b }) => void;
+                   ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+                     ~
+!!! error TS1005: ',' expected.
+                     ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+==== b.ts (3 errors) ====
+    let t2: { m({ a b }): void };
+                  ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+                    ~
+!!! error TS1005: ',' expected.
+                    ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+==== c.ts (3 errors) ====
+    let t3: new ([ a b ]) => void;
+                   ~
+!!! error TS7031: Binding element 'a' implicitly has an 'any' type.
+                     ~
+!!! error TS1005: ',' expected.
+                     ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    

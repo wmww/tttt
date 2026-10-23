@@ -1,0 +1,19 @@
+b.cts(1,36): error TS2339: Property 'a' does not exist on type '{}'.
+b.cts(1,42): error TS2339: Property 'default' does not exist on type '{}'.
+b.cts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext" } }
+==== b.cts (3 errors) ====
+    import * as u3 from "./u3.cjs"; u3.a; u3.default;
+                                       ~
+!!! error TS2339: Property 'a' does not exist on type '{}'.
+                                             ~~~~~~~
+!!! error TS2339: Property 'default' does not exist on type '{}'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== u3.d.cts (0 errors) ====
+    declare const u: { default: number; a: 1 } | { default: string; a: 2 }; export = u;
+    

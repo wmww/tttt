@@ -1,0 +1,14 @@
+a.ts(1,20): error TS2315: Type 'U' is not generic.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export type A1<T = U<number>, U = 1> = [T, U];
+                       ~~~~~~~~~
+!!! error TS2315: Type 'U' is not generic.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

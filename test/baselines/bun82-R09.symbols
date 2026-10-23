@@ -1,0 +1,48 @@
+//// [test/cases/bun82-R09.ts] ////
+
+=== a.ts ===
+const o1 = { m(this) { return this; } };
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 12))
+>this : Symbol(this, Decl(a.ts, 0, 15))
+>this : Symbol(this, Decl(a.ts, 0, 15))
+
+const t1: null = o1;
+>t1 : Symbol(t1, Decl(a.ts, 1, 5))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+
+const o2 = { m(this) { return 1; }, k: 1 };
+>o2 : Symbol(o2, Decl(a.ts, 2, 5))
+>m : Symbol(m, Decl(a.ts, 2, 12))
+>this : Symbol(this, Decl(a.ts, 2, 15))
+>k : Symbol(k, Decl(a.ts, 2, 35))
+
+const t2: null = o2;
+>t2 : Symbol(t2, Decl(a.ts, 3, 5))
+>o2 : Symbol(o2, Decl(a.ts, 2, 5))
+
+const o3 = { f: function (this) { return this; } };
+>o3 : Symbol(o3, Decl(a.ts, 4, 5))
+>f : Symbol(f, Decl(a.ts, 4, 12))
+>this : Symbol(this, Decl(a.ts, 4, 26))
+>this : Symbol(this, Decl(a.ts, 4, 26))
+
+const t3: null = o3;
+>t3 : Symbol(t3, Decl(a.ts, 5, 5))
+>o3 : Symbol(o3, Decl(a.ts, 4, 5))
+
+const o4 = { m(this, x: number) { return x; } };
+>o4 : Symbol(o4, Decl(a.ts, 6, 5))
+>m : Symbol(m, Decl(a.ts, 6, 12))
+>this : Symbol(this, Decl(a.ts, 6, 15))
+>x : Symbol(x, Decl(a.ts, 6, 20))
+>x : Symbol(x, Decl(a.ts, 6, 20))
+
+o4.m = 1;
+>o4.m : Symbol(m, Decl(a.ts, 6, 12))
+>o4 : Symbol(o4, Decl(a.ts, 6, 5))
+>m : Symbol(m, Decl(a.ts, 6, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

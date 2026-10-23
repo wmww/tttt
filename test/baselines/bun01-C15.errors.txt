@@ -1,0 +1,24 @@
+error TS2552: Cannot find name 'Disposable'. Did you mean 'Disposables'?
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2552: Cannot find name 'Disposable'. Did you mean 'Disposables'?
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2022" } }
+==== a.ts (1 errors) ====
+    interface Array<T> {}
+    interface Object {}
+    interface Function {}
+    interface String {}
+    interface Number {}
+    interface Boolean {}
+    interface RegExp {}
+    interface IArguments {}
+    interface CallableFunction {}
+    interface NewableFunction {}
+    interface Disposables {}
+    function f6(a: any) { using x = a; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

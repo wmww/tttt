@@ -1,0 +1,108 @@
+//// [test/cases/bun95-Z3.ts] ////
+
+=== a.ts ===
+// A conditional type that is instantiated within its own instantiation, with the same type arguments. The recursion ends at the
+// mapped type, whose members are in place (empty) while they are resolved. `root.instantiations[key] = result`: the outer call
+// assigns last and returns its own result.
+type A<T> = T extends 1 ? { [P in keyof T]: A<T> }[keyof T] & { x: 1 } : 2;
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+>P : Symbol(P, Decl(a.ts, 3, 29))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+>T : Symbol(T, Decl(a.ts, 3, 7))
+>x : Symbol(x, Decl(a.ts, 3, 63))
+
+const a1: A<any> = null;
+>a1 : Symbol(a1, Decl(a.ts, 4, 5))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+type A2<T> = T extends 1 ? [{ [P in keyof T]: A2<T> }[keyof T]] : 2;
+>A2 : Symbol(A2, Decl(a.ts, 4, 24))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>P : Symbol(P, Decl(a.ts, 5, 31))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>A2 : Symbol(A2, Decl(a.ts, 4, 24))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+
+const a2: A2<any> = null;
+>a2 : Symbol(a2, Decl(a.ts, 6, 5))
+>A2 : Symbol(A2, Decl(a.ts, 4, 24))
+
+type S1 = { [k: string]: 1 };
+>S1 : Symbol(S1, Decl(a.ts, 6, 25))
+>k : Symbol(k, Decl(a.ts, 7, 13))
+
+type A3<T> = T extends object ? [{ [P in keyof T]: A3<T> }[keyof T]] : 2;
+>A3 : Symbol(A3, Decl(a.ts, 7, 29))
+>T : Symbol(T, Decl(a.ts, 8, 8))
+>T : Symbol(T, Decl(a.ts, 8, 8))
+>P : Symbol(P, Decl(a.ts, 8, 36))
+>T : Symbol(T, Decl(a.ts, 8, 8))
+>A3 : Symbol(A3, Decl(a.ts, 7, 29))
+>T : Symbol(T, Decl(a.ts, 8, 8))
+>T : Symbol(T, Decl(a.ts, 8, 8))
+
+const a3: A3<S1> = null;
+>a3 : Symbol(a3, Decl(a.ts, 9, 5))
+>A3 : Symbol(A3, Decl(a.ts, 7, 29))
+>S1 : Symbol(S1, Decl(a.ts, 6, 25))
+
+// Through a second alias: that one keeps what it got in the meantime.
+type B<T> = T extends 1 ? { [P in keyof T]: B2<T> }[keyof T] & { x: 1 } : 2;
+>B : Symbol(B, Decl(a.ts, 9, 24))
+>T : Symbol(T, Decl(a.ts, 11, 7))
+>T : Symbol(T, Decl(a.ts, 11, 7))
+>P : Symbol(P, Decl(a.ts, 11, 29))
+>T : Symbol(T, Decl(a.ts, 11, 7))
+>B2 : Symbol(B2, Decl(a.ts, 11, 76))
+>T : Symbol(T, Decl(a.ts, 11, 7))
+>T : Symbol(T, Decl(a.ts, 11, 7))
+>x : Symbol(x, Decl(a.ts, 11, 64))
+
+type B2<T> = T extends 3 ? B<T> : 4;
+>B2 : Symbol(B2, Decl(a.ts, 11, 76))
+>T : Symbol(T, Decl(a.ts, 12, 8))
+>T : Symbol(T, Decl(a.ts, 12, 8))
+>B : Symbol(B, Decl(a.ts, 9, 24))
+>T : Symbol(T, Decl(a.ts, 12, 8))
+
+const b1: B<any> = null;
+>b1 : Symbol(b1, Decl(a.ts, 13, 5))
+>B : Symbol(B, Decl(a.ts, 9, 24))
+
+const b2: B2<any> = null;
+>b2 : Symbol(b2, Decl(a.ts, 14, 5))
+>B2 : Symbol(B2, Decl(a.ts, 11, 76))
+
+// The outer call has an alias in its key: the entry without one keeps the result of the inner call.
+type C<T> = T extends 1 ? { [P in keyof T]: C<T> }[keyof T] & { x: 1 } : 2;
+>C : Symbol(C, Decl(a.ts, 14, 25))
+>T : Symbol(T, Decl(a.ts, 16, 7))
+>T : Symbol(T, Decl(a.ts, 16, 7))
+>P : Symbol(P, Decl(a.ts, 16, 29))
+>T : Symbol(T, Decl(a.ts, 16, 7))
+>C : Symbol(C, Decl(a.ts, 14, 25))
+>T : Symbol(T, Decl(a.ts, 16, 7))
+>T : Symbol(T, Decl(a.ts, 16, 7))
+>x : Symbol(x, Decl(a.ts, 16, 63))
+
+type CX = C<any>;
+>CX : Symbol(CX, Decl(a.ts, 16, 75))
+>C : Symbol(C, Decl(a.ts, 14, 25))
+
+const c1: CX = null;
+>c1 : Symbol(c1, Decl(a.ts, 18, 5))
+>CX : Symbol(CX, Decl(a.ts, 16, 75))
+
+const c2: C<any> = null;
+>c2 : Symbol(c2, Decl(a.ts, 19, 5))
+>C : Symbol(C, Decl(a.ts, 14, 25))
+
+const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(a.ts, 20, 5))
+

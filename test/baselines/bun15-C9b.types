@@ -1,0 +1,28 @@
+//// [test/cases/bun15-C9b.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : boolean
+
+declare function f1d<const A extends readonly unknown[]>(...args: A): A;
+>f1d : <const A extends readonly unknown[]>(...args: A) => A
+>args : A
+
+const r1d: never = f1d(...(cond ? [1] : ["a", true]));
+>r1d : never
+>f1d(...(cond ? [1] : ["a", true])) : [1] | ["a", true]
+>f1d : <const A extends readonly unknown[]>(...args: A) => A
+>...(cond ? [1] : ["a", true]) : string | number | boolean
+>(cond ? [1] : ["a", true]) : number[] | (string | boolean)[]
+>cond ? [1] : ["a", true] : number[] | (string | boolean)[]
+>cond : boolean
+>[1] : number[]
+>1 : 1
+>["a", true] : (string | boolean)[]
+>"a" : "a"
+>true : true
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

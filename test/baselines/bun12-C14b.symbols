@@ -1,0 +1,24 @@
+//// [test/cases/bun12-C14b.ts] ////
+
+=== a.ts ===
+function g<T>() { const src = { a: 1 }; return { ...src }; }
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>src : Symbol(src, Decl(a.ts, 0, 23))
+>a : Symbol(a, Decl(a.ts, 0, 31))
+>src : Symbol(src, Decl(a.ts, 0, 23))
+
+type U = ReturnType<typeof g<1>> | ReturnType<typeof g<2>>;
+>U : Symbol(U, Decl(a.ts, 0, 60))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+
+const n: never = null! as U;
+>n : Symbol(n, Decl(a.ts, 2, 5))
+>U : Symbol(U, Decl(a.ts, 0, 60))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

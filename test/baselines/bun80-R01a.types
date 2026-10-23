@@ -1,0 +1,29 @@
+//// [test/cases/bun80-R01a.ts] ////
+
+=== a.ts ===
+type T1 = typeof import("./x", { with: { #constructor: "a" } });
+>T1 : typeof import("./x")
+>#constructor : any
+
+type T2 = import("./x", { with: { #constructor: "a" } }).A;
+>T2 : number
+>#constructor : any
+
+import { a as a3 } from "./x" with { #constructor: "a" };
+>a : 1
+>a3 : 1
+>#constructor : any
+
+export * from "./x" with { #constructor: "b" };
+>#constructor : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== x.ts ===
+export const a = 1; export type A = number;
+>a : 1
+>1 : 1
+>A : number
+

@@ -1,0 +1,40 @@
+a.ts(1,6): error TS2456: Type alias 'F3' circularly references itself.
+a.ts(1,41): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(1,41): error TS2315: Type 'F3' is not generic.
+a.ts(2,6): error TS2456: Type alias 'F8' circularly references itself.
+a.ts(2,41): error TS2315: Type 'F8' is not generic.
+a.ts(2,41): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(3,6): error TS2456: Type alias 'H4' circularly references itself.
+a.ts(3,41): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(3,47): error TS2315: Type 'H4' is not generic.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (10 errors) ====
+    type F3<X> = X extends (infer A extends F3<A>) ? A : never;
+         ~~
+!!! error TS2456: Type alias 'F3' circularly references itself.
+                                            ~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+                                            ~~~~~
+!!! error TS2315: Type 'F3' is not generic.
+    type F8<X> = X extends [infer A extends F8<A>[]] ? A : never;
+         ~~
+!!! error TS2456: Type alias 'F8' circularly references itself.
+                                            ~~~~~
+!!! error TS2315: Type 'F8' is not generic.
+                                            ~~~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+    type H4<X> = X extends [infer A extends keyof H4<A>] ? A : never;
+         ~~
+!!! error TS2456: Type alias 'H4' circularly references itself.
+                                            ~~~~~~~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+                                                  ~~~~~
+!!! error TS2315: Type 'H4' is not generic.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

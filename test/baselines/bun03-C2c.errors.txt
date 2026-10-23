@@ -1,0 +1,16 @@
+a.js(2,25): error TS2611: 'asg' is defined as a property in class 'B', but is overridden here in 'D' as an accessor.
+a.js(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    class B { constructor() { this.asg = 1; } }
+    class D extends B { get asg() { return 1 } }
+                            ~~~
+!!! error TS2611: 'asg' is defined as a property in class 'B', but is overridden here in 'D' as an accessor.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

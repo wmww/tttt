@@ -1,0 +1,48 @@
+//// [test/cases/bun56-L07.ts] ////
+
+=== a.ts ===
+export {};
+interface M<T> { m: T }
+>m : T
+
+declare const K: new () => {};
+>K : new () => {}
+
+type U = 1;
+>U : 1
+
+export class C implements (M)<Nope> {}
+>C : C
+>(M) : any
+>M : any
+
+export interface X extends (M)<Nope2> {}
+>(M) : any
+>M : any
+
+export class D implements K()<Nope3> {}
+>D : D
+>K() : any
+>K : new () => {}
+
+export interface Y extends M[0]<Nope4> {}
+>M[0] : any
+>M : any
+>0 : 0
+
+export class F implements (M)<Array<Nope5>, { a: typeof nope6 }> {}
+>F : F
+>(M) : any
+>M : any
+>a : any
+>nope6 : any
+
+export class G implements (M)<U> {}
+>G : G
+>(M) : any
+>M : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

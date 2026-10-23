@@ -1,0 +1,22 @@
+a.ts(9,10): error TS7023: 'compute4' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const key = compute({ a: 1 }, {}, "a");
+    function compute(o: { a: number }, p: any, i: "a") { p[key] = 1; return o[i]; }
+    const key2 = compute2({ a: 1 }, {}, "a");
+    function compute2(o: { a: number }, p: any, i: "a") { if (p[key2]) {} return o[i]; }
+    const key3 = compute3({ a: 1 }, {});
+    function compute3(o: { a: number }, p: any) { let i: "a" = "a"; p[key3] = 1; return o[i]; }
+    // a key with a name: TS7023 in both
+    const key4 = compute4({ a: 1 }, {});
+    function compute4(o: { a: number }, p: any) { const i = "a"; p[key4] = 1; return o[i]; }
+             ~~~~~~~~
+!!! error TS7023: 'compute4' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

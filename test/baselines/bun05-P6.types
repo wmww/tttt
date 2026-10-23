@@ -1,0 +1,17 @@
+//// [test/cases/bun05-P6.ts] ////
+
+=== a.ts ===
+const m = import.meta;
+>m : {}
+>import.meta : {}
+>meta : {}
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+

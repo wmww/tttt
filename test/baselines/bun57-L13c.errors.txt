@@ -1,0 +1,40 @@
+error TS2318: Cannot find global type 'AsyncIterableIterator'.
+error TS2318: Cannot find global type 'IterableIterator'.
+a.ts(2,25): error TS2461: Type '{ a: 1; }' is not an array type.
+a.ts(2,25): error TS2488: Type '{ a: 1; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+a.ts(3,25): error TS2488: Type 'number[]' must have a '[Symbol.iterator]()' method that returns an iterator.
+a.ts(4,25): error TS2461: Type '""' is not an array type.
+a.ts(4,25): error TS2488: Type '""' must have a '[Symbol.iterator]()' method that returns an iterator.
+a.ts(5,31): error TS2461: Type '{ a: 1; }' is not an array type.
+a.ts(5,31): error TS2504: Type '{ a: 1; }' must have a '[Symbol.asyncIterator]()' method that returns an async iterator.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2318: Cannot find global type 'AsyncIterableIterator'.
+!!! error TS2318: Cannot find global type 'IterableIterator'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es5"], "target": "es2022" } }
+==== a.ts (8 errors) ====
+    declare const i1: { a: 1 };
+    function* g1() { yield* i1; }
+                            ~~
+!!! error TS2461: Type '{ a: 1; }' is not an array type.
+                            ~~
+!!! error TS2488: Type '{ a: 1; }' must have a '[Symbol.iterator]()' method that returns an iterator.
+    function* g2() { yield* [1]; }
+                            ~~~
+!!! error TS2488: Type 'number[]' must have a '[Symbol.iterator]()' method that returns an iterator.
+    function* g3() { yield* ""; }
+                            ~~
+!!! error TS2461: Type '""' is not an array type.
+                            ~~
+!!! error TS2488: Type '""' must have a '[Symbol.iterator]()' method that returns an iterator.
+    async function* g4() { yield* i1; }
+                                  ~~
+!!! error TS2461: Type '{ a: 1; }' is not an array type.
+                                  ~~
+!!! error TS2504: Type '{ a: 1; }' must have a '[Symbol.asyncIterator]()' method that returns an async iterator.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,46 @@
+a.ts(2,26): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(2,35): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(3,26): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(3,35): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(4,26): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(4,35): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(5,26): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(5,35): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(6,17): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(6,26): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (11 errors) ====
+    class K {}
+    declare function f1({ a: b }: {}, c = b.x): void;
+                             ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                      ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f2({ a: b }: {}, c = b()): void;
+                             ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                      ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f3({ a: b }: {}, c = (b = 1)): void;
+                             ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                      ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function f4({ a: b }: {}, c = () => b): void;
+                             ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                      ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    type F5 = ({ a: b }: {}, c = b.x) => void;
+                    ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                             ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

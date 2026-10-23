@@ -1,0 +1,32 @@
+//// [test/cases/bun93-R03b.ts] ////
+
+=== a.ts ===
+type X={x:1};type Y={y:1};type B={b:1};type C={c:1};type D={d:1};
+>X : X
+>x : 1
+>Y : Y
+>y : 1
+>B : B
+>b : 1
+>C : C
+>c : 1
+>D : D
+>d : 1
+
+type BCD = B & C & D;
+>BCD : BCD
+
+type T2 = B & C & D & (X|Y);
+>T2 : T2
+
+declare let v4: BCD & (X|Y);
+>v4 : B & C & D & (X | Y)
+
+const e4: number = v4;
+>e4 : number
+>v4 : B & C & D & (X | Y)
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

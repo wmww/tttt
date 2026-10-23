@@ -1,0 +1,12 @@
+//// [test/cases/bun43-P8e.ts] ////
+
+=== a.tsx ===
+var v = <#a />;
+>v : any
+><#a /> : any
+>#a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+a.ts(1,36): error TS2506: 'K' is referenced directly or indirectly in its own base expression.
+a.ts(1,36): error TS7022: 'K' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export namespace N9 { export class K extends M9.A {} }
+                                       ~
+!!! error TS2506: 'K' is referenced directly or indirectly in its own base expression.
+                                       ~
+!!! error TS7022: 'K' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    export namespace M9 { export import A = N9.K; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

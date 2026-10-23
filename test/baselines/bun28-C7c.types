@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C7c.ts] ////
+
+=== a.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+for await (const x of []) {}
+>x : never
+>[] : never[]
+

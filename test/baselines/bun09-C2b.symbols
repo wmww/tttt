@@ -1,0 +1,13 @@
+//// [test/cases/bun09-C2b.ts] ////
+
+=== a.ts ===
+declare const u7: [a: 1] & [a: 1];
+>u7 : Symbol(u7, Decl(a.ts, 0, 13))
+
+const n7: never = u7;
+>n7 : Symbol(n7, Decl(a.ts, 1, 5))
+>u7 : Symbol(u7, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

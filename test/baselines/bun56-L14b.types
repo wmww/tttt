@@ -1,0 +1,39 @@
+//// [test/cases/bun56-L14b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+async function f() {
+>f : () => Promise<void>
+
+  let x: new (@await y: any) => void;
+>x : new (y: any) => void
+>await : any
+>y : any
+
+  let x2: abstract new (a: any, @await.b y: any) => void;
+>x2 : abstract new (a: any, y: any) => void
+>a : any
+>await.b : any
+>await : any
+>b : any
+>y : any
+
+  let x3: <T>(@await y: any) => void;
+>x3 : <T>(y: any) => void
+>await : any
+>y : any
+
+  let x4: { m(@await y: any): void; new (@await y: any): void };
+>x4 : { new (y: any): void; m(y: any): void; }
+>m : (y: any) => void
+>await : any
+>y : any
+>await : any
+>y : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,14 @@
+a.ts(1,78): error TS18048: 'b' is possibly 'undefined'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUncheckedIndexedAccess": true } }
+==== a.ts (2 errors) ====
+    function g(v: [string, ...number[]]) { let b: number | undefined; [, b] = v; b.toFixed(); }
+                                                                                 ~
+!!! error TS18048: 'b' is possibly 'undefined'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,15 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+f.js(1,40): error TS7008: Member 'a' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== f.js (1 errors) ====
+    export class C { m() { this.a = "s"; } a; }
+                                           ~
+!!! error TS7008: Member 'a' implicitly has an 'any' type.
+    

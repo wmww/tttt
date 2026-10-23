@@ -1,0 +1,58 @@
+//// [test/cases/bun82-R09.ts] ////
+
+=== a.ts ===
+const o1 = { m(this) { return this; } };
+>o1 : { m(this: { m(this: any): any; }): { m(this: any): any; }; }
+>{ m(this) { return this; } } : { m(this: { m(this: any): any; }): { m(this: any): any; }; }
+>m : (this: { m(this: any): any; }) => { m(this: any): any; }
+>this : { m(this: any): any; }
+>this : { m(this: any): any; }
+
+const t1: null = o1;
+>t1 : null
+>o1 : { m(this: { m(this: any): any; }): { m(this: any): any; }; }
+
+const o2 = { m(this) { return 1; }, k: 1 };
+>o2 : { m(this: { m(this: any): number; k: number; }): number; k: number; }
+>{ m(this) { return 1; }, k: 1 } : { m(this: { m(this: any): number; k: number; }): number; k: number; }
+>m : (this: { m(this: any): number; k: number; }) => number
+>this : { m(this: any): number; k: number; }
+>1 : 1
+>k : number
+>1 : 1
+
+const t2: null = o2;
+>t2 : null
+>o2 : { m(this: { m(this: any): number; k: number; }): number; k: number; }
+
+const o3 = { f: function (this) { return this; } };
+>o3 : { f: (this: { f: any; }) => { f: any; }; }
+>{ f: function (this) { return this; } } : { f: (this: { f: any; }) => { f: any; }; }
+>f : (this: { f: any; }) => { f: any; }
+>function (this) { return this; } : (this: { f: any; }) => { f: any; }
+>this : { f: (this: any) => any; }
+>this : { f: (this: any) => any; }
+
+const t3: null = o3;
+>t3 : null
+>o3 : { f: (this: { f: any; }) => { f: any; }; }
+
+const o4 = { m(this, x: number) { return x; } };
+>o4 : { m(this: { m(this: any, x: number): number; }, x: number): number; }
+>{ m(this, x: number) { return x; } } : { m(this: { m(this: any, x: number): number; }, x: number): number; }
+>m : (this: { m(this: any, x: number): number; }, x: number) => number
+>this : { m(this: any, x: number): number; }
+>x : number
+>x : number
+
+o4.m = 1;
+>o4.m = 1 : 1
+>o4.m : (this: { m(this: any, x: number): number; }, x: number) => number
+>o4 : { m(this: { m(this: any, x: number): number; }, x: number): number; }
+>m : (this: { m(this: any, x: number): number; }, x: number) => number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

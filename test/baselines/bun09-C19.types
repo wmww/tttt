@@ -1,0 +1,16 @@
+//// [test/cases/bun09-C19.ts] ////
+
+=== a.ts ===
+function rf([...ra, rb]) {}
+>rf : ([...ra, rb]: [any, any]) => void
+>ra : [any, any]
+>rb : any
+
+const trf: never = rf;
+>trf : never
+>rf : ([...ra, rb]: [any, any]) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

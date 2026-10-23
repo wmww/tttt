@@ -1,0 +1,26 @@
+//// [test/cases/bun22-C5c.ts] ////
+
+=== a.ts ===
+function mk<X>() { return class<T extends X> { y!: T } }
+>mk : <X>() => typeof (Anonymous class)
+>class<T extends X> { y!: T } : typeof (Anonymous class)
+>y : T
+
+declare function take<R>(c: new () => R): R;
+>take : <R>(c: new () => R) => R
+>c : new () => R
+
+take(mk<string>()).y.length;
+>take(mk<string>()).y.length : number
+>take(mk<string>()).y : string
+>take(mk<string>()) : mk.(Anonymous class)<string>
+>take : <R>(c: new () => R) => R
+>mk<string>() : typeof (Anonymous class)
+>mk : <X>() => typeof (Anonymous class)
+>y : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

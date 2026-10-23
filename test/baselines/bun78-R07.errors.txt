@@ -1,0 +1,49 @@
+a.ts(1,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(2,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(3,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(4,21): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(5,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(7,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(7,17): error TS2304: Cannot find name 'await'.
+a.ts(8,13): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(8,18): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+a.ts(8,18): error TS2524: 'await' expressions cannot be used in a parameter initializer.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (11 errors) ====
+    function q1(a = await 1): void; function q1(a: any) {}
+                ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function q2(a = (await "s")): void; function q2(a: any) {}
+                ~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    function q3(a = await await true): void; function q3(a: any) {}
+                ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    declare function q4(a = await 1): void; q4();
+                        ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    class K { m(a = await 1): void; m(a: any) {} }
+                ~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    // tsc reports these: the operand is not a literal, or the initializer is not the `await` itself
+    function r1(a = await -1): void; function r1(a: any) {}
+                ~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                    ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    function r2(a = [await 1]): void; function r2(a: any) {}
+                ~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                     ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 a.ts:8:10: Did you mean to mark this function as 'async'?
+                     ~~~~~~~
+!!! error TS2524: 'await' expressions cannot be used in a parameter initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

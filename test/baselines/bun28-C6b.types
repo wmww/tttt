@@ -1,0 +1,16 @@
+//// [test/cases/bun28-C6b.ts] ////
+
+=== a.ts ===
+declare module "m" { export type a = 1; }
+>"m" : typeof import("m")
+>a : 1
+
+declare module "o" { import type d, { a } from "m"; }
+>"o" : typeof import("o")
+>d : any
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

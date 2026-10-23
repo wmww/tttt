@@ -1,0 +1,48 @@
+//// [test/cases/bun92-R19c.ts] ////
+
+=== a.ts ===
+import * as m1 from "./m1";
+>m1 : typeof m1
+
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : S<X>
+
+const t1: S<typeof m1> = ["?", -99];
+>t1 : S<typeof m1>
+>m1 : typeof m1
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+
+type M = { [K in keyof typeof m1]: K }; const m: M = 0;
+>M : M
+>m1 : typeof m1
+>m : M
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+const x = 1; export { x as "0", x as "1.5", x as "a b", x as y };
+>x : 1
+>1 : 1
+>x : 1
+>"0" : 1
+>x : 1
+>"1.5" : 1
+>x : 1
+>"a b" : 1
+>x : 1
+>y : 1
+
+export * as "2" from "./m2";
+>"2" : typeof import("./m2")
+
+=== m2.ts ===
+export const z = 1;
+>z : 1
+>1 : 1
+

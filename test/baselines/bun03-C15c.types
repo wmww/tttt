@@ -1,0 +1,11 @@
+//// [test/cases/bun03-C15c.ts] ////
+
+=== a.ts ===
+function f() { export * from "./missing"; }
+>f : () => void
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

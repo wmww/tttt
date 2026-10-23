@@ -1,0 +1,20 @@
+a.ts(2,13): error TS18004: No value exists in scope for the shorthand property 'kind'. Either declare one or provide an initializer.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import { Kind } from "./kinds";
+    const o = { kind };
+                ~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'kind'. Either declare one or provide an initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== kinds.ts (0 errors) ====
+    export * as Kind from "./kinds_";
+    export type Kind = "Field";
+==== kinds_.ts (0 errors) ====
+    export const FIELD = "Field";
+    

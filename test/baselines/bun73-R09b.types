@@ -1,0 +1,37 @@
+//// [test/cases/bun73-R09b.ts] ////
+
+=== a.ts ===
+declare function f2<K extends string, X>(x: { [P in K]: X }): [K, X];
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>x : { [P in K]: X; }
+
+function g<T, S extends unknown, W extends { a: 1 }>(ts: T & S, tw: T & W, to: T & { b: 1 }) {
+>g : <T, S extends unknown, W extends { a: 1; }>(ts: T & S, tw: T & W, to: T & { b: 1; }) => void
+>a : 1
+>ts : T & S
+>tw : T & W
+>to : T & { b: 1; }
+>b : 1
+
+  const k1: never = f2(ts);
+>k1 : never
+>f2(ts) : [never, never]
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>ts : T & S
+
+  const k4: never = f2(tw);
+>k4 : never
+>f2(tw) : ["a", 1]
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>tw : T & W
+
+  const k5: never = f2(to);
+>k5 : never
+>f2(to) : ["b", 1]
+>f2 : <K extends string, X>(x: { [P in K]: X; }) => [K, X]
+>to : T & { b: 1; }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

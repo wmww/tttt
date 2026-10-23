@@ -1,0 +1,19 @@
+a.ts(1,9): error TS2304: Cannot find name 'a'.
+a.ts(1,13): error TS2304: Cannot find name 'b'.
+a.ts(1,15): error TS1005: ',' expected.
+a.ts(1,19): error TS1134: Variable declaration expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    let y = a + b >>= 1;
+            ~
+!!! error TS2304: Cannot find name 'a'.
+                ~
+!!! error TS2304: Cannot find name 'b'.
+                  ~~~
+!!! error TS1005: ',' expected.
+                      ~
+!!! error TS1134: Variable declaration expected.
+    

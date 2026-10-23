@@ -1,0 +1,27 @@
+a.ts(1,32): error TS7031: Binding element 'b' implicitly has an 'any' type.
+a.ts(2,33): error TS7031: Binding element 'b' implicitly has an 'any' type.
+a.ts(3,54): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(3,54): error TS7031: Binding element 'b' implicitly has an 'any' type.
+a.ts(5,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    export declare function p({ a: b }): typeof b;
+                                   ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    export declare function p2({ a: b }, c: typeof b): void;
+                                    ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    export namespace NS { export declare function q({ a: b }): void; }
+                                                         ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+!!! related TS2843 a.ts:3:57: We can only write a type for 'a' by adding a type for the entire parameter here.
+                                                         ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    NS.q({ a: 1 });
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,17 @@
+a.ts(1,18): error TS2451: Cannot redeclare block-scoped variable 'a'.
+a.ts(1,34): error TS2451: Cannot redeclare block-scoped variable 'a'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    if (false) { let a = 1; function a() {} }
+                     ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'a'.
+                                     ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'a'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

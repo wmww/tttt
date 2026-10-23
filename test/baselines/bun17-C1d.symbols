@@ -1,0 +1,49 @@
+//// [test/cases/bun17-C1d.ts] ////
+
+=== a.ts ===
+type AA<T> = BB<T>[]; type BB<T> = CC<T>[]; type CC<T> = T[];
+>AA : Symbol(AA, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>BB : Symbol(BB, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>BB : Symbol(BB, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 0, 30))
+>CC : Symbol(CC, Decl(a.ts, 0, 43))
+>T : Symbol(T, Decl(a.ts, 0, 30))
+>CC : Symbol(CC, Decl(a.ts, 0, 43))
+>T : Symbol(T, Decl(a.ts, 0, 52))
+>T : Symbol(T, Decl(a.ts, 0, 52))
+
+type AA2<T> = BB2<T>[]; type BB2<T> = CC2<T>[]; type CC2<T> = T[];
+>AA2 : Symbol(AA2, Decl(a.ts, 0, 61))
+>T : Symbol(T, Decl(a.ts, 1, 9))
+>BB2 : Symbol(BB2, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 9))
+>BB2 : Symbol(BB2, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 33))
+>CC2 : Symbol(CC2, Decl(a.ts, 1, 47))
+>T : Symbol(T, Decl(a.ts, 1, 33))
+>CC2 : Symbol(CC2, Decl(a.ts, 1, 47))
+>T : Symbol(T, Decl(a.ts, 1, 57))
+>T : Symbol(T, Decl(a.ts, 1, 57))
+
+declare function f<T>(x: AA<T>): T;
+>f : Symbol(f, Decl(a.ts, 1, 66))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>x : Symbol(x, Decl(a.ts, 2, 22))
+>AA : Symbol(AA, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+
+declare let v: AA2<number>;
+>v : Symbol(v, Decl(a.ts, 3, 11))
+>AA2 : Symbol(AA2, Decl(a.ts, 0, 61))
+
+const r7: string = f(v);
+>r7 : Symbol(r7, Decl(a.ts, 4, 5))
+>f : Symbol(f, Decl(a.ts, 1, 66))
+>v : Symbol(v, Decl(a.ts, 3, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

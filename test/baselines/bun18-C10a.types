@@ -1,0 +1,15 @@
+//// [test/cases/bun18-C10a.ts] ////
+
+=== a.ts ===
+declare function f1(...args: [a: number, ...b: [string]]): void;
+>f1 : (a: number, args_1: string) => void
+>args : [a: number, string]
+
+const x1: 0 = f1;
+>x1 : 0
+>f1 : (a: number, args_1: string) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

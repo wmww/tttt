@@ -1,0 +1,34 @@
+//// [test/cases/bun56-L10.ts] ////
+
+=== a.ts ===
+declare const x: any; declare const async: any; type U = 1;
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>async : Symbol(async, Decl(a.ts, 0, 35))
+>U : Symbol(U, Decl(a.ts, 0, 47))
+
+async <T extends U>(x);
+>async : Symbol(async, Decl(a.ts, 0, 35))
+>T : Symbol(T)
+>U : Symbol(U, Decl(a.ts, 0, 47))
+> : Symbol(unknown)
+> : Symbol(unknown)
+>x : Symbol(x, Decl(a.ts, 0, 13))
+
+async <T = U>(x);
+>async : Symbol(async, Decl(a.ts, 0, 35))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+
+async <const T>(x);
+>async : Symbol(async, Decl(a.ts, 0, 35))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+
+async <T extends U>(x: any);
+>async : Symbol(async, Decl(a.ts, 0, 35))
+>T : Symbol(T)
+>U : Symbol(U, Decl(a.ts, 0, 47))
+> : Symbol(unknown)
+> : Symbol(unknown)
+>x : Symbol(x, Decl(a.ts, 0, 13))
+

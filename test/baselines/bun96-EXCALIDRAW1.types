@@ -1,0 +1,235 @@
+//// [test/cases/bun96-EXCALIDRAW1.ts] ////
+
+=== a.ts ===
+import type { AppState } from "./typesx";
+>AppState : any
+
+const GridLineColor = { light: 1, dark: 2 } as const;
+>GridLineColor : { readonly light: 1; readonly dark: 2; }
+>{ light: 1, dark: 2 } as const : { readonly light: 1; readonly dark: 2; }
+>{ light: 1, dark: 2 } : { readonly light: 1; readonly dark: 2; }
+>light : 1
+>1 : 1
+>dark : 2
+>2 : 2
+
+function strokeGrid(theme: AppState["theme"], gridStep: number, x: number) {
+>strokeGrid : (theme: AppState["theme"], gridStep: number, x: number) => any
+>theme : AppState
+>gridStep : number
+>x : number
+
+  const isBold = gridStep > 1 && x % gridStep === 0;
+>isBold : boolean
+>gridStep > 1 && x % gridStep === 0 : boolean
+>gridStep > 1 : boolean
+>gridStep : number
+>1 : 1
+>x % gridStep === 0 : boolean
+>x % gridStep : number
+>x : number
+>gridStep : number
+>0 : 0
+
+  return isBold ? GridLineColor[theme] : GridLineColor[theme];
+>isBold ? GridLineColor[theme] : GridLineColor[theme] : any
+>isBold : boolean
+>GridLineColor[theme] : any
+>GridLineColor : { readonly light: 1; readonly dark: 2; }
+>theme : AppState
+>GridLineColor[theme] : any
+>GridLineColor : { readonly light: 1; readonly dark: 2; }
+>theme : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+// The neighbours: every place where `narrowType` meets `&&` (assumed false) or `||` (assumed true) in a test that does not mention the reference.
+const G = { light: 1, dark: 2 } as const;
+>G : { readonly light: 1; readonly dark: 2; }
+>{ light: 1, dark: 2 } as const : { readonly light: 1; readonly dark: 2; }
+>{ light: 1, dark: 2 } : { readonly light: 1; readonly dark: 2; }
+>light : 1
+>1 : 1
+>dark : 2
+>2 : 2
+
+declare function nev(x: never): void;
+>nev : (x: never) => void
+>x : never
+
+declare function isNope(x: unknown): x is Nope;
+>isNope : (x: unknown) => x is Nope
+>x : unknown
+
+declare function assert(x: unknown): asserts x;
+>assert : (x: unknown) => asserts x
+>x : unknown
+
+function f1(t: Nope, a: number, b: number) { const c = a > 1 || b === 0; c ? nev(t) : nev(t); }
+>f1 : (t: Nope, a: number, b: number) => void
+>t : Nope
+>a : number
+>b : number
+>c : boolean
+>a > 1 || b === 0 : boolean
+>a > 1 : boolean
+>a : number
+>1 : 1
+>b === 0 : boolean
+>b : number
+>0 : 0
+>c ? nev(t) : nev(t) : void
+>c : boolean
+>nev(t) : void
+>nev : (x: never) => void
+>t : any
+>nev(t) : void
+>nev : (x: never) => void
+>t : Nope
+
+function f2(o: { readonly t: Nope<string> }, a: number, b: number) { const c = a > 1 && b === 0; return c ? G[o.t] : G[o.t]; }
+>f2 : (o: { readonly t: Nope<string>; }, a: number, b: number) => any
+>o : { readonly t: Nope<string>; }
+>t : Nope<string>
+>a : number
+>b : number
+>c : boolean
+>a > 1 && b === 0 : boolean
+>a > 1 : boolean
+>a : number
+>1 : 1
+>b === 0 : boolean
+>b : number
+>0 : 0
+>c ? G[o.t] : G[o.t] : any
+>c : boolean
+>G[o.t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>o.t : Nope<string>
+>o : { readonly t: Nope<string>; }
+>t : Nope<string>
+>G[o.t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>o.t : any
+>o : { readonly t: Nope<string>; }
+>t : any
+
+function f3(x: unknown, a: number, b: number) { const c = a > 1 && b === 0; if (isNope(x)) { return c ? G[x] : G[x]; } return 0; }
+>f3 : (x: unknown, a: number, b: number) => any
+>x : unknown
+>a : number
+>b : number
+>c : boolean
+>a > 1 && b === 0 : boolean
+>a > 1 : boolean
+>a : number
+>1 : 1
+>b === 0 : boolean
+>b : number
+>0 : 0
+>isNope(x) : boolean
+>isNope : (x: unknown) => x is Nope
+>x : unknown
+>c ? G[x] : G[x] : any
+>c : boolean
+>G[x] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>x : Nope
+>G[x] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>x : any
+>0 : 0
+
+function f4(t: Nope, a: number, b: number) { assert(a > 1 || b === 0); return G[t]; }
+>f4 : (t: Nope, a: number, b: number) => any
+>t : Nope
+>a : number
+>b : number
+>assert(a > 1 || b === 0) : void
+>assert : (x: unknown) => asserts x
+>a > 1 || b === 0 : boolean
+>a > 1 : boolean
+>a : number
+>1 : 1
+>b === 0 : boolean
+>b : number
+>0 : 0
+>G[t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>t : any
+
+function f5(t: Nope, a: number, b: number) { switch (true) { case a > 1 || b === 0: return G[t]; } return G[t]; }
+>f5 : (t: Nope, a: number, b: number) => any
+>t : Nope
+>a : number
+>b : number
+>true : true
+>a > 1 || b === 0 : boolean
+>a > 1 : boolean
+>a : number
+>1 : 1
+>b === 0 : boolean
+>b : number
+>0 : 0
+>G[t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>t : any
+>G[t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>t : Nope
+
+// The same in both: an assigned parameter is no constant reference; the first antecedent of a join is the declared type.
+function g1(t: Nope, a: number, b: number) { const c = a > 1 && b === 0; const r = c ? G[t] : G[t]; t = r; return r; }
+>g1 : (t: Nope, a: number, b: number) => any
+>t : Nope
+>a : number
+>b : number
+>c : boolean
+>a > 1 && b === 0 : boolean
+>a > 1 : boolean
+>a : number
+>1 : 1
+>b === 0 : boolean
+>b : number
+>0 : 0
+>r : any
+>c ? G[t] : G[t] : any
+>c : boolean
+>G[t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>t : Nope
+>G[t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>t : Nope
+>t = r : any
+>t : Nope
+>r : any
+>r : any
+
+function g2(t: Nope, a: number, b: number) { const c = a > 1 && b === 0; if (c) { a++; } return G[t]; }
+>g2 : (t: Nope, a: number, b: number) => any
+>t : Nope
+>a : number
+>b : number
+>c : boolean
+>a > 1 && b === 0 : boolean
+>a > 1 : boolean
+>a : number
+>1 : 1
+>b === 0 : boolean
+>b : number
+>0 : 0
+>c : boolean
+>a++ : number
+>a : number
+>G[t] : any
+>G : { readonly light: 1; readonly dark: 2; }
+>t : Nope
+
+const sentinel2: number = "";
+>sentinel2 : number
+>"" : ""
+

@@ -1,0 +1,39 @@
+//// [test/cases/bun16-C15a.ts] ////
+
+=== b.js ===
+const x = [1];
+>x : Symbol(x, Decl(b.js, 0, 5))
+
+/** @param {string[]} rest */
+function f1() { return x[arguments.length]; }
+>f1 : Symbol(f1, Decl(b.js, 0, 14))
+>x : Symbol(x, Decl(b.js, 0, 5))
+>arguments.length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+>arguments : Symbol(arguments)
+>length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+
+/** @param {string} n2 */
+function f2() { return x[arguments[0]]; }
+>f2 : Symbol(f2, Decl(b.js, 2, 45))
+>x : Symbol(x, Decl(b.js, 0, 5))
+>arguments : Symbol(arguments)
+
+/** @param {string[]} rest */
+function f3(a = arguments[0]) { return a; }
+>f3 : Symbol(f3, Decl(b.js, 4, 41))
+>a : Symbol(a, Decl(b.js, 6, 12))
+>arguments : Symbol(arguments)
+>a : Symbol(a, Decl(b.js, 6, 12))
+
+/** @param {string[]} rest */
+function f4() { return { [arguments.length]: 1 }; }
+>f4 : Symbol(f4, Decl(b.js, 6, 43))
+>[arguments.length] : Symbol([arguments.length], Decl(b.js, 8, 24))
+>arguments.length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+>arguments : Symbol(arguments)
+>length : Symbol(IArguments.length, Decl(lib.es5.d.ts, --, --))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 10, 5))
+

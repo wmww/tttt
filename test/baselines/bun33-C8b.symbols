@@ -1,0 +1,8 @@
+//// [test/cases/bun33-C8b.ts] ////
+
+=== a.ts ===
+import(("./g"));
+fromG;
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

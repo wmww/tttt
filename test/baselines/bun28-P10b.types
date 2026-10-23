@@ -1,0 +1,12 @@
+//// [test/cases/bun28-P10b.ts] ////
+
+=== a.ts ===
+type F = ({...a: b}: any) => void;
+>F : F
+>a : any
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

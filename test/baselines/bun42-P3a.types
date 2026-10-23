@@ -1,0 +1,8 @@
+//// [test/cases/bun42-P3a.ts] ////
+
+=== src/a.ts ===
+import "../SRC/foo.ts";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

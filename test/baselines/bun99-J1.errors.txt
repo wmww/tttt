@@ -1,0 +1,64 @@
+error TS6054: File 'App.TSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+error TS6054: File 'Mixed.Tsx' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+error TS6054: File 'z.JSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+  The file is in the program because:
+    Part of 'files' list in tsconfig.json
+imports.ts(1,19): error TS2307: Cannot find module './App.TSX' or its corresponding type declarations.
+imports.ts(2,19): error TS5097: An import path can only end with a '.tsx' extension when 'allowImportingTsExtensions' is enabled.
+imports.ts(4,19): error TS2307: Cannot find module './z.JSX' or its corresponding type declarations.
+imports.ts(5,19): error TS2307: Cannot find module './Mixed' or its corresponding type declarations.
+lower.tsx(1,18): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+lower.tsx(1,18): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+s.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS6054: File 'App.TSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:209: File is matched by 'files' list specified here.
+!!! error TS6054: File 'Mixed.Tsx' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:242: File is matched by 'files' list specified here.
+!!! error TS6054: File 'z.JSX' has an unsupported extension. The only supported extensions are '.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'.
+!!! error TS6054:   The file is in the program because:
+!!! error TS6054:     Part of 'files' list in tsconfig.json
+!!! related TS1410 tsconfig.json:1:233: File is matched by 'files' list specified here.
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2023", "dom"], "jsx": "react-jsx", "module": "esnext", "moduleResolution": "bundler", "allowJs": true, "checkJs": true}, "files": ["App.TSX", "lower.tsx", "z.JSX", "Mixed.Tsx", "s.ts", "imports.ts"]}
+==== App.TSX (0 errors) ====
+    export const a = <div />;
+==== Mixed.Tsx (0 errors) ====
+    export const d = <div />;
+==== imports.ts (4 errors) ====
+    import { a } from "./App.TSX";
+                      ~~~~~~~~~~~
+!!! error TS2307: Cannot find module './App.TSX' or its corresponding type declarations.
+    import { b } from "./lower.tsx";
+                      ~~~~~~~~~~~~~
+!!! error TS5097: An import path can only end with a '.tsx' extension when 'allowImportingTsExtensions' is enabled.
+    import { b as b2 } from "./lower";
+    import { c } from "./z.JSX";
+                      ~~~~~~~~~
+!!! error TS2307: Cannot find module './z.JSX' or its corresponding type declarations.
+    import { d } from "./Mixed";
+                      ~~~~~~~~~
+!!! error TS2307: Cannot find module './Mixed' or its corresponding type declarations.
+    export const all = [a, b, b2, c, d];
+==== lower.tsx (2 errors) ====
+    export const b = <div />;
+                     ~~~~~~~
+!!! error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+                     ~~~~~~~
+!!! error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+==== s.ts (1 errors) ====
+    const sentinel: number = ""; export {};
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== z.JSX (0 errors) ====
+    export const c = <div />;
+    

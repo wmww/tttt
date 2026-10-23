@@ -1,0 +1,53 @@
+//// [test/cases/bun83-R11b.ts] ////
+
+=== b01.ts ===
+const v = x ? (a): T => { f(1 2) } : 1;
+>v : Symbol(v, Decl(b01.ts, 0, 5))
+>a : Symbol(a, Decl(b01.ts, 0, 15))
+>T : Symbol(T)
+
+=== b02.ts ===
+const v = x ? (a): T => { var b = ; } : 1;
+>v : Symbol(v, Decl(b02.ts, 0, 5))
+>a : Symbol(a, Decl(b02.ts, 0, 15))
+>T : Symbol(T)
+>b : Symbol(b, Decl(b02.ts, 0, 29))
+
+=== b03.ts ===
+const v = x ? (a): T => { if } : 1;
+>v : Symbol(v, Decl(b03.ts, 0, 5))
+>a : Symbol(a, Decl(b03.ts, 0, 15))
+>T : Symbol(T)
+
+=== b04.ts ===
+const v = x ? (a): T => f(1 2) : 1;
+>v : Symbol(v, Decl(b04.ts, 0, 5))
+>a : Symbol(a, Decl(b04.ts, 0, 15))
+>T : Symbol(T)
+
+=== b05.ts ===
+const v = x ? (a): T => [1 2] : 1;
+>v : Symbol(v, Decl(b05.ts, 0, 5))
+>a : Symbol(a, Decl(b05.ts, 0, 15))
+>T : Symbol(T)
+
+=== b06.ts ===
+const v = x ? (a): T => { a b } : 1;
+>v : Symbol(v, Decl(b06.ts, 0, 5))
+>a : Symbol(a, Decl(b06.ts, 0, 15))
+>T : Symbol(T)
+>a : Symbol(a, Decl(b06.ts, 0, 15))
+
+=== b10.ts ===
+const v = x ? (a): T => { € } : 1;
+>v : Symbol(v, Decl(b10.ts, 0, 5))
+>a : Symbol(a, Decl(b10.ts, 0, 15))
+>T : Symbol(T)
+
+=== b11.ts ===
+const v = x ? (a): T => { function () {} } : 1;
+>v : Symbol(v, Decl(b11.ts, 0, 5))
+>a : Symbol(a, Decl(b11.ts, 0, 15))
+>T : Symbol(T)
+> : Symbol((Missing), Decl(b11.ts, 0, 25))
+

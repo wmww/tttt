@@ -1,0 +1,22 @@
+//// [test/cases/bun20-C13b.ts] ////
+
+=== a.ts ===
+declare function fail(): never;
+>fail : () => never
+
+function t7(x: string | number | boolean) { fail(); switch (typeof x) { case "string": case "number": const a: null = x; } }
+>t7 : (x: string | number | boolean) => void
+>x : string | number | boolean
+>fail() : never
+>fail : () => never
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number | boolean
+>"string" : "string"
+>"number" : "number"
+>a : null
+>x : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

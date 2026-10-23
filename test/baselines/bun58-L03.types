@@ -1,0 +1,90 @@
+//// [test/cases/bun58-L03.ts] ////
+
+=== a.ts ===
+declare const k: string; declare function fn(): string; declare const o: { p: string };
+>k : string
+>fn : () => string
+>o : { p: string; }
+>p : string
+
+function f1({ [1   +  2]: a }: any) {}
+>f1 : ({ [1 + 2]: a }: any) => void
+>1   +  2 : number
+>1 : 1
+>2 : 2
+>a : any
+
+function f2({ [fn( )]: a }: any) {}
+>f2 : ({ [fn()]: a }: any) => void
+>fn( ) : string
+>fn : () => string
+>a : any
+
+function f3({ [`a${ k }b`]: a }: any) {}
+>f3 : ({ [`a${k}b`]: a }: any) => void
+>`a${ k }b` : string
+>k : string
+>a : any
+
+function f4({ [o [ "p" ]]: a }: any) {}
+>f4 : ({ [o["p"]]: a }: any) => void
+>o [ "p" ] : string
+>o : { p: string; }
+>"p" : "p"
+>a : any
+
+function f5({ [ /*c*/ k   + /*d*/ "x" ]: a }: any) {}
+>f5 : ({ [k + "x"]: a }: any) => void
+>k   + /*d*/ "x" : string
+>k : string
+>"x" : "x"
+>a : any
+
+function f6({ [0x10 + 1]: a }: any) {}
+>f6 : ({ [16 + 1]: a }: any) => void
+>0x10 + 1 : number
+>0x10 : 16
+>1 : 1
+>a : any
+
+function f7({ [1
+>f7 : ({ [1 + 2]: a }: any) => void
+>1  + 2 : number
+>1 : 1
+
+  + 2]: a }: any) {}
+>2 : 2
+>a : any
+
+const n1: number = f1;
+>n1 : number
+>f1 : ({ [1 + 2]: a }: any) => void
+
+const n2: number = f2;
+>n2 : number
+>f2 : ({ [fn()]: a }: any) => void
+
+const n3: number = f3;
+>n3 : number
+>f3 : ({ [`a${k}b`]: a }: any) => void
+
+const n4: number = f4;
+>n4 : number
+>f4 : ({ [o["p"]]: a }: any) => void
+
+const n5: number = f5;
+>n5 : number
+>f5 : ({ [k + "x"]: a }: any) => void
+
+const n6: number = f6;
+>n6 : number
+>f6 : ({ [16 + 1]: a }: any) => void
+
+const n7: number = f7;
+>n7 : number
+>f7 : ({ [1 + 2]: a }: any) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun12-C16c.ts] ////
+
+=== a.ts ===
+declare var Keys: K;
+>Keys : K
+
+interface K { readonly a: unique symbol }
+>a : unique symbol
+
+let s: string = Keys.a;
+>s : string
+>Keys.a : unique symbol
+>Keys : K
+>a : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

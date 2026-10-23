@@ -1,0 +1,14 @@
+//// [test/cases/bun91-R12d.ts] ////
+
+=== a.js ===
+var o = /** @type {any} */ (null);
+>o : Symbol(o, Decl(a.js, 0, 3))
+
+with (o) { exports.z8 = missing8; module.exports.z9 = missing9; exports.z10 = missing10 + 1; }
+>o : Symbol(o, Decl(a.js, 0, 3))
+
+zzzzzzzzzzzz;
+/** @type {number} */
+var sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 4, 3))
+

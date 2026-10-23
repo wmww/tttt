@@ -1,0 +1,19 @@
+a.ts(1,23): error TS2315: Type 'T' is not generic.
+a.ts(3,7): error TS2322: Type '{ a: any; }' is not assignable to type 'never'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class C<T> { p!: { a: T<1> } }
+                          ~~~~
+!!! error TS2315: Type 'T' is not generic.
+    type U = C<1>["p"] | C<2>["p"];
+    const n: never = null! as U;
+          ~
+!!! error TS2322: Type '{ a: any; }' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,80 @@
+//// [test/cases/bun24-SC1.ts] ////
+
+=== a.ts ===
+const o1 = { get d(): number { return 1 }, set d(v: string | number) {} };
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>d : Symbol(d, Decl(a.ts, 0, 12), Decl(a.ts, 0, 42))
+>d : Symbol(d, Decl(a.ts, 0, 12), Decl(a.ts, 0, 42))
+>v : Symbol(v, Decl(a.ts, 0, 49))
+
+const sp = { ...o1 }; sp.d = "x";
+>sp : Symbol(sp, Decl(a.ts, 1, 5))
+>o1 : Symbol(o1, Decl(a.ts, 0, 5))
+>sp.d : Symbol(d, Decl(a.ts, 0, 12), Decl(a.ts, 0, 42))
+>sp : Symbol(sp, Decl(a.ts, 1, 5))
+>d : Symbol(d, Decl(a.ts, 0, 12), Decl(a.ts, 0, 42))
+
+const s1: string = sp;
+>s1 : Symbol(s1, Decl(a.ts, 2, 5))
+>sp : Symbol(sp, Decl(a.ts, 1, 5))
+
+interface I { get d(): number; set d(v: string | number); r: 1 }
+>I : Symbol(I, Decl(a.ts, 2, 22))
+>d : Symbol(I.d, Decl(a.ts, 3, 13), Decl(a.ts, 3, 30))
+>d : Symbol(I.d, Decl(a.ts, 3, 13), Decl(a.ts, 3, 30))
+>v : Symbol(v, Decl(a.ts, 3, 37))
+>r : Symbol(I.r, Decl(a.ts, 3, 57))
+
+declare const i: I;
+>i : Symbol(i, Decl(a.ts, 4, 13))
+>I : Symbol(I, Decl(a.ts, 2, 22))
+
+const { r, ...rest } = i; rest.d = "x";
+>r : Symbol(r, Decl(a.ts, 5, 7))
+>rest : Symbol(rest, Decl(a.ts, 5, 10))
+>i : Symbol(i, Decl(a.ts, 4, 13))
+>rest.d : Symbol(I.d, Decl(a.ts, 3, 13), Decl(a.ts, 3, 30))
+>rest : Symbol(rest, Decl(a.ts, 5, 10))
+>d : Symbol(I.d, Decl(a.ts, 3, 13), Decl(a.ts, 3, 30))
+
+// C8 of the report: the symbol that is handed on also keeps CheckFlagsReverseMapped.
+interface IB { a: { v: number }; b: { v: string } } declare const ib: IB;
+>IB : Symbol(IB, Decl(a.ts, 5, 39))
+>a : Symbol(IB.a, Decl(a.ts, 7, 14))
+>v : Symbol(v, Decl(a.ts, 7, 19))
+>b : Symbol(IB.b, Decl(a.ts, 7, 32))
+>v : Symbol(v, Decl(a.ts, 7, 37))
+>ib : Symbol(ib, Decl(a.ts, 7, 65))
+>IB : Symbol(IB, Decl(a.ts, 5, 39))
+
+declare function un7<T>(b: { [K in keyof T]: { [L in keyof T[K]]: { v: T[K][L] } } }): T;
+>un7 : Symbol(un7, Decl(a.ts, 7, 73))
+>T : Symbol(T, Decl(a.ts, 8, 21))
+>b : Symbol(b, Decl(a.ts, 8, 24))
+>K : Symbol(K, Decl(a.ts, 8, 30))
+>T : Symbol(T, Decl(a.ts, 8, 21))
+>L : Symbol(L, Decl(a.ts, 8, 48))
+>T : Symbol(T, Decl(a.ts, 8, 21))
+>K : Symbol(K, Decl(a.ts, 8, 30))
+>v : Symbol(v, Decl(a.ts, 8, 67))
+>T : Symbol(T, Decl(a.ts, 8, 21))
+>K : Symbol(K, Decl(a.ts, 8, 30))
+>L : Symbol(L, Decl(a.ts, 8, 48))
+>T : Symbol(T, Decl(a.ts, 8, 21))
+
+const e = un7({ p: ib, q: { r: { v: 1 } } });
+>e : Symbol(e, Decl(a.ts, 9, 5))
+>un7 : Symbol(un7, Decl(a.ts, 7, 73))
+>p : Symbol(p, Decl(a.ts, 9, 15))
+>ib : Symbol(ib, Decl(a.ts, 7, 65))
+>q : Symbol(q, Decl(a.ts, 9, 22))
+>r : Symbol(r, Decl(a.ts, 9, 27))
+>v : Symbol(v, Decl(a.ts, 9, 32))
+
+const r8: string = { ...e };
+>r8 : Symbol(r8, Decl(a.ts, 10, 5))
+>e : Symbol(e, Decl(a.ts, 9, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

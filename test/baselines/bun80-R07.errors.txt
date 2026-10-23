@@ -1,0 +1,33 @@
+a.js(1,1): error TS1206: Decorators are not valid here.
+a.js(2,1): error TS1206: Decorators are not valid here.
+a.js(4,29): error TS2322: Type 'string' is not assignable to type 'number'.
+b.js(1,1): error TS1184: Modifiers cannot appear here.
+b.js(1,1): error TS1314: Global module exports may only appear in module files.
+c.js(1,1): error TS1206: Decorators are not valid here.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "allowJs": true, "checkJs": true } }
+==== a.js (3 errors) ====
+    @dec declare module "zz" {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+    @dec declare module "yy";
+    ~
+!!! error TS1206: Decorators are not valid here.
+    function dec() {}
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.js (2 errors) ====
+    @dec export as namespace X;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1184: Modifiers cannot appear here.
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1314: Global module exports may only appear in module files.
+==== c.js (1 errors) ====
+    @dec declare global {}
+    ~
+!!! error TS1206: Decorators are not valid here.
+    export {};
+    

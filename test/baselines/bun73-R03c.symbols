@@ -1,0 +1,39 @@
+//// [test/cases/bun73-R03c.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+function f() {
+>f : Symbol(f, Decl(a.ts, 0, 30))
+
+  let x = []; const y = [];
+>x : Symbol(x, Decl(a.ts, 2, 5))
+>y : Symbol(y, Decl(a.ts, 2, 19))
+
+  while (c()) {
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+    do {
+      if (x.length) { for (y.push(0); (x = []); ) { } }
+>x.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 2, 5))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>y.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 2, 19))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 2, 5))
+
+      else { if (x === y) return; }
+>x : Symbol(x, Decl(a.ts, 2, 5))
+>y : Symbol(y, Decl(a.ts, 2, 19))
+
+    } while (x.push(1));
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 2, 5))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

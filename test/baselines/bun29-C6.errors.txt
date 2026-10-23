@@ -1,0 +1,18 @@
+b.js(2,17): error TS4058: Return type of exported function has or is using name 'Hidden' from external module "m" but cannot be named.
+b.js(3,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"] } }
+==== b.js (2 errors) ====
+    import { mkH } from "./m";
+    export function f() { return mkH(); }
+                    ~
+!!! error TS4058: Return type of exported function has or is using name 'Hidden' from external module "m" but cannot be named.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    interface Hidden { h: 1 }
+    export declare function mkH(): Hidden;
+    

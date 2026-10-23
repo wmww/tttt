@@ -1,0 +1,28 @@
+//// [test/cases/bun06-C3.ts] ////
+
+=== a.ts ===
+class A { get p(): string[] { return [] } set p(v: number[] | string[]) { } }
+>A : A
+>p : string[]
+>[] : never[]
+>p : string[]
+>v : string[] | number[]
+
+declare const a: A;
+>a : A
+
+[...a.p] = [1, 2];
+>[...a.p] = [1, 2] : number[]
+>[...a.p] : string[]
+>...a.p : string
+>a.p : string[]
+>a : A
+>p : string[]
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+//// [test/cases/bun24-C20c.ts] ////
+
+=== a.ts ===
+declare let a1: (x: unknown) => x is "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; declare let a2: (x: unknown) => x is 2;
+>a1 : Symbol(a1, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 17))
+>x : Symbol(x, Decl(a.ts, 0, 17))
+>a2 : Symbol(a2, Decl(a.ts, 0, 372))
+>x : Symbol(x, Decl(a.ts, 0, 378))
+>x : Symbol(x, Decl(a.ts, 0, 378))
+
+a1 = a2;
+>a1 : Symbol(a1, Decl(a.ts, 0, 11))
+>a2 : Symbol(a2, Decl(a.ts, 0, 372))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

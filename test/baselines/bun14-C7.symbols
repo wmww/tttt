@@ -1,0 +1,18 @@
+//// [test/cases/bun14-C7.ts] ////
+
+=== a.ts ===
+declare const o: { readonly ro: number; rw: number };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>ro : Symbol(ro, Decl(a.ts, 0, 18))
+>rw : Symbol(rw, Decl(a.ts, 0, 39))
+
+declare const k1: "aa" | "ro";
+>k1 : Symbol(k1, Decl(a.ts, 1, 13))
+
+o[k1] = 1;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>k1 : Symbol(k1, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

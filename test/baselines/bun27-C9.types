@@ -1,0 +1,30 @@
+//// [test/cases/bun27-C9.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { g: 1 } interface IntrinsicElements { div: { g: string } } }
+>g : 1
+>div : { g: string; }
+>g : string
+
+namespace Outer {
+>Outer : typeof Outer
+
+  namespace React { export declare function createElement(...a: any[]): any; export namespace JSX { export interface Element { l: 1 } export interface IntrinsicElements { div: { l: number } } } }
+>React : typeof React
+>createElement : (...a: any[]) => any
+>a : any[]
+>l : 1
+>div : { l: number; }
+>l : number
+
+  export const a = <div l={1} />;
+>a : React.JSX.Element
+><div l={1} /> : React.JSX.Element
+>div : any
+>l : number
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

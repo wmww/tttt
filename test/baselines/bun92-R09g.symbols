@@ -1,0 +1,70 @@
+//// [test/cases/bun92-R09g.ts] ////
+
+=== a.ts ===
+type Primitive = string | number | boolean | bigint | symbol | null | undefined;
+>Primitive : Symbol(Primitive, Decl(a.ts, 0, 0))
+
+type Json<T> = T extends Primitive ? T : { [K in keyof T]: Json<T[K]> };
+>Json : Symbol(Json, Decl(a.ts, 0, 80))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>Primitive : Symbol(Primitive, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>K : Symbol(K, Decl(a.ts, 1, 44))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>Json : Symbol(Json, Decl(a.ts, 0, 80))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>K : Symbol(K, Decl(a.ts, 1, 44))
+
+class Model<Shape> { declare shape: Shape; toJSON(): Shape { return this.shape; } }
+>Model : Symbol(Model, Decl(a.ts, 1, 72))
+>Shape : Symbol(Shape, Decl(a.ts, 2, 12))
+>shape : Symbol(Model.shape, Decl(a.ts, 2, 20))
+>Shape : Symbol(Shape, Decl(a.ts, 2, 12))
+>toJSON : Symbol(Model.toJSON, Decl(a.ts, 2, 42))
+>Shape : Symbol(Shape, Decl(a.ts, 2, 12))
+>this.shape : Symbol(Model.shape, Decl(a.ts, 2, 20))
+>this : Symbol(Model, Decl(a.ts, 1, 72))
+>shape : Symbol(Model.shape, Decl(a.ts, 2, 20))
+
+class User extends Model<Json<User>> { name = ""; age = 0; }
+>User : Symbol(User, Decl(a.ts, 2, 83))
+>Model : Symbol(Model, Decl(a.ts, 1, 72))
+>Json : Symbol(Json, Decl(a.ts, 0, 80))
+>User : Symbol(User, Decl(a.ts, 2, 83))
+>name : Symbol(User.name, Decl(a.ts, 3, 38))
+>age : Symbol(User.age, Decl(a.ts, 3, 49))
+
+class Post extends Model<Json<Post>> { author = new User(); }
+>Post : Symbol(Post, Decl(a.ts, 3, 60))
+>Model : Symbol(Model, Decl(a.ts, 1, 72))
+>Json : Symbol(Json, Decl(a.ts, 0, 80))
+>Post : Symbol(Post, Decl(a.ts, 3, 60))
+>author : Symbol(Post.author, Decl(a.ts, 4, 38))
+>User : Symbol(User, Decl(a.ts, 2, 83))
+
+const u = new User().toJSON(); const n: number = u.name;
+>u : Symbol(u, Decl(a.ts, 5, 5))
+>new User().toJSON : Symbol(Model.toJSON, Decl(a.ts, 2, 42))
+>User : Symbol(User, Decl(a.ts, 2, 83))
+>toJSON : Symbol(Model.toJSON, Decl(a.ts, 2, 42))
+>n : Symbol(n, Decl(a.ts, 5, 36))
+>u.name : Symbol(name, Decl(a.ts, 3, 38))
+>u : Symbol(u, Decl(a.ts, 5, 5))
+>name : Symbol(name, Decl(a.ts, 3, 38))
+
+const p = new Post().toJSON().author.age; const q: string = p;
+>p : Symbol(p, Decl(a.ts, 6, 5))
+>new Post().toJSON().author.age : Symbol(age, Decl(a.ts, 3, 49))
+>new Post().toJSON().author : Symbol(author, Decl(a.ts, 4, 38))
+>new Post().toJSON : Symbol(Model.toJSON, Decl(a.ts, 2, 42))
+>Post : Symbol(Post, Decl(a.ts, 3, 60))
+>toJSON : Symbol(Model.toJSON, Decl(a.ts, 2, 42))
+>author : Symbol(author, Decl(a.ts, 4, 38))
+>age : Symbol(age, Decl(a.ts, 3, 49))
+>q : Symbol(q, Decl(a.ts, 6, 47))
+>p : Symbol(p, Decl(a.ts, 6, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun19-C1e.ts] ////
+
+=== a.ts ===
+function g<T>(a: number, x: number, y: T extends string ? typeof a : number = x) {}
+>g : <T>(a: number, x: number, y?: T extends string ? typeof a : number) => void
+>a : number
+>x : number
+>y : T extends string ? number : number
+>a : number
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

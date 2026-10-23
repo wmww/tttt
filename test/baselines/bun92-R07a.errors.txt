@@ -1,0 +1,35 @@
+a.js(2,19): error TS1070: 'static' modifier cannot appear on a type member.
+a.js(2,25): error TS7008: Member '(Missing)' implicitly has an 'any' type.
+a.js(3,4): error TS1003: Identifier expected.
+a.js(5,7): error TS2322: Type 'number' is not assignable to type '{ a: 1; "": any; }'.
+a.js(6,8): error TS2339: Property 'b' does not exist on type '{ a: 1; "": any; }'.
+a.js(6,13): error TS2339: Property 'nope' does not exist on type '{ a: 1; "": any; }'.
+a.js(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"],"allowJs":true,"checkJs":true } }
+==== a.js (7 errors) ====
+    /**
+     * @type {{ a: 1; static
+                      ~~~~~~
+!!! error TS1070: 'static' modifier cannot appear on a type member.
+                            
+!!! error TS7008: Member '(Missing)' implicitly has an 'any' type.
+     * {}; b: 2 }}
+       ~
+!!! error TS1003: Identifier expected.
+     */
+    const o = 0;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type '{ a: 1; "": any; }'.
+    o.a; o.b; o.nope;
+           ~
+!!! error TS2339: Property 'b' does not exist on type '{ a: 1; "": any; }'.
+                ~~~~
+!!! error TS2339: Property 'nope' does not exist on type '{ a: 1; "": any; }'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

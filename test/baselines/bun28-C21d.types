@@ -1,0 +1,14 @@
+//// [test/cases/bun28-C21d.ts] ////
+
+=== a.ts ===
+import type { type a } from "./zz";
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== zz.ts ===
+
+export {};
+

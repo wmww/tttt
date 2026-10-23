@@ -1,0 +1,27 @@
+//// [test/cases/bun61-L14.ts] ////
+
+=== a.ts ===
+@dec namespace class {}
+>dec : any
+
+=== b.ts ===
+@dec interface class {}
+>dec : any
+
+=== c.ts ===
+@dec type class = 1
+>dec : any
+> : class
+>1 : 1
+
+=== d.ts ===
+@dec namespace
+>dec : any
+
+N {}
+=== e.ts ===
+@dec interface
+>dec : any
+
+I {}
+

@@ -1,0 +1,35 @@
+//// [test/cases/bun51-L06b.ts] ////
+
+=== a.ts ===
+import "./m";
+export const o = { m() { export * as ns from "./m"; export * as ns from "./m"; } };
+>o : Symbol(o, Decl(a.ts, 1, 12))
+>m : Symbol(m, Decl(a.ts, 1, 18))
+>ns : Symbol(o.m.ns, Decl(a.ts, 1, 31))
+>ns : Symbol(o.m.ns, Decl(a.ts, 1, 58))
+
+export const o3 = { m() { export * as ns from "./m"; } };
+>o3 : Symbol(o3, Decl(a.ts, 2, 12))
+>m : Symbol(m, Decl(a.ts, 2, 19))
+>ns : Symbol(o3.m.ns, Decl(a.ts, 2, 32))
+
+o3.m.ns.v;
+>o3.m.ns.v : Symbol(v, Decl(m.ts, 0, 12))
+>o3.m.ns : Symbol(o3.m.ns, Decl(a.ts, 2, 32))
+>o3.m : Symbol(m, Decl(a.ts, 2, 19))
+>o3 : Symbol(o3, Decl(a.ts, 2, 12))
+>m : Symbol(m, Decl(a.ts, 2, 19))
+>ns : Symbol(o3.m.ns, Decl(a.ts, 2, 32))
+>v : Symbol(v, Decl(m.ts, 0, 12))
+
+export const o4 = { m() { export default 1; export default 2; } };
+>o4 : Symbol(o4, Decl(a.ts, 4, 12))
+>m : Symbol(m, Decl(a.ts, 4, 19))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 12))
+
+=== m.ts ===
+export const v = 1;
+>v : Symbol(v, Decl(m.ts, 0, 12))
+

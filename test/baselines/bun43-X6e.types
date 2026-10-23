@@ -1,0 +1,16 @@
+//// [test/cases/bun43-X6e.ts] ////
+
+=== a.ts ===
+function* g() { yield
+>g : () => Generator<undefined, void, unknown>
+>yield : any
+
+/a/.nope; }
+>/a/.nope : any
+>/a/ : RegExp
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

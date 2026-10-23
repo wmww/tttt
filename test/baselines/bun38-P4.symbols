@@ -1,0 +1,17 @@
+//// [test/cases/bun38-P4.ts] ////
+
+=== a.ts ===
+import { which } from "self";
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+export const i: "esm" = which;
+>i : Symbol(i, Decl(a.ts, 1, 12))
+>which : Symbol(which, Decl(a.ts, 0, 8))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+
+=== esm.d.ts ===
+export declare const which: "esm";
+>which : Symbol(which, Decl(esm.d.ts, 0, 20))
+

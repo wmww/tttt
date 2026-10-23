@@ -1,0 +1,14 @@
+//// [test/cases/bun26-P4.ts] ////
+
+=== a.ts ===
+interface Foo<A extends number, B> { a: A; b: B }
+>a : A
+>b : B
+
+type T<U> = U extends Foo<infer X, (infer X) & string> ? Foo<X, 1> : never;
+>T : T<U>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

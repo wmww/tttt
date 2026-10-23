@@ -1,0 +1,16 @@
+a.ts(3,5): error TS2322: Type 'typeof Keys.a' is not assignable to type 'string'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare var Keys: K;
+    interface K { readonly a: unique symbol }
+    let s: string = Keys.a;
+        ~
+!!! error TS2322: Type 'typeof Keys.a' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

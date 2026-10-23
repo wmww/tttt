@@ -1,0 +1,18 @@
+//// [test/cases/bun15-C4a.ts] ////
+
+=== a.ts ===
+const p1: { 2: (x: number) => void } = { [+2]: x => {} };
+>p1 : { 2: (x: number) => void; }
+>2 : (x: number) => void
+>x : number
+>{ [+2]: x => {} } : { 2: (x: any) => void; }
+>[+2] : (x: any) => void
+>+2 : 2
+>2 : 2
+>x => {} : (x: any) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

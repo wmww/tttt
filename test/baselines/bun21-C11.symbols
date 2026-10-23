@@ -1,0 +1,15 @@
+//// [test/cases/bun21-C11.ts] ////
+
+=== a.ts ===
+function f() { const x = []; x.push(1); if (!x) x.push("a"); }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>x.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+>x : Symbol(x, Decl(a.ts, 0, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

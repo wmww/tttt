@@ -1,0 +1,27 @@
+a.js(3,30): error TS2322: Type '{ m(): void; x: number; }' is not assignable to type 'boolean'.
+a.js(5,30): error TS2322: Type '{ n: number; readonly g: number; x: number; }' is not assignable to type 'boolean'.
+a.js(6,58): error TS2741: Property 'm' is missing in type '{ n: number; readonly g: number; x: number; }' but required in type '{ m(): void; x: string; n: string; }'.
+a.js(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"] } }
+==== a.js (4 errors) ====
+    const k = "x";
+    const o = { [k]: 1, m() { this.x = 2; } };
+    /** @type {boolean} */ const a = o;
+                                 ~
+!!! error TS2322: Type '{ m(): void; x: number; }' is not assignable to type 'boolean'.
+    const o2 = { [k]: 1, n: 1, get g() { this.x = 2; return 1; } };
+    /** @type {boolean} */ const d = o2;
+                                 ~
+!!! error TS2322: Type '{ n: number; readonly g: number; x: number; }' is not assignable to type 'boolean'.
+    /** @type {{ m(): void, x: string, n: string }} */ const e = o2;
+                                                             ~
+!!! error TS2741: Property 'm' is missing in type '{ n: number; readonly g: number; x: number; }' but required in type '{ m(): void; x: string; n: string; }'.
+!!! related TS2728 a.js:6:14: 'm' is declared here.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

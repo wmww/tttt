@@ -1,0 +1,15 @@
+//// [test/cases/bun30-C18.ts] ////
+
+=== a.ts ===
+export {};
+await using h = () => {};
+>h : Symbol(h, Decl(a.ts, 1, 11))
+
+h.x = 1;
+>h.x : Symbol(h.x, Decl(a.ts, 1, 25))
+>h : Symbol(h, Decl(a.ts, 1, 11))
+>x : Symbol(h.x, Decl(a.ts, 1, 25))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

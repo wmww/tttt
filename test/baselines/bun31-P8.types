@@ -1,0 +1,41 @@
+//// [test/cases/bun31-P8.ts] ////
+
+=== a.ts ===
+declare function f(): { y: boolean };
+>f : () => { y: boolean; }
+>y : boolean
+
+declare const o: { [k: string]: boolean };
+>o : { [k: string]: boolean; }
+>k : string
+
+function g() { return q; }
+>g : () => any
+>q : any
+
+const k = g() ? "a" : "b";
+>k : "a" | "b"
+>g() ? "a" : "b" : "a" | "b"
+>g() : any
+>g : () => any
+>"a" : "a"
+>"b" : "b"
+
+o[k] = true;
+>o[k] = true : true
+>o[k] : boolean
+>o : { [k: string]: boolean; }
+>k : "a" | "b"
+>true : true
+
+const q = f()["y"];
+>q : any
+>f()["y"] : boolean
+>f() : { y: boolean; }
+>f : () => { y: boolean; }
+>"y" : "y"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

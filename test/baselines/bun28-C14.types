@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C14.ts] ////
+
+=== a.ts ===
+export async class C {}
+>C : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

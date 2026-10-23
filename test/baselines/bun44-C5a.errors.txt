@@ -1,0 +1,23 @@
+a.ts(2,11): error TS2339: Property 'url' does not exist on type 'string | (T & { a?: 1 | undefined; })'.
+a.ts(2,11): error TS2339: Property 'url' does not exist on type 'string | (object & { a?: 1 | undefined; })'.
+a.ts(2,16): error TS2339: Property 'other' does not exist on type 'string | (T & { a?: 1 | undefined; })'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    function f<T extends object>(options: (T & { a?: 1 }) | string) {
+      const { url, other } = options;
+              ~~~
+!!! error TS2339: Property 'url' does not exist on type 'string | (T & { a?: 1 | undefined; })'.
+              ~~~
+!!! error TS2339: Property 'url' does not exist on type 'string | (object & { a?: 1 | undefined; })'.
+                   ~~~~~
+!!! error TS2339: Property 'other' does not exist on type 'string | (T & { a?: 1 | undefined; })'.
+      url;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,418 @@
+//// [test/cases/bun75-R07b.ts] ////
+
+=== main.ts ===
+namespace M { export const v = 1; }
+>M : Symbol(M, Decl(main.ts, 0, 0))
+>v : Symbol(v, Decl(main.ts, 0, 26))
+
+import a1 = a2;
+>a1 : Symbol(a1, Decl(main.ts, 0, 35))
+>a2 : Symbol(a2, Decl(main.ts, 1, 15))
+
+import a2 = a3;
+>a2 : Symbol(a2, Decl(main.ts, 1, 15))
+>a3 : Symbol(a3, Decl(main.ts, 2, 15))
+
+import a3 = a4;
+>a3 : Symbol(a3, Decl(main.ts, 2, 15))
+>a4 : Symbol(a4, Decl(main.ts, 3, 15))
+
+import a4 = a5;
+>a4 : Symbol(a4, Decl(main.ts, 3, 15))
+>a5 : Symbol(a5, Decl(main.ts, 4, 15))
+
+import a5 = a6;
+>a5 : Symbol(a5, Decl(main.ts, 4, 15))
+>a6 : Symbol(a6, Decl(main.ts, 5, 15))
+
+import a6 = a7;
+>a6 : Symbol(a6, Decl(main.ts, 5, 15))
+>a7 : Symbol(a7, Decl(main.ts, 6, 15))
+
+import a7 = a8;
+>a7 : Symbol(a7, Decl(main.ts, 6, 15))
+>a8 : Symbol(a8, Decl(main.ts, 7, 15))
+
+import a8 = a9;
+>a8 : Symbol(a8, Decl(main.ts, 7, 15))
+>a9 : Symbol(a9, Decl(main.ts, 8, 15))
+
+import a9 = a10;
+>a9 : Symbol(a9, Decl(main.ts, 8, 15))
+>a10 : Symbol(a10, Decl(main.ts, 9, 16))
+
+import a10 = a11;
+>a10 : Symbol(a10, Decl(main.ts, 9, 16))
+>a11 : Symbol(a11, Decl(main.ts, 10, 17))
+
+import a11 = a12;
+>a11 : Symbol(a11, Decl(main.ts, 10, 17))
+>a12 : Symbol(a12, Decl(main.ts, 11, 17))
+
+import a12 = a13;
+>a12 : Symbol(a12, Decl(main.ts, 11, 17))
+>a13 : Symbol(a13, Decl(main.ts, 12, 17))
+
+import a13 = a14;
+>a13 : Symbol(a13, Decl(main.ts, 12, 17))
+>a14 : Symbol(a14, Decl(main.ts, 13, 17))
+
+import a14 = a15;
+>a14 : Symbol(a14, Decl(main.ts, 13, 17))
+>a15 : Symbol(a15, Decl(main.ts, 14, 17))
+
+import a15 = a16;
+>a15 : Symbol(a15, Decl(main.ts, 14, 17))
+>a16 : Symbol(a16, Decl(main.ts, 15, 17))
+
+import a16 = a17;
+>a16 : Symbol(a16, Decl(main.ts, 15, 17))
+>a17 : Symbol(a17, Decl(main.ts, 16, 17))
+
+import a17 = a18;
+>a17 : Symbol(a17, Decl(main.ts, 16, 17))
+>a18 : Symbol(a18, Decl(main.ts, 17, 17))
+
+import a18 = a19;
+>a18 : Symbol(a18, Decl(main.ts, 17, 17))
+>a19 : Symbol(a19, Decl(main.ts, 18, 17))
+
+import a19 = a20;
+>a19 : Symbol(a19, Decl(main.ts, 18, 17))
+>a20 : Symbol(a20, Decl(main.ts, 19, 17))
+
+import a20 = a21;
+>a20 : Symbol(a20, Decl(main.ts, 19, 17))
+>a21 : Symbol(a21, Decl(main.ts, 20, 17))
+
+import a21 = a22;
+>a21 : Symbol(a21, Decl(main.ts, 20, 17))
+>a22 : Symbol(a22, Decl(main.ts, 21, 17))
+
+import a22 = a23;
+>a22 : Symbol(a22, Decl(main.ts, 21, 17))
+>a23 : Symbol(a23, Decl(main.ts, 22, 17))
+
+import a23 = a24;
+>a23 : Symbol(a23, Decl(main.ts, 22, 17))
+>a24 : Symbol(a24, Decl(main.ts, 23, 17))
+
+import a24 = a25;
+>a24 : Symbol(a24, Decl(main.ts, 23, 17))
+>a25 : Symbol(a25, Decl(main.ts, 24, 17))
+
+import a25 = a26;
+>a25 : Symbol(a25, Decl(main.ts, 24, 17))
+>a26 : Symbol(a26, Decl(main.ts, 25, 17))
+
+import a26 = a27;
+>a26 : Symbol(a26, Decl(main.ts, 25, 17))
+>a27 : Symbol(a27, Decl(main.ts, 26, 17))
+
+import a27 = a28;
+>a27 : Symbol(a27, Decl(main.ts, 26, 17))
+>a28 : Symbol(a28, Decl(main.ts, 27, 17))
+
+import a28 = a29;
+>a28 : Symbol(a28, Decl(main.ts, 27, 17))
+>a29 : Symbol(a29, Decl(main.ts, 28, 17))
+
+import a29 = a30;
+>a29 : Symbol(a29, Decl(main.ts, 28, 17))
+>a30 : Symbol(a30, Decl(main.ts, 29, 17))
+
+import a30 = a31;
+>a30 : Symbol(a30, Decl(main.ts, 29, 17))
+>a31 : Symbol(a31, Decl(main.ts, 30, 17))
+
+import a31 = a32;
+>a31 : Symbol(a31, Decl(main.ts, 30, 17))
+>a32 : Symbol(a32, Decl(main.ts, 31, 17))
+
+import a32 = a33;
+>a32 : Symbol(a32, Decl(main.ts, 31, 17))
+>a33 : Symbol(a33, Decl(main.ts, 32, 17))
+
+import a33 = a34;
+>a33 : Symbol(a33, Decl(main.ts, 32, 17))
+>a34 : Symbol(a34, Decl(main.ts, 33, 17))
+
+import a34 = a35;
+>a34 : Symbol(a34, Decl(main.ts, 33, 17))
+>a35 : Symbol(a35, Decl(main.ts, 34, 17))
+
+import a35 = a36;
+>a35 : Symbol(a35, Decl(main.ts, 34, 17))
+>a36 : Symbol(a36, Decl(main.ts, 35, 17))
+
+import a36 = a37;
+>a36 : Symbol(a36, Decl(main.ts, 35, 17))
+>a37 : Symbol(a37, Decl(main.ts, 36, 17))
+
+import a37 = a38;
+>a37 : Symbol(a37, Decl(main.ts, 36, 17))
+>a38 : Symbol(a38, Decl(main.ts, 37, 17))
+
+import a38 = a39;
+>a38 : Symbol(a38, Decl(main.ts, 37, 17))
+>a39 : Symbol(a39, Decl(main.ts, 38, 17))
+
+import a39 = a40;
+>a39 : Symbol(a39, Decl(main.ts, 38, 17))
+>a40 : Symbol(a40, Decl(main.ts, 39, 17))
+
+import a40 = a41;
+>a40 : Symbol(a40, Decl(main.ts, 39, 17))
+>a41 : Symbol(a41, Decl(main.ts, 40, 17))
+
+import a41 = a42;
+>a41 : Symbol(a41, Decl(main.ts, 40, 17))
+>a42 : Symbol(a42, Decl(main.ts, 41, 17))
+
+import a42 = a43;
+>a42 : Symbol(a42, Decl(main.ts, 41, 17))
+>a43 : Symbol(a43, Decl(main.ts, 42, 17))
+
+import a43 = a44;
+>a43 : Symbol(a43, Decl(main.ts, 42, 17))
+>a44 : Symbol(a44, Decl(main.ts, 43, 17))
+
+import a44 = a45;
+>a44 : Symbol(a44, Decl(main.ts, 43, 17))
+>a45 : Symbol(a45, Decl(main.ts, 44, 17))
+
+import a45 = a46;
+>a45 : Symbol(a45, Decl(main.ts, 44, 17))
+>a46 : Symbol(a46, Decl(main.ts, 45, 17))
+
+import a46 = a47;
+>a46 : Symbol(a46, Decl(main.ts, 45, 17))
+>a47 : Symbol(a47, Decl(main.ts, 46, 17))
+
+import a47 = a48;
+>a47 : Symbol(a47, Decl(main.ts, 46, 17))
+>a48 : Symbol(a48, Decl(main.ts, 47, 17))
+
+import a48 = a49;
+>a48 : Symbol(a48, Decl(main.ts, 47, 17))
+>a49 : Symbol(a49, Decl(main.ts, 48, 17))
+
+import a49 = a50;
+>a49 : Symbol(a49, Decl(main.ts, 48, 17))
+>a50 : Symbol(a50, Decl(main.ts, 49, 17))
+
+import a50 = a51;
+>a50 : Symbol(a50, Decl(main.ts, 49, 17))
+>a51 : Symbol(a51, Decl(main.ts, 50, 17))
+
+import a51 = a52;
+>a51 : Symbol(a51, Decl(main.ts, 50, 17))
+>a52 : Symbol(a52, Decl(main.ts, 51, 17))
+
+import a52 = a53;
+>a52 : Symbol(a52, Decl(main.ts, 51, 17))
+>a53 : Symbol(a53, Decl(main.ts, 52, 17))
+
+import a53 = a54;
+>a53 : Symbol(a53, Decl(main.ts, 52, 17))
+>a54 : Symbol(a54, Decl(main.ts, 53, 17))
+
+import a54 = a55;
+>a54 : Symbol(a54, Decl(main.ts, 53, 17))
+>a55 : Symbol(a55, Decl(main.ts, 54, 17))
+
+import a55 = a56;
+>a55 : Symbol(a55, Decl(main.ts, 54, 17))
+>a56 : Symbol(a56, Decl(main.ts, 55, 17))
+
+import a56 = a57;
+>a56 : Symbol(a56, Decl(main.ts, 55, 17))
+>a57 : Symbol(a57, Decl(main.ts, 56, 17))
+
+import a57 = a58;
+>a57 : Symbol(a57, Decl(main.ts, 56, 17))
+>a58 : Symbol(a58, Decl(main.ts, 57, 17))
+
+import a58 = a59;
+>a58 : Symbol(a58, Decl(main.ts, 57, 17))
+>a59 : Symbol(a59, Decl(main.ts, 58, 17))
+
+import a59 = a60;
+>a59 : Symbol(a59, Decl(main.ts, 58, 17))
+>a60 : Symbol(a60, Decl(main.ts, 59, 17))
+
+import a60 = a61;
+>a60 : Symbol(a60, Decl(main.ts, 59, 17))
+>a61 : Symbol(a61, Decl(main.ts, 60, 17))
+
+import a61 = a62;
+>a61 : Symbol(a61, Decl(main.ts, 60, 17))
+>a62 : Symbol(a62, Decl(main.ts, 61, 17))
+
+import a62 = a63;
+>a62 : Symbol(a62, Decl(main.ts, 61, 17))
+>a63 : Symbol(a63, Decl(main.ts, 62, 17))
+
+import a63 = a64;
+>a63 : Symbol(a63, Decl(main.ts, 62, 17))
+>a64 : Symbol(a64, Decl(main.ts, 63, 17))
+
+import a64 = a65;
+>a64 : Symbol(a64, Decl(main.ts, 63, 17))
+>a65 : Symbol(a65, Decl(main.ts, 64, 17))
+
+import a65 = a66;
+>a65 : Symbol(a65, Decl(main.ts, 64, 17))
+>a66 : Symbol(a66, Decl(main.ts, 65, 17))
+
+import a66 = a67;
+>a66 : Symbol(a66, Decl(main.ts, 65, 17))
+>a67 : Symbol(a67, Decl(main.ts, 66, 17))
+
+import a67 = a68;
+>a67 : Symbol(a67, Decl(main.ts, 66, 17))
+>a68 : Symbol(a68, Decl(main.ts, 67, 17))
+
+import a68 = a69;
+>a68 : Symbol(a68, Decl(main.ts, 67, 17))
+>a69 : Symbol(a69, Decl(main.ts, 68, 17))
+
+import a69 = a70;
+>a69 : Symbol(a69, Decl(main.ts, 68, 17))
+>a70 : Symbol(a70, Decl(main.ts, 69, 17))
+
+import a70 = a71;
+>a70 : Symbol(a70, Decl(main.ts, 69, 17))
+>a71 : Symbol(a71, Decl(main.ts, 70, 17))
+
+import a71 = a72;
+>a71 : Symbol(a71, Decl(main.ts, 70, 17))
+>a72 : Symbol(a72, Decl(main.ts, 71, 17))
+
+import a72 = a73;
+>a72 : Symbol(a72, Decl(main.ts, 71, 17))
+>a73 : Symbol(a73, Decl(main.ts, 72, 17))
+
+import a73 = a74;
+>a73 : Symbol(a73, Decl(main.ts, 72, 17))
+>a74 : Symbol(a74, Decl(main.ts, 73, 17))
+
+import a74 = a75;
+>a74 : Symbol(a74, Decl(main.ts, 73, 17))
+>a75 : Symbol(a75, Decl(main.ts, 74, 17))
+
+import a75 = a76;
+>a75 : Symbol(a75, Decl(main.ts, 74, 17))
+>a76 : Symbol(a76, Decl(main.ts, 75, 17))
+
+import a76 = a77;
+>a76 : Symbol(a76, Decl(main.ts, 75, 17))
+>a77 : Symbol(a77, Decl(main.ts, 76, 17))
+
+import a77 = a78;
+>a77 : Symbol(a77, Decl(main.ts, 76, 17))
+>a78 : Symbol(a78, Decl(main.ts, 77, 17))
+
+import a78 = a79;
+>a78 : Symbol(a78, Decl(main.ts, 77, 17))
+>a79 : Symbol(a79, Decl(main.ts, 78, 17))
+
+import a79 = a80;
+>a79 : Symbol(a79, Decl(main.ts, 78, 17))
+>a80 : Symbol(a80, Decl(main.ts, 79, 17))
+
+import a80 = a81;
+>a80 : Symbol(a80, Decl(main.ts, 79, 17))
+>a81 : Symbol(a81, Decl(main.ts, 80, 17))
+
+import a81 = a82;
+>a81 : Symbol(a81, Decl(main.ts, 80, 17))
+>a82 : Symbol(a82, Decl(main.ts, 81, 17))
+
+import a82 = a83;
+>a82 : Symbol(a82, Decl(main.ts, 81, 17))
+>a83 : Symbol(a83, Decl(main.ts, 82, 17))
+
+import a83 = a84;
+>a83 : Symbol(a83, Decl(main.ts, 82, 17))
+>a84 : Symbol(a84, Decl(main.ts, 83, 17))
+
+import a84 = a85;
+>a84 : Symbol(a84, Decl(main.ts, 83, 17))
+>a85 : Symbol(a85, Decl(main.ts, 84, 17))
+
+import a85 = a86;
+>a85 : Symbol(a85, Decl(main.ts, 84, 17))
+>a86 : Symbol(a86, Decl(main.ts, 85, 17))
+
+import a86 = a87;
+>a86 : Symbol(a86, Decl(main.ts, 85, 17))
+>a87 : Symbol(a87, Decl(main.ts, 86, 17))
+
+import a87 = a88;
+>a87 : Symbol(a87, Decl(main.ts, 86, 17))
+>a88 : Symbol(a88, Decl(main.ts, 87, 17))
+
+import a88 = a89;
+>a88 : Symbol(a88, Decl(main.ts, 87, 17))
+>a89 : Symbol(a89, Decl(main.ts, 88, 17))
+
+import a89 = a90;
+>a89 : Symbol(a89, Decl(main.ts, 88, 17))
+>a90 : Symbol(a90, Decl(main.ts, 89, 17))
+
+import a90 = a91;
+>a90 : Symbol(a90, Decl(main.ts, 89, 17))
+>a91 : Symbol(a91, Decl(main.ts, 90, 17))
+
+import a91 = a92;
+>a91 : Symbol(a91, Decl(main.ts, 90, 17))
+>a92 : Symbol(a92, Decl(main.ts, 91, 17))
+
+import a92 = a93;
+>a92 : Symbol(a92, Decl(main.ts, 91, 17))
+>a93 : Symbol(a93, Decl(main.ts, 92, 17))
+
+import a93 = a94;
+>a93 : Symbol(a93, Decl(main.ts, 92, 17))
+>a94 : Symbol(a94, Decl(main.ts, 93, 17))
+
+import a94 = a95;
+>a94 : Symbol(a94, Decl(main.ts, 93, 17))
+>a95 : Symbol(a95, Decl(main.ts, 94, 17))
+
+import a95 = a96;
+>a95 : Symbol(a95, Decl(main.ts, 94, 17))
+>a96 : Symbol(a96, Decl(main.ts, 95, 17))
+
+import a96 = a97;
+>a96 : Symbol(a96, Decl(main.ts, 95, 17))
+>a97 : Symbol(a97, Decl(main.ts, 96, 17))
+
+import a97 = a98;
+>a97 : Symbol(a97, Decl(main.ts, 96, 17))
+>a98 : Symbol(a98, Decl(main.ts, 97, 17))
+
+import a98 = a99;
+>a98 : Symbol(a98, Decl(main.ts, 97, 17))
+>a99 : Symbol(a99, Decl(main.ts, 98, 17))
+
+import a99 = a100;
+>a99 : Symbol(a99, Decl(main.ts, 98, 17))
+>a100 : Symbol(a100, Decl(main.ts, 99, 18))
+
+import a100 = a101;
+>a100 : Symbol(a100, Decl(main.ts, 99, 18))
+>a101 : Symbol(a101, Decl(main.ts, 100, 19))
+
+import a101 = a1;
+>a101 : Symbol(a101, Decl(main.ts, 100, 19))
+>a1 : Symbol(a1, Decl(main.ts, 0, 35))
+
+a1.nope;
+>a1 : Symbol(a1, Decl(main.ts, 0, 35))
+
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(main.ts, 104, 5))
+

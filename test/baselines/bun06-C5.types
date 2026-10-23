@@ -1,0 +1,22 @@
+//// [test/cases/bun06-C5.ts] ////
+
+=== a.ts ===
+function* g5() { const f = (a = yield "x") => { }; }
+>g5 : () => Generator<never, void, unknown>
+>f : (a?: any) => void
+>(a = yield "x") => { } : (a?: any) => void
+>a : any
+>yield "x" : any
+>"x" : "x"
+
+function* g6() { const f = (a = yield) => { }; }
+>g6 : () => Generator<never, void, unknown>
+>f : (a?: any) => void
+>(a = yield) => { } : (a?: any) => void
+>a : any
+>yield : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

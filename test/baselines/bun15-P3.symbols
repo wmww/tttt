@@ -1,0 +1,27 @@
+//// [test/cases/bun15-P3.ts] ////
+
+=== a.tsx ===
+function C(...args: []): JSX.Element { return <div />; }
+>C : Symbol(C, Decl(a.tsx, 0, 0))
+>args : Symbol(args, Decl(a.tsx, 0, 11))
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 0, 0))
+>Element : Symbol(JSX.Element, Decl(jsx.d.ts, 0, 23))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(jsx.d.ts, 0, 74))
+
+const b = <C x={1} />;
+>b : Symbol(b, Decl(a.tsx, 1, 5))
+>C : Symbol(C, Decl(a.tsx, 0, 0))
+>x : Symbol(x, Decl(a.tsx, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+
+=== jsx.d.ts ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } interface IntrinsicAttributes { key?: string } }
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 0, 0))
+>Element : Symbol(Element, Decl(jsx.d.ts, 0, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(jsx.d.ts, 0, 44))
+>div : Symbol(IntrinsicElements.div, Decl(jsx.d.ts, 0, 74))
+>IntrinsicAttributes : Symbol(IntrinsicAttributes, Decl(jsx.d.ts, 0, 85))
+>key : Symbol(IntrinsicAttributes.key, Decl(jsx.d.ts, 0, 117))
+

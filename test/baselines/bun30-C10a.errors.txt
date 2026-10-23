@@ -1,0 +1,17 @@
+a.ts(1,29): error TS1235: A namespace declaration is only allowed at the top level of a namespace or module.
+a.ts(1,47): error TS1359: Identifier expected. 'await' is a reserved word that cannot be used here.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export async function a() { namespace N { var await = 1; } }
+                                ~~~~~~~~~
+!!! error TS1235: A namespace declaration is only allowed at the top level of a namespace or module.
+                                                  ~~~~~
+!!! error TS1359: Identifier expected. 'await' is a reserved word that cannot be used here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

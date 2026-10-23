@@ -1,0 +1,10 @@
+//// [test/cases/bun33-C5d.ts] ////
+
+=== a.ts ===
+class X implements null {}
+>X : X
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

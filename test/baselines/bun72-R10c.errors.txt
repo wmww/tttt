@@ -1,0 +1,31 @@
+a.ts(4,7): error TS2310: Type 'C1' recursively references itself as a base type.
+a.ts(6,7): error TS2310: Type 'C2' recursively references itself as a base type.
+a.ts(11,38): error TS2322: Type 'C5' is not assignable to type 'string | number'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+    class Base<T> { b!: T }
+    declare const pre: C1; pre.x;
+    class C1 extends Base<Cond<C1>> { x = 1 }
+          ~~
+!!! error TS2310: Type 'C1' recursively references itself as a base type.
+    function early(c: C2) { return c.x; }
+    class C2 extends Base<Cond<C2>> { x = 1 }
+          ~~
+!!! error TS2310: Type 'C2' recursively references itself as a base type.
+    let t3: Cond<C3>;
+    class C3 extends Base<Cond<C3>> { x = 1 }
+    let t4: C4 | undefined;
+    class C4 extends Base<Cond<C4>> { x = 1 }
+    let t5 = (c: C5): string | number => c;
+                                         ~
+!!! error TS2322: Type 'C5' is not assignable to type 'string | number'.
+    class C5 extends Base<Cond<C5>> { x = 1 }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

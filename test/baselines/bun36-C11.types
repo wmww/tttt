@@ -1,0 +1,18 @@
+//// [test/cases/bun36-C11.ts] ////
+
+=== a.ts ===
+import { which } from ".\\x";
+>which : "x"
+
+const x: 0 = which;
+>x : 0
+>which : "x"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== x.d.ts ===
+export declare const which: "x";
+>which : "x"
+

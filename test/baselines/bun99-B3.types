@@ -1,0 +1,26 @@
+//// [test/cases/bun99-B3.ts] ////
+
+=== b.js ===
+export const x = /** @type {number | undefined} */ (undefined);
+>x : number | undefined
+>(undefined) : number | undefined
+>undefined : undefined
+
+export const j1 = x!;
+>j1 : number
+>x! : number
+>x : number | undefined
+
+export const j2 = x!!;
+>j2 : number
+>x!! : number
+>x! : number
+>x : number | undefined
+
+export const j3 = x!!!;
+>j3 : number
+>x!!! : number
+>x!! : number
+>x! : number
+>x : number | undefined
+

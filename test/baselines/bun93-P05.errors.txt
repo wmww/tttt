@@ -1,0 +1,20 @@
+a.ts(1,17): error TS1005: ';' expected.
+a.ts(2,1): error TS1185: Merge conflict marker encountered.
+b.ts(1,11): error TS1260: Keywords cannot contain escape characters.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "target": "es2022" } }
+==== a.ts (2 errors) ====
+    class C { a = 1 c\u006fnstructor
+                    ~~~~~~~~~~~~~~~~
+!!! error TS1005: ';' expected.
+    <<<<<<< x
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    () { } }
+==== b.ts (1 errors) ====
+    class D { c\u006fnstructor() {} }
+              ~~~~~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

@@ -1,0 +1,69 @@
+//// [test/cases/bun77-R17a.ts] ////
+
+=== a.js ===
+/** @param {never} x */
+function nv(x) {}
+>nv : (x: never) => void
+>x : never
+
+class A1 { constructor() { this.a = null; this.a = "s"; } a; }
+>A1 : A1
+>this.a = null : null
+>this.a : any
+>this : this
+>a : any
+>this.a = "s" : "s"
+>this.a : any
+>this : this
+>a : any
+>"s" : "s"
+>a : string
+
+class A2 { a; constructor() { this.a = null; this.a = "s"; } }
+>A2 : A2
+>a : string
+>this.a = null : null
+>this.a : string
+>this : this
+>a : string
+>this.a = "s" : "s"
+>this.a : string
+>this : this
+>a : string
+>"s" : "s"
+
+class A3 { constructor() { this.a = 1; nv(this.a); this.a = "s"; nv(this.a); } a; m() { nv(this.a); } }
+>A3 : A3
+>this.a = 1 : 1
+>this.a : any
+>this : this
+>a : any
+>1 : 1
+>nv(this.a) : void
+>nv : (x: never) => void
+>this.a : number
+>this : this
+>a : number
+>this.a = "s" : "s"
+>this.a : any
+>this : this
+>a : any
+>"s" : "s"
+>nv(this.a) : void
+>nv : (x: never) => void
+>this.a : string
+>this : this
+>a : string
+>a : string
+>m : () => void
+>nv(this.a) : void
+>nv : (x: never) => void
+>this.a : string
+>this : this
+>a : string
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

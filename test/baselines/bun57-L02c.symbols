@@ -1,0 +1,9 @@
+//// [test/cases/bun57-L02c.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+@dec export;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+

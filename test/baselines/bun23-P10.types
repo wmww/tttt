@@ -1,0 +1,20 @@
+//// [test/cases/bun23-P10.ts] ////
+
+=== a.ts ===
+export {};
+declare global { interface SymbolConstructor { readonly observable: symbol } }
+>global : any
+>observable : unique symbol
+
+({})[Symbol.observable];
+>({})[Symbol.observable] : any
+>({}) : {}
+>{} : {}
+>Symbol.observable : unique symbol
+>Symbol : SymbolConstructor
+>observable : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

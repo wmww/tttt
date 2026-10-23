@@ -1,0 +1,15 @@
+//// [test/cases/bun28-C28.ts] ////
+
+=== a.ts ===
+class C { [("a" in {})]: any }
+>C : C
+>[("a" in {})] : any
+>("a" in {}) : boolean
+>"a" in {} : boolean
+>"a" : "a"
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

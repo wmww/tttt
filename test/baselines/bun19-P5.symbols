@@ -1,0 +1,32 @@
+//// [test/cases/bun19-P5.ts] ////
+
+=== a.ts ===
+class C {
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+  r!: { a: 1, b: 2 } | { a: 2, c: 3 };
+>r : Symbol(C.r, Decl(a.ts, 0, 9))
+>a : Symbol(a, Decl(a.ts, 1, 7))
+>b : Symbol(b, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 1, 24))
+>c : Symbol(c, Decl(a.ts, 1, 30))
+
+  m(q: this["r"]) {
+>m : Symbol(C.m, Decl(a.ts, 1, 38))
+>q : Symbol(q, Decl(a.ts, 2, 4))
+
+    const { a, ...rest } = q;
+>a : Symbol(a, Decl(a.ts, 3, 11))
+>rest : Symbol(rest, Decl(a.ts, 3, 14))
+>q : Symbol(q, Decl(a.ts, 2, 4))
+
+    const x: { b: 2 } | { c: 3 } = rest;
+>x : Symbol(x, Decl(a.ts, 4, 9))
+>b : Symbol(b, Decl(a.ts, 4, 14))
+>c : Symbol(c, Decl(a.ts, 4, 25))
+>rest : Symbol(rest, Decl(a.ts, 3, 14))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

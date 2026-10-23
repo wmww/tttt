@@ -1,0 +1,18 @@
+//// [test/cases/bun13-C9a.ts] ////
+
+=== a.ts ===
+type Brand<T> = { [P in keyof T]: 1 };
+>Brand : Brand<T>
+
+type M<T> = { [K in "a" | "b" as K & Brand<T>]: 1 };
+>M : M<T>
+
+function f<T>() { const x: M<T> = {}; }
+>f : <T>() => void
+>x : M<T>
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

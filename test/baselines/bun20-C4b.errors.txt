@@ -1,0 +1,14 @@
+a.ts(1,69): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function e15() { let x = []; x.push(1); for (const k in x) { x.push("a"); } }
+                                                                        ~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

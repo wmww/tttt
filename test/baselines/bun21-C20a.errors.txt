@@ -1,0 +1,21 @@
+a.ts(1,25): error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function f(c: boolean): number {
+                            ~~~~~~
+!!! error TS2366: Function lacks ending return statement and return type does not include 'undefined'.
+      let y: 1 | 2 = 1;
+      while (true) {
+        switch (y) { case 1: return 1; case 2: return 2; }
+        y = 2;
+        if (c) break;
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

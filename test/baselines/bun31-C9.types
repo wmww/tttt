@@ -1,0 +1,39 @@
+//// [test/cases/bun31-C9.ts] ////
+
+=== a.ts ===
+function m(a?: { b?: { c?: string } }) { if (a?.b!.c) { const s: string = a.b!.c; } }
+>m : (a?: { b?: { c?: string; }; }) => void
+>a : { b?: { c?: string; }; } | undefined
+>b : { c?: string; } | undefined
+>c : string | undefined
+>a?.b!.c : string | undefined
+>a?.b! : { c?: string; } | undefined
+>a?.b : { c?: string; } | undefined
+>a : { b?: { c?: string; }; } | undefined
+>b : { c?: string; } | undefined
+>c : string | undefined
+>s : string
+>a.b!.c : string
+>a.b! : { c?: string; }
+>a.b : { c?: string; }
+>a : { b?: { c?: string; }; }
+>b : { c?: string; }
+>c : string
+
+function n(a?: { g?(): string }) { if (a?.g!()) a.g; }
+>n : (a?: { g?(): string; }) => void
+>a : { g?(): string; } | undefined
+>g : (() => string) | undefined
+>a?.g!() : string | undefined
+>a?.g! : (() => string) | undefined
+>a?.g : (() => string) | undefined
+>a : { g?(): string; } | undefined
+>g : (() => string) | undefined
+>a.g : (() => string) | undefined
+>a : { g?(): string; }
+>g : (() => string) | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

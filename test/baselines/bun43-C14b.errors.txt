@@ -1,0 +1,14 @@
+a.ts(1,9): error TS2304: Cannot find name 'f'.
+a.ts(1,15): error TS1002: Unterminated string literal.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    var s = f<"abc
+            ~
+!!! error TS2304: Cannot find name 'f'.
+                  
+!!! error TS1002: Unterminated string literal.
+    >();
+    

@@ -1,0 +1,14 @@
+//// [test/cases/bun28-P14b.ts] ////
+
+=== a.ts ===
+class C { [K in "a"]() {} }
+>C : C
+>[K in "a"] : () => void
+>K in "a" : boolean
+>K : any
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

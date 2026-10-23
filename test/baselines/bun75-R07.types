@@ -1,0 +1,474 @@
+//// [test/cases/bun75-R07.ts] ////
+
+=== main.ts ===
+import { n1 } from "./p1";
+>n1 : any
+
+n1.nope;
+>n1.nope : any
+>n1 : any
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== p1.ts ===
+import * as n1 from "./p2"; export { n1 };
+>n1 : any
+>n1 : any
+
+export const v1 = 1;
+>v1 : 1
+>1 : 1
+
+=== p10.ts ===
+import * as n10 from "./p11"; export { n10 };
+>n10 : any
+>n10 : any
+
+export const v10 = 10;
+>v10 : 10
+>10 : 10
+
+=== p11.ts ===
+import * as n11 from "./p12"; export { n11 };
+>n11 : any
+>n11 : any
+
+export const v11 = 11;
+>v11 : 11
+>11 : 11
+
+=== p12.ts ===
+import * as n12 from "./p13"; export { n12 };
+>n12 : any
+>n12 : any
+
+export const v12 = 12;
+>v12 : 12
+>12 : 12
+
+=== p13.ts ===
+import * as n13 from "./p14"; export { n13 };
+>n13 : any
+>n13 : any
+
+export const v13 = 13;
+>v13 : 13
+>13 : 13
+
+=== p14.ts ===
+import * as n14 from "./p15"; export { n14 };
+>n14 : any
+>n14 : any
+
+export const v14 = 14;
+>v14 : 14
+>14 : 14
+
+=== p15.ts ===
+import * as n15 from "./p16"; export { n15 };
+>n15 : any
+>n15 : any
+
+export const v15 = 15;
+>v15 : 15
+>15 : 15
+
+=== p16.ts ===
+import * as n16 from "./p17"; export { n16 };
+>n16 : any
+>n16 : any
+
+export const v16 = 16;
+>v16 : 16
+>16 : 16
+
+=== p17.ts ===
+import * as n17 from "./p18"; export { n17 };
+>n17 : any
+>n17 : any
+
+export const v17 = 17;
+>v17 : 17
+>17 : 17
+
+=== p18.ts ===
+import * as n18 from "./p19"; export { n18 };
+>n18 : any
+>n18 : any
+
+export const v18 = 18;
+>v18 : 18
+>18 : 18
+
+=== p19.ts ===
+import * as n19 from "./p20"; export { n19 };
+>n19 : any
+>n19 : any
+
+export const v19 = 19;
+>v19 : 19
+>19 : 19
+
+=== p2.ts ===
+import * as n2 from "./p3"; export { n2 };
+>n2 : any
+>n2 : any
+
+export const v2 = 2;
+>v2 : 2
+>2 : 2
+
+=== p20.ts ===
+import * as n20 from "./p21"; export { n20 };
+>n20 : any
+>n20 : any
+
+export const v20 = 20;
+>v20 : 20
+>20 : 20
+
+=== p21.ts ===
+import * as n21 from "./p22"; export { n21 };
+>n21 : any
+>n21 : any
+
+export const v21 = 21;
+>v21 : 21
+>21 : 21
+
+=== p22.ts ===
+import * as n22 from "./p23"; export { n22 };
+>n22 : any
+>n22 : any
+
+export const v22 = 22;
+>v22 : 22
+>22 : 22
+
+=== p23.ts ===
+import * as n23 from "./p24"; export { n23 };
+>n23 : any
+>n23 : any
+
+export const v23 = 23;
+>v23 : 23
+>23 : 23
+
+=== p24.ts ===
+import * as n24 from "./p25"; export { n24 };
+>n24 : any
+>n24 : any
+
+export const v24 = 24;
+>v24 : 24
+>24 : 24
+
+=== p25.ts ===
+import * as n25 from "./p26"; export { n25 };
+>n25 : any
+>n25 : any
+
+export const v25 = 25;
+>v25 : 25
+>25 : 25
+
+=== p26.ts ===
+import * as n26 from "./p27"; export { n26 };
+>n26 : any
+>n26 : any
+
+export const v26 = 26;
+>v26 : 26
+>26 : 26
+
+=== p27.ts ===
+import * as n27 from "./p28"; export { n27 };
+>n27 : any
+>n27 : any
+
+export const v27 = 27;
+>v27 : 27
+>27 : 27
+
+=== p28.ts ===
+import * as n28 from "./p29"; export { n28 };
+>n28 : any
+>n28 : any
+
+export const v28 = 28;
+>v28 : 28
+>28 : 28
+
+=== p29.ts ===
+import * as n29 from "./p30"; export { n29 };
+>n29 : any
+>n29 : any
+
+export const v29 = 29;
+>v29 : 29
+>29 : 29
+
+=== p3.ts ===
+import * as n3 from "./p4"; export { n3 };
+>n3 : any
+>n3 : any
+
+export const v3 = 3;
+>v3 : 3
+>3 : 3
+
+=== p30.ts ===
+import * as n30 from "./p31"; export { n30 };
+>n30 : any
+>n30 : any
+
+export const v30 = 30;
+>v30 : 30
+>30 : 30
+
+=== p31.ts ===
+import * as n31 from "./p32"; export { n31 };
+>n31 : any
+>n31 : any
+
+export const v31 = 31;
+>v31 : 31
+>31 : 31
+
+=== p32.ts ===
+import * as n32 from "./p33"; export { n32 };
+>n32 : any
+>n32 : any
+
+export const v32 = 32;
+>v32 : 32
+>32 : 32
+
+=== p33.ts ===
+import * as n33 from "./p34"; export { n33 };
+>n33 : any
+>n33 : any
+
+export const v33 = 33;
+>v33 : 33
+>33 : 33
+
+=== p34.ts ===
+import * as n34 from "./p35"; export { n34 };
+>n34 : any
+>n34 : any
+
+export const v34 = 34;
+>v34 : 34
+>34 : 34
+
+=== p35.ts ===
+import * as n35 from "./p36"; export { n35 };
+>n35 : any
+>n35 : any
+
+export const v35 = 35;
+>v35 : 35
+>35 : 35
+
+=== p36.ts ===
+import * as n36 from "./p37"; export { n36 };
+>n36 : any
+>n36 : any
+
+export const v36 = 36;
+>v36 : 36
+>36 : 36
+
+=== p37.ts ===
+import * as n37 from "./p38"; export { n37 };
+>n37 : any
+>n37 : any
+
+export const v37 = 37;
+>v37 : 37
+>37 : 37
+
+=== p38.ts ===
+import * as n38 from "./p39"; export { n38 };
+>n38 : any
+>n38 : any
+
+export const v38 = 38;
+>v38 : 38
+>38 : 38
+
+=== p39.ts ===
+import * as n39 from "./p40"; export { n39 };
+>n39 : any
+>n39 : any
+
+export const v39 = 39;
+>v39 : 39
+>39 : 39
+
+=== p4.ts ===
+import * as n4 from "./p5"; export { n4 };
+>n4 : any
+>n4 : any
+
+export const v4 = 4;
+>v4 : 4
+>4 : 4
+
+=== p40.ts ===
+import * as n40 from "./p41"; export { n40 };
+>n40 : any
+>n40 : any
+
+export const v40 = 40;
+>v40 : 40
+>40 : 40
+
+=== p41.ts ===
+import * as n41 from "./p42"; export { n41 };
+>n41 : any
+>n41 : any
+
+export const v41 = 41;
+>v41 : 41
+>41 : 41
+
+=== p42.ts ===
+import * as n42 from "./p43"; export { n42 };
+>n42 : any
+>n42 : any
+
+export const v42 = 42;
+>v42 : 42
+>42 : 42
+
+=== p43.ts ===
+import * as n43 from "./p44"; export { n43 };
+>n43 : any
+>n43 : any
+
+export const v43 = 43;
+>v43 : 43
+>43 : 43
+
+=== p44.ts ===
+import * as n44 from "./p45"; export { n44 };
+>n44 : any
+>n44 : any
+
+export const v44 = 44;
+>v44 : 44
+>44 : 44
+
+=== p45.ts ===
+import * as n45 from "./p46"; export { n45 };
+>n45 : any
+>n45 : any
+
+export const v45 = 45;
+>v45 : 45
+>45 : 45
+
+=== p46.ts ===
+import * as n46 from "./p47"; export { n46 };
+>n46 : any
+>n46 : any
+
+export const v46 = 46;
+>v46 : 46
+>46 : 46
+
+=== p47.ts ===
+import * as n47 from "./p48"; export { n47 };
+>n47 : any
+>n47 : any
+
+export const v47 = 47;
+>v47 : 47
+>47 : 47
+
+=== p48.ts ===
+import * as n48 from "./p49"; export { n48 };
+>n48 : any
+>n48 : any
+
+export const v48 = 48;
+>v48 : 48
+>48 : 48
+
+=== p49.ts ===
+import * as n49 from "./p50"; export { n49 };
+>n49 : any
+>n49 : any
+
+export const v49 = 49;
+>v49 : 49
+>49 : 49
+
+=== p5.ts ===
+import * as n5 from "./p6"; export { n5 };
+>n5 : any
+>n5 : any
+
+export const v5 = 5;
+>v5 : 5
+>5 : 5
+
+=== p50.ts ===
+import * as n50 from "./p51"; export { n50 };
+>n50 : any
+>n50 : any
+
+export const v50 = 50;
+>v50 : 50
+>50 : 50
+
+=== p51.ts ===
+import * as n51 from "./p1"; export { n51 };
+>n51 : any
+>n51 : any
+
+export const v51 = 51;
+>v51 : 51
+>51 : 51
+
+=== p6.ts ===
+import * as n6 from "./p7"; export { n6 };
+>n6 : any
+>n6 : any
+
+export const v6 = 6;
+>v6 : 6
+>6 : 6
+
+=== p7.ts ===
+import * as n7 from "./p8"; export { n7 };
+>n7 : any
+>n7 : any
+
+export const v7 = 7;
+>v7 : 7
+>7 : 7
+
+=== p8.ts ===
+import * as n8 from "./p9"; export { n8 };
+>n8 : any
+>n8 : any
+
+export const v8 = 8;
+>v8 : 8
+>8 : 8
+
+=== p9.ts ===
+import * as n9 from "./p10"; export { n9 };
+>n9 : any
+>n9 : any
+
+export const v9 = 9;
+>v9 : 9
+>9 : 9
+

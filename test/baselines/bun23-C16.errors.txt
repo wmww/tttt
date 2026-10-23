@@ -1,0 +1,18 @@
+a.ts(2,29): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(2,46): error TS2322: Type '{ k: number; b: number; }' is not assignable to type '1'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const cs = "k";
+    const o3 = { [cs]: 1, b: 2, [cs]: 3 }; const y3: 1 = o3;
+                                ~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                                                 ~~
+!!! error TS2322: Type '{ k: number; b: number; }' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,23 @@
+//// [test/cases/bun13-P1.ts] ////
+
+=== a.ts ===
+type Foo<T, U extends T> = [T, U];
+>Foo : Foo<T, U>
+
+type P<X> = X extends Foo<infer A, infer B> ? { b: B } : never;
+>P : P<X>
+>b : B
+
+function g<X>(x: P<X>) { x.b = 1; }
+>g : <X>(x: P<X>) => void
+>x : P<X>
+>x.b = 1 : 1
+>x.b : unknown
+>x : P<X>
+>b : unknown
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

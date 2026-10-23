@@ -1,0 +1,84 @@
+//// [test/cases/bun88-R02b.ts] ////
+
+=== index.ts ===
+/// <reference lib="dom" />
+const a: ABC = { abc: 1 };
+>a : ABC
+>{ abc: 1 } : { abc: number; }
+>abc : number
+>1 : 1
+
+const b: string = libValue;
+>b : string
+>libValue : number
+
+const c: number = libBad;
+>c : number
+>libBad : string
+
+const d: string = libFn(1, 2);
+>d : string
+>libFn(1, 2) : any
+>libFn : (a: any, b: any) => any
+>1 : 1
+>2 : 2
+
+const e: string = new LibClass().m();
+>e : string
+>new LibClass().m() : any
+>new LibClass().m : () => any
+>new LibClass() : LibClass
+>LibClass : typeof LibClass
+>m : () => any
+
+const f: string = new LibClass().p;
+>f : string
+>new LibClass().p : number
+>new LibClass() : LibClass
+>LibClass : typeof LibClass
+>p : number
+
+window.localStorage;
+>window.localStorage : any
+>window : any
+>localStorage : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/index.js ===
+/** @typedef {{ abc: string }} ABC */
+var libValue = 1;
+>libValue : number
+>1 : 1
+
+/** @type {string} */
+var libBad = 2;
+>libBad : string
+>2 : 2
+
+function libFn(a, b) { return a + b + missingName; }
+>libFn : (a: any, b: any) => any
+>a : any
+>b : any
+>a + b + missingName : any
+>a + b : any
+>a : any
+>b : any
+>missingName : any
+
+class LibClass { constructor() { this.p = 1; } m() { return this.p.nope; } }
+>LibClass : LibClass
+>this.p = 1 : 1
+>this.p : any
+>this : this
+>p : any
+>1 : 1
+>m : () => any
+>this.p.nope : any
+>this.p : number
+>this : this
+>p : number
+>nope : any
+

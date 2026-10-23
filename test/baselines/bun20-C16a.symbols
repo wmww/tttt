@@ -1,0 +1,19 @@
+//// [test/cases/bun20-C16a.ts] ////
+
+=== a.ts ===
+class A { a = 1 }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(A.a, Decl(a.ts, 0, 9))
+
+function z1<TA extends A>(x: Partial<TA>) { switch (x) { case "a": break; } }
+>z1 : Symbol(z1, Decl(a.ts, 0, 17))
+>TA : Symbol(TA, Decl(a.ts, 1, 12))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>TA : Symbol(TA, Decl(a.ts, 1, 12))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

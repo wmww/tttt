@@ -1,0 +1,37 @@
+//// [test/cases/bun90-R17c.ts] ////
+
+=== b5.ts ===
+import { u } from "./a5"; u;
+>u : k
+>u : k
+
+const zero = class { static x = 0 };
+>zero : typeof zero
+>class { static x = 0 } : typeof zero
+>x : number
+>0 : 0
+
+export function mk() { const k = class { static x = 1 }; return new k(); }
+>mk : () => k
+>k : typeof k
+>class { static x = 1 } : typeof k
+>x : number
+>1 : 1
+>new k() : k
+>k : typeof k
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a5.ts ===
+import { mk } from "./b5"; export const u = mk();
+>mk : () => k
+>u : k
+>mk() : k
+>mk : () => k
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : () => void
+

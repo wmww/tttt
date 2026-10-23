@@ -1,0 +1,15 @@
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    interface C { kind: string; m(): this extends { kind: "a" } ? 1 : 2 }
+    interface A extends C { kind: "a" }
+    interface B extends C { kind: "b" }
+    function f<T extends C>(t: T) { return t.m(); }
+    const r: 1 | 2 = f(null! as A | B);
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

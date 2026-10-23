@@ -1,0 +1,17 @@
+//// [test/cases/bun14-C5.ts] ////
+
+=== a.ts ===
+class R {
+>R : Symbol(R, Decl(a.ts, 0, 0))
+
+  readonly x: number;
+>x : Symbol(R.x, Decl(a.ts, 0, 9))
+
+  constructor() { (this).x = 2; }
+>(this).x : Symbol(R.x, Decl(a.ts, 0, 9))
+>this : Symbol(R, Decl(a.ts, 0, 0))
+>x : Symbol(R.x, Decl(a.ts, 0, 9))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

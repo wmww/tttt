@@ -1,0 +1,21 @@
+//// [test/cases/bun25-P4.ts] ////
+
+=== a.ts ===
+declare const o: { p(v: unknown): asserts v is string } | undefined;
+>o : { p(v: unknown): asserts v is string; } | undefined
+>p : (v: unknown) => asserts v is string
+>v : unknown
+
+function f(v: unknown) { o?.p(v); }
+>f : (v: unknown) => void
+>v : unknown
+>o?.p(v) : void | undefined
+>o?.p : ((v: unknown) => asserts v is string) | undefined
+>o : { p(v: unknown): asserts v is string; } | undefined
+>p : ((v: unknown) => asserts v is string) | undefined
+>v : unknown
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

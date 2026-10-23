@@ -1,0 +1,41 @@
+//// [test/cases/bun62-L06b.ts] ////
+
+=== a.js ===
+const k = "x";
+>k : Symbol(k, Decl(a.js, 0, 5))
+
+const o = { [k]: 1, m() { this.x = 2; } };
+>o : Symbol(o, Decl(a.js, 1, 5))
+>[k] : Symbol(x, Decl(a.js, 1, 25), Decl(a.js, 1, 11))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>m : Symbol(m, Decl(a.js, 1, 19))
+>this.x : Symbol(x, Decl(a.js, 1, 25), Decl(a.js, 1, 11))
+>this : Symbol(o, Decl(a.js, 1, 9))
+>x : Symbol(x, Decl(a.js, 1, 25), Decl(a.js, 1, 11))
+
+/** @type {boolean} */ const a = o;
+>a : Symbol(a, Decl(a.js, 2, 28))
+>o : Symbol(o, Decl(a.js, 1, 5))
+
+const o2 = { [k]: 1, n: 1, get g() { this.x = 2; return 1; } };
+>o2 : Symbol(o2, Decl(a.js, 3, 5))
+>[k] : Symbol(x, Decl(a.js, 3, 36), Decl(a.js, 3, 12))
+>k : Symbol(k, Decl(a.js, 0, 5))
+>n : Symbol(n, Decl(a.js, 3, 20))
+>g : Symbol(g, Decl(a.js, 3, 26))
+>this.x : Symbol(x, Decl(a.js, 3, 36), Decl(a.js, 3, 12))
+>this : Symbol(o2, Decl(a.js, 3, 10))
+>x : Symbol(x, Decl(a.js, 3, 36), Decl(a.js, 3, 12))
+
+/** @type {boolean} */ const d = o2;
+>d : Symbol(d, Decl(a.js, 4, 28))
+>o2 : Symbol(o2, Decl(a.js, 3, 5))
+
+/** @type {{ m(): void, x: string, n: string }} */ const e = o2;
+>e : Symbol(e, Decl(a.js, 5, 56))
+>o2 : Symbol(o2, Decl(a.js, 3, 5))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 7, 5))
+

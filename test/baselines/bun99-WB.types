@@ -1,0 +1,103 @@
+//// [test/cases/bun99-WB.ts] ////
+
+=== before.ts ===
+css2({});
+>css2({}) : void
+>css2 : (style: Style2) => void
+>{} : {}
+
+css2({ top: 'a' });
+>css2({ top: 'a' }) : void
+>css2 : (style: Style2) => void
+>{ top: 'a' } : { top: string; }
+>top : string
+>'a' : "a"
+
+css2({ ':hover': {} });
+>css2({ ':hover': {} }) : void
+>css2 : (style: Style2) => void
+>{ ':hover': {} } : { ':hover': {}; }
+>':hover' : {}
+>{} : {}
+
+declare function css2(style: Style2): void;
+>css2 : (style: Style2) => void
+>style : Style2
+
+type Pseudos2 = ':hover';
+>Pseudos2 : ":hover"
+
+type CSSPseudos2 = { [P in Pseudos2]: Omit<Style2, Pseudos2> };
+>CSSPseudos2 : CSSPseudos2
+
+type Style2 = CSSPseudos2 & { top?: string };
+>Style2 : Style2
+>top : string | undefined
+
+export {};
+=== index.ts ===
+import { css, get } from './lib';
+>css : (style: { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }) => void
+>get : () => { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }
+
+css({ ':hover': { notAProperty: '1' } });
+>css({ ':hover': { notAProperty: '1' } }) : void
+>css : (style: { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }) => void
+>{ ':hover': { notAProperty: '1' } } : { ':hover': { notAProperty: string; }; }
+>':hover' : { notAProperty: string; }
+>{ notAProperty: '1' } : { notAProperty: string; }
+>notAProperty : string
+>'1' : "1"
+
+css({});
+>css({}) : void
+>css : (style: { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }) => void
+>{} : {}
+
+css({ top: 'a' });
+>css({ top: 'a' }) : void
+>css : (style: { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }) => void
+>{ top: 'a' } : { top: string; }
+>top : string
+>'a' : "a"
+
+const s = get();
+>s : { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }
+>get() : { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }
+>get : () => { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }
+
+const a: { ':hover': { top?: string } } = s;
+>a : { ':hover': { top?: string; }; }
+>':hover' : { top?: string; }
+>top : string | undefined
+>s : { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }
+
+const b: { top?: string } = s;
+>b : { top?: string; }
+>top : string | undefined
+>s : { ":hover": Omit<CSSPseudos & { top?: string; }, ":hover">; } & { top?: string; }
+
+export const sentinel: number = '';
+>sentinel : number
+>'' : ""
+
+=== lib.d.ts ===
+type Pseudos = ':hover';
+>Pseudos : ":hover"
+
+type CSSPseudos = { [P in Pseudos]: Omit<Style, Pseudos> };
+>CSSPseudos : CSSPseudos
+
+type Style = CSSPseudos & { top?: string };
+>Style : Style
+>top : string | undefined
+
+export declare function css(style: Style): void;
+>css : (style: Style) => void
+>style : Style
+
+export declare function get(): Style;
+>get : () => Style
+
+export {};
+

@@ -1,0 +1,21 @@
+a.ts(2,21): error TS2615: Type of property 'a' circularly references itself in mapped type 'A'.
+a.ts(2,21): error TS2615: Type of property 'a' circularly references itself in mapped type 'B'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type A = { [K in "a"]: B[K & keyof B] };
+    declare const a: A; a.a;
+                        ~~~
+!!! error TS2615: Type of property 'a' circularly references itself in mapped type 'A'.
+                        ~~~
+!!! error TS2615: Type of property 'a' circularly references itself in mapped type 'B'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    type B = { [K in "a"]: A[K & keyof A] };
+    declare const b: B; b.a;
+    

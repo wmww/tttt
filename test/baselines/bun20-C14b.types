@@ -1,0 +1,26 @@
+//// [test/cases/bun20-C14b.ts] ////
+
+=== a.ts ===
+type Show<T> = { show: T };
+>Show : Show<T>
+>show : T
+
+declare function show<T>(x: T): Show<T>;
+>show : <T>(x: T) => Show<T>
+>x : T
+
+function f<TU extends unknown>(x: TU) { if (x instanceof Object) { const b: number = show(x); } }
+>f : <TU extends unknown>(x: TU) => void
+>x : TU
+>x instanceof Object : boolean
+>x : TU
+>Object : ObjectConstructor
+>b : number
+>show(x) : Show<TU>
+>show : <T>(x: T) => Show<T>
+>x : TU
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

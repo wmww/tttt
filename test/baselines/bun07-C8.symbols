@@ -1,0 +1,23 @@
+//// [test/cases/bun07-C8.ts] ////
+
+=== a.ts ===
+export {};
+interface C<T> { v: T }
+>C : Symbol(C, Decl(a.ts, 0, 10), Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 12), Decl(a.ts, 2, 8))
+>v : Symbol(C.v, Decl(a.ts, 1, 16))
+>T : Symbol(T, Decl(a.ts, 1, 12), Decl(a.ts, 2, 8))
+
+class C<const T> { constructor(x: T) { } }
+>C : Symbol(C, Decl(a.ts, 0, 10), Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 12), Decl(a.ts, 2, 8))
+>x : Symbol(x, Decl(a.ts, 2, 31))
+>T : Symbol(T, Decl(a.ts, 1, 12), Decl(a.ts, 2, 8))
+
+const p1: number = new C([1, 2]);
+>p1 : Symbol(p1, Decl(a.ts, 3, 5))
+>C : Symbol(C, Decl(a.ts, 0, 10), Decl(a.ts, 1, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

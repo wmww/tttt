@@ -1,0 +1,18 @@
+//// [test/cases/bun27-P5.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { div: {} } }
+>e : 1
+>div : {}
+
+function f() { enum React { A } return <div />; }
+>f : () => JSX.Element
+>React : React
+>A : React.A
+><div /> : JSX.Element
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

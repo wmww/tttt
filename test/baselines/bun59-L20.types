@@ -1,0 +1,150 @@
+//// [test/cases/bun59-L20.ts] ////
+
+=== a.ts ===
+const g1 = () => {}; g1.a = "b" as const; g1[k1] = 1; declare const k1: (typeof g1)["a"];
+>g1 : any
+>() => {} : { (): void; a: "b"; }
+>g1.a = "b" as const : "b"
+>g1.a : any
+>g1 : any
+>a : any
+>"b" as const : "b"
+>"b" : "b"
+>g1[k1] = 1 : 1
+>g1[k1] : any
+>g1 : any
+>k1 : any
+>1 : 1
+>k1 : any
+>g1 : any
+
+const g2 = function () {}; g2.a = "b" as const; g2[k2] = 1; declare const k2: (typeof g2)["a"];
+>g2 : any
+>function () {} : { (): void; a: "b"; }
+>g2.a = "b" as const : "b"
+>g2.a : any
+>g2 : any
+>a : any
+>"b" as const : "b"
+>"b" : "b"
+>g2[k2] = 1 : 1
+>g2[k2] : any
+>g2 : any
+>k2 : any
+>1 : 1
+>k2 : any
+>g2 : any
+
+function g3() {} g3.a = "b" as const; g3[k3] = 1; declare const k3: (typeof g3)["a"];
+>g3 : { (): void; a: "b"; b: number; }
+>g3.a = "b" as const : "b"
+>g3.a : "b"
+>g3 : { (): void; a: "b"; b: number; }
+>a : "b"
+>"b" as const : "b"
+>"b" : "b"
+>g3[k3] = 1 : 1
+>g3[k3] : number
+>g3 : { (): void; a: "b"; b: number; }
+>k3 : "b"
+>1 : 1
+>k3 : "b"
+>g3 : { (): void; a: "b"; b: number; }
+
+declare const k4: (typeof g4)["a"]; const g4 = () => {}; g4.a = "b" as const; g4[k4] = 1;
+>k4 : any
+>g4 : any
+>g4 : any
+>() => {} : { (): void; a: "b"; }
+>g4.a = "b" as const : "b"
+>g4.a : any
+>g4 : any
+>a : any
+>"b" as const : "b"
+>"b" : "b"
+>g4[k4] = 1 : 1
+>g4[k4] : any
+>g4 : any
+>k4 : any
+>1 : 1
+
+const g5 = () => {}; g5.a = "b" as const; g5[k5] = 1; const k5 = "c"; g5.c;
+>g5 : { (): void; a: "b"; c: number; }
+>() => {} : { (): void; a: "b"; c: number; }
+>g5.a = "b" as const : "b"
+>g5.a : "b"
+>g5 : { (): void; a: "b"; c: number; }
+>a : "b"
+>"b" as const : "b"
+>"b" : "b"
+>g5[k5] = 1 : 1
+>g5[k5] : number
+>g5 : { (): void; a: "b"; c: number; }
+>k5 : "c"
+>1 : 1
+>k5 : "c"
+>"c" : "c"
+>g5.c : number
+>g5 : { (): void; a: "b"; c: number; }
+>c : number
+
+const g6 = () => {}; g6.a = "b" as const; g6[k6] = 1; declare const k6: "c"; g6.c; g6.b;
+>g6 : { (): void; a: "b"; c: number; }
+>() => {} : { (): void; a: "b"; c: number; }
+>g6.a = "b" as const : "b"
+>g6.a : "b"
+>g6 : { (): void; a: "b"; c: number; }
+>a : "b"
+>"b" as const : "b"
+>"b" : "b"
+>g6[k6] = 1 : 1
+>g6[k6] : number
+>g6 : { (): void; a: "b"; c: number; }
+>k6 : "c"
+>1 : 1
+>k6 : "c"
+>g6.c : number
+>g6 : { (): void; a: "b"; c: number; }
+>c : number
+>g6.b : any
+>g6 : { (): void; a: "b"; c: number; }
+>b : any
+
+const g7 = () => {}; g7[k7] = 1; declare const k7: ReturnType<typeof g7> extends void ? "c" : "d"; g7.c;
+>g7 : any
+>() => {} : () => void
+>g7[k7] = 1 : 1
+>g7[k7] : any
+>g7 : any
+>k7 : any
+>1 : 1
+>k7 : any
+>g7 : any
+>g7.c : any
+>g7 : any
+>c : any
+
+const g8 = () => {}; g8.a = "b" as const; declare const k8: (typeof g8)["a"]; g8[k8] = 1; g8.b;
+>g8 : any
+>() => {} : { (): void; a: "b"; }
+>g8.a = "b" as const : "b"
+>g8.a : any
+>g8 : any
+>a : any
+>"b" as const : "b"
+>"b" : "b"
+>k8 : any
+>g8 : any
+>g8[k8] = 1 : 1
+>g8[k8] : any
+>g8 : any
+>k8 : any
+>1 : 1
+>g8.b : any
+>g8 : any
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

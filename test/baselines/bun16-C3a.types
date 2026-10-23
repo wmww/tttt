@@ -1,0 +1,32 @@
+//// [test/cases/bun16-C3a.ts] ////
+
+=== a.ts ===
+function g<T extends { (): void; id: (x: number) => void }>() {
+>g : <T extends { (): void; id: (x: number) => void; }>() => void
+>id : (x: number) => void
+>x : number
+
+  const F: T = () => {};
+>F : T
+>() => {} : { (): void; id: ((x: any) => void) | ((x: any) => void); }
+
+  F.id = x => {};
+>F.id = x => {} : (x: any) => void
+>F.id : (x: number) => void
+>F : T
+>id : (x: number) => void
+>x => {} : (x: any) => void
+>x : any
+
+  F["id"] = x => {};
+>F["id"] = x => {} : (x: any) => void
+>F["id"] : (x: number) => void
+>F : T
+>"id" : "id"
+>x => {} : (x: any) => void
+>x : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

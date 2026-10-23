@@ -1,0 +1,20 @@
+//// [test/cases/bun04-C3.ts] ////
+
+=== a.ts ===
+export {};
+interface BadP { then(cb: (v: BadP) => void): void }
+>then : (cb: (v: BadP) => void) => void
+>cb : (v: BadP) => void
+>v : BadP
+
+declare const it: Iterable<BadP>;
+>it : Iterable<BadP>
+
+for await (const x of it) {}
+>x : any
+>it : Iterable<BadP>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

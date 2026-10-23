@@ -1,0 +1,26 @@
+//// [test/cases/bun36-C1b.ts] ////
+
+=== a.ts ===
+import { c } from "dep";
+>c : Symbol(c, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/@types/foo/index.d.ts ===
+export {};
+declare global { const gfoo: 1; }
+>global : Symbol(global, Decl(index.d.ts, 0, 10))
+>gfoo : Symbol(gfoo, Decl(index.d.ts, 1, 22))
+
+=== node_modules/dep/index.d.ts ===
+import "foo";
+export declare const c: 1;
+>c : Symbol(c, Decl(index.d.ts, 1, 20))
+
+=== node_modules/dep/node_modules/@types/foo/index.d.ts ===
+export {};
+declare global { const gfoo: 1; }
+>global : Symbol(global, Decl(index.d.ts, 0, 10))
+>gfoo : Symbol(gfoo, Decl(index.d.ts, 1, 22))
+

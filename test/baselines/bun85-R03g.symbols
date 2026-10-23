@@ -1,0 +1,55 @@
+//// [test/cases/bun85-R03g.ts] ////
+
+=== a.js ===
+var p = r;
+>p : Symbol(p, Decl(a.js, 0, 3))
+>r : Symbol(r, Decl(a.js, 1, 3))
+
+var r = [r, exports];
+>r : Symbol(r, Decl(a.js, 1, 3))
+>r : Symbol(r, Decl(a.js, 1, 3))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+
+exports.y = exports.z;
+>exports.y : Symbol(y, Decl(a.js, 1, 21))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>y : Symbol(y, Decl(a.js, 1, 21))
+>exports.z : Symbol(z, Decl(a.js, 2, 22))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>z : Symbol(z, Decl(a.js, 2, 22))
+
+exports.z = 1;
+>exports.z : Symbol(z, Decl(a.js, 2, 22))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>z : Symbol(z, Decl(a.js, 2, 22))
+
+/** @type {never} */ var tp = p;
+>tp : Symbol(tp, Decl(a.js, 4, 24))
+>p : Symbol(p, Decl(a.js, 0, 3))
+
+=== b.js ===
+var q = s;
+>q : Symbol(q, Decl(b.js, 0, 3))
+>s : Symbol(s, Decl(b.js, 1, 3))
+
+var s = [s, require("./a").y, exports];
+>s : Symbol(s, Decl(b.js, 1, 3))
+>s : Symbol(s, Decl(b.js, 1, 3))
+>require("./a").y : Symbol(y, Decl(a.js, 1, 21))
+>require : Symbol(require)
+>y : Symbol(y, Decl(a.js, 1, 21))
+>exports : Symbol(exports, Decl(b.js, 0, 0))
+
+exports.k = 1;
+>exports.k : Symbol(k, Decl(b.js, 1, 39))
+>exports : Symbol(exports, Decl(b.js, 0, 0))
+>k : Symbol(k, Decl(b.js, 1, 39))
+
+/** @type {never} */ var tq = q;
+>tq : Symbol(tq, Decl(b.js, 3, 24))
+>q : Symbol(q, Decl(b.js, 0, 3))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 5, 5))
+

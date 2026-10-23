@@ -1,0 +1,65 @@
+//// [test/cases/bun87-R08.ts] ////
+
+=== a.ts ===
+declare const o1: { a: 1 };
+>o1 : { a: 1; }
+>a : 1
+
+let a1: number;
+>a1 : number
+
+({ 1n: a1 } = o1);
+>({ 1n: a1 } = o1) : { a: 1; }
+>{ 1n: a1 } = o1 : { a: 1; }
+>{ 1n: a1 } : {}
+>1n : number
+>a1 : number
+>o1 : { a: 1; }
+
+({ 1n: a1 = 2 } = o1);
+>({ 1n: a1 = 2 } = o1) : { a: 1; }
+>{ 1n: a1 = 2 } = o1 : { a: 1; }
+>{ 1n: a1 = 2 } : {}
+>1n : number
+>a1 = 2 : 2
+>a1 : number
+>2 : 2
+>o1 : { a: 1; }
+
+[{ 0x1n: a1 }] = [o1];
+>[{ 0x1n: a1 }] = [o1] : [{ a: 1; }]
+>[{ 0x1n: a1 }] : [{}]
+>{ 0x1n: a1 } : {}
+>0x1n : number
+>a1 : number
+>[o1] : [{ a: 1; }]
+>o1 : { a: 1; }
+
+for ({ 1n: a1 } of [o1]) {}
+>{ 1n: a1 } : {}
+>1n : number
+>a1 : number
+>[o1] : { a: 1; }[]
+>o1 : { a: 1; }
+
+({ 1n: missing } = o1);
+>({ 1n: missing } = o1) : { a: 1; }
+>{ 1n: missing } = o1 : { a: 1; }
+>{ 1n: missing } : {}
+>1n : any
+>missing : any
+>o1 : { a: 1; }
+
+({ 1n: a1, ...o1 } = o1);
+>({ 1n: a1, ...o1 } = o1) : { a: 1; }
+>{ 1n: a1, ...o1 } = o1 : { a: 1; }
+>{ 1n: a1, ...o1 } : any
+>1n : number
+>a1 : number
+>o1 : any
+>o1 : { a: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun42-C8.ts] ////
+
+=== a.d.b.d.json.ts ===
+export declare const named: 1;
+>named : Symbol(named, Decl(a.d.b.d.json.ts, 0, 20))
+
+=== a.ts ===
+import { named } from "./a.d.b.json" with { type: "json" };
+>named : Symbol(named, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

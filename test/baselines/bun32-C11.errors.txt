@@ -1,0 +1,17 @@
+a.ts(1,19): error TS2369: A parameter property is only allowed in a constructor implementation.
+a.ts(1,26): error TS6133: 'h' is declared but its value is never read.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedParameters": true } }
+==== a.ts (3 errors) ====
+    export function f(public h: number) {}
+                      ~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                             ~
+!!! error TS6133: 'h' is declared but its value is never read.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

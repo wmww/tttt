@@ -1,0 +1,49 @@
+//// [test/cases/bun58-L07a.ts] ////
+
+=== a.ts ===
+import { S as S1 } from "pkg/sub";
+>S : typeof S1
+>S1 : typeof S1
+
+import { get } from "pkg";
+>get : () => S1
+
+import { S as S2 } from "other";
+>S : typeof S2
+>S2 : typeof S2
+
+declare const s2: S2;
+>s2 : S2
+
+const s1: S1 = s2;
+>s1 : S1
+>s2 : S2
+
+const s3: S2 = get();
+>s3 : S2
+>get() : S1
+>get : () => S1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/other/index.d.ts ===
+export { S } from "pkg/sub";
+>S : typeof import("pkg/sub").S
+
+=== node_modules/other/node_modules/pkg/sub/index.d.ts ===
+export declare class S { private p: number; }
+>S : S
+>p : number
+
+=== node_modules/pkg/index.d.ts ===
+import { S } from "./sub/index"; export declare function get(): S;
+>S : typeof S
+>get : () => S
+
+=== node_modules/pkg/sub/index.d.ts ===
+export declare class S { private p: number; }
+>S : S
+>p : number
+

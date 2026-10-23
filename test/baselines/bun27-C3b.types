@@ -1,0 +1,24 @@
+//// [test/cases/bun27-C3b.ts] ////
+
+=== a.tsx ===
+import type * as React from "./lib";
+>React : typeof React
+
+export const a = <div />;
+>a : React.JSX.Element
+><div /> : React.JSX.Element
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.ts ===
+export declare function createElement(...a: any[]): any;
+>createElement : (...a: any[]) => any
+>a : any[]
+
+export declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { div: {} } }
+>e : 1
+>div : {}
+

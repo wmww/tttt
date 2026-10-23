@@ -1,0 +1,92 @@
+//// [test/cases/bun96-REACTHOOKFORM2.ts] ////
+
+=== a.ts ===
+import type { Box, Field } from './types';
+>Box : Symbol(Box, Decl(a.ts, 0, 13))
+>Field : Symbol(Field, Decl(a.ts, 0, 18))
+
+type Local = { kind: 'local'; box: Box<number> };
+>Local : Symbol(Local, Decl(a.ts, 0, 42))
+>kind : Symbol(kind, Decl(a.ts, 1, 14))
+>box : Symbol(box, Decl(a.ts, 1, 29))
+>Box : Symbol(Box, Decl(a.ts, 0, 13))
+
+declare const u: Field<number> | Local;
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>Field : Symbol(Field, Decl(a.ts, 0, 18))
+>Local : Symbol(Local, Decl(a.ts, 0, 42))
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+>Equal : Symbol(Equal, Decl(a.ts, 2, 39))
+>A : Symbol(A, Decl(a.ts, 4, 11))
+>B : Symbol(B, Decl(a.ts, 4, 13))
+>T : Symbol(T, Decl(a.ts, 4, 21))
+>T : Symbol(T, Decl(a.ts, 4, 21))
+>A : Symbol(A, Decl(a.ts, 4, 11))
+>T : Symbol(T, Decl(a.ts, 4, 60))
+>T : Symbol(T, Decl(a.ts, 4, 60))
+>B : Symbol(B, Decl(a.ts, 4, 13))
+
+const same: Equal<(typeof u)['box'], Box<number>> = true;
+>same : Symbol(same, Decl(a.ts, 5, 5))
+>Equal : Symbol(Equal, Decl(a.ts, 2, 39))
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>Box : Symbol(Box, Decl(a.ts, 0, 13))
+
+interface Mine extends Both {}
+>Mine : Symbol(Mine, Decl(a.ts, 5, 57))
+>Both : Symbol(Both, Decl(a.ts, 6, 30))
+
+type Both = (typeof u)['box'];
+>Both : Symbol(Both, Decl(a.ts, 6, 30))
+>u : Symbol(u, Decl(a.ts, 2, 13))
+
+u.box = {};
+>u.box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+
+u.box = { value: 1, extra: 2 };
+>u.box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+>value : Symbol(value, Decl(a.ts, 10, 9))
+>extra : Symbol(extra, Decl(a.ts, 10, 19))
+
+u.box.valu;
+>u.box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+
+const text: string = u.box;
+>text : Symbol(text, Decl(a.ts, 12, 5))
+>u.box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+>u : Symbol(u, Decl(a.ts, 2, 13))
+>box : Symbol(box, Decl(types.ts, 1, 39), Decl(a.ts, 1, 29))
+
+declare let both: Box<number> & Field<number>['box'];
+>both : Symbol(both, Decl(a.ts, 13, 11))
+>Box : Symbol(Box, Decl(a.ts, 0, 13))
+>Field : Symbol(Field, Decl(a.ts, 0, 18))
+
+both = null;
+>both : Symbol(both, Decl(a.ts, 13, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 15, 5))
+
+=== types.ts ===
+export type Box<T> = { value: T };
+>Box : Symbol(Box, Decl(types.ts, 0, 0))
+>T : Symbol(T, Decl(types.ts, 0, 16))
+>value : Symbol(value, Decl(types.ts, 0, 22))
+>T : Symbol(T, Decl(types.ts, 0, 16))
+
+export type Field<T> = { kind: 'field'; box: Box<T> };
+>Field : Symbol(Field, Decl(types.ts, 0, 34))
+>T : Symbol(T, Decl(types.ts, 1, 18))
+>kind : Symbol(kind, Decl(types.ts, 1, 24))
+>box : Symbol(box, Decl(types.ts, 1, 39))
+>Box : Symbol(Box, Decl(types.ts, 0, 0))
+>T : Symbol(T, Decl(types.ts, 1, 18))
+

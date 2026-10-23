@@ -1,0 +1,15 @@
+a.ts(2,39): error TS2730: An arrow function cannot have a 'this' parameter.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    const a3: (this: { q: 1 }) => void = (this) => {};
+                                          ~~~~
+!!! error TS2730: An arrow function cannot have a 'this' parameter.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,15 @@
+a.ts(2,22): error TS2425: Class '[() => void]' defines instance member property '0', but extended class 'D' defines it as instance member function.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const TB: new () => [() => void];
+    class D extends TB { 0() {} }
+                         ~
+!!! error TS2425: Class '[() => void]' defines instance member property '0', but extended class 'D' defines it as instance member function.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

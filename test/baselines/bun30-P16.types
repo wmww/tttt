@@ -1,0 +1,19 @@
+//// [test/cases/bun30-P16.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+export class D { constructor() { this.a = 1; } a = 1; a() {} }
+>D : D
+>this.a = 1 : 1
+>this.a : () => void
+>this : this
+>a : () => void
+>1 : 1
+>a : number
+>1 : 1
+>a : () => void
+

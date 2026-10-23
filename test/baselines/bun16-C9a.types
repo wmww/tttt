@@ -1,0 +1,17 @@
+//// [test/cases/bun16-C9a.ts] ////
+
+=== a.ts ===
+declare function foo(): void;
+>foo : () => void
+
+if (foo) { globalThis.foo(); }
+>foo : () => void
+>globalThis.foo() : void
+>globalThis.foo : () => void
+>globalThis : typeof globalThis
+>foo : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

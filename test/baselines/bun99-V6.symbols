@@ -1,0 +1,126 @@
+//// [test/cases/bun99-V6.ts] ////
+
+=== globals.ts ===
+export {}
+declare global {
+>global : Symbol(global, Decl(globals.ts, 0, 9))
+
+  let counter: string | number
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+
+  var legacy: string | number
+>legacy : Symbol(legacy, Decl(globals.ts, 3, 5))
+
+  const fixed: string | number
+>fixed : Symbol(fixed, Decl(globals.ts, 4, 7))
+
+  let assignedHere: string | number
+>assignedHere : Symbol(assignedHere, Decl(globals.ts, 5, 5))
+
+  let assignedThere: string | number
+>assignedThere : Symbol(assignedThere, Decl(globals.ts, 6, 5))
+
+  namespace Space { let inside: string | number }
+>Space : Symbol(Space, Decl(globals.ts, 6, 36))
+>inside : Symbol(inside, Decl(globals.ts, 7, 23))
+}
+assignedHere = 1
+>assignedHere : Symbol(assignedHere, Decl(globals.ts, 5, 5))
+
+=== later.ts ===
+export {}
+if (typeof counter === 'string') { const f = () => counter.toUpperCase() }
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>f : Symbol(f, Decl(later.ts, 1, 40))
+>counter.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+if (typeof assignedHere === 'string') { const f = () => assignedHere.toUpperCase() }
+>assignedHere : Symbol(assignedHere, Decl(globals.ts, 5, 5))
+>f : Symbol(f, Decl(later.ts, 2, 45))
+>assignedHere : Symbol(assignedHere, Decl(globals.ts, 5, 5))
+
+counter = 3
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+
+=== main.ts ===
+export {}
+if (typeof counter === 'string') { const f = () => counter.toUpperCase() }
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>f : Symbol(f, Decl(main.ts, 1, 40))
+>counter.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+if (typeof legacy === 'string') { const f = () => legacy.toUpperCase() }
+>legacy : Symbol(legacy, Decl(globals.ts, 3, 5))
+>f : Symbol(f, Decl(main.ts, 2, 39))
+>legacy : Symbol(legacy, Decl(globals.ts, 3, 5))
+
+if (typeof fixed === 'string') { const f = () => fixed.toUpperCase() }
+>fixed : Symbol(fixed, Decl(globals.ts, 4, 7))
+>f : Symbol(f, Decl(main.ts, 3, 38))
+>fixed.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>fixed : Symbol(fixed, Decl(globals.ts, 4, 7))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+if (typeof assignedHere === 'string') { const f = () => assignedHere.toUpperCase() }
+>assignedHere : Symbol(assignedHere, Decl(globals.ts, 5, 5))
+>f : Symbol(f, Decl(main.ts, 4, 45))
+>assignedHere.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>assignedHere : Symbol(assignedHere, Decl(globals.ts, 5, 5))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+if (typeof assignedThere === 'string') { const f = () => assignedThere.toUpperCase() }
+>assignedThere : Symbol(assignedThere, Decl(globals.ts, 6, 5))
+>f : Symbol(f, Decl(main.ts, 5, 46))
+>assignedThere.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>assignedThere : Symbol(assignedThere, Decl(globals.ts, 6, 5))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+if (typeof Space.inside === 'string') { const f = () => Space.inside.toUpperCase() }
+>Space.inside : Symbol(Space.inside, Decl(globals.ts, 7, 23))
+>Space : Symbol(Space, Decl(globals.ts, 6, 36))
+>inside : Symbol(Space.inside, Decl(globals.ts, 7, 23))
+>f : Symbol(f, Decl(main.ts, 6, 45))
+>Space.inside : Symbol(Space.inside, Decl(globals.ts, 7, 23))
+>Space : Symbol(Space, Decl(globals.ts, 6, 36))
+>inside : Symbol(Space.inside, Decl(globals.ts, 7, 23))
+
+if (typeof scriptLet === 'string') { const f = () => scriptLet.toUpperCase() }
+>scriptLet : Symbol(scriptLet, Decl(script.ts, 0, 3))
+>f : Symbol(f, Decl(main.ts, 7, 42))
+>scriptLet : Symbol(scriptLet, Decl(script.ts, 0, 3))
+
+if (typeof counter === 'string') { function g() { return counter.toUpperCase() } }
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>g : Symbol(g, Decl(main.ts, 8, 34))
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+
+if (typeof counter === 'string') { const o = { m() { return counter.toUpperCase() } } }
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>o : Symbol(o, Decl(main.ts, 9, 40))
+>m : Symbol(m, Decl(main.ts, 9, 46))
+>counter.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+if (typeof counter === 'string') { const probe: never = counter; const f = () => { const inner: never = counter } }
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>probe : Symbol(probe, Decl(main.ts, 10, 40))
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+>f : Symbol(f, Decl(main.ts, 10, 70))
+>inner : Symbol(inner, Decl(main.ts, 10, 88))
+>counter : Symbol(counter, Decl(globals.ts, 2, 5))
+
+assignedThere = 2
+>assignedThere : Symbol(assignedThere, Decl(globals.ts, 6, 5))
+
+export const sentinel: number = ''
+>sentinel : Symbol(sentinel, Decl(main.ts, 12, 12))
+
+=== script.ts ===
+let scriptLet: string | number = 1
+>scriptLet : Symbol(scriptLet, Decl(script.ts, 0, 3))
+

@@ -1,0 +1,74 @@
+//// [test/cases/bun99-B2.ts] ////
+
+=== a.ts ===
+const enum E { A, B }
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 14))
+>B : Symbol(E.B, Decl(a.ts, 0, 17))
+
+enum R { A }
+>R : Symbol(R, Decl(a.ts, 0, 21))
+>A : Symbol(R.A, Decl(a.ts, 1, 8))
+
+export const v1 = E!.A;
+>v1 : Symbol(v1, Decl(a.ts, 2, 12))
+>E!.A : Symbol(E.A, Decl(a.ts, 0, 14))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 14))
+
+export const v2 = E!!.A;
+>v2 : Symbol(v2, Decl(a.ts, 3, 12))
+>E!!.A : Symbol(E.A, Decl(a.ts, 0, 14))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 14))
+
+export const v3 = E!!!.A;
+>v3 : Symbol(v3, Decl(a.ts, 4, 12))
+>E!!!.A : Symbol(E.A, Decl(a.ts, 0, 14))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 14))
+
+export const v4 = E! ! /* c */ !.A;
+>v4 : Symbol(v4, Decl(a.ts, 5, 12))
+>E! ! /* c */ !.A : Symbol(E.A, Decl(a.ts, 0, 14))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 14))
+
+export const v5 = (E!)!.A;
+>v5 : Symbol(v5, Decl(a.ts, 6, 12))
+>(E!)!.A : Symbol(E.A, Decl(a.ts, 0, 14))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 14))
+
+export const v6 = (E!!)!.A;
+>v6 : Symbol(v6, Decl(a.ts, 7, 12))
+>(E!!)!.A : Symbol(E.A, Decl(a.ts, 0, 14))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 14))
+
+export const v7 = E!!["A"];
+>v7 : Symbol(v7, Decl(a.ts, 8, 12))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>"A" : Symbol(E.A, Decl(a.ts, 0, 14))
+
+export const v8 = R!!.A;
+>v8 : Symbol(v8, Decl(a.ts, 9, 12))
+>R!!.A : Symbol(R.A, Decl(a.ts, 1, 8))
+>R : Symbol(R, Decl(a.ts, 0, 21))
+>A : Symbol(R.A, Decl(a.ts, 1, 8))
+
+export const v9 = [E!!];
+>v9 : Symbol(v9, Decl(a.ts, 10, 12))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+
+export const v10 = typeof E!!;
+>v10 : Symbol(v10, Decl(a.ts, 11, 12))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+
+export const v11 = { ...E!! };
+>v11 : Symbol(v11, Decl(a.ts, 12, 12))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+

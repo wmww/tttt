@@ -1,0 +1,68 @@
+//// [test/cases/bun54-L07a.ts] ////
+
+=== a.ts ===
+import * as a from "./m";
+>a : typeof a
+
+import * as b from "./m";
+>b : typeof b
+
+import * as c from "./m";
+>c : typeof c
+
+import * as d from "./m";
+>d : typeof d
+
+import * as e from "./m";
+>e : typeof e
+
+export function f() {
+>f : () => number
+
+  const a = 1;
+>a : 1
+>1 : 1
+
+  const b = 1;
+>b : 1
+>1 : 1
+
+  const c = 1;
+>c : 1
+>1 : 1
+
+  const d = 1;
+>d : 1
+>1 : 1
+
+  const e = 1;
+>e : 1
+>1 : 1
+
+  /** {@link a#delete} {@link b#foo} {@link c#default} {@link d#of} {@link e.delete} */
+  const q = 2;
+>q : 2
+>2 : 2
+
+  return q;
+>q : 2
+}
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+const x = 1;
+>x : 1
+>1 : 1
+
+export { x as delete, x as foo, x as default, x as of };
+>x : 1
+>delete : 1
+>x : 1
+>foo : 1
+>x : 1
+>default : 1
+>x : 1
+>of : 1
+

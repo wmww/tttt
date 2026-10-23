@@ -1,0 +1,15 @@
+//// [test/cases/bun75-R01b.ts] ////
+
+=== b.js ===
+/** @typedef {{ q: string= }} T1 */
+/** @typedef {{ q: string=}} T2 */
+/** @typedef {{ q: string=    }} T3 */
+/** @type {{ q: string= , r: number }} */
+let v4;
+>v4 : Symbol(v4, Decl(b.js, 4, 3))
+
+/** @typedef {{ q: string= 1 }} T5 */
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 7, 5))
+

@@ -1,0 +1,23 @@
+//// [test/cases/bun15-C11.ts] ////
+
+=== a.ts ===
+import { J6 } from "./t";
+>J6 : Symbol(J6, Decl(a.ts, 0, 8))
+
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 1, 13))
+
+export class A4 { @dec p3!: J6 | (never); }
+>A4 : Symbol(A4, Decl(a.ts, 1, 23))
+>dec : Symbol(dec, Decl(a.ts, 1, 13))
+>p3 : Symbol(A4.p3, Decl(a.ts, 2, 17))
+>J6 : Symbol(J6, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== t.ts ===
+export interface J6 { a: number }
+>J6 : Symbol(J6, Decl(t.ts, 0, 0))
+>a : Symbol(J6.a, Decl(t.ts, 0, 21))
+

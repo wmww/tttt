@@ -1,0 +1,18 @@
+//// [test/cases/bun28-P12.ts] ////
+
+=== a.ts ===
+let a: any;
+>a : any
+
+for ([...a,] of [[1]]) {}
+>[...a,] : any[]
+>...a : any
+>a : any
+>[[1]] : number[][]
+>[1] : number[]
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

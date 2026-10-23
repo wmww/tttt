@@ -1,0 +1,16 @@
+error TS2468: Cannot find global value 'Promise'.
+b.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2468: Cannot find global value 'Promise'.
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions":{"target":"es2018","lib":["es5"],"noEmit":true,"module":"commonjs"},"files":["a.ts","b.ts"]}
+==== a.ts (0 errors) ====
+    export async function f() {}
+==== b.ts (1 errors) ====
+    import { f } from "./a";
+    f();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

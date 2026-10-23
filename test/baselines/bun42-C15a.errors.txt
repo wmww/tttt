@@ -1,0 +1,19 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,25): error TS1005: ':' expected.
+tsconfig.json(1,25): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+
+
+==== tsconfig.json (2 errors) ====
+    { "files": ["a.ts"], "x"
+                            
+!!! error TS1005: ':' expected.
+                            
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== a.js (0 errors) ====
+    "use strict";
+    const sentinel = "";

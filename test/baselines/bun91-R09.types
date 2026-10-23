@@ -1,0 +1,61 @@
+//// [test/cases/bun91-R09.ts] ////
+
+=== a.js ===
+/** @type {unknown} */
+const v = null;
+>v : unknown
+
+/** @param {unknown} x @returns {(asserts x is string)} */
+function p1(x) {}
+>p1 : (x: unknown) => (asserts x is string)
+>x : unknown
+
+function t1() { p1(v); v.length; }
+>t1 : () => void
+>p1(v) : void
+>p1 : (x: unknown) => (asserts x is string)
+>v : unknown
+>v.length : any
+>v : unknown
+>length : any
+
+class K {
+>K : K
+
+  /** @returns {(asserts this is L)} */
+  n() {}
+>n : () => (asserts this is L)
+}
+class L extends K { l = 1 }
+>L : L
+>K : K
+>l : number
+>1 : 1
+
+/** @type {K} */
+const k = new K();
+>k : K
+>new K() : K
+>K : typeof K
+
+function t2() { k.n(); k.l; }
+>t2 : () => void
+>k.n() : void
+>k.n : () => (asserts this is L)
+>k : K
+>n : () => (asserts this is L)
+>k.l : any
+>k : K
+>l : any
+
+/** @param {unknown} x @returns {(asserts x is string)} */
+const p3 = x => {};
+>p3 : (x: unknown) => (asserts x is string)
+>x => {} : (x: unknown) => (asserts x is string)
+>x : unknown
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

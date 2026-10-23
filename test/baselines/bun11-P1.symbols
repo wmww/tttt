@@ -1,0 +1,43 @@
+//// [test/cases/bun11-P1.ts] ////
+
+=== a.ts ===
+interface Promise<T> { then<R>(ok: (value: T) => R): Promise<R>; }
+>Promise : Symbol(Promise, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+>then : Symbol(Promise.then, Decl(a.ts, 0, 22))
+>R : Symbol(R, Decl(a.ts, 0, 28))
+>ok : Symbol(ok, Decl(a.ts, 0, 31))
+>value : Symbol(value, Decl(a.ts, 0, 36))
+>T : Symbol(T, Decl(a.ts, 0, 18))
+>R : Symbol(R, Decl(a.ts, 0, 28))
+>Promise : Symbol(Promise, Decl(a.ts, 0, 0))
+>R : Symbol(R, Decl(a.ts, 0, 28))
+
+async function f(): Promise<(x: number) => void> { return x => {}; }
+>f : Symbol(f, Decl(a.ts, 0, 66))
+>Promise : Symbol(Promise, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 29))
+>x : Symbol(x, Decl(a.ts, 1, 57))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== lib.d.ts ===
+interface Array<T> { length: number; [n: number]: T } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { }
+>Array : Symbol(Array, Decl(lib.d.ts, --, --))
+>T : Symbol(T, Decl(lib.d.ts, --, --))
+>length : Symbol(Array.length, Decl(lib.d.ts, --, --))
+>n : Symbol(n, Decl(lib.d.ts, --, --))
+>T : Symbol(T, Decl(lib.d.ts, --, --))
+>Boolean : Symbol(Boolean, Decl(lib.d.ts, --, --))
+>CallableFunction : Symbol(CallableFunction, Decl(lib.d.ts, --, --))
+>Function : Symbol(Function, Decl(lib.d.ts, --, --))
+>IArguments : Symbol(IArguments, Decl(lib.d.ts, --, --))
+
+interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+>NewableFunction : Symbol(NewableFunction, Decl(lib.d.ts, --, --))
+>Number : Symbol(Number, Decl(lib.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.d.ts, --, --))
+>RegExp : Symbol(RegExp, Decl(lib.d.ts, --, --))
+>String : Symbol(String, Decl(lib.d.ts, --, --))
+

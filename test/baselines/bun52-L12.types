@@ -1,0 +1,64 @@
+//// [test/cases/bun52-L12.ts] ////
+
+=== a.ts ===
+declare function g(x: number): number;
+>g : (x: number) => number
+>x : number
+
+declare class K { constructor(x: number); }
+>K : K
+>x : number
+
+function f1({ a = 1, b = g(a) }) { const s: string = a; }
+>f1 : ({ a, b }: { a?: number | undefined; b?: number | undefined; }) => void
+>a : number
+>1 : 1
+>b : number
+>g(a) : number
+>g : (x: number) => number
+>a : number
+>s : string
+>a : number
+
+function f2({ a = 1, b = new K(a) }) {}
+>f2 : ({ a, b }: { a?: number | undefined; b?: K | undefined; }) => void
+>a : number
+>1 : 1
+>b : K
+>new K(a) : K
+>K : typeof K
+>a : number
+
+function f3([a = 1, b = g(a)]) {}
+>f3 : ([a, b]: [(number | undefined)?, (number | undefined)?]) => void
+>a : number
+>1 : 1
+>b : number
+>g(a) : number
+>g : (x: number) => number
+>a : number
+
+const f4 = ({ a = 1, b = g(a) }) => {};
+>f4 : ({ a, b }: { a?: number | undefined; b?: number | undefined; }) => void
+>({ a = 1, b = g(a) }) => {} : ({ a, b }: { a?: number | undefined; b?: number | undefined; }) => void
+>a : number
+>1 : 1
+>b : number
+>g(a) : number
+>g : (x: number) => number
+>a : number
+
+class C { m({ a = 1, b = g(a) }) {} }
+>C : C
+>m : ({ a, b }: { a?: number | undefined; b?: number | undefined; }) => void
+>a : number
+>1 : 1
+>b : number
+>g(a) : number
+>g : (x: number) => number
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

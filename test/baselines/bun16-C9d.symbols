@@ -1,0 +1,27 @@
+//// [test/cases/bun16-C9d.ts] ////
+
+=== a.ts ===
+declare const p: { foo(): void };
+>p : Symbol(p, Decl(a.ts, 0, 13))
+>foo : Symbol(foo, Decl(a.ts, 0, 18))
+
+p.foo && (({ foo: f } = p) => f);
+>p.foo : Symbol(foo, Decl(a.ts, 0, 18))
+>p : Symbol(p, Decl(a.ts, 0, 13))
+>foo : Symbol(foo, Decl(a.ts, 0, 18))
+>foo : Symbol(foo, Decl(a.ts, 0, 18))
+>f : Symbol(f, Decl(a.ts, 1, 12))
+>p : Symbol(p, Decl(a.ts, 0, 13))
+>f : Symbol(f, Decl(a.ts, 1, 12))
+
+p.foo && (() => { const { foo: f } = p; });
+>p.foo : Symbol(foo, Decl(a.ts, 0, 18))
+>p : Symbol(p, Decl(a.ts, 0, 13))
+>foo : Symbol(foo, Decl(a.ts, 0, 18))
+>foo : Symbol(foo, Decl(a.ts, 0, 18))
+>f : Symbol(f, Decl(a.ts, 2, 25))
+>p : Symbol(p, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

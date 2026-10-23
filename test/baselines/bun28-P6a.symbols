@@ -1,0 +1,13 @@
+//// [test/cases/bun28-P6a.ts] ////
+
+=== a.ts ===
+class A {}
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+public class B extends A, {}
+>B : Symbol(B, Decl(a.ts, 0, 10))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

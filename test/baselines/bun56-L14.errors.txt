@@ -1,0 +1,26 @@
+a.ts(1,19): error TS1099: Type argument list cannot be empty.
+a.ts(2,16): error TS1099: Type argument list cannot be empty.
+a.ts(3,27): error TS1099: Type argument list cannot be empty.
+a.ts(4,7): error TS2322: Type '1' is not assignable to type '2'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    let a = 1 as const<>;
+                      ~~
+!!! error TS1099: Type argument list cannot be empty.
+    let a2 = <const<>>1;
+                   ~~
+!!! error TS1099: Type argument list cannot be empty.
+    let a3 = [1, "x"] as const<>;
+                              ~~
+!!! error TS1099: Type argument list cannot be empty.
+    const n: 2 = a;
+          ~
+!!! error TS2322: Type '1' is not assignable to type '2'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

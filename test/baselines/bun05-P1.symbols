@@ -1,0 +1,23 @@
+//// [test/cases/bun05-P1.ts] ////
+
+=== a.ts ===
+const g = async () => 1;
+>g : Symbol(g, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== lib.d.ts ===
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+>Array : Symbol(Array, Decl(lib.d.ts, --, --))
+>T : Symbol(T, Decl(lib.d.ts, --, --))
+>Boolean : Symbol(Boolean, Decl(lib.d.ts, --, --))
+>CallableFunction : Symbol(CallableFunction, Decl(lib.d.ts, --, --))
+>Function : Symbol(Function, Decl(lib.d.ts, --, --))
+>IArguments : Symbol(IArguments, Decl(lib.d.ts, --, --))
+>NewableFunction : Symbol(NewableFunction, Decl(lib.d.ts, --, --))
+>Number : Symbol(Number, Decl(lib.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.d.ts, --, --))
+>RegExp : Symbol(RegExp, Decl(lib.d.ts, --, --))
+>String : Symbol(String, Decl(lib.d.ts, --, --))
+

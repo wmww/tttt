@@ -1,0 +1,16 @@
+a.ts(3,45): error TS2741: Property '[u]' is missing in type '{ [E.u]: 1; }' but required in type '{ [D.u]: 1; }'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class D { static readonly u: unique symbol = Symbol(); }
+    class E { static readonly u: unique symbol = Symbol(); }
+    let x1 = null! as { [K in typeof D.u]: 1 }; x1 = null! as { [K in typeof E.u]: 1 };
+                                                ~~
+!!! error TS2741: Property '[u]' is missing in type '{ [E.u]: 1; }' but required in type '{ [D.u]: 1; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

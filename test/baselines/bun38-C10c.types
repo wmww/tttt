@@ -1,0 +1,12 @@
+//// [test/cases/bun38-C10c.ts] ////
+
+=== a.ts ===
+function implicitAny(x) { return x; }
+>implicitAny : (x: any) => any
+>x : any
+>x : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

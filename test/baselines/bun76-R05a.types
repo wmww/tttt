@@ -1,0 +1,106 @@
+//// [test/cases/bun76-R05a.ts] ////
+
+=== a.ts ===
+interface A { a: number }
+>a : number
+
+interface B { b: number }
+>b : number
+
+interface X5<T> extends A, B { [k: string]: X5<T>["a"] }
+>k : string
+
+declare const x5: X5<string>;
+>x5 : X5<string>
+
+const y5: number = x5.zzz;
+>y5 : number
+>x5.zzz : number
+>x5 : X5<string>
+>zzz : number
+
+function f5<U>(x: X5<U>) { const r: number = x.zzz; }
+>f5 : <U>(x: X5<U>) => void
+>x : X5<U>
+>r : number
+>x.zzz : number
+>x : X5<U>
+>zzz : number
+
+interface Y5 extends X5<string> { more: 1 }
+>more : 1
+
+declare const yy5: Y5;
+>yy5 : Y5
+
+const z5: number = yy5.zzz;
+>z5 : number
+>yy5.zzz : number
+>yy5 : Y5
+>zzz : number
+
+// in tsc only the instantiation that the index signature names loses it
+interface X8<T> extends A, B { [k: string]: X8<string>["a"] }
+>k : string
+
+declare const x8: X8<string>;
+>x8 : X8<string>
+
+const y8: number = x8.zzz;
+>y8 : number
+>x8.zzz : any
+>x8 : X8<string>
+>zzz : any
+
+declare const x8n: X8<number>;
+>x8n : X8<number>
+
+const y8n: number = x8n.zzz;
+>y8n : number
+>x8n.zzz : number
+>x8n : X8<number>
+>zzz : number
+
+// an interface with `this`: the type itself loses it, an interface derived from it does not
+interface X9 extends A, B { self: this; [k: string]: X9["a"] | this }
+>self : this
+>k : string
+
+declare const x9: X9;
+>x9 : X9
+
+const y9: number | X9 = x9.zzz;
+>y9 : number | X9
+>x9.zzz : any
+>x9 : X9
+>zzz : any
+
+interface Y9 extends X9 { more: 1 }
+>more : 1
+
+declare const yy9: Y9;
+>yy9 : Y9
+
+const z9: number | Y9 = yy9.zzz;
+>z9 : number | Y9
+>yy9.zzz : number | Y9
+>yy9 : Y9
+>zzz : number | Y9
+
+// one base: the two agree
+interface X7<T> extends A { [k: string]: X7<T>["a"] }
+>k : string
+
+declare const x7: X7<string>;
+>x7 : X7<string>
+
+const y7: number = x7.zzz;
+>y7 : number
+>x7.zzz : number
+>x7 : X7<string>
+>zzz : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

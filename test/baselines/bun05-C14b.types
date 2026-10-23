@@ -1,0 +1,18 @@
+//// [test/cases/bun05-C14b.ts] ////
+
+=== a.ts ===
+declare var Promise: PromiseConstructor;
+>Promise : PromiseConstructor
+
+new Promise(resolve => resolve());
+>new Promise(resolve => resolve()) : Promise<unknown>
+>Promise : PromiseConstructor
+>resolve => resolve() : (resolve: (value: unknown) => void) => void
+>resolve : (value: unknown) => void
+>resolve() : void
+>resolve : (value: unknown) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

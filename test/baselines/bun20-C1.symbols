@@ -1,0 +1,23 @@
+//// [test/cases/bun20-C1.ts] ////
+
+=== a.ts ===
+declare function assert(x: unknown): asserts x;
+>assert : Symbol(assert, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+>x : Symbol(x, Decl(a.ts, 0, 24))
+
+function t1(x?: { f(): boolean }) { assert(x?.f()); x.f(); }
+>t1 : Symbol(t1, Decl(a.ts, 0, 47))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>f : Symbol(f, Decl(a.ts, 1, 17))
+>assert : Symbol(assert, Decl(a.ts, 0, 0))
+>x?.f : Symbol(f, Decl(a.ts, 1, 17))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>f : Symbol(f, Decl(a.ts, 1, 17))
+>x.f : Symbol(f, Decl(a.ts, 1, 17))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>f : Symbol(f, Decl(a.ts, 1, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

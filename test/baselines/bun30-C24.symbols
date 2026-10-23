@@ -1,0 +1,13 @@
+//// [test/cases/bun30-C24.ts] ////
+
+=== a.ts ===
+export class A { #a = 1; m() { const { #a: x } = this; } }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>#a : Symbol(A.#a, Decl(a.ts, 0, 16))
+>m : Symbol(A.m, Decl(a.ts, 0, 24))
+>x : Symbol(x, Decl(a.ts, 0, 38))
+>this : Symbol(A, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

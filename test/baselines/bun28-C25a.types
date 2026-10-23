@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C25a.ts] ////
+
+=== a.ts ===
+if (1) let a = 1,;
+>1 : 1
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

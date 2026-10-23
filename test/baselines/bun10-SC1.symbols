@@ -1,0 +1,67 @@
+//// [test/cases/bun10-SC1.ts] ////
+
+=== a.ts ===
+export {};
+type B<T> = { k: "a"; p: 1 } & { k: T; q: 2 };
+>B : Symbol(B, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>k : Symbol(k, Decl(a.ts, 1, 13))
+>p : Symbol(p, Decl(a.ts, 1, 21))
+>k : Symbol(k, Decl(a.ts, 1, 32))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>q : Symbol(q, Decl(a.ts, 1, 38))
+
+interface X<T> extends B<T> { own: 3 }
+>X : Symbol(X, Decl(a.ts, 1, 46))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>B : Symbol(B, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>own : Symbol(X.own, Decl(a.ts, 2, 29))
+
+declare const xb: X<"b">;
+>xb : Symbol(xb, Decl(a.ts, 3, 13))
+>X : Symbol(X, Decl(a.ts, 1, 46))
+
+xb.k; xb.p; xb.q;
+>xb : Symbol(xb, Decl(a.ts, 3, 13))
+>xb : Symbol(xb, Decl(a.ts, 3, 13))
+>xb : Symbol(xb, Decl(a.ts, 3, 13))
+
+const lit: X<"b"> = { own: 3 };
+>lit : Symbol(lit, Decl(a.ts, 5, 5))
+>X : Symbol(X, Decl(a.ts, 1, 46))
+>own : Symbol(own, Decl(a.ts, 5, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+
+=== b.ts ===
+export {};
+type V<T extends unknown[]> = [1, ...T];
+>V : Symbol(V, Decl(b.ts, 0, 10))
+>T : Symbol(T, Decl(b.ts, 1, 7))
+>T : Symbol(T, Decl(b.ts, 1, 7))
+
+interface X<T extends unknown[]> extends V<T> { }
+>X : Symbol(X, Decl(b.ts, 1, 40))
+>T : Symbol(T, Decl(b.ts, 2, 12))
+>V : Symbol(V, Decl(b.ts, 0, 10))
+>T : Symbol(T, Decl(b.ts, 2, 12))
+
+declare const x: X<[2, 3]>;
+>x : Symbol(x, Decl(b.ts, 3, 13))
+>X : Symbol(X, Decl(b.ts, 1, 40))
+
+const y: [1, 2, 3] = x;
+>y : Symbol(y, Decl(b.ts, 4, 5))
+>x : Symbol(x, Decl(b.ts, 3, 13))
+
+const len: 3 = x.length;
+>len : Symbol(len, Decl(b.ts, 5, 5))
+>x.length : Symbol(length)
+>x : Symbol(x, Decl(b.ts, 3, 13))
+>length : Symbol(length)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 6, 5))
+

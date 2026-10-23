@@ -1,0 +1,44 @@
+a.tsx(6,13): error TS2746: This JSX tag's 'children' prop expects a single child of type 'number', but multiple children were provided.
+a.tsx(7,15): error TS2322: Type 'string' is not assignable to type 'number'.
+a.tsx(8,15): error TS2322: Type 'string' is not assignable to type 'number'.
+a.tsx(8,20): error TS2322: Type 'string' is not assignable to type 'number'.
+a.tsx(9,13): error TS2745: This JSX tag's 'children' prop expects type 'number[]' which requires multiple children, but only a single child was provided.
+a.tsx(10,15): error TS2322: Type 'boolean' is not assignable to type 'string'.
+a.tsx(11,15): error TS2322: Type 'boolean' is not assignable to type 'number | string[]'.
+a.tsx(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es5"], "jsx": "preserve" } }
+==== a.tsx (8 errors) ====
+    interface Iterable<T> {}
+    declare namespace JSX { interface Element {} interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    declare function C(props: { children: number }): JSX.Element;
+    declare function D(props: { children: number[] }): JSX.Element;
+    declare function E(props: { children: number | string[] }): JSX.Element;
+    const a1 = <C>{"x"}{"y"}</C>;
+                ~
+!!! error TS2746: This JSX tag's 'children' prop expects a single child of type 'number', but multiple children were provided.
+    const a2 = <C>{"x"}</C>;
+                  ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+!!! related TS6500 a.tsx:3:29: The expected type comes from property 'children' which is declared here on type '{ children: number; }'
+    const a3 = <D>{"x"}{"y"}</D>;
+                  ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                       ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const a4 = <D>{"x"}</D>;
+                ~
+!!! error TS2745: This JSX tag's 'children' prop expects type 'number[]' which requires multiple children, but only a single child was provided.
+    const a5 = <E>{true}{"y"}</E>;
+                  ~~~~~~
+!!! error TS2322: Type 'boolean' is not assignable to type 'string'.
+    const a6 = <E>{true}</E>;
+                  ~~~~~~
+!!! error TS2322: Type 'boolean' is not assignable to type 'number | string[]'.
+!!! related TS6500 a.tsx:5:29: The expected type comes from property 'children' which is declared here on type '{ children: number | string[]; }'
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

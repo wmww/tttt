@@ -1,0 +1,41 @@
+a.ts(7,17): error TS2304: Cannot find name 'arguments'.
+a.ts(13,13): error TS2662: Cannot find name 'arguments'. Did you mean the static member 'K.arguments'?
+a.ts(18,38): error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+a.ts(18,38): error TS2448: Block-scoped variable 'arguments' used before its declaration.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    interface Call { name: string; arguments: string }
+    /**
+     * Runs a tool call.
+     * @param call the call
+     */
+    export const handle = (call: Call) => {
+      const { name, arguments: args } = call;
+                    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'arguments'.
+      return [name, args];
+    };
+    export class K {
+      /** @param call the call */
+      handle = (call: Call) => {
+        const { arguments: args } = call;
+                ~~~~~~~~~
+!!! error TS2662: Cannot find name 'arguments'. Did you mean the static member 'K.arguments'?
+        return args;
+      };
+    }
+    /** @param z */
+    export function j(z: number) { const arguments = 1; return z; }
+                                         ~~~~~~~~~
+!!! error TS1215: Invalid use of 'arguments'. Modules are automatically in strict mode.
+                                         ~~~~~~~~~
+!!! error TS2448: Block-scoped variable 'arguments' used before its declaration.
+!!! related TS2728 a.ts:18:38: 'arguments' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

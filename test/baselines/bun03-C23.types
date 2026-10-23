@@ -1,0 +1,17 @@
+//// [test/cases/bun03-C23.ts] ////
+
+=== a.ts ===
+interface Array<T> { } interface Boolean { } interface CallableFunction { } interface Function { } interface IArguments { } interface NewableFunction { } interface Number { } interface Object { } interface RegExp { } interface String { }
+declare const o: { a: 1 }; declare let k: "a";
+>o : { a: 1; }
+>a : 1
+>k : "a"
+
+for (k in o) {}
+>k : "a"
+>o : { a: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

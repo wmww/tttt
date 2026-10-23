@@ -1,0 +1,31 @@
+//// [test/cases/bun57-L13b.ts] ////
+
+=== a.ts ===
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+interface Promise<T> {} interface PromiseConstructor {} declare var Promise: PromiseConstructor;
+>Promise : PromiseConstructor
+
+interface ImportCallOptions<T> { with?: { f: (x: number) => void } }
+>with : { f: (x: number) => void; } | undefined
+>f : (x: number) => void
+>x : number
+
+import("./m", { with: { f: x => {} } });
+>import("./m", { with: { f: x => {} } }) : Promise<typeof import("./m")>
+>"./m" : "./m"
+>{ with: { f: x => {} } } : { with: { readonly f: (x: any) => void; }; }
+>with : { readonly f: (x: any) => void; }
+>{ f: x => {} } : { readonly f: (x: any) => void; }
+>f : (x: any) => void
+>x => {} : (x: any) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const m = 1;
+>m : 1
+>1 : 1
+

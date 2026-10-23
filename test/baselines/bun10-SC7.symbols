@@ -1,0 +1,25 @@
+//// [test/cases/bun10-SC7.ts] ////
+
+=== j.js ===
+/** @type {{ m(): void, n: () => void }} */
+const o = { m(a) {}, n(a) {} };
+>o : Symbol(o, Decl(j.js, 1, 5))
+>m : Symbol(m, Decl(j.js, 1, 11))
+>a : Symbol(a, Decl(j.js, 1, 14))
+>n : Symbol(n, Decl(j.js, 1, 20))
+>a : Symbol(a, Decl(j.js, 1, 23))
+
+/** @param {{ m(): void }} x */
+function take(x) {}
+>take : Symbol(take, Decl(j.js, 1, 31))
+>x : Symbol(x, Decl(j.js, 3, 14))
+
+take({ m(a) {} });
+>take : Symbol(take, Decl(j.js, 1, 31))
+>m : Symbol(m, Decl(j.js, 4, 6))
+>a : Symbol(a, Decl(j.js, 4, 9))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(j.js, 6, 5))
+

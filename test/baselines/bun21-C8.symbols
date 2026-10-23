@@ -1,0 +1,26 @@
+//// [test/cases/bun21-C8.ts] ////
+
+=== a.ts ===
+declare const o: { a?: string };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+
+if (o[E.A]) o[E.A].length;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>E.A : Symbol(E.A, Decl(a.ts, 2, 14))
+>E : Symbol(E, Decl(a.ts, 1, 26))
+>A : Symbol(E.A, Decl(a.ts, 2, 14))
+>o[E.A].length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>E.A : Symbol(E.A, Decl(a.ts, 2, 14))
+>E : Symbol(E, Decl(a.ts, 1, 26))
+>A : Symbol(E.A, Decl(a.ts, 2, 14))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const enum E { A = "a" }
+>E : Symbol(E, Decl(a.ts, 1, 26))
+>A : Symbol(E.A, Decl(a.ts, 2, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

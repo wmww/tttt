@@ -1,0 +1,29 @@
+//// [test/cases/bun17-C7b.ts] ////
+
+=== a.ts ===
+namespace N1 { export enum Z { A = -0 } }
+>N1 : typeof N1
+>Z : Z
+>A : Z.A
+>-0 : 0
+>0 : 0
+
+namespace N2 { export enum Z { A = 0 } }
+>N2 : typeof N2
+>Z : Z
+>A : Z.A
+>0 : 0
+
+let n1: N1.Z = N2.Z.A;
+>n1 : N1.Z
+>N1 : any
+>N2.Z.A : N2.Z
+>N2.Z : typeof N2.Z
+>N2 : typeof N2
+>Z : typeof N2.Z
+>A : N2.Z
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

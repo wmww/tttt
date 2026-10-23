@@ -1,0 +1,35 @@
+//// [test/cases/bun10-C4c.ts] ////
+
+=== a.ts ===
+interface G<T> { (x: T): void }
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+interface A4 extends G<string>, G<number>, G<string> {}
+>A4 : Symbol(A4, Decl(a.ts, 0, 31))
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>G : Symbol(G, Decl(a.ts, 0, 0))
+
+declare const a4: A4;
+>a4 : Symbol(a4, Decl(a.ts, 2, 13))
+>A4 : Symbol(A4, Decl(a.ts, 0, 31))
+
+declare function call<T>(f: (x: T) => void): T;
+>call : Symbol(call, Decl(a.ts, 2, 21))
+>T : Symbol(T, Decl(a.ts, 3, 22))
+>f : Symbol(f, Decl(a.ts, 3, 25))
+>x : Symbol(x, Decl(a.ts, 3, 29))
+>T : Symbol(T, Decl(a.ts, 3, 22))
+>T : Symbol(T, Decl(a.ts, 3, 22))
+
+const t: boolean = call(a4);
+>t : Symbol(t, Decl(a.ts, 4, 5))
+>call : Symbol(call, Decl(a.ts, 2, 21))
+>a4 : Symbol(a4, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

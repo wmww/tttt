@@ -1,0 +1,15 @@
+//// [test/cases/bun14-C11a.ts] ////
+
+=== a.ts ===
+const o = { [/*c*/ "1"]: 1 };
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>[/*c*/ "1"] : Symbol([/*c*/ "1"], Decl(a.ts, 0, 11))
+>"1" : Symbol([/*c*/ "1"], Decl(a.ts, 0, 11))
+
+const k: "1" = null! as keyof typeof o;
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>o : Symbol(o, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

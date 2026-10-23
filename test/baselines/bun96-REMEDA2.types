@@ -1,0 +1,22 @@
+//// [test/cases/bun96-REMEDA2.ts] ////
+
+=== a.ts ===
+type NTuple<T, N extends number, R extends unknown[] = []> = R["length"] extends N ? R : NTuple<T, N, [...R, T]>;
+>NTuple : NTuple<T, N, R>
+
+declare function fn<T extends readonly never[]>(): T;
+>fn : <T extends readonly never[]>() => T
+
+function f<N extends number>() { return fn<[never, ...NTuple<never, N>]>; }
+>f : <N extends number>() => () => [never, ...NTuple<never, N, []>]
+>fn<[never, ...NTuple<never, N>]> : () => [never, ...NTuple<never, N, []>]
+>fn : <T extends readonly never[]>() => T
+
+type Q<N extends number> = typeof fn<[never, never, ...NTuple<never, N>]>;
+>Q : typeof fn<[never, never, ...NTuple<never, N>]>
+>fn : <T extends readonly never[]>() => T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '(a: number, args_1: string) => void' is not assignable to type '0'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function f1(...args: [a: number, ...b: [string]]): void;
+    const x1: 0 = f1;
+          ~~
+!!! error TS2322: Type '(a: number, args_1: string) => void' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

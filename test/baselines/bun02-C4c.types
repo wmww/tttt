@@ -1,0 +1,14 @@
+//// [test/cases/bun02-C4c.ts] ////
+
+=== a.ts ===
+declare function gf<X>(): X;
+>gf : <X>() => X
+
+interface I1<T = typeof gf<I1>> { x: T }
+>gf : <X>() => X
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,216 @@
+//// [test/cases/bun99-N1.ts] ////
+
+=== a.ts ===
+type One = { a: boolean; b: string | undefined };
+>One : Symbol(One, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+>b : Symbol(b, Decl(a.ts, 0, 24))
+
+type Left = { kind: "left"; l: number; m(): string };
+>Left : Symbol(Left, Decl(a.ts, 0, 49))
+>kind : Symbol(kind, Decl(a.ts, 1, 13))
+>l : Symbol(l, Decl(a.ts, 1, 27))
+>m : Symbol(m, Decl(a.ts, 1, 38))
+
+type Right = { kind: "right"; r: string; m(): number };
+>Right : Symbol(Right, Decl(a.ts, 1, 53))
+>kind : Symbol(kind, Decl(a.ts, 2, 14))
+>r : Symbol(r, Decl(a.ts, 2, 29))
+>m : Symbol(m, Decl(a.ts, 2, 40))
+
+declare function use<T>(select: () => T): { data: NoInfer<T> | undefined };
+>use : Symbol(use, Decl(a.ts, 2, 55))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+>select : Symbol(select, Decl(a.ts, 3, 24))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+>data : Symbol(data, Decl(a.ts, 3, 43))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 3, 21))
+
+declare function one(): One | undefined;
+>one : Symbol(one, Decl(a.ts, 3, 75))
+>One : Symbol(One, Decl(a.ts, 0, 0))
+
+declare function either(): Left | Right | undefined;
+>either : Symbol(either, Decl(a.ts, 4, 40))
+>Left : Symbol(Left, Decl(a.ts, 0, 49))
+>Right : Symbol(Right, Decl(a.ts, 1, 53))
+
+declare function memo<T>(factory: () => T): T;
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>T : Symbol(T, Decl(a.ts, 6, 22))
+>factory : Symbol(factory, Decl(a.ts, 6, 25))
+>T : Symbol(T, Decl(a.ts, 6, 22))
+>T : Symbol(T, Decl(a.ts, 6, 22))
+
+declare function id<T>(value: T): T;
+>id : Symbol(id, Decl(a.ts, 6, 46))
+>T : Symbol(T, Decl(a.ts, 7, 20))
+>value : Symbol(value, Decl(a.ts, 7, 23))
+>T : Symbol(T, Decl(a.ts, 7, 20))
+>T : Symbol(T, Decl(a.ts, 7, 20))
+
+declare function pair<T, V>(value: T, other: V): [T, V];
+>pair : Symbol(pair, Decl(a.ts, 7, 36))
+>T : Symbol(T, Decl(a.ts, 8, 22))
+>V : Symbol(V, Decl(a.ts, 8, 24))
+>value : Symbol(value, Decl(a.ts, 8, 28))
+>T : Symbol(T, Decl(a.ts, 8, 22))
+>other : Symbol(other, Decl(a.ts, 8, 37))
+>V : Symbol(V, Decl(a.ts, 8, 24))
+>T : Symbol(T, Decl(a.ts, 8, 22))
+>V : Symbol(V, Decl(a.ts, 8, 24))
+
+const { data: x } = use(one);
+>data : Symbol(data, Decl(a.ts, 3, 43))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>use : Symbol(use, Decl(a.ts, 2, 55))
+>one : Symbol(one, Decl(a.ts, 3, 75))
+
+const { data: u } = use(either);
+>data : Symbol(data, Decl(a.ts, 3, 43))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>use : Symbol(use, Decl(a.ts, 2, 55))
+>either : Symbol(either, Decl(a.ts, 4, 40))
+
+const whole = use(one);
+>whole : Symbol(whole, Decl(a.ts, 11, 5))
+>use : Symbol(use, Decl(a.ts, 2, 55))
+>one : Symbol(one, Decl(a.ts, 3, 75))
+
+declare const declared: NoInfer<One | undefined> | null;
+>declared : Symbol(declared, Decl(a.ts, 12, 13))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>One : Symbol(One, Decl(a.ts, 0, 0))
+
+export function returned(s: string): { s: string; a: boolean; b: string | undefined } | undefined {
+>returned : Symbol(returned, Decl(a.ts, 12, 56))
+>s : Symbol(s, Decl(a.ts, 14, 25))
+>s : Symbol(s, Decl(a.ts, 14, 38))
+>a : Symbol(a, Decl(a.ts, 14, 49))
+>b : Symbol(b, Decl(a.ts, 14, 61))
+
+  return memo(() => (x !== undefined && x !== null ? { s, ...x } : undefined));
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>s : Symbol(s, Decl(a.ts, 15, 54))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+}
+export const v01: never = memo(() => (x !== undefined ? { s: 1, ...x } : undefined));
+>v01 : Symbol(v01, Decl(a.ts, 17, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+>s : Symbol(s, Decl(a.ts, 17, 57))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+
+export const v02: never = memo(() => (x ? { ...x, s: 1 } : undefined));
+>v02 : Symbol(v02, Decl(a.ts, 18, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>s : Symbol(s, Decl(a.ts, 18, 49))
+>undefined : Symbol(undefined)
+
+export const v03: never = id(x !== undefined ? { s: 1, ...x } : undefined);
+>v03 : Symbol(v03, Decl(a.ts, 19, 12))
+>id : Symbol(id, Decl(a.ts, 6, 46))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+>s : Symbol(s, Decl(a.ts, 19, 48))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+
+export const v04: never = pair(x ? { s: 1, ...x } : undefined, 1);
+>v04 : Symbol(v04, Decl(a.ts, 20, 12))
+>pair : Symbol(pair, Decl(a.ts, 7, 36))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>s : Symbol(s, Decl(a.ts, 20, 36))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+
+export const v05: never = memo(() => (whole.data !== undefined ? { s: 1, ...whole.data } : undefined));
+>v05 : Symbol(v05, Decl(a.ts, 21, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>whole.data : Symbol(data, Decl(a.ts, 3, 43))
+>whole : Symbol(whole, Decl(a.ts, 11, 5))
+>data : Symbol(data, Decl(a.ts, 3, 43))
+>undefined : Symbol(undefined)
+>s : Symbol(s, Decl(a.ts, 21, 66))
+>whole.data : Symbol(data, Decl(a.ts, 3, 43))
+>whole : Symbol(whole, Decl(a.ts, 11, 5))
+>data : Symbol(data, Decl(a.ts, 3, 43))
+>undefined : Symbol(undefined)
+
+export const v06: never = memo(() => (declared != null ? { s: 1, ...declared } : undefined));
+>v06 : Symbol(v06, Decl(a.ts, 22, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>declared : Symbol(declared, Decl(a.ts, 12, 13))
+>s : Symbol(s, Decl(a.ts, 22, 58))
+>declared : Symbol(declared, Decl(a.ts, 12, 13))
+>undefined : Symbol(undefined)
+
+export const v07: never = memo(function () { return x !== undefined ? { s: 1, ...x } : undefined; });
+>v07 : Symbol(v07, Decl(a.ts, 23, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+>s : Symbol(s, Decl(a.ts, 23, 71))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+
+export const v08: never = memo(() => { if (x !== undefined) return { s: 1, ...x }; return undefined; });
+>v08 : Symbol(v08, Decl(a.ts, 24, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+>s : Symbol(s, Decl(a.ts, 24, 68))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+
+export const v09: never = memo(() => (u !== undefined ? { s: 1, ...u } : undefined));
+>v09 : Symbol(v09, Decl(a.ts, 25, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>undefined : Symbol(undefined)
+>s : Symbol(s, Decl(a.ts, 25, 57))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>undefined : Symbol(undefined)
+
+export const v10: never = id(u && "l" in u ? { s: 1, ...u } : undefined);
+>v10 : Symbol(v10, Decl(a.ts, 26, 12))
+>id : Symbol(id, Decl(a.ts, 6, 46))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>s : Symbol(s, Decl(a.ts, 26, 46))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>undefined : Symbol(undefined)
+
+export const v11: never = id(u?.kind === "right" ? { ...u, s: 1 } : undefined);
+>v11 : Symbol(v11, Decl(a.ts, 27, 12))
+>id : Symbol(id, Decl(a.ts, 6, 46))
+>u?.kind : Symbol(kind, Decl(a.ts, 1, 13), Decl(a.ts, 2, 14))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>kind : Symbol(kind, Decl(a.ts, 1, 13), Decl(a.ts, 2, 14))
+>u : Symbol(u, Decl(a.ts, 10, 7))
+>s : Symbol(s, Decl(a.ts, 27, 58))
+>undefined : Symbol(undefined)
+
+export const v12: never = memo(() => ({ s: 1, ...x }));
+>v12 : Symbol(v12, Decl(a.ts, 28, 12))
+>memo : Symbol(memo, Decl(a.ts, 5, 52))
+>s : Symbol(s, Decl(a.ts, 28, 39))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+
+export const v13: never = (() => (x !== undefined ? { s: 1, ...x } : undefined))();
+>v13 : Symbol(v13, Decl(a.ts, 29, 12))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+>s : Symbol(s, Decl(a.ts, 29, 53))
+>x : Symbol(x, Decl(a.ts, 9, 7))
+>undefined : Symbol(undefined)
+

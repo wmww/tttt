@@ -1,0 +1,24 @@
+//// [test/cases/bun24-C20a.ts] ////
+
+=== a.ts ===
+declare const us: unique symbol; declare const ut: unique symbol;
+>us : unique symbol
+>ut : unique symbol
+
+declare let a1: (x: unknown) => x is typeof us; declare let a2: (x: unknown) => x is typeof ut;
+>a1 : (x: unknown) => x is typeof us
+>x : unknown
+>us : unique symbol
+>a2 : (x: unknown) => x is typeof ut
+>x : unknown
+>ut : unique symbol
+
+a1 = a2;
+>a1 = a2 : (x: unknown) => x is typeof ut
+>a1 : (x: unknown) => x is typeof us
+>a2 : (x: unknown) => x is typeof ut
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

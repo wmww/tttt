@@ -1,0 +1,25 @@
+//// [test/cases/bun11-C13.ts] ////
+
+=== a.ts ===
+function p2(x: string, c: boolean) { if (typeof x === "string") throw 1; return c ? true : false; }
+>p2 : (x: string, c: boolean) => x is never
+>x : string
+>c : boolean
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string
+>"string" : "string"
+>1 : 1
+>c ? true : false : boolean
+>c : boolean
+>true : true
+>false : false
+
+const q2: number = p2;
+>q2 : number
+>p2 : (x: string, c: boolean) => x is never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

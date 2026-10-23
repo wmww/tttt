@@ -1,0 +1,27 @@
+//// [test/cases/bun25-P6.ts] ////
+
+=== a1.js ===
+var lit = {};
+>lit : {}
+>{} : {}
+
+/** @this {typeof lit} */ function g() { return (this).missing; }
+>g : (this: typeof lit) => any
+>(this).missing : any
+>(this) : {}
+>this : {}
+>missing : any
+
+var v = g();
+>v : any
+>g() : any
+>g : (this: typeof lit) => any
+
+=== a2.ts ===
+var v: string;
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

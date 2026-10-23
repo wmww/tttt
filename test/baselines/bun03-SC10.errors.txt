@@ -1,0 +1,18 @@
+a.ts(3,7): error TS2720: Class 'D1' incorrectly implements class 'typeof B'. Did you mean to extend 'typeof B' and inherit its members as a subclass?
+  Type 'D1' is missing the following properties from type 'typeof B': x, prototype
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class B { static x: number; y!: string; }
+    type TB = typeof B;
+    class D1 implements TB {}
+          ~~
+!!! error TS2720: Class 'D1' incorrectly implements class 'typeof B'. Did you mean to extend 'typeof B' and inherit its members as a subclass?
+!!! error TS2720:   Type 'D1' is missing the following properties from type 'typeof B': x, prototype
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

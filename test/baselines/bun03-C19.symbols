@@ -1,0 +1,10 @@
+//// [test/cases/bun03-C19.ts] ////
+
+=== a.ts ===
+try { } catch (x = 1) { let x = 2; }
+>x : Symbol(x, Decl(a.ts, 0, 15))
+>x : Symbol(x, Decl(a.ts, 0, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

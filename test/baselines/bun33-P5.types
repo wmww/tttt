@@ -1,0 +1,18 @@
+//// [test/cases/bun33-P5.ts] ////
+
+=== a.ts ===
+function* g() { interface I { [yield 1]: 1 } }
+>g : () => Generator<never, void, unknown>
+>[yield 1] : 1
+>yield 1 : any
+>1 : 1
+
+const r: string = g();
+>r : string
+>g() : Generator<never, void, unknown>
+>g : () => Generator<never, void, unknown>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

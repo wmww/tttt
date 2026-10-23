@@ -1,0 +1,16 @@
+//// [test/cases/bun02-C24.ts] ////
+
+=== a.ts ===
+let v1: B32;
+>v1 : B32<unknown>
+
+interface B32<T = B33> { x: T }
+>x : T
+
+interface B33<T = B32> { x: T }
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

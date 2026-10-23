@@ -1,0 +1,14 @@
+//// [test/cases/bun02-C4d.ts] ////
+
+=== a.ts ===
+interface A11<T = { [K in keyof A11]: 1 }> { x: T }
+>A11 : Symbol(A11, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>K : Symbol(K, Decl(a.ts, 0, 21))
+>A11 : Symbol(A11, Decl(a.ts, 0, 0))
+>x : Symbol(A11.x, Decl(a.ts, 0, 44))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

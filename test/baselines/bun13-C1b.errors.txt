@@ -1,0 +1,20 @@
+a.ts(2,21): error TS2313: Type parameter 'K' has a circular constraint.
+a.ts(3,11): error TS2310: Type 'D' recursively references itself as a base type.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type Q = keyof M<D>;
+    type M<T> = { [K in keyof T]: T[K] };
+                        ~~~~~~~
+!!! error TS2313: Type parameter 'K' has a circular constraint.
+!!! related TS2751 a.ts:3:11: Circularity originates in type at this location.
+    interface D extends M<D> { m(): void }
+              ~
+!!! error TS2310: Type 'D' recursively references itself as a base type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

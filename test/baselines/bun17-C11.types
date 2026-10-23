@@ -1,0 +1,26 @@
+//// [test/cases/bun17-C11.ts] ////
+
+=== a.ts ===
+class A { static #p = 1; static a: number = 1; }
+>A : A
+>#p : number
+>1 : 1
+>a : number
+>1 : 1
+
+declare function f<T>(x: { a: T; zzz: string; prototype: any }): T;
+>f : <T>(x: { a: T; zzz: string; prototype: any; }) => T
+>x : { a: T; zzz: string; prototype: any; }
+>a : T
+>zzz : string
+>prototype : any
+
+f(A);
+>f(A) : number
+>f : <T>(x: { a: T; zzz: string; prototype: any; }) => T
+>A : typeof A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

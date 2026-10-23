@@ -1,0 +1,21 @@
+a.js(1,21): error TS8024: JSDoc '@param' tag has name 'z', but there is no parameter with that name.
+a.js(1,47): error TS1100: Invalid use of 'arguments' in strict mode.
+a.js(1,47): error TS2448: Block-scoped variable 'arguments' used before its declaration.
+a.js(2,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (4 errors) ====
+    /** @param {number} z */ function j() { const arguments = 1; }
+                        ~
+!!! error TS8024: JSDoc '@param' tag has name 'z', but there is no parameter with that name.
+                                                  ~~~~~~~~~
+!!! error TS1100: Invalid use of 'arguments' in strict mode.
+                                                  ~~~~~~~~~
+!!! error TS2448: Block-scoped variable 'arguments' used before its declaration.
+!!! related TS2728 a.js:1:47: 'arguments' is declared here.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

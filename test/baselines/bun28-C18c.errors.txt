@@ -1,0 +1,20 @@
+a.ts(1,22): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(1,24): error TS1040: 'async' modifier cannot be used in an ambient context.
+a.ts(1,43): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (4 errors) ====
+    declare function f() { async function g() { } }
+                         ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                           ~~~~~
+!!! error TS1040: 'async' modifier cannot be used in an ambient context.
+                                              ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

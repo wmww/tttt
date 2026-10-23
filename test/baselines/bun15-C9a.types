@@ -1,0 +1,25 @@
+//// [test/cases/bun15-C9a.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : boolean
+
+declare function g2(...args: [number] | []): void;
+>g2 : (...args: [number] | []) => void
+>args : [] | [number]
+
+g2(...(cond ? [1] : []));
+>g2(...(cond ? [1] : [])) : void
+>g2 : (...args: [number] | []) => void
+>...(cond ? [1] : []) : number
+>(cond ? [1] : []) : number[]
+>cond ? [1] : [] : number[]
+>cond : boolean
+>[1] : number[]
+>1 : 1
+>[] : never[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

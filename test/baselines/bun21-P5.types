@@ -1,0 +1,20 @@
+//// [test/cases/bun21-P5.ts] ////
+
+=== a.ts ===
+function f(u: { kind: 0 } | { kind: 1; b: number }) { const { ...kind } = u; if (kind) u.b; }
+>f : (u: { kind: 0; } | { kind: 1; b: number; }) => void
+>u : { kind: 0; } | { kind: 1; b: number; }
+>kind : 0
+>kind : 1
+>b : number
+>kind : { kind: 0; } | { kind: 1; b: number; }
+>u : { kind: 0; } | { kind: 1; b: number; }
+>kind : { kind: 0; } | { kind: 1; b: number; }
+>u.b : number
+>u : { kind: 1; b: number; }
+>b : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,27 @@
+//// [test/cases/bun17-C6c.ts] ////
+
+=== a.ts ===
+class GA<T> { constructor(x: T) {} }
+>GA : GA<T>
+>x : T
+
+class GDA extends GA<{ a: 1 }> {}
+>GDA : GDA
+>GA : GA<{ a: 1; }>
+>a : 1
+
+class GDD extends GA<{ a: 1; d: 1 }> {}
+>GDD : GDD
+>GA : GA<{ a: 1; d: 1; }>
+>a : 1
+>d : 1
+
+let k: typeof GDA = GDD;
+>k : typeof GDA
+>GDA : typeof GDA
+>GDD : typeof GDD
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

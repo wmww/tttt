@@ -1,0 +1,106 @@
+//// [test/cases/bun62-L02b.ts] ////
+
+=== a.ts ===
+type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+
+take1(function named(x) {});
+>take1 : Symbol(take1, Decl(a.ts, 7, 45))
+>named : Symbol(named, Decl(a.ts, 1, 6))
+>x : Symbol(x, Decl(a.ts, 1, 21))
+
+take2((x) => {});
+>take2 : Symbol(take2, Decl(a.ts, 8, 63))
+>x : Symbol(x, Decl(a.ts, 2, 7))
+
+declare let o: I3;
+>o : Symbol(o, Decl(a.ts, 3, 11))
+>I3 : Symbol(I3, Decl(a.ts, 9, 63))
+
+o.m = function named3(x) {};
+>o.m : Symbol(I3.m, Decl(a.ts, 10, 14))
+>o : Symbol(o, Decl(a.ts, 3, 11))
+>m : Symbol(I3.m, Decl(a.ts, 10, 14))
+>named3 : Symbol(named3, Decl(a.ts, 4, 5))
+>x : Symbol(x, Decl(a.ts, 4, 22))
+
+o.n = function (x) {};
+>o.n : Symbol(I3.n, Decl(a.ts, 10, 43))
+>o : Symbol(o, Decl(a.ts, 3, 11))
+>n : Symbol(I3.n, Decl(a.ts, 10, 43))
+>x : Symbol(x, Decl(a.ts, 5, 16))
+
+o.k = (x) => {};
+>o.k : Symbol(I3.k, Decl(a.ts, 10, 72))
+>o : Symbol(o, Decl(a.ts, 3, 11))
+>k : Symbol(I3.k, Decl(a.ts, 10, 72))
+>x : Symbol(x, Decl(a.ts, 6, 7))
+
+const o8: { m: F8 } = { m: function (x) {} };
+>o8 : Symbol(o8, Decl(a.ts, 7, 5))
+>m : Symbol(m, Decl(a.ts, 7, 11))
+>F8 : Symbol(F8, Decl(a.ts, 10, 102))
+>m : Symbol(m, Decl(a.ts, 7, 23))
+>x : Symbol(x, Decl(a.ts, 7, 37))
+
+declare function take1(cb: (x: X<X<X<X<[1]>>>>) => void): void;
+>take1 : Symbol(take1, Decl(a.ts, 7, 45))
+>cb : Symbol(cb, Decl(a.ts, 8, 23))
+>x : Symbol(x, Decl(a.ts, 8, 28))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+declare function take2(cb: (x: X<X<X<X<[2]>>>>) => void): void;
+>take2 : Symbol(take2, Decl(a.ts, 8, 63))
+>cb : Symbol(cb, Decl(a.ts, 9, 23))
+>x : Symbol(x, Decl(a.ts, 9, 28))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+interface I3 { m(x: X<X<X<X<[3]>>>>): void; n(x: X<X<X<X<[4]>>>>): void; k(x: X<X<X<X<[5]>>>>): void }
+>I3 : Symbol(I3, Decl(a.ts, 9, 63))
+>m : Symbol(I3.m, Decl(a.ts, 10, 14))
+>x : Symbol(x, Decl(a.ts, 10, 17))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>n : Symbol(I3.n, Decl(a.ts, 10, 43))
+>x : Symbol(x, Decl(a.ts, 10, 46))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>k : Symbol(I3.k, Decl(a.ts, 10, 72))
+>x : Symbol(x, Decl(a.ts, 10, 75))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+type F8 = (x: X<X<X<X<[8]>>>>) => void;
+>F8 : Symbol(F8, Decl(a.ts, 10, 102))
+>x : Symbol(x, Decl(a.ts, 11, 11))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

@@ -1,0 +1,17 @@
+//// [test/cases/bun15-C8a.ts] ////
+
+=== a.ts ===
+declare function pass2<F>(f: F): F;
+>pass2 : Symbol(pass2, Decl(a.ts, 0, 0))
+>F : Symbol(F, Decl(a.ts, 0, 23))
+>f : Symbol(f, Decl(a.ts, 0, 26))
+>F : Symbol(F, Decl(a.ts, 0, 23))
+>F : Symbol(F, Decl(a.ts, 0, 23))
+
+const a2 = pass2(function* () { yield 1; });
+>a2 : Symbol(a2, Decl(a.ts, 1, 5))
+>pass2 : Symbol(pass2, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

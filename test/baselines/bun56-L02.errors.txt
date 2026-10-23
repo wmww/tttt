@@ -1,0 +1,14 @@
+a.ts(1,32): error TS1260: Keywords cannot contain escape characters.
+a.ts(2,31): error TS1260: Keywords cannot contain escape characters.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type X<T> = T extends [infer U \u0065xtends string] ? U : never;
+                                   ~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    type Z<T> = T extends infer U \u0065xtends string ? U : never;
+                                  ~~~~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

@@ -1,0 +1,14 @@
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(2,7): error TS6133: 'sentinel' is declared but its value is never read.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "noUnusedLocals": true }, "compilerOptions": { "types": [] } }
+==== a.ts (2 errors) ====
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+          ~~~~~~~~
+!!! error TS6133: 'sentinel' is declared but its value is never read.
+    

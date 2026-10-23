@@ -1,0 +1,14 @@
+a.ts(1,13): error TS7006: Parameter 'a\u0062' implicitly has an 'any' type.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function fa(a\u0062) { }
+                ~~~~~~~
+!!! error TS7006: Parameter 'a\u0062' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,24 @@
+//// [test/cases/bun04-C4.ts] ////
+
+=== a.ts ===
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+const a = 1;
+>a : 1
+>1 : 1
+
+export class B { m(@dec(a) x: number) { return x; } }
+>B : B
+>m : (x: number) => number
+>dec(a) : any
+>dec : (...a: any[]) => any
+>a : 1
+>x : number
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

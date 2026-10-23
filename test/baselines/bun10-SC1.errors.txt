@@ -1,0 +1,39 @@
+a.ts(5,4): error TS2339: Property 'k' does not exist on type 'X<"b">'.
+a.ts(5,10): error TS2339: Property 'p' does not exist on type 'X<"b">'.
+a.ts(5,16): error TS2339: Property 'q' does not exist on type 'X<"b">'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(3,11): error TS2430: Interface 'X<T>' incorrectly extends interface '[1, ...T]'.
+b.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    export {};
+    type B<T> = { k: "a"; p: 1 } & { k: T; q: 2 };
+    interface X<T> extends B<T> { own: 3 }
+    declare const xb: X<"b">;
+    xb.k; xb.p; xb.q;
+       ~
+!!! error TS2339: Property 'k' does not exist on type 'X<"b">'.
+             ~
+!!! error TS2339: Property 'p' does not exist on type 'X<"b">'.
+                   ~
+!!! error TS2339: Property 'q' does not exist on type 'X<"b">'.
+    const lit: X<"b"> = { own: 3 };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (2 errors) ====
+    export {};
+    type V<T extends unknown[]> = [1, ...T];
+    interface X<T extends unknown[]> extends V<T> { }
+              ~
+!!! error TS2430: Interface 'X<T>' incorrectly extends interface '[1, ...T]'.
+    declare const x: X<[2, 3]>;
+    const y: [1, 2, 3] = x;
+    const len: 3 = x.length;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

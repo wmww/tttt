@@ -1,0 +1,28 @@
+//// [test/cases/bun20-C5b.ts] ////
+
+=== a.ts ===
+class Q { v: string | undefined; isS(): this is { v: string } { return true; } }
+>Q : Q
+>v : string | undefined
+>isS : () => this is { v: string; }
+>v : string
+>true : true
+
+function b22(q: Q) { if ((q.isS)()) { q.v.length; } }
+>b22 : (q: Q) => void
+>q : Q
+>(q.isS)() : boolean
+>(q.isS) : () => this is { v: string; }
+>q.isS : () => this is { v: string; }
+>q : Q
+>isS : () => this is { v: string; }
+>q.v.length : number
+>q.v : string | undefined
+>q : Q
+>v : string | undefined
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,34 @@
+//// [test/cases/bun71-R04a.ts] ////
+
+=== a.ts ===
+declare function use(...x: any[]): void;
+>use : Symbol(use, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+
+function F(this: any) { if (F) { use(new.target); } }
+>F : Symbol(F, Decl(a.ts, 0, 40))
+>this : Symbol(this, Decl(a.ts, 1, 11))
+>F : Symbol(F, Decl(a.ts, 0, 40))
+>use : Symbol(use, Decl(a.ts, 0, 0))
+>new.target : Symbol(F, Decl(a.ts, 0, 40))
+>target : Symbol(F, Decl(a.ts, 0, 40))
+
+function G(this: any) { return G && new.target; }
+>G : Symbol(G, Decl(a.ts, 1, 53))
+>this : Symbol(this, Decl(a.ts, 2, 11))
+>G : Symbol(G, Decl(a.ts, 1, 53))
+>new.target : Symbol(G, Decl(a.ts, 1, 53))
+>target : Symbol(G, Decl(a.ts, 1, 53))
+
+const h = function H(this: any) { if (H) { use(new.target); } };
+>h : Symbol(h, Decl(a.ts, 3, 5))
+>H : Symbol(H, Decl(a.ts, 3, 9))
+>this : Symbol(this, Decl(a.ts, 3, 21))
+>H : Symbol(H, Decl(a.ts, 3, 9))
+>use : Symbol(use, Decl(a.ts, 0, 0))
+>new.target : Symbol(H, Decl(a.ts, 3, 9))
+>target : Symbol(H, Decl(a.ts, 3, 9))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

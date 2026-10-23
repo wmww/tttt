@@ -1,0 +1,53 @@
+//// [test/cases/bun81-R01.ts] ////
+
+=== a.ts ===
+const kz = "z";
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+
+const v2 = { z: 1, get z() { return v2.z } };
+>v2 : Symbol(v2, Decl(a.ts, 1, 5))
+>z : Symbol(z, Decl(a.ts, 1, 12), Decl(a.ts, 1, 18))
+>z : Symbol(z, Decl(a.ts, 1, 12), Decl(a.ts, 1, 18))
+>v2 : Symbol(v2, Decl(a.ts, 1, 5))
+
+const v3 = { [kz]: 1, get [kz]() { return v3.z } };
+>v3 : Symbol(v3, Decl(a.ts, 2, 5))
+>[kz] : Symbol([kz], Decl(a.ts, 2, 12), Decl(a.ts, 2, 21))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>[kz] : Symbol([kz], Decl(a.ts, 2, 12), Decl(a.ts, 2, 21))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>v3 : Symbol(v3, Decl(a.ts, 2, 5))
+
+const v6 = { [kz]: 1, get z() { return v6.z } };
+>v6 : Symbol(v6, Decl(a.ts, 3, 5))
+>[kz] : Symbol(z, Decl(a.ts, 3, 21), Decl(a.ts, 3, 12))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>z : Symbol(z, Decl(a.ts, 3, 21), Decl(a.ts, 3, 12))
+>v6 : Symbol(v6, Decl(a.ts, 3, 5))
+
+const w8 = { z: 1, set z(v: typeof w8) {} };
+>w8 : Symbol(w8, Decl(a.ts, 4, 5))
+>z : Symbol(z, Decl(a.ts, 4, 12), Decl(a.ts, 4, 18))
+>z : Symbol(z, Decl(a.ts, 4, 12), Decl(a.ts, 4, 18))
+>v : Symbol(v, Decl(a.ts, 4, 25))
+>w8 : Symbol(w8, Decl(a.ts, 4, 5))
+
+// the plain member last, or no plain member: the two agree
+const v9 = { get z() { return v9.z }, z: 1 };
+>v9 : Symbol(v9, Decl(a.ts, 6, 5))
+>z : Symbol(z, Decl(a.ts, 6, 12), Decl(a.ts, 6, 37))
+>v9.z : Symbol(z, Decl(a.ts, 6, 12), Decl(a.ts, 6, 37))
+>v9 : Symbol(v9, Decl(a.ts, 6, 5))
+>z : Symbol(z, Decl(a.ts, 6, 12), Decl(a.ts, 6, 37))
+>z : Symbol(z, Decl(a.ts, 6, 12), Decl(a.ts, 6, 37))
+
+const v1 = { get z() { return v1.z } };
+>v1 : Symbol(v1, Decl(a.ts, 7, 5))
+>z : Symbol(z, Decl(a.ts, 7, 12))
+>v1.z : Symbol(z, Decl(a.ts, 7, 12))
+>v1 : Symbol(v1, Decl(a.ts, 7, 5))
+>z : Symbol(z, Decl(a.ts, 7, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun03-C2c.ts] ////
+
+=== a.js ===
+class B { constructor() { this.asg = 1; } }
+>B : B
+>this.asg = 1 : 1
+>this.asg : any
+>this : this
+>asg : any
+>1 : 1
+
+class D extends B { get asg() { return 1 } }
+>D : D
+>B : B
+>asg : number
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

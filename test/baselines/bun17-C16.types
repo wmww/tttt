@@ -1,0 +1,21 @@
+//// [test/cases/bun17-C16.ts] ////
+
+=== a.ts ===
+declare let o: object, e: {};
+>o : object
+>e : {}
+
+[o, e, {}].push(1);
+>[o, e, {}].push(1) : number
+>[o, e, {}].push : (...items: object[]) => number
+>[o, e, {}] : object[]
+>o : object
+>e : {}
+>{} : {}
+>push : (...items: object[]) => number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

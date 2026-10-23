@@ -1,0 +1,15 @@
+//// [test/cases/bun39-C5a.ts] ////
+
+=== a.ts ===
+import { A as A2 } from './a';
+>A : typeof A2
+>A2 : typeof A2
+
+export class A extends A2 {}
+>A : A2
+>A2 : typeof A2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

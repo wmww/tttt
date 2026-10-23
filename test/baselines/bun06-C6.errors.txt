@@ -1,0 +1,25 @@
+a.ts(2,14): error TS1099: Type argument list cannot be empty.
+a.ts(2,15): error TS2635: Type '(x: number) => void' has no signatures for which the type argument list is applicable.
+a.ts(3,20): error TS1099: Type argument list cannot be empty.
+a.ts(3,21): error TS2635: Type '(x: number) => void' has no signatures for which the type argument list is applicable.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare function ng(x: number): void;
+    const e1 = ng<>;
+                 ~~
+!!! error TS1099: Type argument list cannot be empty.
+                  
+!!! error TS2635: Type '(x: number) => void' has no signatures for which the type argument list is applicable.
+    type Q1 = typeof ng<>;
+                       ~~
+!!! error TS1099: Type argument list cannot be empty.
+                        
+!!! error TS2635: Type '(x: number) => void' has no signatures for which the type argument list is applicable.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

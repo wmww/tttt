@@ -1,0 +1,34 @@
+//// [test/cases/bun23-P8.ts] ////
+
+=== a.ts ===
+class G<T> { static readonly u: unique symbol = Symbol(); g!: T }
+>G : G<T>
+>u : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>g : T
+
+namespace A { export class X<Q> { a!: Q } }
+>A : typeof A
+>X : X<Q>
+>a : Q
+
+namespace B { export class X<Q> { b!: Q } }
+>B : typeof B
+>X : X<Q>
+>b : Q
+
+const s: { (p: [A.X<{ [K in typeof G.u]: 1 }>, B.X<1>]): void } = {};
+>s : (p: [A.X<{ [K in typeof G.u]: 1; }>, B.X<1>]) => void
+>p : [A.X<{ [G.u]: 1; }>, B.X<1>]
+>A : any
+>G.u : unique symbol
+>G : typeof G
+>u : unique symbol
+>B : any
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

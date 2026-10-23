@@ -1,0 +1,242 @@
+d01.ts(1,25): error TS2304: Cannot find name 'a'.
+d01.ts(1,25): error TS2695: Left side of comma operator is unused and has no side effects.
+d01.ts(1,28): error TS1109: Expression expected.
+d01.ts(1,31): error TS1134: Variable declaration expected.
+d01.ts(1,33): error TS1005: ';' expected.
+d03.ts(1,10): error TS2304: Cannot find name 'a'.
+d03.ts(1,10): error TS2695: Left side of comma operator is unused and has no side effects.
+d03.ts(1,13): error TS1109: Expression expected.
+d03.ts(1,16): error TS1134: Variable declaration expected.
+d07.ts(1,10): error TS2304: Cannot find name 'T'.
+d07.ts(1,13): error TS2304: Cannot find name 'a'.
+d07.ts(1,13): error TS2695: Left side of comma operator is unused and has no side effects.
+d07.ts(1,16): error TS1109: Expression expected.
+d07.ts(1,19): error TS1134: Variable declaration expected.
+d07.ts(1,21): error TS1005: ';' expected.
+d08.ts(1,10): error TS2304: Cannot find name 'a'.
+d08.ts(1,10): error TS2695: Left side of comma operator is unused and has no side effects.
+d08.ts(1,13): error TS1109: Expression expected.
+d08.ts(1,16): error TS1134: Variable declaration expected.
+d08.ts(1,17): error TS1134: Variable declaration expected.
+d08.ts(1,19): error TS1005: ';' expected.
+d09.ts(1,10): error TS2304: Cannot find name 'a'.
+d09.ts(1,10): error TS2695: Left side of comma operator is unused and has no side effects.
+d09.ts(1,13): error TS1109: Expression expected.
+d09.ts(1,17): error TS1134: Variable declaration expected.
+d09.ts(1,19): error TS1134: Variable declaration expected.
+d09.ts(1,20): error TS1005: ';' expected.
+d09.ts(1,22): error TS1128: Declaration or statement expected.
+d10.ts(1,10): error TS2304: Cannot find name 'a'.
+d10.ts(1,10): error TS2695: Left side of comma operator is unused and has no side effects.
+d10.ts(1,13): error TS1109: Expression expected.
+d10.ts(1,16): error TS1134: Variable declaration expected.
+d10.ts(1,21): error TS1005: ',' expected.
+d10.ts(1,23): error TS1005: ';' expected.
+d12.ts(1,10): error TS2304: Cannot find name 'a'.
+d12.ts(1,10): error TS2695: Left side of comma operator is unused and has no side effects.
+d12.ts(1,13): error TS1109: Expression expected.
+d12.ts(1,16): error TS1134: Variable declaration expected.
+d12.ts(1,17): error TS1005: ';' expected.
+d12.ts(1,19): error TS1128: Declaration or statement expected.
+d15.ts(1,10): error TS2304: Cannot find name 'a'.
+d15.ts(1,10): error TS2695: Left side of comma operator is unused and has no side effects.
+d15.ts(1,13): error TS1109: Expression expected.
+d15.ts(1,16): error TS1134: Variable declaration expected.
+d15.ts(1,18): error TS1005: ';' expected.
+d16.ts(1,1): error TS2304: Cannot find name 'f'.
+d16.ts(1,4): error TS2304: Cannot find name 'a'.
+d16.ts(1,4): error TS2695: Left side of comma operator is unused and has no side effects.
+d16.ts(1,7): error TS1109: Expression expected.
+d16.ts(1,10): error TS1109: Expression expected.
+d16.ts(1,12): error TS1005: ';' expected.
+d16.ts(1,16): error TS1005: ';' expected.
+e061.ts(1,2): error TS2304: Cannot find name 'a'.
+e061.ts(1,2): error TS2695: Left side of comma operator is unused and has no side effects.
+e061.ts(1,5): error TS1109: Expression expected.
+e061.ts(1,8): error TS1128: Declaration or statement expected.
+e061.ts(1,10): error TS1128: Declaration or statement expected.
+p061.ts(1,16): error TS7010: 'w', which lacks return-type annotation, implicitly has an 'any' return type.
+p061.ts(1,18): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+p061.ts(1,23): error TS2304: Cannot find name 'a'.
+p061.ts(1,23): error TS2695: Left side of comma operator is unused and has no side effects.
+p061.ts(1,26): error TS1109: Expression expected.
+p061.ts(1,26): error TS7019: Rest parameter '(Missing)' implicitly has an 'any[]' type.
+p061.ts(1,29): error TS1003: Identifier expected.
+p061.ts(1,31): error TS1144: '{' or ';' expected.
+p061.ts(1,35): error TS1005: ';' expected.
+s061.ts(1,10): error TS2304: Cannot find name 'a'.
+s061.ts(1,10): error TS2695: Left side of comma operator is unused and has no side effects.
+s061.ts(1,13): error TS1109: Expression expected.
+s061.ts(1,16): error TS1134: Variable declaration expected.
+s061.ts(1,18): error TS1005: ';' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== d01.ts (5 errors) ====
+    function w() { var v = (a, ...) => 1; }
+                            ~
+!!! error TS2304: Cannot find name 'a'.
+                            ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                               ~~~
+!!! error TS1109: Expression expected.
+                                  ~
+!!! error TS1134: Variable declaration expected.
+                                    ~~
+!!! error TS1005: ';' expected.
+==== d03.ts (4 errors) ====
+    var v = (a, ...);
+             ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~~~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1134: Variable declaration expected.
+==== d07.ts (6 errors) ====
+    var v = <T>(a, ...) => 1;
+             ~
+!!! error TS2304: Cannot find name 'T'.
+                ~
+!!! error TS2304: Cannot find name 'a'.
+                ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                   ~~~
+!!! error TS1109: Expression expected.
+                      ~
+!!! error TS1134: Variable declaration expected.
+                        ~~
+!!! error TS1005: ';' expected.
+==== d08.ts (6 errors) ====
+    var v = (a, ...,) => 1;
+             ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~~~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1134: Variable declaration expected.
+                    ~
+!!! error TS1134: Variable declaration expected.
+                      ~~
+!!! error TS1005: ';' expected.
+==== d09.ts (7 errors) ====
+    var v = (a, ... = 1) => 1;
+             ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~~~
+!!! error TS1109: Expression expected.
+                    ~
+!!! error TS1134: Variable declaration expected.
+                      ~
+!!! error TS1134: Variable declaration expected.
+                       ~
+!!! error TS1005: ';' expected.
+                         ~~
+!!! error TS1128: Declaration or statement expected.
+==== d10.ts (6 errors) ====
+    var v = (a, ...: any) => 1;
+             ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~~~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1134: Variable declaration expected.
+                        ~
+!!! error TS1005: ',' expected.
+                          ~~
+!!! error TS1005: ';' expected.
+==== d12.ts (6 errors) ====
+    var v = (a, ...1) => 1;
+             ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~~~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1134: Variable declaration expected.
+                    ~
+!!! error TS1005: ';' expected.
+                      ~~
+!!! error TS1128: Declaration or statement expected.
+==== d15.ts (5 errors) ====
+    var v = (a, ...) => { };
+             ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~~~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1134: Variable declaration expected.
+                     ~~
+!!! error TS1005: ';' expected.
+==== d16.ts (7 errors) ====
+    f((a, ...) => 1);
+    ~
+!!! error TS2304: Cannot find name 'f'.
+       ~
+!!! error TS2304: Cannot find name 'a'.
+       ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+          ~~~
+!!! error TS1109: Expression expected.
+             ~
+!!! error TS1109: Expression expected.
+               ~~
+!!! error TS1005: ';' expected.
+                   ~
+!!! error TS1005: ';' expected.
+==== e061.ts (5 errors) ====
+    (a, ...) => 1;
+     ~
+!!! error TS2304: Cannot find name 'a'.
+     ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+        ~~~
+!!! error TS1109: Expression expected.
+           ~
+!!! error TS1128: Declaration or statement expected.
+             ~~
+!!! error TS1128: Declaration or statement expected.
+==== p061.ts (9 errors) ====
+    async function w(q = (a, ...) => 1) {}
+                   ~
+!!! error TS7010: 'w', which lacks return-type annotation, implicitly has an 'any' return type.
+                     ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                          ~
+!!! error TS2304: Cannot find name 'a'.
+                          ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                             ~~~
+!!! error TS1109: Expression expected.
+                             ~~~
+!!! error TS7019: Rest parameter '(Missing)' implicitly has an 'any[]' type.
+                                ~
+!!! error TS1003: Identifier expected.
+                                  ~~
+!!! error TS1144: '{' or ';' expected.
+                                      ~
+!!! error TS1005: ';' expected.
+==== s061.ts (5 errors) ====
+    var v = (a, ...) => 1;
+             ~
+!!! error TS2304: Cannot find name 'a'.
+             ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                ~~~
+!!! error TS1109: Expression expected.
+                   ~
+!!! error TS1134: Variable declaration expected.
+                     ~~
+!!! error TS1005: ';' expected.
+    

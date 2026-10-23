@@ -1,0 +1,10 @@
+//// [test/cases/bun32-C24b.ts] ////
+
+=== a.ts ===
+type T = import(("m"));
+>T : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

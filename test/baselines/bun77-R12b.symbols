@@ -1,0 +1,31 @@
+//// [test/cases/bun77-R12b.ts] ////
+
+=== a.jsx ===
+/** @param {number} a @param {number} extra */
+function s1(a) { switch (a) { case <div arguments />: let arguments = 1; } }
+>s1 : Symbol(s1, Decl(a.jsx, 0, 0))
+>a : Symbol(a, Decl(a.jsx, 1, 12))
+>a : Symbol(a, Decl(a.jsx, 1, 12))
+>arguments : Symbol(arguments, Decl(a.jsx, 1, 39))
+>arguments : Symbol(arguments, Decl(a.jsx, 1, 57))
+
+/** @param {number} a @param {number} extra */
+function s5(a) { switch (a) { case 1: let arguments = 1; break; case <div arguments />: break; } }
+>s5 : Symbol(s5, Decl(a.jsx, 1, 76))
+>a : Symbol(a, Decl(a.jsx, 3, 12))
+>a : Symbol(a, Decl(a.jsx, 3, 12))
+>arguments : Symbol(arguments, Decl(a.jsx, 3, 41))
+>arguments : Symbol(arguments, Decl(a.jsx, 3, 73))
+
+/** @param {number} a @param {number} extra */
+function s8(a) { { const x = <div arguments />; let arguments = 1; } }
+>s8 : Symbol(s8, Decl(a.jsx, 3, 98))
+>a : Symbol(a, Decl(a.jsx, 5, 12))
+>x : Symbol(x, Decl(a.jsx, 5, 24))
+>arguments : Symbol(arguments, Decl(a.jsx, 5, 33))
+>arguments : Symbol(arguments, Decl(a.jsx, 5, 51))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.jsx, 7, 5))
+

@@ -1,0 +1,92 @@
+//// [test/cases/bun62-L18.ts] ////
+
+=== a.ts ===
+declare function id<T>(x: T): T;
+>id : <T>(x: T) => T
+>x : T
+
+const n1 = { m() { return this.z; }, f() { return this.z; }, g: () => id(2 + {}) };
+>n1 : { m(): any; f(): any; g: () => any; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => id(2 + {}) } : { m(): any; f(): any; g: () => any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>g : () => any
+>() => id(2 + {}) : () => any
+>id(2 + {}) : any
+>id : <T>(x: T) => T
+>2 + {} : any
+>2 : 2
+>{} : {}
+
+const n5 = { m() { return this.z; }, f() { return this.z; }, g: () => id(id(6 + {})) };
+>n5 : { m(): any; f(): any; g: () => any; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => id(id(6 + {})) } : { m(): any; f(): any; g: () => any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>g : () => any
+>() => id(id(6 + {})) : () => any
+>id(id(6 + {})) : any
+>id : <T>(x: T) => T
+>id(6 + {}) : any
+>id : <T>(x: T) => T
+>6 + {} : any
+>6 : 6
+>{} : {}
+
+const n9 = { m() { return this.z; }, f() { return this.z; }, g: () => [id(7 + {})] };
+>n9 : { m(): any; f(): any; g: () => any[]; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => [id(7 + {})] } : { m(): any; f(): any; g: () => any[]; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any[]; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any[]; }
+>z : any
+>g : () => any[]
+>() => [id(7 + {})] : () => any[]
+>[id(7 + {})] : any[]
+>id(7 + {}) : any
+>id : <T>(x: T) => T
+>7 + {} : any
+>7 : 7
+>{} : {}
+
+const n11 = { m() { return this.z; }, f() { return this.z; }, g: () => id({ a: 9 + {} }) };
+>n11 : { m(): any; f(): any; g: () => { a: any; }; }
+>{ m() { return this.z; }, f() { return this.z; }, g: () => id({ a: 9 + {} }) } : { m(): any; f(): any; g: () => { a: any; }; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => { a: any; }; }
+>z : any
+>g : () => { a: any; }
+>() => id({ a: 9 + {} }) : () => { a: any; }
+>id({ a: 9 + {} }) : { a: any; }
+>id : <T>(x: T) => T
+>{ a: 9 + {} } : { a: any; }
+>a : any
+>9 + {} : any
+>9 : 9
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

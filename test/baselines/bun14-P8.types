@@ -1,0 +1,21 @@
+//// [test/cases/bun14-P8.ts] ////
+
+=== a.ts ===
+function f<K extends "rw">(o: { readonly ro: number; rw: number }, k: K | "ro") {
+>f : <K extends "rw">(o: { readonly ro: number; rw: number; }, k: K | "ro") => void
+>o : { readonly ro: number; rw: number; }
+>ro : number
+>rw : number
+>k : "ro" | K
+
+  o[k] = 1;
+>o[k] = 1 : 1
+>o[k] : { readonly ro: number; rw: number; }["ro" | K]
+>o : { readonly ro: number; rw: number; }
+>k : "ro" | K
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

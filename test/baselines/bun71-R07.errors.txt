@@ -1,0 +1,25 @@
+a.ts(1,8): error TS2303: Circular definition of import alias 'd'.
+a.ts(2,14): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+m.ts(2,7): error TS7022: 'o' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.ts (3 errors) ====
+    import d from "./m";
+           ~
+!!! error TS2303: Circular definition of import alias 'd'.
+    export const x = d.foo;
+                 ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (1 errors) ====
+    import { x } from "./a";
+    const o = { foo: x };
+          ~
+!!! error TS7022: 'o' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    export = o;
+    

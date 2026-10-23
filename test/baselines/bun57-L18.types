@@ -1,0 +1,45 @@
+//// [test/cases/bun57-L18.ts] ////
+
+=== a.ts ===
+const f = async <T extends object>(x: T)
+>f : any
+>async <T extends object>(x: T) : any
+>async : any
+>x : any
+>T : any
+
+=== b.ts ===
+const g = async <T,>(x: T)
+>g : any
+>async <T,>(x: T) : any
+>async : any
+>x : any
+>T : any
+
+=== c.ts ===
+async <T extends U>(x);
+>async <T extends U>(x) : any
+>async : any
+>x : any
+
+=== d.ts ===
+async <T = U>(x);
+>async <T : boolean
+>async : any
+>T : any
+>U>(x) : boolean
+>U : any
+>(x) : any
+>x : any
+
+=== e.ts ===
+async <const T>(x);
+>async < : boolean
+>async : any
+> : any
+>T : any
+>>(x) : boolean
+> : any
+>(x) : any
+>x : any
+

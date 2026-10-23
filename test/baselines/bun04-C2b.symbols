@@ -1,0 +1,46 @@
+//// [test/cases/bun04-C2b.ts] ////
+
+=== a.ts ===
+type A = { [Symbol.iterator](): Iterator<number>; [Symbol.iterator](x?: string): Iterator<boolean> };
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 0, 10), Decl(a.ts, 0, 49))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 0, 10), Decl(a.ts, 0, 49))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 68))
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+type B = { [Symbol.iterator](): Iterator<string>; [Symbol.iterator](x?: number): Iterator<bigint> };
+>B : Symbol(B, Decl(a.ts, 0, 101))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 1, 10), Decl(a.ts, 1, 49))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 1, 10), Decl(a.ts, 1, 49))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 68))
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+function f9<T extends A | B>(t: T) { for (const x of t) { const n: never = x; } }
+>f9 : Symbol(f9, Decl(a.ts, 1, 100))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 101))
+>t : Symbol(t, Decl(a.ts, 2, 29))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>x : Symbol(x, Decl(a.ts, 2, 47))
+>t : Symbol(t, Decl(a.ts, 2, 29))
+>n : Symbol(n, Decl(a.ts, 2, 63))
+>x : Symbol(x, Decl(a.ts, 2, 47))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

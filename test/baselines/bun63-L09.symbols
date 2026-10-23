@@ -1,0 +1,57 @@
+//// [test/cases/bun63-L09.ts] ////
+
+=== a.js ===
+class C {
+>C : Symbol(C, Decl(a.js, 0, 0))
+
+  constructor() {
+    /** @type {ReturnType<typeof mk>} */
+    this.x = 1;
+>this.x : Symbol(C.x, Decl(a.js, 1, 17), Decl(a.js, 4, 3))
+>this : Symbol(C, Decl(a.js, 0, 0))
+>x : Symbol(C.x, Decl(a.js, 1, 17), Decl(a.js, 4, 3))
+  }
+  x = mk();
+>x : Symbol(C.x, Decl(a.js, 1, 17), Decl(a.js, 4, 3))
+>mk : Symbol(mk, Decl(a.js, 6, 1))
+}
+function mk() { return new C().x; }
+>mk : Symbol(mk, Decl(a.js, 6, 1))
+>new C().x : Symbol(C.x, Decl(a.js, 1, 17), Decl(a.js, 4, 3))
+>C : Symbol(C, Decl(a.js, 0, 0))
+>x : Symbol(C.x, Decl(a.js, 1, 17), Decl(a.js, 4, 3))
+
+class D {
+>D : Symbol(D, Decl(a.js, 7, 35))
+
+  constructor() {
+    this.y = mk2();
+>this.y : Symbol(D.y, Decl(a.js, 9, 17), Decl(a.js, 11, 3))
+>this : Symbol(D, Decl(a.js, 7, 35))
+>y : Symbol(D.y, Decl(a.js, 9, 17), Decl(a.js, 11, 3))
+>mk2 : Symbol(mk2, Decl(a.js, 14, 1))
+  }
+  /** @type {ReturnType<typeof mk2>} */
+  y;
+>y : Symbol(D.y, Decl(a.js, 9, 17), Decl(a.js, 11, 3))
+}
+function mk2() { return new D().y; }
+>mk2 : Symbol(mk2, Decl(a.js, 14, 1))
+>new D().y : Symbol(D.y, Decl(a.js, 9, 17), Decl(a.js, 11, 3))
+>D : Symbol(D, Decl(a.js, 7, 35))
+>y : Symbol(D.y, Decl(a.js, 9, 17), Decl(a.js, 11, 3))
+
+=== b.ts ===
+new C().x<number>();
+>new C().x : Symbol(C.x, Decl(a.js, 1, 17), Decl(a.js, 4, 3))
+>C : Symbol(C, Decl(a.js, 0, 0))
+>x : Symbol(C.x, Decl(a.js, 1, 17), Decl(a.js, 4, 3))
+
+new D().y<number>();
+>new D().y : Symbol(D.y, Decl(a.js, 9, 17), Decl(a.js, 11, 3))
+>D : Symbol(D, Decl(a.js, 7, 35))
+>y : Symbol(D.y, Decl(a.js, 9, 17), Decl(a.js, 11, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 2, 5))
+

@@ -1,0 +1,26 @@
+a.ts(2,18): error TS2314: Generic type 'G<T>' requires 1 type argument(s).
+a.ts(2,19): error TS1005: ',' expected.
+a.ts(2,21): error TS2304: Cannot find name 'T'.
+a.ts(2,24): error TS1109: Expression expected.
+a.ts(2,26): error TS1005: ';' expected.
+a.ts(2,29): error TS2304: Cannot find name 'T'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    declare class G<T> { x: T }
+    class X5 extends G<<T>() => T> {}
+                     ~
+!!! error TS2314: Generic type 'G<T>' requires 1 type argument(s).
+                      ~~
+!!! error TS1005: ',' expected.
+                        ~
+!!! error TS2304: Cannot find name 'T'.
+                           ~
+!!! error TS1109: Expression expected.
+                             ~~
+!!! error TS1005: ';' expected.
+                                ~
+!!! error TS2304: Cannot find name 'T'.
+    

@@ -1,0 +1,28 @@
+//// [test/cases/bun01-C12b.ts] ////
+
+=== a.ts ===
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+type NonNullable<T, U> = T;
+>NonNullable : T
+
+function f3<T>(o: T) { if (o != null) { const n: number = o; } }
+>f3 : <T>(o: T) => void
+>o : T
+>o != null : boolean
+>o : T
+>n : number
+>o : T & {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,120 @@
+//// [test/cases/bun13-C8.ts] ////
+
+=== a.ts ===
+const c0 = 1;
+>c0 : 1
+>1 : 1
+
+const c1 = c0 + 1;
+>c1 : number
+>c0 + 1 : number
+>c0 : 1
+>1 : 1
+
+const c2 = c1 + 1;
+>c2 : number
+>c1 + 1 : number
+>c1 : number
+>1 : 1
+
+const c3 = c2 + 1;
+>c3 : number
+>c2 + 1 : number
+>c2 : number
+>1 : 1
+
+const c4 = c3 + 1;
+>c4 : number
+>c3 + 1 : number
+>c3 : number
+>1 : 1
+
+const c5 = c4 + 1;
+>c5 : number
+>c4 + 1 : number
+>c4 : number
+>1 : 1
+
+const c6 = c5 + 1;
+>c6 : number
+>c5 + 1 : number
+>c5 : number
+>1 : 1
+
+const c7 = c6 + 1;
+>c7 : number
+>c6 + 1 : number
+>c6 : number
+>1 : 1
+
+const c8 = c7 + 1;
+>c8 : number
+>c7 + 1 : number
+>c7 : number
+>1 : 1
+
+const c9 = c8 + 1;
+>c9 : number
+>c8 + 1 : number
+>c8 : number
+>1 : 1
+
+const c10 = c9 + 1;
+>c10 : number
+>c9 + 1 : number
+>c9 : number
+>1 : 1
+
+const c11 = c10 + 1;
+>c11 : number
+>c10 + 1 : number
+>c10 : number
+>1 : 1
+
+const c12 = c11 + 1;
+>c12 : number
+>c11 + 1 : number
+>c11 : number
+>1 : 1
+
+const c13 = c12 + 1;
+>c13 : number
+>c12 + 1 : number
+>c12 : number
+>1 : 1
+
+const c14 = c13 + 1;
+>c14 : number
+>c13 + 1 : number
+>c13 : number
+>1 : 1
+
+const c15 = c14 + 1;
+>c15 : number
+>c14 + 1 : number
+>c14 : number
+>1 : 1
+
+const c16 = c15 + 1;
+>c16 : number
+>c15 + 1 : number
+>c15 : number
+>1 : 1
+
+const c17 = c16 + 1;
+>c17 : number
+>c16 + 1 : number
+>c16 : number
+>1 : 1
+
+const enum CE { C = c16, D = c17 }
+>CE : CE
+>C : CE.C
+>c16 : number
+>D : CE.D
+>c17 : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

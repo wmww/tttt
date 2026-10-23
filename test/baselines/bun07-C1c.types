@@ -1,0 +1,28 @@
+//// [test/cases/bun07-C1c.ts] ////
+
+=== a.ts ===
+export {};
+declare function id<T>(o: T): T;
+>id : <T>(o: T) => T
+>o : T
+
+const e = id({ a: 1, get g() { return this.zz; }, f() { return this.g; } });
+>e : { a: number; readonly g: any; f(): any; }
+>id({ a: 1, get g() { return this.zz; }, f() { return this.g; } }) : { a: number; readonly g: any; f(): any; }
+>id : <T>(o: T) => T
+>{ a: 1, get g() { return this.zz; }, f() { return this.g; } } : { a: number; readonly g: any; f(): any; }
+>a : number
+>1 : 1
+>g : any
+>this.zz : any
+>this : { a: number; readonly g: any; f(): any; }
+>zz : any
+>f : () => any
+>this.g : any
+>this : { a: number; readonly g: any; f(): any; }
+>g : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

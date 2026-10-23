@@ -1,0 +1,11 @@
+//// [test/cases/bun15-C4b.ts] ////
+
+=== a.ts ===
+const C1: { new(): {}; 2: number } = class { static [+2] = 1; };
+>C1 : Symbol(C1, Decl(a.ts, 0, 5))
+>2 : Symbol(2, Decl(a.ts, 0, 22))
+>[+2] : Symbol(C1[+2], Decl(a.ts, 0, 44))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

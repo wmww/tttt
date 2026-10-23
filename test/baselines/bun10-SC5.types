@@ -1,0 +1,57 @@
+//// [test/cases/bun10-SC5.ts] ////
+
+=== a.ts ===
+export {};
+declare function isT<T>(x: T | undefined): x is T;
+>isT : <T>(x: T | undefined) => x is T
+>x : T | undefined
+
+declare function wrap<A, B extends A>(f: (a: A) => a is B): (a: A) => a is B;
+>wrap : <A, B extends A>(f: (a: A) => a is B) => (a: A) => a is B
+>f : (a: A) => a is B
+>a : A
+>a : A
+
+const g = wrap(isT);
+>g : <T>(a: T | undefined) => a is T
+>wrap(isT) : <T>(a: T | undefined) => a is T
+>wrap : <A, B extends A>(f: (a: A) => a is B) => (a: A) => a is B
+>isT : <T>(x: T | undefined) => x is T
+
+declare const v: "a" | undefined;
+>v : "a" | undefined
+
+if (g(v)) { v.length; }
+>g(v) : boolean
+>g : <T>(a: T | undefined) => a is T
+>v : "a" | undefined
+>v.length : number
+>v : "a"
+>length : number
+
+declare let n: never; n = g;
+>n : never
+>n = g : <T>(a: T | undefined) => a is T
+>n : never
+>g : <T>(a: T | undefined) => a is T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export {};
+declare function mk<A, B extends A>(): (a: A) => a is B;
+>mk : <A, B extends A>() => (a: A) => a is B
+>a : A
+
+const f: <T>(x: T | undefined) => x is T = mk();
+>f : <T>(x: T | undefined) => x is T
+>x : T | undefined
+>mk() : (a: T | undefined) => a is T
+>mk : <A, B extends A>() => (a: A) => a is B
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,236 @@
+//// [test/cases/bun36-C4d.ts] ////
+
+=== a.ts ===
+import { which as w1 } from "v1"; const x1: 0 = w1;
+>which : Symbol(w1, Decl(index.d.ts, 0, 20))
+>w1 : Symbol(w1, Decl(a.ts, 0, 8))
+>x1 : Symbol(x1, Decl(a.ts, 0, 39))
+>w1 : Symbol(w1, Decl(a.ts, 0, 8))
+
+import { which as w2 } from "v2"; const x2: 0 = w2;
+>which : Symbol(w2, Decl(index.d.ts, 0, 20))
+>w2 : Symbol(w2, Decl(a.ts, 1, 8))
+>x2 : Symbol(x2, Decl(a.ts, 1, 39))
+>w2 : Symbol(w2, Decl(a.ts, 1, 8))
+
+import { which as w3 } from "v3"; const x3: 0 = w3;
+>which : Symbol(w3, Decl(index.d.ts, 0, 20))
+>w3 : Symbol(w3, Decl(a.ts, 2, 8))
+>x3 : Symbol(x3, Decl(a.ts, 2, 39))
+>w3 : Symbol(w3, Decl(a.ts, 2, 8))
+
+import { which as w4 } from "v4"; const x4: 0 = w4;
+>which : Symbol(w4, Decl(index.d.ts, 0, 20))
+>w4 : Symbol(w4, Decl(a.ts, 3, 8))
+>x4 : Symbol(x4, Decl(a.ts, 3, 39))
+>w4 : Symbol(w4, Decl(a.ts, 3, 8))
+
+import { which as w5 } from "v5"; const x5: 0 = w5;
+>which : Symbol(w5, Decl(index.d.ts, 0, 20))
+>w5 : Symbol(w5, Decl(a.ts, 4, 8))
+>x5 : Symbol(x5, Decl(a.ts, 4, 39))
+>w5 : Symbol(w5, Decl(a.ts, 4, 8))
+
+import { which as w6 } from "v6"; const x6: 0 = w6;
+>which : Symbol(w6, Decl(index.d.ts, 0, 20))
+>w6 : Symbol(w6, Decl(a.ts, 5, 8))
+>x6 : Symbol(x6, Decl(a.ts, 5, 39))
+>w6 : Symbol(w6, Decl(a.ts, 5, 8))
+
+import { which as w7 } from "v7"; const x7: 0 = w7;
+>which : Symbol(w7, Decl(index.d.ts, 0, 20))
+>w7 : Symbol(w7, Decl(a.ts, 6, 8))
+>x7 : Symbol(x7, Decl(a.ts, 6, 39))
+>w7 : Symbol(w7, Decl(a.ts, 6, 8))
+
+import { which as w8 } from "v8"; const x8: 0 = w8;
+>which : Symbol(w8, Decl(index.d.ts, 0, 20))
+>w8 : Symbol(w8, Decl(a.ts, 7, 8))
+>x8 : Symbol(x8, Decl(a.ts, 7, 39))
+>w8 : Symbol(w8, Decl(a.ts, 7, 8))
+
+import { which as w9 } from "v9"; const x9: 0 = w9;
+>which : Symbol(w9, Decl(index.d.ts, 0, 20))
+>w9 : Symbol(w9, Decl(a.ts, 8, 8))
+>x9 : Symbol(x9, Decl(a.ts, 8, 39))
+>w9 : Symbol(w9, Decl(a.ts, 8, 8))
+
+import { which as w10 } from "v10"; const x10: 0 = w10;
+>which : Symbol(w10, Decl(index.d.ts, 0, 20))
+>w10 : Symbol(w10, Decl(a.ts, 9, 8))
+>x10 : Symbol(x10, Decl(a.ts, 9, 41))
+>w10 : Symbol(w10, Decl(a.ts, 9, 8))
+
+import { which as w11 } from "v11"; const x11: 0 = w11;
+>which : Symbol(w11, Decl(index.d.ts, 0, 20))
+>w11 : Symbol(w11, Decl(a.ts, 10, 8))
+>x11 : Symbol(x11, Decl(a.ts, 10, 41))
+>w11 : Symbol(w11, Decl(a.ts, 10, 8))
+
+import { which as w12 } from "v12"; const x12: 0 = w12;
+>which : Symbol(w12, Decl(index.d.ts, 0, 20))
+>w12 : Symbol(w12, Decl(a.ts, 11, 8))
+>x12 : Symbol(x12, Decl(a.ts, 11, 41))
+>w12 : Symbol(w12, Decl(a.ts, 11, 8))
+
+import { which as w13 } from "v13"; const x13: 0 = w13;
+>which : Symbol(w13, Decl(index.d.ts, 0, 20))
+>w13 : Symbol(w13, Decl(a.ts, 12, 8))
+>x13 : Symbol(x13, Decl(a.ts, 12, 41))
+>w13 : Symbol(w13, Decl(a.ts, 12, 8))
+
+import { which as w14 } from "v14"; const x14: 0 = w14;
+>which : Symbol(w14, Decl(index.d.ts, 0, 20))
+>w14 : Symbol(w14, Decl(a.ts, 13, 8))
+>x14 : Symbol(x14, Decl(a.ts, 13, 41))
+>w14 : Symbol(w14, Decl(a.ts, 13, 8))
+
+import { which as w15 } from "v15"; const x15: 0 = w15;
+>which : Symbol(w15, Decl(index.d.ts, 0, 20))
+>w15 : Symbol(w15, Decl(a.ts, 14, 8))
+>x15 : Symbol(x15, Decl(a.ts, 14, 41))
+>w15 : Symbol(w15, Decl(a.ts, 14, 8))
+
+import { which as w16 } from "v16"; const x16: 0 = w16;
+>which : Symbol(w16, Decl(index.d.ts, 0, 20))
+>w16 : Symbol(w16, Decl(a.ts, 15, 8))
+>x16 : Symbol(x16, Decl(a.ts, 15, 41))
+>w16 : Symbol(w16, Decl(a.ts, 15, 8))
+
+import { which as w17 } from "v17"; const x17: 0 = w17;
+>which : Symbol(w17, Decl(index.d.ts, 0, 20))
+>w17 : Symbol(w17, Decl(a.ts, 16, 8))
+>x17 : Symbol(x17, Decl(a.ts, 16, 41))
+>w17 : Symbol(w17, Decl(a.ts, 16, 8))
+
+import { which as w18 } from "v18"; const x18: 0 = w18;
+>which : Symbol(w18, Decl(index.d.ts, 0, 20))
+>w18 : Symbol(w18, Decl(a.ts, 17, 8))
+>x18 : Symbol(x18, Decl(a.ts, 17, 41))
+>w18 : Symbol(w18, Decl(a.ts, 17, 8))
+
+import { which as w19 } from "v19"; const x19: 0 = w19;
+>which : Symbol(w19, Decl(index.d.ts, 0, 20))
+>w19 : Symbol(w19, Decl(a.ts, 18, 8))
+>x19 : Symbol(x19, Decl(a.ts, 18, 41))
+>w19 : Symbol(w19, Decl(a.ts, 18, 8))
+
+import { which as w20 } from "v20"; const x20: 0 = w20;
+>which : Symbol(w20, Decl(index.d.ts, 0, 20))
+>w20 : Symbol(w20, Decl(a.ts, 19, 8))
+>x20 : Symbol(x20, Decl(a.ts, 19, 41))
+>w20 : Symbol(w20, Decl(a.ts, 19, 8))
+
+import { which as w21 } from "v21"; const x21: 0 = w21;
+>which : Symbol(w21, Decl(index.d.ts, 0, 20))
+>w21 : Symbol(w21, Decl(a.ts, 20, 8))
+>x21 : Symbol(x21, Decl(a.ts, 20, 41))
+>w21 : Symbol(w21, Decl(a.ts, 20, 8))
+
+import { which as w22 } from "v22"; const x22: 0 = w22;
+>which : Symbol(w22, Decl(index.d.ts, 0, 20))
+>w22 : Symbol(w22, Decl(a.ts, 21, 8))
+>x22 : Symbol(x22, Decl(a.ts, 21, 41))
+>w22 : Symbol(w22, Decl(a.ts, 21, 8))
+
+import { which as w23 } from "v23"; const x23: 0 = w23;
+>which : Symbol(w23, Decl(index.d.ts, 0, 20))
+>w23 : Symbol(w23, Decl(a.ts, 22, 8))
+>x23 : Symbol(x23, Decl(a.ts, 22, 41))
+>w23 : Symbol(w23, Decl(a.ts, 22, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 23, 5))
+
+=== node_modules/v1/index.d.ts ===
+export declare const which: "index [>= 4.0]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v10/index.d.ts ===
+export declare const which: "index [~>7.0]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v11/index.d.ts ===
+export declare const which: "index [>x]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v12/index.d.ts ===
+export declare const which: "index [<*]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v13/index.d.ts ===
+export declare const which: "index [> 4]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v14/index.d.ts ===
+export declare const which: "index [<= 8]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v15/index.d.ts ===
+export declare const which: "index [^ 7]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v16/index.d.ts ===
+export declare const which: "index [~ 7]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v17/index.d.ts ===
+export declare const which: "index [=v7]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v18/index.d.ts ===
+export declare const which: "index [>=v4]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v19/index.d.ts ===
+export declare const which: "index [>=4 || foo]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v2/index.d.ts ===
+export declare const which: "index [v7.0.2]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v20/index.d.ts ===
+export declare const which: "index [foo || >=4]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v21/index.d.ts ===
+export declare const which: "index [ - 8]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v22/index.d.ts ===
+export declare const which: "index [4 -8]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v23/index.d.ts ===
+export declare const which: "index [4- 8]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v3/index.d.ts ===
+export declare const which: "index [latest]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v4/index.d.ts ===
+export declare const which: "index [foo]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v5/index.d.ts ===
+export declare const which: "index [07]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v6/index.d.ts ===
+export declare const which: "index [7.0.2.1]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v7/index.d.ts ===
+export declare const which: "index [>=4.0,<8]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v8/index.d.ts ===
+export declare const which: "index [==7.0.2]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+
+=== node_modules/v9/index.d.ts ===
+export declare const which: "index [!7]";
+>which : Symbol(which, Decl(index.d.ts, 0, 20))
+

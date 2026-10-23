@@ -1,0 +1,32 @@
+//// [test/cases/bun80-R12a.ts] ////
+
+=== a.js ===
+exports.a = 1;
+>exports.a : Symbol(a, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 0, 0))
+
+{ export { a as a2 } from "./missing"; }
+>a2 : Symbol(a2, Decl(a.js, 1, 10))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 2, 27))
+
+=== b.js ===
+exports.a = 1;
+>exports.a : Symbol(a, Decl(b.js, 0, 0))
+>exports : Symbol(exports, Decl(b.js, 0, 0))
+>a : Symbol(a, Decl(b.js, 0, 0))
+
+{ export * as a6 from "./missing"; }
+>a6 : Symbol(a6, Decl(b.js, 1, 8))
+
+=== c.js ===
+exports.a = 1;
+>exports.a : Symbol(a, Decl(c.js, 0, 0))
+>exports : Symbol(exports, Decl(c.js, 0, 0))
+>a : Symbol(a, Decl(c.js, 0, 0))
+
+{ export { zzz as a2 }; }
+>a2 : Symbol(a2, Decl(c.js, 1, 10))
+

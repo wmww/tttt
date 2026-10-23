@@ -1,0 +1,10 @@
+//// [test/cases/bun43-C2e.ts] ////
+
+=== a.ts ===
+export {};
+declare glob\u0061l {}
+>glob\u0061l : Symbol(glob\u0061l, Decl(a.ts, 0, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

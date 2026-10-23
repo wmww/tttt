@@ -1,0 +1,27 @@
+//// [test/cases/bun23-C4.ts] ////
+
+=== a.ts ===
+export namespace Q { namespace H2 { export enum P { A, B } } export const v = H2.P.A as H2.P; }
+>Q : Symbol(Q, Decl(a.ts, 0, 0))
+>H2 : Symbol(H2, Decl(a.ts, 0, 20))
+>P : Symbol(P, Decl(a.ts, 0, 35))
+>A : Symbol(P.A, Decl(a.ts, 0, 51))
+>B : Symbol(P.B, Decl(a.ts, 0, 54))
+>v : Symbol(v, Decl(a.ts, 0, 73))
+>H2.P.A : Symbol(H2.P.A, Decl(a.ts, 0, 51))
+>H2.P : Symbol(H2.P, Decl(a.ts, 0, 35))
+>H2 : Symbol(H2, Decl(a.ts, 0, 20))
+>P : Symbol(H2.P, Decl(a.ts, 0, 35))
+>A : Symbol(H2.P.A, Decl(a.ts, 0, 51))
+>H2 : Symbol(H2, Decl(a.ts, 0, 20))
+>P : Symbol(H2.P, Decl(a.ts, 0, 35))
+
+export const l1 = Q.v;
+>l1 : Symbol(l1, Decl(a.ts, 1, 12))
+>Q.v : Symbol(Q.v, Decl(a.ts, 0, 73))
+>Q : Symbol(Q, Decl(a.ts, 0, 0))
+>v : Symbol(Q.v, Decl(a.ts, 0, 73))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

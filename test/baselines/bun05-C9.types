@@ -1,0 +1,22 @@
+//// [test/cases/bun05-C9.ts] ////
+
+=== a.ts ===
+declare const arr: number[];
+>arr : number[]
+
+for (gi in arr) { const x: number = arr[gi]; }
+>gi : string
+>arr : number[]
+>x : number
+>arr[gi] : number
+>arr : number[]
+>gi : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+var gi: string;
+>gi : string
+

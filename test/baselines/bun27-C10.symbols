@@ -1,0 +1,26 @@
+//// [test/cases/bun27-C10.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type LibraryManagedAttributes<C, P> = { c: C }; interface IntrinsicElements { div: {} } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>LibraryManagedAttributes : Symbol(LibraryManagedAttributes, Decl(a.tsx, 0, 50))
+>C : Symbol(C, Decl(a.tsx, 0, 81))
+>P : Symbol(P, Decl(a.tsx, 0, 83))
+>c : Symbol(c, Decl(a.tsx, 0, 90))
+>C : Symbol(C, Decl(a.tsx, 0, 81))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 98))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 0, 128))
+
+declare const Lit: "div";
+>Lit : Symbol(Lit, Decl(a.tsx, 1, 13))
+
+const a = <Lit c={1} />;
+>a : Symbol(a, Decl(a.tsx, 2, 5))
+>Lit : Symbol(Lit, Decl(a.tsx, 1, 13))
+>c : Symbol(c, Decl(a.tsx, 2, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

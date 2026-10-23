@@ -1,0 +1,23 @@
+//// [test/cases/bun93-R17a.ts] ////
+
+=== a.ts ===
+import * as r from "./r"; export const v = r.w;
+>r : typeof r
+>v : any
+>r.w : any
+>r : typeof r
+>w : any
+
+=== r.ts ===
+import { v } from "./a"; export { v as w };
+>v : any
+>v : any
+>w : any
+
+=== zz_sentinel.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export {};
+

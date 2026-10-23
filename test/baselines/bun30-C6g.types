@@ -1,0 +1,15 @@
+//// [test/cases/bun30-C6g.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+interface I extends (delete x) {}
+>(delete x) : boolean
+>delete x : boolean
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

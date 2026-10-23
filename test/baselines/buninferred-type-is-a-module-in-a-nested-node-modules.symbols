@@ -1,0 +1,53 @@
+//// [test/cases/buninferred-type-is-a-module-in-a-nested-node-modules.ts] ////
+
+=== a.ts ===
+import { K, viaImportType, viaNamespace } from "outer";
+>K : Symbol(K, Decl(a.ts, 0, 8))
+>viaImportType : Symbol(viaImportType, Decl(a.ts, 0, 11))
+>viaNamespace : Symbol(viaNamespace, Decl(a.ts, 0, 26))
+
+export const a = viaImportType();
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>viaImportType : Symbol(viaImportType, Decl(a.ts, 0, 11))
+
+export const b = viaNamespace();
+>b : Symbol(b, Decl(a.ts, 2, 12))
+>viaNamespace : Symbol(viaNamespace, Decl(a.ts, 0, 26))
+
+export const c = new K().m;
+>c : Symbol(c, Decl(a.ts, 3, 12))
+>new K().m : Symbol(K.m, Decl(index.d.ts, 3, 24))
+>K : Symbol(K, Decl(a.ts, 0, 8))
+>m : Symbol(K.m, Decl(index.d.ts, 3, 24))
+
+export class D { m(x: typeof import("outer/node_modules/inner")) { return x; } }
+>D : Symbol(D, Decl(a.ts, 3, 27))
+>m : Symbol(D.m, Decl(a.ts, 4, 16))
+>x : Symbol(x, Decl(a.ts, 4, 19))
+>x : Symbol(x, Decl(a.ts, 4, 19))
+
+=== node_modules/outer/index.d.ts ===
+import * as inner from "inner";
+>inner : Symbol(inner, Decl(index.d.ts, 0, 6))
+
+export declare function viaImportType(): typeof import("inner");
+>viaImportType : Symbol(viaImportType, Decl(index.d.ts, 0, 31))
+
+export declare function viaNamespace(): typeof inner;
+>viaNamespace : Symbol(viaNamespace, Decl(index.d.ts, 1, 64))
+>inner : Symbol(inner, Decl(index.d.ts, 0, 6))
+
+export declare class K { m(x: import("inner").Inner): typeof import("inner"); }
+>K : Symbol(K, Decl(index.d.ts, 2, 53))
+>m : Symbol(K.m, Decl(index.d.ts, 3, 24))
+>x : Symbol(x, Decl(index.d.ts, 3, 27))
+>Inner : Symbol(inner.Inner, Decl(index.d.ts, 0, 0))
+
+=== node_modules/outer/node_modules/inner/index.d.ts ===
+export interface Inner { a: number }
+>Inner : Symbol(Inner, Decl(index.d.ts, 0, 0))
+>a : Symbol(Inner.a, Decl(index.d.ts, 0, 24))
+
+export declare const value: number;
+>value : Symbol(value, Decl(index.d.ts, 1, 20))
+

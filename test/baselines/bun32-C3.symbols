@@ -1,0 +1,17 @@
+//// [test/cases/bun32-C3.ts] ////
+
+=== a.ts ===
+function f(o: { k: "a"; a: 1 } | { k: "b" } | undefined) { if ((o!).k === "a") o!.a; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>o : Symbol(o, Decl(a.ts, 0, 11))
+>k : Symbol(k, Decl(a.ts, 0, 15))
+>a : Symbol(a, Decl(a.ts, 0, 23))
+>k : Symbol(k, Decl(a.ts, 0, 34))
+>(o!).k : Symbol(k, Decl(a.ts, 0, 15), Decl(a.ts, 0, 34))
+>o : Symbol(o, Decl(a.ts, 0, 11))
+>k : Symbol(k, Decl(a.ts, 0, 15), Decl(a.ts, 0, 34))
+>o : Symbol(o, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

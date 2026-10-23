@@ -1,0 +1,227 @@
+//// [test/cases/bun83-R03c.ts] ////
+
+=== new_inter.ts ===
+let x: 1 & n\u0065w () => Z;
+>x : Symbol(x, Decl(new_inter.ts, 0, 3))
+>Z : Symbol(Z)
+
+=== new_keyof.ts ===
+let x: keyof n\u0065w () => Z;
+>x : Symbol(x, Decl(new_keyof.ts, 0, 3))
+>n\u0065w : Symbol(new)
+
+=== new_ro.ts ===
+let x: readonly n\u0065w () => Z[];
+>x : Symbol(x, Decl(new_ro.ts, 0, 3))
+>n\u0065w : Symbol(new)
+
+=== new_union.ts ===
+let x: 1 | n\u0065w () => Z;
+>x : Symbol(x, Decl(new_union.ts, 0, 3))
+>Z : Symbol(Z)
+
+=== new_union0.ts ===
+let x: | n\u0065w () => Z;
+>x : Symbol(x, Decl(new_union0.ts, 0, 3))
+>Z : Symbol(Z)
+
+=== null_call.ts ===
+
+f<n\u0075ll>();
+=== null_call2.ts ===
+
+f<1, n\u0075ll>();
+=== null_exts.ts ===
+class C extends A<n\u0075ll> {}
+>C : Symbol(C, Decl(null_exts.ts, 0, 0))
+
+=== null_idx.ts ===
+type X = Y[n\u0075ll];
+>X : Symbol(X, Decl(null_idx.ts, 0, 0))
+>Y : Symbol(Y)
+
+=== null_iext.ts ===
+interface I extends A<n\u0075ll> {}
+>I : Symbol(I, Decl(null_iext.ts, 0, 0), Decl(this_iext.ts, 0, 0), Decl(typeof_iext.ts, 0, 0), Decl(void_iext.ts, 0, 0))
+
+=== null_impl.ts ===
+class C implements A<n\u0075ll> {}
+>C : Symbol(C, Decl(null_impl.ts, 0, 0))
+
+=== null_jsx.ts ===
+x = y as A<[n\u0075ll]>;
+>x : Symbol(x, Decl(new_inter.ts, 0, 3))
+>A : Symbol(A)
+
+=== null_targ.ts ===
+let x: A<n\u0075ll>;
+>x : Symbol(x, Decl(null_targ.ts, 0, 3))
+>A : Symbol(A)
+
+=== null_targ2.ts ===
+let x: A<1, n\u0075ll>;
+>x : Symbol(x, Decl(null_targ2.ts, 0, 3))
+>A : Symbol(A)
+
+=== null_tru.ts ===
+type X = 1 extends 1 ? n\u0075ll : 3;
+>X : Symbol(X, Decl(null_tru.ts, 0, 0))
+
+=== null_tuple.ts ===
+let x: [n\u0075ll];
+>x : Symbol(x, Decl(null_tuple.ts, 0, 3))
+
+=== null_tuple2.ts ===
+let x: [1, n\u0075ll];
+>x : Symbol(x, Decl(null_tuple2.ts, 0, 3))
+
+=== this_call.ts ===
+
+f<t\u0068is>();
+=== this_call2.ts ===
+
+f<1, t\u0068is>();
+=== this_exts.ts ===
+class C extends A<t\u0068is> {}
+>C : Symbol(C, Decl(this_exts.ts, 0, 0))
+
+=== this_idx.ts ===
+type X = Y[t\u0068is];
+>X : Symbol(X, Decl(this_idx.ts, 0, 0))
+>Y : Symbol(Y)
+
+=== this_iext.ts ===
+interface I extends A<t\u0068is> {}
+>I : Symbol(I, Decl(null_iext.ts, 0, 0), Decl(this_iext.ts, 0, 0), Decl(typeof_iext.ts, 0, 0), Decl(void_iext.ts, 0, 0))
+
+=== this_impl.ts ===
+class C implements A<t\u0068is> {}
+>C : Symbol(C, Decl(this_impl.ts, 0, 0))
+
+=== this_jsx.ts ===
+x = y as A<[t\u0068is]>;
+>x : Symbol(x, Decl(new_inter.ts, 0, 3))
+>A : Symbol(A)
+
+=== this_targ.ts ===
+let x: A<t\u0068is>;
+>x : Symbol(x, Decl(this_targ.ts, 0, 3))
+>A : Symbol(A)
+
+=== this_targ2.ts ===
+let x: A<1, t\u0068is>;
+>x : Symbol(x, Decl(this_targ2.ts, 0, 3))
+>A : Symbol(A)
+
+=== this_tru.ts ===
+type X = 1 extends 1 ? t\u0068is : 3;
+>X : Symbol(X, Decl(this_tru.ts, 0, 0))
+
+=== this_tuple.ts ===
+let x: [t\u0068is];
+>x : Symbol(x, Decl(this_tuple.ts, 0, 3))
+
+=== this_tuple2.ts ===
+let x: [1, t\u0068is];
+>x : Symbol(x, Decl(this_tuple2.ts, 0, 3))
+
+=== typeof_call.ts ===
+
+f<t\u0079peof y>();
+=== typeof_call2.ts ===
+
+f<1, t\u0079peof y>();
+=== typeof_exts.ts ===
+class C extends A<t\u0079peof y> {}
+>C : Symbol(C, Decl(typeof_exts.ts, 0, 0))
+
+=== typeof_idx.ts ===
+type X = Y[t\u0079peof y];
+>X : Symbol(X, Decl(typeof_idx.ts, 0, 0))
+>Y : Symbol(Y)
+
+=== typeof_iext.ts ===
+interface I extends A<t\u0079peof y> {}
+>I : Symbol(I, Decl(null_iext.ts, 0, 0), Decl(this_iext.ts, 0, 0), Decl(typeof_iext.ts, 0, 0), Decl(void_iext.ts, 0, 0))
+
+=== typeof_impl.ts ===
+class C implements A<t\u0079peof y> {}
+>C : Symbol(C, Decl(typeof_impl.ts, 0, 0))
+
+=== typeof_jsx.ts ===
+x = y as A<[t\u0079peof y]>;
+>x : Symbol(x, Decl(new_inter.ts, 0, 3))
+>A : Symbol(A)
+
+=== typeof_targ.ts ===
+let x: A<t\u0079peof y>;
+>x : Symbol(x, Decl(typeof_targ.ts, 0, 3))
+>A : Symbol(A)
+
+=== typeof_targ2.ts ===
+let x: A<1, t\u0079peof y>;
+>x : Symbol(x, Decl(typeof_targ2.ts, 0, 3))
+>A : Symbol(A)
+
+=== typeof_tru.ts ===
+type X = 1 extends 1 ? t\u0079peof y : 3;
+>X : Symbol(X, Decl(typeof_tru.ts, 0, 0))
+
+=== typeof_tuple.ts ===
+let x: [t\u0079peof y];
+>x : Symbol(x, Decl(typeof_tuple.ts, 0, 3))
+
+=== typeof_tuple2.ts ===
+let x: [1, t\u0079peof y];
+>x : Symbol(x, Decl(typeof_tuple2.ts, 0, 3))
+
+=== void_call.ts ===
+
+f<v\u006fid>();
+=== void_call2.ts ===
+
+f<1, v\u006fid>();
+=== void_exts.ts ===
+class C extends A<v\u006fid> {}
+>C : Symbol(C, Decl(void_exts.ts, 0, 0))
+
+=== void_idx.ts ===
+type X = Y[v\u006fid];
+>X : Symbol(X, Decl(void_idx.ts, 0, 0))
+>Y : Symbol(Y)
+
+=== void_iext.ts ===
+interface I extends A<v\u006fid> {}
+>I : Symbol(I, Decl(null_iext.ts, 0, 0), Decl(this_iext.ts, 0, 0), Decl(typeof_iext.ts, 0, 0), Decl(void_iext.ts, 0, 0))
+
+=== void_impl.ts ===
+class C implements A<v\u006fid> {}
+>C : Symbol(C, Decl(void_impl.ts, 0, 0))
+
+=== void_jsx.ts ===
+x = y as A<[v\u006fid]>;
+>x : Symbol(x, Decl(new_inter.ts, 0, 3))
+>A : Symbol(A)
+
+=== void_targ.ts ===
+let x: A<v\u006fid>;
+>x : Symbol(x, Decl(void_targ.ts, 0, 3))
+>A : Symbol(A)
+
+=== void_targ2.ts ===
+let x: A<1, v\u006fid>;
+>x : Symbol(x, Decl(void_targ2.ts, 0, 3))
+>A : Symbol(A)
+
+=== void_tru.ts ===
+type X = 1 extends 1 ? v\u006fid : 3;
+>X : Symbol(X, Decl(void_tru.ts, 0, 0))
+
+=== void_tuple.ts ===
+let x: [v\u006fid];
+>x : Symbol(x, Decl(void_tuple.ts, 0, 3))
+
+=== void_tuple2.ts ===
+let x: [1, v\u006fid];
+>x : Symbol(x, Decl(void_tuple2.ts, 0, 3))
+

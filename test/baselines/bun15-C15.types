@@ -1,0 +1,17 @@
+//// [test/cases/bun15-C15.ts] ////
+
+=== a.ts ===
+const f1: (a: number, b: string, c: boolean) => void = (x, ...y, z) => {};
+>f1 : (a: number, b: string, c: boolean) => void
+>a : number
+>b : string
+>c : boolean
+>(x, ...y, z) => {} : (x: number, ...y: string, z: boolean) => void
+>x : number
+>y : string
+>z : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,17 @@
+//// [test/cases/bun33-C11a.ts] ////
+
+=== a.ts ===
+const v = 1;
+>v : 1
+>1 : 1
+
+namespace N { export { v as o }; o; }
+>N : typeof N
+>v : 1
+>o : 1
+>o : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

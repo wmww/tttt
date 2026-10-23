@@ -1,0 +1,59 @@
+a.ts(7,46): error TS2322: Type 'AB & E' is not assignable to type 'BA'.
+  Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+a.ts(8,48): error TS2322: Type 'AB & E' is not assignable to type 'BA'.
+  Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+a.ts(9,54): error TS2322: Type 'Pair<1, 2> & E' is not assignable to type 'Pair<2, 1>'.
+  Type '1' is not assignable to type '2'.
+a.ts(11,28): error TS2322: Type 'AB' is not assignable to type 'BA'.
+  Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+a.ts(12,35): error TS2322: Type 'AB & E' is not assignable to type 'BA'.
+  Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+a.ts(14,33): error TS2322: Type 'AB' is not assignable to type 'BA'.
+  Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+a.ts(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    interface Store<S, T> { getState(): S & T }
+    interface Pair<A, B> { either: A | B }
+    type AB = Store<{ a: 1 }, { b: 2 }>
+    type BA = Store<{ b: 2 }, { a: 1 }>
+    
+    // two references to one generic type are related by variances, not by their members
+    function r1<E extends {}>(s: AB & E) { const t: BA = s }
+                                                 ~
+!!! error TS2322: Type 'AB & E' is not assignable to type 'BA'.
+!!! error TS2322:   Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+!!! related TS2728 a.ts:4:19: 'b' is declared here.
+    function r2<E extends object>(s: AB & E): BA { return s }
+                                                   ~~~~~~
+!!! error TS2322: Type 'AB & E' is not assignable to type 'BA'.
+!!! error TS2322:   Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+!!! related TS2728 a.ts:4:19: 'b' is declared here.
+    function r3<E extends {}>(s: Pair<1, 2> & E) { const t: Pair<2, 1> = s }
+                                                         ~
+!!! error TS2322: Type 'Pair<1, 2> & E' is not assignable to type 'Pair<2, 1>'.
+!!! error TS2322:   Type '1' is not assignable to type '2'.
+    // both tools agree on these
+    function r4(s: AB) { const t: BA = s }
+                               ~
+!!! error TS2322: Type 'AB' is not assignable to type 'BA'.
+!!! error TS2322:   Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+!!! related TS2728 a.ts:4:19: 'b' is declared here.
+    function r5<E>(s: AB & E) { const t: BA = s }
+                                      ~
+!!! error TS2322: Type 'AB & E' is not assignable to type 'BA'.
+!!! error TS2322:   Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+!!! related TS2728 a.ts:4:19: 'b' is declared here.
+    function r6<E extends { c: 3 }>(s: AB & E) { const t: BA = s }
+    function r7(s: AB & {}) { const t: BA = s }
+                                    ~
+!!! error TS2322: Type 'AB' is not assignable to type 'BA'.
+!!! error TS2322:   Property 'b' is missing in type '{ a: 1; }' but required in type '{ b: 2; }'.
+!!! related TS2728 a.ts:4:19: 'b' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

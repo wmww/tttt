@@ -1,0 +1,14 @@
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    type NTuple<T, N extends number, R extends unknown[] = []> = R["length"] extends N ? R : NTuple<T, N, [...R, T]>;
+    class Base<T extends readonly never[]> { x!: T }
+    class Derived<N extends number> extends Base<[never, ...NTuple<never, N>]> {}
+    function f<N extends number>() { return class extends Base<[never, never, ...NTuple<never, N>]> {}; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

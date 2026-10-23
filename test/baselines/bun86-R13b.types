@@ -1,0 +1,18 @@
+//// [test/cases/bun86-R13b.ts] ////
+
+=== a.ts ===
+Foob;
+>Foob : any
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== u.d.ts ===
+export as namespace Foob;
+>Foob : any
+
+export = nothing;
+>nothing : any
+

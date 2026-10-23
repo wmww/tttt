@@ -1,0 +1,30 @@
+a.ts(6,32): error TS2794: Expected 1 arguments, but got 0. Did you forget to include 'void' in your type argument to 'Promise'?
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (2 errors) ====
+    import { assertIsString, fail, Promise, Obj } from "./real";
+    function t1(x: unknown) { assertIsString(x); x.length; }
+    function t2(x: string | undefined) { if (!x) fail(); x.length; }
+    function t3(): number { fail(); }
+    function t4(x: unknown) { Obj.assert(x); x.length; }
+    new Promise<number>(resolve => resolve());
+                                   ~~~~~~~
+!!! error TS2794: Expected 1 arguments, but got 0. Did you forget to include 'void' in your type argument to 'Promise'?
+!!! related TS6210 lib.es2015.promise.d.ts:--:--: An argument for 'value' was not provided.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== globals.d.ts (0 errors) ====
+    declare function assertIsString(x: unknown): asserts x is string;
+    declare function fail(): never;
+    declare const Obj: { assert(x: unknown): asserts x is string };
+==== real.ts (0 errors) ====
+    namespace g2 {
+      export interface assertIsString { t: 1 } export interface fail { t: 1 } export interface Promise { t: 1 } export interface Obj { t: 1 }
+    }
+    const g2 = { v: 1 };
+    export = g2;
+    

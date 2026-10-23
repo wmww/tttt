@@ -1,0 +1,16 @@
+error TS5065: File specification cannot contain a parent directory ('..') that appears after a recursive directory wildcard ('**'): 'sub/**/../x'.
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS5065: File specification cannot contain a parent directory ('..') that appears after a recursive directory wildcard ('**'): 'sub/**/../x'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] }, "extends": "./sub/b.json" }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub/b.json (0 errors) ====
+    { "include": ["**\\..\\x", "../a.ts"] }
+==== sub/x/x.ts (0 errors) ====
+    const x: number = "";
+    

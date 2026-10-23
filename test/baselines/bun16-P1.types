@@ -1,0 +1,60 @@
+//// [test/cases/bun16-P1.ts] ////
+
+=== a.ts ===
+declare function n(x: never): void;
+>n : (x: never) => void
+>x : never
+
+declare function p7<T>(mk: () => ((x: T) => string)[], other: (y: T) => void, v: T): T;
+>p7 : <T>(mk: () => ((x: T) => string)[], other: (y: T) => void, v: T) => T
+>mk : () => ((x: T) => string)[]
+>x : T
+>other : (y: T) => void
+>y : T
+>v : T
+
+const r1 = p7(() => [...[x => 1]], y => {}, 1); n(r1);
+>r1 : 1
+>p7(() => [...[x => 1]], y => {}, 1) : 1
+>p7 : <T>(mk: () => ((x: T) => string)[], other: (y: T) => void, v: T) => T
+>() => [...[x => 1]] : () => ((x: any) => number)[]
+>[...[x => 1]] : ((x: any) => number)[]
+>...[x => 1] : (x: any) => number
+>[x => 1] : ((x: any) => number)[]
+>x => 1 : (x: any) => number
+>x : any
+>1 : 1
+>y => {} : (y: 1) => void
+>y : 1
+>1 : 1
+>n(r1) : void
+>n : (x: never) => void
+>r1 : 1
+
+declare function p8<T>(mk: () => T, other: (y: T) => void): T;
+>p8 : <T>(mk: () => T, other: (y: T) => void) => T
+>mk : () => T
+>other : (y: T) => void
+>y : T
+
+const r2 = p8(() => [...[x => 1]], y => {}); n(r2);
+>r2 : ((x: any) => number)[]
+>p8(() => [...[x => 1]], y => {}) : ((x: any) => number)[]
+>p8 : <T>(mk: () => T, other: (y: T) => void) => T
+>() => [...[x => 1]] : () => ((x: any) => number)[]
+>[...[x => 1]] : ((x: any) => number)[]
+>...[x => 1] : (x: any) => number
+>[x => 1] : ((x: any) => number)[]
+>x => 1 : (x: any) => number
+>x : any
+>1 : 1
+>y => {} : (y: ((x: any) => number)[]) => void
+>y : ((x: any) => number)[]
+>n(r2) : void
+>n : (x: never) => void
+>r2 : ((x: any) => number)[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun06-C12a.ts] ////
+
+=== a.ts ===
+function e1<T extends Missing>(t: T) { const n: never = t.foo; }
+>e1 : <T extends Missing>(t: T) => void
+>t : T
+>n : never
+>t.foo : any
+>t : T
+>foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

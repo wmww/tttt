@@ -1,0 +1,16 @@
+//// [test/cases/bun10-C10.ts] ////
+
+=== a.ts ===
+const p7 = { set x([a]) {} };
+>p7 : Symbol(p7, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+
+p7.x = 1;
+>p7.x : Symbol(x, Decl(a.ts, 0, 12))
+>p7 : Symbol(p7, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

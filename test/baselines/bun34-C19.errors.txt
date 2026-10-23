@@ -1,0 +1,17 @@
+a.ts(1,10): error TS2300: Duplicate identifier '["a"]'.
+a.ts(1,17): error TS2300: Duplicate identifier 'a'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    enum E { ["a"], a }
+             ~~~~~
+!!! error TS2300: Duplicate identifier '["a"]'.
+                    ~
+!!! error TS2300: Duplicate identifier 'a'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

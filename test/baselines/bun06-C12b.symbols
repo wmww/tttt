@@ -1,0 +1,16 @@
+//// [test/cases/bun06-C12b.ts] ////
+
+=== a.ts ===
+class PA { #p = 1; static m<T extends Missing3>(t: T) { t.#p; } }
+>PA : Symbol(PA, Decl(a.ts, 0, 0))
+>#p : Symbol(PA.#p, Decl(a.ts, 0, 10))
+>m : Symbol(PA.m, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 0, 28))
+>Missing3 : Symbol(Missing3)
+>t : Symbol(t, Decl(a.ts, 0, 48))
+>T : Symbol(T, Decl(a.ts, 0, 28))
+>t : Symbol(t, Decl(a.ts, 0, 48))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,31 @@
+//// [test/cases/bun39-C19b.ts] ////
+
+=== a.ts ===
+import { Base as B1 } from './m1';
+>Base : any
+>B1 : any
+
+import { Base as B2 } from './m2';
+>Base : any
+>B2 : any
+
+class C implements B1, B2 { x = { y: "" } }
+>C : C
+>x : { y: string; }
+>{ y: "" } : { y: string; }
+>y : string
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+export interface Base { x: number }
+>x : number
+
+=== m2.ts ===
+export interface Base { x: { y: number } }
+>x : { y: number; }
+>y : number
+

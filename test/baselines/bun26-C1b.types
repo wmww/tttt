@@ -1,0 +1,17 @@
+//// [test/cases/bun26-C1b.ts] ////
+
+=== a.ts ===
+type M<T, U> = { [K in keyof T]: M<U, { z: 1 }> };
+>M : M<T, U>
+>z : 1
+
+const x1: keyof M<{ a: 1 }, { b: 2 }>["a"] = "b";
+>x1 : "z"
+>a : 1
+>b : 2
+>"b" : "b"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,44 @@
+a.js(6,3): error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(8,10): error TS7023: 'mk' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(14,3): error TS2502: 'y' is referenced directly or indirectly in its own type annotation.
+a.js(16,10): error TS7023: 'mk2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+b.ts(1,1): error TS2347: Untyped function calls may not accept type arguments.
+b.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true }, "files": ["a.js", "b.ts"] }
+==== a.js (4 errors) ====
+    class C {
+      constructor() {
+        /** @type {ReturnType<typeof mk>} */
+        this.x = 1;
+      }
+      x = mk();
+      ~
+!!! error TS7022: 'x' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    }
+    function mk() { return new C().x; }
+             ~~
+!!! error TS7023: 'mk' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    class D {
+      constructor() {
+        this.y = mk2();
+      }
+      /** @type {ReturnType<typeof mk2>} */
+      y;
+      ~
+!!! error TS2502: 'y' is referenced directly or indirectly in its own type annotation.
+    }
+    function mk2() { return new D().y; }
+             ~~~
+!!! error TS7023: 'mk2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+==== b.ts (2 errors) ====
+    new C().x<number>();
+    ~~~~~~~~~~~~~~~~~~~
+!!! error TS2347: Untyped function calls may not accept type arguments.
+    new D().y<number>();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

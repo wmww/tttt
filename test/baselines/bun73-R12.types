@@ -1,0 +1,152 @@
+//// [test/cases/bun73-R12.ts] ////
+
+=== a.ts ===
+declare function t0<T>(): T;
+>t0 : <T>() => T
+
+declare function box<T>(): { v: T };
+>box : <T>() => { v: T; }
+>v : T
+
+declare function prom<T>(): Promise<T>;
+>prom : <T>() => Promise<T>
+
+declare function dflt<T = { a: number }>(): T;
+>dflt : <T = { a: number; }>() => T
+>a : number
+
+let n: number, u: unknown;
+>n : number
+>u : unknown
+
+declare let d: number | undefined;
+>d : number | undefined
+
+declare const o: { p: number };
+>o : { p: number; }
+>p : number
+
+({ a: n } = t0());
+>({ a: n } = t0()) : unknown
+>{ a: n } = t0() : unknown
+>{ a: n } : { a: number; }
+>a : number
+>n : number
+>t0() : unknown
+>t0 : <T>() => T
+
+({ n } = t0());
+>({ n } = t0()) : unknown
+>{ n } = t0() : unknown
+>{ n } : { n: number; }
+>n : number
+>t0() : unknown
+>t0 : <T>() => T
+
+({ a: u } = t0());
+>({ a: u } = t0()) : unknown
+>{ a: u } = t0() : unknown
+>{ a: u } : { a: unknown; }
+>a : unknown
+>u : unknown
+>t0() : unknown
+>t0 : <T>() => T
+
+({ a: n = 1 } = t0());
+>({ a: n = 1 } = t0()) : unknown
+>{ a: n = 1 } = t0() : unknown
+>{ a: n = 1 } : { a?: number; }
+>a : number
+>n = 1 : 1
+>n : number
+>1 : 1
+>t0() : unknown
+>t0 : <T>() => T
+
+({ a: { b: n } } = t0());
+>({ a: { b: n } } = t0()) : unknown
+>{ a: { b: n } } = t0() : unknown
+>{ a: { b: n } } : { a: { b: number; }; }
+>a : { b: number; }
+>{ b: n } : { b: number; }
+>b : number
+>n : number
+>t0() : unknown
+>t0 : <T>() => T
+
+({ v: n } = box());
+>({ v: n } = box()) : { v: unknown; }
+>{ v: n } = box() : { v: unknown; }
+>{ v: n } : { v: number; }
+>v : number
+>n : number
+>box() : { v: unknown; }
+>box : <T>() => { v: T; }
+
+({ v: { w: n } } = box());
+>({ v: { w: n } } = box()) : { v: unknown; }
+>{ v: { w: n } } = box() : { v: unknown; }
+>{ v: { w: n } } : { v: { w: number; }; }
+>v : { w: number; }
+>{ w: n } : { w: number; }
+>w : number
+>n : number
+>box() : { v: unknown; }
+>box : <T>() => { v: T; }
+
+async function f() { ({ a: n } = await prom()); }
+>f : () => Promise<void>
+>({ a: n } = await prom()) : unknown
+>{ a: n } = await prom() : unknown
+>{ a: n } : { a: number; }
+>a : number
+>n : number
+>await prom() : unknown
+>prom() : Promise<unknown>
+>prom : <T>() => Promise<T>
+
+// no error in either: an array literal is a tuple (one identity), a default for every type parameter skips the test,
+// and a left side that needs flow analysis is cached by getTypeOfExpression
+[n] = t0();
+>[n] = t0() : [number]
+>[n] : [number]
+>n : number
+>t0() : [number]
+>t0 : <T>() => T
+
+({ a: n } = dflt());
+>({ a: n } = dflt()) : { a: number; }
+>{ a: n } = dflt() : { a: number; }
+>{ a: n } : { a: number; }
+>a : number
+>n : number
+>dflt() : { a: number; }
+>dflt : <T = { a: number; }>() => T
+
+({ a: o.p } = t0());
+>({ a: o.p } = t0()) : { a: number; }
+>{ a: o.p } = t0() : { a: number; }
+>{ a: o.p } : { a: number; }
+>a : number
+>o.p : number
+>o : { p: number; }
+>p : number
+>t0() : { a: number; }
+>t0 : <T>() => T
+
+({ a: n = d! } = t0());
+>({ a: n = d! } = t0()) : { a?: number; }
+>{ a: n = d! } = t0() : { a?: number; }
+>{ a: n = d! } : { a?: number; }
+>a : number
+>n = d! : number
+>n : number
+>d! : number
+>d : number | undefined
+>t0() : { a?: number; }
+>t0 : <T>() => T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

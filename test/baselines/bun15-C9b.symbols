@@ -1,0 +1,21 @@
+//// [test/cases/bun15-C9b.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+declare function f1d<const A extends readonly unknown[]>(...args: A): A;
+>f1d : Symbol(f1d, Decl(a.ts, 0, 28))
+>A : Symbol(A, Decl(a.ts, 1, 21))
+>args : Symbol(args, Decl(a.ts, 1, 57))
+>A : Symbol(A, Decl(a.ts, 1, 21))
+>A : Symbol(A, Decl(a.ts, 1, 21))
+
+const r1d: never = f1d(...(cond ? [1] : ["a", true]));
+>r1d : Symbol(r1d, Decl(a.ts, 2, 5))
+>f1d : Symbol(f1d, Decl(a.ts, 0, 28))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

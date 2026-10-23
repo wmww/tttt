@@ -1,0 +1,23 @@
+//// [test/cases/bun03-SC3.ts] ////
+
+=== a.ts ===
+const x = 1; type T = 1;
+>x : Symbol(x, Decl(a.ts, 0, 5))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+export = x;
+>x : Symbol(x, Decl(a.ts, 0, 5))
+
+export { T as Y };
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>Y : Symbol(Y, Decl(a.ts, 2, 8), Decl(a.ts, 3, 12))
+
+export const Y = 1;
+>Y : Symbol(Y, Decl(a.ts, 2, 8), Decl(a.ts, 3, 12))
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(z.ts, 0, 5))
+
+export {};
+

@@ -1,0 +1,24 @@
+//// [test/cases/bun34-C4b.ts] ////
+
+=== a.ts ===
+import type { X } from "./m";
+>X : Symbol(X, Decl(a.ts, 0, 13))
+
+function n1(a = X.y): void; function n1(a: any) {} n1();
+>n1 : Symbol(n1, Decl(a.ts, 0, 29), Decl(a.ts, 1, 27))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>X.y : Symbol(X.y, Decl(m.ts, 0, 16))
+>X : Symbol(X, Decl(a.ts, 0, 13))
+>y : Symbol(X.y, Decl(m.ts, 0, 16))
+>n1 : Symbol(n1, Decl(a.ts, 0, 29), Decl(a.ts, 1, 27))
+>a : Symbol(a, Decl(a.ts, 1, 40))
+>n1 : Symbol(n1, Decl(a.ts, 0, 29), Decl(a.ts, 1, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+export class X { static readonly y = "k"; }
+>X : Symbol(X, Decl(m.ts, 0, 0))
+>y : Symbol(X.y, Decl(m.ts, 0, 16))
+

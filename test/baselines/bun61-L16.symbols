@@ -1,0 +1,47 @@
+//// [test/cases/bun61-L16.ts] ////
+
+=== p001.ts ===
+interface I { \u0065xport z: 1 }
+>I : Symbol(I, Decl(p001.ts, 0, 0), Decl(p002.ts, 0, 0), Decl(p003.ts, 0, 0), Decl(p004.ts, 0, 0), Decl(p006.ts, 0, 0))
+>z : Symbol(I.z, Decl(p001.ts, 0, 13), Decl(p002.ts, 0, 13), Decl(p004.ts, 0, 13))
+
+=== p002.ts ===
+interface I { \u0069n z: 1 }
+>I : Symbol(I, Decl(p001.ts, 0, 0), Decl(p002.ts, 0, 0), Decl(p003.ts, 0, 0), Decl(p004.ts, 0, 0), Decl(p006.ts, 0, 0))
+>z : Symbol(I.z, Decl(p001.ts, 0, 13), Decl(p002.ts, 0, 13), Decl(p004.ts, 0, 13))
+
+=== p003.ts ===
+interface I { d\u0065fault class: 1 }
+>I : Symbol(I, Decl(p001.ts, 0, 0), Decl(p002.ts, 0, 0), Decl(p003.ts, 0, 0), Decl(p004.ts, 0, 0), Decl(p006.ts, 0, 0))
+>class : Symbol(I.default, Decl(p003.ts, 0, 13))
+
+=== p004.ts ===
+interface I { readonly \u0065xport z: 1 }
+>I : Symbol(I, Decl(p001.ts, 0, 0), Decl(p002.ts, 0, 0), Decl(p003.ts, 0, 0), Decl(p004.ts, 0, 0), Decl(p006.ts, 0, 0))
+>z : Symbol(I.z, Decl(p001.ts, 0, 13), Decl(p002.ts, 0, 13), Decl(p004.ts, 0, 13))
+
+=== p005.ts ===
+type T = { \u0065xport z: 1 }
+>T : Symbol(T, Decl(p005.ts, 0, 0))
+>z : Symbol(z, Decl(p005.ts, 0, 10))
+
+=== p006.ts ===
+interface I { \u0065xport [k: string]: 1 }
+>I : Symbol(I, Decl(p001.ts, 0, 0), Decl(p002.ts, 0, 0), Decl(p003.ts, 0, 0), Decl(p004.ts, 0, 0), Decl(p006.ts, 0, 0))
+>k : Symbol(k, Decl(p006.ts, 0, 27))
+
+=== p007.ts ===
+class C { \u0065xport z = 1 }
+>C : Symbol(C, Decl(p007.ts, 0, 0))
+>z : Symbol(C.z, Decl(p007.ts, 0, 9))
+
+=== p008.ts ===
+class C { \u0063onst z = 1 }
+>C : Symbol(C, Decl(p008.ts, 0, 0))
+>z : Symbol(C.z, Decl(p008.ts, 0, 9))
+
+=== p009.ts ===
+function f(\u0065xport z: number) {}
+>f : Symbol(f, Decl(p009.ts, 0, 0))
+>z : Symbol(z, Decl(p009.ts, 0, 11))
+

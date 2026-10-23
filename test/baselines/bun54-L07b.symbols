@@ -1,0 +1,25 @@
+//// [test/cases/bun54-L07b.ts] ////
+
+=== a.js ===
+/** Removes it, like {@link Map#delete}. See {@link Promise#catch} and {@link Map#get}. */
+export const q1 = 2;
+>q1 : Symbol(q1, Decl(a.js, 1, 12))
+
+/** {@link Map.} */
+export const q2 = 2;
+>q2 : Symbol(q2, Decl(a.js, 3, 12))
+
+/** {@link Map#} */
+export const q3 = 2;
+>q3 : Symbol(q3, Decl(a.js, 5, 12))
+
+/** @param {number} x {@linkcode Set#delete} {@linkplain Array#with} */
+export function q4(x) { return x; }
+>q4 : Symbol(q4, Decl(a.js, 5, 20))
+>x : Symbol(x, Decl(a.js, 7, 19))
+>x : Symbol(x, Decl(a.js, 7, 19))
+
+/** @type {number} */
+export const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 9, 12))
+

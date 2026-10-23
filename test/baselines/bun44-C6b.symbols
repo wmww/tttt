@@ -1,0 +1,68 @@
+//// [test/cases/bun44-C6b.ts] ////
+
+=== a.ts ===
+type Base = Readonly<{ id: string; x: number }>;
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>id : Symbol(id, Decl(a.ts, 0, 22))
+>x : Symbol(x, Decl(a.ts, 0, 34))
+
+type Rect = Base & { type: "rectangle" };
+>Rect : Symbol(Rect, Decl(a.ts, 0, 48))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>type : Symbol(type, Decl(a.ts, 1, 20))
+
+type Text = Base & Readonly<{ type: "text"; text: string }>;
+>Text : Symbol(Text, Decl(a.ts, 1, 41))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(a.ts, 2, 29))
+>text : Symbol(text, Decl(a.ts, 2, 43))
+
+type Linear = Base & Readonly<{ type: "line" | "arrow"; points: number[] }>;
+>Linear : Symbol(Linear, Decl(a.ts, 2, 60))
+>Base : Symbol(Base, Decl(a.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(a.ts, 3, 31))
+>points : Symbol(points, Decl(a.ts, 3, 55))
+
+type Arrow = Linear & Readonly<{ type: "arrow"; elbowed: boolean }>;
+>Arrow : Symbol(Arrow, Decl(a.ts, 3, 76))
+>Linear : Symbol(Linear, Decl(a.ts, 2, 60))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(a.ts, 4, 32))
+>elbowed : Symbol(elbowed, Decl(a.ts, 4, 47))
+
+type El = Rect | Text | Linear | Arrow;
+>El : Symbol(El, Decl(a.ts, 4, 68))
+>Rect : Symbol(Rect, Decl(a.ts, 0, 48))
+>Text : Symbol(Text, Decl(a.ts, 1, 41))
+>Linear : Symbol(Linear, Decl(a.ts, 2, 60))
+>Arrow : Symbol(Arrow, Decl(a.ts, 3, 76))
+
+declare const isArrow: <T extends El>(e?: T | null) => e is T & Arrow;
+>isArrow : Symbol(isArrow, Decl(a.ts, 6, 13))
+>T : Symbol(T, Decl(a.ts, 6, 24))
+>El : Symbol(El, Decl(a.ts, 4, 68))
+>e : Symbol(e, Decl(a.ts, 6, 38))
+>T : Symbol(T, Decl(a.ts, 6, 24))
+>e : Symbol(e, Decl(a.ts, 6, 38))
+>T : Symbol(T, Decl(a.ts, 6, 24))
+>Arrow : Symbol(Arrow, Decl(a.ts, 3, 76))
+
+function f(e: El) {
+>f : Symbol(f, Decl(a.ts, 6, 70))
+>e : Symbol(e, Decl(a.ts, 7, 11))
+>El : Symbol(El, Decl(a.ts, 4, 68))
+
+  if (isArrow(e)) {
+>isArrow : Symbol(isArrow, Decl(a.ts, 6, 13))
+>e : Symbol(e, Decl(a.ts, 7, 11))
+
+    e.elbowedX;
+>e : Symbol(e, Decl(a.ts, 7, 11))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

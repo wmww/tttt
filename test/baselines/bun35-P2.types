@@ -1,0 +1,26 @@
+//// [test/cases/bun35-P2.ts] ////
+
+=== sub/a.ts ===
+import { f } from "dep";
+>f : () => import("@/node_modules/dep/internal.js").T
+
+export const x = f();
+>x : import("@/node_modules/dep/internal").T
+>f() : import("@/node_modules/dep/internal").T
+>f : () => import("@/node_modules/dep/internal").T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/dep/index.d.ts ===
+import { T } from "./internal";
+>T : any
+
+export declare function f(): T;
+>f : () => T
+
+=== node_modules/dep/internal.d.ts ===
+export interface T { a: 1 }
+>a : 1
+

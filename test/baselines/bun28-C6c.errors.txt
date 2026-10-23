@@ -1,0 +1,21 @@
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.js(1,15): error TS2206: The 'type' modifier cannot be used on a named import when 'import type' is used on its import statement.
+b.js(3,7): error TS2322: Type '2' is not assignable to type '1'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "allowJs": true, "checkJs": true}}
+==== a.ts (1 errors) ====
+    export type A = 1;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.js (2 errors) ====
+    /** @import { type A } from "./a" */
+                  ~~~~
+!!! error TS2206: The 'type' modifier cannot be used on a named import when 'import type' is used on its import statement.
+    /** @type {A} */
+    const q = 2;
+          ~
+!!! error TS2322: Type '2' is not assignable to type '1'.
+    

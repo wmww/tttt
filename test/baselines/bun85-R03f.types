@@ -1,0 +1,64 @@
+//// [test/cases/bun85-R03f.ts] ////
+
+=== a.js ===
+var p = r;
+>p : any
+>r : any
+
+var r = [r, require("./b").y];
+>r : any
+>[r, require("./b").y] : any[]
+>r : any
+>require("./b").y : 1
+>require("./b") : typeof import("./b")
+>require : any
+>"./b" : "./b"
+>y : 1
+
+exports.k = 1;
+>exports.k = 1 : 1
+>exports.k : 1
+>exports : typeof import("./a")
+>k : 1
+>1 : 1
+
+/** @type {never} */ var tp = p;
+>tp : never
+>p : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== b.js ===
+exports.y = exports.z;
+>exports.y = exports.z : 1
+>exports.y : 1
+>exports : typeof import("./b")
+>y : 1
+>exports.z : 1
+>exports : typeof import("./b")
+>z : 1
+
+exports.z = 1;
+>exports.z = 1 : 1
+>exports.z : 1
+>exports : typeof import("./b")
+>z : 1
+>1 : 1
+
+var p = r;
+>p : any
+>r : any
+
+var r = [r, exports];
+>r : any
+>[r, exports] : any[]
+>r : any
+>exports : typeof import("./b")
+
+/** @type {never} */ var tp = p;
+>tp : never
+>p : any
+

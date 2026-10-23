@@ -1,0 +1,18 @@
+//// [test/cases/bun07-C15.ts] ////
+
+=== a.ts ===
+export {};
+const r4 = { a = [1] } as const; const r4n: null = r4;
+>r4 : { readonly a: readonly [1]; }
+>{ a = [1] } as const : { readonly a: readonly [1]; }
+>{ a = [1] } : { readonly a: readonly [1]; }
+>a : any
+>[1] : readonly [1]
+>1 : 1
+>r4n : null
+>r4 : { readonly a: readonly [1]; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

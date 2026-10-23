@@ -1,0 +1,11 @@
+//// [test/cases/bun11-C2c.ts] ////
+
+=== a.ts ===
+type B10<T = { [K in keyof B10]: 1 }> = { x: T };
+>B10 : B10<T>
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

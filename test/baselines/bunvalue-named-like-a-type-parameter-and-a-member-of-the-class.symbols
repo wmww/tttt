@@ -1,0 +1,224 @@
+//// [test/cases/bunvalue-named-like-a-type-parameter-and-a-member-of-the-class.ts] ////
+
+=== a.ts ===
+import { Decode, Plain } from "./b";
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>Plain : Symbol(Plain, Decl(a.ts, 0, 16))
+
+export class V1<Decode extends unknown = number> { public Decode(value: unknown): Decode { const r = Decode(1, 2, 3); return r as never; } }
+>V1 : Symbol(V1, Decl(a.ts, 0, 36))
+>Decode : Symbol(Decode, Decl(a.ts, 1, 16), Decl(a.ts, 1, 50))
+>Decode : Symbol(Decode, Decl(a.ts, 1, 16), Decl(a.ts, 1, 50))
+>value : Symbol(value, Decl(a.ts, 1, 65))
+>Decode : Symbol(Decode, Decl(a.ts, 1, 16), Decl(a.ts, 1, 50))
+>r : Symbol(r, Decl(a.ts, 1, 96))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>r : Symbol(r, Decl(a.ts, 1, 96))
+
+export class V2<T = number> { public Decode(value: unknown): T { const r = Decode(1, 2, 3); return r as never; } }
+>V2 : Symbol(V2, Decl(a.ts, 1, 140))
+>T : Symbol(T, Decl(a.ts, 2, 16))
+>Decode : Symbol(V2.Decode, Decl(a.ts, 2, 29))
+>value : Symbol(value, Decl(a.ts, 2, 44))
+>T : Symbol(T, Decl(a.ts, 2, 16))
+>r : Symbol(r, Decl(a.ts, 2, 70))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>r : Symbol(r, Decl(a.ts, 2, 70))
+
+export class V3<Decode = number> { public other(value: unknown): Decode { const r = Decode(1, 2, 3); return r as never; } }
+>V3 : Symbol(V3, Decl(a.ts, 2, 114))
+>Decode : Symbol(Decode, Decl(a.ts, 3, 16))
+>other : Symbol(V3.other, Decl(a.ts, 3, 34))
+>value : Symbol(value, Decl(a.ts, 3, 48))
+>Decode : Symbol(Decode, Decl(a.ts, 3, 16))
+>r : Symbol(r, Decl(a.ts, 3, 79))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>r : Symbol(r, Decl(a.ts, 3, 79))
+
+export class V4<Plain = number> { public Plain(value: unknown): Plain { const r = Plain(1, 2, 3); return r as never; } }
+>V4 : Symbol(V4, Decl(a.ts, 3, 123))
+>Plain : Symbol(Plain, Decl(a.ts, 4, 16), Decl(a.ts, 4, 33))
+>Plain : Symbol(Plain, Decl(a.ts, 4, 16), Decl(a.ts, 4, 33))
+>value : Symbol(value, Decl(a.ts, 4, 47))
+>Plain : Symbol(Plain, Decl(a.ts, 4, 16), Decl(a.ts, 4, 33))
+>r : Symbol(r, Decl(a.ts, 4, 77))
+>Plain : Symbol(Plain, Decl(a.ts, 0, 16))
+>r : Symbol(r, Decl(a.ts, 4, 77))
+
+export class V5<Decode = number> { hasCodec = true; Parse(v: unknown): Decode { return v as never; } public Decode(value: unknown): Decode { const result = this.hasCodec ? Decode(1, 2, 3) : this.Parse(value); return result as never; } }
+>V5 : Symbol(V5, Decl(a.ts, 4, 120))
+>Decode : Symbol(Decode, Decl(a.ts, 5, 16), Decl(a.ts, 5, 100))
+>hasCodec : Symbol(V5.hasCodec, Decl(a.ts, 5, 34))
+>Parse : Symbol(V5.Parse, Decl(a.ts, 5, 51))
+>v : Symbol(v, Decl(a.ts, 5, 58))
+>Decode : Symbol(Decode, Decl(a.ts, 5, 16), Decl(a.ts, 5, 100))
+>v : Symbol(v, Decl(a.ts, 5, 58))
+>Decode : Symbol(Decode, Decl(a.ts, 5, 16), Decl(a.ts, 5, 100))
+>value : Symbol(value, Decl(a.ts, 5, 115))
+>Decode : Symbol(Decode, Decl(a.ts, 5, 16), Decl(a.ts, 5, 100))
+>result : Symbol(result, Decl(a.ts, 5, 146))
+>this.hasCodec : Symbol(V5.hasCodec, Decl(a.ts, 5, 34))
+>this : Symbol(V5, Decl(a.ts, 4, 120))
+>hasCodec : Symbol(V5.hasCodec, Decl(a.ts, 5, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>this.Parse : Symbol(V5.Parse, Decl(a.ts, 5, 51))
+>this : Symbol(V5, Decl(a.ts, 4, 120))
+>Parse : Symbol(V5.Parse, Decl(a.ts, 5, 51))
+>value : Symbol(value, Decl(a.ts, 5, 115))
+>result : Symbol(result, Decl(a.ts, 5, 146))
+
+export function f6<Decode>(x: Decode) { return Decode(1, 2, 3); }
+>f6 : Symbol(f6, Decl(a.ts, 5, 236))
+>Decode : Symbol(Decode, Decl(a.ts, 6, 19))
+>x : Symbol(x, Decl(a.ts, 6, 27))
+>Decode : Symbol(Decode, Decl(a.ts, 6, 19))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 12))
+
+export class W1<Decode = number> { Decode(v: unknown): Decode { return v as never; } field = Decode(1, 2, 3); }
+>W1 : Symbol(W1, Decl(a.ts, 7, 35))
+>Decode : Symbol(Decode, Decl(a.ts, 8, 16), Decl(a.ts, 8, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 8, 16), Decl(a.ts, 8, 34))
+>v : Symbol(v, Decl(a.ts, 8, 42))
+>Decode : Symbol(Decode, Decl(a.ts, 8, 16), Decl(a.ts, 8, 34))
+>v : Symbol(v, Decl(a.ts, 8, 42))
+>field : Symbol(W1.field, Decl(a.ts, 8, 84))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+
+export class W2<Decode = number> { Decode(v: unknown): Decode { return v as never; } static s = Decode(1, 2, 3); }
+>W2 : Symbol(W2, Decl(a.ts, 8, 111))
+>Decode : Symbol(Decode, Decl(a.ts, 9, 16), Decl(a.ts, 9, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 9, 16), Decl(a.ts, 9, 34))
+>v : Symbol(v, Decl(a.ts, 9, 42))
+>Decode : Symbol(Decode, Decl(a.ts, 9, 16), Decl(a.ts, 9, 34))
+>v : Symbol(v, Decl(a.ts, 9, 42))
+>s : Symbol(W2.s, Decl(a.ts, 9, 84))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+
+export class W3<Decode = number> { Decode(v: unknown): Decode { const g = () => Decode(1, 2, 3); return g() as never; } }
+>W3 : Symbol(W3, Decl(a.ts, 9, 114))
+>Decode : Symbol(Decode, Decl(a.ts, 10, 16), Decl(a.ts, 10, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 10, 16), Decl(a.ts, 10, 34))
+>v : Symbol(v, Decl(a.ts, 10, 42))
+>Decode : Symbol(Decode, Decl(a.ts, 10, 16), Decl(a.ts, 10, 34))
+>g : Symbol(g, Decl(a.ts, 10, 69))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>g : Symbol(g, Decl(a.ts, 10, 69))
+
+export class W4<Decode = number> { Decode(v: unknown): Decode { type Q = typeof Decode; const q: Q = Decode; return q(1, 2, 3) as never; } }
+>W4 : Symbol(W4, Decl(a.ts, 10, 121))
+>Decode : Symbol(Decode, Decl(a.ts, 11, 16), Decl(a.ts, 11, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 11, 16), Decl(a.ts, 11, 34))
+>v : Symbol(v, Decl(a.ts, 11, 42))
+>Decode : Symbol(Decode, Decl(a.ts, 11, 16), Decl(a.ts, 11, 34))
+>Q : Symbol(Q, Decl(a.ts, 11, 63))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>q : Symbol(q, Decl(a.ts, 11, 93))
+>Q : Symbol(Q, Decl(a.ts, 11, 63))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>q : Symbol(q, Decl(a.ts, 11, 93))
+
+export class W5<Decode = number> { Decode = 1; m(): Decode { return Decode(1, 2, 3) as never; } }
+>W5 : Symbol(W5, Decl(a.ts, 11, 140))
+>Decode : Symbol(Decode, Decl(a.ts, 12, 16), Decl(a.ts, 12, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 12, 16), Decl(a.ts, 12, 34))
+>m : Symbol(W5.m, Decl(a.ts, 12, 46))
+>Decode : Symbol(Decode, Decl(a.ts, 12, 16), Decl(a.ts, 12, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+
+export class W6<Decode = number> { get Decode(): Decode { return Decode(1, 2, 3) as never; } }
+>W6 : Symbol(W6, Decl(a.ts, 12, 97))
+>Decode : Symbol(Decode, Decl(a.ts, 13, 16), Decl(a.ts, 13, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 13, 16), Decl(a.ts, 13, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 13, 16), Decl(a.ts, 13, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+
+export class W7<Decode = number> { Decode(v: unknown, d = Decode(1, 2, 3)): Decode { return d as never; } }
+>W7 : Symbol(W7, Decl(a.ts, 13, 94))
+>Decode : Symbol(Decode, Decl(a.ts, 14, 16), Decl(a.ts, 14, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 14, 16), Decl(a.ts, 14, 34))
+>v : Symbol(v, Decl(a.ts, 14, 42))
+>d : Symbol(d, Decl(a.ts, 14, 53))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>Decode : Symbol(Decode, Decl(a.ts, 14, 16), Decl(a.ts, 14, 34))
+>d : Symbol(d, Decl(a.ts, 14, 53))
+
+export class W8<Decode = number> { [Decode(1, 2)](): Decode { return 1 as never; } Decode(): void {} }
+>W8 : Symbol(W8, Decl(a.ts, 14, 107))
+>Decode : Symbol(Decode, Decl(a.ts, 15, 16), Decl(a.ts, 15, 82))
+>[Decode(1, 2)] : Symbol(W8[Decode(1, 2)], Decl(a.ts, 15, 34))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+>Decode : Symbol(Decode, Decl(a.ts, 15, 16), Decl(a.ts, 15, 82))
+>Decode : Symbol(Decode, Decl(a.ts, 15, 16), Decl(a.ts, 15, 82))
+
+export const W9 = class Named<Decode = number> { Decode(v: unknown): Decode { Named; return Decode(1, 2, 3) as never; } };
+>W9 : Symbol(W9, Decl(a.ts, 16, 12))
+>Named : Symbol(Named, Decl(a.ts, 16, 17))
+>Decode : Symbol(Decode, Decl(a.ts, 16, 30), Decl(a.ts, 16, 48))
+>Decode : Symbol(Decode, Decl(a.ts, 16, 30), Decl(a.ts, 16, 48))
+>v : Symbol(v, Decl(a.ts, 16, 56))
+>Decode : Symbol(Decode, Decl(a.ts, 16, 30), Decl(a.ts, 16, 48))
+>Named : Symbol(Named, Decl(a.ts, 16, 17))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+
+export interface I1<Decode = number> { Decode(v: unknown): Decode; q: typeof Decode; }
+>I1 : Symbol(I1, Decl(a.ts, 16, 122))
+>Decode : Symbol(Decode, Decl(a.ts, 17, 20), Decl(a.ts, 17, 38))
+>Decode : Symbol(Decode, Decl(a.ts, 17, 20), Decl(a.ts, 17, 38))
+>v : Symbol(v, Decl(a.ts, 17, 46))
+>Decode : Symbol(Decode, Decl(a.ts, 17, 20), Decl(a.ts, 17, 38))
+>q : Symbol(I1.q, Decl(a.ts, 17, 66))
+>Decode : Symbol(Decode, Decl(a.ts, 0, 8))
+
+export function g1<T>(T: number) { return T + 1; }
+>g1 : Symbol(g1, Decl(a.ts, 17, 86))
+>T : Symbol(T, Decl(a.ts, 18, 19), Decl(a.ts, 18, 22))
+>T : Symbol(T, Decl(a.ts, 18, 19), Decl(a.ts, 18, 22))
+>T : Symbol(T, Decl(a.ts, 18, 19), Decl(a.ts, 18, 22))
+
+export function g2<Decode>(Decode: (a: number) => number, x: Decode) { return Decode(1); }
+>g2 : Symbol(g2, Decl(a.ts, 18, 50))
+>Decode : Symbol(Decode, Decl(a.ts, 19, 19), Decl(a.ts, 19, 27))
+>Decode : Symbol(Decode, Decl(a.ts, 19, 19), Decl(a.ts, 19, 27))
+>a : Symbol(a, Decl(a.ts, 19, 36))
+>x : Symbol(x, Decl(a.ts, 19, 57))
+>Decode : Symbol(Decode, Decl(a.ts, 19, 19), Decl(a.ts, 19, 27))
+>Decode : Symbol(Decode, Decl(a.ts, 19, 19), Decl(a.ts, 19, 27))
+
+export class X1<Missing = number> { Missing(v: unknown): Missing { return Missing(1) as never; } }
+>X1 : Symbol(X1, Decl(a.ts, 19, 90))
+>Missing : Symbol(Missing, Decl(a.ts, 20, 16), Decl(a.ts, 20, 35))
+>Missing : Symbol(Missing, Decl(a.ts, 20, 16), Decl(a.ts, 20, 35))
+>v : Symbol(v, Decl(a.ts, 20, 44))
+>Missing : Symbol(Missing, Decl(a.ts, 20, 16), Decl(a.ts, 20, 35))
+
+=== b.ts ===
+export function Decode(a: number, b: number): number;
+>Decode : Symbol(Decode, Decl(b.ts, 0, 0), Decl(b.ts, 0, 53), Decl(b.ts, 1, 64))
+>a : Symbol(a, Decl(b.ts, 0, 23))
+>b : Symbol(b, Decl(b.ts, 0, 33))
+
+export function Decode(a: number, b: number, c: number): number;
+>Decode : Symbol(Decode, Decl(b.ts, 0, 0), Decl(b.ts, 0, 53), Decl(b.ts, 1, 64))
+>a : Symbol(a, Decl(b.ts, 1, 23))
+>b : Symbol(b, Decl(b.ts, 1, 33))
+>c : Symbol(c, Decl(b.ts, 1, 44))
+
+export function Decode(...args: number[]): number { return args.length; }
+>Decode : Symbol(Decode, Decl(b.ts, 0, 0), Decl(b.ts, 0, 53), Decl(b.ts, 1, 64))
+>args : Symbol(args, Decl(b.ts, 2, 23))
+>args.length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+>args : Symbol(args, Decl(b.ts, 2, 23))
+>length : Symbol(Array.length, Decl(lib.es5.d.ts, --, --))
+
+export function Plain(a: number, b: number, c: number): number { return a + b + c; }
+>Plain : Symbol(Plain, Decl(b.ts, 2, 73))
+>a : Symbol(a, Decl(b.ts, 3, 22))
+>b : Symbol(b, Decl(b.ts, 3, 32))
+>c : Symbol(c, Decl(b.ts, 3, 43))
+>a : Symbol(a, Decl(b.ts, 3, 22))
+>b : Symbol(b, Decl(b.ts, 3, 32))
+>c : Symbol(c, Decl(b.ts, 3, 43))
+

@@ -1,0 +1,35 @@
+//// [test/cases/bun01-C13.ts] ////
+
+=== a.ts ===
+export {};
+declare function foo<T>(): string;
+>foo : Symbol(foo, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+
+declare function base<T>(): new () => {};
+>base : Symbol(base, Decl(a.ts, 1, 34))
+>T : Symbol(T, Decl(a.ts, 2, 22))
+
+class C1<Item> { static m(x: Itm) {} }
+>C1 : Symbol(C1, Decl(a.ts, 2, 41))
+>Item : Symbol(Item, Decl(a.ts, 3, 9))
+>m : Symbol(C1.m, Decl(a.ts, 3, 16))
+>x : Symbol(x, Decl(a.ts, 3, 26))
+>Itm : Symbol(Itm)
+
+class C4<Item> { [foo<Itm>()]() {} }
+>C4 : Symbol(C4, Decl(a.ts, 3, 38))
+>Item : Symbol(Item, Decl(a.ts, 4, 9))
+>[foo<Itm>()] : Symbol(C4[foo<Itm>()], Decl(a.ts, 4, 16))
+>foo : Symbol(foo, Decl(a.ts, 0, 10))
+>Itm : Symbol(Itm)
+
+class C5<Item> extends base<Itm>() {}
+>C5 : Symbol(C5, Decl(a.ts, 4, 36))
+>Item : Symbol(Item, Decl(a.ts, 5, 9))
+>base : Symbol(base, Decl(a.ts, 1, 34))
+>Itm : Symbol(Itm)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

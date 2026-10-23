@@ -1,0 +1,29 @@
+//// [test/cases/bun22-C5d.ts] ////
+
+=== a.ts ===
+class K<T> { constructor(public x: T) {} }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>x : Symbol(K.x, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+function mk<X>() { return class D<T extends (a: X) => void> extends K<T> {} }
+>mk : Symbol(mk, Decl(a.ts, 0, 42))
+>X : Symbol(X, Decl(a.ts, 1, 12))
+>D : Symbol(D, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 34))
+>a : Symbol(a, Decl(a.ts, 1, 45))
+>X : Symbol(X, Decl(a.ts, 1, 12))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 34))
+
+new (mk<string>())(a => a.length);
+>mk : Symbol(mk, Decl(a.ts, 0, 42))
+>a : Symbol(a, Decl(a.ts, 2, 19))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 2, 19))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

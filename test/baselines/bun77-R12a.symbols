@@ -1,0 +1,29 @@
+//// [test/cases/bun77-R12a.ts] ////
+
+=== a.jsx ===
+/** @param {number} a @param {number} extra */
+function h1(a) { return <a:arguments />; }
+>h1 : Symbol(h1, Decl(a.jsx, 0, 0))
+>a : Symbol(a, Decl(a.jsx, 1, 12))
+
+/** @param {number} a @param {number} extra */
+function h4(a) { return <div a:arguments={1} />; }
+>h4 : Symbol(h4, Decl(a.jsx, 1, 42))
+>a : Symbol(a, Decl(a.jsx, 3, 12))
+>a:arguments : Symbol(a:arguments, Decl(a.jsx, 3, 28))
+
+/** @param {number} a @param {number} extra */
+function h7(a) { return <arguments:a />; }
+>h7 : Symbol(h7, Decl(a.jsx, 3, 50))
+>a : Symbol(a, Decl(a.jsx, 5, 12))
+
+/** @param {number} a @param {number} extra */
+function h3(a) { return <div arguments={1} />; }
+>h3 : Symbol(h3, Decl(a.jsx, 5, 42))
+>a : Symbol(a, Decl(a.jsx, 7, 12))
+>arguments : Symbol(arguments, Decl(a.jsx, 7, 28))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.jsx, 9, 5))
+

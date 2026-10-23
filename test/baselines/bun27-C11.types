@@ -1,0 +1,24 @@
+//// [test/cases/bun27-C11.ts] ////
+
+=== a.tsx ===
+declare namespace Other { type ET = "div"; }
+>ET : "div"
+
+declare namespace JSX { interface Element { e: 1 } export import ElementType = Other.ET; interface IntrinsicElements { div: {}; span: {} } }
+>JSX : typeof JSX
+>e : 1
+>ElementType : any
+>Other : any
+>ET : "div"
+>div : {}
+>span : {}
+
+const a = <span />;
+>a : JSX.Element
+><span /> : JSX.Element
+>span : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

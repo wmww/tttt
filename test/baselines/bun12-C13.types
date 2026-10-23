@@ -1,0 +1,26 @@
+//// [test/cases/bun12-C13.ts] ////
+
+=== a.ts ===
+interface I { self(): this; p: { a: 1 } }
+>self : () => this
+>p : { a: 1; }
+>a : 1
+
+interface I { q: 1 }
+>q : 1
+
+interface J extends I { j: 1 }
+>j : 1
+
+type U1 = I["p"] | J["p"];
+>U1 : U1
+
+const n: never = null! as U1;
+>n : never
+>null! as U1 : U1
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

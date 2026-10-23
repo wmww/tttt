@@ -1,0 +1,18 @@
+c.ts(1,14): error TS2339: Property 'extra' does not exist on type 'typeof import("a_umd")'.
+c.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a_umd.d.ts (0 errors) ====
+    export const v: number; export as namespace UX; export as namespace UC;
+==== b_glob.d.ts (0 errors) ====
+    declare namespace UX { const extra: number; } declare namespace UC { const other: number; }
+==== c.ts (2 errors) ====
+    UX.extra; UC.extra;
+                 ~~~~~
+!!! error TS2339: Property 'extra' does not exist on type 'typeof import("a_umd")'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

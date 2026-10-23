@@ -1,0 +1,16 @@
+//// [test/cases/bun34-C11.ts] ////
+
+=== a.ts ===
+declare class B { p: number }
+>B : B
+>p : number
+
+declare class D extends B { declare p; }
+>D : D
+>B : B
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

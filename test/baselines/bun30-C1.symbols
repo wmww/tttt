@@ -1,0 +1,7 @@
+//// [test/cases/bun30-C1.ts] ////
+
+=== a.ts ===
+{ export as namespace F; }
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

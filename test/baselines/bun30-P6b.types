@@ -1,0 +1,23 @@
+//// [test/cases/bun30-P6b.ts] ////
+
+=== a.ts ===
+export const o = { a() {}, get a() { return 1 }, set a(v: number) {} };
+>o : { a: number; }
+>{ a() {}, get a() { return 1 }, set a(v: number) {} } : { a: number; }
+>a : () => void
+>a : number
+>1 : 1
+>a : number
+>v : number
+
+o.a = 3;
+>o.a = 3 : 3
+>o.a : number
+>o : { a: number; }
+>a : number
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

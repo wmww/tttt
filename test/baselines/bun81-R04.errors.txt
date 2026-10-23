@@ -1,0 +1,37 @@
+a.ts(1,18): error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+a.ts(2,7): error TS2322: Type '{ a: any; }' is not assignable to type 'null'.
+a.ts(3,18): error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+a.ts(3,44): error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+a.ts(4,7): error TS2322: Type '{ a: typeof s7.b; b: any; }' is not assignable to type 'null'.
+a.ts(5,19): error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+a.ts(6,7): error TS2322: Type '{ readonly a: any; }' is not assignable to type 'null'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    const s1 = { set a(v: typeof s1.a) {} };
+                     ~
+!!! error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+    const r1: null = s1;
+          ~~
+!!! error TS2322: Type '{ a: any; }' is not assignable to type 'null'.
+    const s7 = { set a(v: typeof s7.b) {}, set b(v: typeof s7.a) {} };
+                     ~
+!!! error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+                                               ~
+!!! error TS2502: 'b' is referenced directly or indirectly in its own type annotation.
+    const r7: null = s7;
+          ~~
+!!! error TS2322: Type '{ a: typeof s7.b; b: any; }' is not assignable to type 'null'.
+    const s31 = { get a(): typeof s31.a { return 1 } };
+                      ~
+!!! error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+    const r31: null = s31;
+          ~~~
+!!! error TS2322: Type '{ readonly a: any; }' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

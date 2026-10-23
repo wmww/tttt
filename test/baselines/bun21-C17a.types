@@ -1,0 +1,35 @@
+//// [test/cases/bun21-C17a.ts] ////
+
+=== a.ts ===
+function f(x: { a?: { b: string | number } }, y: typeof x) { if (typeof x.a!.b === "string") { x = y; x.a!.b.length; } }
+>f : (x: { a?: { b: string | number; }; }, y: typeof x) => void
+>x : { a?: { b: string | number; }; }
+>a : { b: string | number; } | undefined
+>b : string | number
+>y : { a?: { b: string | number; }; }
+>x : { a?: { b: string | number; }; }
+>typeof x.a!.b === "string" : boolean
+>typeof x.a!.b : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x.a!.b : string | number
+>x.a! : { b: string | number; }
+>x.a : { b: string | number; } | undefined
+>x : { a?: { b: string | number; }; }
+>a : { b: string | number; } | undefined
+>b : string | number
+>"string" : "string"
+>x = y : { a?: { b: string | number; }; }
+>x : { a?: { b: string | number; }; }
+>y : { a?: { b: string | number; }; }
+>x.a!.b.length : number
+>x.a!.b : string
+>x.a! : { b: string | number; }
+>x.a : { b: string | number; } | undefined
+>x : { a?: { b: string | number; }; }
+>a : { b: string | number; } | undefined
+>b : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

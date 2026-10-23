@@ -1,0 +1,26 @@
+//// [test/cases/bun43-C17a.ts] ////
+
+=== a.ts ===
+abstract class A { abstract m(): void; }
+>A : A
+>m : () => void
+
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+declare function use(...a: any[]): any;
+>use : (...a: any[]) => any
+>a : any[]
+
+use(@dec class extends A {});
+>use(@dec class extends A {}) : any
+>use : (...a: any[]) => any
+>@dec class extends A {} : typeof (Anonymous class)
+>dec : (...a: any[]) => any
+>A : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

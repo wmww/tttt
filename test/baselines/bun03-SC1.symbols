@@ -1,0 +1,21 @@
+//// [test/cases/bun03-SC1.ts] ////
+
+=== a.ts ===
+declare function f(): "a";
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+class C14 { [k: string]: number; [f()]() {} }
+>C14 : Symbol(C14, Decl(a.ts, 0, 26))
+>k : Symbol(k, Decl(a.ts, 1, 13))
+>[f()] : Symbol(C14[f()], Decl(a.ts, 1, 32))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+class C15 { [k: string]: number; get [f()]() { return ""; } }
+>C15 : Symbol(C15, Decl(a.ts, 1, 45))
+>k : Symbol(k, Decl(a.ts, 2, 13))
+>[f()] : Symbol(C15[f()], Decl(a.ts, 2, 32))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

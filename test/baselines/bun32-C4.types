@@ -1,0 +1,41 @@
+//// [test/cases/bun32-C4.ts] ////
+
+=== a.ts ===
+declare const x: { f(): void };
+>x : { f(): void; }
+>f : () => void
+
+(0, (x.f))();
+>(0, (x.f))() : void
+>(0, (x.f)) : () => void
+>0, (x.f) : () => void
+>0 : 0
+>(x.f) : () => void
+>x.f : () => void
+>x : { f(): void; }
+>f : () => void
+
+((0), x.f)();
+>((0), x.f)() : void
+>((0), x.f) : () => void
+>(0), x.f : () => void
+>(0) : 0
+>0 : 0
+>x.f : () => void
+>x : { f(): void; }
+>f : () => void
+
+((0, x.f))();
+>((0, x.f))() : void
+>((0, x.f)) : () => void
+>(0, x.f) : () => void
+>0, x.f : () => void
+>0 : 0
+>x.f : () => void
+>x : { f(): void; }
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

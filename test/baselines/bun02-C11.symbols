@@ -1,0 +1,10 @@
+//// [test/cases/bun02-C11.ts] ////
+
+=== a.ts ===
+type P17 = { [K in "a"]: 1, };
+>P17 : Symbol(P17, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 14))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun18-C3a.ts] ////
+
+=== a.ts ===
+function f6<T extends T[keyof T]>(t: T) { const a: T[keyof T] = t; }
+>f6 : <T>(t: T) => void
+>t : T
+>a : T[keyof T]
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun17-P4.ts] ////
+
+=== a.ts ===
+declare const o: { a?: number | undefined };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+
+const t: { a?: string } = { a: "x", ...o };
+>t : Symbol(t, Decl(a.ts, 1, 5))
+>a : Symbol(a, Decl(a.ts, 1, 10))
+>a : Symbol(a, Decl(a.ts, 1, 27))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

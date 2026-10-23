@@ -1,0 +1,33 @@
+//// [test/cases/bun25-C2.ts] ////
+
+=== a.ts ===
+declare const o: { a: string | number };
+>o : { a: string | number; }
+>a : string | number
+
+if (typeof o[E.A] === "string") o[E.A].length;
+>typeof o[E.A] === "string" : boolean
+>typeof o[E.A] : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>o[E.A] : string | number
+>o : { a: string | number; }
+>E.A : E
+>E : typeof E
+>A : E
+>"string" : "string"
+>o[E.A].length : any
+>o[E.A] : string | number
+>o : { a: string | number; }
+>E.A : E
+>E : typeof E
+>A : E
+>length : any
+
+const enum E { A = "a" }
+>E : E
+>A : E.A
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

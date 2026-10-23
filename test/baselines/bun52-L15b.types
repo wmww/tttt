@@ -1,0 +1,26 @@
+//// [test/cases/bun52-L15b.ts] ////
+
+=== a.ts ===
+enum E1 { A = E1["z"] } namespace E1 { export const z = 1; }
+>E1 : E1
+>A : E1.A
+>E1["z"] : 1
+>E1 : typeof E1
+>"z" : "z"
+>E1 : typeof E1
+>z : 1
+>1 : 1
+
+enum E2 { A = E2["z"] } namespace E2 { export function z() {} }
+>E2 : E2
+>A : E2.A
+>E2["z"] : () => void
+>E2 : typeof E2
+>"z" : "z"
+>E2 : typeof E2
+>z : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,20 @@
+//// [test/cases/bun61-L05c.ts] ////
+
+=== a.tsx ===
+export const a = <div />;
+>a : Symbol(a, Decl(a.tsx, 0, 12))
+
+export const b = <div />;
+>b : Symbol(b, Decl(a.tsx, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+
+=== x/jsx-runtime.ts ===
+export namespace JSX { export interface IntrinsicElements { div: {} } export interface Element {} } export function jsx(): void {}
+>JSX : Symbol(JSX, Decl(jsx-runtime.ts, 0, 0))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(jsx-runtime.ts, 0, 22))
+>div : Symbol(IntrinsicElements.div, Decl(jsx-runtime.ts, 0, 59))
+>Element : Symbol(Element, Decl(jsx-runtime.ts, 0, 69))
+>jsx : Symbol(jsx, Decl(jsx-runtime.ts, 0, 99))
+

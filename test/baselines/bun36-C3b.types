@@ -1,0 +1,10 @@
+//// [test/cases/bun36-C3b.ts] ////
+
+=== a.ts ===
+import w1 = require("@data");
+>w1 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

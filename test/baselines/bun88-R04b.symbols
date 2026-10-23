@@ -1,0 +1,118 @@
+//// [test/cases/bun88-R04b.ts] ////
+
+=== a.ts ===
+interface Array<T> {}
+>Array : Symbol(Array, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 16))
+
+interface Object {}
+>Object : Symbol(Object, Decl(a.ts, 0, 21))
+
+interface Function {}
+>Function : Symbol(Function, Decl(a.ts, 1, 19))
+
+interface String {}
+>String : Symbol(String, Decl(a.ts, 2, 21))
+
+interface Number {}
+>Number : Symbol(Number, Decl(a.ts, 3, 19))
+
+interface Boolean {}
+>Boolean : Symbol(Boolean, Decl(a.ts, 4, 19))
+
+interface RegExp {}
+>RegExp : Symbol(RegExp, Decl(a.ts, 5, 20))
+
+interface IArguments {}
+>IArguments : Symbol(IArguments, Decl(a.ts, 6, 19))
+
+interface CallableFunction {}
+>CallableFunction : Symbol(CallableFunction, Decl(a.ts, 7, 23))
+
+interface NewableFunction {}
+>NewableFunction : Symbol(NewableFunction, Decl(a.ts, 8, 29))
+
+interface Symbol {}
+>Symbol : Symbol(Symbol, Decl(a.ts, 9, 28), Decl(a.ts, 12, 11))
+
+interface SymbolConstructor { readonly iterator: unique symbol; }
+>SymbolConstructor : Symbol(SymbolConstructor, Decl(a.ts, 10, 19))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(a.ts, 11, 29))
+
+declare var Symbol: SymbolConstructor;
+>Symbol : Symbol(Symbol, Decl(a.ts, 9, 28), Decl(a.ts, 12, 11))
+>SymbolConstructor : Symbol(SymbolConstructor, Decl(a.ts, 10, 19))
+
+interface Iterator<T, TReturn = any, TNext = any> { next(): { done: boolean; value: T }; }
+>Iterator : Symbol(Iterator, Decl(a.ts, 12, 38))
+>T : Symbol(T, Decl(a.ts, 13, 19))
+>TReturn : Symbol(TReturn, Decl(a.ts, 13, 21))
+>TNext : Symbol(TNext, Decl(a.ts, 13, 36))
+>next : Symbol(Iterator.next, Decl(a.ts, 13, 51))
+>done : Symbol(done, Decl(a.ts, 13, 61))
+>value : Symbol(value, Decl(a.ts, 13, 76))
+>T : Symbol(T, Decl(a.ts, 13, 19))
+
+interface Iterable<T, TReturn = any, TNext = any> { [Symbol.iterator](): Iterator<T, TReturn, TNext>; }
+>Iterable : Symbol(Iterable, Decl(a.ts, 13, 90))
+>T : Symbol(T, Decl(a.ts, 14, 19))
+>TReturn : Symbol(TReturn, Decl(a.ts, 14, 21))
+>TNext : Symbol(TNext, Decl(a.ts, 14, 36))
+>[Symbol.iterator] : Symbol(Iterable[Symbol.iterator], Decl(a.ts, 14, 51))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(a.ts, 11, 29))
+>Symbol : Symbol(Symbol, Decl(a.ts, 9, 28), Decl(a.ts, 12, 11))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(a.ts, 11, 29))
+>Iterator : Symbol(Iterator, Decl(a.ts, 12, 38))
+>T : Symbol(T, Decl(a.ts, 14, 19))
+>TReturn : Symbol(TReturn, Decl(a.ts, 14, 21))
+>TNext : Symbol(TNext, Decl(a.ts, 14, 36))
+
+interface ReadonlyArray<T> {}
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(a.ts, 14, 103))
+>T : Symbol(T, Decl(a.ts, 15, 24))
+
+declare const arr: number[]; declare const ro: readonly number[]; declare const tup: [number, number];
+>arr : Symbol(arr, Decl(a.ts, 16, 13))
+>ro : Symbol(ro, Decl(a.ts, 16, 42))
+>tup : Symbol(tup, Decl(a.ts, 16, 79))
+
+const [e1] = arr;
+>e1 : Symbol(e1, Decl(a.ts, 17, 7))
+>arr : Symbol(arr, Decl(a.ts, 16, 13))
+
+const [e2, ...r2] = ro;
+>e2 : Symbol(e2, Decl(a.ts, 18, 7))
+>r2 : Symbol(r2, Decl(a.ts, 18, 10))
+>ro : Symbol(ro, Decl(a.ts, 16, 42))
+
+const [e3] = tup;
+>e3 : Symbol(e3, Decl(a.ts, 19, 7))
+>tup : Symbol(tup, Decl(a.ts, 16, 79))
+
+const [] = arr;
+>arr : Symbol(arr, Decl(a.ts, 16, 13))
+
+let e4: number; [e4] = arr;
+>e4 : Symbol(e4, Decl(a.ts, 21, 3))
+>e4 : Symbol(e4, Decl(a.ts, 21, 3))
+>arr : Symbol(arr, Decl(a.ts, 16, 13))
+
+function f5([a, b]: number[], [c]: [number]) {}
+>f5 : Symbol(f5, Decl(a.ts, 21, 27))
+>a : Symbol(a, Decl(a.ts, 22, 13))
+>b : Symbol(b, Decl(a.ts, 22, 15))
+>c : Symbol(c, Decl(a.ts, 22, 31))
+
+const { p: [q] } = { p: arr };
+>p : Symbol(p, Decl(a.ts, 23, 20))
+>q : Symbol(q, Decl(a.ts, 23, 12))
+>p : Symbol(p, Decl(a.ts, 23, 20))
+>arr : Symbol(arr, Decl(a.ts, 16, 13))
+
+const [d1 = 1] = arr;
+>d1 : Symbol(d1, Decl(a.ts, 24, 7))
+>arr : Symbol(arr, Decl(a.ts, 16, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 25, 5))
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun01-P5.ts] ////
+
+=== a.tsx ===
+export {};
+declare global { namespace JSX { interface IntrinsicElements { div: any } interface Element {} } }
+>global : any
+>div : any
+
+class K { React: any; m() { return <React />; } }
+>K : K
+>React : any
+>m : () => JSX.Element
+><React /> : JSX.Element
+>React : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

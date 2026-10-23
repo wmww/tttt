@@ -1,0 +1,48 @@
+//// [test/cases/bun52-L15.ts] ////
+
+=== a.ts ===
+function next(e: E1) { return e + 1; }
+>next : (e: E1) => number
+>e : E1
+>e + 1 : number
+>e : E1
+>1 : 1
+
+enum E1 { A = 1, B = next(E1.A) }
+>E1 : E1
+>A : E1.A
+>1 : 1
+>B : E1.B
+>next(E1.A) : number
+>next : (e: E1) => number
+>E1.A : E1.A
+>E1 : typeof E1
+>A : E1.A
+
+declare function make(n: number): E2;
+>make : (n: number) => E2
+>n : number
+
+enum E2 { A = 1, B = make(1) }
+>E2 : E2
+>A : E2.A
+>1 : 1
+>B : E2.B
+>make(1) : E2
+>make : (n: number) => E2
+>1 : 1
+
+declare const first: E3;
+>first : E3
+
+enum E3 { A = 1, B = first }
+>E3 : E3
+>A : E3.A
+>1 : 1
+>B : E3.B
+>first : E3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

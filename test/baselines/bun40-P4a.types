@@ -1,0 +1,23 @@
+//// [test/cases/bun40-P4a.ts] ////
+
+=== src/a.ts ===
+/// <reference path="./b.ts" />
+import "p";
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/p/g.ts ===
+declare const g: 1;
+>g : 1
+
+=== node_modules/p/index.ts ===
+/// <reference path="./g.ts" />
+export const p = 1;
+>p : 1
+>1 : 1
+
+=== src/b.ts ===
+
+/// <reference path="../node_modules/p/index.ts" />
+

@@ -1,0 +1,75 @@
+//// [test/cases/bun58-L03.ts] ////
+
+=== a.ts ===
+declare const k: string; declare function fn(): string; declare const o: { p: string };
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>fn : Symbol(fn, Decl(a.ts, 0, 24))
+>o : Symbol(o, Decl(a.ts, 0, 69))
+>p : Symbol(p, Decl(a.ts, 0, 74))
+
+function f1({ [1   +  2]: a }: any) {}
+>f1 : Symbol(f1, Decl(a.ts, 0, 87))
+>a : Symbol(a, Decl(a.ts, 1, 13))
+
+function f2({ [fn( )]: a }: any) {}
+>f2 : Symbol(f2, Decl(a.ts, 1, 38))
+>fn : Symbol(fn, Decl(a.ts, 0, 24))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+
+function f3({ [`a${ k }b`]: a }: any) {}
+>f3 : Symbol(f3, Decl(a.ts, 2, 35))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 3, 13))
+
+function f4({ [o [ "p" ]]: a }: any) {}
+>f4 : Symbol(f4, Decl(a.ts, 3, 40))
+>o : Symbol(o, Decl(a.ts, 0, 69))
+>"p" : Symbol(p, Decl(a.ts, 0, 74))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+
+function f5({ [ /*c*/ k   + /*d*/ "x" ]: a }: any) {}
+>f5 : Symbol(f5, Decl(a.ts, 4, 39))
+>k : Symbol(k, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 5, 13))
+
+function f6({ [0x10 + 1]: a }: any) {}
+>f6 : Symbol(f6, Decl(a.ts, 5, 53))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+
+function f7({ [1
+>f7 : Symbol(f7, Decl(a.ts, 6, 38))
+
+  + 2]: a }: any) {}
+>a : Symbol(a, Decl(a.ts, 7, 13))
+
+const n1: number = f1;
+>n1 : Symbol(n1, Decl(a.ts, 9, 5))
+>f1 : Symbol(f1, Decl(a.ts, 0, 87))
+
+const n2: number = f2;
+>n2 : Symbol(n2, Decl(a.ts, 10, 5))
+>f2 : Symbol(f2, Decl(a.ts, 1, 38))
+
+const n3: number = f3;
+>n3 : Symbol(n3, Decl(a.ts, 11, 5))
+>f3 : Symbol(f3, Decl(a.ts, 2, 35))
+
+const n4: number = f4;
+>n4 : Symbol(n4, Decl(a.ts, 12, 5))
+>f4 : Symbol(f4, Decl(a.ts, 3, 40))
+
+const n5: number = f5;
+>n5 : Symbol(n5, Decl(a.ts, 13, 5))
+>f5 : Symbol(f5, Decl(a.ts, 4, 39))
+
+const n6: number = f6;
+>n6 : Symbol(n6, Decl(a.ts, 14, 5))
+>f6 : Symbol(f6, Decl(a.ts, 5, 53))
+
+const n7: number = f7;
+>n7 : Symbol(n7, Decl(a.ts, 15, 5))
+>f7 : Symbol(f7, Decl(a.ts, 6, 38))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 16, 5))
+

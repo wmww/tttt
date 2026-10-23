@@ -1,0 +1,18 @@
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    namespace M { const x = 1; }
+    declare let m1: typeof M;
+    m1.toString;
+    declare let m2: typeof M & string;
+    const e4: number = m2;
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

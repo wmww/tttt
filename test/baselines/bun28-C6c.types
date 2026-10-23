@@ -1,0 +1,17 @@
+//// [test/cases/bun28-C6c.ts] ////
+
+=== a.ts ===
+export type A = 1;
+>A : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.js ===
+/** @import { type A } from "./a" */
+/** @type {A} */
+const q = 2;
+>q : 1
+>2 : 2
+

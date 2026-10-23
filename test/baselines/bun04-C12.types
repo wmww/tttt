@@ -1,0 +1,18 @@
+//// [test/cases/bun04-C12.ts] ////
+
+=== a.ts ===
+import { K } from "./m";
+>K : typeof K
+
+export namespace K {}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+class K {}
+>K : K
+
+export type { K };
+>K : K
+

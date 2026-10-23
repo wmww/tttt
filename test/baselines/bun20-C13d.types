@@ -1,0 +1,22 @@
+//// [test/cases/bun20-C13d.ts] ////
+
+=== a.ts ===
+declare function assert(x: unknown): asserts x;
+>assert : (x: unknown) => asserts x
+>x : unknown
+
+function t10(x: string) { assert(false || false); const a: null = x; }
+>t10 : (x: string) => void
+>x : string
+>assert(false || false) : void
+>assert : (x: unknown) => asserts x
+>false || false : false
+>false : false
+>false : false
+>a : null
+>x : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

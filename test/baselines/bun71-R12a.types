@@ -1,0 +1,73 @@
+//// [test/cases/bun71-R12a.ts] ////
+
+=== a.ts ===
+export {};
+declare function dec(...x: any[]): (c: any, ctx: any) => void;
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>x : any[]
+>c : any
+>ctx : any
+
+declare const o: any;
+>o : any
+
+const e1 = @dec(#i in o) class { #i = 1; };
+>e1 : typeof e1
+>@dec(#i in o) class { #i = 1; } : typeof e1
+>dec(#i in o) : (c: any, ctx: any) => void
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>#i in o : boolean
+>#i : any
+>o : any
+>#i : number
+>1 : 1
+
+const e2 = @dec(o.#i) class { #i = 1; };
+>e2 : typeof e2
+>@dec(o.#i) class { #i = 1; } : typeof e2
+>dec(o.#i) : (c: any, ctx: any) => void
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>o.#i : any
+>o : any
+>#i : number
+>1 : 1
+
+const e3 = @dec(() => o.#i) class { #i = 1; };
+>e3 : typeof e3
+>@dec(() => o.#i) class { #i = 1; } : typeof e3
+>dec(() => o.#i) : (c: any, ctx: any) => void
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>() => o.#i : () => any
+>o.#i : any
+>o : any
+>#i : number
+>1 : 1
+
+const e4 = @dec((x: E4) => x.#i) class E4 { #i = 1; };
+>e4 : typeof E4
+>@dec((x: E4) => x.#i) class E4 { #i = 1; } : typeof E4
+>dec((x: E4) => x.#i) : (c: any, ctx: any) => void
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>(x: E4) => x.#i : (x: E4) => any
+>x : E4
+>x.#i : any
+>x : E4
+>E4 : typeof E4
+>#i : number
+>1 : 1
+
+const e5 = @dec(() => e5.#s) class { static #s = 1; };
+>e5 : typeof e5
+>@dec(() => e5.#s) class { static #s = 1; } : typeof e5
+>dec(() => e5.#s) : (c: any, ctx: any) => void
+>dec : (...x: any[]) => (c: any, ctx: any) => void
+>() => e5.#s : () => any
+>e5.#s : any
+>e5 : typeof e5
+>#s : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

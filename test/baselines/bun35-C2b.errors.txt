@@ -1,0 +1,18 @@
+a.ts(1,8): error TS2882: Cannot find module or type declarations for side-effect import of 'tv/sub/'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import "tv/sub/";
+           ~~~~~~~~~
+!!! error TS2882: Cannot find module or type declarations for side-effect import of 'tv/sub/'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/tv/package.json (0 errors) ====
+    { "typesVersions": { "*": { "sub": ["ts/sub.d.ts"] } } }
+==== node_modules/tv/ts/sub.d.ts (0 errors) ====
+    export const x: number;
+    

@@ -1,0 +1,26 @@
+//// [test/cases/bun84-R04.ts] ////
+
+=== a.js ===
+const a = { b: { c: 1 } };
+>a : Symbol(a, Decl(a.js, 0, 5))
+>b : Symbol(b, Decl(a.js, 0, 11))
+>c : Symbol(c, Decl(a.js, 0, 16))
+
+/** @type {typeof nope..b} */ let x1 = 1;
+>x1 : Symbol(x1, Decl(a.js, 1, 33))
+
+/** @type {typeof a.nope..b} */ let x2 = 1;
+>x2 : Symbol(x2, Decl(a.js, 2, 35))
+
+/** @type {typeof em..z} */ let x3 = 2;
+>x3 : Symbol(x3, Decl(a.js, 3, 31))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 4, 27))
+
+=== n.d.ts ===
+declare const em: { "": { z: 1 } };
+>em : Symbol(em, Decl(n.d.ts, 0, 13))
+>"" : Symbol("", Decl(n.d.ts, 0, 19))
+>z : Symbol(z, Decl(n.d.ts, 0, 25))
+

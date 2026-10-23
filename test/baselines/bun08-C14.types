@@ -1,0 +1,25 @@
+//// [test/cases/bun08-C14.ts] ////
+
+=== a.ts ===
+import d1 from "./e1"; d1.length; d1.a;
+>d1 : string
+>d1.length : number
+>d1 : string
+>length : number
+>d1.a : any
+>d1 : string
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== e1.d.ts ===
+declare const v: { default: string; __esModule: true; a: number }; export = v;
+>v : { default: string; __esModule: true; a: number; }
+>default : string
+>__esModule : true
+>true : true
+>a : number
+>v : { default: string; __esModule: true; a: number; }
+

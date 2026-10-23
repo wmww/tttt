@@ -1,0 +1,17 @@
+//// [test/cases/bun19-C1f.ts] ////
+
+=== a.ts ===
+class K { p!: this extends string ? this : this; m() { this.p = this; } }
+>K : K
+>p : this extends string ? this : this
+>m : () => void
+>this.p = this : this
+>this.p : this extends string ? this : this
+>this : this
+>p : this extends string ? this : this
+>this : this
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,13 @@
+//// [test/cases/bun40-P5.ts] ////
+
+=== __inferred type names__.ts ===
+declare const c: 1;
+>c : Symbol(c, Decl(__inferred type names__.ts, 0, 13))
+
+=== a.ts ===
+const f: 0 = foo;
+>f : Symbol(f, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

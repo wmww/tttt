@@ -1,0 +1,19 @@
+//// [test/cases/bun26-C3.ts] ////
+
+=== a.ts ===
+function f({ a = 1 }) {}
+>f : ({ a }: { a?: number | undefined; }) => void
+>a : number
+>1 : 1
+
+const i: { [k: string]: number } = null! as Parameters<typeof f>[0];
+>i : { [k: string]: number; }
+>k : string
+>null! as Parameters<typeof f>[0] : { a?: number | undefined; }
+>null! : never
+>f : ({ a }: { a?: number | undefined; }) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

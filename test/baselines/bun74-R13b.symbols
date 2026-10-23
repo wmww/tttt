@@ -1,0 +1,11 @@
+//// [test/cases/bun74-R13b.ts] ////
+
+=== a.ts ===
+x = (...
+> : Symbol((Missing), Decl(a.ts, 0, 5))
+
+=== b.ts ===
+x = async (... // c
+
+> : Symbol((Missing), Decl(b.ts, 0, 11))
+

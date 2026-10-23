@@ -1,0 +1,10 @@
+//// [test/cases/bun43-X5e.ts] ////
+
+=== a.ts ===
+a?.!b;
+>a?. : any
+>a : any
+> : any
+>!b : boolean
+>b : any
+

@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C21b.ts] ////
+
+=== a.ts ===
+import type d, { a } from "./nope";
+>d : Symbol(d, Decl(a.ts, 0, 6))
+>a : Symbol(a, Decl(a.ts, 0, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,26 @@
+//// [test/cases/bun33-C16b.ts] ////
+
+=== a.ts ===
+export {};
+declare module "./t" { interface A {} }
+>"./t" : typeof import("./t")
+
+=== b.ts ===
+export {};
+declare module "./t" { interface I {} export = I; }
+>"./t" : typeof import("./t")
+>I : I
+
+=== c.ts ===
+export {};
+declare module "./t" { interface C {} }
+>"./t" : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== t.ts ===
+
+export {};
+

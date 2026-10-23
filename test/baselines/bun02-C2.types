@@ -1,0 +1,23 @@
+//// [test/cases/bun02-C2.ts] ////
+
+=== a.ts ===
+interface IFoo<X extends string> { x: X }
+>x : X
+
+type T2<T> = T extends IFoo<infer U extends number> ? U : never;
+>T2 : T2<T>
+
+type Two<A extends string, B extends A> = [A, B];
+>Two : Two<A, B>
+
+type T9<T> = T extends Two<infer X extends "a", infer Y extends "b"> ? [X, Y] : never;
+>T9 : T9<T>
+
+type T11<T> = T extends [IFoo<infer U>, { n: infer U extends number }] ? U : never;
+>T11 : T11<T>
+>n : U
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

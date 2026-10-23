@@ -1,0 +1,17 @@
+//// [test/cases/bun62-L17.ts] ////
+
+=== a.js ===
+#!/usr/bin/env -S node --require ./hook
+require("./B");
+>require : Symbol(require)
+
+=== c.js ===
+require("./b");
+>require : Symbol(require)
+
+=== b.js ===
+module.exports = 1;
+>module.exports : Symbol(exports, Decl(b.js, 0, 0))
+>module : Symbol(module, Decl(b.js, 0, 0))
+>exports : Symbol(exports, Decl(b.js, 0, 0))
+

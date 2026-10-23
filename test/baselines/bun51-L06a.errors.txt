@@ -1,0 +1,30 @@
+f.js(12,20): error TS7006: Parameter 'n' implicitly has an 'any' type.
+f.js(18,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== f.js (2 errors) ====
+    export const store = {
+      /** @param {number} n */
+      format(n) { return String(n); },
+      pair: /** @type {[number, number]} */ ([1, 2]),
+      reset() {
+        this.format = (n) => n.toFixed(2);
+        this.pair = [3, 4];
+      },
+    };
+    export const later = {
+      reset() {
+        this.format = (n) => String(n);
+                       ~
+!!! error TS7006: Parameter 'n' implicitly has an 'any' type.
+      },
+      /** @param {number} n */
+      format(n) { return String(n); },
+    };
+    /** @type {number} */
+    export const sentinel = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

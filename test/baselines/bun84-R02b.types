@@ -1,0 +1,19 @@
+//// [test/cases/bun84-R02b.ts] ////
+
+=== a.ts ===
+type A = <T>({#x: a}: any) => void;
+>A : A
+>a : any
+
+interface I { m({#x: b}: any): void }
+>m : ({ #x: b }: any) => void
+>b : any
+
+declare function f({#x: c}: any): void;
+>f : ({ #x: c }: any) => void
+>c : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

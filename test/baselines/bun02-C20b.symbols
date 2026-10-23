@@ -1,0 +1,14 @@
+//// [test/cases/bun02-C20b.ts] ////
+
+=== a.ts ===
+declare const n: number;
+>n : Symbol(n, Decl(a.ts, 0, 13))
+
+switch (n) { case 1: function c6(): void; case 2: function c6() {} }
+>n : Symbol(n, Decl(a.ts, 0, 13))
+>c6 : Symbol(c6, Decl(a.ts, 1, 20), Decl(a.ts, 1, 49))
+>c6 : Symbol(c6, Decl(a.ts, 1, 20), Decl(a.ts, 1, 49))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

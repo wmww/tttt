@@ -1,0 +1,18 @@
+//// [test/cases/bun17-C15.ts] ////
+
+=== a.ts ===
+declare function g<T>(u: T, v: typeof y): number;
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>u : Symbol(u, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>v : Symbol(v, Decl(a.ts, 0, 27))
+>y : Symbol(y, Decl(a.ts, 1, 5))
+
+const y = g(1, 2);
+>y : Symbol(y, Decl(a.ts, 1, 5))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

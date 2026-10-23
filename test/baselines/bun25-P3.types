@@ -1,0 +1,22 @@
+//// [test/cases/bun25-P3.ts] ////
+
+=== a1.js ===
+var obj = {};
+>obj : {}
+>{} : {}
+
+=== a2.js ===
+var v = obj.missing;
+>v : any
+>obj.missing : any
+>obj : {}
+>missing : any
+
+=== a3.ts ===
+var v: string;
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

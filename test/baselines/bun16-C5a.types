@@ -1,0 +1,36 @@
+//// [test/cases/bun16-C5a.ts] ////
+
+=== a.ts ===
+function n(x: never) {}
+>n : (x: never) => void
+>x : never
+
+namespace N { const x = 1; }
+>N : typeof N
+>x : 1
+>1 : 1
+
+const nn = N;
+>nn : typeof N
+>N : typeof N
+
+if (typeof nn !== "object") n(nn);
+>typeof nn !== "object" : boolean
+>typeof nn : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>nn : typeof N
+>"object" : "object"
+>n(nn) : void
+>n : (x: never) => void
+>nn : typeof N
+
+if (!nn) n(nn);
+>!nn : boolean
+>nn : typeof N
+>n(nn) : void
+>n : (x: never) => void
+>nn : typeof N
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

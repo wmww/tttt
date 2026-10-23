@@ -1,0 +1,62 @@
+//// [test/cases/bun55-L06b.ts] ////
+
+=== a.ts ===
+declare function g(a: unknown): number;
+>g : (a: unknown) => number
+>a : unknown
+
+declare class K { constructor(a: unknown); v: number }
+>K : K
+>a : unknown
+>v : number
+
+function h1({ a = 1, b = g(a) }) { return b; }
+>h1 : ({ a, b }: { a?: number | undefined; b?: number | undefined; }) => number
+>a : number
+>1 : 1
+>b : number
+>g(a) : number
+>g : (a: unknown) => number
+>a : number
+>b : number
+
+const h2 = ([a = 1, b = Math.max(a, 2)]) => b;
+>h2 : ([a, b]: [(number | undefined)?, (number | undefined)?]) => number
+>([a = 1, b = Math.max(a, 2)]) => b : ([a, b]: [(number | undefined)?, (number | undefined)?]) => number
+>a : number
+>1 : 1
+>b : number
+>Math.max(a, 2) : number
+>Math.max : (...values: number[]) => number
+>Math : Math
+>max : (...values: number[]) => number
+>a : number
+>2 : 2
+>b : number
+
+class C { m({ a = 1, b = new K(a) }) { return b; } }
+>C : C
+>m : ({ a, b }: { a?: number | undefined; b?: K | undefined; }) => K
+>a : number
+>1 : 1
+>b : K
+>new K(a) : K
+>K : typeof K
+>a : number
+>b : K
+
+// not quick: TS7022 in both
+function h3({ a = 1, b = a + 1 }) { return b; }
+>h3 : ({ a, b }: { a?: number | undefined; b?: any; }) => any
+>a : any
+>1 : 1
+>b : any
+>a + 1 : any
+>a : any
+>1 : 1
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

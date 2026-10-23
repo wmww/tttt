@@ -1,0 +1,25 @@
+//// [test/cases/bun09-P5.ts] ////
+
+=== a.ts ===
+interface I { p: 0 }
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>p : Symbol(I.p, Decl(a.ts, 0, 13))
+
+type X1 = I & { a: 1 };
+>X1 : Symbol(X1, Decl(a.ts, 0, 20))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 1, 15))
+
+function f1<T extends X1>(t: T) { const q: { a: 2 } = t; }
+>f1 : Symbol(f1, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>X1 : Symbol(X1, Decl(a.ts, 0, 20))
+>t : Symbol(t, Decl(a.ts, 2, 26))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>q : Symbol(q, Decl(a.ts, 2, 39))
+>a : Symbol(a, Decl(a.ts, 2, 44))
+>t : Symbol(t, Decl(a.ts, 2, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

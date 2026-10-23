@@ -1,0 +1,290 @@
+//// [test/cases/bun95-Z1.ts] ////
+
+=== a.ts ===
+// `ReturnType<typeof f>` is `any` in tsc: `f`, instantiated in the context of `(...args: any) => R` (O = any), returns `M<any>`,
+// which is not assignable to R = `M<'a' | 'b'>`, so `T extends (...args: any) => infer R` is definitely false.
+type U = { [k: string]: unknown };
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 2, 12))
+
+type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+>M : Symbol(M, Decl(a.ts, 2, 34))
+>S : Symbol(S, Decl(a.ts, 3, 7))
+>S : Symbol(S, Decl(a.ts, 3, 7))
+>P : Symbol(P, Decl(a.ts, 3, 29))
+>S : Symbol(S, Decl(a.ts, 3, 7))
+>M : Symbol(M, Decl(a.ts, 2, 34))
+>S : Symbol(S, Decl(a.ts, 3, 7))
+>S : Symbol(S, Decl(a.ts, 3, 7))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+
+type K = 'a' | 'b';
+>K : Symbol(K, Decl(a.ts, 3, 71))
+
+declare function f<O extends K>(op: O): M<O>;
+>f : Symbol(f, Decl(a.ts, 4, 19))
+>O : Symbol(O, Decl(a.ts, 5, 19))
+>K : Symbol(K, Decl(a.ts, 3, 71))
+>op : Symbol(op, Decl(a.ts, 5, 32))
+>O : Symbol(O, Decl(a.ts, 5, 19))
+>M : Symbol(M, Decl(a.ts, 2, 34))
+>O : Symbol(O, Decl(a.ts, 5, 19))
+
+const p1: ReturnType<typeof f> = 0;
+>p1 : Symbol(p1, Decl(a.ts, 6, 5))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(a.ts, 4, 19))
+
+declare function g<O extends K>(op: O): <Z>(o: Z) => M<O>;
+>g : Symbol(g, Decl(a.ts, 6, 35))
+>O : Symbol(O, Decl(a.ts, 7, 19))
+>K : Symbol(K, Decl(a.ts, 3, 71))
+>op : Symbol(op, Decl(a.ts, 7, 32))
+>O : Symbol(O, Decl(a.ts, 7, 19))
+>Z : Symbol(Z, Decl(a.ts, 7, 41))
+>o : Symbol(o, Decl(a.ts, 7, 44))
+>Z : Symbol(Z, Decl(a.ts, 7, 41))
+>M : Symbol(M, Decl(a.ts, 2, 34))
+>O : Symbol(O, Decl(a.ts, 7, 19))
+
+const p2: ReturnType<typeof g> = 0;
+>p2 : Symbol(p2, Decl(a.ts, 8, 5))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>g : Symbol(g, Decl(a.ts, 6, 35))
+
+declare const o: { m<O extends K>(op: O): M<O>; a: <O extends K>(op: O) => M<O> };
+>o : Symbol(o, Decl(a.ts, 9, 13))
+>m : Symbol(m, Decl(a.ts, 9, 18))
+>O : Symbol(O, Decl(a.ts, 9, 21))
+>K : Symbol(K, Decl(a.ts, 3, 71))
+>op : Symbol(op, Decl(a.ts, 9, 34))
+>O : Symbol(O, Decl(a.ts, 9, 21))
+>M : Symbol(M, Decl(a.ts, 2, 34))
+>O : Symbol(O, Decl(a.ts, 9, 21))
+>a : Symbol(a, Decl(a.ts, 9, 47))
+>O : Symbol(O, Decl(a.ts, 9, 52))
+>K : Symbol(K, Decl(a.ts, 3, 71))
+>op : Symbol(op, Decl(a.ts, 9, 65))
+>O : Symbol(O, Decl(a.ts, 9, 52))
+>M : Symbol(M, Decl(a.ts, 2, 34))
+>O : Symbol(O, Decl(a.ts, 9, 52))
+
+const p3: ReturnType<typeof o.m> = 0;
+>p3 : Symbol(p3, Decl(a.ts, 10, 5))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>o.m : Symbol(m, Decl(a.ts, 9, 18))
+>o : Symbol(o, Decl(a.ts, 9, 13))
+>m : Symbol(m, Decl(a.ts, 9, 18))
+
+const p4: ReturnType<typeof o.a> = 0;
+>p4 : Symbol(p4, Decl(a.ts, 11, 5))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>o.a : Symbol(a, Decl(a.ts, 9, 47))
+>o : Symbol(o, Decl(a.ts, 9, 13))
+>a : Symbol(a, Decl(a.ts, 9, 47))
+
+const p5: M<any> = null;
+>p5 : Symbol(p5, Decl(a.ts, 12, 5))
+>M : Symbol(M, Decl(a.ts, 2, 34))
+
+// The shape it was found in: the header that graphql-zeus generates.
+type SD = Record<string, { decode?: (s: unknown) => unknown }>;
+>SD : Symbol(SD, Decl(a.ts, 12, 24))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>decode : Symbol(decode, Decl(a.ts, 15, 26))
+>s : Symbol(s, Decl(a.ts, 15, 37))
+
+type DeepAnify<T> = { [P in keyof T]?: any };
+>DeepAnify : Symbol(DeepAnify, Decl(a.ts, 15, 63))
+>T : Symbol(T, Decl(a.ts, 16, 15))
+>P : Symbol(P, Decl(a.ts, 16, 23))
+>T : Symbol(T, Decl(a.ts, 16, 15))
+
+type IsArray<T, V, SCLR extends SD> = T extends Array<infer R> ? MapType<R, V, SCLR>[] : MapType<T, V, SCLR>;
+>IsArray : Symbol(IsArray, Decl(a.ts, 16, 45))
+>T : Symbol(T, Decl(a.ts, 17, 13))
+>V : Symbol(V, Decl(a.ts, 17, 15))
+>SCLR : Symbol(SCLR, Decl(a.ts, 17, 18))
+>SD : Symbol(SD, Decl(a.ts, 12, 24))
+>T : Symbol(T, Decl(a.ts, 17, 13))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>R : Symbol(R, Decl(a.ts, 17, 59))
+>MapType : Symbol(MapType, Decl(a.ts, 26, 107))
+>R : Symbol(R, Decl(a.ts, 17, 59))
+>V : Symbol(V, Decl(a.ts, 17, 15))
+>SCLR : Symbol(SCLR, Decl(a.ts, 17, 18))
+>MapType : Symbol(MapType, Decl(a.ts, 26, 107))
+>T : Symbol(T, Decl(a.ts, 17, 13))
+>V : Symbol(V, Decl(a.ts, 17, 15))
+>SCLR : Symbol(SCLR, Decl(a.ts, 17, 18))
+
+type FlattenArray<T> = T extends Array<infer R> ? R : T;
+>FlattenArray : Symbol(FlattenArray, Decl(a.ts, 17, 109))
+>T : Symbol(T, Decl(a.ts, 18, 18))
+>T : Symbol(T, Decl(a.ts, 18, 18))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>R : Symbol(R, Decl(a.ts, 18, 44))
+>R : Symbol(R, Decl(a.ts, 18, 44))
+>T : Symbol(T, Decl(a.ts, 18, 18))
+
+type IsInterfaced<SRC extends DeepAnify<DST>, DST, SCLR extends SD> = FlattenArray<SRC> extends never
+>IsInterfaced : Symbol(IsInterfaced, Decl(a.ts, 18, 56))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>DeepAnify : Symbol(DeepAnify, Decl(a.ts, 15, 63))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>SCLR : Symbol(SCLR, Decl(a.ts, 19, 50))
+>SD : Symbol(SD, Decl(a.ts, 12, 24))
+>FlattenArray : Symbol(FlattenArray, Decl(a.ts, 17, 109))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+
+  ? { [P in keyof SRC]: SRC[P] extends '__union' & infer R
+>P : Symbol(P, Decl(a.ts, 20, 7))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>P : Symbol(P, Decl(a.ts, 20, 7))
+>R : Symbol(R, Decl(a.ts, 20, 56))
+
+        ? P extends keyof DST ? IsArray<R, '__typename' extends keyof DST ? DST[P] & { __typename: true } : DST[P], SCLR>
+>P : Symbol(P, Decl(a.ts, 20, 7))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>IsArray : Symbol(IsArray, Decl(a.ts, 16, 45))
+>R : Symbol(R, Decl(a.ts, 20, 56))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>P : Symbol(P, Decl(a.ts, 20, 7))
+>__typename : Symbol(__typename, Decl(a.ts, 21, 86))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>P : Symbol(P, Decl(a.ts, 20, 7))
+>SCLR : Symbol(SCLR, Decl(a.ts, 19, 50))
+
+                              : IsArray<R, '__typename' extends keyof DST ? { __typename: true } : Record<string, never>, SCLR>
+>IsArray : Symbol(IsArray, Decl(a.ts, 16, 45))
+>R : Symbol(R, Decl(a.ts, 20, 56))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>__typename : Symbol(__typename, Decl(a.ts, 22, 77))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>SCLR : Symbol(SCLR, Decl(a.ts, 19, 50))
+
+        : never }[keyof SRC] &
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+
+    { [P in keyof Omit<Pick<SRC, { [P in keyof DST]: SRC[P] extends '__union' & infer R ? never : P }[keyof DST]>, '__typename'>]:
+>P : Symbol(P, Decl(a.ts, 24, 7))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>P : Symbol(P, Decl(a.ts, 24, 36))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>P : Symbol(P, Decl(a.ts, 24, 36))
+>R : Symbol(R, Decl(a.ts, 24, 85))
+>P : Symbol(P, Decl(a.ts, 24, 36))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+
+        DST[P] extends boolean ? SRC[P] : IsArray<SRC[P], DST[P], SCLR> }
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>P : Symbol(P, Decl(a.ts, 24, 7))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>P : Symbol(P, Decl(a.ts, 24, 7))
+>IsArray : Symbol(IsArray, Decl(a.ts, 16, 45))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>P : Symbol(P, Decl(a.ts, 24, 7))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>P : Symbol(P, Decl(a.ts, 24, 7))
+>SCLR : Symbol(SCLR, Decl(a.ts, 19, 50))
+
+  : { [P in keyof Pick<SRC, keyof DST>]: DST[P] extends boolean ? SRC[P] : IsArray<SRC[P], DST[P], SCLR> };
+>P : Symbol(P, Decl(a.ts, 26, 7))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>P : Symbol(P, Decl(a.ts, 26, 7))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>P : Symbol(P, Decl(a.ts, 26, 7))
+>IsArray : Symbol(IsArray, Decl(a.ts, 16, 45))
+>SRC : Symbol(SRC, Decl(a.ts, 19, 18))
+>P : Symbol(P, Decl(a.ts, 26, 7))
+>DST : Symbol(DST, Decl(a.ts, 19, 45))
+>P : Symbol(P, Decl(a.ts, 26, 7))
+>SCLR : Symbol(SCLR, Decl(a.ts, 19, 50))
+
+type MapType<SRC, DST, SCLR extends SD> = SRC extends DeepAnify<DST> ? IsInterfaced<SRC, DST, SCLR> : never;
+>MapType : Symbol(MapType, Decl(a.ts, 26, 107))
+>SRC : Symbol(SRC, Decl(a.ts, 27, 13))
+>DST : Symbol(DST, Decl(a.ts, 27, 17))
+>SCLR : Symbol(SCLR, Decl(a.ts, 27, 22))
+>SD : Symbol(SD, Decl(a.ts, 12, 24))
+>SRC : Symbol(SRC, Decl(a.ts, 27, 13))
+>DeepAnify : Symbol(DeepAnify, Decl(a.ts, 15, 63))
+>DST : Symbol(DST, Decl(a.ts, 27, 17))
+>IsInterfaced : Symbol(IsInterfaced, Decl(a.ts, 18, 56))
+>SRC : Symbol(SRC, Decl(a.ts, 27, 13))
+>DST : Symbol(DST, Decl(a.ts, 27, 17))
+>SCLR : Symbol(SCLR, Decl(a.ts, 27, 22))
+
+type Q = {
+>Q : Symbol(Q, Decl(a.ts, 27, 108))
+
+  ['Query']: { __typename: 'Query'; viewer: Q['User'] };
+>['Query'] : Symbol(['Query'], Decl(a.ts, 28, 10))
+>'Query' : Symbol(['Query'], Decl(a.ts, 28, 10))
+>__typename : Symbol(__typename, Decl(a.ts, 29, 14))
+>viewer : Symbol(viewer, Decl(a.ts, 29, 35))
+>Q : Symbol(Q, Decl(a.ts, 27, 108))
+
+  ['Mutation']: { __typename: 'Mutation'; addReview?: Q['User'] | undefined };
+>['Mutation'] : Symbol(['Mutation'], Decl(a.ts, 29, 56))
+>'Mutation' : Symbol(['Mutation'], Decl(a.ts, 29, 56))
+>__typename : Symbol(__typename, Decl(a.ts, 30, 17))
+>addReview : Symbol(addReview, Decl(a.ts, 30, 41))
+>Q : Symbol(Q, Decl(a.ts, 27, 108))
+
+  ['User']: { __typename: 'User'; login: string };
+>['User'] : Symbol(['User'], Decl(a.ts, 30, 78))
+>'User' : Symbol(['User'], Decl(a.ts, 30, 78))
+>__typename : Symbol(__typename, Decl(a.ts, 31, 13))
+>login : Symbol(login, Decl(a.ts, 31, 33))
+
+};
+type Ops = { query: 'Query', mutation: 'Mutation' };
+>Ops : Symbol(Ops, Decl(a.ts, 32, 2))
+>query : Symbol(query, Decl(a.ts, 33, 12))
+>mutation : Symbol(mutation, Decl(a.ts, 33, 28))
+
+type G<O> = O extends keyof Ops ? Ops[O] : never;
+>G : Symbol(G, Decl(a.ts, 33, 52))
+>O : Symbol(O, Decl(a.ts, 34, 7))
+>O : Symbol(O, Decl(a.ts, 34, 7))
+>Ops : Symbol(Ops, Decl(a.ts, 32, 2))
+>Ops : Symbol(Ops, Decl(a.ts, 32, 2))
+>O : Symbol(O, Decl(a.ts, 34, 7))
+
+declare function c6<O extends keyof Ops>(op: O): <Z>(o: Z) => MapType<Q[G<O>], Z, {}>;
+>c6 : Symbol(c6, Decl(a.ts, 34, 49))
+>O : Symbol(O, Decl(a.ts, 35, 20))
+>Ops : Symbol(Ops, Decl(a.ts, 32, 2))
+>op : Symbol(op, Decl(a.ts, 35, 41))
+>O : Symbol(O, Decl(a.ts, 35, 20))
+>Z : Symbol(Z, Decl(a.ts, 35, 50))
+>o : Symbol(o, Decl(a.ts, 35, 53))
+>Z : Symbol(Z, Decl(a.ts, 35, 50))
+>MapType : Symbol(MapType, Decl(a.ts, 26, 107))
+>Q : Symbol(Q, Decl(a.ts, 27, 108))
+>G : Symbol(G, Decl(a.ts, 33, 52))
+>O : Symbol(O, Decl(a.ts, 35, 20))
+>Z : Symbol(Z, Decl(a.ts, 35, 50))
+
+const p6: ReturnType<typeof c6> = 0;
+>p6 : Symbol(p6, Decl(a.ts, 36, 5))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>c6 : Symbol(c6, Decl(a.ts, 34, 49))
+
+const p7: MapType<any, any, {}> = null;
+>p7 : Symbol(p7, Decl(a.ts, 37, 5))
+>MapType : Symbol(MapType, Decl(a.ts, 26, 107))
+
+const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(a.ts, 38, 5))
+

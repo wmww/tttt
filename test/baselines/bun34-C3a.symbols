@@ -1,0 +1,11 @@
+//// [test/cases/bun34-C3a.ts] ////
+
+=== a.ts ===
+const f: (this: string) => void = function (this) {};
+>f : Symbol(f, Decl(a.ts, 0, 5))
+>this : Symbol(this, Decl(a.ts, 0, 10))
+>this : Symbol(this, Decl(a.ts, 0, 44))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

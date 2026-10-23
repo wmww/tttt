@@ -1,0 +1,9 @@
+//// [test/cases/bun30-C6d.ts] ////
+
+=== a.ts ===
+@(yield) function f() {}
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

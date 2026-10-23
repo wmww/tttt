@@ -1,0 +1,17 @@
+//// [test/cases/bun12-C4b.ts] ////
+
+=== a.ts ===
+function i<T extends [1, 2]>() {
+>i : <T extends [1, 2]>() => void
+
+  type M = { [P in keyof T as P extends `${number}` ? P : never]: T[P] };
+>M : { [P in keyof T as P extends `${number}` ? P : never]: T[P]; }
+
+  let k1: keyof M = "0";
+>k1 : keyof { [P in keyof T as P extends `${number}` ? P : never]: T[P]; }
+>"0" : "0"
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

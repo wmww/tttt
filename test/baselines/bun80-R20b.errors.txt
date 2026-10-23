@@ -1,0 +1,31 @@
+a.ts(3,5): error TS2540: Cannot assign to 'a' because it is a read-only property.
+a.ts(4,5): error TS2339: Property 'zzz' does not exist on type 'T & { readonly a: string; }'.
+a.ts(10,7): error TS2540: Cannot assign to 'c' because it is a read-only property.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022" } }
+==== a.ts (4 errors) ====
+    function f1<T extends object>(t: T) {
+      const r = { ...t, get a() { return "g"; } };
+      r.a = "x";
+        ~
+!!! error TS2540: Cannot assign to 'a' because it is a read-only property.
+      r.zzz;
+        ~~~
+!!! error TS2339: Property 'zzz' does not exist on type 'T & { readonly a: string; }'.
+    }
+    class K<T extends object> {
+      constructor(public t: T) {}
+      m() {
+        const s = { ...this, b: 1, get c() { return 1; } };
+        s.c = 2;
+          ~
+!!! error TS2540: Cannot assign to 'c' because it is a read-only property.
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,18 @@
+//// [test/cases/bun17-C9.ts] ////
+
+=== a.ts ===
+function f<T extends unknown[]>(x: T) {
+>f : <T extends unknown[]>(x: T) => void
+>x : T
+
+  const t: [number, ...T] = ["s", ...x];
+>t : [number, ...T]
+>["s", ...x] : [string, ...T]
+>"s" : "s"
+>...x : unknown
+>x : T
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

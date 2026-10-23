@@ -1,0 +1,19 @@
+//// [test/cases/bun11-C1.ts] ////
+
+=== a.ts ===
+interface Thenable { then(cb: number): void }
+>then : (cb: number) => void
+>cb : number
+
+declare const th: Thenable;
+>th : Thenable
+
+async function* w6() { yield th; }
+>w6 : () => AsyncGenerator<never, void, unknown>
+>yield th : any
+>th : Thenable
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,23 @@
+//// [test/cases/bun04-C3.ts] ////
+
+=== a.ts ===
+export {};
+interface BadP { then(cb: (v: BadP) => void): void }
+>BadP : Symbol(BadP, Decl(a.ts, 0, 10))
+>then : Symbol(BadP.then, Decl(a.ts, 1, 16))
+>cb : Symbol(cb, Decl(a.ts, 1, 22))
+>v : Symbol(v, Decl(a.ts, 1, 27))
+>BadP : Symbol(BadP, Decl(a.ts, 0, 10))
+
+declare const it: Iterable<BadP>;
+>it : Symbol(it, Decl(a.ts, 2, 13))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>BadP : Symbol(BadP, Decl(a.ts, 0, 10))
+
+for await (const x of it) {}
+>x : Symbol(x, Decl(a.ts, 3, 16))
+>it : Symbol(it, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

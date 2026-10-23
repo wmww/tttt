@@ -1,0 +1,21 @@
+//// [test/cases/bun25-C20a.ts] ////
+
+=== a.js ===
+const [x] = require("./m");
+>x : 1
+>require("./m") : typeof import("./m")
+>require : any
+>"./m" : "./m"
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== m.js ===
+exports.x = 1;
+>exports.x = 1 : 1
+>exports.x : 1
+>exports : typeof import("./m")
+>x : 1
+>1 : 1
+

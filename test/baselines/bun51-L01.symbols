@@ -1,0 +1,49 @@
+//// [test/cases/bun51-L01.ts] ////
+
+=== f.js ===
+/** @param {number} z */ function j(z) { const arguments = 1; return z; }
+>j : Symbol(j, Decl(f.js, 0, 0))
+>z : Symbol(z, Decl(f.js, 0, 36))
+>arguments : Symbol(arguments, Decl(f.js, 0, 46))
+>z : Symbol(z, Decl(f.js, 0, 36))
+
+/** @param {number} z */ function j3(z) { var arguments = 1; return z; }
+>j3 : Symbol(j3, Decl(f.js, 0, 73))
+>z : Symbol(z, Decl(f.js, 1, 37))
+>arguments : Symbol(arguments, Decl(f.js, 1, 45))
+>z : Symbol(z, Decl(f.js, 1, 37))
+
+/** @param {number} z */ function j8(z) { const { a: arguments } = { a: 1 }; return z; }
+>j8 : Symbol(j8, Decl(f.js, 1, 72))
+>z : Symbol(z, Decl(f.js, 2, 37))
+>a : Symbol(a, Decl(f.js, 2, 68))
+>arguments : Symbol(arguments, Decl(f.js, 2, 49))
+>a : Symbol(a, Decl(f.js, 2, 68))
+>z : Symbol(z, Decl(f.js, 2, 37))
+
+/** @param {number} z */ function j5(z) { class arguments {} return z; }
+>j5 : Symbol(j5, Decl(f.js, 2, 88))
+>z : Symbol(z, Decl(f.js, 3, 37))
+>arguments : Symbol(arguments, Decl(f.js, 3, 41))
+>z : Symbol(z, Decl(f.js, 3, 37))
+
+function k(z) { const arguments = 1; return z; }
+>k : Symbol(k, Decl(f.js, 3, 72))
+>z : Symbol(z, Decl(f.js, 4, 11))
+>arguments : Symbol(arguments, Decl(f.js, 4, 21))
+>z : Symbol(z, Decl(f.js, 4, 11))
+
+j(1); j3(1); j8(1); j5(1); k(1);
+>j : Symbol(j, Decl(f.js, 0, 0))
+>j3 : Symbol(j3, Decl(f.js, 0, 73))
+>j8 : Symbol(j8, Decl(f.js, 1, 72))
+>j5 : Symbol(j5, Decl(f.js, 2, 88))
+>k : Symbol(k, Decl(f.js, 3, 72))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(f.js, 7, 5))
+
+export { sentinel };
+>sentinel : Symbol(sentinel, Decl(f.js, 8, 8))
+

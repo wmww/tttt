@@ -1,0 +1,10 @@
+//// [test/cases/bun04-C16.ts] ////
+
+=== a.ts ===
+declare function f1(a = missing1): void;
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

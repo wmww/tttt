@@ -1,0 +1,18 @@
+a.ts(1,18): error TS5085: A tuple member cannot be both optional and rest.
+a.ts(2,7): error TS2322: Type 'string[]' is not assignable to type 'never'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare let t1: [...a?: string[]];
+                     ~~~~~~~~~~~~~~~
+!!! error TS5085: A tuple member cannot be both optional and rest.
+    const n1: never = t1;
+          ~~
+!!! error TS2322: Type 'string[]' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

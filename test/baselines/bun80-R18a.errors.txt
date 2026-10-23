@@ -1,0 +1,27 @@
+a.ts(4,17): error TS2749: 'A.b' refers to a value, but is being used as a type here. Did you mean 'typeof A.b'?
+a.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(4,23): error TS2694: Namespace 'A' has no exported member 'b'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "commonjs", "noUnusedLocals": true } }
+==== a.ts (2 errors) ====
+    const A = { b: 1 };
+    export namespace W {
+      namespace A {}
+      export let t: A.b;
+                    ~~~
+!!! error TS2749: 'A.b' refers to a value, but is being used as a type here. Did you mean 'typeof A.b'?
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    class A { static q = 1 }
+    export namespace W {
+      namespace A {}
+      export import x = A.b;
+                          ~
+!!! error TS2694: Namespace 'A' has no exported member 'b'.
+    }
+    

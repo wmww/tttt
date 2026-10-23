@@ -1,0 +1,22 @@
+//// [test/cases/bun26-C10.ts] ////
+
+=== a.ts ===
+function r<T>({ a, ...rest }: { a: 1; b: 2 }) { return rest; }
+>r : Symbol(r, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 15))
+>rest : Symbol(rest, Decl(a.ts, 0, 18))
+>a : Symbol(a, Decl(a.ts, 0, 31))
+>b : Symbol(b, Decl(a.ts, 0, 37))
+>rest : Symbol(rest, Decl(a.ts, 0, 18))
+
+const n: never = null! as ReturnType<typeof r<1>> | ReturnType<typeof r<2>>;
+>n : Symbol(n, Decl(a.ts, 1, 5))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>r : Symbol(r, Decl(a.ts, 0, 0))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>r : Symbol(r, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

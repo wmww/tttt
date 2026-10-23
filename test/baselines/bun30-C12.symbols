@@ -1,0 +1,12 @@
+//// [test/cases/bun30-C12.ts] ////
+
+=== a.ts ===
+(class T<T> { x!: T });
+>T : Symbol(T, Decl(a.ts, 0, 1))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+>x : Symbol(T.x, Decl(a.ts, 0, 13))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,28 @@
+b.js(2,19): error TS8013: Non-null assertions can only be used in TypeScript files.
+b.js(3,19): error TS8013: Non-null assertions can only be used in TypeScript files.
+b.js(3,19): error TS8013: Non-null assertions can only be used in TypeScript files.
+b.js(4,19): error TS8013: Non-null assertions can only be used in TypeScript files.
+b.js(4,19): error TS8013: Non-null assertions can only be used in TypeScript files.
+b.js(4,19): error TS8013: Non-null assertions can only be used in TypeScript files.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "allowJs": true, "checkJs": true } }
+==== b.js (6 errors) ====
+    export const x = /** @type {number | undefined} */ (undefined);
+    export const j1 = x!;
+                      ~~
+!!! error TS8013: Non-null assertions can only be used in TypeScript files.
+    export const j2 = x!!;
+                      ~~
+!!! error TS8013: Non-null assertions can only be used in TypeScript files.
+                      ~~~
+!!! error TS8013: Non-null assertions can only be used in TypeScript files.
+    export const j3 = x!!!;
+                      ~~
+!!! error TS8013: Non-null assertions can only be used in TypeScript files.
+                      ~~~
+!!! error TS8013: Non-null assertions can only be used in TypeScript files.
+                      ~~~~
+!!! error TS8013: Non-null assertions can only be used in TypeScript files.
+    

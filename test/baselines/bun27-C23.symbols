@@ -1,0 +1,19 @@
+//// [test/cases/bun27-C23.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+
+enum Frag { A }
+>Frag : Symbol(Frag, Decl(a.tsx, 0, 83))
+>A : Symbol(Frag.A, Decl(a.tsx, 1, 11))
+
+const f = <></>;
+>f : Symbol(f, Decl(a.tsx, 2, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

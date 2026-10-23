@@ -1,0 +1,15 @@
+//// [test/cases/bun14-P10.ts] ////
+
+=== a.ts ===
+function f<T extends () => unknown>(y: ReturnType<T>) {
+>f : <T extends () => unknown>(y: ReturnType<T>) => any
+>y : ReturnType<T>
+
+  return { ...y };
+>{ ...y } : any
+>y : ReturnType<T>
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

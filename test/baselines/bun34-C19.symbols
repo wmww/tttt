@@ -1,0 +1,12 @@
+//// [test/cases/bun34-C19.ts] ////
+
+=== a.ts ===
+enum E { ["a"], a }
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>["a"] : Symbol(E["a"], Decl(a.ts, 0, 8))
+>"a" : Symbol(E["a"], Decl(a.ts, 0, 8))
+>a : Symbol(E.a, Decl(a.ts, 0, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

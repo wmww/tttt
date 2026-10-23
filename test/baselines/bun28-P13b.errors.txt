@@ -1,0 +1,15 @@
+a.ts(2,4): error TS18064: Private identifiers cannot be used in destructuring patterns.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    let b: any;
+    ({ #b: b } = {} as any);
+       ~~
+!!! error TS18064: Private identifiers cannot be used in destructuring patterns.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

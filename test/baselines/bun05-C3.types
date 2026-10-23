@@ -1,0 +1,22 @@
+//// [test/cases/bun05-C3.ts] ////
+
+=== a.ts ===
+class B { constructor(cb: (x: number) => void) {} }
+>B : B
+>cb : (x: number) => void
+>x : number
+
+class D1 extends B { m() { super(x => x); } }
+>D1 : D1
+>B : B
+>m : () => void
+>super(x => x) : void
+>super : any
+>x => x : (x: any) => any
+>x : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

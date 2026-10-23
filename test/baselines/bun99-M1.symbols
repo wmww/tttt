@@ -1,0 +1,525 @@
+//// [test/cases/bun99-M1.ts] ////
+
+=== a.ts ===
+enum K { ID = "id", N = "n" }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>N : Symbol(K.N, Decl(a.ts, 0, 19))
+
+enum Num { Zero, One }
+>Num : Symbol(Num, Decl(a.ts, 0, 29))
+>Zero : Symbol(Num.Zero, Decl(a.ts, 1, 10))
+>One : Symbol(Num.One, Decl(a.ts, 1, 16))
+
+declare const sym: unique symbol;
+>sym : Symbol(sym, Decl(a.ts, 2, 13))
+
+type Item = { [K.ID]: string; [K.N]: number; plain: boolean };
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>[K.ID] : Symbol([K.ID], Decl(a.ts, 3, 13))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>[K.N] : Symbol([K.N], Decl(a.ts, 3, 29))
+>K.N : Symbol(K.N, Decl(a.ts, 0, 19))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>N : Symbol(K.N, Decl(a.ts, 0, 19))
+>plain : Symbol(plain, Decl(a.ts, 3, 44))
+
+type NumItem = { [Num.Zero]: string; [Num.One]: number };
+>NumItem : Symbol(NumItem, Decl(a.ts, 3, 62))
+>[Num.Zero] : Symbol([Num.Zero], Decl(a.ts, 4, 16))
+>Num.Zero : Symbol(Num.Zero, Decl(a.ts, 1, 10))
+>Num : Symbol(Num, Decl(a.ts, 0, 29))
+>Zero : Symbol(Num.Zero, Decl(a.ts, 1, 10))
+>[Num.One] : Symbol([Num.One], Decl(a.ts, 4, 36))
+>Num.One : Symbol(Num.One, Decl(a.ts, 1, 16))
+>Num : Symbol(Num, Decl(a.ts, 0, 29))
+>One : Symbol(Num.One, Decl(a.ts, 1, 16))
+
+const k1: never = null! as keyof Item;
+>k1 : Symbol(k1, Decl(a.ts, 5, 5))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+
+const k2: never = null! as keyof Required<Item>;
+>k2 : Symbol(k2, Decl(a.ts, 6, 5))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+
+const k3: never = null! as keyof Partial<Item>;
+>k3 : Symbol(k3, Decl(a.ts, 7, 5))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+
+const k4: never = null! as keyof Pick<Item, K.ID>;
+>k4 : Symbol(k4, Decl(a.ts, 8, 5))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+
+const k5: never = null! as keyof { [P in keyof Item]: Item[P] };
+>k5 : Symbol(k5, Decl(a.ts, 9, 5))
+>P : Symbol(P, Decl(a.ts, 9, 36))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>P : Symbol(P, Decl(a.ts, 9, 36))
+
+const k6: never = null! as keyof { [P in K]: 1 };
+>k6 : Symbol(k6, Decl(a.ts, 10, 5))
+>P : Symbol(P, Decl(a.ts, 10, 36))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+
+const k7: never = null! as keyof Record<K, 1>;
+>k7 : Symbol(k7, Decl(a.ts, 11, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+
+const k8: never = null! as keyof Required<NumItem>;
+>k8 : Symbol(k8, Decl(a.ts, 12, 5))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>NumItem : Symbol(NumItem, Decl(a.ts, 3, 62))
+
+const k9: never = null! as keyof Readonly<Required<Item>>;
+>k9 : Symbol(k9, Decl(a.ts, 13, 5))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+
+function r1({ [K.ID]: id, ...rest }: Item) { const x: never = rest; }
+>r1 : Symbol(r1, Decl(a.ts, 13, 58))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 14, 13))
+>rest : Symbol(rest, Decl(a.ts, 14, 25))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>x : Symbol(x, Decl(a.ts, 14, 50))
+>rest : Symbol(rest, Decl(a.ts, 14, 25))
+
+function r2({ [K.ID]: id, ...rest }: Required<Item>) { const x: never = rest; }
+>r2 : Symbol(r2, Decl(a.ts, 14, 69))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 15, 13))
+>rest : Symbol(rest, Decl(a.ts, 15, 25))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>x : Symbol(x, Decl(a.ts, 15, 60))
+>rest : Symbol(rest, Decl(a.ts, 15, 25))
+
+function r3({ [K.ID]: id, ...rest }: Partial<Item>) { const x: never = rest; }
+>r3 : Symbol(r3, Decl(a.ts, 15, 79))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 16, 13))
+>rest : Symbol(rest, Decl(a.ts, 16, 25))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>x : Symbol(x, Decl(a.ts, 16, 59))
+>rest : Symbol(rest, Decl(a.ts, 16, 25))
+
+function r4({ [K.ID]: id, ...rest }: Record<K, 1>) { const x: never = rest; }
+>r4 : Symbol(r4, Decl(a.ts, 16, 78))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 17, 13))
+>rest : Symbol(rest, Decl(a.ts, 17, 25))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 17, 58))
+>rest : Symbol(rest, Decl(a.ts, 17, 25))
+
+function r5({ [K.ID]: id, ...rest }: { [P in K]: P }) { const x: never = rest; }
+>r5 : Symbol(r5, Decl(a.ts, 17, 77))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 18, 13))
+>rest : Symbol(rest, Decl(a.ts, 18, 25))
+>P : Symbol(P, Decl(a.ts, 18, 40))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>P : Symbol(P, Decl(a.ts, 18, 40))
+>x : Symbol(x, Decl(a.ts, 18, 61))
+>rest : Symbol(rest, Decl(a.ts, 18, 25))
+
+function r6({ [Num.Zero]: z, ...rest }: Required<NumItem>) { const x: never = rest; }
+>r6 : Symbol(r6, Decl(a.ts, 18, 80))
+>Num.Zero : Symbol(Num.Zero, Decl(a.ts, 1, 10))
+>Num : Symbol(Num, Decl(a.ts, 0, 29))
+>Zero : Symbol(Num.Zero, Decl(a.ts, 1, 10))
+>z : Symbol(z, Decl(a.ts, 19, 13))
+>rest : Symbol(rest, Decl(a.ts, 19, 28))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>NumItem : Symbol(NumItem, Decl(a.ts, 3, 62))
+>x : Symbol(x, Decl(a.ts, 19, 66))
+>rest : Symbol(rest, Decl(a.ts, 19, 28))
+
+function r7({ id, ...rest }: Required<Item>) { const x: never = rest; }
+>r7 : Symbol(r7, Decl(a.ts, 19, 85))
+>id : Symbol(id, Decl(a.ts, 20, 13))
+>rest : Symbol(rest, Decl(a.ts, 20, 17))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>x : Symbol(x, Decl(a.ts, 20, 52))
+>rest : Symbol(rest, Decl(a.ts, 20, 17))
+
+function r8({ ["id"]: id, ...rest }: Required<Item>) { const x: never = rest; }
+>r8 : Symbol(r8, Decl(a.ts, 20, 71))
+>"id" : Symbol(id, Decl(a.ts, 21, 13))
+>id : Symbol(id, Decl(a.ts, 21, 13))
+>rest : Symbol(rest, Decl(a.ts, 21, 25))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>x : Symbol(x, Decl(a.ts, 21, 60))
+>rest : Symbol(rest, Decl(a.ts, 21, 25))
+
+function r9({ [K.ID]: id, ...rest }: Readonly<Required<Item>>) { const x: never = rest; }
+>r9 : Symbol(r9, Decl(a.ts, 21, 79))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 22, 13))
+>rest : Symbol(rest, Decl(a.ts, 22, 25))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>x : Symbol(x, Decl(a.ts, 22, 70))
+>rest : Symbol(rest, Decl(a.ts, 22, 25))
+
+function r10({ [K.ID]: id, ...rest }: Required<Item> & { extra: 1 }) { const x: never = rest; }
+>r10 : Symbol(r10, Decl(a.ts, 22, 89))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 23, 14))
+>rest : Symbol(rest, Decl(a.ts, 23, 26))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>extra : Symbol(extra, Decl(a.ts, 23, 56))
+>x : Symbol(x, Decl(a.ts, 23, 76))
+>rest : Symbol(rest, Decl(a.ts, 23, 26))
+
+function r11({ [K.ID]: id, ...rest }: Pick<Item, K.ID | "plain">) { const x: never = rest; }
+>r11 : Symbol(r11, Decl(a.ts, 23, 95))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 24, 14))
+>rest : Symbol(rest, Decl(a.ts, 24, 26))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>x : Symbol(x, Decl(a.ts, 24, 73))
+>rest : Symbol(rest, Decl(a.ts, 24, 26))
+
+function r12({ [K.ID]: id, ...rest }: Omit<Item, "plain">) { const x: never = rest; }
+>r12 : Symbol(r12, Decl(a.ts, 24, 92))
+>K.ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(a.ts, 0, 8))
+>id : Symbol(id, Decl(a.ts, 25, 14))
+>rest : Symbol(rest, Decl(a.ts, 25, 26))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(a.ts, 2, 33))
+>x : Symbol(x, Decl(a.ts, 25, 66))
+>rest : Symbol(rest, Decl(a.ts, 25, 26))
+
+export {};
+=== b.ts ===
+enum K { ID = "id", N = "n" }
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>N : Symbol(K.N, Decl(b.ts, 0, 19))
+
+enum L { ID = "id" }
+>L : Symbol(L, Decl(b.ts, 0, 29))
+>ID : Symbol(L.ID, Decl(b.ts, 1, 8))
+
+type Item = { [K.ID]: string; [K.N]: number; plain: boolean };
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>[K.ID] : Symbol([K.ID], Decl(b.ts, 2, 13))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>[K.N] : Symbol([K.N], Decl(b.ts, 2, 29))
+>K.N : Symbol(K.N, Decl(b.ts, 0, 19))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>N : Symbol(K.N, Decl(b.ts, 0, 19))
+>plain : Symbol(plain, Decl(b.ts, 2, 44))
+
+type Same = { [P in keyof Item as P]: Item[P] };
+>Same : Symbol(Same, Decl(b.ts, 2, 62))
+>P : Symbol(P, Decl(b.ts, 3, 15))
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>P : Symbol(P, Decl(b.ts, 3, 15))
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>P : Symbol(P, Decl(b.ts, 3, 15))
+
+type Filtered = { [P in keyof Item as Exclude<P, K.N>]: Item[P] };
+>Filtered : Symbol(Filtered, Decl(b.ts, 3, 48))
+>P : Symbol(P, Decl(b.ts, 4, 19))
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(b.ts, 4, 19))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>N : Symbol(K.N, Decl(b.ts, 0, 19))
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>P : Symbol(P, Decl(b.ts, 4, 19))
+
+type Prefixed = { [P in K as `x${P}`]: P };
+>Prefixed : Symbol(Prefixed, Decl(b.ts, 4, 66))
+>P : Symbol(P, Decl(b.ts, 5, 19))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>P : Symbol(P, Decl(b.ts, 5, 19))
+>P : Symbol(P, Decl(b.ts, 5, 19))
+
+type ToOther = { [P in K as P extends K.ID ? L.ID : P]: P };
+>ToOther : Symbol(ToOther, Decl(b.ts, 5, 43))
+>P : Symbol(P, Decl(b.ts, 6, 18))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>P : Symbol(P, Decl(b.ts, 6, 18))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>L : Symbol(L, Decl(b.ts, 0, 29))
+>ID : Symbol(L.ID, Decl(b.ts, 1, 8))
+>P : Symbol(P, Decl(b.ts, 6, 18))
+>P : Symbol(P, Decl(b.ts, 6, 18))
+
+type Merged = { [P in K | "id" as P extends K.ID ? "id" : P]: P };
+>Merged : Symbol(Merged, Decl(b.ts, 6, 60))
+>P : Symbol(P, Decl(b.ts, 7, 17))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>P : Symbol(P, Decl(b.ts, 7, 17))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>P : Symbol(P, Decl(b.ts, 7, 17))
+>P : Symbol(P, Decl(b.ts, 7, 17))
+
+type ToString = { [P in K as `${P}`]: P };
+>ToString : Symbol(ToString, Decl(b.ts, 7, 66))
+>P : Symbol(P, Decl(b.ts, 8, 19))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>P : Symbol(P, Decl(b.ts, 8, 19))
+>P : Symbol(P, Decl(b.ts, 8, 19))
+
+type Two = { [P in K.ID as P | "also"]: P };
+>Two : Symbol(Two, Decl(b.ts, 8, 42))
+>P : Symbol(P, Decl(b.ts, 9, 14))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>P : Symbol(P, Decl(b.ts, 9, 14))
+>P : Symbol(P, Decl(b.ts, 9, 14))
+
+const k1: never = null! as keyof Same;
+>k1 : Symbol(k1, Decl(b.ts, 10, 5))
+>Same : Symbol(Same, Decl(b.ts, 2, 62))
+
+const k2: never = null! as keyof Filtered;
+>k2 : Symbol(k2, Decl(b.ts, 11, 5))
+>Filtered : Symbol(Filtered, Decl(b.ts, 3, 48))
+
+const k3: never = null! as keyof Prefixed;
+>k3 : Symbol(k3, Decl(b.ts, 12, 5))
+>Prefixed : Symbol(Prefixed, Decl(b.ts, 4, 66))
+
+const k4: never = null! as keyof ToOther;
+>k4 : Symbol(k4, Decl(b.ts, 13, 5))
+>ToOther : Symbol(ToOther, Decl(b.ts, 5, 43))
+
+const k5: never = null! as keyof Merged;
+>k5 : Symbol(k5, Decl(b.ts, 14, 5))
+>Merged : Symbol(Merged, Decl(b.ts, 6, 60))
+
+const k6: never = null! as keyof ToString;
+>k6 : Symbol(k6, Decl(b.ts, 15, 5))
+>ToString : Symbol(ToString, Decl(b.ts, 7, 66))
+
+const k7: never = null! as keyof Two;
+>k7 : Symbol(k7, Decl(b.ts, 16, 5))
+>Two : Symbol(Two, Decl(b.ts, 8, 42))
+
+function s1({ [K.ID]: id, ...rest }: Same) { const x: never = rest; }
+>s1 : Symbol(s1, Decl(b.ts, 16, 37))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 17, 13))
+>rest : Symbol(rest, Decl(b.ts, 17, 25))
+>Same : Symbol(Same, Decl(b.ts, 2, 62))
+>x : Symbol(x, Decl(b.ts, 17, 50))
+>rest : Symbol(rest, Decl(b.ts, 17, 25))
+
+function s2({ [K.ID]: id, ...rest }: Filtered) { const x: never = rest; }
+>s2 : Symbol(s2, Decl(b.ts, 17, 69))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 18, 13))
+>rest : Symbol(rest, Decl(b.ts, 18, 25))
+>Filtered : Symbol(Filtered, Decl(b.ts, 3, 48))
+>x : Symbol(x, Decl(b.ts, 18, 54))
+>rest : Symbol(rest, Decl(b.ts, 18, 25))
+
+function s3({ xid, ...rest }: Prefixed) { const x: never = rest; }
+>s3 : Symbol(s3, Decl(b.ts, 18, 73))
+>xid : Symbol(xid, Decl(b.ts, 19, 13))
+>rest : Symbol(rest, Decl(b.ts, 19, 18))
+>Prefixed : Symbol(Prefixed, Decl(b.ts, 4, 66))
+>x : Symbol(x, Decl(b.ts, 19, 47))
+>rest : Symbol(rest, Decl(b.ts, 19, 18))
+
+function s4({ [K.ID]: id, ...rest }: ToOther) { const x: never = rest; }
+>s4 : Symbol(s4, Decl(b.ts, 19, 66))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 20, 13))
+>rest : Symbol(rest, Decl(b.ts, 20, 25))
+>ToOther : Symbol(ToOther, Decl(b.ts, 5, 43))
+>x : Symbol(x, Decl(b.ts, 20, 53))
+>rest : Symbol(rest, Decl(b.ts, 20, 25))
+
+function s5({ [L.ID]: id, ...rest }: ToOther) { const x: never = rest; }
+>s5 : Symbol(s5, Decl(b.ts, 20, 72))
+>L.ID : Symbol(L.ID, Decl(b.ts, 1, 8))
+>L : Symbol(L, Decl(b.ts, 0, 29))
+>ID : Symbol(L.ID, Decl(b.ts, 1, 8))
+>id : Symbol(id, Decl(b.ts, 21, 13))
+>rest : Symbol(rest, Decl(b.ts, 21, 25))
+>ToOther : Symbol(ToOther, Decl(b.ts, 5, 43))
+>x : Symbol(x, Decl(b.ts, 21, 53))
+>rest : Symbol(rest, Decl(b.ts, 21, 25))
+
+function s6({ [K.ID]: id, ...rest }: Merged) { const x: never = rest; }
+>s6 : Symbol(s6, Decl(b.ts, 21, 72))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 22, 13))
+>rest : Symbol(rest, Decl(b.ts, 22, 25))
+>Merged : Symbol(Merged, Decl(b.ts, 6, 60))
+>x : Symbol(x, Decl(b.ts, 22, 52))
+>rest : Symbol(rest, Decl(b.ts, 22, 25))
+
+function s7({ id, ...rest }: Merged) { const x: never = rest; }
+>s7 : Symbol(s7, Decl(b.ts, 22, 71))
+>id : Symbol(id, Decl(b.ts, 23, 13))
+>rest : Symbol(rest, Decl(b.ts, 23, 17))
+>Merged : Symbol(Merged, Decl(b.ts, 6, 60))
+>x : Symbol(x, Decl(b.ts, 23, 44))
+>rest : Symbol(rest, Decl(b.ts, 23, 17))
+
+function s8({ [K.ID]: id, ...rest }: ToString) { const x: never = rest; }
+>s8 : Symbol(s8, Decl(b.ts, 23, 63))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 24, 13))
+>rest : Symbol(rest, Decl(b.ts, 24, 25))
+>ToString : Symbol(ToString, Decl(b.ts, 7, 66))
+>x : Symbol(x, Decl(b.ts, 24, 54))
+>rest : Symbol(rest, Decl(b.ts, 24, 25))
+
+function s9({ id, ...rest }: ToString) { const x: never = rest; }
+>s9 : Symbol(s9, Decl(b.ts, 24, 73))
+>id : Symbol(id, Decl(b.ts, 25, 13))
+>rest : Symbol(rest, Decl(b.ts, 25, 17))
+>ToString : Symbol(ToString, Decl(b.ts, 7, 66))
+>x : Symbol(x, Decl(b.ts, 25, 46))
+>rest : Symbol(rest, Decl(b.ts, 25, 17))
+
+function s10({ [K.ID]: id, ...rest }: Two) { const x: never = rest; }
+>s10 : Symbol(s10, Decl(b.ts, 25, 65))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 26, 14))
+>rest : Symbol(rest, Decl(b.ts, 26, 26))
+>Two : Symbol(Two, Decl(b.ts, 8, 42))
+>x : Symbol(x, Decl(b.ts, 26, 50))
+>rest : Symbol(rest, Decl(b.ts, 26, 26))
+
+function s11({ [L.ID]: id, ...rest }: Required<Item>) { const x: never = rest; }
+>s11 : Symbol(s11, Decl(b.ts, 26, 69))
+>L.ID : Symbol(L.ID, Decl(b.ts, 1, 8))
+>L : Symbol(L, Decl(b.ts, 0, 29))
+>ID : Symbol(L.ID, Decl(b.ts, 1, 8))
+>id : Symbol(id, Decl(b.ts, 27, 14))
+>rest : Symbol(rest, Decl(b.ts, 27, 26))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>x : Symbol(x, Decl(b.ts, 27, 61))
+>rest : Symbol(rest, Decl(b.ts, 27, 26))
+
+function s12<T extends Item>({ [K.ID]: id, ...rest }: Required<T>) { const x: never = rest; }
+>s12 : Symbol(s12, Decl(b.ts, 27, 80))
+>T : Symbol(T, Decl(b.ts, 28, 13))
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 28, 30))
+>rest : Symbol(rest, Decl(b.ts, 28, 42))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(b.ts, 28, 13))
+>x : Symbol(x, Decl(b.ts, 28, 74))
+>rest : Symbol(rest, Decl(b.ts, 28, 42))
+
+function s13(o: Required<Item>) { let id, rest; ({ [K.ID]: id, ...rest } = o); const x: never = rest; }
+>s13 : Symbol(s13, Decl(b.ts, 28, 93))
+>o : Symbol(o, Decl(b.ts, 29, 13))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(b.ts, 1, 20))
+>id : Symbol(id, Decl(b.ts, 29, 37))
+>rest : Symbol(rest, Decl(b.ts, 29, 41))
+>[K.ID] : Symbol([K.ID], Decl(b.ts, 29, 50))
+>K.ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>K : Symbol(K, Decl(b.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(b.ts, 0, 8))
+>id : Symbol(id, Decl(b.ts, 29, 37))
+>rest : Symbol(rest, Decl(b.ts, 29, 41))
+>o : Symbol(o, Decl(b.ts, 29, 13))
+>x : Symbol(x, Decl(b.ts, 29, 84))
+>rest : Symbol(rest, Decl(b.ts, 29, 41))
+
+export {};
+=== index.ts ===
+enum K {
+>K : Symbol(K, Decl(index.ts, 0, 0))
+
+  ID = "id",
+>ID : Symbol(K.ID, Decl(index.ts, 0, 8))
+}
+
+type Item = { [K.ID]: string };
+>Item : Symbol(Item, Decl(index.ts, 2, 1))
+>[K.ID] : Symbol([K.ID], Decl(index.ts, 4, 13))
+>K.ID : Symbol(K.ID, Decl(index.ts, 0, 8))
+>K : Symbol(K, Decl(index.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(index.ts, 0, 8))
+
+export function f({ [K.ID]: id, ...rest }: Required<Item>): Item {
+>f : Symbol(f, Decl(index.ts, 4, 31))
+>K.ID : Symbol(K.ID, Decl(index.ts, 0, 8))
+>K : Symbol(K, Decl(index.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(index.ts, 0, 8))
+>id : Symbol(id, Decl(index.ts, 6, 19))
+>rest : Symbol(rest, Decl(index.ts, 6, 31))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Item : Symbol(Item, Decl(index.ts, 2, 1))
+>Item : Symbol(Item, Decl(index.ts, 2, 1))
+
+  return { [K.ID]: id, ...rest };
+>[K.ID] : Symbol([K.ID], Decl(index.ts, 7, 10))
+>K.ID : Symbol(K.ID, Decl(index.ts, 0, 8))
+>K : Symbol(K, Decl(index.ts, 0, 0))
+>ID : Symbol(K.ID, Decl(index.ts, 0, 8))
+>id : Symbol(id, Decl(index.ts, 6, 19))
+>rest : Symbol(rest, Decl(index.ts, 6, 31))
+}
+

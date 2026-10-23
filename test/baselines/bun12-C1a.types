@@ -1,0 +1,26 @@
+//// [test/cases/bun12-C1a.ts] ////
+
+=== a.ts ===
+function pick<T, U>(t: T, u: U): { [K in keyof T]: U } {
+>pick : <T, U>(t: T, u: U) => { [K in keyof T]: U; }
+>t : T
+>u : U
+
+  const r = pick(u, t);
+>r : { [K in keyof T]: T; }
+>pick(u, t) : { [K in keyof T]: T; }
+>pick : <T, U>(t: T, u: U) => { [K in keyof T]: U; }
+>u : U
+>t : T
+
+  const ok: { [K in keyof U]: T } = r;
+>ok : { [K in keyof U]: T; }
+>r : { [K in keyof T]: T; }
+
+  return null!;
+>null! : never
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

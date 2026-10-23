@@ -1,0 +1,9 @@
+//// [test/cases/bun04-C18.ts] ////
+
+=== a.ts ===
+export type X1 = intrinsic | 1;
+>X1 : intrinsic
+>| 1 : number
+> : any
+>1 : 1
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun09-C10.ts] ////
+
+=== a.ts ===
+declare const f1: ({ a }: { a: 1 } | undefined) => void;
+>f1 : Symbol(f1, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+>a : Symbol(a, Decl(a.ts, 0, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

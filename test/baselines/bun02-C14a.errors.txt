@@ -1,0 +1,24 @@
+a.ts(1,16): error TS1070: 'static' modifier cannot appear on a type member.
+a.ts(1,23): error TS2699: Static property 'prototype' conflicts with built-in property 'Function.prototype' of constructor function 'I1'.
+a.ts(2,13): error TS1070: 'static' modifier cannot appear on a type member.
+a.ts(2,20): error TS2699: Static property 'prototype' conflicts with built-in property 'Function.prototype' of constructor function '__type'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    interface I1 { static prototype: number }
+                   ~~~~~~
+!!! error TS1070: 'static' modifier cannot appear on a type member.
+                          ~~~~~~~~~
+!!! error TS2699: Static property 'prototype' conflicts with built-in property 'Function.prototype' of constructor function 'I1'.
+    type L1 = { static prototype: number };
+                ~~~~~~
+!!! error TS1070: 'static' modifier cannot appear on a type member.
+                       ~~~~~~~~~
+!!! error TS2699: Static property 'prototype' conflicts with built-in property 'Function.prototype' of constructor function '__type'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

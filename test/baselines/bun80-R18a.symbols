@@ -1,0 +1,37 @@
+//// [test/cases/bun80-R18a.ts] ////
+
+=== a.ts ===
+const A = { b: 1 };
+>A : Symbol(A, Decl(a.ts, 0, 5))
+>b : Symbol(b, Decl(a.ts, 0, 11))
+
+export namespace W {
+>W : Symbol(W, Decl(a.ts, 0, 19))
+
+  namespace A {}
+>A : Symbol(A, Decl(a.ts, 1, 20))
+
+  export let t: A.b;
+>t : Symbol(t, Decl(a.ts, 3, 12))
+>A : Symbol(A, Decl(a.ts, 1, 20))
+>b : Symbol(A.b)
+}
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 12))
+
+=== b.ts ===
+class A { static q = 1 }
+>A : Symbol(A, Decl(b.ts, 0, 0))
+>q : Symbol(A.q, Decl(b.ts, 0, 9))
+
+export namespace W {
+>W : Symbol(W, Decl(b.ts, 0, 24))
+
+  namespace A {}
+>A : Symbol(A, Decl(b.ts, 1, 20))
+
+  export import x = A.b;
+>x : Symbol(x, Decl(b.ts, 2, 16))
+>A : Symbol(A, Decl(b.ts, 1, 20))
+}
+

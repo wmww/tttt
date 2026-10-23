@@ -1,0 +1,30 @@
+//// [test/cases/bun86-R02a.ts] ////
+
+=== a.ts ===
+Document.a = 2;
+>Document.a : Symbol(a, Decl(index.js, 0, 16))
+>Document : Symbol(Document, Decl(index.js, 0, 3))
+>a : Symbol(a, Decl(index.js, 0, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/@typescript/lib-dom/index.js ===
+var Document = { a: 1 };
+>Document : Symbol(Document, Decl(index.js, 0, 3))
+>a : Symbol(a, Decl(index.js, 0, 16))
+
+/** @type {number} */ var bad = "";
+>bad : Symbol(bad, Decl(index.js, 1, 25))
+
+function helper(x) { return x; }
+>helper : Symbol(helper, Decl(index.js, 1, 35))
+>x : Symbol(x, Decl(index.js, 2, 16))
+>x : Symbol(x, Decl(index.js, 2, 16))
+
+class Win { constructor() { this.p = 1; } }
+>Win : Symbol(Win, Decl(index.js, 2, 32))
+>this.p : Symbol(Win.p, Decl(index.js, 3, 27))
+>this : Symbol(Win, Decl(index.js, 2, 32))
+>p : Symbol(Win.p, Decl(index.js, 3, 27))
+

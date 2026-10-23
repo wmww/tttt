@@ -1,0 +1,120 @@
+//// [test/cases/bun73-R01b.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : () => boolean
+
+function missed() {
+>missed : () => void
+
+  let x: string | 1 | boolean = "";
+>x : string | 1 | boolean
+>"" : ""
+
+  let y: string | number = "";
+>y : string | number
+>"" : ""
+
+  while (c()) {
+>c() : boolean
+>c : () => boolean
+
+    x;
+>x : string | 1
+
+    if (y === 1) { }
+>y === 1 : boolean
+>y : string | number
+>1 : 1
+
+    x = y;
+>x = y : string | number
+>x : string | 1 | boolean
+>y : string | number
+
+    if (c()) y = 0;
+>c() : boolean
+>c : () => boolean
+>y = 0 : 0
+>y : string | number
+>0 : 0
+  }
+}
+function otherText() {
+>otherText : () => void
+
+  let x: string | boolean = "";
+>x : string | boolean
+>"" : ""
+
+  let y: string | number = "";
+>y : string | number
+>"" : ""
+
+  while (c()) {
+>c() : boolean
+>c : () => boolean
+
+    x;
+>x : string | boolean
+
+    if (y === 1) { }
+>y === 1 : boolean
+>y : string | number
+>1 : 1
+
+    x = y;
+>x = y : string | number
+>x : string | boolean
+>y : string | number
+
+    if (c()) y = 0;
+>c() : boolean
+>c : () => boolean
+>y = 0 : 0
+>y : string | number
+>0 : 0
+  }
+}
+function reportedTwice() {
+>reportedTwice : () => void
+
+  let x: string | number | boolean = "";
+>x : string | number | boolean
+>"" : ""
+
+  let y: string | number = "";
+>y : string | number
+>"" : ""
+
+  while (c()) {
+>c() : boolean
+>c : () => boolean
+
+    x;
+>x : string | number
+
+    if (y === 1) { }
+>y === 1 : boolean
+>y : string | number
+>1 : 1
+
+    x = (y satisfies never);
+>x = (y satisfies never) : string | number
+>x : string | number | boolean
+>(y satisfies never) : string | number
+>y satisfies never : string | number
+>y : string | number
+
+    if (c()) y = 0;
+>c() : boolean
+>c : () => boolean
+>y = 0 : 0
+>y : string | number
+>0 : 0
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,836 @@
+a.ts(6,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(7,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(8,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(9,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(10,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(11,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(12,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(13,25): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(13,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(14,28): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(14,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(15,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(17,28): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+a.ts(17,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(18,28): error TS2322: Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+  Type 'A[] | A[]' is not assignable to type 'A[]'.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+a.ts(18,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(19,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(20,19): error TS2345: Argument of type '<A extends {}>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends {}>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+a.ts(20,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(21,19): error TS2345: Argument of type '<A extends {}>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends {}>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+a.ts(21,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(22,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(23,28): error TS2322: Type 'P<A[]> | P<A[]>' is not assignable to type 'P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+a.ts(23,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(24,25): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+a.ts(24,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(25,28): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(25,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(26,19): error TS2345: Argument of type '<Z>(box: Box<Z, string>) => P<A[] | Z[]>' is not assignable to parameter of type '<A extends {}>(box: Box<A, "tag">) => P<A[]>'.
+  Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+    Type 'A[] | A[]' is not assignable to type 'A[]'.
+      Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+        Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+          'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+a.ts(26,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(28,28): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+a.ts(28,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(29,28): error TS2322: Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+  Type 'A[] | A[]' is not assignable to type 'A[]'.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+a.ts(29,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(30,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(31,19): error TS2345: Argument of type '<A extends unknown>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends unknown>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+a.ts(31,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(32,19): error TS2345: Argument of type '<A extends unknown>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends unknown>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+a.ts(32,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(33,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(34,28): error TS2322: Type 'P<A[]> | P<A[]>' is not assignable to type 'P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+a.ts(34,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(35,25): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+a.ts(35,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(36,28): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(36,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(37,19): error TS2345: Argument of type '<Z>(box: Box<Z, string>) => P<A[] | Z[]>' is not assignable to parameter of type '<A extends unknown>(box: Box<A, "tag">) => P<A[]>'.
+  Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+    Type 'A[] | A[]' is not assignable to type 'A[]'.
+      Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+        Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+          'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+a.ts(37,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(39,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(40,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(41,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(42,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(43,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(44,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(45,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(46,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(47,28): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(47,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(48,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(50,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(51,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(52,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(53,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(54,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(55,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(56,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(57,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(58,28): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(58,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(59,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(61,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(62,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(63,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(64,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(65,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(66,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(67,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(68,32): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(68,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(69,35): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(69,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(70,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(72,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(73,82): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(74,81): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(75,89): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(76,95): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(77,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(78,98): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(79,35): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(79,72): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(80,38): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(80,76): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(81,102): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(83,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(84,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(85,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(86,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(87,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(88,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(89,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(90,25): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(90,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(91,28): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(91,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(92,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(94,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(95,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(96,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(97,77): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(98,83): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(99,52): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(100,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(101,26): error TS2345: Argument of type '() => P<A[]>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(101,60): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(102,26): error TS2345: Argument of type '<A>(box: Box<A, string>) => P<Box<A, string>>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+    Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(102,64): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(103,90): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(105,66): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(106,71): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(107,70): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(108,78): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(109,84): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(110,53): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(111,87): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(112,20): error TS2345: Argument of type '() => P<A[]>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+    Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+      Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+        'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(112,61): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(113,20): error TS2345: Argument of type '<A>(box: Box<A, string>) => P<Box<A, string>>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+    Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(113,65): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(114,91): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(116,66): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(117,71): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(118,70): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(119,78): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(120,84): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(121,53): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(122,87): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(123,26): error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+  Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+    Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+      'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(123,61): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(124,29): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(124,65): error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+a.ts(125,91): error TS2322: Type '<A>(box: Box<A, "tag">) => P<A[]>' is not assignable to type 'never'.
+a.ts(127,74): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(128,79): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(129,78): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(130,86): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(131,92): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(132,61): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(133,95): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(134,69): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(135,37): error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+  Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+a.ts(135,73): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(136,28): error TS2345: Argument of type '<Z>(box: Box<Z, string>) => P<A[] | Z[]>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+  Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+    Type 'A[] | A[]' is not assignable to type 'A[]'.
+      Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+        Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+          'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+a.ts(136,99): error TS2322: Type 'void' is not assignable to type 'never'.
+a.ts(141,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "target": "ES2022", "lib": ["ES2022"], "noEmit": true, "types": [], "skipLibCheck": true } }
+==== a.ts (155 errors) ====
+    interface P<T> { v: T; then<W = never>(f: (value: T) => unknown): P<W>; both<U, W = never>(f: (value: T) => U | P<U>): P<U | W>; one<U>(f: (value: T) => U | P<U>): P<U> }
+    interface Box<A, R> { readonly a: A; readonly r: R }
+    declare const start: P<number>;
+    declare function run<A, R>(box: Box<A, R>): P<A[]>;
+    declare function make1<R>(runner: <A>(box: Box<A, R>) => P<A[]>, tag: R): void;
+    { const r = make1((box) => start.then(() => box), "tag"); const probe: never = r; }
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1((box) => run(box), "tag"); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1(() => start.then(() => 0), "tag"); const probe: never = r; }
+                            ~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:5:36: This type parameter might need an `extends A` constraint.
+!!! related TS6502 a.ts:5:35: The expected type comes from the return type of this signature.
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1((box) => start.one(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:5:35: The expected type comes from the return type of this signature.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make1(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make2<R>(runner: <A extends {}>(box: Box<A, R>) => P<A[]>, tag: R): void;
+    { const r = make2((box) => start.then(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+!!! related TS6502 a.ts:16:35: The expected type comes from the return type of this signature.
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'A[] | A[]' is not assignable to type 'A[]'.
+!!! error TS2322:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+!!! related TS6502 a.ts:16:35: The expected type comes from the return type of this signature.
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<A extends {}>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends {}>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                      ~~~~~~~~
+!!! error TS2345: Argument of type '<A extends {}>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends {}>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2((box) => run(box), "tag"); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<A[]> | P<A[]>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+!!! related TS6502 a.ts:16:35: The expected type comes from the return type of this signature.
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2(() => start.then(() => 0), "tag"); const probe: never = r; }
+                            ~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+!!! related TS6502 a.ts:16:35: The expected type comes from the return type of this signature.
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2((box) => start.one(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:16:35: The expected type comes from the return type of this signature.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make2(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<Z>(box: Box<Z, string>) => P<A[] | Z[]>' is not assignable to parameter of type '<A extends {}>(box: Box<A, "tag">) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+!!! error TS2345:     Type 'A[] | A[]' is not assignable to type 'A[]'.
+!!! error TS2345:       Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:           'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint '{}'.
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make3<R>(runner: <A extends unknown>(box: Box<A, R>) => P<A[]>, tag: R): void;
+    { const r = make3((box) => start.then(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+!!! related TS6502 a.ts:27:35: The expected type comes from the return type of this signature.
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'A[] | A[]' is not assignable to type 'A[]'.
+!!! error TS2322:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+!!! related TS6502 a.ts:27:35: The expected type comes from the return type of this signature.
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<A extends unknown>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends unknown>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                      ~~~~~~~~
+!!! error TS2345: Argument of type '<A extends unknown>(box: Box<A, string>) => P<A[]>' is not assignable to parameter of type '<A extends unknown>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3((box) => run(box), "tag"); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<A[]> | P<A[]>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2322:         'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+!!! related TS6502 a.ts:27:35: The expected type comes from the return type of this signature.
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3(() => start.then(() => 0), "tag"); const probe: never = r; }
+                            ~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+!!! related TS6502 a.ts:27:35: The expected type comes from the return type of this signature.
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3((box) => start.one(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:27:35: The expected type comes from the return type of this signature.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make3(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<Z>(box: Box<Z, string>) => P<A[] | Z[]>' is not assignable to parameter of type '<A extends unknown>(box: Box<A, "tag">) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+!!! error TS2345:     Type 'A[] | A[]' is not assignable to type 'A[]'.
+!!! error TS2345:       Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:           'A' is assignable to the constraint of type 'A', but 'A' could be instantiated with a different subtype of constraint 'unknown'.
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make4(runner: <A>(box: Box<A, string>) => P<A[]>, tag: string): void;
+    { const r = make4((box) => start.then(() => box), "tag"); const probe: never = r; }
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4((box) => run(box), "tag"); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4(() => start.then(() => 0), "tag"); const probe: never = r; }
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4((box) => start.one(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:38:32: The expected type comes from the return type of this signature.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make4(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make5<R>(runner: <A>(box: Box<A, string>) => P<A[]>, tag: R): void;
+    { const r = make5((box) => start.then(() => box), "tag"); const probe: never = r; }
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5((box) => run(box), "tag"); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5(() => start.then(() => 0), "tag"); const probe: never = r; }
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5((box) => start.one(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:49:35: The expected type comes from the return type of this signature.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make5(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make6<R>(tag: R, runner: <A>(box: Box<A, R>) => P<A[]>): void;
+    { const r = make6("tag", (box) => start.then(() => box)); const probe: never = r; }
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", (box) => start.both(() => run(box))); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", (box) => start.one(() => run(box))); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", (box) => { return start.then(() => box); }); const probe: never = r; }
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", function (box) { return start.then(() => box); }); const probe: never = r; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", (box) => run(box)); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", (box) => (box.a ? start.then(() => box) : run(box))); const probe: never = r; }
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", () => start.then(() => 0)); const probe: never = r; }
+                                   ~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:60:44: This type parameter might need an `extends A` constraint.
+!!! related TS6502 a.ts:60:43: The expected type comes from the return type of this signature.
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", (box) => start.one(() => box)); const probe: never = r; }
+                                      ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:60:43: The expected type comes from the return type of this signature.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make6("tag", <Z,>(box: Box<Z, string>) => start.both(() => run(box))); const probe: never = r; }
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make7<R>(o: { runner: <A>(box: Box<A, R>) => P<A[]> }, tag: R): void;
+    { const r = make7({ runner: (box) => start.then(() => box) }, "tag"); const probe: never = r; }
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: (box) => start.both(() => run(box)) }, "tag"); const probe: never = r; }
+                                                                                     ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: (box) => start.one(() => run(box)) }, "tag"); const probe: never = r; }
+                                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: (box) => { return start.then(() => box); } }, "tag"); const probe: never = r; }
+                                                                                            ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: function (box) { return start.then(() => box); } }, "tag"); const probe: never = r; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: (box) => run(box) }, "tag"); const probe: never = r; }
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: (box) => (box.a ? start.then(() => box) : run(box)) }, "tag"); const probe: never = r; }
+                                                                                                     ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: () => start.then(() => 0) }, "tag"); const probe: never = r; }
+                                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:71:41: This type parameter might need an `extends A` constraint.
+!!! related TS6502 a.ts:71:40: The expected type comes from the return type of this signature.
+                                                                           ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: (box) => start.one(() => box) }, "tag"); const probe: never = r; }
+                                         ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:71:40: The expected type comes from the return type of this signature.
+                                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make7({ runner: <Z,>(box: Box<Z, string>) => start.both(() => run(box)) }, "tag"); const probe: never = r; }
+                                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make8<R>(runner: <A, B>(box: Box<A, R>, other: B) => P<A[]>, tag: R): void;
+    { const r = make8((box) => start.then(() => box), "tag"); const probe: never = r; }
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8((box) => run(box), "tag"); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8(() => start.then(() => 0), "tag"); const probe: never = r; }
+                            ~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:82:36: This type parameter might need an `extends A` constraint.
+!!! related TS6502 a.ts:82:35: The expected type comes from the return type of this signature.
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8((box) => start.one(() => box), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:82:35: The expected type comes from the return type of this signature.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make8(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make9<R>(tag: R, runner?: <A>(box: Box<A, R>) => P<A[]>): void;
+    { const r = make9("tag", (box) => start.then(() => box)); const probe: never = r; }
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", (box) => start.both(() => run(box))); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", (box) => start.one(() => run(box))); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", (box) => { return start.then(() => box); }); const probe: never = r; }
+                                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", function (box) { return start.then(() => box); }); const probe: never = r; }
+                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", (box) => run(box)); const probe: never = r; }
+                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", (box) => (box.a ? start.then(() => box) : run(box))); const probe: never = r; }
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", () => start.then(() => 0)); const probe: never = r; }
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '() => P<A[]>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:93:45: This type parameter might need an `extends A` constraint.
+                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", (box) => start.one(() => box)); const probe: never = r; }
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<A>(box: Box<A, string>) => P<Box<A, string>>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2345:     Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+                                                                   ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make9("tag", <Z,>(box: Box<Z, string>) => start.both(() => run(box))); const probe: never = r; }
+                                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make10<R>(runner: (<A>(box: Box<A, R>) => P<A[]>) | undefined, tag: R): void;
+    { const r = make10((box) => start.then(() => box), "tag"); const probe: never = r; }
+                                                                     ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                          ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                 ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                       ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10((box) => run(box), "tag"); const probe: never = r; }
+                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                                                                                          ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10(() => start.then(() => 0), "tag"); const probe: never = r; }
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '() => P<A[]>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:     Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:       Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:104:38: This type parameter might need an `extends A` constraint.
+                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10((box) => start.one(() => box), "tag"); const probe: never = r; }
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<A>(box: Box<A, string>) => P<Box<A, string>>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2345:     Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+                                                                    ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make10(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                                              ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function make11<R>(runner: <A>(box: Box<A, R>) => P<A[]>, tag: R): typeof runner;
+    { const r = make11((box) => start.then(() => box), "tag"); const probe: never = r; }
+                                                                     ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                          ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                         ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                 ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                       ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11((box) => run(box), "tag"); const probe: never = r; }
+                                                        ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                                                                                          ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11(() => start.then(() => 0), "tag"); const probe: never = r; }
+                             ~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'P<A[]>' is not assignable to type 'P<A[]>'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:     Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:       'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:115:37: This type parameter might need an `extends A` constraint.
+!!! related TS6502 a.ts:115:36: The expected type comes from the return type of this signature.
+                                                                ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11((box) => start.one(() => box), "tag"); const probe: never = r; }
+                                ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:115:36: The expected type comes from the return type of this signature.
+                                                                    ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, string>) => P<A[]>' is not assignable to type 'never'.
+    { const r = make11(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                                              ~~~~~
+!!! error TS2322: Type '<A>(box: Box<A, "tag">) => P<A[]>' is not assignable to type 'never'.
+    declare function make12<R>(runner: <A>(box: Box<A, R>) => P<A[]>, tag: R): void;
+    { const r = make12<string>((box) => start.then(() => box), "tag"); const probe: never = r; }
+                                                                             ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>((box) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                                                                                  ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>((box) => start.one(() => run(box)), "tag"); const probe: never = r; }
+                                                                                 ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>((box) => { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                         ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>(function (box) { return start.then(() => box); }, "tag"); const probe: never = r; }
+                                                                                               ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>((box) => run(box), "tag"); const probe: never = r; }
+                                                                ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>((box) => (box.a ? start.then(() => box) : run(box)), "tag"); const probe: never = r; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>(() => start.then(() => 0), "tag"); const probe: never = r; }
+                                                                        ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>((box) => start.one(() => box), "tag"); const probe: never = r; }
+                                        ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'P<Box<A, string>>' is not assignable to type 'P<A[]>'.
+!!! error TS2322:   Type 'Box<A, string>' is missing the following properties from type 'A[]': length, pop, push, concat, and 29 more.
+!!! related TS6502 a.ts:126:36: The expected type comes from the return type of this signature.
+                                                                            ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    { const r = make12<string>(<Z,>(box: Box<Z, string>) => start.both(() => run(box)), "tag"); const probe: never = r; }
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '<Z>(box: Box<Z, string>) => P<A[] | Z[]>' is not assignable to parameter of type '<A>(box: Box<A, string>) => P<A[]>'.
+!!! error TS2345:   Type 'P<A[] | A[]>' is not assignable to type 'P<A[]>'.
+!!! error TS2345:     Type 'A[] | A[]' is not assignable to type 'A[]'.
+!!! error TS2345:       Type 'A[]' is not assignable to type 'A[]'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:         Type 'A' is not assignable to type 'A'. Two different types with this name exist, but they are unrelated.
+!!! error TS2345:           'A' could be instantiated with an arbitrary type which could be unrelated to 'A'.
+!!! related TS2208 a.ts:126:37: This type parameter might need an `extends A` constraint.
+                                                                                                      ~~~~~
+!!! error TS2322: Type 'void' is not assignable to type 'never'.
+    declare function real<R>(runner: <A>(box: Box<A, R>) => Promise<A[]>, tag: R): void;
+    declare function runReal<A, R>(box: Box<A, R>): Promise<A[]>;
+    real((box) => Promise.resolve(0).then(() => runReal(box)), "tag");
+    real(async (box) => await runReal(box), "tag");
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+    

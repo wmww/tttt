@@ -1,0 +1,29 @@
+//// [test/cases/bun57-L02b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+@dec interface = 1
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol((Missing), Decl(a.ts, 0, 23), Decl(c.ts, 0, 0))
+
+=== b.ts ===
+@dec type
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+T = 1
+>T : Symbol(T, Decl(b.ts, 0, 0))
+
+=== c.ts ===
+@dec namespace = 1
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol((Missing), Decl(a.ts, 0, 23), Decl(c.ts, 0, 0))
+
+=== d.ts ===
+@dec module
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+M = 1
+>M : Symbol(M, Decl(d.ts, 0, 0))
+

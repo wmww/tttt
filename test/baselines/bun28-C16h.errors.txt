@@ -1,0 +1,17 @@
+a.ts(1,12): error TS1274: 'out' modifier can only appear on a type parameter of a class, interface or type alias
+a.ts(1,16): error TS1018: An index signature parameter cannot have an accessibility modifier.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    class C { [out x: string]: any }
+               ~~~
+!!! error TS1274: 'out' modifier can only appear on a type parameter of a class, interface or type alias
+                   ~
+!!! error TS1018: An index signature parameter cannot have an accessibility modifier.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,94 @@
+//// [test/cases/bun88-R05b.ts] ////
+
+=== a.ts ===
+export {};
+function f1() {
+>f1 : Symbol(f1, Decl(a.ts, 0, 10))
+
+    const kk = "x"; const oo = {};
+>kk : Symbol(kk, Decl(a.ts, 2, 9))
+>oo : Symbol(oo, Decl(a.ts, 2, 25))
+
+    class D1 { [k: string]: any; [kk in oo]: number = 1 }
+>D1 : Symbol(D1, Decl(a.ts, 2, 34))
+>k : Symbol(k, Decl(a.ts, 3, 16))
+>[kk in oo] : Symbol(D1[kk in oo], Decl(a.ts, 3, 32))
+>kk : Symbol(kk, Decl(a.ts, 2, 9))
+>oo : Symbol(oo, Decl(a.ts, 2, 25))
+
+    return D1;
+>D1 : Symbol(D1, Decl(a.ts, 2, 34))
+}
+function f2() {
+>f2 : Symbol(f2, Decl(a.ts, 5, 1))
+
+    const kk = "x"; const oo = {};
+>kk : Symbol(kk, Decl(a.ts, 7, 9))
+>oo : Symbol(oo, Decl(a.ts, 7, 25))
+
+    class D2 { [kk in oo]: number = 1 }
+>D2 : Symbol(D2, Decl(a.ts, 7, 34))
+>[kk in oo] : Symbol(D2[kk in oo], Decl(a.ts, 8, 14))
+>kk : Symbol(kk, Decl(a.ts, 7, 9))
+>oo : Symbol(oo, Decl(a.ts, 7, 25))
+
+    return D2;
+>D2 : Symbol(D2, Decl(a.ts, 7, 34))
+}
+class D3 { [k: string]: any; [later in laterObj]: number = 1 }
+>D3 : Symbol(D3, Decl(a.ts, 10, 1))
+>k : Symbol(k, Decl(a.ts, 11, 12))
+>[later in laterObj] : Symbol(D3[later in laterObj], Decl(a.ts, 11, 28))
+>later : Symbol(later, Decl(a.ts, 12, 5))
+>laterObj : Symbol(laterObj, Decl(a.ts, 12, 24))
+
+const later = "x"; const laterObj = {};
+>later : Symbol(later, Decl(a.ts, 12, 5))
+>laterObj : Symbol(laterObj, Decl(a.ts, 12, 24))
+
+class D4 { [k: string]: any; [missing1.a.b in missing2()]: number = 1 }
+>D4 : Symbol(D4, Decl(a.ts, 12, 39))
+>k : Symbol(k, Decl(a.ts, 13, 12))
+>[missing1.a.b in missing2()] : Symbol(D4[missing1.a.b in missing2()], Decl(a.ts, 13, 28))
+
+class D5 { [k: string]: any; [(missing3) in [missing4]]: number = 1 }
+>D5 : Symbol(D5, Decl(a.ts, 13, 71))
+>k : Symbol(k, Decl(a.ts, 14, 12))
+>[(missing3) in [missing4]] : Symbol(D5[(missing3) in [missing4]], Decl(a.ts, 14, 28))
+
+class D6 { [k: string]: any; [this.x in super.y]: number = 1 }
+>D6 : Symbol(D6, Decl(a.ts, 14, 69))
+>k : Symbol(k, Decl(a.ts, 15, 12))
+>[this.x in super.y] : Symbol(D6[this.x in super.y], Decl(a.ts, 15, 28))
+>this.x : Symbol(D6.__index, Decl(a.ts, 15, 10))
+>this : Symbol(D6, Decl(a.ts, 14, 69))
+>x : Symbol(D6.__index, Decl(a.ts, 15, 10))
+
+class D7<T> { [k: string]: any; [T in T]: number = 1 }
+>D7 : Symbol(D7, Decl(a.ts, 15, 62))
+>T : Symbol(T, Decl(a.ts, 16, 9))
+>k : Symbol(k, Decl(a.ts, 16, 15))
+>[T in T] : Symbol(D7[T in T], Decl(a.ts, 16, 31))
+
+function f8(this: any, arg: string) { return class { [k: string]: any; [arg in this]: number = 1 } }
+>f8 : Symbol(f8, Decl(a.ts, 16, 54))
+>this : Symbol(this, Decl(a.ts, 17, 12))
+>arg : Symbol(arg, Decl(a.ts, 17, 22))
+>k : Symbol(k, Decl(a.ts, 17, 54))
+>[arg in this] : Symbol((Anonymous class)[arg in this], Decl(a.ts, 17, 70))
+>arg : Symbol(arg, Decl(a.ts, 17, 22))
+>this : Symbol(this, Decl(a.ts, 17, 12))
+
+import { gone } from "./gone";
+>gone : Symbol(gone, Decl(a.ts, 18, 8))
+
+class D9 { [k: string]: any; [gone in gone]: number = 1 }
+>D9 : Symbol(D9, Decl(a.ts, 18, 30))
+>k : Symbol(k, Decl(a.ts, 19, 12))
+>[gone in gone] : Symbol(D9[gone in gone], Decl(a.ts, 19, 28))
+>gone : Symbol(gone, Decl(a.ts, 18, 8))
+>gone : Symbol(gone, Decl(a.ts, 18, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 20, 5))
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun28-P5b.ts] ////
+
+=== a.ts ===
+interface X { static static p: number }
+>static : any
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

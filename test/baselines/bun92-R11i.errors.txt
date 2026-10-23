@@ -1,0 +1,21 @@
+a.ts(8,13): error TS2615: Type of property 'a' circularly references itself in mapped type 'M<{ a: "29"; }>'.
+a.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type M<T> = { [K in keyof T]: M<T>[K] };
+    type G<X extends string, T = { a: X }> = M<T>[keyof T];
+    declare function f<T>(x?: any): T;
+    declare function tag<T>(s: TemplateStringsArray): T;
+    declare class K<T> { k: T }
+    declare const e: any;
+    interface IG<T> { g: T }
+    const v29 = class { [k: string]: G<"29"> };
+                ~~~~~
+!!! error TS2615: Type of property 'a' circularly references itself in mapped type 'M<{ a: "29"; }>'.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

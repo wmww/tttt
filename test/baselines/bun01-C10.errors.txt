@@ -1,0 +1,16 @@
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+s.d.ts(1,31): error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (1 errors) ====
+    import { v } from "x.foo";
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== s.d.ts (1 errors) ====
+    declare namespace NS { module "*.foo" { export const v: number; } }
+                                  ~~~~~~~
+!!! error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+    

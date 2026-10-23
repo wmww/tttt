@@ -1,0 +1,70 @@
+a.ts(1,6): error TS2456: Type alias 'F4' circularly references itself.
+a.ts(1,41): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(1,41): error TS2315: Type 'F4' is not generic.
+a.ts(2,6): error TS2456: Type alias 'F6' circularly references itself.
+a.ts(2,41): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(2,41): error TS2315: Type 'F6' is not generic.
+a.ts(3,6): error TS2456: Type alias 'W3' circularly references itself.
+a.ts(3,41): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(3,79): error TS2502: 'w3' is referenced directly or indirectly in its own type annotation.
+a.ts(3,83): error TS2315: Type 'W3' is not generic.
+a.ts(4,6): error TS2456: Type alias 'W6' circularly references itself.
+a.ts(4,41): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(4,78): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+a.ts(4,81): error TS2315: Type 'W6' is not generic.
+a.ts(5,16): error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+a.ts(5,46): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(6,15): error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+a.ts(6,46): error TS2313: Type parameter 'A' has a circular constraint.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (19 errors) ====
+    type F4<X> = X extends [infer A extends F4<A>] ? A : never;
+         ~~
+!!! error TS2456: Type alias 'F4' circularly references itself.
+                                            ~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+                                            ~~~~~
+!!! error TS2315: Type 'F4' is not generic.
+    type F6<X> = X extends [infer A extends F6<string>] ? A : never;
+         ~~
+!!! error TS2456: Type alias 'F6' circularly references itself.
+                                            ~~~~~~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+                                            ~~~~~~~~~~
+!!! error TS2315: Type 'F6' is not generic.
+    type W3<X> = X extends [infer A extends typeof w3] ? A : never; declare const w3: W3<[1]>;
+         ~~
+!!! error TS2456: Type alias 'W3' circularly references itself.
+                                            ~~~~~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+                                                                                  ~~
+!!! error TS2502: 'w3' is referenced directly or indirectly in its own type annotation.
+                                                                                      ~~~~~~~
+!!! error TS2315: Type 'W3' is not generic.
+    type W6<X> = X extends [infer A extends W7["p"]] ? A : never; interface W7 { p: W6<[1]> }
+         ~~
+!!! error TS2456: Type alias 'W6' circularly references itself.
+                                            ~~~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+                                                                                 ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+                                                                                    ~~~~~~~
+!!! error TS2315: Type 'W6' is not generic.
+    function fn<X>(x: X extends [infer A extends ReturnType<typeof fn>] ? A : never) { return x; }
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'x' is referenced directly or indirectly in its own type annotation.
+                                                 ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+    class Cl<X> { p!: X extends [infer A extends Cl<A>["p"]] ? A : never; }
+                  ~
+!!! error TS2502: 'p' is referenced directly or indirectly in its own type annotation.
+                                                 ~~~~~~~~~~
+!!! error TS2313: Type parameter 'A' has a circular constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

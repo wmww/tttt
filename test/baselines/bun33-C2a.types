@@ -1,0 +1,22 @@
+//// [test/cases/bun33-C2a.ts] ////
+
+=== a.js ===
+/** @type {number} */ let x;
+>x : number
+
+() => x;
+>() => x : () => number
+>x : number
+
+exports.a = 1;
+>exports.a = 1 : 1
+>exports.a : 1
+>exports : typeof import("./a")
+>a : 1
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

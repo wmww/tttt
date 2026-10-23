@@ -1,0 +1,221 @@
+//// [test/cases/bun83-R11a.ts] ////
+
+=== a01.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => { var; } : 1;
+>v : 1 | ((a: any) => T)
+>x ? (a): T => { var; } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => { var; } : (a: any) => T
+>a : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a02.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => { declare let; } : 1;
+>v : 1 | ((a: any) => T)
+>x ? (a): T => { declare let; } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => { declare let; } : (a: any) => T
+>a : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a03.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => { const; } : 1;
+>v : 1 | ((a: any) => T)
+>x ? (a): T => { const; } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => { const; } : (a: any) => T
+>a : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a05.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => { var b = 1,; } : 1;
+>v : 1 | ((a: any) => T)
+>x ? (a): T => { var b = 1,; } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => { var b = 1,; } : (a: any) => T
+>a : any
+>b : number
+>1 : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a07.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => { export var; } : 1;
+>v : 1 | ((a: any) => T)
+>x ? (a): T => { export var; } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => { export var; } : (a: any) => T
+>a : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a08.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => function () { var; } : 1;
+>v : 1 | ((a: any) => T)
+>x ? (a): T => function () { var; } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => function () { var; } : (a: any) => T
+>a : any
+>function () { var; } : () => void
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a09.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => class { m() { var; } } : 1;
+>v : 1 | ((a: any) => T)
+>x ? (a): T => class { m() { var; } } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => class { m() { var; } } : (a: any) => T
+>a : any
+>class { m() { var; } } : typeof (Anonymous class)
+>m : () => void
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a10.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? (a): T => { var; } : (b): T => { var; };
+>v : (a: any) => T
+>x ? (a): T => { var; } : (b): T => { var; } : (a: any) => T
+>x : any
+>(a): T => { var; } : (a: any) => T
+>a : any
+>(b): T => { var; } : (b: any) => T
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a11.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? async (a): T => { var; } : 1;
+>v : 1 | ((a: any) => T)
+>x ? async (a): T => { var; } : 1 : 1 | ((a: any) => T)
+>x : any
+>async (a): T => { var; } : (a: any) => T
+>a : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== a13.ts ===
+export {}; declare const x: any; type T = any;
+>x : any
+>T : any
+
+const v = x ? x ? (a): T => { var; } : 1 : 2;
+>v : 1 | 2 | ((a: any) => T)
+>x ? x ? (a): T => { var; } : 1 : 2 : 1 | 2 | ((a: any) => T)
+>x : any
+>x ? (a): T => { var; } : 1 : 1 | ((a: any) => T)
+>x : any
+>(a): T => { var; } : (a: any) => T
+>a : any
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== c01.ts ===
+export {}; declare const f: any, x: any;
+>f : any
+>x : any
+
+const v = (a): { [(() => { var; return "x" })()]: 1 } => x;
+>v : (a: any) => {}
+>(a): { [(() => { var; return "x" })()]: 1 } => x : (a: any) => {}
+>a : any
+>[(() => { var; return "x" })()] : 1
+>(() => { var; return "x" })() : string
+>(() => { var; return "x" }) : () => string
+>() => { var; return "x" } : () => string
+>"x" : "x"
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== c02.ts ===
+export {}; declare const f: any, x: any;
+>f : any
+>x : any
+
+const v = f<{ [(() => { var; return "x" })()]: 1 }>(x);
+>v : any
+>f<{ [(() => { var; return "x" })()]: 1 }>(x) : any
+>f : any
+>[(() => { var; return "x" })()] : 1
+>(() => { var; return "x" })() : string
+>(() => { var; return "x" }) : () => string
+>() => { var; return "x" } : () => string
+>"x" : "x"
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

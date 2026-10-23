@@ -1,0 +1,16 @@
+//// [test/cases/bun07-C4.ts] ////
+
+=== a.ts ===
+export {};
+function f10<T extends {}, U>(x: T & U) { "a" in x; }
+>f10 : Symbol(f10, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 13))
+>U : Symbol(U, Decl(a.ts, 1, 26))
+>x : Symbol(x, Decl(a.ts, 1, 30))
+>T : Symbol(T, Decl(a.ts, 1, 13))
+>U : Symbol(U, Decl(a.ts, 1, 26))
+>x : Symbol(x, Decl(a.ts, 1, 30))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

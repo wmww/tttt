@@ -1,0 +1,15 @@
+a.ts(2,50): error TS2638: Type 'T & U' may represent a primitive value, which is not permitted as the right operand of the 'in' operator.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    function f10<T extends {}, U>(x: T & U) { "a" in x; }
+                                                     ~
+!!! error TS2638: Type 'T & U' may represent a primitive value, which is not permitted as the right operand of the 'in' operator.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

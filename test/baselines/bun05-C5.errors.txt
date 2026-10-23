@@ -1,0 +1,19 @@
+a.ts(3,6): error TS2630: Cannot assign to 'ff' because it is a function.
+a.ts(3,41): error TS2538: Type '() => void' cannot be used as an index type.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const arr: number[];
+    function ff() {}
+    for (ff in arr) { const x: number = arr[ff]; }
+         ~~
+!!! error TS2630: Cannot assign to 'ff' because it is a function.
+                                            ~~
+!!! error TS2538: Type '() => void' cannot be used as an index type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,22 @@
+//// [test/cases/bun62-L12.ts] ////
+
+=== a.ts ===
+declare const dec: any; class A {} class B {}
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>A : Symbol(A, Decl(a.ts, 0, 23))
+>B : Symbol(B, Decl(a.ts, 0, 34))
+
+@dec export default @dec class<> extends A, B {}
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+>A : Symbol(A, Decl(a.ts, 0, 23))
+>B : Symbol(B, Decl(a.ts, 0, 34))
+
+namespace N { export default class<> extends A, B {} }
+>N : Symbol(N, Decl(a.ts, 1, 48))
+>A : Symbol(A, Decl(a.ts, 0, 23))
+>B : Symbol(B, Decl(a.ts, 0, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

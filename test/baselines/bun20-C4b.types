@@ -1,0 +1,24 @@
+//// [test/cases/bun20-C4b.ts] ////
+
+=== a.ts ===
+function e15() { let x = []; x.push(1); for (const k in x) { x.push("a"); } }
+>e15 : () => void
+>x : any[]
+>[] : never[]
+>x.push(1) : number
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+>1 : 1
+>k : string
+>x : number[]
+>x.push("a") : number
+>x.push : (...items: number[]) => number
+>x : number[]
+>push : (...items: number[]) => number
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

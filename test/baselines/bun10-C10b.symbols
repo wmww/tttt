@@ -1,0 +1,14 @@
+//// [test/cases/bun10-C10b.ts] ////
+
+=== a.ts ===
+const p8 = { set x(v: typeof p8.x) {} };
+>p8 : Symbol(p8, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 12))
+>v : Symbol(v, Decl(a.ts, 0, 19))
+>p8.x : Symbol(x, Decl(a.ts, 0, 12))
+>p8 : Symbol(p8, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

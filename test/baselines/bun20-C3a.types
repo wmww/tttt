@@ -1,0 +1,29 @@
+//// [test/cases/bun20-C3a.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+declare function id<T>(x: T): T;
+>id : <T>(x: T) => T
+>x : T
+
+function a13(): string { let x: string | number = ""; do { do { x = id(x); } while (cond()); } while (cond()); return x; }
+>a13 : () => string
+>x : string | number
+>"" : ""
+>x = id(x) : string
+>x : string | number
+>id(x) : string
+>id : <T>(x: T) => T
+>x : string
+>cond() : boolean
+>cond : () => boolean
+>cond() : boolean
+>cond : () => boolean
+>x : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

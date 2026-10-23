@@ -1,0 +1,31 @@
+//// [test/cases/bun17-C10c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements {} interface ElementChildrenAttribute { children: {} } }
+>children : {}
+
+declare const React: any;
+>React : any
+
+function Outer<T>() {
+>Outer : <T>() => void
+
+  function E(props: T extends string ? { children: number[] } : { children: number[] }) { return null as any as JSX.Element; }
+>E : (props: T extends string ? { children: number[]; } : { children: number[]; }) => JSX.Element
+>props : T extends string ? { children: number[]; } : { children: number[]; }
+>children : number[]
+>children : number[]
+>null as any as JSX.Element : JSX.Element
+>null as any : any
+>JSX : any
+
+  <E>{"s"}</E>;
+><E>{"s"}</E> : JSX.Element
+>E : (props: T extends string ? { children: number[]; } : { children: number[]; }) => JSX.Element
+>"s" : "s"
+>E : (props: T extends string ? { children: number[]; } : { children: number[]; }) => JSX.Element
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

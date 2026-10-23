@@ -1,0 +1,43 @@
+//// [test/cases/bun60-L17.ts] ////
+
+=== a.ts ===
+class C { private constructor() {} x = 1; }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>x : Symbol(C.x, Decl(a.ts, 0, 34))
+
+type CT = typeof C;
+>CT : Symbol(CT, Decl(a.ts, 0, 43))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+interface IC extends CT {}
+>IC : Symbol(IC, Decl(a.ts, 1, 19))
+>CT : Symbol(CT, Decl(a.ts, 0, 43))
+
+declare const B1: IC;
+>B1 : Symbol(B1, Decl(a.ts, 3, 13))
+>IC : Symbol(IC, Decl(a.ts, 1, 19))
+
+class D1 extends B1 {}
+>D1 : Symbol(D1, Decl(a.ts, 3, 21))
+>B1 : Symbol(B1, Decl(a.ts, 3, 13))
+
+interface IC6 extends IC { y: 1 }
+>IC6 : Symbol(IC6, Decl(a.ts, 4, 22))
+>IC : Symbol(IC, Decl(a.ts, 1, 19))
+>y : Symbol(IC6.y, Decl(a.ts, 5, 26))
+
+declare const B6: IC6;
+>B6 : Symbol(B6, Decl(a.ts, 6, 13))
+>IC6 : Symbol(IC6, Decl(a.ts, 4, 22))
+
+class D6 extends B6 {}
+>D6 : Symbol(D6, Decl(a.ts, 6, 22))
+>B6 : Symbol(B6, Decl(a.ts, 6, 13))
+
+class D2 extends C {}
+>D2 : Symbol(D2, Decl(a.ts, 7, 22))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

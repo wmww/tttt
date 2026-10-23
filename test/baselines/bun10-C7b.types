@@ -1,0 +1,16 @@
+//// [test/cases/bun10-C7b.ts] ////
+
+=== a.ts ===
+class C { m() { return m(); } }
+>C : C
+>m : () => never
+>m() : never
+>m : () => never
+
+declare const m: C["m"];
+>m : () => never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

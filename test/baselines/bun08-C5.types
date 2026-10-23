@@ -1,0 +1,22 @@
+//// [test/cases/bun08-C5.ts] ////
+
+=== a.ts ===
+import {} from "./m";
+declare const k: "k";
+>k : "k"
+
+declare module "./m" {
+>"./m" : typeof import("./m")
+
+  interface I { [k](): void }
+>[k] : () => void
+>k : "k"
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export interface I { k: number }
+>k : number
+

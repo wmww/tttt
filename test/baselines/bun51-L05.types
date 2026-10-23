@@ -1,0 +1,59 @@
+//// [test/cases/bun51-L05.ts] ////
+
+=== a.ts ===
+interface Call { name: string; arguments: string }
+>name : string
+>arguments : string
+
+/**
+ * Runs a tool call.
+ * @param call the call
+ */
+export const handle = (call: Call) => {
+>handle : (call: Call) => string[]
+>(call: Call) => {  const { name, arguments: args } = call;  return [name, args];} : (call: Call) => string[]
+>call : Call
+
+  const { name, arguments: args } = call;
+>name : string
+>arguments : any
+>args : string
+>call : Call
+
+  return [name, args];
+>[name, args] : string[]
+>name : string
+>args : string
+
+};
+export class K {
+>K : K
+
+  /** @param call the call */
+  handle = (call: Call) => {
+>handle : (call: Call) => string
+>(call: Call) => {    const { arguments: args } = call;    return args;  } : (call: Call) => string
+>call : Call
+
+    const { arguments: args } = call;
+>arguments : any
+>args : string
+>call : Call
+
+    return args;
+>args : string
+
+  };
+}
+/** @param z */
+export function j(z: number) { const arguments = 1; return z; }
+>j : (z: number) => number
+>z : number
+>arguments : 1
+>1 : 1
+>z : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

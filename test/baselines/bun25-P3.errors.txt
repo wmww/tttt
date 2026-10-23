@@ -1,0 +1,19 @@
+a3.ts(1,5): error TS2403: Subsequent variable declarations must have the same type.  Variable 'v' must be of type 'any', but here has type 'string'.
+a3.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": false, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true }, "files": ["a1.js", "a2.js", "a3.ts"] }
+==== a1.js (0 errors) ====
+    var obj = {};
+==== a2.js (0 errors) ====
+    var v = obj.missing;
+==== a3.ts (2 errors) ====
+    var v: string;
+        ~
+!!! error TS2403: Subsequent variable declarations must have the same type.  Variable 'v' must be of type 'any', but here has type 'string'.
+!!! related TS6203 a2.js:1:5: 'v' was also declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

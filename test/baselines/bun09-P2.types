@@ -1,0 +1,13 @@
+//// [test/cases/bun09-P2.ts] ////
+
+=== a.ts ===
+declare var v1: <T extends T>() => void;
+>v1 : <T>() => void
+
+declare var v1: <U>() => void;
+>v1 : <T>() => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

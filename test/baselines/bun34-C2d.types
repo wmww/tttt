@@ -1,0 +1,25 @@
+//// [test/cases/bun34-C2d.ts] ////
+
+=== a.tsx ===
+import { React } from "./m";
+>React : any
+
+<div />;
+><div /> : any
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== g.d.ts ===
+declare const React: any;
+>React : any
+
+declare namespace JSX { interface IntrinsicElements { div: any } }
+>div : any
+
+=== m.ts ===
+
+export interface React {}
+

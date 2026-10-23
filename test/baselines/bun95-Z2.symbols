@@ -1,0 +1,263 @@
+//// [test/cases/bun95-Z2.ts] ////
+
+=== a.ts ===
+type U = { [k: string]: unknown };
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 0, 12))
+
+type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>S : Symbol(S, Decl(a.ts, 1, 7))
+>S : Symbol(S, Decl(a.ts, 1, 7))
+>P : Symbol(P, Decl(a.ts, 1, 29))
+>S : Symbol(S, Decl(a.ts, 1, 7))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>S : Symbol(S, Decl(a.ts, 1, 7))
+>S : Symbol(S, Decl(a.ts, 1, 7))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+
+type K = 'a' | 'b';
+>K : Symbol(K, Decl(a.ts, 1, 71))
+
+type IsAny<T> = 0 extends 1 & T ? 'any' : 'not any';
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>T : Symbol(T, Decl(a.ts, 3, 11))
+>T : Symbol(T, Decl(a.ts, 3, 11))
+
+declare function f<O extends K>(op: O): M<O>;
+>f : Symbol(f, Decl(a.ts, 3, 52))
+>O : Symbol(O, Decl(a.ts, 4, 19))
+>K : Symbol(K, Decl(a.ts, 1, 71))
+>op : Symbol(op, Decl(a.ts, 4, 32))
+>O : Symbol(O, Decl(a.ts, 4, 19))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 4, 19))
+
+declare class C<O extends K> { constructor(op: O); v: M<O> }
+>C : Symbol(C, Decl(a.ts, 4, 45))
+>O : Symbol(O, Decl(a.ts, 5, 16))
+>K : Symbol(K, Decl(a.ts, 1, 71))
+>op : Symbol(op, Decl(a.ts, 5, 43))
+>O : Symbol(O, Decl(a.ts, 5, 16))
+>v : Symbol(C.v, Decl(a.ts, 5, 50))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 5, 16))
+
+declare const ctor: new <O extends K>(op: O) => M<O>;
+>ctor : Symbol(ctor, Decl(a.ts, 6, 13))
+>O : Symbol(O, Decl(a.ts, 6, 25))
+>K : Symbol(K, Decl(a.ts, 1, 71))
+>op : Symbol(op, Decl(a.ts, 6, 38))
+>O : Symbol(O, Decl(a.ts, 6, 25))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 6, 25))
+
+declare function cb<O extends K>(op: (x: M<O>) => void, o: O): void;
+>cb : Symbol(cb, Decl(a.ts, 6, 53))
+>O : Symbol(O, Decl(a.ts, 7, 20))
+>K : Symbol(K, Decl(a.ts, 1, 71))
+>op : Symbol(op, Decl(a.ts, 7, 33))
+>x : Symbol(x, Decl(a.ts, 7, 38))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 7, 20))
+>o : Symbol(o, Decl(a.ts, 7, 55))
+>O : Symbol(O, Decl(a.ts, 7, 20))
+
+declare function pr<O extends K>(op: O): Promise<M<O>>;
+>pr : Symbol(pr, Decl(a.ts, 7, 68))
+>O : Symbol(O, Decl(a.ts, 8, 20))
+>K : Symbol(K, Decl(a.ts, 1, 71))
+>op : Symbol(op, Decl(a.ts, 8, 33))
+>O : Symbol(O, Decl(a.ts, 8, 20))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 8, 20))
+
+declare function ov(op: number): number;
+>ov : Symbol(ov, Decl(a.ts, 8, 55), Decl(a.ts, 9, 40))
+>op : Symbol(op, Decl(a.ts, 9, 20))
+
+declare function ov<O extends K>(op: O): M<O>;
+>ov : Symbol(ov, Decl(a.ts, 8, 55), Decl(a.ts, 9, 40))
+>O : Symbol(O, Decl(a.ts, 10, 20))
+>K : Symbol(K, Decl(a.ts, 1, 71))
+>op : Symbol(op, Decl(a.ts, 10, 33))
+>O : Symbol(O, Decl(a.ts, 10, 20))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 10, 20))
+
+declare function un<O>(op: O): M<O>;
+>un : Symbol(un, Decl(a.ts, 10, 46))
+>O : Symbol(O, Decl(a.ts, 11, 20))
+>op : Symbol(op, Decl(a.ts, 11, 23))
+>O : Symbol(O, Decl(a.ts, 11, 20))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 11, 20))
+
+declare function st<O extends string>(op: O): M<O>;
+>st : Symbol(st, Decl(a.ts, 11, 36))
+>O : Symbol(O, Decl(a.ts, 12, 20))
+>op : Symbol(op, Decl(a.ts, 12, 38))
+>O : Symbol(O, Decl(a.ts, 12, 20))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 12, 20))
+
+declare function an<O extends any>(op: O): M<O>;
+>an : Symbol(an, Decl(a.ts, 12, 51))
+>O : Symbol(O, Decl(a.ts, 13, 20))
+>op : Symbol(op, Decl(a.ts, 13, 35))
+>O : Symbol(O, Decl(a.ts, 13, 20))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 13, 20))
+
+declare function ob<O extends { a: 1 }>(op: O): M<O>;
+>ob : Symbol(ob, Decl(a.ts, 13, 48))
+>O : Symbol(O, Decl(a.ts, 14, 20))
+>a : Symbol(a, Decl(a.ts, 14, 31))
+>op : Symbol(op, Decl(a.ts, 14, 40))
+>O : Symbol(O, Decl(a.ts, 14, 20))
+>M : Symbol(M, Decl(a.ts, 0, 34))
+>O : Symbol(O, Decl(a.ts, 14, 20))
+
+type MyReturn<T> = T extends (...a: any) => infer R ? R : 'no';
+>MyReturn : Symbol(MyReturn, Decl(a.ts, 14, 53))
+>T : Symbol(T, Decl(a.ts, 15, 14))
+>T : Symbol(T, Decl(a.ts, 15, 14))
+>a : Symbol(a, Decl(a.ts, 15, 30))
+>R : Symbol(R, Decl(a.ts, 15, 49))
+>R : Symbol(R, Decl(a.ts, 15, 49))
+
+type MyReturn2<T> = T extends (...a: any[]) => infer R ? R : 'no';
+>MyReturn2 : Symbol(MyReturn2, Decl(a.ts, 15, 63))
+>T : Symbol(T, Decl(a.ts, 16, 15))
+>T : Symbol(T, Decl(a.ts, 16, 15))
+>a : Symbol(a, Decl(a.ts, 16, 31))
+>R : Symbol(R, Decl(a.ts, 16, 52))
+>R : Symbol(R, Decl(a.ts, 16, 52))
+
+type MyReturn3<T> = T extends (...a: never) => infer R ? R : 'no';
+>MyReturn3 : Symbol(MyReturn3, Decl(a.ts, 16, 66))
+>T : Symbol(T, Decl(a.ts, 17, 15))
+>T : Symbol(T, Decl(a.ts, 17, 15))
+>a : Symbol(a, Decl(a.ts, 17, 31))
+>R : Symbol(R, Decl(a.ts, 17, 52))
+>R : Symbol(R, Decl(a.ts, 17, 52))
+
+type MyReturn4<T> = T extends (a: any) => infer R ? R : 'no';
+>MyReturn4 : Symbol(MyReturn4, Decl(a.ts, 17, 66))
+>T : Symbol(T, Decl(a.ts, 18, 15))
+>T : Symbol(T, Decl(a.ts, 18, 15))
+>a : Symbol(a, Decl(a.ts, 18, 31))
+>R : Symbol(R, Decl(a.ts, 18, 47))
+>R : Symbol(R, Decl(a.ts, 18, 47))
+
+const a01: IsAny<ReturnType<typeof f>> = 0;
+>a01 : Symbol(a01, Decl(a.ts, 19, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a02: Parameters<typeof f> = 0;
+>a02 : Symbol(a02, Decl(a.ts, 20, 5))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a03: Parameters<typeof cb> = 0;
+>a03 : Symbol(a03, Decl(a.ts, 21, 5))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>cb : Symbol(cb, Decl(a.ts, 6, 53))
+
+const a04: ConstructorParameters<typeof ctor> = 0;
+>a04 : Symbol(a04, Decl(a.ts, 22, 5))
+>ConstructorParameters : Symbol(ConstructorParameters, Decl(lib.es5.d.ts, --, --))
+>ctor : Symbol(ctor, Decl(a.ts, 6, 13))
+
+const a05: IsAny<InstanceType<typeof ctor>> = 0;
+>a05 : Symbol(a05, Decl(a.ts, 23, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>ctor : Symbol(ctor, Decl(a.ts, 6, 13))
+
+const a06: IsAny<InstanceType<typeof C>> = 0;
+>a06 : Symbol(a06, Decl(a.ts, 24, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(a.ts, 4, 45))
+
+const a07: IsAny<Awaited<ReturnType<typeof pr>>> = 0;
+>a07 : Symbol(a07, Decl(a.ts, 25, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>pr : Symbol(pr, Decl(a.ts, 7, 68))
+
+const a08: MyReturn<typeof f> = 0;
+>a08 : Symbol(a08, Decl(a.ts, 26, 5))
+>MyReturn : Symbol(MyReturn, Decl(a.ts, 14, 53))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a09: MyReturn2<typeof f> = 0;
+>a09 : Symbol(a09, Decl(a.ts, 27, 5))
+>MyReturn2 : Symbol(MyReturn2, Decl(a.ts, 15, 63))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a10: MyReturn3<typeof f> = 0;
+>a10 : Symbol(a10, Decl(a.ts, 28, 5))
+>MyReturn3 : Symbol(MyReturn3, Decl(a.ts, 16, 66))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a11: MyReturn4<typeof f> = 0;
+>a11 : Symbol(a11, Decl(a.ts, 29, 5))
+>MyReturn4 : Symbol(MyReturn4, Decl(a.ts, 17, 66))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a12: IsAny<ReturnType<typeof ov>> = 0;
+>a12 : Symbol(a12, Decl(a.ts, 30, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>ov : Symbol(ov, Decl(a.ts, 8, 55), Decl(a.ts, 9, 40))
+
+const a13: IsAny<ReturnType<typeof un>> = 0;
+>a13 : Symbol(a13, Decl(a.ts, 31, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>un : Symbol(un, Decl(a.ts, 10, 46))
+
+const a14: IsAny<ReturnType<typeof st>> = 0;
+>a14 : Symbol(a14, Decl(a.ts, 32, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>st : Symbol(st, Decl(a.ts, 11, 36))
+
+const a15: IsAny<ReturnType<typeof an>> = 0;
+>a15 : Symbol(a15, Decl(a.ts, 33, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>an : Symbol(an, Decl(a.ts, 12, 51))
+
+const a16: IsAny<ReturnType<typeof ob>> = 0;
+>a16 : Symbol(a16, Decl(a.ts, 34, 5))
+>IsAny : Symbol(IsAny, Decl(a.ts, 2, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>ob : Symbol(ob, Decl(a.ts, 13, 48))
+
+const a17: (...args: any) => U = f;
+>a17 : Symbol(a17, Decl(a.ts, 35, 5))
+>args : Symbol(args, Decl(a.ts, 35, 12))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a18: (op: any) => U = f;
+>a18 : Symbol(a18, Decl(a.ts, 36, 5))
+>op : Symbol(op, Decl(a.ts, 36, 12))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const a19: U = f(null as any);
+>a19 : Symbol(a19, Decl(a.ts, 37, 5))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>f : Symbol(f, Decl(a.ts, 3, 52))
+
+const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(a.ts, 38, 5))
+

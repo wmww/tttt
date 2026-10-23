@@ -1,0 +1,49 @@
+//// [test/cases/bun16-C10.ts] ////
+
+=== a.ts ===
+type U = { kind: `a${number}`, f: (x: number) => void } | { kind: "b", f: (x: string) => void };
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 0, 10))
+>f : Symbol(f, Decl(a.ts, 0, 30))
+>x : Symbol(x, Decl(a.ts, 0, 35))
+>kind : Symbol(kind, Decl(a.ts, 0, 59))
+>f : Symbol(f, Decl(a.ts, 0, 70))
+>x : Symbol(x, Decl(a.ts, 0, 75))
+
+declare const n: number;
+>n : Symbol(n, Decl(a.ts, 1, 13))
+
+({ kind: `a${n}`, f: x => {} } as const) satisfies U;
+>kind : Symbol(kind, Decl(a.ts, 2, 2))
+>n : Symbol(n, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 2, 17))
+>x : Symbol(x, Decl(a.ts, 2, 20))
+>const : Symbol(const)
+>U : Symbol(U, Decl(a.ts, 0, 0))
+
+const v: U = { kind: `a${n}`, f: x => {} } as const;
+>v : Symbol(v, Decl(a.ts, 3, 5))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 3, 14))
+>n : Symbol(n, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 3, 29))
+>x : Symbol(x, Decl(a.ts, 3, 32))
+>const : Symbol(const)
+
+declare function fc<const T extends U>(x: T): void;
+>fc : Symbol(fc, Decl(a.ts, 3, 52))
+>T : Symbol(T, Decl(a.ts, 4, 20))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 4, 39))
+>T : Symbol(T, Decl(a.ts, 4, 20))
+
+fc({ kind: `a${n}`, f: x => {} });
+>fc : Symbol(fc, Decl(a.ts, 3, 52))
+>kind : Symbol(kind, Decl(a.ts, 5, 4))
+>n : Symbol(n, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 5, 19))
+>x : Symbol(x, Decl(a.ts, 5, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

@@ -1,0 +1,46 @@
+//// [test/cases/bun56-L07.ts] ////
+
+=== a.ts ===
+export {};
+interface M<T> { m: T }
+>M : Symbol(M, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>m : Symbol(M.m, Decl(a.ts, 1, 16))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+
+declare const K: new () => {};
+>K : Symbol(K, Decl(a.ts, 2, 13))
+
+type U = 1;
+>U : Symbol(U, Decl(a.ts, 2, 30))
+
+export class C implements (M)<Nope> {}
+>C : Symbol(C, Decl(a.ts, 3, 11))
+>Nope : Symbol(Nope)
+
+export interface X extends (M)<Nope2> {}
+>X : Symbol(X, Decl(a.ts, 4, 38))
+>Nope2 : Symbol(Nope2)
+
+export class D implements K()<Nope3> {}
+>D : Symbol(D, Decl(a.ts, 5, 40))
+>K : Symbol(K, Decl(a.ts, 2, 13))
+>Nope3 : Symbol(Nope3)
+
+export interface Y extends M[0]<Nope4> {}
+>Y : Symbol(Y, Decl(a.ts, 6, 39))
+>Nope4 : Symbol(Nope4)
+
+export class F implements (M)<Array<Nope5>, { a: typeof nope6 }> {}
+>F : Symbol(F, Decl(a.ts, 7, 41))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>Nope5 : Symbol(Nope5)
+>a : Symbol(a, Decl(a.ts, 8, 45))
+
+export class G implements (M)<U> {}
+>G : Symbol(G, Decl(a.ts, 8, 67))
+>U : Symbol(U, Decl(a.ts, 2, 30))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 12))
+

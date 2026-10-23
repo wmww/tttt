@@ -1,0 +1,23 @@
+//// [test/cases/bun74-R13a.ts] ////
+
+=== a.ts ===
+let f: (a: string, ...
+>f : (a: string, ...: any[]) => any
+>a : string
+> : any[]
+
+=== b.ts ===
+interface I { m(...
+>m : (...: any[]) => any
+
+// c
+> : any[]
+
+=== c.ts ===
+type F = new (a, @dec 
+>F : F
+>a : any
+>dec : any
+
+> : any
+

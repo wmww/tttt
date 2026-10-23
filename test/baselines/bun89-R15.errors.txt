@@ -1,0 +1,47 @@
+a.ts(4,11): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(5,11): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(5,25): error TS2339: Property '#p' does not exist on type '{ [k: string]: string; }'.
+a.ts(6,11): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(7,11): error TS2322: Type 'number | boolean' is not assignable to type 'never'.
+  Type 'number' is not assignable to type 'never'.
+a.ts(8,11): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(8,25): error TS2339: Property '#p' does not exist on type 'U | [string]'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    class U {
+      #p = 1;
+      m(x: U | { [k: string]: string }, y: { [k: string]: string }, z: U & { [k: string]: string }, w: U | Record<string, boolean>, t: U | [string]) {
+        const r1: never = x.#p;
+              ~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+        const r2: never = y.#p;
+              ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                            ~~
+!!! error TS2339: Property '#p' does not exist on type '{ [k: string]: string; }'.
+        const r3: never = z.#p;
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        const r4: never = w.#p;
+              ~~
+!!! error TS2322: Type 'number | boolean' is not assignable to type 'never'.
+!!! error TS2322:   Type 'number' is not assignable to type 'never'.
+        const r5: never = t.#p;
+              ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                            ~~
+!!! error TS2339: Property '#p' does not exist on type 'U | [string]'.
+        x.#p = 1;
+        x.#p = "";
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

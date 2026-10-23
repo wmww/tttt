@@ -1,0 +1,287 @@
+//// [test/cases/bun99-N1.ts] ////
+
+=== a.ts ===
+type One = { a: boolean; b: string | undefined };
+>One : One
+>a : boolean
+>b : string | undefined
+
+type Left = { kind: "left"; l: number; m(): string };
+>Left : Left
+>kind : "left"
+>l : number
+>m : () => string
+
+type Right = { kind: "right"; r: string; m(): number };
+>Right : Right
+>kind : "right"
+>r : string
+>m : () => number
+
+declare function use<T>(select: () => T): { data: NoInfer<T> | undefined };
+>use : <T>(select: () => T) => { data: NoInfer<T> | undefined; }
+>select : () => T
+>data : NoInfer<T> | undefined
+
+declare function one(): One | undefined;
+>one : () => One | undefined
+
+declare function either(): Left | Right | undefined;
+>either : () => Left | Right | undefined
+
+declare function memo<T>(factory: () => T): T;
+>memo : <T>(factory: () => T) => T
+>factory : () => T
+
+declare function id<T>(value: T): T;
+>id : <T>(value: T) => T
+>value : T
+
+declare function pair<T, V>(value: T, other: V): [T, V];
+>pair : <T, V>(value: T, other: V) => [T, V]
+>value : T
+>other : V
+
+const { data: x } = use(one);
+>data : any
+>x : NoInfer<One | undefined> | undefined
+>use(one) : { data: NoInfer<One | undefined> | undefined; }
+>use : <T>(select: () => T) => { data: NoInfer<T> | undefined; }
+>one : () => One | undefined
+
+const { data: u } = use(either);
+>data : any
+>u : NoInfer<Left | Right | undefined> | undefined
+>use(either) : { data: NoInfer<Left | Right | undefined> | undefined; }
+>use : <T>(select: () => T) => { data: NoInfer<T> | undefined; }
+>either : () => Left | Right | undefined
+
+const whole = use(one);
+>whole : { data: NoInfer<One | undefined> | undefined; }
+>use(one) : { data: NoInfer<One | undefined> | undefined; }
+>use : <T>(select: () => T) => { data: NoInfer<T> | undefined; }
+>one : () => One | undefined
+
+declare const declared: NoInfer<One | undefined> | null;
+>declared : NoInfer<One | undefined> | null
+
+export function returned(s: string): { s: string; a: boolean; b: string | undefined } | undefined {
+>returned : (s: string) => { s: string; a: boolean; b: string | undefined; } | undefined
+>s : string
+>s : string
+>a : boolean
+>b : string | undefined
+
+  return memo(() => (x !== undefined && x !== null ? { s, ...x } : undefined));
+>memo(() => (x !== undefined && x !== null ? { s, ...x } : undefined)) : { a: boolean; b: string | undefined; s: string; } | undefined
+>memo : <T>(factory: () => T) => T
+>() => (x !== undefined && x !== null ? { s, ...x } : undefined) : () => { a: boolean; b: string | undefined; s: string; } | undefined
+>(x !== undefined && x !== null ? { s, ...x } : undefined) : { a: boolean; b: string | undefined; s: string; } | undefined
+>x !== undefined && x !== null ? { s, ...x } : undefined : { a: boolean; b: string | undefined; s: string; } | undefined
+>x !== undefined && x !== null : boolean
+>x !== undefined : boolean
+>x : NoInfer<One | undefined> | undefined
+>undefined : undefined
+>x !== null : boolean
+>x : NoInfer<One | undefined> & {}
+>{ s, ...x } : { a: boolean; b: string | undefined; s: string; }
+>s : string
+>x : One
+>undefined : undefined
+}
+export const v01: never = memo(() => (x !== undefined ? { s: 1, ...x } : undefined));
+>v01 : never
+>memo(() => (x !== undefined ? { s: 1, ...x } : undefined)) : { a: boolean; b: string | undefined; s: number; } | undefined
+>memo : <T>(factory: () => T) => T
+>() => (x !== undefined ? { s: 1, ...x } : undefined) : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>(x !== undefined ? { s: 1, ...x } : undefined) : { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined ? { s: 1, ...x } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined : boolean
+>x : NoInfer<One | undefined> | undefined
+>undefined : undefined
+>{ s: 1, ...x } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>x : One
+>undefined : undefined
+
+export const v02: never = memo(() => (x ? { ...x, s: 1 } : undefined));
+>v02 : never
+>memo(() => (x ? { ...x, s: 1 } : undefined)) : { a: boolean; b: string | undefined; s: number; } | undefined
+>memo : <T>(factory: () => T) => T
+>() => (x ? { ...x, s: 1 } : undefined) : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>(x ? { ...x, s: 1 } : undefined) : { a: boolean; b: string | undefined; s: number; } | undefined
+>x ? { ...x, s: 1 } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>x : NoInfer<One | undefined> | undefined
+>{ ...x, s: 1 } : { a: boolean; b: string | undefined; s: number; }
+>x : One
+>s : number
+>1 : 1
+>undefined : undefined
+
+export const v03: never = id(x !== undefined ? { s: 1, ...x } : undefined);
+>v03 : never
+>id(x !== undefined ? { s: 1, ...x } : undefined) : { a: boolean; b: string | undefined; s: number; } | undefined
+>id : <T>(value: T) => T
+>x !== undefined ? { s: 1, ...x } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined : boolean
+>x : NoInfer<One | undefined> | undefined
+>undefined : undefined
+>{ s: 1, ...x } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>x : One
+>undefined : undefined
+
+export const v04: never = pair(x ? { s: 1, ...x } : undefined, 1);
+>v04 : never
+>pair(x ? { s: 1, ...x } : undefined, 1) : [{ a: boolean; b: string | undefined; s: number; } | undefined, number]
+>pair : <T, V>(value: T, other: V) => [T, V]
+>x ? { s: 1, ...x } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>x : NoInfer<One | undefined> | undefined
+>{ s: 1, ...x } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>x : One
+>undefined : undefined
+>1 : 1
+
+export const v05: never = memo(() => (whole.data !== undefined ? { s: 1, ...whole.data } : undefined));
+>v05 : never
+>memo(() => (whole.data !== undefined ? { s: 1, ...whole.data } : undefined)) : { a: boolean; b: string | undefined; s: number; } | undefined
+>memo : <T>(factory: () => T) => T
+>() => (whole.data !== undefined ? { s: 1, ...whole.data } : undefined) : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>(whole.data !== undefined ? { s: 1, ...whole.data } : undefined) : { a: boolean; b: string | undefined; s: number; } | undefined
+>whole.data !== undefined ? { s: 1, ...whole.data } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>whole.data !== undefined : boolean
+>whole.data : NoInfer<One | undefined> | undefined
+>whole : { data: NoInfer<One | undefined> | undefined; }
+>data : NoInfer<One | undefined> | undefined
+>undefined : undefined
+>{ s: 1, ...whole.data } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>whole.data : One
+>whole : { data: NoInfer<One | undefined> | undefined; }
+>data : One
+>undefined : undefined
+
+export const v06: never = memo(() => (declared != null ? { s: 1, ...declared } : undefined));
+>v06 : never
+>memo(() => (declared != null ? { s: 1, ...declared } : undefined)) : { a: boolean; b: string | undefined; s: number; } | undefined
+>memo : <T>(factory: () => T) => T
+>() => (declared != null ? { s: 1, ...declared } : undefined) : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>(declared != null ? { s: 1, ...declared } : undefined) : { a: boolean; b: string | undefined; s: number; } | undefined
+>declared != null ? { s: 1, ...declared } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>declared != null : boolean
+>declared : NoInfer<One | undefined> | null
+>{ s: 1, ...declared } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>declared : One
+>undefined : undefined
+
+export const v07: never = memo(function () { return x !== undefined ? { s: 1, ...x } : undefined; });
+>v07 : never
+>memo(function () { return x !== undefined ? { s: 1, ...x } : undefined; }) : { a: boolean; b: string | undefined; s: number; } | undefined
+>memo : <T>(factory: () => T) => T
+>function () { return x !== undefined ? { s: 1, ...x } : undefined; } : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined ? { s: 1, ...x } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined : boolean
+>x : NoInfer<One | undefined> | undefined
+>undefined : undefined
+>{ s: 1, ...x } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>x : One
+>undefined : undefined
+
+export const v08: never = memo(() => { if (x !== undefined) return { s: 1, ...x }; return undefined; });
+>v08 : never
+>memo(() => { if (x !== undefined) return { s: 1, ...x }; return undefined; }) : { a: boolean; b: string | undefined; s: number; } | undefined
+>memo : <T>(factory: () => T) => T
+>() => { if (x !== undefined) return { s: 1, ...x }; return undefined; } : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined : boolean
+>x : NoInfer<One | undefined> | undefined
+>undefined : undefined
+>{ s: 1, ...x } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>x : One
+>undefined : undefined
+
+export const v09: never = memo(() => (u !== undefined ? { s: 1, ...u } : undefined));
+>v09 : never
+>memo(() => (u !== undefined ? { s: 1, ...u } : undefined)) : { kind: "left" | "right"; m: (() => string) | (() => number); s: number; } | undefined
+>memo : <T>(factory: () => T) => T
+>() => (u !== undefined ? { s: 1, ...u } : undefined) : () => { kind: "left" | "right"; m: (() => string) | (() => number); s: number; } | undefined
+>(u !== undefined ? { s: 1, ...u } : undefined) : { kind: "left"; l: number; m(): string; s: number; } | { kind: "right"; r: string; m(): number; s: number; } | undefined
+>u !== undefined ? { s: 1, ...u } : undefined : { kind: "left"; l: number; m(): string; s: number; } | { kind: "right"; r: string; m(): number; s: number; } | undefined
+>u !== undefined : boolean
+>u : NoInfer<Left | Right | undefined> | undefined
+>undefined : undefined
+>{ s: 1, ...u } : { kind: "left"; l: number; m(): string; s: number; } | { kind: "right"; r: string; m(): number; s: number; }
+>s : number
+>1 : 1
+>u : Left | Right
+>undefined : undefined
+
+export const v10: never = id(u && "l" in u ? { s: 1, ...u } : undefined);
+>v10 : never
+>id(u && "l" in u ? { s: 1, ...u } : undefined) : { kind: "left" | "right"; l: unknown; m: (() => string) | (() => number); s: number; } | undefined
+>id : <T>(value: T) => T
+>u && "l" in u ? { s: 1, ...u } : undefined : { kind: "left"; l: number; m(): string; s: number; } | undefined
+>u && "l" in u : boolean | undefined
+>u : NoInfer<Left | Right | undefined> | undefined
+>"l" in u : boolean
+>"l" : "l"
+>u : NonNullable<NoInfer<Left | Right | undefined>>
+>{ s: 1, ...u } : { kind: "left"; l: number; m(): string; s: number; }
+>s : number
+>1 : 1
+>u : Left
+>undefined : undefined
+
+export const v11: never = id(u?.kind === "right" ? { ...u, s: 1 } : undefined);
+>v11 : never
+>id(u?.kind === "right" ? { ...u, s: 1 } : undefined) : { kind: "left" | "right"; m: (() => string) | (() => number); s: number; } | undefined
+>id : <T>(value: T) => T
+>u?.kind === "right" ? { ...u, s: 1 } : undefined : { kind: "right"; r: string; m(): number; s: number; } | undefined
+>u?.kind === "right" : boolean
+>u?.kind : "left" | "right" | undefined
+>u : Left | Right | undefined
+>kind : "left" | "right" | undefined
+>"right" : "right"
+>{ ...u, s: 1 } : { kind: "right"; r: string; m(): number; s: number; }
+>u : Right
+>s : number
+>1 : 1
+>undefined : undefined
+
+export const v12: never = memo(() => ({ s: 1, ...x }));
+>v12 : never
+>memo(() => ({ s: 1, ...x })) : { s: number; }
+>memo : <T>(factory: () => T) => T
+>() => ({ s: 1, ...x }) : () => { s: number; }
+>({ s: 1, ...x }) : { a?: boolean | undefined; b?: string | undefined; s: number; }
+>{ s: 1, ...x } : { a?: boolean | undefined; b?: string | undefined; s: number; }
+>s : number
+>1 : 1
+>x : One | undefined
+
+export const v13: never = (() => (x !== undefined ? { s: 1, ...x } : undefined))();
+>v13 : never
+>(() => (x !== undefined ? { s: 1, ...x } : undefined))() : { a: boolean; b: string | undefined; s: number; } | undefined
+>(() => (x !== undefined ? { s: 1, ...x } : undefined)) : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>() => (x !== undefined ? { s: 1, ...x } : undefined) : () => { a: boolean; b: string | undefined; s: number; } | undefined
+>(x !== undefined ? { s: 1, ...x } : undefined) : { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined ? { s: 1, ...x } : undefined : { a: boolean; b: string | undefined; s: number; } | undefined
+>x !== undefined : boolean
+>x : NoInfer<One | undefined> | undefined
+>undefined : undefined
+>{ s: 1, ...x } : { a: boolean; b: string | undefined; s: number; }
+>s : number
+>1 : 1
+>x : One
+>undefined : undefined
+

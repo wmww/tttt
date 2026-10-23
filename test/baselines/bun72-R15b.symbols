@@ -1,0 +1,251 @@
+//// [test/cases/bun72-R15b.ts] ////
+
+=== a.ts ===
+function f1(a: number, b = g1()) { return a; }
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+>b : Symbol(b, Decl(a.ts, 0, 22))
+>g1 : Symbol(g1, Decl(a.ts, 0, 46))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+
+function g1() { return f1("wrong", 1); }
+>g1 : Symbol(g1, Decl(a.ts, 0, 46))
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+
+function g2() { return f2("wrong", 1); }
+>g2 : Symbol(g2, Decl(a.ts, 1, 40))
+>f2 : Symbol(f2, Decl(a.ts, 2, 40))
+
+function f2(a: number, b = g2()) { return a; }
+>f2 : Symbol(f2, Decl(a.ts, 2, 40))
+>a : Symbol(a, Decl(a.ts, 3, 12))
+>b : Symbol(b, Decl(a.ts, 3, 22))
+>g2 : Symbol(g2, Decl(a.ts, 1, 40))
+>a : Symbol(a, Decl(a.ts, 3, 12))
+
+function f3(a: number, b = g3()) { return a; }
+>f3 : Symbol(f3, Decl(a.ts, 3, 46))
+>a : Symbol(a, Decl(a.ts, 4, 12))
+>b : Symbol(b, Decl(a.ts, 4, 22))
+>g3 : Symbol(g3, Decl(a.ts, 4, 46))
+>a : Symbol(a, Decl(a.ts, 4, 12))
+
+function g3() { return f3(1, 1); }
+>g3 : Symbol(g3, Decl(a.ts, 4, 46))
+>f3 : Symbol(f3, Decl(a.ts, 3, 46))
+
+function f4(a: number, b = g4()) { return a; }
+>f4 : Symbol(f4, Decl(a.ts, 5, 34))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>b : Symbol(b, Decl(a.ts, 6, 22))
+>g4 : Symbol(g4, Decl(a.ts, 6, 46))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+
+function g4() { return [f4("wrong", [])]; }
+>g4 : Symbol(g4, Decl(a.ts, 6, 46))
+>f4 : Symbol(f4, Decl(a.ts, 5, 34))
+
+function f5(a: number, b = g5()) { return a; }
+>f5 : Symbol(f5, Decl(a.ts, 7, 43))
+>a : Symbol(a, Decl(a.ts, 8, 12))
+>b : Symbol(b, Decl(a.ts, 8, 22))
+>g5 : Symbol(g5, Decl(a.ts, 8, 46))
+>a : Symbol(a, Decl(a.ts, 8, 12))
+
+function g5() { return { r: f5("wrong") }; }
+>g5 : Symbol(g5, Decl(a.ts, 8, 46))
+>r : Symbol(r, Decl(a.ts, 9, 24))
+>f5 : Symbol(f5, Decl(a.ts, 7, 43))
+
+function f6(a: number, b = g6()) { return a; }
+>f6 : Symbol(f6, Decl(a.ts, 9, 44))
+>a : Symbol(a, Decl(a.ts, 10, 12))
+>b : Symbol(b, Decl(a.ts, 10, 22))
+>g6 : Symbol(g6, Decl(a.ts, 10, 46))
+>a : Symbol(a, Decl(a.ts, 10, 12))
+
+function g6() { return { r: f6(1) }; }
+>g6 : Symbol(g6, Decl(a.ts, 10, 46))
+>r : Symbol(r, Decl(a.ts, 11, 24))
+>f6 : Symbol(f6, Decl(a.ts, 9, 44))
+
+function f7(a: number, b: ReturnType<typeof g7>) { return a; }
+>f7 : Symbol(f7, Decl(a.ts, 11, 38))
+>a : Symbol(a, Decl(a.ts, 12, 12))
+>b : Symbol(b, Decl(a.ts, 12, 22))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>g7 : Symbol(g7, Decl(a.ts, 12, 62))
+>a : Symbol(a, Decl(a.ts, 12, 12))
+
+function g7() { return { r: f7("wrong", null!) }; }
+>g7 : Symbol(g7, Decl(a.ts, 12, 62))
+>r : Symbol(r, Decl(a.ts, 13, 24))
+>f7 : Symbol(f7, Decl(a.ts, 11, 38))
+
+function f8(a: number, b: ReturnType<typeof g8>) { return a; }
+>f8 : Symbol(f8, Decl(a.ts, 13, 51))
+>a : Symbol(a, Decl(a.ts, 14, 12))
+>b : Symbol(b, Decl(a.ts, 14, 22))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>g8 : Symbol(g8, Decl(a.ts, 14, 62))
+>a : Symbol(a, Decl(a.ts, 14, 12))
+
+function g8() { return { r: f8(1, null!) }; }
+>g8 : Symbol(g8, Decl(a.ts, 14, 62))
+>r : Symbol(r, Decl(a.ts, 15, 24))
+>f8 : Symbol(f8, Decl(a.ts, 13, 51))
+
+function f9(a: number, b = g9().r) { return [a]; }
+>f9 : Symbol(f9, Decl(a.ts, 15, 45))
+>a : Symbol(a, Decl(a.ts, 16, 12))
+>b : Symbol(b, Decl(a.ts, 16, 22))
+>g9().r : Symbol(r, Decl(a.ts, 17, 24))
+>g9 : Symbol(g9, Decl(a.ts, 16, 50))
+>r : Symbol(r, Decl(a.ts, 17, 24))
+>a : Symbol(a, Decl(a.ts, 16, 12))
+
+function g9() { return { r: f9("wrong", []) }; }
+>g9 : Symbol(g9, Decl(a.ts, 16, 50))
+>r : Symbol(r, Decl(a.ts, 17, 24))
+>f9 : Symbol(f9, Decl(a.ts, 15, 45))
+
+class C10 { m(a: number, b = this.n()) { return [a]; } n() { return { r: this.m("wrong", null!) }; } }
+>C10 : Symbol(C10, Decl(a.ts, 17, 48))
+>m : Symbol(C10.m, Decl(a.ts, 18, 11))
+>a : Symbol(a, Decl(a.ts, 18, 14))
+>b : Symbol(b, Decl(a.ts, 18, 24))
+>this.n : Symbol(C10.n, Decl(a.ts, 18, 54))
+>this : Symbol(C10, Decl(a.ts, 17, 48))
+>n : Symbol(C10.n, Decl(a.ts, 18, 54))
+>a : Symbol(a, Decl(a.ts, 18, 14))
+>n : Symbol(C10.n, Decl(a.ts, 18, 54))
+>r : Symbol(r, Decl(a.ts, 18, 69))
+>this.m : Symbol(C10.m, Decl(a.ts, 18, 11))
+>this : Symbol(C10, Decl(a.ts, 17, 48))
+>m : Symbol(C10.m, Decl(a.ts, 18, 11))
+
+class C11 { m(a: number, b = this.n()) { return [a]; } n() { return { r: this.m(1, null!) }; } }
+>C11 : Symbol(C11, Decl(a.ts, 18, 102))
+>m : Symbol(C11.m, Decl(a.ts, 19, 11))
+>a : Symbol(a, Decl(a.ts, 19, 14))
+>b : Symbol(b, Decl(a.ts, 19, 24))
+>this.n : Symbol(C11.n, Decl(a.ts, 19, 54))
+>this : Symbol(C11, Decl(a.ts, 18, 102))
+>n : Symbol(C11.n, Decl(a.ts, 19, 54))
+>a : Symbol(a, Decl(a.ts, 19, 14))
+>n : Symbol(C11.n, Decl(a.ts, 19, 54))
+>r : Symbol(r, Decl(a.ts, 19, 69))
+>this.m : Symbol(C11.m, Decl(a.ts, 19, 11))
+>this : Symbol(C11, Decl(a.ts, 18, 102))
+>m : Symbol(C11.m, Decl(a.ts, 19, 11))
+
+class C12 { p = this.m("wrong", null!); m(a: number, b = this.p) { return [a]; } }
+>C12 : Symbol(C12, Decl(a.ts, 19, 96))
+>p : Symbol(C12.p, Decl(a.ts, 20, 11))
+>this.m : Symbol(C12.m, Decl(a.ts, 20, 39))
+>this : Symbol(C12, Decl(a.ts, 19, 96))
+>m : Symbol(C12.m, Decl(a.ts, 20, 39))
+>m : Symbol(C12.m, Decl(a.ts, 20, 39))
+>a : Symbol(a, Decl(a.ts, 20, 42))
+>b : Symbol(b, Decl(a.ts, 20, 52))
+>this.p : Symbol(C12.p, Decl(a.ts, 20, 11))
+>this : Symbol(C12, Decl(a.ts, 19, 96))
+>p : Symbol(C12.p, Decl(a.ts, 20, 11))
+>a : Symbol(a, Decl(a.ts, 20, 42))
+
+class C13 { p = this.m(1, null!); m(a: number, b = this.p) { return [a]; } }
+>C13 : Symbol(C13, Decl(a.ts, 20, 82))
+>p : Symbol(C13.p, Decl(a.ts, 21, 11))
+>this.m : Symbol(C13.m, Decl(a.ts, 21, 33))
+>this : Symbol(C13, Decl(a.ts, 20, 82))
+>m : Symbol(C13.m, Decl(a.ts, 21, 33))
+>m : Symbol(C13.m, Decl(a.ts, 21, 33))
+>a : Symbol(a, Decl(a.ts, 21, 36))
+>b : Symbol(b, Decl(a.ts, 21, 46))
+>this.p : Symbol(C13.p, Decl(a.ts, 21, 11))
+>this : Symbol(C13, Decl(a.ts, 20, 82))
+>p : Symbol(C13.p, Decl(a.ts, 21, 11))
+>a : Symbol(a, Decl(a.ts, 21, 36))
+
+const o14 = { m(a: number, b = o14.n()) { return [a]; }, n() { return { r: o14.m("wrong", null!) }; } };
+>o14 : Symbol(o14, Decl(a.ts, 22, 5))
+>m : Symbol(m, Decl(a.ts, 22, 13))
+>a : Symbol(a, Decl(a.ts, 22, 16))
+>b : Symbol(b, Decl(a.ts, 22, 26))
+>o14 : Symbol(o14, Decl(a.ts, 22, 5))
+>a : Symbol(a, Decl(a.ts, 22, 16))
+>n : Symbol(n, Decl(a.ts, 22, 56))
+>r : Symbol(r, Decl(a.ts, 22, 71))
+>o14 : Symbol(o14, Decl(a.ts, 22, 5))
+
+function f15(a: number, b = g15(), c = 1) { return [a]; }
+>f15 : Symbol(f15, Decl(a.ts, 22, 104))
+>a : Symbol(a, Decl(a.ts, 23, 13))
+>b : Symbol(b, Decl(a.ts, 23, 23))
+>g15 : Symbol(g15, Decl(a.ts, 23, 57))
+>c : Symbol(c, Decl(a.ts, 23, 34))
+>a : Symbol(a, Decl(a.ts, 23, 13))
+
+function g15() { return { r: f15("wrong", null!, "also wrong") }; }
+>g15 : Symbol(g15, Decl(a.ts, 23, 57))
+>r : Symbol(r, Decl(a.ts, 24, 25))
+>f15 : Symbol(f15, Decl(a.ts, 22, 104))
+
+function f16(a: number, b: string, c = g16()) { return [a]; }
+>f16 : Symbol(f16, Decl(a.ts, 24, 67))
+>a : Symbol(a, Decl(a.ts, 25, 13))
+>b : Symbol(b, Decl(a.ts, 25, 23))
+>c : Symbol(c, Decl(a.ts, 25, 34))
+>g16 : Symbol(g16, Decl(a.ts, 25, 61))
+>a : Symbol(a, Decl(a.ts, 25, 13))
+
+function g16() { return { r: f16(1, 2, null!) }; }
+>g16 : Symbol(g16, Decl(a.ts, 25, 61))
+>r : Symbol(r, Decl(a.ts, 26, 25))
+>f16 : Symbol(f16, Decl(a.ts, 24, 67))
+
+function f17(a: number, b: string, c = g17()) { return [a]; }
+>f17 : Symbol(f17, Decl(a.ts, 26, 50))
+>a : Symbol(a, Decl(a.ts, 27, 13))
+>b : Symbol(b, Decl(a.ts, 27, 23))
+>c : Symbol(c, Decl(a.ts, 27, 34))
+>g17 : Symbol(g17, Decl(a.ts, 27, 61))
+>a : Symbol(a, Decl(a.ts, 27, 13))
+
+function g17() { return { r: f17(1, "", null!) }; }
+>g17 : Symbol(g17, Decl(a.ts, 27, 61))
+>r : Symbol(r, Decl(a.ts, 28, 25))
+>f17 : Symbol(f17, Decl(a.ts, 26, 50))
+
+function f18(cb: (x: number) => void, b = g18()) { return [cb]; }
+>f18 : Symbol(f18, Decl(a.ts, 28, 51))
+>cb : Symbol(cb, Decl(a.ts, 29, 13))
+>x : Symbol(x, Decl(a.ts, 29, 18))
+>b : Symbol(b, Decl(a.ts, 29, 37))
+>g18 : Symbol(g18, Decl(a.ts, 29, 65))
+>cb : Symbol(cb, Decl(a.ts, 29, 13))
+
+function g18() { return { r: f18((x: string) => {}, null!) }; }
+>g18 : Symbol(g18, Decl(a.ts, 29, 65))
+>r : Symbol(r, Decl(a.ts, 30, 25))
+>f18 : Symbol(f18, Decl(a.ts, 28, 51))
+>x : Symbol(x, Decl(a.ts, 30, 34))
+
+function f19(cb: (x: number) => void, b = g19()) { return [cb]; }
+>f19 : Symbol(f19, Decl(a.ts, 30, 63))
+>cb : Symbol(cb, Decl(a.ts, 31, 13))
+>x : Symbol(x, Decl(a.ts, 31, 18))
+>b : Symbol(b, Decl(a.ts, 31, 37))
+>g19 : Symbol(g19, Decl(a.ts, 31, 65))
+>cb : Symbol(cb, Decl(a.ts, 31, 13))
+
+function g19() { return { r: f19(x => { x.nope }, null!) }; }
+>g19 : Symbol(g19, Decl(a.ts, 31, 65))
+>r : Symbol(r, Decl(a.ts, 32, 25))
+>f19 : Symbol(f19, Decl(a.ts, 30, 63))
+>x : Symbol(x, Decl(a.ts, 32, 33))
+>x : Symbol(x, Decl(a.ts, 32, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 33, 5))
+

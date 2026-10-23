@@ -1,0 +1,19 @@
+a.ts(2,29): error TS2323: Cannot redeclare exported variable 'w'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import {} from "./r4";
+    declare module "./r4" { var w: number; }
+                                ~
+!!! error TS2323: Cannot redeclare exported variable 'w'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== n.ts (0 errors) ====
+    export var w = 1;
+==== r4.ts (0 errors) ====
+    export { w } from "./n";
+    

@@ -1,0 +1,32 @@
+//// [test/cases/bun27-C2.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+declare function One(p: { children: number }): JSX.Element;
+>One : { (p: { children: number; }): JSX.Element; (p: { children: number; x: 1; }): JSX.Element; }
+>p : { children: number; }
+>children : number
+>JSX : any
+
+declare function One(p: { children: number; x: 1 }): JSX.Element;
+>One : { (p: { children: number; }): JSX.Element; (p: { children: number; x: 1; }): JSX.Element; }
+>p : { children: number; x: 1; }
+>children : number
+>x : 1
+>JSX : any
+
+const a = <One>{1}{2}</One>;
+>a : JSX.Element
+><One>{1}{2}</One> : JSX.Element
+>One : { (p: { children: number; }): JSX.Element; (p: { children: number; x: 1; }): JSX.Element; }
+>1 : 1
+>2 : 2
+>One : { (p: { children: number; }): JSX.Element; (p: { children: number; x: 1; }): JSX.Element; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

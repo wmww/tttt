@@ -1,0 +1,14 @@
+//// [test/cases/bun53-L16b.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+x = ({ @dec b }) => 1;
+>x = ({ @dec b }) => 1 : ({}: {}, b: any) => number
+>x : any
+>({ @dec b }) => 1 : ({}: {}, b: any) => number
+>dec : any
+>b : any
+>1 : 1
+

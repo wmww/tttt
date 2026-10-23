@@ -1,0 +1,16 @@
+a.ts(3,21): error TS2339: Property 'c' does not exist on type 'T'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type T = { a: "b"; [k]: number };
+    declare const k: T["a"];
+    declare let t: T; t.c;
+                        ~
+!!! error TS2339: Property 'c' does not exist on type 'T'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

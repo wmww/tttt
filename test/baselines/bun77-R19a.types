@@ -1,0 +1,45 @@
+//// [test/cases/bun77-R19a.ts] ////
+
+=== a.ts ===
+interface Array<T> { 0: string; }
+>0 : string
+
+declare function f(...a: number[]): void;
+>f : (...a: number[]) => void
+>a : number[]
+
+f("s"); f(1); f("s", 1);
+>f("s") : void
+>f : (...a: number[]) => void
+>"s" : "s"
+>f(1) : void
+>f : (...a: number[]) => void
+>1 : 1
+>f("s", 1) : void
+>f : (...a: number[]) => void
+>"s" : "s"
+>1 : 1
+
+declare function g(...cbs: ((x: number) => void)[]): void;
+>g : (...cbs: ((x: number) => void)[]) => void
+>cbs : ((x: number) => void)[]
+>x : number
+
+g("s", y => { const t: never = y; });
+>g("s", y => { const t: never = y; }) : void
+>g : (...cbs: ((x: number) => void)[]) => void
+>"s" : "s"
+>y => { const t: never = y; } : (y: number) => void
+>y : number
+>t : never
+>y : number
+
+const fn: (a: number) => void = f;
+>fn : (a: number) => void
+>a : number
+>f : (...a: number[]) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

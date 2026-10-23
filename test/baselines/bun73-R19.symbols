@@ -1,0 +1,56 @@
+//// [test/cases/bun73-R19.ts] ////
+
+=== a.ts ===
+namespace NS {
+>NS : Symbol(NS, Decl(a.ts, 0, 0))
+
+  type LU = Partial<{ a: 1 } | { b: 1 }>; type GT<T> = [LU, T];
+>LU : Symbol(LU, Decl(a.ts, 0, 14))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 1, 21))
+>b : Symbol(b, Decl(a.ts, 1, 32))
+>GT : Symbol(GT, Decl(a.ts, 1, 41))
+>T : Symbol(T, Decl(a.ts, 1, 50))
+>LU : Symbol(LU, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 1, 50))
+
+  const n1: never = null! as [LU] | [GT<1>[0]];
+>n1 : Symbol(n1, Decl(a.ts, 2, 7))
+>LU : Symbol(LU, Decl(a.ts, 0, 14))
+>GT : Symbol(GT, Decl(a.ts, 1, 41))
+}
+{
+  type LU = Partial<{ a: 1 } | { b: 1 }>; type GT<T> = [LU, T];
+>LU : Symbol(LU, Decl(a.ts, 4, 1))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 5, 21))
+>b : Symbol(b, Decl(a.ts, 5, 32))
+>GT : Symbol(GT, Decl(a.ts, 5, 41))
+>T : Symbol(T, Decl(a.ts, 5, 50))
+>LU : Symbol(LU, Decl(a.ts, 4, 1))
+>T : Symbol(T, Decl(a.ts, 5, 50))
+
+  const n2: never = null! as [LU] | [GT<1>[0]];
+>n2 : Symbol(n2, Decl(a.ts, 6, 7))
+>LU : Symbol(LU, Decl(a.ts, 4, 1))
+>GT : Symbol(GT, Decl(a.ts, 5, 41))
+}
+// at the top level of the file the alias is isNonGenericTopLevelType: one type in both
+type TU = Partial<{ a: 1 } | { b: 1 }>; type TGT<T> = [TU, T];
+>TU : Symbol(TU, Decl(a.ts, 7, 1))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 9, 19))
+>b : Symbol(b, Decl(a.ts, 9, 30))
+>TGT : Symbol(TGT, Decl(a.ts, 9, 39))
+>T : Symbol(T, Decl(a.ts, 9, 49))
+>TU : Symbol(TU, Decl(a.ts, 7, 1))
+>T : Symbol(T, Decl(a.ts, 9, 49))
+
+const n3: never = null! as [TU] | [TGT<1>[0]];
+>n3 : Symbol(n3, Decl(a.ts, 10, 5))
+>TU : Symbol(TU, Decl(a.ts, 7, 1))
+>TGT : Symbol(TGT, Decl(a.ts, 9, 39))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

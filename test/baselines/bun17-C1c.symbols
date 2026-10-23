@@ -1,0 +1,52 @@
+//// [test/cases/bun17-C1c.ts] ////
+
+=== a.ts ===
+interface Box<T> { v: T }
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>v : Symbol(Box.v, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+
+type IA<T> = Box<IB<T>>; type IB<T> = Box<T>;
+>IA : Symbol(IA, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>IB : Symbol(IB, Decl(a.ts, 1, 24))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>IB : Symbol(IB, Decl(a.ts, 1, 24))
+>T : Symbol(T, Decl(a.ts, 1, 33))
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 33))
+
+type JA<T> = Box<JB<T>>; type JB<T> = Box<T>;
+>JA : Symbol(JA, Decl(a.ts, 1, 45))
+>T : Symbol(T, Decl(a.ts, 2, 8))
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>JB : Symbol(JB, Decl(a.ts, 2, 24))
+>T : Symbol(T, Decl(a.ts, 2, 8))
+>JB : Symbol(JB, Decl(a.ts, 2, 24))
+>T : Symbol(T, Decl(a.ts, 2, 33))
+>Box : Symbol(Box, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 2, 33))
+
+declare function h<T>(x: IA<T>): T;
+>h : Symbol(h, Decl(a.ts, 2, 45))
+>T : Symbol(T, Decl(a.ts, 3, 19))
+>x : Symbol(x, Decl(a.ts, 3, 22))
+>IA : Symbol(IA, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 3, 19))
+>T : Symbol(T, Decl(a.ts, 3, 19))
+
+declare let j: JA<number>;
+>j : Symbol(j, Decl(a.ts, 4, 11))
+>JA : Symbol(JA, Decl(a.ts, 1, 45))
+
+h(j).toFixed();
+>h(j).toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>h : Symbol(h, Decl(a.ts, 2, 45))
+>j : Symbol(j, Decl(a.ts, 4, 11))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

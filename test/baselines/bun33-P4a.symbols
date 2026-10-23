@@ -1,0 +1,13 @@
+//// [test/cases/bun33-P4a.ts] ////
+
+=== a.js ===
+/** @param {number[]} q */
+function f(a = arguments) {}
+>f : Symbol(f, Decl(a.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 1, 11))
+>arguments : Symbol(arguments)
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 3, 5))
+

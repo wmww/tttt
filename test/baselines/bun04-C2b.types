@@ -1,0 +1,39 @@
+//// [test/cases/bun04-C2b.ts] ////
+
+=== a.ts ===
+type A = { [Symbol.iterator](): Iterator<number>; [Symbol.iterator](x?: string): Iterator<boolean> };
+>A : A
+>[Symbol.iterator] : { (): Iterator<number>; (x?: string): Iterator<boolean>; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>[Symbol.iterator] : { (): Iterator<number>; (x?: string): Iterator<boolean>; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>x : string | undefined
+
+type B = { [Symbol.iterator](): Iterator<string>; [Symbol.iterator](x?: number): Iterator<bigint> };
+>B : B
+>[Symbol.iterator] : { (): Iterator<string>; (x?: number): Iterator<bigint>; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>[Symbol.iterator] : { (): Iterator<string>; (x?: number): Iterator<bigint>; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>x : number | undefined
+
+function f9<T extends A | B>(t: T) { for (const x of t) { const n: never = x; } }
+>f9 : <T extends A | B>(t: T) => void
+>t : T
+>x : string | number
+>t : T
+>n : never
+>x : string | number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,12 @@
+//// [test/cases/bun30-C4.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== m.js ===
+(class K { p = (K.x = 1); });
+>K : Symbol(K, Decl(m.js, 0, 1))
+>p : Symbol(K.p, Decl(m.js, 0, 10))
+>K : Symbol(K, Decl(m.js, 0, 1))
+

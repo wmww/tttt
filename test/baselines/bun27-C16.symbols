@@ -1,0 +1,35 @@
+//// [test/cases/bun27-C16.ts] ////
+
+=== a.jsx ===
+/** @param {{ a?: string }} p */
+function F(p) { return /** @type {any} */ (null); }
+>F : Symbol(F, Decl(a.jsx, 0, 0))
+>p : Symbol(p, Decl(a.jsx, 1, 11))
+
+const a1 = <F q={x => x.nope} />;
+>a1 : Symbol(a1, Decl(a.jsx, 2, 5))
+>F : Symbol(F, Decl(a.jsx, 0, 0))
+>q : Symbol(q, Decl(a.jsx, 2, 13))
+>x : Symbol(x, Decl(a.jsx, 2, 17))
+>x : Symbol(x, Decl(a.jsx, 2, 17))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.jsx, 4, 5))
+
+=== g.d.ts ===
+declare namespace JSX { interface Element { e: 1 } type LibraryManagedAttributes<C, P, Q> = P & { q: (x: Q) => void }; interface IntrinsicElements { div: {} } }
+>JSX : Symbol(JSX, Decl(g.d.ts, 0, 0))
+>Element : Symbol(Element, Decl(g.d.ts, 0, 23))
+>e : Symbol(Element.e, Decl(g.d.ts, 0, 43))
+>LibraryManagedAttributes : Symbol(LibraryManagedAttributes, Decl(g.d.ts, 0, 50))
+>C : Symbol(C, Decl(g.d.ts, 0, 81))
+>P : Symbol(P, Decl(g.d.ts, 0, 83))
+>Q : Symbol(Q, Decl(g.d.ts, 0, 86))
+>P : Symbol(P, Decl(g.d.ts, 0, 83))
+>q : Symbol(q, Decl(g.d.ts, 0, 97))
+>x : Symbol(x, Decl(g.d.ts, 0, 102))
+>Q : Symbol(Q, Decl(g.d.ts, 0, 86))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(g.d.ts, 0, 118))
+>div : Symbol(IntrinsicElements.div, Decl(g.d.ts, 0, 148))
+

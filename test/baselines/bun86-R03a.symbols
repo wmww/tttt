@@ -1,0 +1,26 @@
+//// [test/cases/bun86-R03a.ts] ////
+
+=== a.d.ts ===
+declare namespace f { interface x { j: 1 } }
+>f : Symbol(f, Decl(a.d.ts, 0, 0), Decl(b.ts, 0, 0))
+>x : Symbol(x, Decl(a.d.ts, 0, 21), Decl(b.ts, 0, 15))
+>j : Symbol(x.j, Decl(a.d.ts, 0, 35))
+
+=== b.ts ===
+function f() {}
+>f : Symbol(f, Decl(a.d.ts, 0, 0), Decl(b.ts, 0, 0))
+
+f.x = "s";
+>f.x : Symbol(f.x, Decl(a.d.ts, 0, 21), Decl(b.ts, 0, 15))
+>f : Symbol(f, Decl(a.d.ts, 0, 0), Decl(b.ts, 0, 0))
+>x : Symbol(f.x, Decl(a.d.ts, 0, 21), Decl(b.ts, 0, 15))
+
+const p: number = f.x;
+>p : Symbol(p, Decl(b.ts, 2, 5))
+>f.x : Symbol(f.x, Decl(a.d.ts, 0, 21), Decl(b.ts, 0, 15))
+>f : Symbol(f, Decl(a.d.ts, 0, 0), Decl(b.ts, 0, 0))
+>x : Symbol(f.x, Decl(a.d.ts, 0, 21), Decl(b.ts, 0, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 3, 5))
+

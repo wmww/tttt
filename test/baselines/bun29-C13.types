@@ -1,0 +1,22 @@
+//// [test/cases/bun29-C13.ts] ////
+
+=== a.ts ===
+declare class G { static s: number }
+>G : G
+>s : number
+
+declare function g(): typeof G;
+>g : () => typeof G
+>G : typeof G
+
+let n: number = function G() { return g(); };
+>n : number
+>function G() { return g(); } : () => typeof G
+>G : () => typeof G
+>g() : typeof G
+>g : () => typeof G
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,14 @@
+a.ts(1,20): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class X implements null {}
+                       ~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

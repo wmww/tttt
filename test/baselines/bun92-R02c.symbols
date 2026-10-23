@@ -1,0 +1,13 @@
+//// [test/cases/bun92-R02c.ts] ////
+
+=== a.ts ===
+declare const a: any, b: any, x: any, f: any; x = { p: a?.!b };
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>x : Symbol(x, Decl(a.ts, 0, 29))
+>f : Symbol(f, Decl(a.ts, 0, 37))
+>x : Symbol(x, Decl(a.ts, 0, 29))
+>p : Symbol(p, Decl(a.ts, 0, 51))
+>a : Symbol(a, Decl(a.ts, 0, 13))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+

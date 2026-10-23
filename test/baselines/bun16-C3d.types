@@ -1,0 +1,16 @@
+//// [test/cases/bun16-C3d.ts] ////
+
+=== a.ts ===
+function f8<T extends { 0?: (x: number) => void } & Iterable<(x: string) => void>>([a = x => {}]: T) {}
+>f8 : <T extends { 0?: (x: number) => void; } & Iterable<(x: string) => void>>([a]: T) => void
+>0 : ((x: number) => void) | undefined
+>x : number
+>x : string
+>a : (x: string) => void
+>x => {} : (x: string) => void
+>x : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,40 @@
+//// [test/cases/bun13-C7b.ts] ////
+
+=== a.ts ===
+type U<T, V extends { k: T }> = (V & { k: "b"; y: 2 }) | { k: "c"; z: 3 };
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>V : Symbol(V, Decl(a.ts, 0, 9))
+>k : Symbol(k, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>V : Symbol(V, Decl(a.ts, 0, 9))
+>k : Symbol(k, Decl(a.ts, 0, 38))
+>y : Symbol(y, Decl(a.ts, 0, 46))
+>k : Symbol(k, Decl(a.ts, 0, 58))
+>z : Symbol(z, Decl(a.ts, 0, 66))
+
+type K<T, V extends { k: T }> = keyof U<T, V>;
+>K : Symbol(K, Decl(a.ts, 0, 74))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>V : Symbol(V, Decl(a.ts, 1, 9))
+>k : Symbol(k, Decl(a.ts, 1, 21))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>U : Symbol(U, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>V : Symbol(V, Decl(a.ts, 1, 9))
+
+function f<T, V extends { k: T }>() { const n: { q: K<T, V> } = 1; }
+>f : Symbol(f, Decl(a.ts, 1, 46))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>V : Symbol(V, Decl(a.ts, 2, 13))
+>k : Symbol(k, Decl(a.ts, 2, 25))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>n : Symbol(n, Decl(a.ts, 2, 43))
+>q : Symbol(q, Decl(a.ts, 2, 48))
+>K : Symbol(K, Decl(a.ts, 0, 74))
+>T : Symbol(T, Decl(a.ts, 2, 11))
+>V : Symbol(V, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

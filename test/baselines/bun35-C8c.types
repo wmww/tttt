@@ -1,0 +1,12 @@
+//// [test/cases/bun35-C8c.ts] ////
+
+=== a.ts ===
+/// <reference types="foo/" />
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@types/foo/index.d.ts ===
+declare const foo: 1;
+>foo : 1
+

@@ -1,0 +1,15 @@
+a.ts(2,50): error TS2322: Type 'unknown' is not assignable to type 'string'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": false, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function isObj(x: unknown): x is {};
+    function f1(x: unknown) { if (!isObj(x)) { const y: string = x; } }
+                                                     ~
+!!! error TS2322: Type 'unknown' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

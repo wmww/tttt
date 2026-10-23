@@ -1,0 +1,17 @@
+a.ts(1,3): error TS1234: An ambient module declaration is only allowed at the top level in a file.
+a.ts(1,3): error TS2668: 'export' modifier cannot be applied to ambient modules and module augmentations since they are always visible.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    { export declare module "x" {} }
+      ~~~~~~
+!!! error TS1234: An ambient module declaration is only allowed at the top level in a file.
+      ~~~~~~
+!!! error TS2668: 'export' modifier cannot be applied to ambient modules and module augmentations since they are always visible.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

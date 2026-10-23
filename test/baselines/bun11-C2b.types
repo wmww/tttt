@@ -1,0 +1,11 @@
+//// [test/cases/bun11-C2b.ts] ////
+
+=== a.ts ===
+type B6<T = `${B6 & string}`> = { x: T };
+>B6 : B6<T>
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

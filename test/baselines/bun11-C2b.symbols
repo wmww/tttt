@@ -1,0 +1,13 @@
+//// [test/cases/bun11-C2b.ts] ////
+
+=== a.ts ===
+type B6<T = `${B6 & string}`> = { x: T };
+>B6 : Symbol(B6, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>B6 : Symbol(B6, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 33))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

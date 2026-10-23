@@ -1,0 +1,55 @@
+a.ts(46,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (1 errors) ====
+    type Args<T extends ReadonlyArray<any>> = {
+      1: [T[0]];
+      2: [T[0], T[1]];
+      3: [T[0], T[1], T[2]];
+      fallback: Array<T extends ReadonlyArray<infer U> ? U : any>;
+    }[T extends Readonly<[any]> ? 1 : T extends Readonly<[any, any]> ? 2 : T extends Readonly<[any, any, any]> ? 3 : "fallback"];
+    interface Run<T extends any[]> {
+      (name: string, fn: (...args: T) => void | Promise<void>): void;
+    }
+    interface Each {
+      <T extends any[] | [any]>(cases: ReadonlyArray<T>): Run<T>;
+      <T extends ReadonlyArray<any>>(cases: ReadonlyArray<T>): Run<Args<T>>;
+      <T>(cases: ReadonlyArray<T>): Run<T[]>;
+    }
+    declare const each: Each;
+    let handler: (a: { id: string }, b: number) => { n: number } = () => ({ n: 1 });
+    const TWO = 2;
+    
+    each([
+      ["two", () => ({ n: TWO }), "x"],
+      ["zero", () => ({ n: 0 }), "y"],
+      [
+        "throws",
+        () => {
+          throw new Error("no");
+        },
+        "z",
+      ],
+    ] as const)("reads %s as %s", async (_name, answer, expected) => {
+      handler = answer;
+      const text: "x" | "y" | "z" = expected;
+      void text;
+    });
+    each([
+      ["a", { make: () => ({ n: TWO }) }],
+      ["b", { make: () => ({ n: 0 }) }],
+    ] as const)("%s", (_name, row) => {
+      handler = row.make;
+    });
+    each([
+      [() => ({ n: TWO })],
+      [() => ({ n: 0 })],
+    ])("%s", answer => {
+      handler = answer;
+    });
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

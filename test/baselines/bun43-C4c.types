@@ -1,0 +1,20 @@
+//// [test/cases/bun43-C4c.ts] ////
+
+=== a.ts ===
+declare class G<T> { x: T }
+>G : G<T>
+>x : T
+
+class X5 extends G<<T>() => T> {}
+>X5 : X5
+>G : typeof G
+><<T>() : boolean
+><<T : number
+> : any
+>T : any
+>() : any
+> : any
+>T> {} : boolean
+>T : any
+>{} : {}
+

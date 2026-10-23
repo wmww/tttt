@@ -1,0 +1,58 @@
+//// [test/cases/bun20-C3b.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+declare function id<T>(x: T): T;
+>id : <T>(x: T) => T
+>x : T
+
+declare const m: { a: "b"; b: "a" };
+>m : { a: "b"; b: "a"; }
+>a : "b"
+>b : "a"
+
+function f() {
+>f : () => void
+
+    let x: "a" | "b" = "a", y: "a" | "b" = "a";
+>x : "a" | "b"
+>"a" : "a"
+>y : "a" | "b"
+>"a" : "a"
+
+    do {
+        if (y === x) { }
+>y === x : boolean
+>y : "a" | "b"
+>x : "a" | "b"
+
+        if (cond()) { y = id(x); }
+>cond() : boolean
+>cond : () => boolean
+>y = id(x) : "a" | "b"
+>y : "a" | "b"
+>id(x) : "a" | "b"
+>id : <T>(x: T) => T
+>x : "a" | "b"
+
+        if (cond()) continue;
+>cond() : boolean
+>cond : () => boolean
+
+        x = m[y];
+>x = m[y] : "a" | "b"
+>x : "a" | "b"
+>m[y] : "a" | "b"
+>m : { a: "b"; b: "a"; }
+>y : "a" | "b"
+
+    } while (cond());
+>cond() : boolean
+>cond : () => boolean
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

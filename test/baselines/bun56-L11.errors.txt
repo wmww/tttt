@@ -1,0 +1,39 @@
+a.ts(3,10): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+a.ts(3,10): error TS2304: Cannot find name 'await'.
+a.ts(4,16): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+a.ts(4,16): error TS2304: Cannot find name 'await'.
+a.ts(5,16): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+a.ts(5,16): error TS2304: Cannot find name 'await'.
+a.ts(5,33): error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+a.ts(5,33): error TS2304: Cannot find name 'await'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (9 errors) ====
+    export {};
+    declare const x: any;
+    const { [await]: a } = x;
+             ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+             ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    interface I { [await]: 1 }
+                   ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                   ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    interface J { [await](): void; [await.x]: 1 }
+                   ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                   ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+                                    ~~~~~
+!!! error TS1262: Identifier expected. 'await' is a reserved word at the top-level of a module.
+                                    ~~~~~
+!!! error TS2304: Cannot find name 'await'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

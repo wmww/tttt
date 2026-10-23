@@ -1,0 +1,152 @@
+//// [test/cases/bun73-R01f.ts] ////
+
+=== a.ts ===
+type U = string | number | boolean | null | undefined;
+>U : U
+
+function missed(o: { x: U }) { if (o["x"]) { if (o["x"] === 0) { o["x"].toFixed(); } } }
+>missed : (o: { x: U; }) => void
+>o : { x: U; }
+>x : U
+>o["x"] : U
+>o : { x: U; }
+>"x" : "x"
+>o["x"] === 0 : boolean
+>o["x"] : string | number | true
+>o : { x: U; }
+>"x" : "x"
+>0 : 0
+>o["x"].toFixed() : any
+>o["x"].toFixed : any
+>o["x"] : never
+>o : { x: U; }
+>"x" : "x"
+>toFixed : any
+
+function element(o: { x: U }) { if (o["x"]) { if (o["x"] === 0) { const p: never = o["x"]; } } }
+>element : (o: { x: U; }) => void
+>o : { x: U; }
+>x : U
+>o["x"] : U
+>o : { x: U; }
+>"x" : "x"
+>o["x"] === 0 : boolean
+>o["x"] : string | number | true
+>o : { x: U; }
+>"x" : "x"
+>0 : 0
+>p : never
+>o["x"] : never
+>o : { x: U; }
+>"x" : "x"
+
+function property(o: { x: U }) { if (o.x) { if (o.x === 0) { const p: never = o.x; } } }
+>property : (o: { x: U; }) => void
+>o : { x: U; }
+>x : U
+>o.x : U
+>o : { x: U; }
+>x : U
+>o.x === 0 : boolean
+>o.x : string | number | true
+>o : { x: U; }
+>x : string | number | true
+>0 : 0
+>p : never
+>o.x : 0
+>o : { x: U; }
+>x : 0
+
+function mixed(o: { x: U }) { if (o["x"]) { if (o.x === 0) { const p: never = o["x"]; const q: never = o.x; } } }
+>mixed : (o: { x: U; }) => void
+>o : { x: U; }
+>x : U
+>o["x"] : U
+>o : { x: U; }
+>"x" : "x"
+>o.x === 0 : boolean
+>o.x : string | number | true
+>o : { x: U; }
+>x : string | number | true
+>0 : 0
+>p : never
+>o["x"] : never
+>o : { x: U; }
+>"x" : "x"
+>q : never
+>o.x : 0
+>o : { x: U; }
+>x : 0
+
+function text(o: { x: U }) { if (o["x"]) { if (o["x"] === "") { const p: never = o["x"]; } } }
+>text : (o: { x: U; }) => void
+>o : { x: U; }
+>x : U
+>o["x"] : U
+>o : { x: U; }
+>"x" : "x"
+>o["x"] === "" : boolean
+>o["x"] : string | number | true
+>o : { x: U; }
+>"x" : "x"
+>"" : ""
+>p : never
+>o["x"] : never
+>o : { x: U; }
+>"x" : "x"
+
+function falsy(o: { x: U }) { if (!o["x"]) { if (o["x"] === 1) { const p: never = o["x"]; } } }
+>falsy : (o: { x: U; }) => void
+>o : { x: U; }
+>x : U
+>!o["x"] : boolean
+>o["x"] : U
+>o : { x: U; }
+>"x" : "x"
+>o["x"] === 1 : boolean
+>o["x"] : string | number | false | null | undefined
+>o : { x: U; }
+>"x" : "x"
+>1 : 1
+>p : never
+>o["x"] : never
+>o : { x: U; }
+>"x" : "x"
+
+function plainNumber(o: { x: number }) { if (o["x"]) { if (o["x"] === 0) { const p: never = o["x"]; } } }
+>plainNumber : (o: { x: number; }) => void
+>o : { x: number; }
+>x : number
+>o["x"] : number
+>o : { x: number; }
+>"x" : "x"
+>o["x"] === 0 : boolean
+>o["x"] : number
+>o : { x: number; }
+>"x" : "x"
+>0 : 0
+>p : never
+>o["x"] : never
+>o : { x: number; }
+>"x" : "x"
+
+function arrayIndex(o: U[]) { if (o[0]) { if (o[0] === 0) { const p: never = o[0]; } } }
+>arrayIndex : (o: U[]) => void
+>o : U[]
+>o[0] : U
+>o : U[]
+>0 : 0
+>o[0] === 0 : boolean
+>o[0] : string | number | true
+>o : U[]
+>0 : 0
+>0 : 0
+>p : never
+>o[0] : 0
+>o : U[]
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

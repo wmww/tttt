@@ -1,0 +1,13 @@
+a.ts(1,23): error TS1005: ';' expected.
+a.ts(1,27): error TS1005: ';' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function* g() { yield ? 1 : 2; }
+                          ~
+!!! error TS1005: ';' expected.
+                              ~
+!!! error TS1005: ';' expected.
+    

@@ -1,0 +1,18 @@
+//// [test/cases/bun42-C3.ts] ////
+
+=== a.ts ===
+1 << E.A;
+>1 << E.A : number
+>1 : 1
+>E.A : E
+>E : typeof E
+>A : E
+
+const enum E { A }
+>E : E
+>A : E.A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

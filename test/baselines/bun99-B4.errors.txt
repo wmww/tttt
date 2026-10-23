@@ -1,0 +1,130 @@
+a.ts(3,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(4,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(4,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(4,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(5,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(5,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(5,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(5,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(5,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(6,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(6,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(6,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(6,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(6,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(6,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(6,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(7,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(7,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(7,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(7,20): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(7,20): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(7,20): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(7,20): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(7,20): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(7,20): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(8,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(8,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(8,19): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(8,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(8,19): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(9,20): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(9,20): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(9,20): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(9,20): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(9,20): error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+a.ts(9,20): error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "module": "esnext", "moduleResolution": "bundler", "isolatedModules": true}}
+==== a.ts (37 errors) ====
+    declare const enum A { X }
+    import { B } from "./b";
+    export const v1 = A.X;
+                      ~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    export const v2 = A!.X;
+                      ~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    export const v3 = A!!.X;
+                      ~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    export const v4 = A!!!.X;
+                      ~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    export const v5 = (A!!)!.X;
+                      ~~~~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~~~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~~~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                       ~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                       ~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                       ~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                       ~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                       ~~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                       ~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    export const v6 = B!!.Y;
+                      ~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                      ~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                      ~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    export const v7 = [A!!];
+                       ~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                       ~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                       ~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                       ~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+                       ~~~
+!!! error TS2475: 'const' enums can only be used in property or index access expressions or the right hand side of an import declaration or export assignment or type query.
+                       ~~~
+!!! error TS2748: Cannot access ambient const enums when 'isolatedModules' is enabled.
+    export type T = typeof A;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.d.ts (0 errors) ====
+    export declare const enum B { Y }
+    

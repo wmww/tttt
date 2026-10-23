@@ -1,0 +1,91 @@
+a.ts(1,10): error TS6133: 'A1' is declared but its value is never read.
+a.ts(1,14): error TS6133: 'A2' is declared but its value is never read.
+a.ts(1,18): error TS6133: 'A3' is declared but its value is never read.
+a.ts(1,26): error TS6133: 'A5' is declared but its value is never read.
+a.ts(1,34): error TS6133: 'A7' is declared but its value is never read.
+a.ts(1,38): error TS6133: 'A8' is declared but its value is never read.
+a.ts(26,14): error TS2322: Type 'string' is not assignable to type 'number'.
+b.js(1,18): error TS6133: 'A3' is declared but its value is never read.
+b.js(1,38): error TS6133: 'A8' is declared but its value is never read.
+b.js(25,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true, "allowJs": true, "checkJs": true } }
+==== a.ts (7 errors) ====
+    import { A1, A2, A3, A4, A5, A6, A7, A8, A9 } from "./p";
+             ~~
+!!! error TS6133: 'A1' is declared but its value is never read.
+                 ~~
+!!! error TS6133: 'A2' is declared but its value is never read.
+                     ~~
+!!! error TS6133: 'A3' is declared but its value is never read.
+                             ~~
+!!! error TS6133: 'A5' is declared but its value is never read.
+                                     ~~
+!!! error TS6133: 'A7' is declared but its value is never read.
+                                         ~~
+!!! error TS6133: 'A8' is declared but its value is never read.
+    /**
+     * @typedef {Object} T
+     * @property {string} a see {@link A1}
+     */
+    export const s1 = 1;
+    /** @callback F
+     * @param {string} a see {@link A2}
+     * @returns {string} see {@link A3}
+     */
+    export const s2 = 1;
+    /** @param {Object} o see {@link A4}
+     * @param {string} o.a see {@link A5}
+     * @param {string} b see {@link A6}
+     */
+    export function s12(o: any, b: any) { return [o, b]; }
+    /**
+     * @overload
+     * @param {string} a see {@link A7}
+     * @returns {string} see {@link A8}
+     */
+    /**
+     * @param {string} a see {@link A9}
+     */
+    export function s13(a: any) { return a; }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.js (3 errors) ====
+    import { A1, A2, A3, A4, A5, A6, A7, A8, A9 } from "./p";
+                     ~~
+!!! error TS6133: 'A3' is declared but its value is never read.
+                                         ~~
+!!! error TS6133: 'A8' is declared but its value is never read.
+    /**
+     * @typedef {Object} T
+     * @property {string} a see {@link A1}
+     */
+    /** @callback F
+     * @param {string} a see {@link A2}
+     * @returns {string} see {@link A3}
+     */
+    /** @param {Object} o see {@link A4}
+     * @param {string} o.a see {@link A5}
+     * @param {string} b see {@link A6}
+     */
+    export function s12(o, b) { return [o, b]; }
+    /**
+     * @overload
+     * @param {string} a see {@link A7}
+     * @returns {string} see {@link A8}
+     */
+    /**
+     * @param {string} a see {@link A9}
+     */
+    export function s13(a) { return a; }
+    /** @type {number} */
+    export const sentinel = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== p.ts (0 errors) ====
+    export class A1 {} export class A2 {} export class A3 {} export class A4 {} export class A5 {} export class A6 {} export class A7 {} export class A8 {} export class A9 {}
+    export class B1 {} export class B2 {} export class B3 {} export class B4 {} export class B5 {} export class B6 {} export class B7 {} export class B8 {} export class B9 {}
+    

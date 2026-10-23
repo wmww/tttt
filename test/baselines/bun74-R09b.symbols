@@ -1,0 +1,41 @@
+//// [test/cases/bun74-R09b.ts] ////
+
+=== a.tsx ===
+declare global { namespace JSX { interface IntrinsicElements { [k: string]: any } } }
+>global : Symbol(global, Decl(a.tsx, 0, 0))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 16))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 32))
+>k : Symbol(k, Decl(a.tsx, 0, 64))
+
+export function Button() {
+>Button : Symbol(Button, Decl(a.tsx, 0, 85))
+
+  return <button onClick={() => { const interface = 1; return interface; }}>ok</button>;
+>button : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+>onClick : Symbol(onClick, Decl(a.tsx, 2, 16))
+>interface : Symbol(interface, Decl(a.tsx, 2, 39))
+>interface : Symbol(interface, Decl(a.tsx, 2, 39))
+>button : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+}
+export function Input(public: any) {
+>Input : Symbol(Input, Decl(a.tsx, 3, 1))
+>public : Symbol(public, Decl(a.tsx, 4, 22))
+
+  return <input value={public} {...public} />;
+>input : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+>value : Symbol(value, Decl(a.tsx, 5, 15))
+>public : Symbol(public, Decl(a.tsx, 4, 22))
+>public : Symbol(public, Decl(a.tsx, 4, 22))
+}
+export class View { render() { return <div ref={(static: any) => static}></div>; } }
+>View : Symbol(View, Decl(a.tsx, 6, 1))
+>render : Symbol(View.render, Decl(a.tsx, 7, 19))
+>div : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+>ref : Symbol(ref, Decl(a.tsx, 7, 42))
+>static : Symbol(static, Decl(a.tsx, 7, 49))
+>static : Symbol(static, Decl(a.tsx, 7, 49))
+>div : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 62))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 8, 5))
+

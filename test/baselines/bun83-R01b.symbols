@@ -1,0 +1,104 @@
+//// [test/cases/bun83-R01b.ts] ////
+
+=== i03.ts ===
+var v = new X<T extends U>(a);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== i13.ts ===
+var v = new <T extends U>;
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== j01.ts ===
+var v = f<T extends U>(a);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== j06.ts ===
+var v = f<typeof>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+
+=== j10.ts ===
+var v = f<T extends U ? 1>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+
+=== j13.ts ===
+var v = f<T[>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+
+=== j16.ts ===
+var v = f<new>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+> : Symbol(unknown)
+
+=== j17.ts ===
+var v = f<infer>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+> : Symbol((Missing), Decl(j17.ts, 0, 15))
+
+=== j19.ts ===
+var v = f<T extends U>`x`;
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== j20.ts ===
+var v = f<T extends U>;
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== j21.ts ===
+var v = f<T extends U>.x;
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== j23.ts ===
+var v = a.b<T extends U>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+
+=== j32.ts ===
+var v = f<import>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+> : Symbol(unknown)
+
+=== j33.ts ===
+var v = f<import(>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+> : Symbol(unknown)
+
+=== j34.ts ===
+var v = f<`${>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+> : Symbol(unknown)
+
+=== j40.ts ===
+var v = f<abstract new>(x);
+>v : Symbol(v, Decl(i03.ts, 0, 3), Decl(i13.ts, 0, 3), Decl(j01.ts, 0, 3), Decl(j06.ts, 0, 3), Decl(j10.ts, 0, 3) ... and 11 more)
+> : Symbol(unknown)
+

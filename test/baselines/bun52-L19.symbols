@@ -1,0 +1,47 @@
+//// [test/cases/bun52-L19.ts] ////
+
+=== a.ts ===
+type Unk = unknown; type Nev = never;
+>Unk : Symbol(Unk, Decl(a.ts, 0, 0))
+>Nev : Symbol(Nev, Decl(a.ts, 0, 19))
+
+function f1<T extends string & number & T>() {}
+>f1 : Symbol(f1, Decl(a.ts, 0, 37))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+
+function f2<T extends T | Unk>() {}
+>f2 : Symbol(f2, Decl(a.ts, 1, 47))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>T : Symbol(T, Decl(a.ts, 2, 12))
+>Unk : Symbol(Unk, Decl(a.ts, 0, 0))
+
+function f3<T extends T & Nev>() {}
+>f3 : Symbol(f3, Decl(a.ts, 2, 35))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>Nev : Symbol(Nev, Decl(a.ts, 0, 19))
+
+function f4<T extends U | Unk, U extends T>() {}
+>f4 : Symbol(f4, Decl(a.ts, 3, 35))
+>T : Symbol(T, Decl(a.ts, 4, 12))
+>U : Symbol(U, Decl(a.ts, 4, 30))
+>Unk : Symbol(Unk, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 4, 30))
+>T : Symbol(T, Decl(a.ts, 4, 12))
+
+function f5<T extends { [K in T & Nev]: 1 }>() {}
+>f5 : Symbol(f5, Decl(a.ts, 4, 48))
+>T : Symbol(T, Decl(a.ts, 5, 12))
+>K : Symbol(K, Decl(a.ts, 5, 25))
+>T : Symbol(T, Decl(a.ts, 5, 12))
+>Nev : Symbol(Nev, Decl(a.ts, 0, 19))
+
+function f6<T extends T & (string & number)>() {}
+>f6 : Symbol(f6, Decl(a.ts, 5, 49))
+>T : Symbol(T, Decl(a.ts, 6, 12))
+>T : Symbol(T, Decl(a.ts, 6, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

@@ -1,0 +1,39 @@
+//// [test/cases/bun80-R18b.ts] ////
+
+=== a.ts ===
+const A = { b: 1 };
+>A : Symbol(A, Decl(a.ts, 0, 5))
+>b : Symbol(b, Decl(a.ts, 0, 11))
+
+export namespace W {
+>W : Symbol(W, Decl(a.ts, 0, 19))
+
+  interface A { b: 1 }
+>A : Symbol(A, Decl(a.ts, 1, 20))
+>b : Symbol(A.b, Decl(a.ts, 2, 15))
+
+  export import x = A;
+>x : Symbol(x, Decl(a.ts, 2, 22))
+}
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 12))
+
+=== b.ts ===
+class A { static b = 1 }
+>A : Symbol(A, Decl(b.ts, 0, 0))
+>b : Symbol(A.b, Decl(b.ts, 0, 9))
+
+export namespace W {
+>W : Symbol(W, Decl(b.ts, 0, 24))
+
+  type A = { b: 1 };
+>A : Symbol(A, Decl(b.ts, 1, 20))
+>b : Symbol(b, Decl(b.ts, 2, 12))
+
+  import x = A.b;
+>x : Symbol(x, Decl(b.ts, 2, 20))
+
+  x;
+>x : Symbol(x, Decl(b.ts, 2, 20))
+}
+

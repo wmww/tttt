@@ -1,0 +1,12 @@
+//// [test/cases/bun32-C19.ts] ////
+
+=== a.ts ===
+import(("./nope"));
+>import(("./nope")) : Promise<any>
+>("./nope") : "./nope"
+>"./nope" : "./nope"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

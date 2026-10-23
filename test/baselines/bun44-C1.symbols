@@ -1,0 +1,17 @@
+//// [test/cases/bun44-C1.ts] ////
+
+=== a.ts ===
+export type PickByType<T> = { [K in keyof T extends T[K] ? K : never]: T[K] };
+>PickByType : Symbol(PickByType, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>K : Symbol(K, Decl(a.ts, 0, 31))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>K : Symbol(K, Decl(a.ts, 0, 31))
+>K : Symbol(K, Decl(a.ts, 0, 31))
+>T : Symbol(T, Decl(a.ts, 0, 23))
+>K : Symbol(K, Decl(a.ts, 0, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

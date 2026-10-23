@@ -1,0 +1,16 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+j.js(2,35): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== j.js (1 errors) ====
+    /** @type {() => Generator<number, string, boolean>} */
+    function* f13() { const x = yield "a"; return "s"; }
+                                      ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

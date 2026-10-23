@@ -1,0 +1,10 @@
+//// [test/cases/bun02-C11.ts] ////
+
+=== a.ts ===
+type P17 = { [K in "a"]: 1, };
+>P17 : P17
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

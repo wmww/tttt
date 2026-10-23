@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C22a.ts] ////
+
+=== a.ts ===
+export {};
+function f() { export * from "./zz"; }
+>f : Symbol(f, Decl(a.ts, 0, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

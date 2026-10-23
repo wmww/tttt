@@ -1,0 +1,97 @@
+a.ts(18,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(19,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(20,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(21,14): error TS2322: Type '[{ a: boolean; b: string | undefined; s: number; } | undefined, number]' is not assignable to type 'never'.
+a.ts(22,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(23,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(24,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(25,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(26,14): error TS2322: Type '{ kind: "left" | "right"; m: (() => string) | (() => number); s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(27,14): error TS2322: Type '{ kind: "left" | "right"; l: unknown; m: (() => string) | (() => number); s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(28,14): error TS2322: Type '{ kind: "left" | "right"; m: (() => string) | (() => number); s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(29,14): error TS2322: Type '{ s: number; }' is not assignable to type 'never'.
+a.ts(30,14): error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (13 errors) ====
+    type One = { a: boolean; b: string | undefined };
+    type Left = { kind: "left"; l: number; m(): string };
+    type Right = { kind: "right"; r: string; m(): number };
+    declare function use<T>(select: () => T): { data: NoInfer<T> | undefined };
+    declare function one(): One | undefined;
+    declare function either(): Left | Right | undefined;
+    declare function memo<T>(factory: () => T): T;
+    declare function id<T>(value: T): T;
+    declare function pair<T, V>(value: T, other: V): [T, V];
+    const { data: x } = use(one);
+    const { data: u } = use(either);
+    const whole = use(one);
+    declare const declared: NoInfer<One | undefined> | null;
+    
+    export function returned(s: string): { s: string; a: boolean; b: string | undefined } | undefined {
+      return memo(() => (x !== undefined && x !== null ? { s, ...x } : undefined));
+    }
+    export const v01: never = memo(() => (x !== undefined ? { s: 1, ...x } : undefined));
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v02: never = memo(() => (x ? { ...x, s: 1 } : undefined));
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v03: never = id(x !== undefined ? { s: 1, ...x } : undefined);
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v04: never = pair(x ? { s: 1, ...x } : undefined, 1);
+                 ~~~
+!!! error TS2322: Type '[{ a: boolean; b: string | undefined; s: number; } | undefined, number]' is not assignable to type 'never'.
+    export const v05: never = memo(() => (whole.data !== undefined ? { s: 1, ...whole.data } : undefined));
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v06: never = memo(() => (declared != null ? { s: 1, ...declared } : undefined));
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v07: never = memo(function () { return x !== undefined ? { s: 1, ...x } : undefined; });
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v08: never = memo(() => { if (x !== undefined) return { s: 1, ...x }; return undefined; });
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v09: never = memo(() => (u !== undefined ? { s: 1, ...u } : undefined));
+                 ~~~
+!!! error TS2322: Type '{ kind: "left" | "right"; m: (() => string) | (() => number); s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v10: never = id(u && "l" in u ? { s: 1, ...u } : undefined);
+                 ~~~
+!!! error TS2322: Type '{ kind: "left" | "right"; l: unknown; m: (() => string) | (() => number); s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v11: never = id(u?.kind === "right" ? { ...u, s: 1 } : undefined);
+                 ~~~
+!!! error TS2322: Type '{ kind: "left" | "right"; m: (() => string) | (() => number); s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v12: never = memo(() => ({ s: 1, ...x }));
+                 ~~~
+!!! error TS2322: Type '{ s: number; }' is not assignable to type 'never'.
+    export const v13: never = (() => (x !== undefined ? { s: 1, ...x } : undefined))();
+                 ~~~
+!!! error TS2322: Type '{ a: boolean; b: string | undefined; s: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    

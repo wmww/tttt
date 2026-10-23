@@ -1,0 +1,26 @@
+//// [test/cases/bun25-P1b.ts] ////
+
+=== a.ts ===
+interface J<T> { m: T extends string ? 1 : 2 }
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>m : Symbol(J.m, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+function f<A, B, Z>(a: [J<A | B>["m"] | J<Z>["m"]]) { const n: never = a; }
+>f : Symbol(f, Decl(a.ts, 0, 46))
+>A : Symbol(A, Decl(a.ts, 1, 11))
+>B : Symbol(B, Decl(a.ts, 1, 13))
+>Z : Symbol(Z, Decl(a.ts, 1, 16))
+>a : Symbol(a, Decl(a.ts, 1, 20))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 1, 11))
+>B : Symbol(B, Decl(a.ts, 1, 13))
+>J : Symbol(J, Decl(a.ts, 0, 0))
+>Z : Symbol(Z, Decl(a.ts, 1, 16))
+>n : Symbol(n, Decl(a.ts, 1, 59))
+>a : Symbol(a, Decl(a.ts, 1, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

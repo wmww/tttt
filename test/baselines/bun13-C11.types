@@ -1,0 +1,14 @@
+//// [test/cases/bun13-C11.ts] ////
+
+=== a.ts ===
+declare let t1: [...a?: string[]];
+>t1 : string[]
+
+const n1: never = t1;
+>n1 : never
+>t1 : string[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

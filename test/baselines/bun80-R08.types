@@ -1,0 +1,32 @@
+//// [test/cases/bun80-R08.ts] ////
+
+=== a.ts ===
+declare function dec(...a: any[]): any;
+>dec : (...a: any[]) => any
+>a : any[]
+
+const c1 = @dec abstract class { abstract m(): void };
+>c1 : typeof c1
+>@dec abstract class { abstract m(): void } : typeof c1
+>dec : (...a: any[]) => any
+>m : () => void
+
+const c2 = @dec public class {};
+>c2 : typeof c2
+>@dec public class {} : typeof c2
+>dec : (...a: any[]) => any
+
+const c3 = (@dec export default class {});
+>c3 : typeof (Anonymous class)
+>(@dec export default class {}) : typeof (Anonymous class)
+>@dec export default class {} : typeof (Anonymous class)
+>dec : (...a: any[]) => any
+
+new c1();
+>new c1() : c1
+>c1 : typeof c1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

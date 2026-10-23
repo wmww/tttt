@@ -1,0 +1,16 @@
+//// [test/cases/bun18-C10b.ts] ////
+
+=== a.ts ===
+declare function f3(...args: [...a: [number], b: string]): void;
+>f3 : Symbol(f3, Decl(a.ts, 0, 0))
+>args : Symbol(args, Decl(a.ts, 0, 20))
+
+let u3: typeof f3 = (p: string, q: string) => {};
+>u3 : Symbol(u3, Decl(a.ts, 1, 3))
+>f3 : Symbol(f3, Decl(a.ts, 0, 0))
+>p : Symbol(p, Decl(a.ts, 1, 21))
+>q : Symbol(q, Decl(a.ts, 1, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

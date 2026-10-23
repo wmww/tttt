@@ -1,0 +1,31 @@
+//// [test/cases/bun21-C3.ts] ////
+
+=== a.ts ===
+class N { static a = 1; }
+>N : N
+>a : number
+>1 : 1
+
+const k = compute();
+>k : any
+>compute() : any
+>compute : () => any
+
+function check(p: unknown) { return k; }
+>check : (p: unknown) => any
+>p : unknown
+>k : any
+
+function compute() { if (check(N)) { } return N.a; }
+>compute : () => any
+>check(N) : any
+>check : (p: unknown) => any
+>N : typeof N
+>N.a : number
+>N : typeof N
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun43-C13i.ts] ////
+
+=== a.tsx ===
+var x = 1;
+>x : number
+>1 : 1
+
+x <// c
+>x : number
+>/ c : RegExp
+

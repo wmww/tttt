@@ -1,0 +1,38 @@
+//// [test/cases/bun86-R02a.ts] ////
+
+=== a.ts ===
+Document.a = 2;
+>Document.a = 2 : 2
+>Document.a : number
+>Document : { a: number; }
+>a : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/index.js ===
+var Document = { a: 1 };
+>Document : { a: number; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+/** @type {number} */ var bad = "";
+>bad : number
+>"" : ""
+
+function helper(x) { return x; }
+>helper : (x: any) => any
+>x : any
+>x : any
+
+class Win { constructor() { this.p = 1; } }
+>Win : Win
+>this.p = 1 : 1
+>this.p : any
+>this : this
+>p : any
+>1 : 1
+

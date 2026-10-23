@@ -1,0 +1,28 @@
+//// [test/cases/bun33-C16b.ts] ////
+
+=== a.ts ===
+export {};
+declare module "./t" { interface A {} }
+>"./t" : Symbol("./t", Decl(t.ts, 0, 0), Decl(a.ts, 0, 10), Decl(b.ts, 0, 10))
+>A : Symbol(A, Decl(a.ts, 1, 22))
+
+=== b.ts ===
+export {};
+declare module "./t" { interface I {} export = I; }
+>"./t" : Symbol("./t", Decl(t.ts, 0, 0), Decl(a.ts, 0, 10), Decl(b.ts, 0, 10))
+>I : Symbol(I, Decl(b.ts, 1, 22))
+>I : Symbol(I, Decl(b.ts, 1, 22))
+
+=== c.ts ===
+export {};
+declare module "./t" { interface C {} }
+>"./t" : Symbol("./t", Decl(c.ts, 0, 10))
+>C : Symbol(C, Decl(c.ts, 1, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(c.ts, 2, 5))
+
+=== t.ts ===
+
+export {};
+

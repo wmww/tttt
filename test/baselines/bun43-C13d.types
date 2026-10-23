@@ -1,0 +1,16 @@
+//// [test/cases/bun43-C13d.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { a: any } }
+>a : any
+
+var v = <a #b />;
+>v : any
+><a #b /> : any
+>a : any
+>#b : true
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,70 @@
+//// [test/cases/bun99-W10.ts] ////
+
+=== a.ts ===
+type Comp<P> = (p: P) => void;
+>Comp : Comp<P>
+>p : P
+
+type M<T> = { [k in keyof T]: T };
+>M : M<T>
+
+type GetProps<C> = C extends { x: Comp<any> } ? (C['x'] extends new () => 0 ? C : never) : never;
+>GetProps : GetProps<C>
+>x : Comp<any>
+
+type Enh<I, N> = <C extends { x: Comp<GetProps<C>> }>(c: C) => Comp<M<GetProps<C> & N>>;
+>Enh : Enh<I, N>
+>x : Comp<GetProps<C>>
+>c : C
+
+declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>f : (a: A) => B
+>a : A
+>g : (b: B) => C
+>b : B
+>a : A
+
+declare const hoc: <C extends { x: Comp<any> }>(c: C) => C;
+>hoc : <C extends { x: Comp<any>; }>(c: C) => C
+>x : Comp<any>
+>c : C
+
+declare const enh: Enh<{}, {}>;
+>enh : Enh<{}, {}>
+
+export const R = flow(hoc, enh);
+>R : <C extends { x: Comp<any>; }>(a: C) => Comp<M<GetProps<C> & {}>>
+>flow(hoc, enh) : <C extends { x: Comp<any>; }>(a: C) => Comp<M<GetProps<C> & {}>>
+>flow : <A, B, C>(f: (a: A) => B, g: (b: B) => C) => (a: A) => C
+>hoc : <C extends { x: Comp<any>; }>(c: C) => C
+>enh : Enh<{}, {}>
+
+type F<T> = T extends { a: unknown } ? (T['a'] extends string ? 1 : 2) : 3;
+>F : F<T>
+>a : unknown
+
+export const f1: never = null! as F<{ a: 'x' }>;
+>f1 : never
+>null! as F<{ a: 'x' }> : 1
+>null! : never
+>a : "x"
+
+export const f2: never = null! as F<{ a: 1 }>;
+>f2 : never
+>null! as F<{ a: 1 }> : 2
+>null! : never
+>a : 1
+
+function g<T extends { a: unknown }>(t: T) { const x: never = null! as F<T>; }
+>g : <T extends { a: unknown; }>(t: T) => void
+>a : unknown
+>t : T
+>x : never
+>null! as F<T> : F<T>
+>null! : never
+
+export const sentinel: number = '';
+>sentinel : number
+>'' : ""
+

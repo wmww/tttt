@@ -1,0 +1,130 @@
+a.ts(3,7): error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(4,10): error TS7023: 'h' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(11,7): error TS7022: 'k' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(3,7): error TS7022: 'r1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(4,10): error TS7023: 'h1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+b.ts(5,39): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+b.ts(8,7): error TS7022: 'k1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(9,7): error TS7022: 'r2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(10,10): error TS7023: 'h2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+b.ts(14,7): error TS7022: 'k2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(15,7): error TS7022: 'r3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(16,10): error TS7023: 'h3' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+b.ts(20,7): error TS7022: 'k3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(21,7): error TS7022: 'r4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(22,10): error TS7023: 'h4' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+b.ts(26,7): error TS7022: 'k4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(27,7): error TS7022: 'r5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(28,10): error TS7023: 'h5' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+b.ts(32,7): error TS7022: 'k5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(33,7): error TS7022: 'r6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(34,10): error TS7023: 'h6' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+b.ts(38,7): error TS7022: 'k6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.ts(39,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    export {};
+    declare function assert(c: unknown): asserts c;
+    const r = h("a");
+          ~
+!!! error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h(x: string) {
+             ~
+!!! error TS7023: 'h' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      if (typeof x !== "string") {
+        assert(x === k);
+        return x;
+      }
+      return 1;
+    }
+    const k = r;
+          ~
+!!! error TS7022: 'k' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (20 errors) ====
+    export {};
+    declare function assert(c: unknown): asserts c;
+    const r1 = h1("a");
+          ~~
+!!! error TS7022: 'r1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h1(x: string) {
+             ~~
+!!! error TS7023: 'h1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      if (typeof x !== "string") { assert(x instanceof k1); return x; }
+                                          ~
+!!! error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+      return class {};
+    }
+    const k1 = r1;
+          ~~
+!!! error TS7022: 'k1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const r2 = h2("a");
+          ~~
+!!! error TS7022: 'r2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h2(x: string) {
+             ~~
+!!! error TS7023: 'h2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      if (typeof x !== "string") { assert(k2 in x); return x; }
+      return "p";
+    }
+    const k2 = r2;
+          ~~
+!!! error TS7022: 'k2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const r3 = h3("a");
+          ~~
+!!! error TS7022: 'r3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h3(x: string) {
+             ~~
+!!! error TS7023: 'h3' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      if (typeof x !== "string") { assert(x !== k3); return x; }
+      return 1;
+    }
+    const k3 = r3;
+          ~~
+!!! error TS7022: 'k3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const r4 = h4("a");
+          ~~
+!!! error TS7022: 'r4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h4(x: string) {
+             ~~
+!!! error TS7023: 'h4' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      if (typeof x !== "string") { assert(true && x === k4); return x; }
+      return 1;
+    }
+    const k4 = r4;
+          ~~
+!!! error TS7022: 'k4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const r5 = h5(null!);
+          ~~
+!!! error TS7022: 'r5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h5(x: never) {
+             ~~
+!!! error TS7023: 'h5' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      assert(x === k5);
+      return [x];
+    }
+    const k5 = r5;
+          ~~
+!!! error TS7022: 'k5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const r6 = h6("a");
+          ~~
+!!! error TS7022: 'r6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h6(x: string) {
+             ~~
+!!! error TS7023: 'h6' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+      if (typeof x !== "string") { assert(!(x === k6)); return x; }
+      return 1;
+    }
+    const k6 = r6;
+          ~~
+!!! error TS7022: 'k6' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

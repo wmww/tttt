@@ -1,0 +1,17 @@
+//// [test/cases/bun05-P4.ts] ////
+
+=== a.ts ===
+class K { static readonly #i = Symbol(); static t() { const n: number = K.#i; } }
+>K : K
+>#i : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+>t : () => void
+>n : number
+>K.#i : unique symbol
+>K : typeof K
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

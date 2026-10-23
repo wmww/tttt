@@ -1,0 +1,17 @@
+//// [test/cases/bun17-C7a.ts] ////
+
+=== a.ts ===
+enum E { A = -0, B = 1 }
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 8))
+>B : Symbol(E.B, Decl(a.ts, 0, 16))
+
+const z: 0 = E.A;
+>z : Symbol(z, Decl(a.ts, 1, 5))
+>E.A : Symbol(E.A, Decl(a.ts, 0, 8))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>A : Symbol(E.A, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

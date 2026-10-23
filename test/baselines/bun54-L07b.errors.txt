@@ -1,0 +1,40 @@
+a.js(1,33): error TS1359: Identifier expected. 'delete' is a reserved word that cannot be used here.
+a.js(1,61): error TS1359: Identifier expected. 'catch' is a reserved word that cannot be used here.
+a.js(3,16): error TS1003: Identifier expected.
+a.js(5,15): error TS1127: Invalid character.
+a.js(5,16): error TS1003: Identifier expected.
+a.js(7,38): error TS1359: Identifier expected. 'delete' is a reserved word that cannot be used here.
+a.js(7,64): error TS1359: Identifier expected. 'with' is a reserved word that cannot be used here.
+a.js(10,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (8 errors) ====
+    /** Removes it, like {@link Map#delete}. See {@link Promise#catch} and {@link Map#get}. */
+                                    ~~~~~~
+!!! error TS1359: Identifier expected. 'delete' is a reserved word that cannot be used here.
+                                                                ~~~~~
+!!! error TS1359: Identifier expected. 'catch' is a reserved word that cannot be used here.
+    export const q1 = 2;
+    /** {@link Map.} */
+                   ~
+!!! error TS1003: Identifier expected.
+    export const q2 = 2;
+    /** {@link Map#} */
+                  ~
+!!! error TS1127: Invalid character.
+                   ~
+!!! error TS1003: Identifier expected.
+    export const q3 = 2;
+    /** @param {number} x {@linkcode Set#delete} {@linkplain Array#with} */
+                                         ~~~~~~
+!!! error TS1359: Identifier expected. 'delete' is a reserved word that cannot be used here.
+                                                                   ~~~~
+!!! error TS1359: Identifier expected. 'with' is a reserved word that cannot be used here.
+    export function q4(x) { return x; }
+    /** @type {number} */
+    export const sentinel = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

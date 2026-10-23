@@ -1,0 +1,24 @@
+//// [test/cases/bun01-C8.ts] ////
+
+=== a.ts ===
+export {};
+class C3 { [arguments.length]() {} }
+>C3 : C3
+>[arguments.length] : () => void
+>arguments.length : number
+>arguments : IArguments
+>length : number
+
+const o = { get [arguments.length]() { return 1; } };
+>o : { [x: number]: number; }
+>{ get [arguments.length]() { return 1; } } : { [x: number]: number; }
+>[arguments.length] : number
+>arguments.length : number
+>arguments : IArguments
+>length : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

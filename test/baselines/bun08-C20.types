@@ -1,0 +1,17 @@
+//// [test/cases/bun08-C20.ts] ////
+
+=== a.ts ===
+import { x } from "./eqmissing";
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== eqmissing.ts ===
+import x = require("./missing-mod2");
+>x : any
+
+export = x;
+>x : any
+

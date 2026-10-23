@@ -1,0 +1,10 @@
+//// [test/cases/bun44-C1.ts] ////
+
+=== a.ts ===
+export type PickByType<T> = { [K in keyof T extends T[K] ? K : never]: T[K] };
+>PickByType : PickByType<T>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

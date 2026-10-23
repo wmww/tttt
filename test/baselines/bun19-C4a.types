@@ -1,0 +1,18 @@
+//// [test/cases/bun19-C4a.ts] ////
+
+=== a.ts ===
+class Foo { a = 1; p!: this extends Foo ? 1 : 2; m() { const x: 1 = this.p; } }
+>Foo : Foo
+>a : number
+>1 : 1
+>p : this extends Foo ? 1 : 2
+>m : () => void
+>x : 1
+>this.p : this extends Foo ? 1 : 2
+>this : this
+>p : this extends Foo ? 1 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

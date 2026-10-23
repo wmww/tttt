@@ -1,0 +1,59 @@
+//// [test/cases/bun91-R02.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: any } }
+>div : any
+
+declare const React: any;
+>React : any
+
+const enum E { A = 1 }
+>E : E
+>A : E.A
+>1 : 1
+
+let j1 = <div a={E} />;
+>j1 : JSX.Element
+><div a={E} /> : JSX.Element
+>div : any
+>a : typeof E
+>E : typeof E
+
+let j2 = <div>{E}</div>;
+>j2 : JSX.Element
+><div>{E}</div> : JSX.Element
+>div : any
+>E : typeof E
+>div : any
+
+let j3 = <div a={(E)} />;
+>j3 : JSX.Element
+><div a={(E)} /> : JSX.Element
+>div : any
+>a : typeof E
+>(E) : typeof E
+>E : typeof E
+
+let j4 = <div {...E} />;
+>j4 : JSX.Element
+><div {...E} /> : JSX.Element
+>div : any
+>E : typeof E
+
+let j5 = <div a={E.A}>{E.A}</div>;
+>j5 : JSX.Element
+><div a={E.A}>{E.A}</div> : JSX.Element
+>div : any
+>a : E
+>E.A : E
+>E : typeof E
+>A : E
+>E.A : E
+>E : typeof E
+>A : E
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

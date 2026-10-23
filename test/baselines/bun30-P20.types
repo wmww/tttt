@@ -1,0 +1,22 @@
+//// [test/cases/bun30-P20.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+exports.a = 1;
+>exports.a = 1 : 1
+>exports.a : any
+>exports : typeof import("./f")
+>a : any
+>1 : 1
+
+exports.a = a;
+>exports.a = a : any
+>exports.a : any
+>exports : typeof import("./f")
+>a : any
+>a : any
+

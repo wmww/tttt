@@ -1,0 +1,48 @@
+//// [test/cases/bun80-R20b.ts] ////
+
+=== a.ts ===
+function f1<T extends object>(t: T) {
+>f1 : Symbol(f1, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>t : Symbol(t, Decl(a.ts, 0, 30))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+  const r = { ...t, get a() { return "g"; } };
+>r : Symbol(r, Decl(a.ts, 1, 7))
+>t : Symbol(t, Decl(a.ts, 0, 30))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+
+  r.a = "x";
+>r.a : Symbol(a, Decl(a.ts, 1, 19))
+>r : Symbol(r, Decl(a.ts, 1, 7))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+
+  r.zzz;
+>r : Symbol(r, Decl(a.ts, 1, 7))
+}
+class K<T extends object> {
+>K : Symbol(K, Decl(a.ts, 4, 1))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+
+  constructor(public t: T) {}
+>t : Symbol(K.t, Decl(a.ts, 6, 14))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+
+  m() {
+>m : Symbol(K.m, Decl(a.ts, 6, 29))
+
+    const s = { ...this, b: 1, get c() { return 1; } };
+>s : Symbol(s, Decl(a.ts, 8, 9))
+>this : Symbol(K, Decl(a.ts, 4, 1))
+>b : Symbol(b, Decl(a.ts, 8, 24))
+>c : Symbol(c, Decl(a.ts, 8, 30))
+
+    s.c = 2;
+>s.c : Symbol(c, Decl(a.ts, 8, 30))
+>s : Symbol(s, Decl(a.ts, 8, 9))
+>c : Symbol(c, Decl(a.ts, 8, 30))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

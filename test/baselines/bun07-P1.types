@@ -1,0 +1,24 @@
+//// [test/cases/bun07-P1.ts] ////
+
+=== a.ts ===
+export {};
+const b1: (this: { q: 1 }) => void = function (this) {};
+>b1 : (this: { q: 1; }) => void
+>this : { q: 1; }
+>q : 1
+>function (this) {} : (this: { q: 1; }) => void
+>this : { q: 1; }
+
+const o1: { m(this: { q: 1 }): void } = { m(this) {} };
+>o1 : { m(this: { q: 1; }): void; }
+>m : (this: { q: 1; }) => void
+>this : { q: 1; }
+>q : 1
+>{ m(this) {} } : { m(this: { q: 1; }): void; }
+>m : (this: { q: 1; }) => void
+>this : { q: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

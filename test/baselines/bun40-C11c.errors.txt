@@ -1,0 +1,16 @@
+a.ts(1,1): error TS2304: Cannot find name 'b'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["a.ts", "b.TS"] }
+==== a.ts (2 errors) ====
+    b;
+    ~
+!!! error TS2304: Cannot find name 'b'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    declare const b: 1;
+    

@@ -1,0 +1,11 @@
+//// [test/cases/bun26-C4.ts] ////
+
+=== a.ts ===
+function h({ x = null }) { }
+>h : ({ x }: { x?: any; }) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

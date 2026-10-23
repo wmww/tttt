@@ -1,0 +1,171 @@
+//// [test/cases/bun96-EXCALIDRAW1.ts] ////
+
+=== a.ts ===
+import type { AppState } from "./typesx";
+>AppState : Symbol(AppState, Decl(a.ts, 0, 13))
+
+const GridLineColor = { light: 1, dark: 2 } as const;
+>GridLineColor : Symbol(GridLineColor, Decl(a.ts, 1, 5))
+>light : Symbol(light, Decl(a.ts, 1, 23))
+>dark : Symbol(dark, Decl(a.ts, 1, 33))
+>const : Symbol(const)
+
+function strokeGrid(theme: AppState["theme"], gridStep: number, x: number) {
+>strokeGrid : Symbol(strokeGrid, Decl(a.ts, 1, 53))
+>theme : Symbol(theme, Decl(a.ts, 2, 20))
+>AppState : Symbol(AppState, Decl(a.ts, 0, 13))
+>gridStep : Symbol(gridStep, Decl(a.ts, 2, 45))
+>x : Symbol(x, Decl(a.ts, 2, 63))
+
+  const isBold = gridStep > 1 && x % gridStep === 0;
+>isBold : Symbol(isBold, Decl(a.ts, 3, 7))
+>gridStep : Symbol(gridStep, Decl(a.ts, 2, 45))
+>x : Symbol(x, Decl(a.ts, 2, 63))
+>gridStep : Symbol(gridStep, Decl(a.ts, 2, 45))
+
+  return isBold ? GridLineColor[theme] : GridLineColor[theme];
+>isBold : Symbol(isBold, Decl(a.ts, 3, 7))
+>GridLineColor : Symbol(GridLineColor, Decl(a.ts, 1, 5))
+>theme : Symbol(theme, Decl(a.ts, 2, 20))
+>GridLineColor : Symbol(GridLineColor, Decl(a.ts, 1, 5))
+>theme : Symbol(theme, Decl(a.ts, 2, 20))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+
+=== b.ts ===
+// The neighbours: every place where `narrowType` meets `&&` (assumed false) or `||` (assumed true) in a test that does not mention the reference.
+const G = { light: 1, dark: 2 } as const;
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>light : Symbol(light, Decl(b.ts, 1, 11))
+>dark : Symbol(dark, Decl(b.ts, 1, 21))
+>const : Symbol(const)
+
+declare function nev(x: never): void;
+>nev : Symbol(nev, Decl(b.ts, 1, 41))
+>x : Symbol(x, Decl(b.ts, 2, 21))
+
+declare function isNope(x: unknown): x is Nope;
+>isNope : Symbol(isNope, Decl(b.ts, 2, 37))
+>x : Symbol(x, Decl(b.ts, 3, 24))
+>x : Symbol(x, Decl(b.ts, 3, 24))
+>Nope : Symbol(Nope)
+
+declare function assert(x: unknown): asserts x;
+>assert : Symbol(assert, Decl(b.ts, 3, 47))
+>x : Symbol(x, Decl(b.ts, 4, 24))
+>x : Symbol(x, Decl(b.ts, 4, 24))
+
+function f1(t: Nope, a: number, b: number) { const c = a > 1 || b === 0; c ? nev(t) : nev(t); }
+>f1 : Symbol(f1, Decl(b.ts, 4, 47))
+>t : Symbol(t, Decl(b.ts, 5, 12))
+>Nope : Symbol(Nope)
+>a : Symbol(a, Decl(b.ts, 5, 20))
+>b : Symbol(b, Decl(b.ts, 5, 31))
+>c : Symbol(c, Decl(b.ts, 5, 50))
+>a : Symbol(a, Decl(b.ts, 5, 20))
+>b : Symbol(b, Decl(b.ts, 5, 31))
+>c : Symbol(c, Decl(b.ts, 5, 50))
+>nev : Symbol(nev, Decl(b.ts, 1, 41))
+>t : Symbol(t, Decl(b.ts, 5, 12))
+>nev : Symbol(nev, Decl(b.ts, 1, 41))
+>t : Symbol(t, Decl(b.ts, 5, 12))
+
+function f2(o: { readonly t: Nope<string> }, a: number, b: number) { const c = a > 1 && b === 0; return c ? G[o.t] : G[o.t]; }
+>f2 : Symbol(f2, Decl(b.ts, 5, 95))
+>o : Symbol(o, Decl(b.ts, 6, 12))
+>t : Symbol(t, Decl(b.ts, 6, 16))
+>Nope : Symbol(Nope)
+>a : Symbol(a, Decl(b.ts, 6, 44))
+>b : Symbol(b, Decl(b.ts, 6, 55))
+>c : Symbol(c, Decl(b.ts, 6, 74))
+>a : Symbol(a, Decl(b.ts, 6, 44))
+>b : Symbol(b, Decl(b.ts, 6, 55))
+>c : Symbol(c, Decl(b.ts, 6, 74))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>o.t : Symbol(t, Decl(b.ts, 6, 16))
+>o : Symbol(o, Decl(b.ts, 6, 12))
+>t : Symbol(t, Decl(b.ts, 6, 16))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>o.t : Symbol(t, Decl(b.ts, 6, 16))
+>o : Symbol(o, Decl(b.ts, 6, 12))
+>t : Symbol(t, Decl(b.ts, 6, 16))
+
+function f3(x: unknown, a: number, b: number) { const c = a > 1 && b === 0; if (isNope(x)) { return c ? G[x] : G[x]; } return 0; }
+>f3 : Symbol(f3, Decl(b.ts, 6, 126))
+>x : Symbol(x, Decl(b.ts, 7, 12))
+>a : Symbol(a, Decl(b.ts, 7, 23))
+>b : Symbol(b, Decl(b.ts, 7, 34))
+>c : Symbol(c, Decl(b.ts, 7, 53))
+>a : Symbol(a, Decl(b.ts, 7, 23))
+>b : Symbol(b, Decl(b.ts, 7, 34))
+>isNope : Symbol(isNope, Decl(b.ts, 2, 37))
+>x : Symbol(x, Decl(b.ts, 7, 12))
+>c : Symbol(c, Decl(b.ts, 7, 53))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>x : Symbol(x, Decl(b.ts, 7, 12))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>x : Symbol(x, Decl(b.ts, 7, 12))
+
+function f4(t: Nope, a: number, b: number) { assert(a > 1 || b === 0); return G[t]; }
+>f4 : Symbol(f4, Decl(b.ts, 7, 130))
+>t : Symbol(t, Decl(b.ts, 8, 12))
+>Nope : Symbol(Nope)
+>a : Symbol(a, Decl(b.ts, 8, 20))
+>b : Symbol(b, Decl(b.ts, 8, 31))
+>assert : Symbol(assert, Decl(b.ts, 3, 47))
+>a : Symbol(a, Decl(b.ts, 8, 20))
+>b : Symbol(b, Decl(b.ts, 8, 31))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>t : Symbol(t, Decl(b.ts, 8, 12))
+
+function f5(t: Nope, a: number, b: number) { switch (true) { case a > 1 || b === 0: return G[t]; } return G[t]; }
+>f5 : Symbol(f5, Decl(b.ts, 8, 85))
+>t : Symbol(t, Decl(b.ts, 9, 12))
+>Nope : Symbol(Nope)
+>a : Symbol(a, Decl(b.ts, 9, 20))
+>b : Symbol(b, Decl(b.ts, 9, 31))
+>a : Symbol(a, Decl(b.ts, 9, 20))
+>b : Symbol(b, Decl(b.ts, 9, 31))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>t : Symbol(t, Decl(b.ts, 9, 12))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>t : Symbol(t, Decl(b.ts, 9, 12))
+
+// The same in both: an assigned parameter is no constant reference; the first antecedent of a join is the declared type.
+function g1(t: Nope, a: number, b: number) { const c = a > 1 && b === 0; const r = c ? G[t] : G[t]; t = r; return r; }
+>g1 : Symbol(g1, Decl(b.ts, 9, 113))
+>t : Symbol(t, Decl(b.ts, 11, 12))
+>Nope : Symbol(Nope)
+>a : Symbol(a, Decl(b.ts, 11, 20))
+>b : Symbol(b, Decl(b.ts, 11, 31))
+>c : Symbol(c, Decl(b.ts, 11, 50))
+>a : Symbol(a, Decl(b.ts, 11, 20))
+>b : Symbol(b, Decl(b.ts, 11, 31))
+>r : Symbol(r, Decl(b.ts, 11, 78))
+>c : Symbol(c, Decl(b.ts, 11, 50))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>t : Symbol(t, Decl(b.ts, 11, 12))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>t : Symbol(t, Decl(b.ts, 11, 12))
+>t : Symbol(t, Decl(b.ts, 11, 12))
+>r : Symbol(r, Decl(b.ts, 11, 78))
+>r : Symbol(r, Decl(b.ts, 11, 78))
+
+function g2(t: Nope, a: number, b: number) { const c = a > 1 && b === 0; if (c) { a++; } return G[t]; }
+>g2 : Symbol(g2, Decl(b.ts, 11, 118))
+>t : Symbol(t, Decl(b.ts, 12, 12))
+>Nope : Symbol(Nope)
+>a : Symbol(a, Decl(b.ts, 12, 20))
+>b : Symbol(b, Decl(b.ts, 12, 31))
+>c : Symbol(c, Decl(b.ts, 12, 50))
+>a : Symbol(a, Decl(b.ts, 12, 20))
+>b : Symbol(b, Decl(b.ts, 12, 31))
+>c : Symbol(c, Decl(b.ts, 12, 50))
+>a : Symbol(a, Decl(b.ts, 12, 20))
+>G : Symbol(G, Decl(b.ts, 1, 5))
+>t : Symbol(t, Decl(b.ts, 12, 12))
+
+const sentinel2: number = "";
+>sentinel2 : Symbol(sentinel2, Decl(b.ts, 13, 5))
+

@@ -1,0 +1,27 @@
+//// [test/cases/bun20-P1.ts] ////
+
+=== a.ts ===
+interface H { a?: number; hasOwnProperty(k: string): this is H; }
+>a : number | undefined
+>hasOwnProperty : (k: string) => this is H
+>k : string
+
+function f(x: H) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+>f : (x: H) => void
+>x : H
+>x.hasOwnProperty("a") : boolean
+>x.hasOwnProperty : (k: string) => this is H
+>x : H
+>hasOwnProperty : (k: string) => this is H
+>"a" : "a"
+>x.a.toFixed() : string
+>x.a.toFixed : (fractionDigits?: number) => string
+>x.a : number | undefined
+>x : H
+>a : number | undefined
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

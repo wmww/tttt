@@ -1,0 +1,14 @@
+//// [test/cases/bun25-C8.ts] ////
+
+=== a.ts ===
+function f(x: string | number) { x! = ""; x.length; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

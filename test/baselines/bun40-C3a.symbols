@@ -1,0 +1,16 @@
+//// [test/cases/bun40-C3a.ts] ////
+
+=== a.ts ===
+/// <reference path="./node_modules/p/node_modules/x/index.d.ts" />
+/// <reference path="./node_modules/q/node_modules/x/index.d.ts" />
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/p/node_modules/x/index.d.ts ===
+declare const g: 1;
+>g : Symbol(g, Decl(index.d.ts, 0, 13))
+
+=== node_modules/q/node_modules/x/index.d.ts ===
+declare const g: 1;
+>g : Symbol(g, Decl(index.d.ts, 0, 13))
+

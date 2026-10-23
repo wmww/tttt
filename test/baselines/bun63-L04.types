@@ -1,0 +1,44 @@
+//// [test/cases/bun63-L04.ts] ////
+
+=== a.ts ===
+const { a, ...rest } = { a: 1, b: 2, c: 3 };
+>a : number
+>rest : { b: number; c: number; }
+>{ a: 1, b: 2, c: 3 } : { a: number; b: number; c: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+>c : number
+>3 : 3
+
+declare function f<T>(x: typeof rest, y: T): T;
+>f : { <T>(x: typeof rest, y: T): T; (x: { b: string; }, y: number): number; }
+>x : { b: number; c: number; }
+>rest : { b: number; c: number; }
+>y : T
+
+declare function f(x: { b: string }, y: number): number;
+>f : { <T>(x: typeof rest, y: T): T; (x: { b: string; }, y: number): number; }
+>x : { b: string; }
+>b : string
+>y : number
+
+class C {
+>C : C
+
+  b = "";
+>b : string
+>"" : ""
+
+  c = f(this, 1);
+>c : any
+>f(this, 1) : number
+>f : { <T>(x: typeof rest, y: T): T; (x: { b: string; }, y: number): number; }
+>this : this
+>1 : 1
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

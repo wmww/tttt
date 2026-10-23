@@ -1,0 +1,18 @@
+//// [test/cases/bun16-C1a.ts] ////
+
+=== a.ts ===
+interface Ia extends Pick<typeof xa, "a"> {}
+>xa : any
+
+declare const ya: Ia | undefined;
+>ya : Ia | undefined
+
+const xa = ya!;
+>xa : any
+>ya! : Ia
+>ya : Ia | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

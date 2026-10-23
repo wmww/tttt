@@ -1,0 +1,42 @@
+//// [test/cases/bun92-R09e.ts] ////
+
+=== a.ts ===
+interface Other { o: 1 } interface Base { b: 1 } interface Sub extends Base { }
+>Other : Symbol(Other, Decl(a.ts, 0, 0))
+>o : Symbol(Other.o, Decl(a.ts, 0, 17))
+>Base : Symbol(Base, Decl(a.ts, 0, 24))
+>b : Symbol(Base.b, Decl(a.ts, 0, 41))
+>Sub : Symbol(Sub, Decl(a.ts, 0, 48))
+>Base : Symbol(Base, Decl(a.ts, 0, 24))
+
+type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+>Cond : Symbol(Cond, Decl(a.ts, 0, 79))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>y : Symbol(y, Decl(a.ts, 1, 44))
+>z : Symbol(z, Decl(a.ts, 1, 55))
+
+declare const B: new () => Cond<A>;
+>B : Symbol(B, Decl(a.ts, 2, 13))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 79))
+>A : Symbol(A, Decl(a.ts, 2, 35))
+
+class A extends B { x = 1 }
+>A : Symbol(A, Decl(a.ts, 2, 35))
+>B : Symbol(B, Decl(a.ts, 2, 13))
+>x : Symbol(A.x, Decl(a.ts, 3, 19))
+
+declare const a: A; a.x; a.y; a.z;
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>A : Symbol(A, Decl(a.ts, 2, 35))
+>a.x : Symbol(A.x, Decl(a.ts, 3, 19))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>x : Symbol(A.x, Decl(a.ts, 3, 19))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>a.z : Symbol(z, Decl(a.ts, 1, 55))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>z : Symbol(z, Decl(a.ts, 1, 55))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

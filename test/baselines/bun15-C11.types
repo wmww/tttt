@@ -1,0 +1,22 @@
+//// [test/cases/bun15-C11.ts] ////
+
+=== a.ts ===
+import { J6 } from "./t";
+>J6 : any
+
+declare const dec: any;
+>dec : any
+
+export class A4 { @dec p3!: J6 | (never); }
+>A4 : A4
+>dec : any
+>p3 : J6
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== t.ts ===
+export interface J6 { a: number }
+>a : number
+

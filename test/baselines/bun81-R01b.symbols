@@ -1,0 +1,60 @@
+//// [test/cases/bun81-R01b.ts] ////
+
+=== a.ts ===
+const kz = "z";
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+
+const w10 = { set z(v) {}, get [kz]() { return w10.z } };
+>w10 : Symbol(w10, Decl(a.ts, 1, 5))
+>z : Symbol(z, Decl(a.ts, 1, 13), Decl(a.ts, 1, 26))
+>v : Symbol(v, Decl(a.ts, 1, 20))
+>[kz] : Symbol(z, Decl(a.ts, 1, 13), Decl(a.ts, 1, 26))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>w10.z : Symbol(z, Decl(a.ts, 1, 13), Decl(a.ts, 1, 26))
+>w10 : Symbol(w10, Decl(a.ts, 1, 5))
+>z : Symbol(z, Decl(a.ts, 1, 13), Decl(a.ts, 1, 26))
+
+const w11 = { get [kz]() { return w11.z }, set z(v) {} };
+>w11 : Symbol(w11, Decl(a.ts, 2, 5))
+>[kz] : Symbol(z, Decl(a.ts, 2, 42), Decl(a.ts, 2, 13))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>w11.z : Symbol(z, Decl(a.ts, 2, 42), Decl(a.ts, 2, 13))
+>w11 : Symbol(w11, Decl(a.ts, 2, 5))
+>z : Symbol(z, Decl(a.ts, 2, 42), Decl(a.ts, 2, 13))
+>z : Symbol(z, Decl(a.ts, 2, 42), Decl(a.ts, 2, 13))
+>v : Symbol(v, Decl(a.ts, 2, 49))
+
+const w15 = { get [kz](): typeof w15.z { return 1 }, set z(v) {} };
+>w15 : Symbol(w15, Decl(a.ts, 3, 5))
+>[kz] : Symbol(z, Decl(a.ts, 3, 52), Decl(a.ts, 3, 13))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>w15.z : Symbol(z, Decl(a.ts, 3, 52), Decl(a.ts, 3, 13))
+>w15 : Symbol(w15, Decl(a.ts, 3, 5))
+>z : Symbol(z, Decl(a.ts, 3, 52), Decl(a.ts, 3, 13))
+>z : Symbol(z, Decl(a.ts, 3, 52), Decl(a.ts, 3, 13))
+>v : Symbol(v, Decl(a.ts, 3, 59))
+
+// a class, or the getter with the plain name: the two agree
+const w12 = { set [kz](v) {}, get z() { return w12.z } };
+>w12 : Symbol(w12, Decl(a.ts, 5, 5))
+>[kz] : Symbol(z, Decl(a.ts, 5, 29), Decl(a.ts, 5, 13))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 5, 23))
+>z : Symbol(z, Decl(a.ts, 5, 29), Decl(a.ts, 5, 13))
+>w12.z : Symbol(z, Decl(a.ts, 5, 29), Decl(a.ts, 5, 13))
+>w12 : Symbol(w12, Decl(a.ts, 5, 5))
+>z : Symbol(z, Decl(a.ts, 5, 29), Decl(a.ts, 5, 13))
+
+class K1 { set z(v) {} get [kz]() { return this.z } }
+>K1 : Symbol(K1, Decl(a.ts, 5, 57))
+>z : Symbol(K1.z, Decl(a.ts, 6, 10), Decl(a.ts, 6, 22))
+>v : Symbol(v, Decl(a.ts, 6, 17))
+>[kz] : Symbol(K1.z, Decl(a.ts, 6, 10), Decl(a.ts, 6, 22))
+>kz : Symbol(kz, Decl(a.ts, 0, 5))
+>this.z : Symbol(K1.z, Decl(a.ts, 6, 10), Decl(a.ts, 6, 22))
+>this : Symbol(K1, Decl(a.ts, 5, 57))
+>z : Symbol(K1.z, Decl(a.ts, 6, 10), Decl(a.ts, 6, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

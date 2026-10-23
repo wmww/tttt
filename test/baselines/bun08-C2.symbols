@@ -1,0 +1,23 @@
+//// [test/cases/bun08-C2.ts] ////
+
+=== a.ts ===
+import { OnlyT } from "./real";
+>OnlyT : Symbol(OnlyT, Decl(a.ts, 0, 8))
+
+OnlyT;
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== real.ts ===
+namespace g2 { export interface OnlyT { t: 1 } }
+>g2 : Symbol(g2, Decl(real.ts, 0, 0), Decl(real.ts, 1, 5))
+>OnlyT : Symbol(OnlyT, Decl(real.ts, 0, 14))
+>t : Symbol(OnlyT.t, Decl(real.ts, 0, 39))
+
+const g2 = { v: 1 };
+>g2 : Symbol(g2, Decl(real.ts, 0, 0), Decl(real.ts, 1, 5))
+>v : Symbol(v, Decl(real.ts, 1, 12))
+
+export = g2;
+>g2 : Symbol(g2, Decl(real.ts, 0, 0), Decl(real.ts, 1, 5))
+

@@ -1,0 +1,36 @@
+//// [test/cases/bun96-H3.ts] ////
+
+=== a.ts ===
+export type { type A } from 123;
+>A : any
+
+export { B } from 123 with { type: "json" };
+>B : any
+>type : any
+
+export { C } from 123 with { type: 1 };
+>C : any
+>type : any
+
+export type { D } from 123 with { "resolution-mode": "x" };
+>D : any
+
+function f() {
+>f : () => void
+
+  export { E } from 123;
+>E : any
+}
+{
+  export * from 123;
+  export * as F from 123;
+>F : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+declare export { A } from 123;
+>A : any
+

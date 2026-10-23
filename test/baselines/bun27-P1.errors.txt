@@ -1,0 +1,19 @@
+a.tsx(3,14): error TS2322: Type 'true' is not assignable to type '"x" | "y"'.
+a.tsx(3,20): error TS2322: Type 'string' is not assignable to type '"x" | "y"'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    declare function L(p: { children: ("x" | "y")[] }): JSX.Element;
+    const t = <L>{true}{"x"}</L>;
+                 ~~~~~~
+!!! error TS2322: Type 'true' is not assignable to type '"x" | "y"'.
+                       ~~~~~
+!!! error TS2322: Type 'string' is not assignable to type '"x" | "y"'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

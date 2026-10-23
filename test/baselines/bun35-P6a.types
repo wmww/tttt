@@ -1,0 +1,8 @@
+//// [test/cases/bun35-P6a.ts] ////
+
+=== a.ts ===
+import "pkg/p/..\\b";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

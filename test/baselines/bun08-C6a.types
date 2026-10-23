@@ -1,0 +1,26 @@
+//// [test/cases/bun08-C6a.ts] ////
+
+=== a.mts ===
+import * as u1 from "./u1.cjs"; u1.a; u1.default.a;
+>u1 : {}
+>u1.a : any
+>u1 : {}
+>a : any
+>u1.default.a : any
+>u1.default : any
+>u1 : {}
+>default : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== u1.d.cts ===
+declare const u: { a: number } | { a: string; b: number }; export = u;
+>u : { a: number; } | { a: string; b: number; }
+>a : number
+>a : string
+>b : number
+>u : { a: number; } | { a: string; b: number; }
+

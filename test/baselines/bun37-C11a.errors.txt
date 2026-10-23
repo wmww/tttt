@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "lib": ["es2022"], "types": [], "moduleDetection": "" }, "extends": "./A.json", "files": ["a.ts", "b.ts"] }
+==== a.ts (1 errors) ====
+    const x = 1;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    const x = 2;
+    
+==== A.json (0 errors) ====
+    { "compilerOptions": { "moduleDetection": "force" } }

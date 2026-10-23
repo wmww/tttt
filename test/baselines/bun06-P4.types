@@ -1,0 +1,23 @@
+//// [test/cases/bun06-P4.ts] ////
+
+=== c.js ===
+let x;
+>x : any
+
+function f() { return x; }
+>f : () => undefined
+>x : undefined
+
+module.exports = { f };
+>module.exports = { f } : { f: () => undefined; }
+>module.exports : { f: () => undefined; }
+>module : { exports: { f: () => undefined; }; }
+>exports : { f: () => undefined; }
+>{ f } : { f: () => undefined; }
+>f : () => undefined
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

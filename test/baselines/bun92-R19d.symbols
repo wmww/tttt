@@ -1,0 +1,86 @@
+//// [test/cases/bun92-R19d.ts] ////
+
+=== a.ts ===
+import * as j1 from "./j1";
+>j1 : Symbol(j1, Decl(a.ts, 0, 6))
+
+import { K, o as jo } from "./j3";
+>K : Symbol(K, Decl(a.ts, 1, 8))
+>o : Symbol(jo, Decl(j3.js, 2, 12))
+>jo : Symbol(jo, Decl(a.ts, 1, 11))
+
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : Symbol(S, Decl(a.ts, 1, 34))
+>X : Symbol(X, Decl(a.ts, 2, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 2, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 2, 7))
+
+const t1: S<typeof j1> = ["?", -99], t2: S<K> = ["?", -99], t3: S<typeof K> = ["?", -99], t4: S<typeof jo> = ["?", -99];
+>t1 : Symbol(t1, Decl(a.ts, 3, 5))
+>S : Symbol(S, Decl(a.ts, 1, 34))
+>j1 : Symbol(j1, Decl(a.ts, 0, 6))
+>t2 : Symbol(t2, Decl(a.ts, 3, 36))
+>S : Symbol(S, Decl(a.ts, 1, 34))
+>K : Symbol(K, Decl(a.ts, 1, 8))
+>t3 : Symbol(t3, Decl(a.ts, 3, 59))
+>S : Symbol(S, Decl(a.ts, 1, 34))
+>K : Symbol(K, Decl(a.ts, 1, 8))
+>t4 : Symbol(t4, Decl(a.ts, 3, 89))
+>S : Symbol(S, Decl(a.ts, 1, 34))
+>jo : Symbol(jo, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+
+=== j1.js ===
+exports[0] = 1; exports["1"] = 2; exports.a = 3;
+>exports : Symbol(exports, Decl(j1.js, 0, 0))
+>0 : Symbol(0, Decl(j1.js, 0, 0))
+>exports : Symbol(exports, Decl(j1.js, 0, 0))
+>"1" : Symbol("1", Decl(j1.js, 0, 15))
+>exports.a : Symbol(a, Decl(j1.js, 0, 33))
+>exports : Symbol(exports, Decl(j1.js, 0, 0))
+>a : Symbol(a, Decl(j1.js, 0, 33))
+
+=== j3.js ===
+export class K { constructor() { this[0] = 1; this["1"] = 2; this.a = 3; } }
+>K : Symbol(K, Decl(j3.js, 0, 0))
+>this : Symbol(K, Decl(j3.js, 0, 0))
+>0 : Symbol(K[0], Decl(j3.js, 0, 32))
+>this : Symbol(K, Decl(j3.js, 0, 0))
+>"1" : Symbol(K["1"], Decl(j3.js, 0, 45))
+>this.a : Symbol(K.a, Decl(j3.js, 0, 60))
+>this : Symbol(K, Decl(j3.js, 0, 0))
+>a : Symbol(K.a, Decl(j3.js, 0, 60))
+
+K[5] = 1; K["6"] = 2;
+>K : Symbol(K, Decl(j3.js, 0, 0))
+>5 : Symbol(K[5], Decl(j3.js, 0, 76))
+>K : Symbol(K, Decl(j3.js, 0, 0))
+>"6" : Symbol(K["6"], Decl(j3.js, 1, 9))
+
+export const o = {}; o[0] = 1; o["1"] = 2; o.a = 3;
+>o : Symbol(o, Decl(j3.js, 2, 12))
+>o : Symbol(o, Decl(j3.js, 2, 12))
+>0 : Symbol(0, Decl(j3.js, 2, 20))
+>o : Symbol(o, Decl(j3.js, 2, 12))
+>"1" : Symbol("1", Decl(j3.js, 2, 30))
+>o.a : Symbol(a, Decl(j3.js, 2, 42))
+>o : Symbol(o, Decl(j3.js, 2, 12))
+>a : Symbol(a, Decl(j3.js, 2, 42))
+
+Object.defineProperty(o, "3", { value: 1 }); Object.defineProperty(o, 4, { value: 1 });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(j3.js, 2, 12))
+>"3" : Symbol("3", Decl(j3.js, 2, 51))
+>value : Symbol(value, Decl(j3.js, 3, 31))
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(j3.js, 2, 12))
+>value : Symbol(value, Decl(j3.js, 3, 74))
+

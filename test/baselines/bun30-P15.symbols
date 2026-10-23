@@ -1,0 +1,15 @@
+//// [test/cases/bun30-P15.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+export class C { m() { this.a = "s"; } a; }
+>C : Symbol(C, Decl(f.js, 0, 0))
+>m : Symbol(C.m, Decl(f.js, 0, 16))
+>this.a : Symbol(C.a, Decl(f.js, 0, 22), Decl(f.js, 0, 38))
+>this : Symbol(C, Decl(f.js, 0, 0))
+>a : Symbol(C.a, Decl(f.js, 0, 22), Decl(f.js, 0, 38))
+>a : Symbol(C.a, Decl(f.js, 0, 22), Decl(f.js, 0, 38))
+

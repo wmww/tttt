@@ -1,0 +1,10 @@
+//// [test/cases/bun43-C14a.ts] ////
+
+=== a.ts ===
+var s12 = (x = €) => x;
+>s12 : (x?: any) => any
+>(x = €) => x : (x?: any) => any
+>x : any
+> : any
+>x : any
+

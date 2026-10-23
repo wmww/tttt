@@ -1,0 +1,112 @@
+a.ts(2,24): error TS2551: Property 'forX' does not exist on type 'SymbolConstructor'. Did you mean 'for'?
+a.ts(11,36): error TS2339: Property 'nope' does not exist on type 'string'.
+a.ts(12,43): error TS2339: Property 'nope' does not exist on type 'string'.
+a.ts(14,36): error TS2339: Property 'nope' does not exist on type 'string'.
+a.ts(14,62): error TS2339: Property 'nope' does not exist on type 'string'.
+a.ts(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(9,29): error TS2339: Property 'nope' does not exist on type 'string'.
+b.ts(10,29): error TS2339: Property 'nope' does not exist on type 'string'.
+b.ts(11,33): error TS2339: Property 'nope' does not exist on type 'string'.
+b.ts(12,36): error TS2339: Property 'nope' does not exist on type 'string'.
+b.ts(14,39): error TS2339: Property 'nope' does not exist on type 'string'.
+b.ts(16,32): error TS2339: Property 'nope' does not exist on type 'string'.
+b.ts(19,7): error TS2322: Type '{ [key]: (value: any) => boolean; b: () => number; }' is not assignable to type 'number'.
+b.ts(20,22): error TS2345: Argument of type '{ [x: string]: (value: any) => boolean; }' is not assignable to parameter of type 'number'.
+b.ts(20,32): error TS7006: Parameter 'value' implicitly has an 'any' type.
+b.ts(21,22): error TS2345: Argument of type '{ a: number; }' is not assignable to parameter of type 'number'.
+b.ts(21,28): error TS7006: Parameter 'value' implicitly has an 'any' type.
+b.ts(21,44): error TS1117: An object literal cannot have multiple properties with the same name.
+b.ts(22,22): error TS2345: Argument of type '{ b: number; }' is not assignable to parameter of type 'number'.
+b.ts(22,24): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+b.ts(22,32): error TS7006: Parameter 'value' implicitly has an 'any' type.
+b.ts(23,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    // As in ts-pattern: the typo makes `matcher` an `any`, so `[matcher]` is a name that cannot be bound.
+    const matcher = Symbol.forX("m");
+                           ~~~~
+!!! error TS2551: Property 'forX' does not exist on type 'SymbolConstructor'. Did you mean 'for'?
+!!! related TS2728 lib.es2015.symbol.d.ts:--:--: 'for' is declared here.
+    interface Matcher { [matcher](): { match: (value: string) => boolean } }
+    declare function chainable<P extends Matcher>(p: P): P;
+    chainable({ [matcher]: () => ({ match: (value) => true }) });
+    chainable({ [matcher]() { return { match: (value) => true } } });
+    
+    // The same without any mistake.
+    declare const key: string;
+    declare function handlers<P extends Record<string, (value: string) => unknown>>(p: P): P;
+    handlers({ [key]: (value) => value.nope });
+                                       ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    handlers({ [`on${key}`]: (value) => value.nope });
+                                              ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    // A context sensitive member with an ordinary name beside it hides the difference.
+    handlers({ [key]: (value) => value.nope, a: (value) => value.nope });
+                                       ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+                                                                 ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (16 errors) ====
+    // Neighbours: EVERY member propagates its flags in `checkObjectLiteral`, also one that leaves no property in the type.
+    export {};
+    declare const key: string;
+    declare const num: number;
+    declare const sym: symbol;
+    declare const obj: {};
+    type Fn = (value: string) => unknown;
+    declare function f<P extends Record<string | symbol, Fn>>(p: P): P;
+    f({ [num]: (value) => value.nope });
+                                ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    f({ [sym]: (value) => value.nope });
+                                ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    f({ [key](value) { return value.nope } });
+                                    ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    f({ ...{}, [key]: (value) => value.nope });
+                                       ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    declare function nested<P extends { a: Record<string, Fn> }>(p: P): P;
+    nested({ a: { [key]: (value) => value.nope } });
+                                          ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    declare function list<P extends Record<string, Fn>>(...p: P[]): P;
+    list({ [key]: (value) => value.nope });
+                                   ~~~~
+!!! error TS2339: Property 'nope' does not exist on type 'string'.
+    // What is inferred: nothing in the first pass, so `P` comes from the return type.
+    declare function g<P>(p: P, q: (p: P) => void): P;
+    const r1: number = g({ [key]: (value: any) => true, b: () => 1 }, (p) => {});
+          ~~
+!!! error TS2322: Type '{ [key]: (value: any) => boolean; b: () => number; }' is not assignable to type 'number'.
+    const r2: number = g({ [key]: (value) => true }, (p) => {});
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '{ [x: string]: (value: any) => boolean; }' is not assignable to parameter of type 'number'.
+                                   ~~~~~
+!!! error TS7006: Parameter 'value' implicitly has an 'any' type.
+    const r3: number = g({ a: (value) => true, a: 1 }, (p) => {});
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '{ a: number; }' is not assignable to parameter of type 'number'.
+                               ~~~~~
+!!! error TS7006: Parameter 'value' implicitly has an 'any' type.
+                                               ~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const r4: number = g({ [obj]: (value) => true, b: 1 }, (p) => {});
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '{ b: number; }' is not assignable to parameter of type 'number'.
+                           ~~~~~
+!!! error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+                                   ~~~~~
+!!! error TS7006: Parameter 'value' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

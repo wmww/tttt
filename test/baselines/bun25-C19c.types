@@ -1,0 +1,19 @@
+//// [test/cases/bun25-C19c.ts] ////
+
+=== a.ts ===
+const c: { [k: string]: (a: number) => void } = { "#a@1": a => a.length };
+>c : { [k: string]: (a: number) => void; }
+>k : string
+>a : number
+>{ "#a@1": a => a.length } : { "#a@1": (a: number) => any; }
+>"#a@1" : (a: number) => any
+>a => a.length : (a: number) => any
+>a : number
+>a.length : any
+>a : number
+>length : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

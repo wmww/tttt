@@ -1,0 +1,164 @@
+b01.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b01.ts(1,11): error TS2304: Cannot find name 'x'.
+b01.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b01.ts(1,20): error TS2304: Cannot find name 'T'.
+b01.ts(1,27): error TS2304: Cannot find name 'f'.
+b01.ts(1,31): error TS1005: ',' expected.
+b02.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b02.ts(1,11): error TS2304: Cannot find name 'x'.
+b02.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b02.ts(1,20): error TS2304: Cannot find name 'T'.
+b02.ts(1,35): error TS1109: Expression expected.
+b03.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b03.ts(1,11): error TS2304: Cannot find name 'x'.
+b03.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b03.ts(1,20): error TS2304: Cannot find name 'T'.
+b03.ts(1,30): error TS1005: '(' expected.
+b04.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b04.ts(1,11): error TS2304: Cannot find name 'x'.
+b04.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b04.ts(1,20): error TS2304: Cannot find name 'T'.
+b04.ts(1,25): error TS2304: Cannot find name 'f'.
+b04.ts(1,29): error TS1005: ',' expected.
+b05.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b05.ts(1,11): error TS2304: Cannot find name 'x'.
+b05.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b05.ts(1,20): error TS2304: Cannot find name 'T'.
+b05.ts(1,28): error TS1005: ',' expected.
+b06.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b06.ts(1,11): error TS2304: Cannot find name 'x'.
+b06.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b06.ts(1,20): error TS2304: Cannot find name 'T'.
+b06.ts(1,27): error TS1434: Unexpected keyword or identifier.
+b06.ts(1,29): error TS2304: Cannot find name 'b'.
+b10.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b10.ts(1,11): error TS2304: Cannot find name 'x'.
+b10.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b10.ts(1,20): error TS2304: Cannot find name 'T'.
+b10.ts(1,27): error TS1127: Invalid character.
+b11.ts(1,7): error TS2451: Cannot redeclare block-scoped variable 'v'.
+b11.ts(1,11): error TS2304: Cannot find name 'x'.
+b11.ts(1,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+b11.ts(1,20): error TS2304: Cannot find name 'T'.
+b11.ts(1,36): error TS1003: Identifier expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== b01.ts (6 errors) ====
+    const v = x ? (a): T => { f(1 2) } : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b02.ts:1:7: 'v' was also declared here.
+!!! related TS6203 b03.ts:1:7: 'v' was also declared here.
+!!! related TS6203 b04.ts:1:7: 'v' was also declared here.
+!!! related TS6203 b05.ts:1:7: 'v' was also declared here.
+!!! related TS6203 b06.ts:1:7: 'v' was also declared here.
+!!! related TS6203 b10.ts:1:7: 'v' was also declared here.
+!!! related TS6203 b11.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                              ~
+!!! error TS2304: Cannot find name 'f'.
+                                  ~
+!!! error TS1005: ',' expected.
+==== b02.ts (5 errors) ====
+    const v = x ? (a): T => { var b = ; } : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b01.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                                      ~
+!!! error TS1109: Expression expected.
+==== b03.ts (5 errors) ====
+    const v = x ? (a): T => { if } : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b01.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                                 ~
+!!! error TS1005: '(' expected.
+==== b04.ts (6 errors) ====
+    const v = x ? (a): T => f(1 2) : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b01.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                            ~
+!!! error TS2304: Cannot find name 'f'.
+                                ~
+!!! error TS1005: ',' expected.
+==== b05.ts (5 errors) ====
+    const v = x ? (a): T => [1 2] : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b01.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                               ~
+!!! error TS1005: ',' expected.
+==== b06.ts (6 errors) ====
+    const v = x ? (a): T => { a b } : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b01.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                              ~
+!!! error TS1434: Unexpected keyword or identifier.
+                                ~
+!!! error TS2304: Cannot find name 'b'.
+==== b10.ts (5 errors) ====
+    const v = x ? (a): T => { € } : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b01.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                              ~
+!!! error TS1127: Invalid character.
+==== b11.ts (5 errors) ====
+    const v = x ? (a): T => { function () {} } : 1;
+          ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'v'.
+!!! related TS6203 b01.ts:1:7: 'v' was also declared here.
+              ~
+!!! error TS2304: Cannot find name 'x'.
+                   ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                       ~
+!!! error TS2304: Cannot find name 'T'.
+                                       ~
+!!! error TS1003: Identifier expected.
+    

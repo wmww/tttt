@@ -1,0 +1,43 @@
+//// [test/cases/bun72-R04a.ts] ////
+
+=== a.ts ===
+import { make } from "dep";
+>make : () => import("dep/node_modules/@types/foo").C
+
+declare module "foo" { interface C { added: number } }
+>"foo" : typeof import("foo")
+>added : number
+
+make().own;
+>make().own : number
+>make() : import("dep/node_modules/@types/foo").C
+>make : () => import("dep/node_modules/@types/foo").C
+>own : number
+
+make().added;
+>make().added : any
+>make() : import("dep/node_modules/@types/foo").C
+>make : () => import("dep/node_modules/@types/foo").C
+>added : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@types/foo/index.d.ts ===
+export declare class C { own: number; }
+>C : C
+>own : number
+
+=== node_modules/dep/index.d.ts ===
+import { C } from "foo";
+>C : typeof C
+
+export declare function make(): C;
+>make : () => C
+
+=== node_modules/dep/node_modules/@types/foo/index.d.ts ===
+export declare class C { own: number; }
+>C : C
+>own : number
+

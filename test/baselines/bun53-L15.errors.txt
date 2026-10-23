@@ -1,0 +1,85 @@
+a.ts(1,24): error TS1040: 'async' modifier cannot be used in an ambient context.
+a.ts(1,24): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(1,36): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(2,24): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(2,36): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(3,24): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(3,30): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(3,42): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(4,24): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(4,36): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(5,31): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(5,37): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(6,33): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+a.ts(6,39): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(6,49): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(7,20): error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+a.ts(7,28): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(8,33): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(8,39): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(9,25): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(9,36): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(9,43): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (23 errors) ====
+    class D1 { declare p = async () => {}; }
+                           ~~~~~
+!!! error TS1040: 'async' modifier cannot be used in an ambient context.
+                           ~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D3 { declare p = function () {}; }
+                           ~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D4 { declare p = { m() {}, get g() { return 1; } }; }
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                 ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                             ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D5 { declare p = class { m() {} }; }
+                           ~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D6 { declare static p = () => {}; }
+                                  ~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                        ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D7 { declare readonly p = () => { let x = 1; }; }
+                                    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+                                          ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                                    ~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+    class D8 { declare [(() => { return "a" as const; })()]: number; }
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1166: A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.
+                               ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    const E13 = class { declare p = () => {}; };
+                                    ~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                          ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    class D14 { declare p = (a = () => {}) => {}; }
+                            ~~~~~~~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                       ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                              ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

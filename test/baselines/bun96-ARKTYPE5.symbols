@@ -1,0 +1,103 @@
+//// [test/cases/bun96-ARKTYPE5.ts] ////
+
+=== a.ts ===
+type show<t> = { [k in keyof t]: t[k] } & unknown
+>show : Symbol(show, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 0, 10))
+>k : Symbol(k, Decl(a.ts, 0, 18))
+>t : Symbol(t, Decl(a.ts, 0, 10))
+>t : Symbol(t, Decl(a.ts, 0, 10))
+>k : Symbol(k, Decl(a.ts, 0, 18))
+
+type R<d> = d extends object ? show<{ [k in keyof d as string]: R<d> | 1 } & { b: 1 }> : never
+>R : Symbol(R, Decl(a.ts, 0, 49))
+>d : Symbol(d, Decl(a.ts, 1, 7))
+>d : Symbol(d, Decl(a.ts, 1, 7))
+>show : Symbol(show, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 1, 39))
+>d : Symbol(d, Decl(a.ts, 1, 7))
+>R : Symbol(R, Decl(a.ts, 0, 49))
+>d : Symbol(d, Decl(a.ts, 1, 7))
+>b : Symbol(b, Decl(a.ts, 1, 78))
+
+declare const s: R<{ a: 1 }>
+>s : Symbol(s, Decl(a.ts, 2, 13))
+>R : Symbol(R, Decl(a.ts, 0, 49))
+>a : Symbol(a, Decl(a.ts, 2, 20))
+
+const t: number = s
+>t : Symbol(t, Decl(a.ts, 3, 5))
+>s : Symbol(s, Decl(a.ts, 2, 13))
+
+// the two types side by side
+declare let u: typeof s | Exclude<(typeof s)[string], 1>
+>u : Symbol(u, Decl(a.ts, 5, 11))
+>s : Symbol(s, Decl(a.ts, 2, 13))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(a.ts, 2, 13))
+
+const v: number = u
+>v : Symbol(v, Decl(a.ts, 6, 5))
+>u : Symbol(u, Decl(a.ts, 5, 11))
+
+// no `as` clause
+type R3<d> = d extends object ? show<{ [k in string]: R3<d> | 1 } & { b: 1 }> : never
+>R3 : Symbol(R3, Decl(a.ts, 6, 19))
+>d : Symbol(d, Decl(a.ts, 8, 8))
+>d : Symbol(d, Decl(a.ts, 8, 8))
+>show : Symbol(show, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 8, 40))
+>R3 : Symbol(R3, Decl(a.ts, 6, 19))
+>d : Symbol(d, Decl(a.ts, 8, 8))
+>b : Symbol(b, Decl(a.ts, 8, 69))
+
+declare const s3: R3<{ a: 1 }>
+>s3 : Symbol(s3, Decl(a.ts, 9, 13))
+>R3 : Symbol(R3, Decl(a.ts, 6, 19))
+>a : Symbol(a, Decl(a.ts, 9, 22))
+
+const t3: number = s3
+>t3 : Symbol(t3, Decl(a.ts, 10, 5))
+>s3 : Symbol(s3, Decl(a.ts, 9, 13))
+
+// not an intersection, or a property in place of the index signature: one type in both tools
+type R6<d> = d extends object ? show<{ [k in string]: R6<d> | 1 }> : never
+>R6 : Symbol(R6, Decl(a.ts, 10, 21))
+>d : Symbol(d, Decl(a.ts, 12, 8))
+>d : Symbol(d, Decl(a.ts, 12, 8))
+>show : Symbol(show, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 12, 40))
+>R6 : Symbol(R6, Decl(a.ts, 10, 21))
+>d : Symbol(d, Decl(a.ts, 12, 8))
+
+declare const s6: R6<{ a: 1 }>
+>s6 : Symbol(s6, Decl(a.ts, 13, 13))
+>R6 : Symbol(R6, Decl(a.ts, 10, 21))
+>a : Symbol(a, Decl(a.ts, 13, 22))
+
+const t6: number = s6
+>t6 : Symbol(t6, Decl(a.ts, 14, 5))
+>s6 : Symbol(s6, Decl(a.ts, 13, 13))
+
+type R7<d> = d extends object ? show<{ [k in "p"]: R7<d> | 1 } & { b: 1 }> : never
+>R7 : Symbol(R7, Decl(a.ts, 14, 21))
+>d : Symbol(d, Decl(a.ts, 15, 8))
+>d : Symbol(d, Decl(a.ts, 15, 8))
+>show : Symbol(show, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 15, 40))
+>R7 : Symbol(R7, Decl(a.ts, 14, 21))
+>d : Symbol(d, Decl(a.ts, 15, 8))
+>b : Symbol(b, Decl(a.ts, 15, 66))
+
+declare const s7: R7<{ a: 1 }>
+>s7 : Symbol(s7, Decl(a.ts, 16, 13))
+>R7 : Symbol(R7, Decl(a.ts, 14, 21))
+>a : Symbol(a, Decl(a.ts, 16, 22))
+
+const t7: number = s7
+>t7 : Symbol(t7, Decl(a.ts, 17, 5))
+>s7 : Symbol(s7, Decl(a.ts, 16, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

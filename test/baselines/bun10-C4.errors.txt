@@ -1,0 +1,23 @@
+a.ts(5,4): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface B1 { (x: number): void; p: number }
+    interface A1 extends B1 {}
+    interface A1 extends B1 {}
+    declare const a1: A1;
+    a1("s");
+       ~~~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type 'string' is not assignable to parameter of type 'number'.
+!!! related TS2771 a.ts:1:16: The last overload is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

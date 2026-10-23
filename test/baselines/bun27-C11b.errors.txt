@@ -1,0 +1,14 @@
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (1 errors) ====
+    declare namespace Other { type LMA<C, P> = P & { extra: number }; }
+    declare namespace JSX { interface Element { e: 1 } export import LibraryManagedAttributes = Other.LMA; interface IntrinsicElements {} }
+    declare function F(p: {}): JSX.Element;
+    const a = <F />;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,27 @@
+//// [test/cases/bun19-P2.ts] ////
+
+=== a.ts ===
+import * as m4 from "./m4";
+>m4 : Symbol(m4, Decl(a.ts, 0, 6))
+
+declare let m: { [K in keyof typeof m4]: 1 };
+>m : Symbol(m, Decl(a.ts, 1, 11))
+>K : Symbol(K, Decl(a.ts, 1, 18))
+>m4 : Symbol(m4, Decl(a.ts, 0, 6))
+
+m.a = 1;
+>m.a : Symbol(a)
+>m : Symbol(m, Decl(a.ts, 1, 11))
+>a : Symbol(a)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== m1.ts ===
+export const a = 1;
+>a : Symbol(a, Decl(m1.ts, 0, 12))
+
+=== m4.ts ===
+
+export type * from "./m1";
+

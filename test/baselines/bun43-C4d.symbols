@@ -1,0 +1,9 @@
+//// [test/cases/bun43-C4d.ts] ////
+
+=== a.ts ===
+var v: typeof Array<<T>() => T>;
+>v : Symbol(v, Decl(a.ts, 0, 3))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+

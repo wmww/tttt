@@ -1,0 +1,15 @@
+//// [test/cases/bun05-C10a.ts] ////
+
+=== a.ts ===
+async function imp() { const i2: number = await import(("./m")); }
+>imp : Symbol(imp, Decl(a.ts, 0, 0))
+>i2 : Symbol(i2, Decl(a.ts, 0, 28))
+
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+export const v = 1;
+>v : Symbol(v, Decl(m.ts, 0, 12))
+

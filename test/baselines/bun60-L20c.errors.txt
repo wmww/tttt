@@ -1,0 +1,26 @@
+a.js(7,19): error TS7008: Member '[k]' implicitly has an 'any' type.
+a.js(8,26): error TS2729: Property 'foo' is used before its initialization.
+a.js(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"] } }
+==== a.js (3 errors) ====
+    const k = "foo";
+    class D3 { static [k] = 1; static { this.foo = 2; } }
+    class D4 { static [k] = 1; static m() { this.foo = 2; } }
+    class D5 { [k] = 1; constructor() { this.foo = 2; } }
+    class D6 { [k] = 1; m() { this.foo = 2; } }
+    class D7 { static foo = 1; static { this.foo = 2; } }
+    class D8 { static [k]; static { this.foo = 2; } }
+                      ~~~
+!!! error TS7008: Member '[k]' implicitly has an 'any' type.
+    class D9 { static { this.foo = 2; } static [k] = 1; }
+                             ~~~
+!!! error TS2729: Property 'foo' is used before its initialization.
+!!! related TS2728 a.js:8:44: 'foo' is declared here.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

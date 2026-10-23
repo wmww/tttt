@@ -1,0 +1,35 @@
+//// [test/cases/bun56-L01.ts] ////
+
+=== a.js ===
+/** @template T */
+class A { /** @type {T | undefined} */ x = undefined; }
+>A : A<T>
+>x : undefined
+>undefined : undefined
+
+/** @augments {A<=} */
+class B extends A {}
+>B : B
+>A : A<any>
+
+/** @augments {A<<=} */
+class C extends A {}
+>C : C
+>A : A<any>
+
+/** @augments A<= */
+class D extends A {}
+>D : D
+>A : A<any>
+
+/** @implements {A<=} */
+class E { x = undefined }
+>E : E
+>x : undefined
+>undefined : undefined
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

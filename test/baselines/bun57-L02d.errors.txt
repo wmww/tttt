@@ -1,0 +1,20 @@
+a.ts(1,7): error TS1260: Keywords cannot contain escape characters.
+b.ts(1,14): error TS1260: Keywords cannot contain escape characters.
+c.ts(1,15): error TS1260: Keywords cannot contain escape characters.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    const \u0065num E {}
+          ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== b.ts (1 errors) ====
+    export const \u0065num E {}
+                 ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+==== c.ts (1 errors) ====
+    declare const \u0065num E {}
+                  ~~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+    

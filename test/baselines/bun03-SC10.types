@@ -1,0 +1,19 @@
+//// [test/cases/bun03-SC10.ts] ////
+
+=== a.ts ===
+class B { static x: number; y!: string; }
+>B : B
+>x : number
+>y : string
+
+type TB = typeof B;
+>TB : typeof B
+>B : typeof B
+
+class D1 implements TB {}
+>D1 : D1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

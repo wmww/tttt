@@ -1,0 +1,27 @@
+//// [test/cases/bun74-R09c.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { [k: string]: any } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 23))
+>k : Symbol(k, Decl(a.tsx, 0, 55))
+
+const a = <form onSubmit={function (e: any) { arguments = e; }} />;
+>a : Symbol(a, Decl(a.tsx, 1, 5))
+>form : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 53))
+>onSubmit : Symbol(onSubmit, Decl(a.tsx, 1, 15))
+>e : Symbol(e, Decl(a.tsx, 1, 36))
+>arguments : Symbol(arguments)
+>e : Symbol(e, Decl(a.tsx, 1, 36))
+
+const b = <div a={(eval: any) => 1}>{function arguments() {}}</div>;
+>b : Symbol(b, Decl(a.tsx, 2, 5))
+>div : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 53))
+>a : Symbol(a, Decl(a.tsx, 2, 14))
+>eval : Symbol(eval, Decl(a.tsx, 2, 19))
+>arguments : Symbol(arguments, Decl(a.tsx, 2, 37))
+>div : Symbol(JSX.IntrinsicElements.__index, Decl(a.tsx, 0, 53))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 3, 5))
+

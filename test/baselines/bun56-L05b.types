@@ -1,0 +1,32 @@
+//// [test/cases/bun56-L05b.ts] ////
+
+=== a.tsx ===
+const g = <T,>x => x;
+>g : <T>() => any
+><T,>x : <T>() => any
+>x : any
+>x : any
+
+const h = <T extends object> x, y;
+>h : <T extends object>() => any
+><T extends object> x : <T extends object>() => any
+>x : any
+>y : any
+
+const i = <T,>{ a: 1 };
+>i : <T>() => void
+><T,>{ a: 1 } : <T>() => void
+>a : any
+>1 : 1
+
+const j = <T, 2>(x: T) => x;
+>j : <T>() => any
+><T, : <T>() => any
+> : any
+>2>(x : boolean
+>2 : 2
+>(x : any
+>x : any
+>T : any
+>x : any
+

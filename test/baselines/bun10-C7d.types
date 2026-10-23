@@ -1,0 +1,14 @@
+//// [test/cases/bun10-C7d.ts] ////
+
+=== a.ts ===
+import f from "./a";
+>f : () => never
+
+export default function () { return f(); }
+>f() : never
+>f : () => never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

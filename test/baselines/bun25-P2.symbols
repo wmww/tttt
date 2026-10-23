@@ -1,0 +1,13 @@
+//// [test/cases/bun25-P2.ts] ////
+
+=== a.ts ===
+(function f(this: any, a) { const n: never = f; })(1);
+>f : Symbol(f, Decl(a.ts, 0, 1))
+>this : Symbol(this, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+>n : Symbol(n, Decl(a.ts, 0, 33))
+>f : Symbol(f, Decl(a.ts, 0, 1))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,22 @@
+a.ts(1,21): error TS2726: Cannot find lib definition for ''.
+a.ts(2,21): error TS2726: Cannot find lib definition for 'esnext.full'.
+a.ts(3,10): error TS2304: Cannot find name 'Document'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    /// <reference lib="" />
+                        
+!!! error TS2726: Cannot find lib definition for ''.
+    /// <reference lib="esnext.full" />
+                        ~~~~~~~~~~~
+!!! error TS2726: Cannot find lib definition for 'esnext.full'.
+    const d: Document = 1;
+             ~~~~~~~~
+!!! error TS2304: Cannot find name 'Document'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

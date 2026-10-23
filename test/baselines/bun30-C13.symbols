@@ -1,0 +1,15 @@
+//// [test/cases/bun30-C13.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+const await = 1;
+>await : Symbol(await, Decl(f.js, 0, 5))
+
+exports.x = 1;
+>exports.x : Symbol(x, Decl(f.js, 0, 16))
+>exports : Symbol(exports, Decl(f.js, 0, 0))
+>x : Symbol(x, Decl(f.js, 0, 16))
+

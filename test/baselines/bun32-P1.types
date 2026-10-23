@@ -1,0 +1,13 @@
+//// [test/cases/bun32-P1.ts] ////
+
+=== a.ts ===
+({ static static m() {} });
+>({ static static m() {} }) : { static: any; m(): void; }
+>{ static static m() {} } : { static: any; m(): void; }
+>static : any
+>m : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

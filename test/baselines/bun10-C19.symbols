@@ -1,0 +1,13 @@
+//// [test/cases/bun10-C19.ts] ////
+
+=== a.ts ===
+class A5 { get x() { return 1; } set x(this: { a: 1 }) { } }
+>A5 : Symbol(A5, Decl(a.ts, 0, 0))
+>x : Symbol(A5.x, Decl(a.ts, 0, 10), Decl(a.ts, 0, 32))
+>x : Symbol(A5.x, Decl(a.ts, 0, 10), Decl(a.ts, 0, 32))
+>this : Symbol(this, Decl(a.ts, 0, 39))
+>a : Symbol(a, Decl(a.ts, 0, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

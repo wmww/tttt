@@ -1,0 +1,20 @@
+a.ts(1,32): error TS1040: 'async' modifier cannot be used in an ambient context.
+a.ts(1,32): error TS1039: Initializers are not allowed in ambient contexts.
+a.ts(1,44): error TS1183: An implementation cannot be declared in ambient contexts.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare namespace M5 { var f = async () => {}; }
+                                   ~~~~~
+!!! error TS1040: 'async' modifier cannot be used in an ambient context.
+                                   ~~~~~~~~~~~~~~
+!!! error TS1039: Initializers are not allowed in ambient contexts.
+                                               ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

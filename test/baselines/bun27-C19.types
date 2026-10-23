@@ -1,0 +1,27 @@
+//// [test/cases/bun27-C19.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+type Cond<T> = T extends string ? { children: number } : { children: string };
+>Cond : Cond<T>
+>children : number
+>children : string
+
+function f<T>(C: (p: Cond<T>) => JSX.Element) { return <C>{1}{2}</C>; }
+>f : <T>(C: (p: Cond<T>) => JSX.Element) => JSX.Element
+>C : (p: Cond<T>) => JSX.Element
+>p : Cond<T>
+>JSX : any
+><C>{1}{2}</C> : JSX.Element
+>C : (p: Cond<T>) => JSX.Element
+>1 : 1
+>2 : 2
+>C : (p: Cond<T>) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

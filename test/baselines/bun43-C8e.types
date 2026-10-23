@@ -1,0 +1,14 @@
+//// [test/cases/bun43-C8e.ts] ////
+
+=== a.js ===
+
+/** @import a-b from "./p" */
+=== b.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== p.ts ===
+
+export interface Foo {}
+

@@ -1,0 +1,13 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,85): error TS5024: Compiler option 'include' requires a value of type Array.
+
+
+==== tsconfig.json (1 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] }, "include": 1, "include": ["a.ts"] }
+                                                                                        ~
+!!! error TS5024: Compiler option 'include' requires a value of type Array.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

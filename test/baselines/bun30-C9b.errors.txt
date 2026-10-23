@@ -1,0 +1,14 @@
+a.ts(1,33): error TS18016: Private identifiers are not allowed outside class bodies.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export class C { #a = 1; m(o: { #a: number }) { return o.#a; } }
+                                    ~~
+!!! error TS18016: Private identifiers are not allowed outside class bodies.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

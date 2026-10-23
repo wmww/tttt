@@ -1,0 +1,24 @@
+//// [test/cases/bun56-L09.ts] ////
+
+=== a.ts ===
+declare const v: any;
+>v : Symbol(v, Decl(a.ts, 0, 13))
+
+interface I {}
+>I : Symbol(I, Decl(a.ts, 0, 21))
+
+class X extends import<string>, v {}
+>X : Symbol(X, Decl(a.ts, 1, 14))
+>v : Symbol(v, Decl(a.ts, 0, 13))
+
+class Y implements import<string>, {}
+>Y : Symbol(Y, Decl(a.ts, 2, 36))
+
+class Z implements I implements import<string>, I {}
+>Z : Symbol(Z, Decl(a.ts, 3, 37))
+>I : Symbol(I, Decl(a.ts, 0, 21))
+>I : Symbol(I, Decl(a.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

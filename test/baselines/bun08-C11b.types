@@ -1,0 +1,17 @@
+//// [test/cases/bun08-C11b.ts] ////
+
+=== a.ts ===
+import { x } from "./a"; const v = { x: 1, y: x }; export = v;
+>x : any
+>v : any
+>{ x: 1, y: x } : { x: number; y: any; }
+>x : number
+>1 : 1
+>y : any
+>x : any
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

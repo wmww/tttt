@@ -1,0 +1,17 @@
+//// [test/cases/bun30-C6e.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+enum E { [delete x] = 1 }
+>E : E
+>[delete x] : E
+>delete x : boolean
+>x : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

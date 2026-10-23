@@ -1,0 +1,18 @@
+a.ts(2,18): error TS2730: An arrow function cannot have a 'this' parameter.
+a.ts(2,18): error TS7006: Parameter 'this' implicitly has an 'any' type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    const a1 = { f: (this) => 1 };
+                     ~~~~
+!!! error TS2730: An arrow function cannot have a 'this' parameter.
+                     ~~~~
+!!! error TS7006: Parameter 'this' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

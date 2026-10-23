@@ -1,0 +1,14 @@
+//// [test/cases/bun02-C14a.ts] ////
+
+=== a.ts ===
+interface I1 { static prototype: number }
+>prototype : number
+
+type L1 = { static prototype: number };
+>L1 : L1
+>prototype : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

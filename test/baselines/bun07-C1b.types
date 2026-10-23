@@ -1,0 +1,34 @@
+//// [test/cases/bun07-C1b.ts] ////
+
+=== a.ts ===
+export {};
+declare function make<D, M>(o: { data: D; methods: M & ThisType<D & M> }): D & M;
+>make : <D, M>(o: { data: D; methods: M & ThisType<D & M>; }) => D & M
+>o : { data: D; methods: M & ThisType<D & M>; }
+>data : D
+>methods : M & ThisType<D & M>
+
+const m = make({ data: { x: 1 }, methods: { get i() { return this.x; }, f() { return this.i; } } });
+>m : { x: number; } & { readonly i: any; f(): any; }
+>make({ data: { x: 1 }, methods: { get i() { return this.x; }, f() { return this.i; } } }) : { x: number; } & { readonly i: any; f(): any; }
+>make : <D, M>(o: { data: D; methods: M & ThisType<D & M>; }) => D & M
+>{ data: { x: 1 }, methods: { get i() { return this.x; }, f() { return this.i; } } } : { data: { x: number; }; methods: { readonly i: any; f(): any; }; }
+>data : { x: number; }
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+>methods : { readonly i: any; f(): any; }
+>{ get i() { return this.x; }, f() { return this.i; } } : { readonly i: any; f(): any; }
+>i : any
+>this.x : number
+>this : { x: number; } & { readonly i: any; f(): any; }
+>x : number
+>f : () => any
+>this.i : any
+>this : { x: number; } & { readonly i: any; f(): any; }
+>i : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

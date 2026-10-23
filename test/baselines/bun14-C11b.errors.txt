@@ -1,0 +1,17 @@
+a.ts(3,7): error TS2741: Property 'x' is missing in type '{ z: number; }' but required in type '{ z: number; x: 1; }'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const o: { 0: number; z: number };
+    const { [/*c*/ 0]: a0, ...rest } = o;
+    const r: { z: number; x: 1 } = rest;
+          ~
+!!! error TS2741: Property 'x' is missing in type '{ z: number; }' but required in type '{ z: number; x: 1; }'.
+!!! related TS2728 a.ts:3:23: 'x' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

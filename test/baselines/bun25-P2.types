@@ -1,0 +1,18 @@
+//// [test/cases/bun25-P2.ts] ////
+
+=== a.ts ===
+(function f(this: any, a) { const n: never = f; })(1);
+>(function f(this: any, a) { const n: never = f; })(1) : void
+>(function f(this: any, a) { const n: never = f; }) : (this: any, a?: undefined) => void
+>function f(this: any, a) { const n: never = f; } : (this: any, a?: undefined) => void
+>f : (this: any, a?: undefined) => void
+>this : any
+>a : undefined
+>n : never
+>f : (this: any, a?: undefined) => void
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

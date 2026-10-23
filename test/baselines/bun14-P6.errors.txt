@@ -1,0 +1,17 @@
+a.ts(1,6): error TS2456: Type alias 'X' circularly references itself.
+a.ts(1,39): error TS2315: Type 'X' is not generic.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type X<K extends "a"> = { [P in "a"]: X<K> }[K];
+         ~
+!!! error TS2456: Type alias 'X' circularly references itself.
+                                          ~~~~
+!!! error TS2315: Type 'X' is not generic.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

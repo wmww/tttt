@@ -1,0 +1,20 @@
+//// [test/cases/bun02-C6a.ts] ////
+
+=== a.ts ===
+declare const o: { f(): void };
+>o : { f(): void; }
+>f : () => void
+
+if (o.f) { let t: typeof o.f; }
+>o.f : () => void
+>o : { f(): void; }
+>f : () => void
+>t : () => void
+>o.f : () => void
+>o : { f(): void; }
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

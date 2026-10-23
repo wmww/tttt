@@ -1,0 +1,21 @@
+a.ts(3,7): error TS2322: Type '[string, Q]' is not assignable to type '[string, number]'.
+  Type at position 1 in source is not compatible with type at position 1 in target.
+    Type 'Q' is not assignable to type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function pipe1<A, B>(f: (a: A) => B): { (a: A): B };
+    function outer<Q>(q: Q) { return pipe1(<T,>(x: T) => [x, q] as [T, Q]); }
+    const r: [string, number] = outer(1)("");
+          ~
+!!! error TS2322: Type '[string, Q]' is not assignable to type '[string, number]'.
+!!! error TS2322:   Type at position 1 in source is not compatible with type at position 1 in target.
+!!! error TS2322:     Type 'Q' is not assignable to type 'number'.
+!!! related TS2208 a.ts:2:16: This type parameter might need an `extends number` constraint.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

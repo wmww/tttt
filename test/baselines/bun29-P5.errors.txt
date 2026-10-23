@@ -1,0 +1,18 @@
+a.ts(1,17): error TS2322: Type '(x: { 1n: 6; }) => number' is not assignable to type 'number'.
+a.ts(1,23): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    let n: number = (x: { 1n: 6 }) => 1;
+                    ~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '(x: { 1n: 6; }) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:1:17: Did you mean to call this expression?
+                          ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

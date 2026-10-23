@@ -1,0 +1,45 @@
+//// [test/cases/bun73-R19.ts] ////
+
+=== a.ts ===
+namespace NS {
+>NS : typeof NS
+
+  type LU = Partial<{ a: 1 } | { b: 1 }>; type GT<T> = [LU, T];
+>LU : LU
+>a : 1
+>b : 1
+>GT : GT<T>
+
+  const n1: never = null! as [LU] | [GT<1>[0]];
+>n1 : never
+>null! as [LU] | [GT<1>[0]] : [LU] | [LU]
+>null! : never
+}
+{
+  type LU = Partial<{ a: 1 } | { b: 1 }>; type GT<T> = [LU, T];
+>LU : Partial<{ a: 1; }> | Partial<{ b: 1; }>
+>a : 1
+>b : 1
+>GT : [Partial<{ a: 1; }> | Partial<{ b: 1; }>, T]
+
+  const n2: never = null! as [LU] | [GT<1>[0]];
+>n2 : never
+>null! as [LU] | [GT<1>[0]] : [Partial<{ a: 1; }> | Partial<{ b: 1; }>] | [Partial<{ a: 1; }> | Partial<{ b: 1; }>]
+>null! : never
+}
+// at the top level of the file the alias is isNonGenericTopLevelType: one type in both
+type TU = Partial<{ a: 1 } | { b: 1 }>; type TGT<T> = [TU, T];
+>TU : TU
+>a : 1
+>b : 1
+>TGT : TGT<T>
+
+const n3: never = null! as [TU] | [TGT<1>[0]];
+>n3 : never
+>null! as [TU] | [TGT<1>[0]] : [TU]
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

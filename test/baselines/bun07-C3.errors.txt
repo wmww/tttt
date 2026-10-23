@@ -1,0 +1,32 @@
+a.ts(3,3): error TS2695: Left side of comma operator is unused and has no side effects.
+a.ts(4,2): error TS2695: Left side of comma operator is unused and has no side effects.
+a.ts(5,2): error TS2695: Left side of comma operator is unused and has no side effects.
+a.ts(6,2): error TS2695: Left side of comma operator is unused and has no side effects.
+a.ts(7,3): error TS2695: Left side of comma operator is unused and has no side effects.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    export {};
+    declare const x: { f(): void; g: any };
+    ((0, x.f))();
+      ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    ((0), x.f)();
+     ~~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    (0, (x.f))();
+     ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    (0, (eval))("1");
+     ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    ((0, x.g))``;
+      ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,14 @@
+//// [test/cases/bun01-C11.ts] ////
+
+=== a.ts ===
+export {};
+namespace N { const a = 1; export { a as b }; b; }
+>N : Symbol(N, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+>b : Symbol(b, Decl(a.ts, 1, 35))
+>b : Symbol(b, Decl(a.ts, 1, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

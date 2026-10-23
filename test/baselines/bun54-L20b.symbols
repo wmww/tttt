@@ -1,0 +1,89 @@
+//// [test/cases/bun54-L20b.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+function g1({ kind, payload } = cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' }) {
+>g1 : Symbol(g1, Decl(a.ts, 0, 28))
+>kind : Symbol(kind, Decl(a.ts, 1, 13))
+>payload : Symbol(payload, Decl(a.ts, 1, 19))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>kind : Symbol(kind, Decl(a.ts, 1, 40))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 1, 60))
+>kind : Symbol(kind, Decl(a.ts, 1, 80))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 1, 100))
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; payload.foo; }
+>kind : Symbol(kind, Decl(a.ts, 1, 13))
+>t : Symbol(t, Decl(a.ts, 2, 27))
+>x : Symbol(x, Decl(a.ts, 2, 32))
+>payload : Symbol(payload, Decl(a.ts, 1, 19))
+>payload : Symbol(payload, Decl(a.ts, 1, 19))
+}
+function g4({ kind, payload } = cond ? { kind: 'A' as const, payload: [] } : { kind: 'B' as const, payload: 's' }) {
+>g4 : Symbol(g4, Decl(a.ts, 3, 1))
+>kind : Symbol(kind, Decl(a.ts, 4, 13))
+>payload : Symbol(payload, Decl(a.ts, 4, 19))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>kind : Symbol(kind, Decl(a.ts, 4, 40))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 4, 60))
+>kind : Symbol(kind, Decl(a.ts, 4, 78))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 4, 98))
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; payload.push(1); }
+>kind : Symbol(kind, Decl(a.ts, 4, 13))
+>t : Symbol(t, Decl(a.ts, 5, 27))
+>x : Symbol(x, Decl(a.ts, 5, 32))
+>payload : Symbol(payload, Decl(a.ts, 4, 19))
+>payload.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>payload : Symbol(payload, Decl(a.ts, 4, 19))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+}
+class K { m({ kind, payload } = cond ? { kind: 'A' as const, payload: undefined } : { kind: 'B' as const, payload: 's' }) {
+>K : Symbol(K, Decl(a.ts, 6, 1))
+>m : Symbol(K.m, Decl(a.ts, 7, 9))
+>kind : Symbol(kind, Decl(a.ts, 7, 13))
+>payload : Symbol(payload, Decl(a.ts, 7, 19))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>kind : Symbol(kind, Decl(a.ts, 7, 40))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 7, 60))
+>undefined : Symbol(undefined)
+>kind : Symbol(kind, Decl(a.ts, 7, 85))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 7, 105))
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; }
+>kind : Symbol(kind, Decl(a.ts, 7, 13))
+>t : Symbol(t, Decl(a.ts, 8, 27))
+>x : Symbol(x, Decl(a.ts, 8, 32))
+>payload : Symbol(payload, Decl(a.ts, 7, 19))
+
+} }
+const g5 = function ({ kind, payload } = cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' }) {
+>g5 : Symbol(g5, Decl(a.ts, 10, 5))
+>kind : Symbol(kind, Decl(a.ts, 10, 22))
+>payload : Symbol(payload, Decl(a.ts, 10, 28))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+>kind : Symbol(kind, Decl(a.ts, 10, 49))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 10, 69))
+>kind : Symbol(kind, Decl(a.ts, 10, 89))
+>const : Symbol(const)
+>payload : Symbol(payload, Decl(a.ts, 10, 109))
+
+  if (kind === 'A') { const t: { x: 1 } = [payload]; }
+>kind : Symbol(kind, Decl(a.ts, 10, 22))
+>t : Symbol(t, Decl(a.ts, 11, 27))
+>x : Symbol(x, Decl(a.ts, 11, 32))
+>payload : Symbol(payload, Decl(a.ts, 10, 28))
+
+};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+

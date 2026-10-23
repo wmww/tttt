@@ -1,0 +1,13 @@
+//// [test/cases/bun32-C6a.ts] ////
+
+=== a.ts ===
+function f() { return (f)(); }
+>f : () => any
+>(f)() : any
+>(f) : () => any
+>f : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

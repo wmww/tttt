@@ -1,0 +1,20 @@
+//// [test/cases/bun14-C11a.ts] ////
+
+=== a.ts ===
+const o = { [/*c*/ "1"]: 1 };
+>o : { "1": number; }
+>{ [/*c*/ "1"]: 1 } : { "1": number; }
+>[/*c*/ "1"] : number
+>"1" : "1"
+>1 : 1
+
+const k: "1" = null! as keyof typeof o;
+>k : "1"
+>null! as keyof typeof o : "1"
+>null! : never
+>o : { "1": number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

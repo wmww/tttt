@@ -1,0 +1,19 @@
+a.ts(1,28): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(2,13): error TS2403: Subsequent variable declarations must have the same type.  Variable 'v1' must be of type '<T>() => void', but here has type '<U>() => void'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare var v1: <T extends T>() => void;
+                               ~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+    declare var v1: <U>() => void;
+                ~~
+!!! error TS2403: Subsequent variable declarations must have the same type.  Variable 'v1' must be of type '<T>() => void', but here has type '<U>() => void'.
+!!! related TS6203 a.ts:1:13: 'v1' was also declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

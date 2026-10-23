@@ -1,0 +1,13 @@
+//// [test/cases/bun23-C15.ts] ////
+
+=== a.ts ===
+const s1: { <T extends { readonly k: unique symbol }>(x: T): void } = {};
+>s1 : <T extends { readonly k: unique symbol; }>(x: T) => void
+>k : unique symbol
+>x : T
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

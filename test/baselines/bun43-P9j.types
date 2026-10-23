@@ -1,0 +1,7 @@
+//// [test/cases/bun43-P9j.ts] ////
+
+=== a.ts ===
+type T = A.
+>T : any
+>A : any
+

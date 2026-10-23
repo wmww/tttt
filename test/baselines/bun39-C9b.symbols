@@ -1,0 +1,10 @@
+//// [test/cases/bun39-C9b.ts] ////
+
+=== a.ts ===
+// @ts-expect-error
+export const __esModule = 1;
+>__esModule : Symbol(__esModule, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun11-P3.ts] ////
+
+=== a.ts ===
+function g(x: typeof obj) { return x; }
+>g : (x: typeof obj) => any
+>x : any
+>obj : any
+>x : any
+
+const obj = { a: g(1 as any) };
+>obj : any
+>{ a: g(1 as any) } : { a: any; }
+>a : any
+>g(1 as any) : any
+>g : (x: typeof obj) => any
+>1 as any : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

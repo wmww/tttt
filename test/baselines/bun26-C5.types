@@ -1,0 +1,19 @@
+//// [test/cases/bun26-C5.ts] ////
+
+=== a.ts ===
+let d9 = [[[[[[[[[null]]]]]]]]];
+>d9 : any[][][][][][][][][]
+>[[[[[[[[[null]]]]]]]]] : null[][][][][][][][][]
+>[[[[[[[[null]]]]]]]] : null[][][][][][][][]
+>[[[[[[[null]]]]]]] : null[][][][][][][]
+>[[[[[[null]]]]]] : null[][][][][][]
+>[[[[[null]]]]] : null[][][][][]
+>[[[[null]]]] : null[][][][]
+>[[[null]]] : null[][][]
+>[[null]] : null[][]
+>[null] : null[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

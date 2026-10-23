@@ -1,0 +1,81 @@
+//// [test/cases/bun75-R02.ts] ////
+
+=== a.ts ===
+import { make, make2, make3, cls } from "./m";
+>make : Symbol(make, Decl(a.ts, 0, 8))
+>make2 : Symbol(make2, Decl(a.ts, 0, 14))
+>make3 : Symbol(make3, Decl(a.ts, 0, 21))
+>cls : Symbol(cls, Decl(a.ts, 0, 28))
+
+export const v = make();
+>v : Symbol(v, Decl(a.ts, 1, 12))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+
+export const v2 = make2();
+>v2 : Symbol(v2, Decl(a.ts, 2, 12))
+>make2 : Symbol(make2, Decl(a.ts, 0, 14))
+
+export const v3 = make3();
+>v3 : Symbol(v3, Decl(a.ts, 3, 12))
+>make3 : Symbol(make3, Decl(a.ts, 0, 21))
+
+export const v4 = cls();
+>v4 : Symbol(v4, Decl(a.ts, 4, 12))
+>cls : Symbol(cls, Decl(a.ts, 0, 28))
+
+export function f(p = make()) { return [make2()]; }
+>f : Symbol(f, Decl(a.ts, 4, 24))
+>p : Symbol(p, Decl(a.ts, 5, 18))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+>make2 : Symbol(make2, Decl(a.ts, 0, 14))
+
+export class C { p = make(); static s = make2(); m() { return make3(); } }
+>C : Symbol(C, Decl(a.ts, 5, 51))
+>p : Symbol(C.p, Decl(a.ts, 6, 16))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+>s : Symbol(C.s, Decl(a.ts, 6, 28))
+>make2 : Symbol(make2, Decl(a.ts, 0, 14))
+>m : Symbol(C.m, Decl(a.ts, 6, 48))
+>make3 : Symbol(make3, Decl(a.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+
+=== m.ts ===
+namespace N { export default class Foo { x = 1 } }
+>N : Symbol(N, Decl(m.ts, 0, 0))
+>Foo : Symbol(Foo, Decl(m.ts, 0, 13))
+>x : Symbol(Foo.x, Decl(m.ts, 0, 40))
+
+namespace N2 { export default class { y = 1 } }
+>N2 : Symbol(N2, Decl(m.ts, 0, 50))
+>y : Symbol(default.y, Decl(m.ts, 1, 37))
+
+namespace N3 { export default interface Ifc { z: number } }
+>N3 : Symbol(N3, Decl(m.ts, 1, 47))
+>Ifc : Symbol(Ifc, Decl(m.ts, 2, 14))
+>z : Symbol(Ifc.z, Decl(m.ts, 2, 45))
+
+export function make() { return new N.default(); }
+>make : Symbol(make, Decl(m.ts, 2, 59))
+>N.default : Symbol(N.default, Decl(m.ts, 0, 13))
+>N : Symbol(N, Decl(m.ts, 0, 0))
+>default : Symbol(N.default, Decl(m.ts, 0, 13))
+
+export function make2() { return new N2.default(); }
+>make2 : Symbol(make2, Decl(m.ts, 3, 50))
+>N2.default : Symbol(N2.default, Decl(m.ts, 1, 14))
+>N2 : Symbol(N2, Decl(m.ts, 0, 50))
+>default : Symbol(N2.default, Decl(m.ts, 1, 14))
+
+export function make3() { return null! as N3.default; }
+>make3 : Symbol(make3, Decl(m.ts, 4, 52))
+>N3 : Symbol(N3, Decl(m.ts, 1, 47))
+>default : Symbol(N3.default, Decl(m.ts, 2, 14))
+
+export function cls() { return N.default; }
+>cls : Symbol(cls, Decl(m.ts, 5, 55))
+>N.default : Symbol(N.default, Decl(m.ts, 0, 13))
+>N : Symbol(N, Decl(m.ts, 0, 0))
+>default : Symbol(N.default, Decl(m.ts, 0, 13))
+

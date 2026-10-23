@@ -1,0 +1,18 @@
+//// [test/cases/bun21-P6.ts] ////
+
+=== a.ts ===
+function f(v: [string]) { const [...r]: [string] | [number] = v; r[0].length; }
+>f : (v: [string]) => void
+>v : [string]
+>r : [string] | [number]
+>v : [string]
+>r[0].length : any
+>r[0] : string | number
+>r : [string] | [number]
+>0 : 0
+>length : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

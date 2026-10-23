@@ -1,0 +1,10 @@
+//// [test/cases/bun93-P04e.ts] ////
+
+=== a.tsx ===
+var v = (<a><c<=T>()=>void>/></a>);
+>v : Symbol(v, Decl(a.tsx, 0, 3))
+
+=== b.tsx ===
+var w = (<a><c<<=T>()=>void>/></a>);
+>w : Symbol(w, Decl(b.tsx, 0, 3))
+

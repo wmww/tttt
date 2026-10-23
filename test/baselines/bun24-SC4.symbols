@@ -1,0 +1,17 @@
+//// [test/cases/bun24-SC4.ts] ////
+
+=== a.ts ===
+const ar = () => {}; ar['d-e'] = 3; ar['1'] = 1;
+>ar : Symbol(ar, Decl(a.ts, 0, 5))
+>ar : Symbol(ar, Decl(a.ts, 0, 5))
+>'d-e' : Symbol(ar['d-e'], Decl(a.ts, 0, 20))
+>ar : Symbol(ar, Decl(a.ts, 0, 5))
+>'1' : Symbol(ar['1'], Decl(a.ts, 0, 35))
+
+const t2: string = ar;
+>t2 : Symbol(t2, Decl(a.ts, 1, 5))
+>ar : Symbol(ar, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

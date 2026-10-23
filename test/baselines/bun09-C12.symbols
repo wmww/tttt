@@ -1,0 +1,10 @@
+//// [test/cases/bun09-C12.ts] ////
+
+=== a.ts ===
+function p1({ toString = 1 } = {}) {}
+>p1 : Symbol(p1, Decl(a.ts, 0, 0))
+>toString : Symbol(toString, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

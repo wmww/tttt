@@ -1,0 +1,22 @@
+a.ts(3,11): error TS2317: Global type 'ImportCallOptions' must have 0 type parameter(s).
+a.ts(4,28): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (3 errors) ====
+    interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+    interface Promise<T> {} interface PromiseConstructor {} declare var Promise: PromiseConstructor;
+    interface ImportCallOptions<T> { with?: { f: (x: number) => void } }
+              ~~~~~~~~~~~~~~~~~
+!!! error TS2317: Global type 'ImportCallOptions' must have 0 type parameter(s).
+    import("./m", { with: { f: x => {} } });
+                               ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export const m = 1;
+    

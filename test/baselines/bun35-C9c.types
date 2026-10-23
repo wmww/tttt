@@ -1,0 +1,11 @@
+//// [test/cases/bun35-C9c.ts] ////
+
+=== a.ts ===
+import "slash/foo";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.d.ts ===
+
+export {};

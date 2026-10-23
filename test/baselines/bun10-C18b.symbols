@@ -1,0 +1,24 @@
+//// [test/cases/bun10-C18b.ts] ////
+
+=== a.ts ===
+interface SymbolConstructor { readonly ["m7"]: symbol; readonly "m8": symbol }
+>SymbolConstructor : Symbol(SymbolConstructor, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.asynciterable.d.ts, --, --), Decl(lib.es2020.symbol.wellknown.d.ts, --, --) ... and 1 more)
+>["m7"] : Symbol(SymbolConstructor["m7"], Decl(a.ts, 0, 29))
+>"m7" : Symbol(SymbolConstructor["m7"], Decl(a.ts, 0, 29))
+>"m8" : Symbol(SymbolConstructor["m8"], Decl(a.ts, 0, 54))
+
+let t: boolean = Symbol.m7;
+>t : Symbol(t, Decl(a.ts, 1, 3))
+>Symbol.m7 : Symbol(SymbolConstructor["m7"], Decl(a.ts, 0, 29))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>m7 : Symbol(SymbolConstructor["m7"], Decl(a.ts, 0, 29))
+
+t = Symbol.m8;
+>t : Symbol(t, Decl(a.ts, 1, 3))
+>Symbol.m8 : Symbol(SymbolConstructor["m8"], Decl(a.ts, 0, 54))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>m8 : Symbol(SymbolConstructor["m8"], Decl(a.ts, 0, 54))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

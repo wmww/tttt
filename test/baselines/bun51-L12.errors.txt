@@ -1,0 +1,27 @@
+a.ts(2,41): error TS2635: Type '(x: number) => number' has no signatures for which the type argument list is applicable.
+a.ts(3,41): error TS2635: Type '1' has no signatures for which the type argument list is applicable.
+a.ts(4,39): error TS2635: Type 'typeof import("m")' has no signatures for which the type argument list is applicable.
+a.ts(5,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (4 errors) ====
+    export type A1 = typeof import("./m").f<>;
+    export type A2 = typeof import("./m").g<>;
+                                            
+!!! error TS2635: Type '(x: number) => number' has no signatures for which the type argument list is applicable.
+    export type A3 = typeof import("./m").v<>;
+                                            
+!!! error TS2635: Type '1' has no signatures for which the type argument list is applicable.
+    export type A4 = typeof import("./m")<>;
+                                          
+!!! error TS2635: Type 'typeof import("m")' has no signatures for which the type argument list is applicable.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export function f<T>(x: T): T { return x; }
+    export function g(x: number): number { return x; }
+    export const v = 1;
+    

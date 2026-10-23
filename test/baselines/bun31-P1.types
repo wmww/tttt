@@ -1,0 +1,50 @@
+//// [test/cases/bun31-P1.ts] ////
+
+=== a.ts ===
+declare function f(): { x: { y: boolean } };
+>f : () => { x: { y: boolean; }; }
+>x : { y: boolean; }
+>y : boolean
+
+declare const o: { y: boolean; [k: string]: boolean };
+>o : { [k: string]: boolean; y: boolean; }
+>y : boolean
+>k : string
+
+function g() { return q; }
+>g : () => any
+>q : any
+
+const k = g() ? "a" : "b";
+>k : "a" | "b"
+>g() ? "a" : "b" : "a" | "b"
+>g() : any
+>g : () => any
+>"a" : "a"
+>"b" : "b"
+
+o[k] = true;
+>o[k] = true : true
+>o[k] : boolean
+>o : { [k: string]: boolean; y: boolean; }
+>k : "a" | "b"
+>true : true
+
+const q = (f().x = { y: true }).y;
+>q : any
+>(f().x = { y: true }).y : true
+>(f().x = { y: true }) : { y: true; }
+>f().x = { y: true } : { y: true; }
+>f().x : { y: boolean; }
+>f() : { x: { y: boolean; }; }
+>f : () => { x: { y: boolean; }; }
+>x : { y: boolean; }
+>{ y: true } : { y: true; }
+>y : true
+>true : true
+>y : true
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

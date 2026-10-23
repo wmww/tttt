@@ -1,0 +1,57 @@
+//// [test/cases/bun16-C10.ts] ////
+
+=== a.ts ===
+type U = { kind: `a${number}`, f: (x: number) => void } | { kind: "b", f: (x: string) => void };
+>U : U
+>kind : `a${number}`
+>f : (x: number) => void
+>x : number
+>kind : "b"
+>f : (x: string) => void
+>x : string
+
+declare const n: number;
+>n : number
+
+({ kind: `a${n}`, f: x => {} } as const) satisfies U;
+>({ kind: `a${n}`, f: x => {} } as const) satisfies U : { readonly kind: `a${number}`; readonly f: (x: number) => void; }
+>({ kind: `a${n}`, f: x => {} } as const) : { readonly kind: `a${number}`; readonly f: (x: number) => void; }
+>{ kind: `a${n}`, f: x => {} } as const : { readonly kind: `a${number}`; readonly f: (x: number) => void; }
+>{ kind: `a${n}`, f: x => {} } : { readonly kind: `a${number}`; readonly f: (x: number) => void; }
+>kind : `a${number}`
+>`a${n}` : `a${number}`
+>n : number
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+const v: U = { kind: `a${n}`, f: x => {} } as const;
+>v : U
+>{ kind: `a${n}`, f: x => {} } as const : { readonly kind: `a${number}`; readonly f: (x: number) => void; }
+>{ kind: `a${n}`, f: x => {} } : { readonly kind: `a${number}`; readonly f: (x: number) => void; }
+>kind : `a${number}`
+>`a${n}` : `a${number}`
+>n : number
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+declare function fc<const T extends U>(x: T): void;
+>fc : <const T extends U>(x: T) => void
+>x : T
+
+fc({ kind: `a${n}`, f: x => {} });
+>fc({ kind: `a${n}`, f: x => {} }) : void
+>fc : <const T extends U>(x: T) => void
+>{ kind: `a${n}`, f: x => {} } : { kind: `a${number}`; f: (x: number) => void; }
+>kind : `a${number}`
+>`a${n}` : `a${number}`
+>n : number
+>f : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

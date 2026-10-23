@@ -1,0 +1,15 @@
+//// [test/cases/bun36-P3.ts] ////
+
+=== a.ts ===
+import {} from "./dir";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+
+import {} from "./dir";
+=== dir/index.d.ts ===
+
+export {};
+

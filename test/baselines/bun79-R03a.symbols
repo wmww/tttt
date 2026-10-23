@@ -1,0 +1,33 @@
+//// [test/cases/bun79-R03a.ts] ////
+
+=== a.ts ===
+type F3<X> = X extends (infer A extends F3<A>) ? A : never;
+>F3 : Symbol(F3, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 8))
+>X : Symbol(X, Decl(a.ts, 0, 8))
+>A : Symbol(A, Decl(a.ts, 0, 29))
+>F3 : Symbol(F3, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 29))
+>A : Symbol(A, Decl(a.ts, 0, 29))
+
+type F8<X> = X extends [infer A extends F8<A>[]] ? A : never;
+>F8 : Symbol(F8, Decl(a.ts, 0, 59))
+>X : Symbol(X, Decl(a.ts, 1, 8))
+>X : Symbol(X, Decl(a.ts, 1, 8))
+>A : Symbol(A, Decl(a.ts, 1, 29))
+>F8 : Symbol(F8, Decl(a.ts, 0, 59))
+>A : Symbol(A, Decl(a.ts, 1, 29))
+>A : Symbol(A, Decl(a.ts, 1, 29))
+
+type H4<X> = X extends [infer A extends keyof H4<A>] ? A : never;
+>H4 : Symbol(H4, Decl(a.ts, 1, 61))
+>X : Symbol(X, Decl(a.ts, 2, 8))
+>X : Symbol(X, Decl(a.ts, 2, 8))
+>A : Symbol(A, Decl(a.ts, 2, 29))
+>H4 : Symbol(H4, Decl(a.ts, 1, 61))
+>A : Symbol(A, Decl(a.ts, 2, 29))
+>A : Symbol(A, Decl(a.ts, 2, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

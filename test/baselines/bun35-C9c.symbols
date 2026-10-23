@@ -1,0 +1,10 @@
+//// [test/cases/bun35-C9c.ts] ////
+
+=== a.ts ===
+import "slash/foo";
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== b.d.ts ===
+
+export {};

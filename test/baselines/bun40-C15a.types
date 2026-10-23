@@ -1,0 +1,53 @@
+//// [test/cases/bun40-C15a.ts] ////
+
+=== a.mts ===
+import { kind as k1 } from "dual";
+>kind : "esm"
+>k1 : "esm"
+
+import { b } from "./b.mjs";
+>b : 1
+
+import k2 = require("dual");
+>k2 : typeof k2
+
+declare const o: Order; o.f(0);
+>o : Order
+>o.f(0) : never
+>o.f : { (x: "esm"): 1; (x: "b"): 3; (x: "cjs"): 2; }
+>o : Order
+>f : { (x: "esm"): 1; (x: "b"): 3; (x: "cjs"): 2; }
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.mts ===
+export const b = 1;
+>b : 1
+>1 : 1
+
+declare global { interface Order { f(x: "b"): 3 } }
+>global : any
+>f : { (x: "esm"): 1; (x: "b"): 3; (x: "cjs"): 2; }
+>x : "b"
+
+=== node_modules/dual/cjs.d.cts ===
+export declare const kind: "cjs";
+>kind : "cjs"
+
+declare global { interface Order { f(x: "cjs"): 2 } }
+>global : any
+>f : { (x: "esm"): 1; (x: "b"): 3; (x: "cjs"): 2; }
+>x : "cjs"
+
+=== node_modules/dual/esm.d.mts ===
+export declare const kind: "esm";
+>kind : "esm"
+
+declare global { interface Order { f(x: "esm"): 1 } }
+>global : any
+>f : { (x: "esm"): 1; (x: "b"): 3; (x: "cjs"): 2; }
+>x : "esm"
+

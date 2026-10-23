@@ -1,0 +1,64 @@
+//// [test/cases/bun53-L04b.ts] ////
+
+=== a.ts ===
+declare const o: { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2 };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>"0x10n" : Symbol("0x10n", Decl(a.ts, 0, 18))
+>"16n" : Symbol("16n", Decl(a.ts, 0, 35))
+>"0xffn" : Symbol("0xffn", Decl(a.ts, 0, 50))
+>"255n" : Symbol("255n", Decl(a.ts, 0, 62))
+
+const { 0x10n: a } = o; const a1: never = a;
+>a : Symbol(a, Decl(a.ts, 1, 7))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>a1 : Symbol(a1, Decl(a.ts, 1, 29))
+>a : Symbol(a, Decl(a.ts, 1, 7))
+
+const { 0XFFn: c } = o; const c1: never = c;
+>c : Symbol(c, Decl(a.ts, 2, 7))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>c1 : Symbol(c1, Decl(a.ts, 2, 29))
+>c : Symbol(c, Decl(a.ts, 2, 7))
+
+const o1 = { 0b11n: 1, 3n: 2 };
+>o1 : Symbol(o1, Decl(a.ts, 3, 5))
+>0b11n : Symbol(0b11n, Decl(a.ts, 3, 12))
+>3n : Symbol(3n, Decl(a.ts, 3, 22))
+
+const o2 = { 0XFFn: 1, 0xffn: 2 };
+>o2 : Symbol(o2, Decl(a.ts, 4, 5))
+>0XFFn : Symbol(0XFFn, Decl(a.ts, 4, 12))
+>0xffn : Symbol(0xffn, Decl(a.ts, 4, 22))
+
+const o4 = { 0o7n: 1, "7n": 2 };
+>o4 : Symbol(o4, Decl(a.ts, 5, 5))
+>0o7n : Symbol(0o7n, Decl(a.ts, 5, 12))
+>"7n" : Symbol("7n", Decl(a.ts, 5, 21))
+
+const o6 = { 0b11n: 1, "0b11n": 2 };
+>o6 : Symbol(o6, Decl(a.ts, 6, 5))
+>0b11n : Symbol(0b11n, Decl(a.ts, 6, 12))
+>"0b11n" : Symbol("0b11n", Decl(a.ts, 6, 22))
+
+declare function dec(t: any, c: { name: "0xffn" }): void;
+>dec : Symbol(dec, Decl(a.ts, 6, 36))
+>t : Symbol(t, Decl(a.ts, 7, 21))
+>c : Symbol(c, Decl(a.ts, 7, 28))
+>name : Symbol(name, Decl(a.ts, 7, 33))
+
+declare function dec2(t: any, c: { name: "3n" }): void;
+>dec2 : Symbol(dec2, Decl(a.ts, 7, 57))
+>t : Symbol(t, Decl(a.ts, 8, 22))
+>c : Symbol(c, Decl(a.ts, 8, 29))
+>name : Symbol(name, Decl(a.ts, 8, 34))
+
+class C { @dec 0XFFn() {} @dec2 0b11n() {} }
+>C : Symbol(C, Decl(a.ts, 8, 55))
+>dec : Symbol(dec, Decl(a.ts, 6, 36))
+>0XFFn : Symbol(C[0XFFn], Decl(a.ts, 9, 9))
+>dec2 : Symbol(dec2, Decl(a.ts, 7, 57))
+>0b11n : Symbol(C[0b11n], Decl(a.ts, 9, 25))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

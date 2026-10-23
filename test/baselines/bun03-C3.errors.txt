@@ -1,0 +1,17 @@
+a.ts(2,7): error TS2417: Class static side 'typeof S' incorrectly extends base class static side '{ [k: string]: number; }'.
+  Index signature for type 'string' is missing in type 'typeof S'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const X: (new () => { a: number }) & { [k: string]: number };
+    class S extends X {}
+          ~
+!!! error TS2417: Class static side 'typeof S' incorrectly extends base class static side '{ [k: string]: number; }'.
+!!! error TS2417:   Index signature for type 'string' is missing in type 'typeof S'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

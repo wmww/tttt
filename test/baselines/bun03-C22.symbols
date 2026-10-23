@@ -1,0 +1,15 @@
+//// [test/cases/bun03-C22.ts] ////
+
+=== a.ts ===
+declare const obj: { a: number }; declare let a: any;
+>obj : Symbol(obj, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+>a : Symbol(a, Decl(a.ts, 0, 45))
+
+for (([a]) in obj) {}
+>a : Symbol(a, Decl(a.ts, 0, 45))
+>obj : Symbol(obj, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,39 @@
+//// [test/cases/bun96-REMEDA2.ts] ////
+
+=== a.ts ===
+type NTuple<T, N extends number, R extends unknown[] = []> = R["length"] extends N ? R : NTuple<T, N, [...R, T]>;
+>NTuple : Symbol(NTuple, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>N : Symbol(N, Decl(a.ts, 0, 14))
+>R : Symbol(R, Decl(a.ts, 0, 32))
+>R : Symbol(R, Decl(a.ts, 0, 32))
+>N : Symbol(N, Decl(a.ts, 0, 14))
+>R : Symbol(R, Decl(a.ts, 0, 32))
+>NTuple : Symbol(NTuple, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>N : Symbol(N, Decl(a.ts, 0, 14))
+>R : Symbol(R, Decl(a.ts, 0, 32))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+declare function fn<T extends readonly never[]>(): T;
+>fn : Symbol(fn, Decl(a.ts, 0, 113))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+function f<N extends number>() { return fn<[never, ...NTuple<never, N>]>; }
+>f : Symbol(f, Decl(a.ts, 1, 53))
+>N : Symbol(N, Decl(a.ts, 2, 11))
+>fn : Symbol(fn, Decl(a.ts, 0, 113))
+>NTuple : Symbol(NTuple, Decl(a.ts, 0, 0))
+>N : Symbol(N, Decl(a.ts, 2, 11))
+
+type Q<N extends number> = typeof fn<[never, never, ...NTuple<never, N>]>;
+>Q : Symbol(Q, Decl(a.ts, 2, 75))
+>N : Symbol(N, Decl(a.ts, 3, 7))
+>fn : Symbol(fn, Decl(a.ts, 0, 113))
+>NTuple : Symbol(NTuple, Decl(a.ts, 0, 0))
+>N : Symbol(N, Decl(a.ts, 3, 7))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun02-C9b.ts] ////
+
+=== a.ts ===
+class A26 { async *constructor() {} }
+>A26 : A26
+>constructor : () => AsyncGenerator<never, void, unknown>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

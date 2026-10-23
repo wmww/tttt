@@ -1,0 +1,21 @@
+//// [test/cases/bun30-P12.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : any
+
+let x;
+>x : any
+
+({ 1n: x } = o);
+>({ 1n: x } = o) : any
+>{ 1n: x } = o : any
+>{ 1n: x } : {}
+>1n : any
+>x : any
+>o : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

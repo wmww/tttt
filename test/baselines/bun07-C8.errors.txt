@@ -1,0 +1,17 @@
+a.ts(4,7): error TS2322: Type 'C<readonly [1, 2]>' is not assignable to type 'number'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    interface C<T> { v: T }
+    class C<const T> { constructor(x: T) { } }
+    const p1: number = new C([1, 2]);
+          ~~
+!!! error TS2322: Type 'C<readonly [1, 2]>' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

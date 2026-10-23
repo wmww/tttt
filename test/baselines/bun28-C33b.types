@@ -1,0 +1,12 @@
+//// [test/cases/bun28-C33b.ts] ////
+
+=== a.ts ===
+class n { export p(): any; p(): any { } }
+>n : n
+>p : () => any
+>p : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

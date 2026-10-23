@@ -1,0 +1,50 @@
+//// [test/cases/bun92-R19a.ts] ////
+
+=== a.ts ===
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+
+function f1() {} f1[0] = 1; f1["1"] = 2; f1["1.5"] = 3; f1["-1"] = 4; f1["a"] = 5;
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>0 : Symbol(f1[0], Decl(a.ts, 1, 16))
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>"1" : Symbol(f1["1"], Decl(a.ts, 1, 27))
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>"1.5" : Symbol(f1["1.5"], Decl(a.ts, 1, 40))
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>"-1" : Symbol(f1["-1"], Decl(a.ts, 1, 55))
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>"a" : Symbol(f1["a"], Decl(a.ts, 1, 69))
+
+const f3 = () => {}; f3[0] = 1; f3["1"] = 2;
+>f3 : Symbol(f3, Decl(a.ts, 2, 5))
+>f3 : Symbol(f3, Decl(a.ts, 2, 5))
+>0 : Symbol(f3[0], Decl(a.ts, 2, 20))
+>f3 : Symbol(f3, Decl(a.ts, 2, 5))
+>"1" : Symbol(f3["1"], Decl(a.ts, 2, 31))
+
+const t1: S<typeof f1> = ["?", -99], t3: S<typeof f3> = ["?", -99];
+>t1 : Symbol(t1, Decl(a.ts, 3, 5))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>t3 : Symbol(t3, Decl(a.ts, 3, 36))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>f3 : Symbol(f3, Decl(a.ts, 2, 5))
+
+type M = { [K in keyof typeof f1]: K }; const m: M = 0;
+>M : Symbol(M, Decl(a.ts, 3, 67))
+>K : Symbol(K, Decl(a.ts, 4, 12))
+>f1 : Symbol(f1, Decl(a.ts, 0, 65))
+>K : Symbol(K, Decl(a.ts, 4, 12))
+>m : Symbol(m, Decl(a.ts, 4, 45))
+>M : Symbol(M, Decl(a.ts, 3, 67))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

@@ -1,0 +1,16 @@
+a.ts(1,15): error TS7006: Parameter 'K' implicitly has an 'any' type.
+a.ts(1,20): error TS1005: ',' expected.
+a.ts(1,20): error TS7006: Parameter 'string' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type W12 = { [in K in string]: 1 };
+                  ~~~~
+!!! error TS7006: Parameter 'K' implicitly has an 'any' type.
+                       ~~
+!!! error TS1005: ',' expected.
+                       ~~~~~~~~~
+!!! error TS7006: Parameter 'string' implicitly has an 'any' type.
+    

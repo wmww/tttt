@@ -1,0 +1,15 @@
+//// [test/cases/bun14-C2b.ts] ////
+
+=== a.ts ===
+function f<T extends Uppercase<string> | number>(t: T) {
+>f : <T extends Uppercase<string> | number>(t: T) => void
+>t : T
+
+  const n: boolean = t;
+>n : boolean
+>t : string | number
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

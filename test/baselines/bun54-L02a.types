@@ -1,0 +1,72 @@
+//// [test/cases/bun54-L02a.ts] ////
+
+=== a.ts ===
+function h() { export { xxx as www }; www; }
+>h : () => void
+>xxx : any
+>www : any
+>www : any
+
+function h2() { export { yyy as vvv }; }
+>h2 : () => void
+>yyy : any
+>vvv : any
+
+function h3() { export { zzz }; zzz; }
+>h3 : () => void
+>zzz : any
+>zzz : any
+
+function h4() { const loc = 1; export { loc as uuu }; uuu; }
+>h4 : () => void
+>loc : 1
+>1 : 1
+>loc : 1
+>uuu : 1
+>uuu : 1
+
+function h5() { export { ttt as sss }; let q: sss; }
+>h5 : () => void
+>ttt : any
+>sss : any
+>q : sss
+
+function h6() { export { rrr as ppp }; let q: typeof ppp; }
+>h6 : () => void
+>rrr : any
+>ppp : any
+>q : any
+>ppp : any
+
+namespace N { export { nnn as mmm }; mmm; }
+>N : typeof N
+>nnn : any
+>mmm : any
+>mmm : any
+
+{ export { bbb as ccc }; ccc; }
+>bbb : any
+>ccc : any
+>ccc : any
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+{ export { b1 as b2 }; }
+>b1 : any
+>b2 : any
+
+{ export { b3 as b4 }; b4; }
+>b3 : any
+>b4 : any
+>b4 : any
+
+function hb() { export { b5 as b6 }; b6; }
+>hb : () => void
+>b5 : any
+>b6 : any
+>b6 : any
+

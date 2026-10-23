@@ -1,0 +1,19 @@
+//// [test/cases/bun09-C11a.ts] ////
+
+=== a.ts ===
+declare const s: string;
+>s : string
+
+class A { [s] = 1; }
+>A : A
+>[s] : number
+>s : string
+>1 : 1
+
+interface A { b: boolean }
+>b : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

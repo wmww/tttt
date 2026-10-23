@@ -1,0 +1,9 @@
+//// [test/cases/bun10-SC11.ts] ////
+
+=== g.ts ===
+interface Array<T> extends Array<T> {}
+interface ReadonlyArray<T> extends ReadonlyArray<T> {}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

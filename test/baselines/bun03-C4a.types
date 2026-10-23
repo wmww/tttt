@@ -1,0 +1,18 @@
+//// [test/cases/bun03-C4a.ts] ////
+
+=== a.ts ===
+const f: (opts?: { a: number }) => void = ({}) => {};
+>f : (opts?: { a: number; }) => void
+>opts : { a: number; } | undefined
+>a : number
+>({}) => {} : ({}: { a: number; } | undefined) => void
+
+const g: (x: number) => void = ([]) => {};
+>g : (x: number) => void
+>x : number
+>([]) => {} : ([]: number) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

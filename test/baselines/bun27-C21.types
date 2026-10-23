@@ -1,0 +1,28 @@
+//// [test/cases/bun27-C21.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+declare function F(p: { "data-o"?: { alpha: number } }): JSX.Element;
+>F : (p: { "data-o"?: { alpha: number; }; }) => JSX.Element
+>p : { "data-o"?: { alpha: number; }; }
+>"data-o" : { alpha: number; } | undefined
+>alpha : number
+>JSX : any
+
+const a = <F data-o={{ alpha: 1, b: 2 }} />;
+>a : JSX.Element
+><F data-o={{ alpha: 1, b: 2 }} /> : JSX.Element
+>F : (p: { "data-o"?: { alpha: number; }; }) => JSX.Element
+>data-o : { alpha: number; b: number; }
+>{ alpha: 1, b: 2 } : { alpha: number; b: number; }
+>alpha : number
+>1 : 1
+>b : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

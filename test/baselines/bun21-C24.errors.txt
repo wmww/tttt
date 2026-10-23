@@ -1,0 +1,16 @@
+a.ts(1,1): error TS2448: Block-scoped variable 'k' used before its declaration.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    k = "b"; export {}; let k = "a"; declare const rec: Record<string, string | undefined>;
+    ~
+!!! error TS2448: Block-scoped variable 'k' used before its declaration.
+!!! related TS2728 a.ts:1:25: 'k' is declared here.
+    if (rec[k]) rec[k].length;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

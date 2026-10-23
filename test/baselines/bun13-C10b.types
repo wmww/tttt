@@ -1,0 +1,24 @@
+//// [test/cases/bun13-C10b.ts] ////
+
+=== a.ts ===
+declare function f(a: string): void;
+>f : (a: string) => void
+>a : string
+
+declare function g(a: string): void;
+>g : (a: string) => void
+>a : string
+
+declare let x2: Parameters<typeof f> | Parameters<typeof g>;
+>x2 : [a: string] | [a: string]
+>f : (a: string) => void
+>g : (a: string) => void
+
+const n2: never = x2;
+>n2 : never
+>x2 : [a: string] | [a: string]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

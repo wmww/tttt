@@ -1,0 +1,22 @@
+//// [test/cases/bun12-P3.ts] ////
+
+=== a.ts ===
+class C<T> { p!: { a: T<1> } }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>p : Symbol(C.p, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+type U = C<1>["p"] | C<2>["p"];
+>U : Symbol(U, Decl(a.ts, 0, 30))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+const n: never = null! as U;
+>n : Symbol(n, Decl(a.ts, 2, 5))
+>U : Symbol(U, Decl(a.ts, 0, 30))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,28 @@
+//// [test/cases/bun12-C14c.ts] ////
+
+=== a.ts ===
+function g<T>() { const { a, ...rest } = { a: 1, b: 2 }; return rest; }
+>g : <T>() => { b: number; }
+>a : number
+>rest : { b: number; }
+>{ a: 1, b: 2 } : { a: number; b: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+>rest : { b: number; }
+
+type U = ReturnType<typeof g<1>> | ReturnType<typeof g<2>>;
+>U : U
+>g : <T>() => { b: number; }
+>g : <T>() => { b: number; }
+
+const n: never = null! as U;
+>n : never
+>null! as U : U
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

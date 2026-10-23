@@ -1,0 +1,42 @@
+//// [test/cases/bun07-C1d.ts] ////
+
+=== a.ts ===
+export {};
+declare function observable<T>(o: T): T;
+>observable : Symbol(observable, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 28))
+>o : Symbol(o, Decl(a.ts, 1, 31))
+>T : Symbol(T, Decl(a.ts, 1, 28))
+>T : Symbol(T, Decl(a.ts, 1, 28))
+
+const store = observable({
+>store : Symbol(store, Decl(a.ts, 2, 5))
+>observable : Symbol(observable, Decl(a.ts, 0, 10))
+
+  items: [{ done: true }],
+>items : Symbol(items, Decl(a.ts, 2, 26))
+>done : Symbol(done, Decl(a.ts, 3, 11))
+
+  get doneItems() { return this.items.filter(x => x.done); },
+>doneItems : Symbol(doneItems, Decl(a.ts, 3, 26))
+>this.items.filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this.items : Symbol(items, Decl(a.ts, 2, 26))
+>this : Symbol(__object, Decl(a.ts, 2, 25))
+>items : Symbol(items, Decl(a.ts, 2, 26))
+>filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 4, 45))
+>x : Symbol(x, Decl(a.ts, 4, 45))
+
+  add() { this.items.push({ done: false }); },
+>add : Symbol(add, Decl(a.ts, 4, 61))
+>this.items.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>this.items : Symbol(items, Decl(a.ts, 2, 26))
+>this : Symbol(__object, Decl(a.ts, 2, 25))
+>items : Symbol(items, Decl(a.ts, 2, 26))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>done : Symbol(done, Decl(a.ts, 5, 27))
+
+});
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

@@ -1,0 +1,91 @@
+//// [test/cases/bun99-W3.ts] ////
+
+=== after.ts ===
+type Pseudos3 = ':hover';
+>Pseudos3 : Symbol(Pseudos3, Decl(after.ts, 0, 0))
+
+type CSSPseudos3 = { [P in Pseudos3]?: Omit<Style3, Pseudos3> };
+>CSSPseudos3 : Symbol(CSSPseudos3, Decl(after.ts, 0, 25))
+>P : Symbol(P, Decl(after.ts, 1, 22))
+>Pseudos3 : Symbol(Pseudos3, Decl(after.ts, 0, 0))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Style3 : Symbol(Style3, Decl(after.ts, 1, 64))
+>Pseudos3 : Symbol(Pseudos3, Decl(after.ts, 0, 0))
+
+type Style3 = CSSPseudos3 & { top?: string };
+>Style3 : Symbol(Style3, Decl(after.ts, 1, 64))
+>CSSPseudos3 : Symbol(CSSPseudos3, Decl(after.ts, 0, 25))
+>top : Symbol(top, Decl(after.ts, 2, 29))
+
+declare function css3(style: Style3): void;
+>css3 : Symbol(css3, Decl(after.ts, 2, 45))
+>style : Symbol(style, Decl(after.ts, 3, 22))
+>Style3 : Symbol(Style3, Decl(after.ts, 1, 64))
+
+css3({ ':hover': { notAProperty: '1' } });
+>css3 : Symbol(css3, Decl(after.ts, 2, 45))
+>':hover' : Symbol(':hover', Decl(after.ts, 4, 6))
+>notAProperty : Symbol(notAProperty, Decl(after.ts, 4, 18))
+
+export {};
+=== before.ts ===
+css2({ ':hover': { notAProperty: '1' } });
+>css2 : Symbol(css2, Decl(before.ts, 0, 42))
+>':hover' : Symbol(':hover', Decl(before.ts, 0, 6))
+>notAProperty : Symbol(notAProperty, Decl(before.ts, 0, 18))
+
+declare function css2(style: Style2): void;
+>css2 : Symbol(css2, Decl(before.ts, 0, 42))
+>style : Symbol(style, Decl(before.ts, 1, 22))
+>Style2 : Symbol(Style2, Decl(before.ts, 3, 64))
+
+type Pseudos2 = ':hover';
+>Pseudos2 : Symbol(Pseudos2, Decl(before.ts, 1, 43))
+
+type CSSPseudos2 = { [P in Pseudos2]?: Omit<Style2, Pseudos2> };
+>CSSPseudos2 : Symbol(CSSPseudos2, Decl(before.ts, 2, 25))
+>P : Symbol(P, Decl(before.ts, 3, 22))
+>Pseudos2 : Symbol(Pseudos2, Decl(before.ts, 1, 43))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Style2 : Symbol(Style2, Decl(before.ts, 3, 64))
+>Pseudos2 : Symbol(Pseudos2, Decl(before.ts, 1, 43))
+
+type Style2 = CSSPseudos2 & { top?: string };
+>Style2 : Symbol(Style2, Decl(before.ts, 3, 64))
+>CSSPseudos2 : Symbol(CSSPseudos2, Decl(before.ts, 2, 25))
+>top : Symbol(top, Decl(before.ts, 4, 29))
+
+export {};
+=== index.ts ===
+import { css } from './lib';
+>css : Symbol(css, Decl(index.ts, 0, 8))
+
+css({ ':hover': { notAProperty: '1' } });
+>css : Symbol(css, Decl(index.ts, 0, 8))
+>':hover' : Symbol(':hover', Decl(index.ts, 2, 5))
+>notAProperty : Symbol(notAProperty, Decl(index.ts, 2, 17))
+
+=== lib.d.ts ===
+type Pseudos = ':hover';
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+
+type CSSPseudos = { [P in Pseudos]?: Omit<Style, Pseudos> };
+>CSSPseudos : Symbol(CSSPseudos, Decl(lib.d.ts, --, --))
+>P : Symbol(P, Decl(lib.d.ts, --, --))
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+
+type Style = CSSPseudos & { top?: string };
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+>CSSPseudos : Symbol(CSSPseudos, Decl(lib.d.ts, --, --))
+>top : Symbol(top, Decl(lib.d.ts, --, --))
+
+export declare function css(style: Style): void;
+>css : Symbol(css, Decl(lib.d.ts, --, --))
+>style : Symbol(style, Decl(lib.d.ts, --, --))
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+
+export {};
+

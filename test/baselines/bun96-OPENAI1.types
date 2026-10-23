@@ -1,0 +1,226 @@
+//// [test/cases/bun96-OPENAI1.ts] ////
+
+=== a.ts ===
+declare const c: boolean;
+>c : boolean
+
+// The shape of openai-node, src/_vendor/zod-to-json-schema: `{} & Meta` is `Meta`, a supertype of the other members.
+type Meta = { title?: string };
+>Meta : Meta
+>title : string | undefined
+
+type Schema = ({ type: "string" } | { type: "number" } | {}) & Meta;
+>Schema : Schema
+>type : "string"
+>type : "number"
+
+type MapType = { maxItems: 125; items: [Schema, Schema] };
+>MapType : MapType
+>maxItems : 125
+>items : [Schema, Schema]
+
+type RecordType = { type: "object"; additionalProperties: Schema };
+>RecordType : RecordType
+>type : "object"
+>additionalProperties : Schema
+
+declare function parseDef(): Schema | undefined;
+>parseDef : () => Schema | undefined
+
+function parseMapDef(): MapType | RecordType {
+>parseMapDef : () => MapType | RecordType
+
+  const keys = parseDef() || {};
+>keys : Schema
+>parseDef() || {} : Schema
+>parseDef() : Schema | undefined
+>parseDef : () => Schema | undefined
+>{} : {}
+
+  return { type: "array", maxItems: 125, items: [keys, keys] };
+>{ type: "array", maxItems: 125, items: [keys, keys] } : { type: "array"; maxItems: 125; items: [Schema, Schema]; }
+>type : "array"
+>"array" : "array"
+>maxItems : 125
+>125 : 125
+>items : [Schema, Schema]
+>[keys, keys] : [Schema, Schema]
+>keys : Schema
+>keys : Schema
+}
+// Ordinary code: a named union with a member that is a supertype of all the others.
+interface Animal { name: string }
+>name : string
+
+interface Dog extends Animal { bark(): void }
+>bark : () => void
+
+interface Cat extends Animal { meow(): void }
+>meow : () => void
+
+type Pet = Animal | Dog;
+>Pet : Pet
+
+declare const a: Pet, b: Pet, u: Pet | undefined, dog: Dog, cat: Cat;
+>a : Pet
+>b : Pet
+>u : Pet | undefined
+>dog : Dog
+>cat : Cat
+
+const x = c ? a : b;
+>x : Pet
+>c ? a : b : Pet
+>c : boolean
+>a : Pet
+>b : Pet
+
+if ("bark" in x) x.bark();
+>"bark" in x : boolean
+>"bark" : "bark"
+>x : Pet
+>x.bark() : void
+>x.bark : () => void
+>x : Dog
+>bark : () => void
+
+for (const e of [a, b]) if ("bark" in e) e.bark();
+>e : Pet
+>[a, b] : Pet[]
+>a : Pet
+>b : Pet
+>"bark" in e : boolean
+>"bark" : "bark"
+>e : Pet
+>e.bark() : void
+>e.bark : () => void
+>e : Dog
+>bark : () => void
+
+let y = u ?? b;
+>y : Pet
+>u ?? b : Pet
+>u : Pet | undefined
+>b : Pet
+
+y = { name: "", bark() {} };
+>y = { name: "", bark() {} } : { name: string; bark(): void; }
+>y : Pet
+>{ name: "", bark() {} } : { name: string; bark(): void; }
+>name : string
+>"" : ""
+>bark : () => void
+
+const t1: number = c ? a : b;
+>t1 : number
+>c ? a : b : Pet
+>c : boolean
+>a : Pet
+>b : Pet
+
+const t2: number = [a, b];
+>t2 : number
+>[a, b] : Pet[]
+>a : Pet
+>b : Pet
+
+const t3: number = u || b;
+>t3 : number
+>u || b : Pet
+>u : Pet | undefined
+>b : Pet
+
+const t4: number = u ?? b;
+>t4 : number
+>u ?? b : Pet
+>u : Pet | undefined
+>b : Pet
+
+const t5: number = c ? a : dog;
+>t5 : number
+>c ? a : dog : Pet
+>c : boolean
+>a : Pet
+>dog : Dog
+
+const t6: number = c ? a : cat;
+>t6 : number
+>c ? a : cat : Pet
+>c : boolean
+>a : Pet
+>cat : Cat
+
+// Named by an origin, without an alias.
+declare const o: ({ type: "s" } | { type: "n" } | {}) & Meta;
+>o : ({ type: "s"; } | { type: "n"; } | {}) & Meta
+>type : "s"
+>type : "n"
+
+const t7: number = c ? o : o;
+>t7 : number
+>c ? o : o : ({ type: "s"; } | { type: "n"; } | {}) & Meta
+>c : boolean
+>o : ({ type: "s"; } | { type: "n"; } | {}) & Meta
+>o : ({ type: "s"; } | { type: "n"; } | {}) & Meta
+
+// reduceVoidUndefined of removeRedundantLiteralTypes: one member is left, two are left.
+type VU = void | undefined;
+>VU : VU
+
+type VUS = void | undefined | string;
+>VUS : VUS
+
+declare const vu: VU, vus: VUS;
+>vu : VU
+>vus : VUS
+
+const t8: number = c ? vu : vu;
+>t8 : number
+>c ? vu : vu : VU
+>c : boolean
+>vu : VU
+>vu : VU
+
+const t9: number = c ? vus : vus;
+>t9 : number
+>c ? vus : vus : VUS
+>c : boolean
+>vus : VUS
+>vus : VUS
+
+// The two agree: two members are left, two named unions, a named union inside `Pet | undefined`.
+type Three = Animal | Dog | string;
+>Three : Three
+
+type Pet2 = Animal | Cat;
+>Pet2 : Pet2
+
+declare const three: Three, p2: Pet2;
+>three : Three
+>p2 : Pet2
+
+const s1: number = c ? three : three;
+>s1 : number
+>c ? three : three : Three
+>c : boolean
+>three : Three
+>three : Three
+
+const s2: number = c ? a : p2;
+>s2 : number
+>c ? a : p2 : Animal
+>c : boolean
+>a : Pet
+>p2 : Pet2
+
+const s3: number = c ? u : a;
+>s3 : number
+>c ? u : a : Animal | undefined
+>c : boolean
+>u : Pet | undefined
+>a : Pet
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

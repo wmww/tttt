@@ -1,0 +1,59 @@
+//// [test/cases/bun04-C8.ts] ////
+
+=== a.ts ===
+declare function both2<A, B, C, D>(f: new (a: A) => B, g: new (c: C) => D): (a: A, c: C) => [B, D];
+>both2 : Symbol(both2, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 23))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>C : Symbol(C, Decl(a.ts, 0, 28))
+>D : Symbol(D, Decl(a.ts, 0, 31))
+>f : Symbol(f, Decl(a.ts, 0, 35))
+>a : Symbol(a, Decl(a.ts, 0, 43))
+>A : Symbol(A, Decl(a.ts, 0, 23))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>g : Symbol(g, Decl(a.ts, 0, 54))
+>c : Symbol(c, Decl(a.ts, 0, 63))
+>C : Symbol(C, Decl(a.ts, 0, 28))
+>D : Symbol(D, Decl(a.ts, 0, 31))
+>a : Symbol(a, Decl(a.ts, 0, 77))
+>A : Symbol(A, Decl(a.ts, 0, 23))
+>c : Symbol(c, Decl(a.ts, 0, 82))
+>C : Symbol(C, Decl(a.ts, 0, 28))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>D : Symbol(D, Decl(a.ts, 0, 31))
+
+class Box<T> { constructor(public v: T) {} }
+>Box : Symbol(Box, Decl(a.ts, 0, 99))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>v : Symbol(Box.v, Decl(a.ts, 1, 27))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+
+class Bag<T> { constructor(public w: T) {} }
+>Bag : Symbol(Bag, Decl(a.ts, 1, 44))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+>w : Symbol(Bag.w, Decl(a.ts, 2, 27))
+>T : Symbol(T, Decl(a.ts, 2, 10))
+
+class Two<T, U> { constructor(public w: [T, U]) {} }
+>Two : Symbol(Two, Decl(a.ts, 2, 44))
+>T : Symbol(T, Decl(a.ts, 3, 10))
+>U : Symbol(U, Decl(a.ts, 3, 12))
+>w : Symbol(Two.w, Decl(a.ts, 3, 30))
+>T : Symbol(T, Decl(a.ts, 3, 10))
+>U : Symbol(U, Decl(a.ts, 3, 12))
+
+const n: never = both2(Box, Bag);
+>n : Symbol(n, Decl(a.ts, 4, 5))
+>both2 : Symbol(both2, Decl(a.ts, 0, 0))
+>Box : Symbol(Box, Decl(a.ts, 0, 99))
+>Bag : Symbol(Bag, Decl(a.ts, 1, 44))
+
+const r = both2(Two, Two);
+>r : Symbol(r, Decl(a.ts, 5, 5))
+>both2 : Symbol(both2, Decl(a.ts, 0, 0))
+>Two : Symbol(Two, Decl(a.ts, 2, 44))
+>Two : Symbol(Two, Decl(a.ts, 2, 44))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

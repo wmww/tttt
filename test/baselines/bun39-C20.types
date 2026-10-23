@@ -1,0 +1,19 @@
+//// [test/cases/bun39-C20.ts] ////
+
+=== b.ts ===
+import j from './j.json';
+>j : { a: any; }
+
+j;
+>j : { a: any; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== j.json ===
+{ "a": }
+>{ "a": } : { a: any; }
+>"a" : any
+> : any
+

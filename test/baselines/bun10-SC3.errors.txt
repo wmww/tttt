@@ -1,0 +1,21 @@
+j.js(3,1): error TS7008: Member 'a' implicitly has an 'any[]' type.
+j.js(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"] } }
+==== j.js (2 errors) ====
+    /** @type {{ new(): {}, a: string[] }} */
+    const CE2 = class {};
+    CE2.a = [];
+    ~~~~~~~~~~
+!!! error TS7008: Member 'a' implicitly has an 'any[]' type.
+    function F() {}
+    /** @type {{ (): void, b: string[] }} */
+    F.a = function () {};
+    F.a.b = [];
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

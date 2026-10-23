@@ -1,0 +1,8 @@
+//// [test/cases/bun43-P9n.ts] ////
+
+=== a.ts ===
+import x =
+>x : any
+
+> : any
+

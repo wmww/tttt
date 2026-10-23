@@ -1,0 +1,12 @@
+//// [test/cases/bun34-C14b.ts] ////
+
+=== a.ts ===
+type H = ({ [missing]: a }: any) => void;
+>H : H
+>missing : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

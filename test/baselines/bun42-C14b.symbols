@@ -1,0 +1,41 @@
+//// [test/cases/bun42-C14b.ts] ////
+
+=== a.ts ===
+import { a, b } from "outer";
+>a : Symbol(a, Decl(a.ts, 0, 8))
+>b : Symbol(b, Decl(a.ts, 0, 11))
+
+export default { x: b(), y: a() };
+>x : Symbol(x, Decl(a.ts, 1, 16))
+>b : Symbol(b, Decl(a.ts, 0, 11))
+>y : Symbol(y, Decl(a.ts, 1, 24))
+>a : Symbol(a, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/outer/index.d.ts ===
+import { B } from "inner";
+>B : Symbol(B, Decl(index.d.ts, 0, 8))
+
+import { A } from "inner/zz/deep";
+>A : Symbol(A, Decl(index.d.ts, 1, 8))
+
+export declare function b(): B;
+>b : Symbol(b, Decl(index.d.ts, 1, 34))
+>B : Symbol(B, Decl(index.d.ts, 0, 8))
+
+export declare function a(): A;
+>a : Symbol(a, Decl(index.d.ts, 2, 31))
+>A : Symbol(A, Decl(index.d.ts, 1, 8))
+
+=== node_modules/outer/node_modules/inner/index.d.ts ===
+export interface B { b: 1 }
+>B : Symbol(B, Decl(index.d.ts, 0, 0))
+>b : Symbol(B.b, Decl(index.d.ts, 0, 20))
+
+=== node_modules/outer/node_modules/inner/zz/deep.d.ts ===
+export interface A { a: 1 }
+>A : Symbol(A, Decl(deep.d.ts, 0, 0))
+>a : Symbol(A.a, Decl(deep.d.ts, 0, 20))
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun43-P5.ts] ////
+
+=== a.js ===
+module.exports = { a: exports };
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 0, 18))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+
+=== b.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 0, 5))
+

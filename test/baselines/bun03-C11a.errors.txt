@@ -1,0 +1,15 @@
+a.ts(2,29): error TS2842: 'z' is an unused renaming of 'priv'. Did you intend to use it as a type annotation?
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class P { private priv = 1 }
+    declare function fc({ priv: z }: P): void;
+                                ~
+!!! error TS2842: 'z' is an unused renaming of 'priv'. Did you intend to use it as a type annotation?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

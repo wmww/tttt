@@ -1,0 +1,17 @@
+a.ts(4,7): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "esnext" } }
+==== a.ts (2 errors) ====
+    export {};
+    type P6<T> = Promise<Promise<Promise<Promise<Promise<Promise<T>>>>>>;
+    declare const p42: P6<P6<P6<P6<P6<P6<P6<number>>>>>>>;
+    const a: string = await p42;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

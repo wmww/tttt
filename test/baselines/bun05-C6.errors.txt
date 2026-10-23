@@ -1,0 +1,16 @@
+a.ts(3,43): error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const arr: number[];
+    let li: string;
+    for ((li) in arr) { const x: number = arr[li]; }
+                                              ~~
+!!! error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

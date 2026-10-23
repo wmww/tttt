@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C33c.ts] ////
+
+=== a.ts ===
+class n { override static { } }
+>n : n
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

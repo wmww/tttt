@@ -1,0 +1,13 @@
+//// [test/cases/bun33-P6b.ts] ////
+
+=== a.ts ===
+function* g() { let x: { [yield]: 1 }; }
+>g : () => Generator<never, void, unknown>
+>x : { [x: number]: 1; }
+>[yield] : 1
+>yield : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

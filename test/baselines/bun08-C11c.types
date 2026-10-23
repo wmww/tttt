@@ -1,0 +1,19 @@
+//// [test/cases/bun08-C11c.ts] ////
+
+=== a.ts ===
+import d from "./a"; const o = { p: 1, q: d }; export default o.p;
+>d : any
+>o : any
+>{ p: 1, q: d } : { p: number; q: any; }
+>p : number
+>1 : 1
+>q : any
+>d : any
+>o.p : any
+>o : any
+>p : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

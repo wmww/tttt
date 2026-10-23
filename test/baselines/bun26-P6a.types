@@ -1,0 +1,16 @@
+//// [test/cases/bun26-P6a.ts] ////
+
+=== a.ts ===
+function f<T extends string | number>(x: T & string) {
+>f : <T extends string | number>(x: T & string) => void
+>x : T & string
+
+  const t: T & { a: 1 } = x;
+>t : T & { a: 1; }
+>a : 1
+>x : T & string
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

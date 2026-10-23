@@ -1,0 +1,22 @@
+a.cts(4,5): error TS2339: Property 'default' does not exist on type 'typeof f'.
+a.cts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "nodenext" } }
+==== a.cts (2 errors) ====
+    import * as fns from "./fn.cjs";
+    async function dyn() {
+      const c = await import("./fn.cjs");
+      c.default();
+        ~~~~~~~
+!!! error TS2339: Property 'default' does not exist on type 'typeof f'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn.d.cts (0 errors) ====
+    declare function f(): void;
+    declare namespace f { const __esModule: true; const x: number }
+    export = f;
+    

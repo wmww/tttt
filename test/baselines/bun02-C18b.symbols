@@ -1,0 +1,18 @@
+//// [test/cases/bun02-C18b.ts] ////
+
+=== a.js ===
+module.exports = function () {};
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+
+if (typeof exports === "object" && module.exports) {}
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+>module.exports : Symbol(exports, Decl(a.js, 0, 0))
+>module : Symbol(module, Decl(a.js, 0, 0))
+>exports : Symbol(exports, Decl(a.js, 0, 0))
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(z.ts, 0, 5))
+

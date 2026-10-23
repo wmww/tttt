@@ -1,0 +1,18 @@
+a.ts(1,20): error TS7016: Could not find a declaration file for module 'u'. 'node_modules/u/index.js' implicitly has an 'any' type.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    import * as u from "u";
+                       ~~~
+!!! error TS7016: Could not find a declaration file for module 'u'. 'node_modules/u/index.js' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/u/index.js (0 errors) ====
+    module.exports = {};
+==== node_modules/u/package.json (0 errors) ====
+    { "name": "", "version": "1.0.0" }
+    

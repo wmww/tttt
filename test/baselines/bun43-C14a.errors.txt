@@ -1,0 +1,10 @@
+a.ts(1,16): error TS1127: Invalid character.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    var s12 = (x = €) => x;
+                   ~
+!!! error TS1127: Invalid character.
+    

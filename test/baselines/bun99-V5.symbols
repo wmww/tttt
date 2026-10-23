@@ -1,0 +1,306 @@
+//// [test/cases/bun99-V5.ts] ////
+
+=== neighbours.ts ===
+export {}
+// A call through a union of two generic signatures: the return types are united first.
+declare const lists: number[] | ReadonlyArray<number>
+>lists : Symbol(lists, Decl(neighbours.ts, 2, 13))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+
+export const mapped: never = lists.map(n => String(n))
+>mapped : Symbol(mapped, Decl(neighbours.ts, 3, 12))
+>lists.map : Symbol(map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>lists : Symbol(lists, Decl(neighbours.ts, 2, 13))
+>map : Symbol(map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>n : Symbol(n, Decl(neighbours.ts, 3, 39))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>n : Symbol(n, Decl(neighbours.ts, 3, 39))
+
+declare const sets: Set<number> | Map<number, number>
+>sets : Symbol(sets, Decl(neighbours.ts, 4, 13))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+
+export const each: never = sets.forEach(v => v)
+>each : Symbol(each, Decl(neighbours.ts, 5, 12))
+>sets.forEach : Symbol(forEach, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --))
+>sets : Symbol(sets, Decl(neighbours.ts, 4, 13))
+>forEach : Symbol(forEach, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --))
+>v : Symbol(v, Decl(neighbours.ts, 5, 40))
+>v : Symbol(v, Decl(neighbours.ts, 5, 40))
+
+declare const thenables: Promise<number> | PromiseLike<number> | Promise<string>
+>thenables : Symbol(thenables, Decl(neighbours.ts, 6, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+export const three: never = thenables.then(v => v)
+>three : Symbol(three, Decl(neighbours.ts, 7, 12))
+>thenables.then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>thenables : Symbol(thenables, Decl(neighbours.ts, 6, 13))
+>then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(neighbours.ts, 7, 43))
+>v : Symbol(v, Decl(neighbours.ts, 7, 43))
+
+declare const fns: (<T>(value: T) => Promise<T>) | (<U>(value: U) => PromiseLike<U>)
+>fns : Symbol(fns, Decl(neighbours.ts, 8, 13))
+>T : Symbol(T, Decl(neighbours.ts, 8, 21))
+>value : Symbol(value, Decl(neighbours.ts, 8, 24))
+>T : Symbol(T, Decl(neighbours.ts, 8, 21))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(neighbours.ts, 8, 21))
+>U : Symbol(U, Decl(neighbours.ts, 8, 53))
+>value : Symbol(value, Decl(neighbours.ts, 8, 56))
+>U : Symbol(U, Decl(neighbours.ts, 8, 53))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(neighbours.ts, 8, 53))
+
+export const called: never = fns(1)
+>called : Symbol(called, Decl(neighbours.ts, 9, 12))
+>fns : Symbol(fns, Decl(neighbours.ts, 8, 13))
+
+declare const fns2: (<T>(value: T) => T[]) | (<U>(value: U) => ReadonlyArray<U>)
+>fns2 : Symbol(fns2, Decl(neighbours.ts, 10, 13))
+>T : Symbol(T, Decl(neighbours.ts, 10, 22))
+>value : Symbol(value, Decl(neighbours.ts, 10, 25))
+>T : Symbol(T, Decl(neighbours.ts, 10, 22))
+>T : Symbol(T, Decl(neighbours.ts, 10, 22))
+>U : Symbol(U, Decl(neighbours.ts, 10, 47))
+>value : Symbol(value, Decl(neighbours.ts, 10, 50))
+>U : Symbol(U, Decl(neighbours.ts, 10, 47))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>U : Symbol(U, Decl(neighbours.ts, 10, 47))
+
+export const called2: never = fns2('a')
+>called2 : Symbol(called2, Decl(neighbours.ts, 11, 12))
+>fns2 : Symbol(fns2, Decl(neighbours.ts, 10, 13))
+
+declare const one: (<T>(value: T) => Promise<T>) | ((value: number) => PromiseLike<number>)
+>one : Symbol(one, Decl(neighbours.ts, 12, 13))
+>T : Symbol(T, Decl(neighbours.ts, 12, 21))
+>value : Symbol(value, Decl(neighbours.ts, 12, 24))
+>T : Symbol(T, Decl(neighbours.ts, 12, 21))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(neighbours.ts, 12, 21))
+>value : Symbol(value, Decl(neighbours.ts, 12, 53))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+export const mixed: never = one(1)
+>mixed : Symbol(mixed, Decl(neighbours.ts, 13, 12))
+>one : Symbol(one, Decl(neighbours.ts, 12, 13))
+
+interface A { run<T>(value: T): { a: T } }
+>A : Symbol(A, Decl(neighbours.ts, 13, 34))
+>run : Symbol(A.run, Decl(neighbours.ts, 14, 13))
+>T : Symbol(T, Decl(neighbours.ts, 14, 18))
+>value : Symbol(value, Decl(neighbours.ts, 14, 21))
+>T : Symbol(T, Decl(neighbours.ts, 14, 18))
+>a : Symbol(a, Decl(neighbours.ts, 14, 33))
+>T : Symbol(T, Decl(neighbours.ts, 14, 18))
+
+interface B { run<U>(value: U): { a: U; b: U } }
+>B : Symbol(B, Decl(neighbours.ts, 14, 42))
+>run : Symbol(B.run, Decl(neighbours.ts, 15, 13))
+>U : Symbol(U, Decl(neighbours.ts, 15, 18))
+>value : Symbol(value, Decl(neighbours.ts, 15, 21))
+>U : Symbol(U, Decl(neighbours.ts, 15, 18))
+>a : Symbol(a, Decl(neighbours.ts, 15, 33))
+>U : Symbol(U, Decl(neighbours.ts, 15, 18))
+>b : Symbol(b, Decl(neighbours.ts, 15, 39))
+>U : Symbol(U, Decl(neighbours.ts, 15, 18))
+
+declare const ab: A | B
+>ab : Symbol(ab, Decl(neighbours.ts, 16, 13))
+>A : Symbol(A, Decl(neighbours.ts, 13, 34))
+>B : Symbol(B, Decl(neighbours.ts, 14, 42))
+
+export const shapes: never = ab.run(1)
+>shapes : Symbol(shapes, Decl(neighbours.ts, 17, 12))
+>ab.run : Symbol(run, Decl(neighbours.ts, 14, 13), Decl(neighbours.ts, 15, 13))
+>ab : Symbol(ab, Decl(neighbours.ts, 16, 13))
+>run : Symbol(run, Decl(neighbours.ts, 14, 13), Decl(neighbours.ts, 15, 13))
+
+declare const ba: B | A
+>ba : Symbol(ba, Decl(neighbours.ts, 18, 13))
+>B : Symbol(B, Decl(neighbours.ts, 14, 42))
+>A : Symbol(A, Decl(neighbours.ts, 13, 34))
+
+export const shapes2: never = ba.run(1)
+>shapes2 : Symbol(shapes2, Decl(neighbours.ts, 19, 12))
+>ba.run : Symbol(run, Decl(neighbours.ts, 14, 13), Decl(neighbours.ts, 15, 13))
+>ba : Symbol(ba, Decl(neighbours.ts, 18, 13))
+>run : Symbol(run, Decl(neighbours.ts, 14, 13), Decl(neighbours.ts, 15, 13))
+
+declare const both: A & B
+>both : Symbol(both, Decl(neighbours.ts, 20, 13))
+>A : Symbol(A, Decl(neighbours.ts, 13, 34))
+>B : Symbol(B, Decl(neighbours.ts, 14, 42))
+
+export const overloads: never = both.run(1)
+>overloads : Symbol(overloads, Decl(neighbours.ts, 21, 12))
+>both.run : Symbol(run, Decl(neighbours.ts, 14, 13), Decl(neighbours.ts, 15, 13))
+>both : Symbol(both, Decl(neighbours.ts, 20, 13))
+>run : Symbol(run, Decl(neighbours.ts, 14, 13), Decl(neighbours.ts, 15, 13))
+
+async function settle(p: Promise<number> | PromiseLike<number>) {
+>settle : Symbol(settle, Decl(neighbours.ts, 21, 43))
+>p : Symbol(p, Decl(neighbours.ts, 22, 22))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+  const r = p.then(v => v + 1, () => 'failed' as const)
+>r : Symbol(r, Decl(neighbours.ts, 23, 7))
+>p.then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>p : Symbol(p, Decl(neighbours.ts, 22, 22))
+>then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(neighbours.ts, 23, 19))
+>v : Symbol(v, Decl(neighbours.ts, 23, 19))
+>const : Symbol(const)
+
+  const probe: never = r
+>probe : Symbol(probe, Decl(neighbours.ts, 24, 7))
+>r : Symbol(r, Decl(neighbours.ts, 23, 7))
+
+  if ('finally' in r) r.finally(() => {})
+>r : Symbol(r, Decl(neighbours.ts, 23, 7))
+>r.finally : Symbol(Promise.finally, Decl(lib.es2018.promise.d.ts, --, --))
+>r : Symbol(r, Decl(neighbours.ts, 23, 7))
+>finally : Symbol(Promise.finally, Decl(lib.es2018.promise.d.ts, --, --))
+
+  return await r
+>r : Symbol(r, Decl(neighbours.ts, 23, 7))
+}
+export const settled: never = settle(Promise.resolve(1))
+>settled : Symbol(settled, Decl(neighbours.ts, 28, 12))
+>settle : Symbol(settle, Decl(neighbours.ts, 21, 43))
+>Promise.resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+
+export const sentinel: number = ''
+>sentinel : Symbol(sentinel, Decl(neighbours.ts, 29, 12))
+
+=== then_on_a_union.ts ===
+export {}
+declare const p: Promise<number> | PromiseLike<number>
+>p : Symbol(p, Decl(then_on_a_union.ts, 1, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+const r = p.then(v => {})
+>r : Symbol(r, Decl(then_on_a_union.ts, 2, 5))
+>p.then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>p : Symbol(p, Decl(then_on_a_union.ts, 1, 13))
+>then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(then_on_a_union.ts, 2, 17))
+
+export const probe_r: never = r
+>probe_r : Symbol(probe_r, Decl(then_on_a_union.ts, 3, 12))
+>r : Symbol(r, Decl(then_on_a_union.ts, 2, 5))
+
+if ('catch' in r) {
+>r : Symbol(r, Decl(then_on_a_union.ts, 2, 5))
+
+  const narrowed: never = r
+>narrowed : Symbol(narrowed, Decl(then_on_a_union.ts, 5, 7))
+>r : Symbol(r, Decl(then_on_a_union.ts, 2, 5))
+
+  r.catch(reason => {})
+>r.catch : Symbol(Promise.catch, Decl(lib.es5.d.ts, --, --))
+>r : Symbol(r, Decl(then_on_a_union.ts, 2, 5))
+>catch : Symbol(Promise.catch, Decl(lib.es5.d.ts, --, --))
+>reason : Symbol(reason, Decl(then_on_a_union.ts, 6, 10))
+}
+class Holder<T> {
+>Holder : Symbol(Holder, Decl(then_on_a_union.ts, 7, 1))
+>T : Symbol(T, Decl(then_on_a_union.ts, 8, 13))
+
+  promise: Promise<T> | PromiseLike<T>
+>promise : Symbol(Holder.promise, Decl(then_on_a_union.ts, 8, 17))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(then_on_a_union.ts, 8, 13))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(then_on_a_union.ts, 8, 13))
+
+  constructor(arg: Promise<T> | PromiseLike<T>) {
+>arg : Symbol(arg, Decl(then_on_a_union.ts, 10, 14))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(then_on_a_union.ts, 8, 13))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(then_on_a_union.ts, 8, 13))
+
+    this.promise = arg
+>this.promise : Symbol(Holder.promise, Decl(then_on_a_union.ts, 8, 17))
+>this : Symbol(Holder, Decl(then_on_a_union.ts, 7, 1))
+>promise : Symbol(Holder.promise, Decl(then_on_a_union.ts, 8, 17))
+>arg : Symbol(arg, Decl(then_on_a_union.ts, 10, 14))
+
+    const thenReturn = this.promise.then(value => {})
+>thenReturn : Symbol(thenReturn, Decl(then_on_a_union.ts, 12, 9))
+>this.promise.then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>this.promise : Symbol(Holder.promise, Decl(then_on_a_union.ts, 8, 17))
+>this : Symbol(Holder, Decl(then_on_a_union.ts, 7, 1))
+>promise : Symbol(Holder.promise, Decl(then_on_a_union.ts, 8, 17))
+>then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>value : Symbol(value, Decl(then_on_a_union.ts, 12, 41))
+
+    const probe: never = thenReturn
+>probe : Symbol(probe, Decl(then_on_a_union.ts, 13, 9))
+>thenReturn : Symbol(thenReturn, Decl(then_on_a_union.ts, 12, 9))
+
+    if ('catch' in thenReturn) {
+>thenReturn : Symbol(thenReturn, Decl(then_on_a_union.ts, 12, 9))
+
+      const narrowed: never = thenReturn
+>narrowed : Symbol(narrowed, Decl(then_on_a_union.ts, 15, 11))
+>thenReturn : Symbol(thenReturn, Decl(then_on_a_union.ts, 12, 9))
+
+      thenReturn.catch(reason => {})
+>thenReturn.catch : Symbol(Promise.catch, Decl(lib.es5.d.ts, --, --))
+>thenReturn : Symbol(thenReturn, Decl(then_on_a_union.ts, 12, 9))
+>catch : Symbol(Promise.catch, Decl(lib.es5.d.ts, --, --))
+>reason : Symbol(reason, Decl(then_on_a_union.ts, 16, 23))
+    }
+  }
+}
+declare const q: Promise<void> | PromiseLike<void>
+>q : Symbol(q, Decl(then_on_a_union.ts, 20, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+if ('catch' in q) { const narrowed: never = q }
+>q : Symbol(q, Decl(then_on_a_union.ts, 20, 13))
+>narrowed : Symbol(narrowed, Decl(then_on_a_union.ts, 21, 25))
+>q : Symbol(q, Decl(then_on_a_union.ts, 20, 13))
+
+declare const u: PromiseLike<void> | Promise<void>
+>u : Symbol(u, Decl(then_on_a_union.ts, 22, 13))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+const r2 = u.then(() => 1)
+>r2 : Symbol(r2, Decl(then_on_a_union.ts, 23, 5))
+>u.then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>u : Symbol(u, Decl(then_on_a_union.ts, 22, 13))
+>then : Symbol(then, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+export const probe_r2: never = r2
+>probe_r2 : Symbol(probe_r2, Decl(then_on_a_union.ts, 24, 12))
+>r2 : Symbol(r2, Decl(then_on_a_union.ts, 23, 5))
+
+declare const both: { then(cb: () => void): Promise<void> } | { then(cb: () => void): PromiseLike<void> }
+>both : Symbol(both, Decl(then_on_a_union.ts, 25, 13))
+>then : Symbol(then, Decl(then_on_a_union.ts, 25, 21))
+>cb : Symbol(cb, Decl(then_on_a_union.ts, 25, 27))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>then : Symbol(then, Decl(then_on_a_union.ts, 25, 63))
+>cb : Symbol(cb, Decl(then_on_a_union.ts, 25, 69))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --))
+
+export const probe_both: never = both.then(() => {})
+>probe_both : Symbol(probe_both, Decl(then_on_a_union.ts, 26, 12))
+>both.then : Symbol(then, Decl(then_on_a_union.ts, 25, 21), Decl(then_on_a_union.ts, 25, 63))
+>both : Symbol(both, Decl(then_on_a_union.ts, 25, 13))
+>then : Symbol(then, Decl(then_on_a_union.ts, 25, 21), Decl(then_on_a_union.ts, 25, 63))
+

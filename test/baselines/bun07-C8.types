@@ -1,0 +1,23 @@
+//// [test/cases/bun07-C8.ts] ////
+
+=== a.ts ===
+export {};
+interface C<T> { v: T }
+>v : T
+
+class C<const T> { constructor(x: T) { } }
+>C : C<T>
+>x : T
+
+const p1: number = new C([1, 2]);
+>p1 : number
+>new C([1, 2]) : C<readonly [1, 2]>
+>C : typeof C
+>[1, 2] : [1, 2]
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

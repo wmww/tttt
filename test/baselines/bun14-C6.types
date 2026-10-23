@@ -1,0 +1,19 @@
+//// [test/cases/bun14-C6.ts] ////
+
+=== a.ts ===
+interface MJ { readonly a: number }
+>a : number
+
+class MJ { readonly a: number; constructor() { this.a = 1; } }
+>MJ : MJ
+>a : number
+>this.a = 1 : 1
+>this.a : any
+>this : this
+>a : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

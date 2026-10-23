@@ -1,0 +1,30 @@
+//// [test/cases/bun19-C3c.ts] ////
+
+=== a.ts ===
+import * as m4 from "./m4";
+>m4 : Symbol(m4, Decl(a.ts, 0, 6))
+
+declare function pick<T>(x: { a?: T }): T;
+>pick : Symbol(pick, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>x : Symbol(x, Decl(a.ts, 1, 25))
+>a : Symbol(a, Decl(a.ts, 1, 29))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+
+const t: string = pick(m4);
+>t : Symbol(t, Decl(a.ts, 2, 5))
+>pick : Symbol(pick, Decl(a.ts, 0, 27))
+>m4 : Symbol(m4, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== m1.ts ===
+export const a = 1;
+>a : Symbol(a, Decl(m1.ts, 0, 12))
+
+=== m4.ts ===
+
+export type * from "./m1";
+

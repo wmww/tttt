@@ -1,0 +1,12 @@
+//// [test/cases/bun25-C17c.ts] ////
+
+=== a.js ===
+/** @param {number} z */ function j() { const arguments = 1; }
+>j : () => void
+>arguments : 1
+>1 : 1
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun23-C10.ts] ////
+
+=== a.ts ===
+const s1: { (c: typeof Symbol.iterator): void } = {};
+>s1 : (c: typeof Symbol.iterator) => void
+>c : unique symbol
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

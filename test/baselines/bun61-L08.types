@@ -1,0 +1,33 @@
+//// [test/cases/bun61-L08.ts] ////
+
+=== a.ts ===
+export const a = f();
+>a : number
+>f() : number
+>f : () => number
+
+export async function g() {}
+>g : () => Promise<void>
+
+function f() { return C.get(new C()); }
+>f : () => number
+>C.get(new C()) : number
+>C.get : (c: C) => number
+>C : typeof C
+>get : (c: C) => number
+>new C() : C
+>C : typeof C
+
+class C { #x = 1; static get(c: C) { return c.#x; } }
+>C : C
+>#x : number
+>1 : 1
+>get : (c: C) => number
+>c : C
+>c.#x : number
+>c : C
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

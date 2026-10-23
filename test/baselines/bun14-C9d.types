@@ -1,0 +1,31 @@
+//// [test/cases/bun14-C9d.ts] ////
+
+=== a.ts ===
+function mk<T>(t: T) { return {}; }
+>mk : <T>(t: T) => {}
+>t : T
+>{} : {}
+
+const r = mk(1);
+>r : {}
+>mk(1) : {}
+>mk : <T>(t: T) => {}
+>1 : 1
+
+r.toString;
+>r.toString : () => string
+>r : {}
+>toString : () => string
+
+declare let x: typeof r & string;
+>x : string
+>r : {}
+
+const e: number = x;
+>e : number
+>x : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

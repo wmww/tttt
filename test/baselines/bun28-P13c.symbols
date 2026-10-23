@@ -1,0 +1,13 @@
+//// [test/cases/bun28-P13c.ts] ////
+
+=== a.ts ===
+let b: any;
+>b : Symbol(b, Decl(a.ts, 0, 3))
+
+({ 1n: b } = {} as any);
+>1n : Symbol(1n, Decl(a.ts, 1, 2))
+>b : Symbol(b, Decl(a.ts, 0, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,41 @@
+a.ts(1,4): error TS1042: 'abstract' modifier cannot be used here.
+a.ts(1,4): error TS1244: Abstract methods can only appear within an abstract class.
+a.ts(2,4): error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+a.ts(2,4): error TS1042: 'readonly' modifier cannot be used here.
+a.ts(3,10): error TS1029: 'public' modifier must precede 'async' modifier.
+a.ts(3,10): error TS1042: 'public' modifier cannot be used here.
+a.ts(4,4): error TS1042: 'public' modifier cannot be used here.
+a.ts(4,11): error TS1028: Accessibility modifier already seen.
+a.ts(4,11): error TS1042: 'public' modifier cannot be used here.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (10 errors) ====
+    ({ abstract e() {} });
+       ~~~~~~~~
+!!! error TS1042: 'abstract' modifier cannot be used here.
+       ~~~~~~~~
+!!! error TS1244: Abstract methods can only appear within an abstract class.
+    ({ readonly m() {} });
+       ~~~~~~~~
+!!! error TS1024: 'readonly' modifier can only appear on a property declaration or index signature.
+       ~~~~~~~~
+!!! error TS1042: 'readonly' modifier cannot be used here.
+    ({ async public m() {} });
+             ~~~~~~
+!!! error TS1029: 'public' modifier must precede 'async' modifier.
+             ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    ({ public public m() {} });
+       ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+              ~~~~~~
+!!! error TS1028: Accessibility modifier already seen.
+              ~~~~~~
+!!! error TS1042: 'public' modifier cannot be used here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

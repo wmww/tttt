@@ -1,0 +1,18 @@
+a.ts(1,42): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(2,3): error TS2540: Cannot assign to 'a' because it is a read-only property.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export const o = { get a() { return 1 }, a: 2 };
+                                             ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o.a = 3;
+      ~
+!!! error TS2540: Cannot assign to 'a' because it is a read-only property.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

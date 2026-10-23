@@ -1,0 +1,21 @@
+//// [test/cases/bun10-C9.ts] ////
+
+=== a.ts ===
+const a1 = [{ p: { get g() { return a1; } } }, { p: { b: 1 } }];
+>a1 : ({ p: { readonly g: any; b?: undefined; }; } | { p: { readonly g?: undefined; b: number; }; })[]
+>[{ p: { get g() { return a1; } } }, { p: { b: 1 } }] : ({ p: { readonly g: ({ p: { readonly g: any; b?: undefined; }; } | { p: { readonly g?: undefined; b: number; }; })[]; }; } | { p: { b: number; }; })[]
+>{ p: { get g() { return a1; } } } : { p: { readonly g: ({ p: { readonly g: any; b?: undefined; }; } | { p: { readonly g?: undefined; b: number; }; })[]; }; }
+>p : { readonly g: ({ p: { readonly g: any; b?: undefined; }; } | { p: { readonly g?: undefined; b: number; }; })[]; }
+>{ get g() { return a1; } } : { readonly g: ({ p: { readonly g: any; b?: undefined; }; } | { p: { readonly g?: undefined; b: number; }; })[]; }
+>g : ({ p: { readonly g: any; b?: undefined; }; } | { p: { readonly g?: undefined; b: number; }; })[]
+>a1 : ({ p: { readonly g: any; b?: undefined; }; } | { p: { readonly g?: undefined; b: number; }; })[]
+>{ p: { b: 1 } } : { p: { b: number; }; }
+>p : { b: number; }
+>{ b: 1 } : { b: number; }
+>b : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

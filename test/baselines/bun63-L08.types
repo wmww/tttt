@@ -1,0 +1,34 @@
+//// [test/cases/bun63-L08.ts] ////
+
+=== a.ts ===
+declare const bad: { [Symbol.iterator](): { next(): { done: boolean; value: number }; return: number } };
+>bad : { [Symbol.iterator](): { next(): { done: boolean; value: number; }; return: number; }; }
+>[Symbol.iterator] : () => { next(): { done: boolean; value: number; }; return: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => { done: boolean; value: number; }
+>done : boolean
+>value : number
+>return : number
+
+declare function f(...a: number[]): void;
+>f : (...a: number[]) => void
+>a : number[]
+
+f(...bad);
+>f(...bad) : void
+>f : (...a: number[]) => void
+>...bad : number
+>bad : { [Symbol.iterator](): { next(): { done: boolean; value: number; }; return: number; }; }
+
+const arr = [...bad];
+>arr : number[]
+>[...bad] : number[]
+>...bad : number
+>bad : { [Symbol.iterator](): { next(): { done: boolean; value: number; }; return: number; }; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

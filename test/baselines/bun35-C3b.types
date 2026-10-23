@@ -1,0 +1,10 @@
+//// [test/cases/bun35-C3b.ts] ////
+
+=== a.ts ===
+import j = require("j");
+>j : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

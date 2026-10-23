@@ -1,0 +1,21 @@
+//// [test/cases/bun05-C10a.ts] ////
+
+=== a.ts ===
+async function imp() { const i2: number = await import(("./m")); }
+>imp : () => Promise<void>
+>i2 : number
+>await import(("./m")) : any
+>import(("./m")) : Promise<any>
+>("./m") : "./m"
+>"./m" : "./m"
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const v = 1;
+>v : 1
+>1 : 1
+

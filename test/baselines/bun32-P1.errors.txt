@@ -1,0 +1,17 @@
+a.ts(1,11): error TS18004: No value exists in scope for the shorthand property 'static'. Either declare one or provide an initializer.
+a.ts(1,18): error TS1005: ',' expected.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    ({ static static m() {} });
+              ~~~~~~
+!!! error TS18004: No value exists in scope for the shorthand property 'static'. Either declare one or provide an initializer.
+                     ~
+!!! error TS1005: ',' expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

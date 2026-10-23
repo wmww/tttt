@@ -1,0 +1,18 @@
+//// [test/cases/bun33-C14c.ts] ////
+
+=== j.js ===
+exports.a = 1;
+>exports.a = 1 : 1
+>exports.a : 1
+>exports : typeof import("./j")
+>a : 1
+>1 : 1
+
+declare global { }
+>global : typeof global
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

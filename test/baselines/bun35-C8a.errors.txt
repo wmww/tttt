@@ -1,0 +1,15 @@
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "typeRoots": ["./types"], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    import { C as C1 } from "modroot";
+    import { C as C2 } from "modroot/";
+    export const c: C1 = new C2();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== types/modroot/index.d.ts (0 errors) ====
+    export declare class C { private p; }
+    

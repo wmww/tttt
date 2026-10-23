@@ -1,0 +1,6 @@
+//// [test/cases/bun43-X5d.ts] ////
+
+=== a.ts ===
+let y = a + b >>= 1;
+>y : Symbol(y, Decl(a.ts, 0, 3))
+

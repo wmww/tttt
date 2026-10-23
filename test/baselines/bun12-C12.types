@@ -1,0 +1,23 @@
+//// [test/cases/bun12-C12.ts] ////
+
+=== a.ts ===
+class C<T> {
+>C : C<T>
+
+  m1(x = 1): void {}
+>m1 : (x?: number) => void
+>x : number
+>1 : 1
+}
+type U = C<string>["m1"] | C<number>["m1"];
+>U : (x?: number) => void
+
+const n: never = null! as U;
+>n : never
+>null! as U : (x?: number) => void
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

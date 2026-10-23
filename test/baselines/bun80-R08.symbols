@@ -1,0 +1,26 @@
+//// [test/cases/bun80-R08.ts] ////
+
+=== a.ts ===
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+
+const c1 = @dec abstract class { abstract m(): void };
+>c1 : Symbol(c1, Decl(a.ts, 1, 5))
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>m : Symbol(c1.m, Decl(a.ts, 1, 32))
+
+const c2 = @dec public class {};
+>c2 : Symbol(c2, Decl(a.ts, 2, 5))
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+
+const c3 = (@dec export default class {});
+>c3 : Symbol(c3, Decl(a.ts, 3, 5))
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+
+new c1();
+>c1 : Symbol(c1, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

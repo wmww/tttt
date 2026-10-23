@@ -1,0 +1,52 @@
+//// [test/cases/bun55-L12b.ts] ////
+
+=== a.ts ===
+namespace NS { export let a = 1; }
+>NS : typeof NS
+>a : number
+>1 : 1
+
+const k1 = c1({});
+>k1 : any
+>c1({}) : any
+>c1 : (p: any) => any
+>{} : {}
+
+function c1(p: any) { if (p?.[k1].b) {} return (NS satisfies {})["a"]; }
+>c1 : (p: any) => any
+>p : any
+>p?.[k1].b : any
+>p?.[k1] : any
+>p : any
+>k1 : any
+>b : any
+>(NS satisfies {})["a"] : number
+>(NS satisfies {}) : typeof NS
+>NS satisfies {} : typeof NS
+>NS : typeof NS
+>"a" : "a"
+
+// without `satisfies`: TS7023 in both
+const k2 = c2({});
+>k2 : any
+>c2({}) : any
+>c2 : (p: any) => any
+>{} : {}
+
+function c2(p: any) { if (p?.[k2].b) {} return (NS)["a"]; }
+>c2 : (p: any) => any
+>p : any
+>p?.[k2].b : any
+>p?.[k2] : any
+>p : any
+>k2 : any
+>b : any
+>(NS)["a"] : number
+>(NS) : typeof NS
+>NS : typeof NS
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

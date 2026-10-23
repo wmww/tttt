@@ -1,0 +1,14 @@
+//// [test/cases/bun25-C13.ts] ////
+
+=== a.ts ===
+class S { set c(this: string) {} } new S().c = 1;
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>c : Symbol(S.c, Decl(a.ts, 0, 9))
+>this : Symbol(this, Decl(a.ts, 0, 16))
+>new S().c : Symbol(S.c, Decl(a.ts, 0, 9))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>c : Symbol(S.c, Decl(a.ts, 0, 9))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

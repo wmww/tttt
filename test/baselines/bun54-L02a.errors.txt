@@ -1,0 +1,86 @@
+a.ts(1,16): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(1,25): error TS2304: Cannot find name 'xxx'.
+a.ts(2,17): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(3,17): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(3,26): error TS2303: Circular definition of import alias 'zzz'.
+a.ts(4,32): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(5,17): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(5,26): error TS2304: Cannot find name 'ttt'.
+a.ts(6,17): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(6,26): error TS2304: Cannot find name 'rrr'.
+a.ts(7,15): error TS1194: Export declarations are not permitted in a namespace.
+a.ts(7,24): error TS2304: Cannot find name 'nnn'.
+a.ts(8,3): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+a.ts(8,12): error TS2304: Cannot find name 'bbb'.
+a.ts(8,26): error TS2304: Cannot find name 'ccc'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(1,3): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+b.ts(1,12): error TS2304: Cannot find name 'b1'.
+b.ts(2,3): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+b.ts(2,12): error TS2304: Cannot find name 'b3'.
+b.ts(3,17): error TS1233: An export declaration can only be used at the top level of a namespace or module.
+b.ts(3,26): error TS2304: Cannot find name 'b5'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (16 errors) ====
+    function h() { export { xxx as www }; www; }
+                   ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                            ~~~
+!!! error TS2304: Cannot find name 'xxx'.
+    function h2() { export { yyy as vvv }; }
+                    ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+    function h3() { export { zzz }; zzz; }
+                    ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                             ~~~
+!!! error TS2303: Circular definition of import alias 'zzz'.
+    function h4() { const loc = 1; export { loc as uuu }; uuu; }
+                                   ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+    function h5() { export { ttt as sss }; let q: sss; }
+                    ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                             ~~~
+!!! error TS2304: Cannot find name 'ttt'.
+    function h6() { export { rrr as ppp }; let q: typeof ppp; }
+                    ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                             ~~~
+!!! error TS2304: Cannot find name 'rrr'.
+    namespace N { export { nnn as mmm }; mmm; }
+                  ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                           ~~~
+!!! error TS2304: Cannot find name 'nnn'.
+    { export { bbb as ccc }; ccc; }
+      ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+               ~~~
+!!! error TS2304: Cannot find name 'bbb'.
+                             ~~~
+!!! error TS2304: Cannot find name 'ccc'.
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (6 errors) ====
+    { export { b1 as b2 }; }
+      ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+               ~~
+!!! error TS2304: Cannot find name 'b1'.
+    { export { b3 as b4 }; b4; }
+      ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+               ~~
+!!! error TS2304: Cannot find name 'b3'.
+    function hb() { export { b5 as b6 }; b6; }
+                    ~~~~~~
+!!! error TS1233: An export declaration can only be used at the top level of a namespace or module.
+                             ~~
+!!! error TS2304: Cannot find name 'b5'.
+    

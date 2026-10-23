@@ -1,0 +1,28 @@
+//// [test/cases/bun21-C9b.ts] ////
+
+=== a.ts ===
+declare const sy: unique symbol;
+>sy : unique symbol
+
+function g({ [sy]: k, v }: { [sy]: "a"; v: string } | { [sy]: "b"; v: number }) { if (k === "a") v.length; }
+>g : ({ [sy]: k, v }: { [sy]: "a"; v: string; } | { [sy]: "b"; v: number; }) => void
+>sy : unique symbol
+>k : "a" | "b"
+>v : string | number
+>[sy] : "a"
+>sy : unique symbol
+>v : string
+>[sy] : "b"
+>sy : unique symbol
+>v : number
+>k === "a" : boolean
+>k : "a" | "b"
+>"a" : "a"
+>v.length : any
+>v : string | number
+>length : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

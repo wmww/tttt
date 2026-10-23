@@ -1,0 +1,15 @@
+a.ts(2,27): error TS7027: Unreachable code detected.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowUnreachableCode": false } }
+==== a.ts (2 errors) ====
+    const fail = (): never => { throw 0; };
+    function g() { fail(), 0; g; }
+                              ~~
+!!! error TS7027: Unreachable code detected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

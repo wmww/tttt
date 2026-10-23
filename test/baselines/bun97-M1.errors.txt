@@ -1,0 +1,113 @@
+a.ts(1,10): error TS6133: 'I' is declared but its value is never read.
+a.ts(2,22): error TS2693: 'I' only refers to a type, but is being used as a value here.
+b.ts(1,10): error TS6133: 'A' is declared but its value is never read.
+b.ts(2,18): error TS2693: 'A' only refers to a type, but is being used as a value here.
+c.ts(1,10): error TS6133: 'N' is declared but its value is never read.
+c.ts(2,18): error TS2708: Cannot use namespace 'N' as a value.
+d.ts(1,11): error TS6196: 'J' is declared but never used.
+d.ts(2,18): error TS2693: 'J' only refers to a type, but is being used as a value here.
+f.ts(2,22): error TS1361: 'K' cannot be used as a value because it was imported using 'import type'.
+g.ts(2,18): error TS2693: 'I' only refers to a type, but is being used as a value here.
+h.ts(1,1): error TS6192: All imports in import declaration are unused.
+h.ts(2,18): error TS2693: 'I' only refers to a type, but is being used as a value here.
+h.ts(3,18): error TS2693: 'A' only refers to a type, but is being used as a value here.
+j.ts(1,10): error TS6133: 'I' is declared but its value is never read.
+j.ts(2,20): error TS2693: 'I' only refers to a type, but is being used as a value here.
+l.ts(1,10): error TS6133: 'I' is declared but its value is never read.
+l.ts(2,34): error TS2693: 'I' only refers to a type, but is being used as a value here.
+z.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {
+     "compilerOptions": {
+      "strict": true,
+      "noEmit": true,
+      "target": "esnext",
+      "module": "esnext",
+      "moduleResolution": "bundler",
+      "lib": [
+       "esnext"
+      ],
+      "types": [],
+      "skipLibCheck": true,
+      "noUnusedLocals": true
+     }
+    }
+==== a.ts (2 errors) ====
+    import { I } from "./lib";
+             ~
+!!! error TS6133: 'I' is declared but its value is never read.
+    export const v = 1 & I;
+                         ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+==== b.ts (2 errors) ====
+    import { A } from "./lib";
+             ~
+!!! error TS6133: 'A' is declared but its value is never read.
+    export const v = A;
+                     ~
+!!! error TS2693: 'A' only refers to a type, but is being used as a value here.
+==== c.ts (2 errors) ====
+    import { N } from "./lib";
+             ~
+!!! error TS6133: 'N' is declared but its value is never read.
+    export const v = N;
+                     ~
+!!! error TS2708: Cannot use namespace 'N' as a value.
+==== d.ts (2 errors) ====
+    interface J { x: number }
+              ~
+!!! error TS6196: 'J' is declared but never used.
+    export const v = J;
+                     ~
+!!! error TS2693: 'J' only refers to a type, but is being used as a value here.
+==== f.ts (1 errors) ====
+    import type { K } from "./lib";
+    export const v = new K();
+                         ~
+!!! error TS1361: 'K' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 f.ts:1:15: 'K' was imported here.
+==== g.ts (1 errors) ====
+    import { I } from "./lib";
+    export const v = I;
+                     ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+    export const w: I = { x: 1 };
+==== h.ts (3 errors) ====
+    import { I, A } from "./lib";
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS6192: All imports in import declaration are unused.
+    export const v = I.x;
+                     ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+    export const w = A();
+                     ~
+!!! error TS2693: 'A' only refers to a type, but is being used as a value here.
+==== j.ts (2 errors) ====
+    import { I } from "./lib";
+             ~
+!!! error TS6133: 'I' is declared but its value is never read.
+    export const v = { I };
+                       ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+==== k.ts (0 errors) ====
+    import { I } from "./lib";
+    export { I };
+==== l.ts (2 errors) ====
+    import { I } from "./lib";
+             ~
+!!! error TS6133: 'I' is declared but its value is never read.
+    export const v = ({}) instanceof I;
+                                     ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+==== lib.ts (0 errors) ====
+    export interface I { x: number }
+    export type A = { y: number };
+    export declare namespace N { interface T {} }
+    export class K {}
+==== z.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

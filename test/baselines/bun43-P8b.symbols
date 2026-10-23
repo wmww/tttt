@@ -1,0 +1,13 @@
+//// [test/cases/bun43-P8b.ts] ////
+
+=== a.ts ===
+export * as #a from "./m";
+>#a : Symbol(#a, Decl(a.ts, 0, 6))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 12))
+
+=== m.ts ===
+export const a = 1;
+>a : Symbol(a, Decl(m.ts, 0, 12))
+

@@ -1,0 +1,41 @@
+//// [test/cases/bun16-C2.ts] ////
+
+=== a.ts ===
+type AB = { kind: "a", a: 1, f(): void } | { kind: "b", b: 2 };
+>AB : Symbol(AB, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+>f : Symbol(f, Decl(a.ts, 0, 28))
+>kind : Symbol(kind, Decl(a.ts, 0, 44))
+>b : Symbol(b, Decl(a.ts, 0, 55))
+
+function f1<T extends AB>(x: T) {
+>f1 : Symbol(f1, Decl(a.ts, 0, 63))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+>AB : Symbol(AB, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+>T : Symbol(T, Decl(a.ts, 1, 12))
+
+  if (x.kind === "a") {
+>x.kind : Symbol(kind, Decl(a.ts, 0, 11), Decl(a.ts, 0, 44))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+>kind : Symbol(kind, Decl(a.ts, 0, 11), Decl(a.ts, 0, 44))
+
+    x.a;
+>x.a : Symbol(a, Decl(a.ts, 0, 22))
+>x : Symbol(x, Decl(a.ts, 1, 26))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+
+    (x).a;
+>x : Symbol(x, Decl(a.ts, 1, 26))
+
+    (x)["a"];
+>x : Symbol(x, Decl(a.ts, 1, 26))
+
+    (x).f();
+>x : Symbol(x, Decl(a.ts, 1, 26))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

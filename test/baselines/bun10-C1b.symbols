@@ -1,0 +1,17 @@
+//// [test/cases/bun10-C1b.ts] ////
+
+=== a.ts ===
+function i2<T>(x: T, y = i2(x, undefined)) { return x; }
+>i2 : Symbol(i2, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 15))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>y : Symbol(y, Decl(a.ts, 0, 20))
+>i2 : Symbol(i2, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 15))
+>undefined : Symbol(undefined)
+>x : Symbol(x, Decl(a.ts, 0, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

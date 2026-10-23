@@ -1,0 +1,9 @@
+//// [test/cases/bun30-C5a.ts] ////
+
+=== a.ts ===
+{ declare module "a*b*c" {} }
+>"a*b*c" : Symbol("a*b*c", Decl(a.ts, 0, 1))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

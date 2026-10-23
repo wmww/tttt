@@ -1,0 +1,18 @@
+a.ts(1,62): error TS7022: 'z' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(2,24): error TS2303: Circular definition of import alias 'B'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export namespace N10 { export import A = M10.B; export const z = A; }
+                                                                 ~
+!!! error TS7022: 'z' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    export namespace M10 { export import B = N10.z; }
+                           ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'B'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

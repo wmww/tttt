@@ -1,0 +1,11 @@
+//// [test/cases/bun29-P5.ts] ////
+
+=== a.ts ===
+let n: number = (x: { 1n: 6 }) => 1;
+>n : Symbol(n, Decl(a.ts, 0, 3))
+>x : Symbol(x, Decl(a.ts, 0, 17))
+>1n : Symbol(1n, Decl(a.ts, 0, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

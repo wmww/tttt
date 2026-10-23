@@ -1,0 +1,15 @@
+//// [test/cases/bun02-C23b.ts] ////
+
+=== a.ts ===
+type W1 = { [in K: string]: 1 };
+>W1 : W1
+>K : string
+
+type W2 = { [out K: string]: 1 };
+>W2 : W2
+>K : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

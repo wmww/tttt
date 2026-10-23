@@ -1,0 +1,16 @@
+//// [test/cases/bun15-C4c.ts] ////
+
+=== a.ts ===
+const g1: { 3: number } = { get [+3]() { return 1; } };
+>g1 : { 3: number; }
+>3 : number
+>{ get [+3]() { return 1; } } : { readonly "+3": number; }
+>[+3] : number
+>+3 : 3
+>3 : 3
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

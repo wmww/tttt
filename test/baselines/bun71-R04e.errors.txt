@@ -1,0 +1,49 @@
+a.ts(6,9): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(7,9): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(8,9): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(14,5): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(15,5): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(16,5): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(18,44): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    export {};
+    declare function use(...x: any[]): void;
+    class G<T> { f() {} g(): void {} h(x: T): T { return x; } }
+    class A { f() {} g(): void {} p = () => {};
+      m(other: A) {
+        use(this.f && other.f());
+            ~~~~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+        use(this.p && other.p());
+            ~~~~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+        use(other.f && this.f());
+            ~~~~~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+        use(this.g && other.g());
+        use(this.f && this.f());
+      }
+    }
+    declare const g1: G<number>, g2: G<string>, g3: G<number>;
+    use(g1.f && g2.f());
+        ~~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    use(g1.g && g2.g());
+        ~~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    use(g1.h && g2.h(""));
+        ~~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    use(g1.f && g3.f());
+    function tp<T extends A>(t: T, a: A) { use(t.f && a.f()); use(t.g && a.g()); use(t.f && t.f()); }
+                                               ~~~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,51 @@
+//// [test/cases/bun73-R03c.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : () => boolean
+
+function f() {
+>f : () => void
+
+  let x = []; const y = [];
+>x : any[]
+>[] : never[]
+>y : any[]
+>[] : never[]
+
+  while (c()) {
+>c() : boolean
+>c : () => boolean
+
+    do {
+      if (x.length) { for (y.push(0); (x = []); ) { } }
+>x.length : number
+>x : any[]
+>length : number
+>y.push(0) : number
+>y.push : (...items: any[]) => number
+>y : any[]
+>push : (...items: any[]) => number
+>0 : 0
+>(x = []) : never[]
+>x = [] : never[]
+>x : any[]
+>[] : never[]
+
+      else { if (x === y) return; }
+>x === y : boolean
+>x : number[]
+>y : number[]
+
+    } while (x.push(1));
+>x.push(1) : number
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+>1 : 1
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+//// [test/cases/bun36-C6.ts] ////
+
+=== a.ts ===
+import { which } from "p/x";
+>which : "ts/x"
+
+const x: 0 = which;
+>x : 0
+>which : "ts/x"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/p/ts/x.d.ts ===
+export declare const which: "ts/x";
+>which : "ts/x"
+

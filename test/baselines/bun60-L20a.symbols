@@ -1,0 +1,103 @@
+//// [test/cases/bun60-L20a.ts] ////
+
+=== a.ts ===
+const k = "foo";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+class C1 { get foo() { return 1; } set [k](v: number) {} }
+>C1 : Symbol(C1, Decl(a.ts, 0, 16))
+>foo : Symbol(C1.foo, Decl(a.ts, 1, 10), Decl(a.ts, 1, 34))
+>[k] : Symbol(C1.foo, Decl(a.ts, 1, 10), Decl(a.ts, 1, 34))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 1, 43))
+
+new C1().foo = 2;
+>new C1().foo : Symbol(C1.foo, Decl(a.ts, 1, 10), Decl(a.ts, 1, 34))
+>C1 : Symbol(C1, Decl(a.ts, 0, 16))
+>foo : Symbol(C1.foo, Decl(a.ts, 1, 10), Decl(a.ts, 1, 34))
+
+class C3 { static get foo() { return 1; } static set [k](v: number) {} }
+>C3 : Symbol(C3, Decl(a.ts, 2, 17))
+>foo : Symbol(C3.foo, Decl(a.ts, 3, 10), Decl(a.ts, 3, 41))
+>[k] : Symbol(C3.foo, Decl(a.ts, 3, 10), Decl(a.ts, 3, 41))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 3, 57))
+
+C3.foo = 2;
+>C3.foo : Symbol(C3.foo, Decl(a.ts, 3, 10), Decl(a.ts, 3, 41))
+>C3 : Symbol(C3, Decl(a.ts, 2, 17))
+>foo : Symbol(C3.foo, Decl(a.ts, 3, 10), Decl(a.ts, 3, 41))
+
+class C6 { set [k](v: number) {} get foo() { return 1; } }
+>C6 : Symbol(C6, Decl(a.ts, 4, 11))
+>[k] : Symbol(C6.foo, Decl(a.ts, 5, 32), Decl(a.ts, 5, 10))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 5, 19))
+>foo : Symbol(C6.foo, Decl(a.ts, 5, 32), Decl(a.ts, 5, 10))
+
+new C6().foo = 2;
+>new C6().foo : Symbol(C6.foo, Decl(a.ts, 5, 32), Decl(a.ts, 5, 10))
+>C6 : Symbol(C6, Decl(a.ts, 4, 11))
+>foo : Symbol(C6.foo, Decl(a.ts, 5, 32), Decl(a.ts, 5, 10))
+
+declare const v5: { get foo(): 1; set [k](v: 2) }; v5.foo = 2;
+>v5 : Symbol(v5, Decl(a.ts, 7, 13))
+>foo : Symbol(foo, Decl(a.ts, 7, 19), Decl(a.ts, 7, 33))
+>[k] : Symbol(foo, Decl(a.ts, 7, 19), Decl(a.ts, 7, 33))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 7, 42))
+>v5.foo : Symbol(foo, Decl(a.ts, 7, 19), Decl(a.ts, 7, 33))
+>v5 : Symbol(v5, Decl(a.ts, 7, 13))
+>foo : Symbol(foo, Decl(a.ts, 7, 19), Decl(a.ts, 7, 33))
+
+interface I7 { get foo(): 1; set [k](v: 2) } declare const i7: I7; i7.foo = 2;
+>I7 : Symbol(I7, Decl(a.ts, 7, 62))
+>foo : Symbol(I7.foo, Decl(a.ts, 8, 14), Decl(a.ts, 8, 28))
+>[k] : Symbol(I7.foo, Decl(a.ts, 8, 14), Decl(a.ts, 8, 28))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 8, 37))
+>i7 : Symbol(i7, Decl(a.ts, 8, 58))
+>I7 : Symbol(I7, Decl(a.ts, 7, 62))
+>i7.foo : Symbol(I7.foo, Decl(a.ts, 8, 14), Decl(a.ts, 8, 28))
+>i7 : Symbol(i7, Decl(a.ts, 8, 58))
+>foo : Symbol(I7.foo, Decl(a.ts, 8, 14), Decl(a.ts, 8, 28))
+
+declare const v7: { foo: number; get [k](): string }; const n7: null = v7; v7.foo = "";
+>v7 : Symbol(v7, Decl(a.ts, 9, 13))
+>foo : Symbol(foo, Decl(a.ts, 9, 19), Decl(a.ts, 9, 32))
+>[k] : Symbol(foo, Decl(a.ts, 9, 19), Decl(a.ts, 9, 32))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>n7 : Symbol(n7, Decl(a.ts, 9, 59))
+>v7 : Symbol(v7, Decl(a.ts, 9, 13))
+>v7.foo : Symbol(foo, Decl(a.ts, 9, 19), Decl(a.ts, 9, 32))
+>v7 : Symbol(v7, Decl(a.ts, 9, 13))
+>foo : Symbol(foo, Decl(a.ts, 9, 19), Decl(a.ts, 9, 32))
+
+class C2 { get [k]() { return 1; } set foo(v: number) {} }
+>C2 : Symbol(C2, Decl(a.ts, 9, 87))
+>[k] : Symbol(C2.foo, Decl(a.ts, 10, 34), Decl(a.ts, 10, 10))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>foo : Symbol(C2.foo, Decl(a.ts, 10, 34), Decl(a.ts, 10, 10))
+>v : Symbol(v, Decl(a.ts, 10, 43))
+
+new C2().foo = 2;
+>new C2().foo : Symbol(C2.foo, Decl(a.ts, 10, 34), Decl(a.ts, 10, 10))
+>C2 : Symbol(C2, Decl(a.ts, 9, 87))
+>foo : Symbol(C2.foo, Decl(a.ts, 10, 34), Decl(a.ts, 10, 10))
+
+class C8 { get [k]() { return 1; } set [k](v: number) {} }
+>C8 : Symbol(C8, Decl(a.ts, 11, 17))
+>[k] : Symbol(C8[k], Decl(a.ts, 12, 10), Decl(a.ts, 12, 34))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>[k] : Symbol(C8[k], Decl(a.ts, 12, 10), Decl(a.ts, 12, 34))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 12, 43))
+
+new C8().foo = 2;
+>new C8().foo : Symbol(C8[k], Decl(a.ts, 12, 10), Decl(a.ts, 12, 34))
+>C8 : Symbol(C8, Decl(a.ts, 11, 17))
+>foo : Symbol(C8[k], Decl(a.ts, 12, 10), Decl(a.ts, 12, 34))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 14, 5))
+

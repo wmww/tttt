@@ -1,0 +1,16 @@
+//// [test/cases/bun93-R01c.ts] ////
+
+=== a.ts ===
+type M = { [K in "a" | "b" as A]: N["a"] };
+>M : M
+
+type A = M["a"] & string;
+>A : any
+
+interface N { a: M["b"] }
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

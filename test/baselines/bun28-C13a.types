@@ -1,0 +1,15 @@
+//// [test/cases/bun28-C13a.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+declare class A { @dec x: any }
+>A : A
+>dec : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

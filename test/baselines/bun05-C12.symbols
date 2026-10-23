@@ -1,0 +1,18 @@
+//// [test/cases/bun05-C12.ts] ////
+
+=== a.ts ===
+declare function lo2(x: string): 1;
+>lo2 : Symbol(lo2, Decl(a.ts, 0, 0), Decl(a.ts, 0, 35))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+
+declare function lo2(x: ("a")): 2;
+>lo2 : Symbol(lo2, Decl(a.ts, 0, 0), Decl(a.ts, 0, 35))
+>x : Symbol(x, Decl(a.ts, 1, 21))
+
+const lr2: 3 = lo2("a");
+>lr2 : Symbol(lr2, Decl(a.ts, 2, 5))
+>lo2 : Symbol(lo2, Decl(a.ts, 0, 0), Decl(a.ts, 0, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

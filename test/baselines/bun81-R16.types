@@ -1,0 +1,150 @@
+//// [test/cases/bun81-R16.ts] ////
+
+=== a.ts ===
+declare function run<T>(f: () => T): T;
+>run : <T>(f: () => T) => T
+>f : () => T
+
+function k6(ns: string[]) {
+>k6 : (ns: string[]) => void
+>ns : string[]
+
+    let last: string | null = null;
+>last : string | null
+
+    for (const n of ns) {
+>n : string
+>ns : string[]
+
+        if (n === last) continue;
+>n === last : boolean
+>n : string
+>last : string | null
+
+        last = run(() => n);
+>last = run(() => n) : string
+>last : string | null
+>run(() => n) : string
+>run : <T>(f: () => T) => T
+>() => n : () => string
+>n : string
+    }
+}
+function k1(n: number, more: () => boolean) {
+>k1 : (n: number, more: () => boolean) => void
+>n : number
+>more : () => boolean
+
+    let acc: number | null = null;
+>acc : number | null
+
+    while (more()) {
+>more() : boolean
+>more : () => boolean
+
+        if (n === acc) break;
+>n === acc : boolean
+>n : number
+>acc : number | null
+
+        acc = [1].map(() => n)[0];
+>acc = [1].map(() => n)[0] : number
+>acc : number | null
+>[1].map(() => n)[0] : number
+>[1].map(() => n) : number[]
+>[1].map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>[1] : number[]
+>1 : 1
+>map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>() => n : () => number
+>n : number
+>0 : 0
+    }
+}
+async function k21(y: "a" | "b", more: () => boolean) {
+>k21 : (y: "a" | "b", more: () => boolean) => Promise<void>
+>y : "a" | "b"
+>more : () => boolean
+
+    let x: "a" | "b" = "a";
+>x : "a" | "b"
+>"a" : "a"
+
+    while (more()) {
+>more() : boolean
+>more : () => boolean
+
+        if (y === x) { }
+>y === x : boolean
+>y : "a" | "b"
+>x : "a" | "b"
+
+        x = await Promise.resolve().then(() => y);
+>x = await Promise.resolve().then(() => y) : "a" | "b"
+>x : "a" | "b"
+>await Promise.resolve().then(() => y) : "a" | "b"
+>Promise.resolve().then(() => y) : Promise<"a" | "b">
+>Promise.resolve().then : <TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>
+>Promise.resolve() : Promise<void>
+>Promise.resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>Promise : PromiseConstructor
+>resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>then : <TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>
+>() => y : () => "a" | "b"
+>y : "a" | "b"
+    }
+}
+// the two agree: no initializer, a declared type that is no union, an annotated callback
+function a1(ns: string[]) { let last: string | undefined; for (const n of ns) { if (n === last) continue; last = run(() => n); } }
+>a1 : (ns: string[]) => void
+>ns : string[]
+>last : string | undefined
+>n : string
+>ns : string[]
+>n === last : boolean
+>n : string
+>last : string | undefined
+>last = run(() => n) : string
+>last : string | undefined
+>run(() => n) : string
+>run : <T>(f: () => T) => T
+>() => n : () => string
+>n : string
+
+function a2(ns: string[]) { let last = ""; for (const n of ns) { if (n === last) continue; last = run(() => n); } }
+>a2 : (ns: string[]) => void
+>ns : string[]
+>last : string
+>"" : ""
+>n : string
+>ns : string[]
+>n === last : boolean
+>n : string
+>last : string
+>last = run(() => n) : string
+>last : string
+>run(() => n) : string
+>run : <T>(f: () => T) => T
+>() => n : () => string
+>n : string
+
+function a3(ns: string[]) { let last: string | null = null; for (const n of ns) { if (n === last) continue; last = run((): string => n); } }
+>a3 : (ns: string[]) => void
+>ns : string[]
+>last : string | null
+>n : string
+>ns : string[]
+>n === last : boolean
+>n : string
+>last : string | null
+>last = run((): string => n) : string
+>last : string | null
+>run((): string => n) : string
+>run : <T>(f: () => T) => T
+>(): string => n : () => string
+>n : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

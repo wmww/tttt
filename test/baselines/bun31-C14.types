@@ -1,0 +1,11 @@
+//// [test/cases/bun31-C14.ts] ////
+
+=== a.ts ===
+class M<ClassParam> { static b: ClassPara; }
+>M : M<ClassParam>
+>b : ClassPara
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

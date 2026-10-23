@@ -1,0 +1,13 @@
+//// [test/cases/bun24-C15.ts] ////
+
+=== a.ts ===
+const b: 1 = null! as { get x(this: 1): number; set x(v: string) };
+>b : Symbol(b, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 23), Decl(a.ts, 0, 47))
+>this : Symbol(this, Decl(a.ts, 0, 30))
+>x : Symbol(x, Decl(a.ts, 0, 23), Decl(a.ts, 0, 47))
+>v : Symbol(v, Decl(a.ts, 0, 54))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

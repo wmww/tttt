@@ -1,0 +1,14 @@
+//// [test/cases/bun57-L02f.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+
+type A = 1;
+>A : Symbol(A, Decl(a.ts, 0, 23))
+
+export @dec type { A }
+>dec : Symbol(dec, Decl(a.ts, 0, 13))
+> : Symbol((Missing), Decl(a.ts, 1, 11))
+>A : Symbol(A, Decl(a.ts, 2, 18))
+

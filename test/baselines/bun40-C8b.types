@@ -1,0 +1,23 @@
+//// [test/cases/bun40-C8b.ts] ////
+
+=== a.ts ===
+declare function dec(x: any): void;
+>dec : (x: any) => void
+>x : any
+
+@dec class A {}
+>dec : (x: any) => void
+>A : A
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/tslib/tslib.js ===
+exports.__extends = function () {};
+>exports.__extends = function () {} : () => void
+>exports.__extends : () => void
+>exports : typeof import("tslib")
+>__extends : () => void
+>function () {} : () => void
+

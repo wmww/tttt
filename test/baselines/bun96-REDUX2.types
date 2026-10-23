@@ -1,0 +1,67 @@
+//// [test/cases/bun96-REDUX2.ts] ////
+
+=== a.ts ===
+interface Store<S, T> { getState(): S & T }
+>getState : () => S & T
+
+interface Pair<A, B> { either: A | B }
+>either : A | B
+
+type AB = Store<{ a: 1 }, { b: 2 }>
+>AB : AB
+>a : 1
+>b : 2
+
+type BA = Store<{ b: 2 }, { a: 1 }>
+>BA : BA
+>b : 2
+>a : 1
+
+// two references to one generic type are related by variances, not by their members
+function r1<E extends {}>(s: AB & E) { const t: BA = s }
+>r1 : <E extends {}>(s: AB & E) => void
+>s : AB & E
+>t : BA
+>s : AB & E
+
+function r2<E extends object>(s: AB & E): BA { return s }
+>r2 : <E extends object>(s: AB & E) => BA
+>s : AB & E
+>s : AB & E
+
+function r3<E extends {}>(s: Pair<1, 2> & E) { const t: Pair<2, 1> = s }
+>r3 : <E extends {}>(s: Pair<1, 2> & E) => void
+>s : Pair<1, 2> & E
+>t : Pair<2, 1>
+>s : Pair<1, 2> & E
+
+// both tools agree on these
+function r4(s: AB) { const t: BA = s }
+>r4 : (s: AB) => void
+>s : AB
+>t : BA
+>s : AB
+
+function r5<E>(s: AB & E) { const t: BA = s }
+>r5 : <E>(s: AB & E) => void
+>s : AB & E
+>t : BA
+>s : AB & E
+
+function r6<E extends { c: 3 }>(s: AB & E) { const t: BA = s }
+>r6 : <E extends { c: 3; }>(s: AB & E) => void
+>c : 3
+>s : AB & E
+>t : BA
+>s : AB & E
+
+function r7(s: AB & {}) { const t: BA = s }
+>r7 : (s: AB & {}) => void
+>s : AB
+>t : BA
+>s : AB
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

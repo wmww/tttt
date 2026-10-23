@@ -1,0 +1,9 @@
+//// [test/cases/bun57-L02c.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+@dec export;
+>dec : any
+

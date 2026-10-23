@@ -1,0 +1,16 @@
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    interface Box<T> { v: T }
+    type IA<T> = Box<IB<T>>; type IB<T> = Box<T>;
+    type JA<T> = Box<JB<T>>; type JB<T> = Box<T>;
+    declare function h<T>(x: IA<T>): T;
+    declare let j: JA<number>;
+    h(j).toFixed();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

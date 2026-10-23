@@ -1,0 +1,23 @@
+//// [test/cases/bun15-P5.ts] ////
+
+=== a.ts ===
+function* g(): IterableIterator<(x: number) => void> { yield* [x => {}]; }
+>g : () => IterableIterator<(x: number) => void>
+>x : number
+>yield* [x => {}] : undefined
+>[x => {}] : ((x: number) => void)[]
+>x => {} : (x: number) => void
+>x : number
+
+const k: () => IterableIterator<(x: number) => void> = function* () { yield x => {}; };
+>k : () => IterableIterator<(x: number) => void>
+>x : number
+>function* () { yield x => {}; } : () => IterableIterator<(x: number) => void, void>
+>yield x => {} : any
+>x => {} : (x: number) => void
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

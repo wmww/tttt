@@ -1,0 +1,46 @@
+//// [test/cases/bun71-R04b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; a: {} } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 44))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>a : Symbol(IntrinsicElements.a, Decl(a.tsx, 0, 83))
+
+declare function use(...x: any[]): void;
+>use : Symbol(use, Decl(a.tsx, 0, 93))
+>x : Symbol(x, Decl(a.tsx, 1, 21))
+
+function div() {}
+>div : Symbol(div, Decl(a.tsx, 1, 40))
+
+if (div) { use(<div />); }
+>div : Symbol(div, Decl(a.tsx, 1, 40))
+>use : Symbol(use, Decl(a.tsx, 0, 93))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+
+if (div) { use(<div></div>); }
+>div : Symbol(div, Decl(a.tsx, 1, 40))
+>use : Symbol(use, Decl(a.tsx, 0, 93))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+
+use(div && <a><div /></a>);
+>use : Symbol(use, Decl(a.tsx, 0, 93))
+>div : Symbol(div, Decl(a.tsx, 1, 40))
+>a : Symbol(JSX.IntrinsicElements.a, Decl(a.tsx, 0, 83))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 0, 74))
+>a : Symbol(JSX.IntrinsicElements.a, Decl(a.tsx, 0, 83))
+
+async function t(a: Promise<string>) { if (a) { use(<a />); } }
+>t : Symbol(t, Decl(a.tsx, 5, 27))
+>a : Symbol(a, Decl(a.tsx, 6, 17))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>a : Symbol(a, Decl(a.tsx, 6, 17))
+>use : Symbol(use, Decl(a.tsx, 0, 93))
+>a : Symbol(JSX.IntrinsicElements.a, Decl(a.tsx, 0, 83))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 7, 5))
+

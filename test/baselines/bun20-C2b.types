@@ -1,0 +1,46 @@
+//// [test/cases/bun20-C2b.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : () => boolean
+
+function h() {
+>h : () => void
+
+    let x: string | number | boolean = "";
+>x : string | number | boolean
+>"" : ""
+
+    do {
+        x;
+>x : string | number
+
+        try { x = 1; while (!x) { if (cond()) break; } }
+>x = 1 : 1
+>x : string | number | boolean
+>1 : 1
+>!x : boolean
+>x : number
+>cond() : boolean
+>cond : () => boolean
+
+        finally { do { if (cond()) break; } while (typeof x !== "boolean"); x.toFixed(); }
+>cond() : boolean
+>cond : () => boolean
+>typeof x !== "boolean" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"boolean" : "boolean"
+>x.toFixed() : any
+>x.toFixed : any
+>x : string | number
+>toFixed : any
+
+    } while (cond());
+>cond() : boolean
+>cond : () => boolean
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

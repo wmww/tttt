@@ -1,0 +1,20 @@
+a.ts(7,10): error TS7023: 'compute2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const K: string = compute({ a: "" });
+    function compute(o: Record<string, string>) { return o[K]; }
+    const K3: string = compute3({ a: "" });
+    function compute3(o: Record<string, string>) { return o[K3].length + ""; }
+    // an access on the way is compared with it: TS7023 in both
+    const K2: string = compute2({ a: "" });
+    function compute2(o: Record<string, string>) { o.x = ""; return o[K2]; }
+             ~~~~~~~~
+!!! error TS7023: 'compute2' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

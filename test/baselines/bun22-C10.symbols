@@ -1,0 +1,32 @@
+//// [test/cases/bun22-C10.ts] ////
+
+=== a.ts ===
+declare function f<T>(a: T, b: (x: T) => void): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>b : Symbol(b, Decl(a.ts, 0, 27))
+>x : Symbol(x, Decl(a.ts, 0, 32))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+type Deep9 = ((x: number, y: string) => number)[][][][][][][][][];
+>Deep9 : Symbol(Deep9, Decl(a.ts, 0, 50))
+>x : Symbol(x, Decl(a.ts, 1, 15))
+>y : Symbol(y, Decl(a.ts, 1, 25))
+
+const r9: Deep9 = f([[[[[[[[[(x: number, y) => y.length]]]]]]]]], x => {});
+>r9 : Symbol(r9, Decl(a.ts, 2, 5))
+>Deep9 : Symbol(Deep9, Decl(a.ts, 0, 50))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 2, 30))
+>y : Symbol(y, Decl(a.ts, 2, 40))
+>y.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 2, 40))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 2, 65))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

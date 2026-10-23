@@ -1,0 +1,101 @@
+a.ts(1,36): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(2,4): error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+  Type 'Number' has no call signatures.
+a.ts(3,24): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(4,4): error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+  Type 'Number' has no call signatures.
+a.ts(6,4): error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+  Type 'Number' has no call signatures.
+a.ts(8,4): error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+  Type 'Number' has no call signatures.
+a.ts(9,18): error TS2300: Duplicate identifier 'a'.
+a.ts(9,36): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(9,36): error TS2300: Duplicate identifier 'a'.
+a.ts(10,4): error TS2349: This expression is not callable.
+  Type 'Number' has no call signatures.
+a.ts(11,35): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(12,4): error TS2349: This expression is not callable.
+  Type 'Number' has no call signatures.
+a.ts(14,38): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(15,4): error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+  Type 'Number' has no call signatures.
+a.ts(16,26): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(17,4): error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+  Type 'Number' has no call signatures.
+a.ts(18,36): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(19,4): error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+  Type 'Number' has no call signatures.
+a.ts(20,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (19 errors) ====
+    const o1 = { get a() { return 1 }, a: 2 };
+                                       ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o1.a();
+       ~
+!!! error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+!!! error TS6234:   Type 'Number' has no call signatures.
+    const o2 = { a: 2, get a() { return 1 } };
+                           ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o2.a();
+       ~
+!!! error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+!!! error TS6234:   Type 'Number' has no call signatures.
+    const o3 = { set a(v: number) {}, get a() { return 1 } };
+    o3.a();
+       ~
+!!! error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+!!! error TS6234:   Type 'Number' has no call signatures.
+    const o4 = { get a() { return 1 }, set a(v: number) {} };
+    o4.a();
+       ~
+!!! error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+!!! error TS6234:   Type 'Number' has no call signatures.
+    const o5 = { get a() { return 1 }, a() {} , b: 1 };
+                     ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                       ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+                                       ~
+!!! error TS2300: Duplicate identifier 'a'.
+    o5.b();
+       ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'Number' has no call signatures.
+    const o6 = { set a(v: number) {}, a: 2 };
+                                      ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o6.a();
+       ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'Number' has no call signatures.
+    const k = "a";
+    const o7 = { get [k]() { return 1 }, [k]: 2 };
+                                         ~~~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o7.a();
+       ~
+!!! error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+!!! error TS6234:   Type 'Number' has no call signatures.
+    const o8 = { [k]: 2, get a() { return 1 } };
+                             ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o8.a();
+       ~
+!!! error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+!!! error TS6234:   Type 'Number' has no call signatures.
+    const o9 = { get a() { return 1 }, [k]: 2 };
+                                       ~~~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o9.a();
+       ~
+!!! error TS6234: This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?
+!!! error TS6234:   Type 'Number' has no call signatures.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,12 @@
+//// [test/cases/bun34-C15b.ts] ////
+
+=== a.ts ===
+class E { set x(this) {} }
+>E : E
+>x : any
+>this : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

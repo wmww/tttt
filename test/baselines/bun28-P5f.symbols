@@ -1,0 +1,12 @@
+//// [test/cases/bun28-P5f.ts] ////
+
+=== a.ts ===
+interface X { get
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+p: number }
+>p : Symbol(X.p, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

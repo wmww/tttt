@@ -1,0 +1,31 @@
+//// [test/cases/bun25-C1.ts] ////
+
+=== a.ts ===
+type U = { k: "a"; v: string } | { k: "b"; v: number };
+>U : U
+>k : "a"
+>v : string
+>k : "b"
+>v : number
+
+function f(u: U | undefined) { if ((u!).k === "a") u!.v.length; }
+>f : (u: U | undefined) => void
+>u : U | undefined
+>(u!).k === "a" : boolean
+>(u!).k : "a" | "b"
+>(u!) : U
+>u! : U
+>u : U | undefined
+>k : "a" | "b"
+>"a" : "a"
+>u!.v.length : any
+>u!.v : string | number
+>u! : U
+>u : U | undefined
+>v : string | number
+>length : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun30-C2a.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.d.ts ===
+export declare const arguments: number;
+>arguments : number
+

@@ -1,0 +1,210 @@
+a.ts(10,161): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(11,173): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(12,179): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(13,152): error TS2322: Type '(index: number) => "k"' is not assignable to type 'never'.
+a.ts(14,162): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(15,139): error TS2322: Type '() => "k"' is not assignable to type 'never'.
+a.ts(16,186): error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+a.ts(17,186): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(18,170): error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+a.ts(19,168): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(20,160): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(21,172): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(22,178): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(23,151): error TS2322: Type '(index: number) => "k"' is not assignable to type 'never'.
+a.ts(24,161): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(25,138): error TS2322: Type '() => "k"' is not assignable to type 'never'.
+a.ts(26,185): error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+a.ts(27,185): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(28,169): error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+a.ts(29,167): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(30,159): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(31,171): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(32,177): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(33,150): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(34,160): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(35,137): error TS2322: Type '() => string' is not assignable to type 'never'.
+a.ts(36,184): error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+a.ts(37,184): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(38,168): error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+a.ts(39,166): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(40,151): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(41,163): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(42,169): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(43,142): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(44,152): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(45,129): error TS2322: Type '() => string' is not assignable to type 'never'.
+a.ts(46,176): error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+a.ts(47,176): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(48,160): error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+a.ts(49,158): error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+a.ts(50,102): error TS2322: Type '(value: unknown) => value is string' is not assignable to type 'never'.
+a.ts(51,95): error TS2322: Type '(value: unknown) => boolean' is not assignable to type 'never'.
+a.ts(53,7): error TS7023: 'direct' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(54,26): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(55,25): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(56,10): error TS7023: 'named' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(57,18): error TS7023: 'method' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(59,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "skipLibCheck": true } }
+==== a.ts (48 errors) ====
+    declare function wrap<T extends Function>(callback: T, deps: readonly unknown[]): T;
+    declare function wrapAny<T>(callback: T): T;
+    declare function wrapFn<T extends (...args: any[]) => any>(callback: T): T;
+    declare function use<T>(options: { items: readonly T[]; key?: (index: number) => string }): void;
+    declare function useRequired<T>(options: { items: readonly T[]; key: (index: number) => string }): void;
+    declare function usePlain(options: { items: readonly string[]; key?: (index: number) => string }): void;
+    declare function useArgs<T>(items: readonly T[], key?: (index: number) => string): void;
+    declare function useGuard<T>(options: { items: readonly T[]; is?: (value: unknown) => boolean }): void;
+    declare const items: readonly string[];
+    { const key = wrap((index: number) => `k-${index}`, []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                    ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrap((index: number) => { return `k-${index}`; }, []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrap(function (index: number) { return `k-${index}`; }, []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                      ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrap((index: number) => "k", []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                           ~~~~~
+!!! error TS2322: Type '(index: number) => "k"' is not assignable to type 'never'.
+    { const key = wrap((index: number) => String(index), []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                     ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrap(() => `k`, []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                              ~~~~~
+!!! error TS2322: Type '() => "k"' is not assignable to type 'never'.
+    { const key = wrap((index: number, other?: number) => `k-${index}-${other}`, []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                             ~~~~~
+!!! error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+    { const key = wrap((index: number) => (index ? `a-${index}` : `b-${index}`), []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                             ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrap((index: number) => `k-${index}` as const, []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                             ~~~~~
+!!! error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+    { const key = wrap((index: number) => `k-${`i-${index}`}`, []); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                           ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapAny((index: number) => `k-${index}`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                   ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapAny((index: number) => { return `k-${index}`; }); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                               ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapAny(function (index: number) { return `k-${index}`; }); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                     ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapAny((index: number) => "k"); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                          ~~~~~
+!!! error TS2322: Type '(index: number) => "k"' is not assignable to type 'never'.
+    { const key = wrapAny((index: number) => String(index)); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                    ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapAny(() => `k`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                             ~~~~~
+!!! error TS2322: Type '() => "k"' is not assignable to type 'never'.
+    { const key = wrapAny((index: number, other?: number) => `k-${index}-${other}`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                            ~~~~~
+!!! error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+    { const key = wrapAny((index: number) => (index ? `a-${index}` : `b-${index}`)); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                            ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapAny((index: number) => `k-${index}` as const); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                            ~~~~~
+!!! error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+    { const key = wrapAny((index: number) => `k-${`i-${index}`}`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                          ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn((index: number) => `k-${index}`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                  ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn((index: number) => { return `k-${index}`; }); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                              ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn(function (index: number) { return `k-${index}`; }); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                    ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn((index: number) => "k"); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                         ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn((index: number) => String(index)); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                   ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn(() => `k`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                            ~~~~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+    { const key = wrapFn((index: number, other?: number) => `k-${index}-${other}`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                           ~~~~~
+!!! error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn((index: number) => (index ? `a-${index}` : `b-${index}`)); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                           ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = wrapFn((index: number) => `k-${index}` as const); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                           ~~~~~
+!!! error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+    { const key = wrapFn((index: number) => `k-${`i-${index}`}`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                         ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = (index: number) => `k-${index}`; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                          ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = (index: number) => { return `k-${index}`; }; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                      ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = function (index: number) { return `k-${index}`; }; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                            ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = (index: number) => "k"; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                 ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = (index: number) => String(index); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                           ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = () => `k`; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                    ~~~~~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+    { const key = (index: number, other?: number) => `k-${index}-${other}`; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                   ~~~~~
+!!! error TS2322: Type '(index: number, other?: number) => string' is not assignable to type 'never'.
+    { const key = (index: number) => (index ? `a-${index}` : `b-${index}`); use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                                   ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const key = (index: number) => `k-${index}` as const; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                   ~~~~~
+!!! error TS2322: Type '(index: number) => `k-${number}`' is not assignable to type 'never'.
+    { const key = (index: number) => `k-${`i-${index}`}`; use({ items, key }); useRequired({ items, key }); usePlain({ items, key }); useArgs(items, key); const probe: never = key; }
+                                                                                                                                                                 ~~~~~
+!!! error TS2322: Type '(index: number) => string' is not assignable to type 'never'.
+    { const is = wrap((value: unknown) => typeof value === "string", []); useGuard({ items, is }); const probe: never = is; }
+                                                                                                         ~~~~~
+!!! error TS2322: Type '(value: unknown) => value is string' is not assignable to type 'never'.
+    { const is = wrap((value: unknown) => `${value}` === "a", []); useGuard({ items, is }); const probe: never = is; }
+                                                                                                  ~~~~~
+!!! error TS2322: Type '(value: unknown) => boolean' is not assignable to type 'never'.
+    // tsc reports these
+    const direct = () => direct();
+          ~~~~~~
+!!! error TS7023: 'direct' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const throughWrap = wrap(() => throughWrap(), []);
+                             ~~~~~~~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const inTemplate = wrap((index: number) => `k-${inTemplate(index)}`, []);
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function named(index: number) { return `k-${named(index)}`; }
+             ~~~~~
+!!! error TS7023: 'named' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const object = { method() { return `k-${object.method()}`; } };
+                     ~~~~~~
+!!! error TS7023: 'method' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    use({ items, key: inTemplate });
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+    

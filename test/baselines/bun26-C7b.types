@@ -1,0 +1,18 @@
+//// [test/cases/bun26-C7b.ts] ////
+
+=== a.ts ===
+type I<T> = (({ k: T | "b"; z: 1 } & { k: "a" }) | { z: 3 })["z"];
+>I : I<T>
+>k : "b" | T
+>z : 1
+>k : "a"
+>z : 3
+
+const i1: I<"c"> = 1;
+>i1 : 3
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

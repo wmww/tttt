@@ -1,0 +1,22 @@
+//// [test/cases/bun10-C1.ts] ////
+
+=== a.ts ===
+function g4() { return f4(1, 2); }
+>g4 : () => any
+>f4(1, 2) : number
+>f4 : (a: number, b?: any) => number
+>1 : 1
+>2 : 2
+
+function f4(a: number, b = g4()) { return a; }
+>f4 : (a: number, b?: any) => number
+>a : number
+>b : any
+>g4() : any
+>g4 : () => any
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

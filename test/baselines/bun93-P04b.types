@@ -1,0 +1,14 @@
+//// [test/cases/bun93-P04b.ts] ////
+
+=== a.tsx ===
+var v = (<a><<<T>()=>void>/></a>);
+>v : any
+>(<a><<<T>()=>void>/></a>) : any
+><a><<<T>()=>void>/></a> : any
+>a : any
+>< : any
+> : any
+><<T>()=>void>/> : any
+> : any
+>a : any
+

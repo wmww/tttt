@@ -1,0 +1,29 @@
+//// [test/cases/bun51-L20b.ts] ////
+
+=== a.ts ===
+export class C { private a = 1; m(c: C) { const { ...a: x } = c; return x; } }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>a : Symbol(C.a, Decl(a.ts, 0, 16))
+>m : Symbol(C.m, Decl(a.ts, 0, 31))
+>c : Symbol(c, Decl(a.ts, 0, 34))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>a : Symbol(C.a, Decl(a.ts, 0, 16))
+>x : Symbol(x, Decl(a.ts, 0, 49))
+>c : Symbol(c, Decl(a.ts, 0, 34))
+>x : Symbol(x, Decl(a.ts, 0, 49))
+
+export class D { private a = 1; private x = 2; m(c: D) { const { ...a: x } = c; return x; } }
+>D : Symbol(D, Decl(a.ts, 0, 78))
+>a : Symbol(D.a, Decl(a.ts, 1, 16))
+>x : Symbol(D.x, Decl(a.ts, 1, 31))
+>m : Symbol(D.m, Decl(a.ts, 1, 46))
+>c : Symbol(c, Decl(a.ts, 1, 49))
+>D : Symbol(D, Decl(a.ts, 0, 78))
+>a : Symbol(D.a, Decl(a.ts, 1, 16))
+>x : Symbol(x, Decl(a.ts, 1, 64))
+>c : Symbol(c, Decl(a.ts, 1, 49))
+>x : Symbol(x, Decl(a.ts, 1, 64))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 12))
+

@@ -1,0 +1,156 @@
+//// [test/cases/bun09-C6.ts] ////
+
+=== f0.ts ===
+export const x = 1;
+>x : 1
+>1 : 1
+
+=== f1.ts ===
+export { x } from "./f0";
+>x : 1
+
+=== f10.ts ===
+export { x } from "./f9";
+>x : 1
+
+=== f11.ts ===
+export { x } from "./f10";
+>x : 1
+
+=== f12.ts ===
+export { x } from "./f11";
+>x : 1
+
+=== f13.ts ===
+export { x } from "./f12";
+>x : 1
+
+=== f14.ts ===
+export { x } from "./f13";
+>x : 1
+
+=== f15.ts ===
+export { x } from "./f14";
+>x : 1
+
+=== f16.ts ===
+export { x } from "./f15";
+>x : 1
+
+=== f17.ts ===
+export { x } from "./f16";
+>x : 1
+
+=== f18.ts ===
+export { x } from "./f17";
+>x : 1
+
+=== f19.ts ===
+export { x } from "./f18";
+>x : 1
+
+=== f2.ts ===
+export { x } from "./f1";
+>x : 1
+
+=== f20.ts ===
+export { x } from "./f19";
+>x : 1
+
+=== f21.ts ===
+export { x } from "./f20";
+>x : 1
+
+=== f22.ts ===
+export { x } from "./f21";
+>x : 1
+
+=== f23.ts ===
+export { x } from "./f22";
+>x : 1
+
+=== f24.ts ===
+export { x } from "./f23";
+>x : 1
+
+=== f25.ts ===
+export { x } from "./f24";
+>x : 1
+
+=== f26.ts ===
+export { x } from "./f25";
+>x : 1
+
+=== f27.ts ===
+export { x } from "./f26";
+>x : 1
+
+=== f28.ts ===
+export { x } from "./f27";
+>x : 1
+
+=== f29.ts ===
+export { x } from "./f28";
+>x : 1
+
+=== f3.ts ===
+export { x } from "./f2";
+>x : 1
+
+=== f30.ts ===
+export { x } from "./f29";
+>x : 1
+
+=== f31.ts ===
+export { x } from "./f30";
+>x : 1
+
+=== f32.ts ===
+export { x } from "./f31";
+>x : 1
+
+=== f4.ts ===
+export { x } from "./f3";
+>x : 1
+
+=== f5.ts ===
+export { x } from "./f4";
+>x : 1
+
+=== f6.ts ===
+export { x } from "./f5";
+>x : 1
+
+=== f7.ts ===
+export { x } from "./f6";
+>x : 1
+
+=== f8.ts ===
+export { x } from "./f7";
+>x : 1
+
+=== f9.ts ===
+export { x } from "./f8";
+>x : 1
+
+=== u.ts ===
+import { x as x31 } from "./f31";
+>x : 1
+>x31 : 1
+
+import { x as x32 } from "./f32";
+>x : 1
+>x32 : 1
+
+const s31: string = x31;
+>s31 : string
+>x31 : 1
+
+const s32: string = x32;
+>s32 : string
+>x32 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

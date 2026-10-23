@@ -1,0 +1,20 @@
+a.ts(1,21): error TS7042: Module 'tv' was resolved to 'node_modules/tv/d.json', but '--resolveJsonModule' is not used.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "node16" }, "files": ["a.ts"] }
+==== a.ts (2 errors) ====
+    import w3 = require("tv");
+                        ~~~~
+!!! error TS7042: Module 'tv' was resolved to 'node_modules/tv/d.json', but '--resolveJsonModule' is not used.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/tv/d.json (0 errors) ====
+    {"a":1}
+==== node_modules/tv/index.d.ts (0 errors) ====
+    export declare const which: "tv/index";
+==== node_modules/tv/package.json (0 errors) ====
+    {"name":"tv","version":"1.0.0","types":"index.d.ts","typesVersions":{"*":{"index.d.ts":["d.json"]}}}
+    

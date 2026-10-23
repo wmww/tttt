@@ -1,0 +1,32 @@
+//// [test/cases/bun30-C23.ts] ////
+
+=== a.ts ===
+import { a, b } from "./m";
+>a : number
+>b : number
+
+export { a as aa };
+>a : number
+>aa : number
+
+b;
+>b : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import { b } from "./a";
+>b : any
+
+=== m.ts ===
+const o = { a: 1, b: 2 }; export = o;
+>o : { a: number; b: number; }
+>{ a: 1, b: 2 } : { a: number; b: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+>o : { a: number; b: number; }
+

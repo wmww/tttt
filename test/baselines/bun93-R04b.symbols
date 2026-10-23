@@ -1,0 +1,92 @@
+//// [test/cases/bun93-R04b.ts] ////
+
+=== a.ts ===
+declare function abs(n: number): number; declare let u: (() => number) | undefined;
+>abs : Symbol(abs, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 0, 21))
+>u : Symbol(u, Decl(a.ts, 0, 52))
+
+const a = { m() { return this.z; }, f() { return this.z; }, g() { const q = (1, 2); return q; } };
+>a : Symbol(a, Decl(a.ts, 1, 5))
+>m : Symbol(m, Decl(a.ts, 1, 11))
+>this : Symbol(a, Decl(a.ts, 1, 9))
+>f : Symbol(f, Decl(a.ts, 1, 35))
+>this : Symbol(a, Decl(a.ts, 1, 9))
+>g : Symbol(g, Decl(a.ts, 1, 59))
+>q : Symbol(q, Decl(a.ts, 1, 71))
+>q : Symbol(q, Decl(a.ts, 1, 71))
+
+const b = { m() { return this.z; }, f() { return this.z; }, g() { return abs(1) instanceof Object; } };
+>b : Symbol(b, Decl(a.ts, 2, 5))
+>m : Symbol(m, Decl(a.ts, 2, 11))
+>this : Symbol(b, Decl(a.ts, 2, 9))
+>f : Symbol(f, Decl(a.ts, 2, 35))
+>this : Symbol(b, Decl(a.ts, 2, 9))
+>g : Symbol(g, Decl(a.ts, 2, 59))
+>abs : Symbol(abs, Decl(a.ts, 0, 0))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+const c = { m() { return this.z; }, f() { return this.z; }, g() { return u(); } };
+>c : Symbol(c, Decl(a.ts, 3, 5))
+>m : Symbol(m, Decl(a.ts, 3, 11))
+>this : Symbol(c, Decl(a.ts, 3, 9))
+>f : Symbol(f, Decl(a.ts, 3, 35))
+>this : Symbol(c, Decl(a.ts, 3, 9))
+>g : Symbol(g, Decl(a.ts, 3, 59))
+>u : Symbol(u, Decl(a.ts, 0, 52))
+
+const d = { m() { return this.z; }, f() { return this.z; }, g() { return "" satisfies number; } };
+>d : Symbol(d, Decl(a.ts, 4, 5))
+>m : Symbol(m, Decl(a.ts, 4, 11))
+>this : Symbol(d, Decl(a.ts, 4, 9))
+>f : Symbol(f, Decl(a.ts, 4, 35))
+>this : Symbol(d, Decl(a.ts, 4, 9))
+>g : Symbol(g, Decl(a.ts, 4, 59))
+
+const e = { m() { return this.z; }, f() { return this.z; }, g() { return { ...1 }; } };
+>e : Symbol(e, Decl(a.ts, 5, 5))
+>m : Symbol(m, Decl(a.ts, 5, 11))
+>this : Symbol(e, Decl(a.ts, 5, 9))
+>f : Symbol(f, Decl(a.ts, 5, 35))
+>this : Symbol(e, Decl(a.ts, 5, 9))
+>g : Symbol(g, Decl(a.ts, 5, 59))
+
+const h = { m() { return this.z; }, f() { return this.z; }, g() { return new (class { private constructor() {} })(); } };
+>h : Symbol(h, Decl(a.ts, 6, 5))
+>m : Symbol(m, Decl(a.ts, 6, 11))
+>this : Symbol(h, Decl(a.ts, 6, 9))
+>f : Symbol(f, Decl(a.ts, 6, 35))
+>this : Symbol(h, Decl(a.ts, 6, 9))
+>g : Symbol(g, Decl(a.ts, 6, 59))
+
+const i = { m() { return this.z; }, f() { return this.z; }, g() { return g2 ? 1 : 2; function g2() {} } };
+>i : Symbol(i, Decl(a.ts, 7, 5))
+>m : Symbol(m, Decl(a.ts, 7, 11))
+>this : Symbol(i, Decl(a.ts, 7, 9))
+>f : Symbol(f, Decl(a.ts, 7, 35))
+>this : Symbol(i, Decl(a.ts, 7, 9))
+>g : Symbol(g, Decl(a.ts, 7, 59))
+>g2 : Symbol(g2, Decl(a.ts, 7, 84))
+>g2 : Symbol(g2, Decl(a.ts, 7, 84))
+
+const j = { m() { return this.z; }, f() { return this.z; }, g() { return /(/; } };
+>j : Symbol(j, Decl(a.ts, 8, 5))
+>m : Symbol(m, Decl(a.ts, 8, 11))
+>this : Symbol(j, Decl(a.ts, 8, 9))
+>f : Symbol(f, Decl(a.ts, 8, 35))
+>this : Symbol(j, Decl(a.ts, 8, 9))
+>g : Symbol(g, Decl(a.ts, 8, 59))
+
+const k = { m() { return this.z; }, f() { return this.z; }, g() { return later; let later = 1; } };
+>k : Symbol(k, Decl(a.ts, 9, 5))
+>m : Symbol(m, Decl(a.ts, 9, 11))
+>this : Symbol(k, Decl(a.ts, 9, 9))
+>f : Symbol(f, Decl(a.ts, 9, 35))
+>this : Symbol(k, Decl(a.ts, 9, 9))
+>g : Symbol(g, Decl(a.ts, 9, 59))
+>later : Symbol(later, Decl(a.ts, 9, 83))
+>later : Symbol(later, Decl(a.ts, 9, 83))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

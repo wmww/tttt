@@ -1,0 +1,17 @@
+//// [test/cases/bun37-C9a.ts] ////
+
+=== src/a.ts ===
+import { b } from "./b";
+>b : Symbol(b, Decl(a.ts, 0, 8))
+
+export const y: number = b;
+>y : Symbol(y, Decl(a.ts, 1, 12))
+>b : Symbol(b, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== gen/src/b.ts ===
+export const b = 1;
+>b : Symbol(b, Decl(b.ts, 0, 12))
+

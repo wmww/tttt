@@ -1,0 +1,30 @@
+//// [test/cases/bun16-C5b.ts] ////
+
+=== a.ts ===
+import * as ns from "./empty";
+>ns : typeof ns
+
+function n(x: never) {}
+>n : (x: never) => void
+>x : never
+
+const mm = ns;
+>mm : typeof ns
+>ns : typeof ns
+
+if (!mm) n(mm);
+>!mm : boolean
+>mm : typeof ns
+>n(mm) : void
+>n : (x: never) => void
+>mm : typeof ns
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== empty.ts ===
+export {}; const q = 1;
+>q : 1
+>1 : 1
+

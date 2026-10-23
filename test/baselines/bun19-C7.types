@@ -1,0 +1,32 @@
+//// [test/cases/bun19-C7.ts] ////
+
+=== a.ts ===
+interface I { m: { [K in keyof this]: 1 } }
+>m : { [K in keyof this]: 1; }
+
+function f<T extends I>(t: T) { return t.m; }
+>f : <T extends I>(t: T) => { [K in keyof T]: 1; }
+>t : T
+>t.m : { [K in keyof T]: 1; }
+>t : T
+>m : { [K in keyof T]: 1; }
+
+declare let u: (I & { a: 1 }) | (I & { b: 1 });
+>u : (I & { a: 1; }) | (I & { b: 1; })
+>a : 1
+>b : 1
+
+const ok: { a: 1, m: 1 } | { b: 1, m: 1 } = f(u);
+>ok : { a: 1; m: 1; } | { b: 1; m: 1; }
+>a : 1
+>m : 1
+>b : 1
+>m : 1
+>f(u) : { m: 1; a: 1; } | { m: 1; b: 1; }
+>f : <T extends I>(t: T) => { [K in keyof T]: 1; }
+>u : (I & { a: 1; }) | (I & { b: 1; })
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

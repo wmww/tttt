@@ -1,0 +1,10 @@
+//// [test/cases/bun03-C20.ts] ////
+
+=== a.ts ===
+declare namespace A { return; }
+>A : typeof A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

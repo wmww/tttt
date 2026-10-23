@@ -1,0 +1,22 @@
+//// [test/cases/bun15-C12.ts] ////
+
+=== a.ts ===
+export {};
+declare global { interface PromiseLike<T> { then(cb: (v: "extra") => void): void } }
+>global : Symbol(global, Decl(a.ts, 0, 10))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --), Decl(a.ts, 1, 16))
+>T : Symbol(T, Decl(lib.es5.d.ts, --, --), Decl(a.ts, 1, 39))
+>then : Symbol(PromiseLike.then, Decl(lib.es5.d.ts, --, --), Decl(a.ts, 1, 43))
+>cb : Symbol(cb, Decl(a.ts, 1, 49))
+>v : Symbol(v, Decl(a.ts, 1, 54))
+
+async function f(p: PromiseLike<number>) { const r: never[] = [await p]; }
+>f : Symbol(f, Decl(a.ts, 1, 84))
+>p : Symbol(p, Decl(a.ts, 2, 17))
+>PromiseLike : Symbol(PromiseLike, Decl(lib.es5.d.ts, --, --), Decl(a.ts, 1, 16))
+>r : Symbol(r, Decl(a.ts, 2, 48))
+>p : Symbol(p, Decl(a.ts, 2, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

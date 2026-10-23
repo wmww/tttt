@@ -1,0 +1,17 @@
+a.ts(2,7): error TS2322: Type '{}' is not assignable to type '(e: unique symbol) => void'.
+  Type '{}' provides no match for the signature '(e: typeof "x-y"): void'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface A { readonly "x-y": unique symbol }
+    const s1: { (e: A["x-y"]): void } = {};
+          ~~
+!!! error TS2322: Type '{}' is not assignable to type '(e: unique symbol) => void'.
+!!! error TS2322:   Type '{}' provides no match for the signature '(e: typeof "x-y"): void'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

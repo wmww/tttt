@@ -1,0 +1,11 @@
+//// [test/cases/bun11-C2d.ts] ////
+
+=== a.ts ===
+type B24<T = ReturnType<() => B24>> = { x: T };
+>B24 : B24<T>
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

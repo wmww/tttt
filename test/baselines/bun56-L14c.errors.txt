@@ -1,0 +1,21 @@
+a.ts(1,22): error TS1005: '=>' expected.
+a.ts(2,22): error TS1005: '=>' expected.
+a.ts(3,18): error TS7006: Parameter 'b' implicitly has an 'any' type.
+a.ts(3,20): error TS1005: '=>' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    let x: ([...a,]: any);
+                         ~
+!!! error TS1005: '=>' expected.
+    let y: ({...a,}: any);
+                         ~
+!!! error TS1005: '=>' expected.
+    let z: ([...a,], b);
+                     ~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+                       ~
+!!! error TS1005: '=>' expected.
+    

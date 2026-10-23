@@ -1,0 +1,37 @@
+//// [test/cases/bun90-R10a.ts] ////
+
+=== a.ts ===
+import { G1 as GC, G1 as GN } from "./t";
+>G1 : Symbol(GC, Decl(t.ts, 0, 0))
+>GC : Symbol(GC, Decl(a.ts, 0, 8))
+>G1 : Symbol(GC, Decl(t.ts, 0, 0))
+>GN : Symbol(GN, Decl(a.ts, 0, 18))
+
+import c = GC.v;
+>c : Symbol(c, Decl(a.ts, 0, 41))
+
+import d = GN.nope;
+>d : Symbol(d, Decl(a.ts, 1, 16))
+>GN : Symbol(GN, Decl(g.d.ts, 0, 37))
+
+c; d;
+>c : Symbol(c, Decl(a.ts, 0, 41))
+>d : Symbol(d, Decl(a.ts, 1, 16))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 12))
+
+=== g.d.ts ===
+declare class GC { static v: number }
+>GC : Symbol(GC, Decl(g.d.ts, 0, 0))
+>v : Symbol(GC.v, Decl(g.d.ts, 0, 18))
+
+declare namespace GN { const v: number }
+>GN : Symbol(GN, Decl(g.d.ts, 0, 37))
+>v : Symbol(v, Decl(g.d.ts, 1, 28))
+
+=== t.ts ===
+export interface G1 { x: 1 }
+>G1 : Symbol(G1, Decl(t.ts, 0, 0))
+>x : Symbol(G1.x, Decl(t.ts, 0, 21))
+

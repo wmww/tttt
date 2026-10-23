@@ -1,0 +1,21 @@
+//// [test/cases/bun55-L04.ts] ////
+
+=== a.ts ===
+declare function fail(): never;
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+
+function f(o: any): number { with (fail()) { } }
+>f : Symbol(f, Decl(a.ts, 0, 31))
+>o : Symbol(o, Decl(a.ts, 1, 11))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+
+function g(o: any) { with (fail()) { } let x: string | number = 1; x.length; }
+>g : Symbol(g, Decl(a.ts, 1, 48))
+>o : Symbol(o, Decl(a.ts, 2, 11))
+>fail : Symbol(fail, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 2, 42))
+>x : Symbol(x, Decl(a.ts, 2, 42))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

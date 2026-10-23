@@ -1,0 +1,72 @@
+//// [test/cases/bun73-R09.ts] ////
+
+=== a.ts ===
+declare function keys<K extends string>(o: Record<K, unknown>): K[];
+>keys : Symbol(keys, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 22))
+>o : Symbol(o, Decl(a.ts, 0, 40))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>K : Symbol(K, Decl(a.ts, 0, 22))
+>K : Symbol(K, Decl(a.ts, 0, 22))
+
+declare function f2<K extends string, X>(x: { [P in K]: X }): [K, X];
+>f2 : Symbol(f2, Decl(a.ts, 0, 68))
+>K : Symbol(K, Decl(a.ts, 1, 20))
+>X : Symbol(X, Decl(a.ts, 1, 37))
+>x : Symbol(x, Decl(a.ts, 1, 41))
+>P : Symbol(P, Decl(a.ts, 1, 47))
+>K : Symbol(K, Decl(a.ts, 1, 20))
+>X : Symbol(X, Decl(a.ts, 1, 37))
+>K : Symbol(K, Decl(a.ts, 1, 20))
+>X : Symbol(X, Decl(a.ts, 1, 37))
+
+function strict<R extends {}, W extends { a: 1 }, V extends { b: 2 }>(rw: R & W, wv: W & V, wo: W & { c: 3 }) {
+>strict : Symbol(strict, Decl(a.ts, 1, 69))
+>R : Symbol(R, Decl(a.ts, 2, 16))
+>W : Symbol(W, Decl(a.ts, 2, 29))
+>a : Symbol(a, Decl(a.ts, 2, 41))
+>V : Symbol(V, Decl(a.ts, 2, 49))
+>b : Symbol(b, Decl(a.ts, 2, 61))
+>rw : Symbol(rw, Decl(a.ts, 2, 70))
+>R : Symbol(R, Decl(a.ts, 2, 16))
+>W : Symbol(W, Decl(a.ts, 2, 29))
+>wv : Symbol(wv, Decl(a.ts, 2, 80))
+>W : Symbol(W, Decl(a.ts, 2, 29))
+>V : Symbol(V, Decl(a.ts, 2, 49))
+>wo : Symbol(wo, Decl(a.ts, 2, 91))
+>W : Symbol(W, Decl(a.ts, 2, 29))
+>c : Symbol(c, Decl(a.ts, 2, 101))
+
+  const k1: "a"[] = keys(rw);
+>k1 : Symbol(k1, Decl(a.ts, 3, 7))
+>keys : Symbol(keys, Decl(a.ts, 0, 0))
+>rw : Symbol(rw, Decl(a.ts, 2, 70))
+
+  const k2: ("a" | "b")[] = keys(wv);
+>k2 : Symbol(k2, Decl(a.ts, 4, 7))
+>keys : Symbol(keys, Decl(a.ts, 0, 0))
+>wv : Symbol(wv, Decl(a.ts, 2, 80))
+
+  const k3: ("a" | "c")[] = keys(wo);
+>k3 : Symbol(k3, Decl(a.ts, 5, 7))
+>keys : Symbol(keys, Decl(a.ts, 0, 0))
+>wo : Symbol(wo, Decl(a.ts, 2, 91))
+
+  const p1: never = f2(rw);
+>p1 : Symbol(p1, Decl(a.ts, 6, 7))
+>f2 : Symbol(f2, Decl(a.ts, 0, 68))
+>rw : Symbol(rw, Decl(a.ts, 2, 70))
+
+  const p2: never = f2(wv);
+>p2 : Symbol(p2, Decl(a.ts, 7, 7))
+>f2 : Symbol(f2, Decl(a.ts, 0, 68))
+>wv : Symbol(wv, Decl(a.ts, 2, 80))
+
+  const p3: never = f2(wo);
+>p3 : Symbol(p3, Decl(a.ts, 8, 7))
+>f2 : Symbol(f2, Decl(a.ts, 0, 68))
+>wo : Symbol(wo, Decl(a.ts, 2, 91))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

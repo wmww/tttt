@@ -1,0 +1,49 @@
+//// [test/cases/bun74-R15b.ts] ////
+
+=== a.ts ===
+declare const cond: boolean, x: unknown; type Fn = (n: number) => number;
+>cond : boolean
+>x : unknown
+>Fn : Fn
+>n : number
+
+export const f = cond ? <Fn>(x) : n => n + 1;
+>f : Fn | ((n: any) => any)
+>cond ? <Fn>(x) : n => n + 1 : Fn | ((n: any) => any)
+>cond : boolean
+><Fn>(x) : Fn
+>(x) : unknown
+>x : unknown
+>n => n + 1 : (n: any) => any
+>n : any
+>n + 1 : any
+>n : any
+>1 : 1
+
+export const g = [cond ? <any>(x) : (n: number) => n, cond ? <Fn>(x) : n => n ? 1 : 2];
+>g : any[]
+>[cond ? <any>(x) : (n: number) => n, cond ? <Fn>(x) : n => n ? 1 : 2] : any[]
+>cond ? <any>(x) : (n: number) => n : any
+>cond : boolean
+><any>(x) : any
+>(x) : unknown
+>x : unknown
+>(n: number) => n : (n: number) => number
+>n : number
+>n : number
+>cond ? <Fn>(x) : n => n ? 1 : 2 : Fn
+>cond : boolean
+><Fn>(x) : Fn
+>(x) : unknown
+>x : unknown
+>n => n ? 1 : 2 : (n: any) => 1 | 2
+>n : any
+>n ? 1 : 2 : 1 | 2
+>n : any
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

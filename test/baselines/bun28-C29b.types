@@ -1,0 +1,17 @@
+//// [test/cases/bun28-C29b.ts] ////
+
+=== a.ts ===
+import.foo<string>("./zz");
+>import.foo<string>("./zz") : any
+>import.foo : any
+>foo : any
+>"./zz" : "./zz"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== zz.ts ===
+
+export {};
+

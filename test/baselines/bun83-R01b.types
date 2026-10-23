@@ -1,0 +1,116 @@
+//// [test/cases/bun83-R01b.ts] ////
+
+=== i03.ts ===
+var v = new X<T extends U>(a);
+>v : any
+>new X<T extends U>(a) : any
+>X : any
+>a : any
+
+=== i13.ts ===
+var v = new <T extends U>;
+>v : any
+>new <T extends U> : any
+> : any
+
+=== j01.ts ===
+var v = f<T extends U>(a);
+>v : any
+>f<T extends U>(a) : any
+>f : any
+>a : any
+
+=== j06.ts ===
+var v = f<typeof>(x);
+>v : any
+>f<typeof>(x) : any
+>f : any
+> : any
+>x : any
+
+=== j10.ts ===
+var v = f<T extends U ? 1>(x);
+>v : any
+>f<T extends U ? 1>(x) : any
+>f : any
+>x : any
+
+=== j13.ts ===
+var v = f<T[>(x);
+>v : any
+>f<T[>(x) : any
+>f : any
+>x : any
+
+=== j16.ts ===
+var v = f<new>(x);
+>v : any
+>f<new>(x) : any
+>f : any
+>x : any
+
+=== j17.ts ===
+var v = f<infer>(x);
+>v : any
+>f<infer>(x) : any
+>f : any
+>x : any
+
+=== j19.ts ===
+var v = f<T extends U>`x`;
+>v : any
+>f<T extends U>`x` : any
+>f : any
+>`x` : "x"
+
+=== j20.ts ===
+var v = f<T extends U>;
+>v : any
+>f<T extends U> : any
+>f : any
+
+=== j21.ts ===
+var v = f<T extends U>.x;
+>v : any
+>f<T extends U>.x : any
+>f<T extends U> : any
+>f : any
+>x : any
+
+=== j23.ts ===
+var v = a.b<T extends U>(x);
+>v : any
+>a.b<T extends U>(x) : any
+>a.b : any
+>a : any
+>b : any
+>x : any
+
+=== j32.ts ===
+var v = f<import>(x);
+>v : any
+>f<import>(x) : any
+>f : any
+>x : any
+
+=== j33.ts ===
+var v = f<import(>(x);
+>v : any
+>f<import(>(x) : any
+>f : any
+>x : any
+
+=== j34.ts ===
+var v = f<`${>(x);
+>v : any
+>f<`${>(x) : any
+>f : any
+>x : any
+
+=== j40.ts ===
+var v = f<abstract new>(x);
+>v : any
+>f<abstract new>(x) : any
+>f : any
+>x : any
+

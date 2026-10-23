@@ -1,0 +1,201 @@
+//// [test/cases/bun96-REACTHOOKFORM1.ts] ////
+
+=== a.ts ===
+import type { Message, Rule } from './types';
+>Message : Symbol(Message, Decl(a.ts, 0, 13))
+>Rule : Symbol(Rule, Decl(a.ts, 0, 22))
+
+declare function get<T>(rule: Rule<T> | Message<T>): void;
+>get : Symbol(get, Decl(a.ts, 0, 45))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+>rule : Symbol(rule, Decl(a.ts, 1, 24))
+>Rule : Symbol(Rule, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+>Message : Symbol(Message, Decl(a.ts, 0, 13))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+
+declare const rule: Rule<number> | undefined;
+>rule : Symbol(rule, Decl(a.ts, 2, 13))
+>Rule : Symbol(Rule, Decl(a.ts, 0, 22))
+
+get<number>(rule);
+>get : Symbol(get, Decl(a.ts, 0, 45))
+>rule : Symbol(rule, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+
+=== b.ts ===
+import type { Ctor, Dict, Fn, Message, Renamed, Rule, Two, ViaCtor, ViaDict, ViaFn, ViaTwo } from './barrel';
+>Ctor : Symbol(Ctor, Decl(b.ts, 0, 13))
+>Dict : Symbol(Dict, Decl(b.ts, 0, 19))
+>Fn : Symbol(Fn, Decl(b.ts, 0, 25))
+>Message : Symbol(Message, Decl(b.ts, 0, 29))
+>Renamed : Symbol(Renamed, Decl(b.ts, 0, 38))
+>Rule : Symbol(Rule, Decl(b.ts, 0, 47))
+>Two : Symbol(Two, Decl(b.ts, 0, 53))
+>ViaCtor : Symbol(ViaCtor, Decl(b.ts, 0, 58))
+>ViaDict : Symbol(ViaDict, Decl(b.ts, 0, 67))
+>ViaFn : Symbol(ViaFn, Decl(b.ts, 0, 76))
+>ViaTwo : Symbol(ViaTwo, Decl(b.ts, 0, 83))
+
+function f<T, K extends string>(
+>f : Symbol(f, Decl(b.ts, 0, 109))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>K : Symbol(K, Decl(b.ts, 1, 13))
+
+  literal: Rule<T> | Message<T>,
+>literal : Symbol(literal, Decl(b.ts, 1, 32))
+>Rule : Symbol(Rule, Decl(b.ts, 0, 47))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>Message : Symbol(Message, Decl(b.ts, 0, 29))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+
+  renamed: Rule<T> | Renamed<T>,
+>renamed : Symbol(renamed, Decl(b.ts, 2, 32))
+>Rule : Symbol(Rule, Decl(b.ts, 0, 47))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>Renamed : Symbol(Renamed, Decl(b.ts, 0, 38))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+
+  fn: ViaFn<T> | Fn<T>,
+>fn : Symbol(fn, Decl(b.ts, 3, 32))
+>ViaFn : Symbol(ViaFn, Decl(b.ts, 0, 76))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>Fn : Symbol(Fn, Decl(b.ts, 0, 25))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+
+  ctor: ViaCtor<T> | Ctor<T>,
+>ctor : Symbol(ctor, Decl(b.ts, 4, 23))
+>ViaCtor : Symbol(ViaCtor, Decl(b.ts, 0, 58))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>Ctor : Symbol(Ctor, Decl(b.ts, 0, 13))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+
+  dict: ViaDict<K, T> | Dict<K, T>,
+>dict : Symbol(dict, Decl(b.ts, 5, 29))
+>ViaDict : Symbol(ViaDict, Decl(b.ts, 0, 67))
+>K : Symbol(K, Decl(b.ts, 1, 13))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>Dict : Symbol(Dict, Decl(b.ts, 0, 19))
+>K : Symbol(K, Decl(b.ts, 1, 13))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+
+  two: ViaTwo<T> | Two<T, T>,
+>two : Symbol(two, Decl(b.ts, 6, 35))
+>ViaTwo : Symbol(ViaTwo, Decl(b.ts, 0, 83))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>Two : Symbol(Two, Decl(b.ts, 0, 53))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+
+  // Two types in tsc too: the alias type arguments are those written at the reference.
+  one: ViaTwo<T> | Two<T>,
+>one : Symbol(one, Decl(b.ts, 7, 29))
+>ViaTwo : Symbol(ViaTwo, Decl(b.ts, 0, 83))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+>Two : Symbol(Two, Decl(b.ts, 0, 53))
+>T : Symbol(T, Decl(b.ts, 1, 11))
+
+) {
+  literal = null;
+>literal : Symbol(literal, Decl(b.ts, 1, 32))
+
+  renamed = null;
+>renamed : Symbol(renamed, Decl(b.ts, 2, 32))
+
+  fn = null;
+>fn : Symbol(fn, Decl(b.ts, 3, 32))
+
+  ctor = null;
+>ctor : Symbol(ctor, Decl(b.ts, 4, 23))
+
+  dict = null;
+>dict : Symbol(dict, Decl(b.ts, 5, 29))
+
+  two = null;
+>two : Symbol(two, Decl(b.ts, 6, 35))
+
+  one = null;
+>one : Symbol(one, Decl(b.ts, 7, 29))
+}
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 19, 12))
+
+=== barrel.ts ===
+export * from './types';
+export type { Message as Renamed } from './types';
+>Message : Symbol(Message, Decl(types.ts, 0, 37))
+>Renamed : Symbol(Renamed, Decl(barrel.ts, 1, 13))
+
+=== types.ts ===
+export type Rule<T> = T | Message<T>;
+>Rule : Symbol(Rule, Decl(types.ts, 0, 0))
+>T : Symbol(T, Decl(types.ts, 0, 17))
+>T : Symbol(T, Decl(types.ts, 0, 17))
+>Message : Symbol(Message, Decl(types.ts, 0, 37))
+>T : Symbol(T, Decl(types.ts, 0, 17))
+
+export type Message<T> = { value: T };
+>Message : Symbol(Message, Decl(types.ts, 0, 37))
+>T : Symbol(T, Decl(types.ts, 1, 20))
+>value : Symbol(value, Decl(types.ts, 1, 26))
+>T : Symbol(T, Decl(types.ts, 1, 20))
+
+// b.ts: the other kinds of alias body
+export type Fn<T> = (x: T) => void;
+>Fn : Symbol(Fn, Decl(types.ts, 1, 38))
+>T : Symbol(T, Decl(types.ts, 4, 15))
+>x : Symbol(x, Decl(types.ts, 4, 21))
+>T : Symbol(T, Decl(types.ts, 4, 15))
+
+export type Ctor<T> = new (x: T) => object;
+>Ctor : Symbol(Ctor, Decl(types.ts, 4, 35))
+>T : Symbol(T, Decl(types.ts, 5, 17))
+>x : Symbol(x, Decl(types.ts, 5, 27))
+>T : Symbol(T, Decl(types.ts, 5, 17))
+
+export type Dict<K extends string, V> = { [P in K]: V };
+>Dict : Symbol(Dict, Decl(types.ts, 5, 43))
+>K : Symbol(K, Decl(types.ts, 6, 17))
+>V : Symbol(V, Decl(types.ts, 6, 34))
+>P : Symbol(P, Decl(types.ts, 6, 43))
+>K : Symbol(K, Decl(types.ts, 6, 17))
+>V : Symbol(V, Decl(types.ts, 6, 34))
+
+export type Two<A, B = A> = { a: A; b: B };
+>Two : Symbol(Two, Decl(types.ts, 6, 56))
+>A : Symbol(A, Decl(types.ts, 7, 16))
+>B : Symbol(B, Decl(types.ts, 7, 18))
+>A : Symbol(A, Decl(types.ts, 7, 16))
+>a : Symbol(a, Decl(types.ts, 7, 29))
+>A : Symbol(A, Decl(types.ts, 7, 16))
+>b : Symbol(b, Decl(types.ts, 7, 35))
+>B : Symbol(B, Decl(types.ts, 7, 18))
+
+export type ViaFn<T> = 0 | Fn<T>;
+>ViaFn : Symbol(ViaFn, Decl(types.ts, 7, 43))
+>T : Symbol(T, Decl(types.ts, 8, 18))
+>Fn : Symbol(Fn, Decl(types.ts, 1, 38))
+>T : Symbol(T, Decl(types.ts, 8, 18))
+
+export type ViaCtor<T> = 0 | Ctor<T>;
+>ViaCtor : Symbol(ViaCtor, Decl(types.ts, 8, 33))
+>T : Symbol(T, Decl(types.ts, 9, 20))
+>Ctor : Symbol(Ctor, Decl(types.ts, 4, 35))
+>T : Symbol(T, Decl(types.ts, 9, 20))
+
+export type ViaDict<K extends string, V> = 0 | Dict<K, V>;
+>ViaDict : Symbol(ViaDict, Decl(types.ts, 9, 37))
+>K : Symbol(K, Decl(types.ts, 10, 20))
+>V : Symbol(V, Decl(types.ts, 10, 37))
+>Dict : Symbol(Dict, Decl(types.ts, 5, 43))
+>K : Symbol(K, Decl(types.ts, 10, 20))
+>V : Symbol(V, Decl(types.ts, 10, 37))
+
+export type ViaTwo<A> = 0 | Two<A>;
+>ViaTwo : Symbol(ViaTwo, Decl(types.ts, 10, 58))
+>A : Symbol(A, Decl(types.ts, 11, 19))
+>Two : Symbol(Two, Decl(types.ts, 6, 56))
+>A : Symbol(A, Decl(types.ts, 11, 19))
+

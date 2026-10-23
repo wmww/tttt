@@ -1,0 +1,81 @@
+a.js(1,1): error TS7022: '"g1"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(1,40): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(2,1): error TS7022: '"g2"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(2,40): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(3,1): error TS7022: '"g3"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(3,40): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(4,1): error TS7022: '"g4"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(4,40): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(5,1): error TS7022: '"g5"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(5,54): error TS7023: 'named' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(6,1): error TS7022: '"g6"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(6,40): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(7,1): error TS7022: '"g7"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(7,40): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(10,1): error TS7022: '"g8"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(10,47): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(12,1): error TS7022: '"g9"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(12,34): error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.js(13,60): error TS7009: 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.
+a.js(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" } }
+==== a.js (20 errors) ====
+    Object.defineProperty(exports, "g1", { get() { return exports.g1; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g1"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                           ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(exports, "g2", { get: () => exports.g2 });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g2"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                           ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(exports, "g3", { get: () => { return exports.g3; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g3"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                           ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(exports, "g4", { get: function () { return exports.g4; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g4"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                           ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(exports, "g5", { get: function named() { return exports.g5; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g5"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                         ~~~~~
+!!! error TS7023: 'named' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(exports, "g6", { get() { return exports.g7; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g6"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                           ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(exports, "g7", { get() { return exports.g6; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g7"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                           ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(exports, "v1", { value: () => exports.v1 });
+    Object.defineProperty(exports, "v2", { value() { return exports.v2; } });
+    Object.defineProperty(module.exports, "g8", { get() { return module.exports.g8; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g8"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                  ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function F() {}
+    Object.defineProperty(F, "g9", { get() { return F.g9; } });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: '"g9"' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                     ~~~
+!!! error TS7023: 'get' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    Object.defineProperty(F.prototype, "g10", { get() { return new F().g10; } });
+                                                               ~~~~~~~
+!!! error TS7009: 'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

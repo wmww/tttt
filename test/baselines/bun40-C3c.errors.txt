@@ -1,0 +1,26 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+node_modules/p/node_modules/x/index.d.ts(1,15): error TS2451: Cannot redeclare block-scoped variable 'g'.
+node_modules/q/node_modules/x/index.d.ts(1,15): error TS2451: Cannot redeclare block-scoped variable 'g'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["a.ts", "node_modules/p/node_modules/x/index.d.ts", "node_modules/q/node_modules/x/index.d.ts"] }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/p/node_modules/x/index.d.ts (1 errors) ====
+    declare const g: 1;
+                  ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'g'.
+!!! related TS6203 node_modules/q/node_modules/x/index.d.ts:1:15: 'g' was also declared here.
+==== node_modules/q/node_modules/x/index.d.ts (1 errors) ====
+    declare const g: 1;
+                  ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'g'.
+!!! related TS6203 node_modules/p/node_modules/x/index.d.ts:1:15: 'g' was also declared here.
+==== node_modules/p/node_modules/x/package.json (0 errors) ====
+    {"name":"x","version":"1.0.0"}
+==== node_modules/q/node_modules/x/package.json (0 errors) ====
+    {"name":"x","version":"1.0.0"}
+    

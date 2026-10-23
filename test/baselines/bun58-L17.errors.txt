@@ -1,0 +1,41 @@
+a.ts(2,15): error TS1194: Export declarations are not permitted in a namespace.
+a.ts(2,24): error TS2661: Cannot export 'v'. Only local declarations can be exported from a module.
+a.ts(2,40): error TS2322: Type 'string' is not assignable to type 'boolean'.
+a.ts(3,31): error TS1194: Export declarations are not permitted in a namespace.
+a.ts(3,56): error TS2322: Type 'true' is not assignable to type 'null'.
+a.ts(3,90): error TS2322: Type 'true' is not assignable to type 'null'.
+a.ts(4,15): error TS1194: Export declarations are not permitted in a namespace.
+a.ts(4,24): error TS2661: Cannot export 'v'. Only local declarations can be exported from a module.
+a.ts(4,61): error TS2322: Type '""' is not assignable to type 'null'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (10 errors) ====
+    const o = 1; const v = "";
+    namespace N { export { v as o }; const t: boolean = o; }
+                  ~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                           ~
+!!! error TS2661: Cannot export 'v'. Only local declarations can be exported from a module.
+                                           ~
+!!! error TS2322: Type 'string' is not assignable to type 'boolean'.
+    namespace M { const w = true; export { w as o }; const t: null = o; function f() { const u: null = o; } }
+                                  ~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                                                           ~
+!!! error TS2322: Type 'true' is not assignable to type 'null'.
+                                                                                             ~
+!!! error TS2322: Type 'true' is not assignable to type 'null'.
+    namespace P { export { v as o }; export namespace Q { const t: null = o; } }
+                  ~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                           ~
+!!! error TS2661: Cannot export 'v'. Only local declarations can be exported from a module.
+                                                                ~
+!!! error TS2322: Type '""' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,21 @@
+//// [test/cases/bun05-P3.ts] ////
+
+=== a.ts ===
+import type { Promise } from "./ty";
+>Promise : Symbol(Promise, Decl(a.ts, 0, 13))
+
+new Promise(resolve => resolve());
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(resolve, Decl(a.ts, 1, 12))
+>resolve : Symbol(resolve, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== ty.ts ===
+export interface Promise<T> { q: T }
+>Promise : Symbol(Promise, Decl(ty.ts, 0, 0))
+>T : Symbol(T, Decl(ty.ts, 0, 25))
+>q : Symbol(Promise.q, Decl(ty.ts, 0, 29))
+>T : Symbol(T, Decl(ty.ts, 0, 25))
+

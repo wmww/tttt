@@ -1,0 +1,16 @@
+a.ts(2,17): error TS2767: The 'return' property of an iterator must be a method.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const badReturn: { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+    for (const x of badReturn) {}
+                    ~~~~~~~~~
+!!! error TS2767: The 'return' property of an iterator must be a method.
+    for (const y of badReturn) {}
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

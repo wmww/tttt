@@ -1,0 +1,26 @@
+a.ts(1,17): error TS7008: Member 'a' implicitly has an 'any' type.
+a.ts(1,19): error TS1441: Cannot start a function call in a type annotation.
+a.ts(1,20): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+a.ts(1,22): error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+a.ts(1,25): error TS1128: Declaration or statement expected.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    class B { async a!() {} }
+                    ~
+!!! error TS7008: Member 'a' implicitly has an 'any' type.
+                      ~
+!!! error TS1441: Cannot start a function call in a type annotation.
+                       ~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+                         ~
+!!! error TS1068: Unexpected token. A constructor, method, accessor, or property was expected.
+                            ~
+!!! error TS1128: Declaration or statement expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

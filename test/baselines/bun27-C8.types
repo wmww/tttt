@@ -1,0 +1,28 @@
+//// [test/cases/bun27-C8.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+declare namespace React { function createElement(...a: any[]): any; const Fragment: (p: { x: number }) => JSX.Element; }
+>React : typeof React
+>createElement : (...a: any[]) => any
+>a : any[]
+>Fragment : (p: { x: number; }) => JSX.Element
+>p : { x: number; }
+>x : number
+>JSX : any
+
+function f(React: any) { return <></>; }
+>f : (React: any) => JSX.Element
+>React : any
+><></> : JSX.Element
+
+const a = <></>;
+>a : JSX.Element
+><></> : JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

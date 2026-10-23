@@ -1,0 +1,24 @@
+a.ts(1,14): error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+a.ts(1,17): error TS1018: An index signature parameter cannot have an accessibility modifier.
+a.ts(2,14): error TS1274: 'out' modifier can only appear on a type parameter of a class, interface or type alias
+a.ts(2,18): error TS1018: An index signature parameter cannot have an accessibility modifier.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    type W1 = { [in K: string]: 1 };
+                 ~~
+!!! error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+                    ~
+!!! error TS1018: An index signature parameter cannot have an accessibility modifier.
+    type W2 = { [out K: string]: 1 };
+                 ~~~
+!!! error TS1274: 'out' modifier can only appear on a type parameter of a class, interface or type alias
+                     ~
+!!! error TS1018: An index signature parameter cannot have an accessibility modifier.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

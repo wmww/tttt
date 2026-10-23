@@ -1,0 +1,19 @@
+a.ts(2,5): error TS2322: Type '(x: any) => x is string' is not assignable to type '(x: any) => x is unique symbol'.
+  Type predicate 'x is string' is not assignable to 'x is typeof sy'.
+    Type 'string' is not assignable to type 'unique symbol'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const sy: unique symbol;
+    let p1: (x: any) => x is typeof sy = null! as (x: any) => x is string;
+        ~~
+!!! error TS2322: Type '(x: any) => x is string' is not assignable to type '(x: any) => x is unique symbol'.
+!!! error TS2322:   Type predicate 'x is string' is not assignable to 'x is typeof sy'.
+!!! error TS2322:     Type 'string' is not assignable to type 'unique symbol'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,20 @@
+a.ts(1,14): error TS2552: Cannot find name 'valu'. Did you mean 'value'?
+a.ts(2,16): error TS2552: Cannot find name 'valu'. Did you mean 'value'?
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class S25 { [valu]() { let value = 1 } }
+                 ~~~~
+!!! error TS2552: Cannot find name 'valu'. Did you mean 'value'?
+!!! related TS2728 a.ts:1:28: 'value' is declared here.
+    const s26 = { [valu]() { let value = 1 } };
+                   ~~~~
+!!! error TS2552: Cannot find name 'valu'. Did you mean 'value'?
+!!! related TS2728 a.ts:2:30: 'value' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

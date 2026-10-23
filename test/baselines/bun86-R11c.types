@@ -1,0 +1,26 @@
+//// [test/cases/bun86-R11c.ts] ////
+
+=== a.ts ===
+doc.a = "";
+>doc.a = "" : ""
+>doc.a : number
+>doc : import("@typescript/lib-dom/other.js", { with: { "resolution-mode": "import" } }).X
+>a : number
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/index.d.ts ===
+import { X } from "./other";
+>X : any
+
+declare global { var doc: X }
+>global : typeof global
+>doc : X
+
+=== node_modules/@typescript/lib-dom/other.d.ts ===
+export interface X { a: number }
+>a : number
+

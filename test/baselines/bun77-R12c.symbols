@@ -1,0 +1,20 @@
+//// [test/cases/bun77-R12c.ts] ////
+
+=== a.js ===
+/** @param {number} a @param {number} extra */
+function g3(a) { return class { arguments = 1; constructor(arguments) {} }; }
+>g3 : Symbol(g3, Decl(a.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 1, 12))
+>arguments : Symbol((Anonymous class).arguments, Decl(a.js, 1, 31))
+>arguments : Symbol(arguments, Decl(a.js, 1, 59))
+
+/** @param {number} a @param {number} extra */
+function g1(a) { return class { arguments = 1; }; }
+>g1 : Symbol(g1, Decl(a.js, 1, 77))
+>a : Symbol(a, Decl(a.js, 3, 12))
+>arguments : Symbol((Anonymous class).arguments, Decl(a.js, 3, 31))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 5, 5))
+

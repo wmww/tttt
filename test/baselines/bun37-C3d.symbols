@@ -1,0 +1,9 @@
+//// [test/cases/bun37-C3d.ts] ////
+
+=== a.ts ===
+let n: number = null;
+>n : Symbol(n, Decl(a.ts, 0, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

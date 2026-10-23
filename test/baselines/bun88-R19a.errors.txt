@@ -1,0 +1,24 @@
+src/a.ts(2,14): error TS2883: The inferred type of 'x' cannot be named without a reference to 'T' from '@/node_modules/dep/internal'. This is likely not portable. A type annotation is necessary.
+src/a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "declaration": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler", "paths": {"@/*": ["./*"]}}, "files": ["src/a.ts"]}
+==== src/a.ts (2 errors) ====
+    import { f } from "dep";
+    export const x = f();
+                 ~
+!!! error TS2883: The inferred type of 'x' cannot be named without a reference to 'T' from '@/node_modules/dep/internal'. This is likely not portable. A type annotation is necessary.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
+==== node_modules/dep/index.d.ts (0 errors) ====
+    import { T } from "./internal";
+    export declare function f(): T;
+==== node_modules/dep/internal.d.ts (0 errors) ====
+    export interface T { a: 1 }
+==== node_modules/dep/package.json (0 errors) ====
+    {"name": "dep", "version": "1.0.0", "exports": {".": "./index.d.ts"}}
+==== package.json (0 errors) ====
+    {"name": "p", "dependencies": {"dep": "*"}}

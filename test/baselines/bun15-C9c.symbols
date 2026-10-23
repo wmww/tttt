@@ -1,0 +1,22 @@
+//// [test/cases/bun15-C9c.ts] ////
+
+=== a.ts ===
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+declare function g3<T extends unknown[]>(x: number, ...args: [...T, number]): T;
+>g3 : Symbol(g3, Decl(a.ts, 0, 28))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>x : Symbol(x, Decl(a.ts, 1, 41))
+>args : Symbol(args, Decl(a.ts, 1, 51))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+const r3: never = g3(0, ...(cond ? ["a", 1] : [true, 2]));
+>r3 : Symbol(r3, Decl(a.ts, 2, 5))
+>g3 : Symbol(g3, Decl(a.ts, 0, 28))
+>cond : Symbol(cond, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

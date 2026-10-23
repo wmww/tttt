@@ -1,0 +1,39 @@
+//// [test/cases/bun63-L04.ts] ////
+
+=== a.ts ===
+const { a, ...rest } = { a: 1, b: 2, c: 3 };
+>a : Symbol(a, Decl(a.ts, 0, 7))
+>rest : Symbol(rest, Decl(a.ts, 0, 10))
+>a : Symbol(a, Decl(a.ts, 0, 24))
+>b : Symbol(b, Decl(a.ts, 0, 30))
+>c : Symbol(c, Decl(a.ts, 0, 36))
+
+declare function f<T>(x: typeof rest, y: T): T;
+>f : Symbol(f, Decl(a.ts, 0, 44), Decl(a.ts, 1, 47))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+>rest : Symbol(rest, Decl(a.ts, 0, 10))
+>y : Symbol(y, Decl(a.ts, 1, 37))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+
+declare function f(x: { b: string }, y: number): number;
+>f : Symbol(f, Decl(a.ts, 0, 44), Decl(a.ts, 1, 47))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+>b : Symbol(b, Decl(a.ts, 2, 23))
+>y : Symbol(y, Decl(a.ts, 2, 36))
+
+class C {
+>C : Symbol(C, Decl(a.ts, 2, 56))
+
+  b = "";
+>b : Symbol(C.b, Decl(a.ts, 3, 9))
+
+  c = f(this, 1);
+>c : Symbol(C.c, Decl(a.ts, 4, 9))
+>f : Symbol(f, Decl(a.ts, 0, 44), Decl(a.ts, 1, 47))
+>this : Symbol(C, Decl(a.ts, 2, 56))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

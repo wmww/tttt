@@ -1,0 +1,21 @@
+//// [test/cases/bun25-P6.ts] ////
+
+=== a1.js ===
+var lit = {};
+>lit : Symbol(lit, Decl(a1.js, 0, 3))
+
+/** @this {typeof lit} */ function g() { return (this).missing; }
+>g : Symbol(g, Decl(a1.js, 0, 13))
+>this : Symbol((Missing), Decl(a1.js, 1, 5))
+
+var v = g();
+>v : Symbol(v, Decl(a1.js, 2, 3), Decl(a2.ts, 0, 3))
+>g : Symbol(g, Decl(a1.js, 0, 13))
+
+=== a2.ts ===
+var v: string;
+>v : Symbol(v, Decl(a1.js, 2, 3), Decl(a2.ts, 0, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a2.ts, 1, 5))
+

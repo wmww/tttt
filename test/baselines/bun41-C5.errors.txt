@@ -1,0 +1,8 @@
+tsconfig.json(1,31): error TS5024: Compiler option 'reference.path' requires a value of type string.
+
+
+==== tsconfig.json (1 errors) ====
+    { "files": [], "references": [{}] }
+                                  ~~
+!!! error TS5024: Compiler option 'reference.path' requires a value of type string.
+    

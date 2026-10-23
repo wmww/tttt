@@ -1,0 +1,24 @@
+//// [test/cases/bun80-R17c.ts] ////
+
+=== a.ts ===
+import { X } from "./m";
+>X : typeof X
+
+export class K {
+>K : K
+
+  p = 1;
+>p : number
+>1 : 1
+
+  /** {@link X} */
+  ;
+}
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export class X {}
+>X : X
+

@@ -1,0 +1,17 @@
+//// [test/cases/bun16-C3d.ts] ////
+
+=== a.ts ===
+function f8<T extends { 0?: (x: number) => void } & Iterable<(x: string) => void>>([a = x => {}]: T) {}
+>f8 : Symbol(f8, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>0 : Symbol(0, Decl(a.ts, 0, 23))
+>x : Symbol(x, Decl(a.ts, 0, 29))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 62))
+>a : Symbol(a, Decl(a.ts, 0, 84))
+>x : Symbol(x, Decl(a.ts, 0, 87))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

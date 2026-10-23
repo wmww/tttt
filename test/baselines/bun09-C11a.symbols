@@ -1,0 +1,18 @@
+//// [test/cases/bun09-C11a.ts] ////
+
+=== a.ts ===
+declare const s: string;
+>s : Symbol(s, Decl(a.ts, 0, 13))
+
+class A { [s] = 1; }
+>A : Symbol(A, Decl(a.ts, 0, 24), Decl(a.ts, 1, 20))
+>[s] : Symbol(A[s], Decl(a.ts, 1, 9))
+>s : Symbol(s, Decl(a.ts, 0, 13))
+
+interface A { b: boolean }
+>A : Symbol(A, Decl(a.ts, 0, 24), Decl(a.ts, 1, 20))
+>b : Symbol(A.b, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

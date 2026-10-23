@@ -1,0 +1,46 @@
+//// [test/cases/bun53-L20.ts] ////
+
+=== a.js ===
+class B {} class C {}
+>B : B
+>C : C
+
+/** @augments B */
+class A0 extends C {}
+>A0 : A0
+>C : C
+
+/** @augments B */
+async class A1 extends C {}
+>A1 : A1
+>C : C
+
+/** @augments B */
+static class A2 extends C {}
+>A2 : A2
+>C : C
+
+/** @augments B */
+export export class A3 extends C {}
+>A3 : A3
+>C : C
+
+/** @augments B */
+accessor class A4 extends C {}
+>A4 : A4
+>C : C
+
+/** @extends B */
+async class A5 extends C {}
+>A5 : A5
+>C : C
+
+/** @augments B */
+export async class A6 extends C {}
+>A6 : A6
+>C : C
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+

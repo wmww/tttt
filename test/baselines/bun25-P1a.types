@@ -1,0 +1,15 @@
+//// [test/cases/bun25-P1a.ts] ////
+
+=== a.ts ===
+class I<T> { m!: T extends string ? 1 : 2; k<U>(a: [I<T>["m"] | I<U>["m"]]) { const n: never = a; } }
+>I : I<T>
+>m : T extends string ? 1 : 2
+>k : <U>(a: [I<T>["m"] | I<U>["m"]]) => void
+>a : [(U extends string ? 1 : 2) | (T extends string ? 1 : 2)]
+>n : never
+>a : [(U extends string ? 1 : 2) | (T extends string ? 1 : 2)]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

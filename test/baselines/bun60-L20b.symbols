@@ -1,0 +1,57 @@
+//// [test/cases/bun60-L20b.ts] ////
+
+=== a.ts ===
+function f() { const s = Symbol(); return { [s]: 1 }; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>s : Symbol(s, Decl(a.ts, 0, 20))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>[s] : Symbol([s], Decl(a.ts, 0, 43))
+>s : Symbol(s, Decl(a.ts, 0, 20))
+
+const k = "foo";
+>k : Symbol(k, Decl(a.ts, 1, 5))
+
+export class H1 { get foo() { return f(); } set [k](v) {} }
+>H1 : Symbol(H1, Decl(a.ts, 1, 16))
+>foo : Symbol(H1.foo, Decl(a.ts, 2, 17), Decl(a.ts, 2, 43))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>[k] : Symbol(H1.foo, Decl(a.ts, 2, 17), Decl(a.ts, 2, 43))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>v : Symbol(v, Decl(a.ts, 2, 52))
+
+export class H2 { get [k]() { return f(); } set foo(v) {} }
+>H2 : Symbol(H2, Decl(a.ts, 2, 59))
+>[k] : Symbol(H2.foo, Decl(a.ts, 3, 43), Decl(a.ts, 3, 17))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>foo : Symbol(H2.foo, Decl(a.ts, 3, 43), Decl(a.ts, 3, 17))
+>v : Symbol(v, Decl(a.ts, 3, 52))
+
+export class H3 { get [k]() { return f(); } set [k](v) {} }
+>H3 : Symbol(H3, Decl(a.ts, 3, 59))
+>[k] : Symbol(H3[k], Decl(a.ts, 4, 17), Decl(a.ts, 4, 43))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>[k] : Symbol(H3[k], Decl(a.ts, 4, 17), Decl(a.ts, 4, 43))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>v : Symbol(v, Decl(a.ts, 4, 52))
+
+export class H4 { set [k](v) {} get foo() { return f(); } }
+>H4 : Symbol(H4, Decl(a.ts, 4, 59))
+>[k] : Symbol(H4.foo, Decl(a.ts, 5, 31), Decl(a.ts, 5, 17))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>v : Symbol(v, Decl(a.ts, 5, 26))
+>foo : Symbol(H4.foo, Decl(a.ts, 5, 31), Decl(a.ts, 5, 17))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+export class H5 { static get foo() { return f(); } static set [k](v) {} }
+>H5 : Symbol(H5, Decl(a.ts, 5, 59))
+>foo : Symbol(H5.foo, Decl(a.ts, 6, 17), Decl(a.ts, 6, 50))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>[k] : Symbol(H5.foo, Decl(a.ts, 6, 17), Decl(a.ts, 6, 50))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>v : Symbol(v, Decl(a.ts, 6, 66))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

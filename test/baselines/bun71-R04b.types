@@ -1,0 +1,53 @@
+//// [test/cases/bun71-R04b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; a: {} } }
+>div : {}
+>a : {}
+
+declare function use(...x: any[]): void;
+>use : (...x: any[]) => void
+>x : any[]
+
+function div() {}
+>div : () => void
+
+if (div) { use(<div />); }
+>div : () => void
+>use(<div />) : void
+>use : (...x: any[]) => void
+><div /> : JSX.Element
+>div : () => void
+
+if (div) { use(<div></div>); }
+>div : () => void
+>use(<div></div>) : void
+>use : (...x: any[]) => void
+><div></div> : JSX.Element
+>div : () => void
+>div : () => void
+
+use(div && <a><div /></a>);
+>use(div && <a><div /></a>) : void
+>use : (...x: any[]) => void
+>div && <a><div /></a> : JSX.Element
+>div : () => void
+><a><div /></a> : JSX.Element
+>a : any
+><div /> : JSX.Element
+>div : () => void
+>a : any
+
+async function t(a: Promise<string>) { if (a) { use(<a />); } }
+>t : (a: Promise<string>) => Promise<void>
+>a : Promise<string>
+>a : Promise<string>
+>use(<a />) : void
+>use : (...x: any[]) => void
+><a /> : JSX.Element
+>a : Promise<string>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

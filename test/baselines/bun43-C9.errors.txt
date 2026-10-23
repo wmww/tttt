@@ -1,0 +1,16 @@
+a.ts(1,13): error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+a.ts(1,13): error TS1003: Identifier expected.
+a.ts(1,14): error TS1488: Escape sequence '\8' is not allowed.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function g4("\8") {}
+                
+!!! error TS7006: Parameter '(Missing)' implicitly has an 'any' type.
+                ~~~~
+!!! error TS1003: Identifier expected.
+                 ~~
+!!! error TS1488: Escape sequence '\8' is not allowed.
+    

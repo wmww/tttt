@@ -1,0 +1,26 @@
+a.ts(5,47): error TS2698: Spread types may only be created from object types.
+a.ts(6,50): error TS2698: Spread types may only be created from object types.
+a.ts(7,44): error TS2698: Spread types may only be created from object types.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"] } }
+==== a.ts (4 errors) ====
+    class K { k = 1 }
+    declare function id<T>(value: T): T;
+    declare function memo<T>(factory: () => T): T;
+    declare const k: NoInfer<K | string | undefined> | undefined;
+    export const v1 = id(k instanceof K ? { s: 1, ...k } : undefined);
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v2 = memo(() => (k instanceof K ? { ...k, s: 1 } : undefined));
+                                                     ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v3 = k instanceof K ? { s: 1, ...k } : undefined;
+                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

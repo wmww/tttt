@@ -1,0 +1,48 @@
+a.ts(3,29): error TS2741: Property 'x' is missing in type 'null[]' but required in type '{ x: 1; }'.
+a.ts(3,54): error TS18047: 'payload' is possibly 'null'.
+a.ts(5,21): error TS7031: Binding element 'payload' implicitly has an 'string | any[]' type.
+a.ts(6,29): error TS2741: Property 'x' is missing in type 'undefined[][]' but required in type '{ x: 1; }'.
+a.ts(9,29): error TS2741: Property 'x' is missing in type 'undefined[]' but required in type '{ x: 1; }'.
+a.ts(11,71): error TS7018: Object literal's property 'payload' implicitly has an 'any' type.
+a.ts(12,29): error TS2741: Property 'x' is missing in type 'any[]' but required in type '{ x: 1; }'.
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "strictNullChecks": false, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    declare const cond: boolean;
+    function g1({ kind, payload } = cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' }) {
+      if (kind === 'A') { const t: { x: 1 } = [payload]; payload.foo; }
+                                ~
+!!! error TS2741: Property 'x' is missing in type 'null[]' but required in type '{ x: 1; }'.
+!!! related TS2728 a.ts:3:34: 'x' is declared here.
+                                                         ~~~~~~~
+!!! error TS18047: 'payload' is possibly 'null'.
+    }
+    function g4({ kind, payload } = cond ? { kind: 'A' as const, payload: [] } : { kind: 'B' as const, payload: 's' }) {
+                        ~~~~~~~
+!!! error TS7031: Binding element 'payload' implicitly has an 'string | any[]' type.
+      if (kind === 'A') { const t: { x: 1 } = [payload]; payload.push(1); }
+                                ~
+!!! error TS2741: Property 'x' is missing in type 'undefined[][]' but required in type '{ x: 1; }'.
+!!! related TS2728 a.ts:6:34: 'x' is declared here.
+    }
+    class K { m({ kind, payload } = cond ? { kind: 'A' as const, payload: undefined } : { kind: 'B' as const, payload: 's' }) {
+      if (kind === 'A') { const t: { x: 1 } = [payload]; }
+                                ~
+!!! error TS2741: Property 'x' is missing in type 'undefined[]' but required in type '{ x: 1; }'.
+!!! related TS2728 a.ts:9:34: 'x' is declared here.
+    } }
+    const g5 = function ({ kind, payload } = cond ? { kind: 'A' as const, payload: null } : { kind: 'B' as const, payload: 's' }) {
+                                                                          ~~~~~~~~~~~~~
+!!! error TS7018: Object literal's property 'payload' implicitly has an 'any' type.
+      if (kind === 'A') { const t: { x: 1 } = [payload]; }
+                                ~
+!!! error TS2741: Property 'x' is missing in type 'any[]' but required in type '{ x: 1; }'.
+!!! related TS2728 a.ts:12:34: 'x' is declared here.
+    };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,49 @@
+a.ts(3,8): error TS2343: This syntax requires an imported helper named '__esDecorate' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+a.ts(3,8): error TS2343: This syntax requires an imported helper named '__runInitializers' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+a.ts(3,8): error TS2343: This syntax requires an imported helper named '__setFunctionName' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+a.ts(3,60): error TS2343: This syntax requires an imported helper named '__propKey' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(3,16): error TS2343: This syntax requires an imported helper named '__esDecorate' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+b.ts(3,16): error TS2343: This syntax requires an imported helper named '__runInitializers' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+b.ts(3,16): error TS2343: This syntax requires an imported helper named '__setFunctionName' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+b.ts(3,68): error TS2343: This syntax requires an imported helper named '__propKey' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+b.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022", "esnext.decorators"], "importHelpers": true, "target": "es2022", "useDefineForClassFields": false, "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (5 errors) ====
+    export {};
+    declare const key: string; declare const dec: any; declare function use(...a: any[]): void;
+    export @dec class P { static y = 1; [key] = class { static x = 1 } }
+           ~~~~
+!!! error TS2343: This syntax requires an imported helper named '__esDecorate' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+           ~~~~
+!!! error TS2343: This syntax requires an imported helper named '__runInitializers' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+           ~~~~
+!!! error TS2343: This syntax requires an imported helper named '__setFunctionName' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+                                                               ~
+!!! error TS2343: This syntax requires an imported helper named '__propKey' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (5 errors) ====
+    export {};
+    declare const key: string; declare const dec: any; declare function use(...a: any[]): void;
+    export default @dec class P { static y = 1; [key] = class { static x = 1 } }
+                   ~~~~
+!!! error TS2343: This syntax requires an imported helper named '__esDecorate' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+                   ~~~~
+!!! error TS2343: This syntax requires an imported helper named '__runInitializers' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+                   ~~~~
+!!! error TS2343: This syntax requires an imported helper named '__setFunctionName' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+                                                                       ~
+!!! error TS2343: This syntax requires an imported helper named '__propKey' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/tslib/index.d.ts (0 errors) ====
+    export declare function __nothing(): void;
+==== node_modules/tslib/package.json (0 errors) ====
+    { "name": "tslib", "version": "2.0.0", "types": "index.d.ts" }
+    

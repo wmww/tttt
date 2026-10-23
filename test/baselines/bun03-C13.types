@@ -1,0 +1,24 @@
+//// [test/cases/bun03-C13.ts] ////
+
+=== a.ts ===
+class C { a = 1 }
+>C : C
+>a : number
+>1 : 1
+
+interface C { new (): C; new (x: number): { a: number; b: number } }
+>x : number
+>a : number
+>b : number
+
+declare const x: C;
+>x : C
+
+class S extends x {}
+>S : S
+>x : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

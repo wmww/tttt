@@ -1,0 +1,26 @@
+//// [test/cases/bun13-C7b.ts] ////
+
+=== a.ts ===
+type U<T, V extends { k: T }> = (V & { k: "b"; y: 2 }) | { k: "c"; z: 3 };
+>U : U<T, V>
+>k : T
+>k : "b"
+>y : 2
+>k : "c"
+>z : 3
+
+type K<T, V extends { k: T }> = keyof U<T, V>;
+>K : "k" | ("k" & keyof V) | ("z" & keyof V)
+>k : T
+
+function f<T, V extends { k: T }>() { const n: { q: K<T, V> } = 1; }
+>f : <T, V extends { k: T; }>() => void
+>k : T
+>n : { q: K<T, V>; }
+>q : "k" | ("k" & keyof V) | ("z" & keyof V)
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

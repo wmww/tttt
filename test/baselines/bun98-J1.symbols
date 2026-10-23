@@ -1,0 +1,44 @@
+//// [test/cases/bun98-J1.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { [name: string]: any } interface Element {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 23))
+>name : Symbol(name, Decl(a.tsx, 0, 55))
+>Element : Symbol(Element, Decl(a.tsx, 0, 75))
+
+declare const isLogin: boolean;
+>isLogin : Symbol(isLogin, Decl(a.tsx, 1, 13))
+
+declare const DEFAULT_NULL_VALUE: string;
+>DEFAULT_NULL_VALUE : Symbol(DEFAULT_NULL_VALUE, Decl(a.tsx, 2, 13))
+
+declare const HoverCardText: (p: { label: any }) => null;
+>HoverCardText : Symbol(HoverCardText, Decl(a.tsx, 3, 13))
+>p : Symbol(p, Decl(a.tsx, 3, 30))
+>label : Symbol(label, Decl(a.tsx, 3, 34))
+
+// `(DEFAULT_NULL_VALUE): (<HoverCardText label=..` is tried as an arrow function with a return type. The type is a function type without
+// a parameter list, so the trial fails (typeHasArrowFunctionBlockingParseError) and its errors are dropped.
+export const x = (
+>x : Symbol(x, Decl(a.tsx, 6, 12))
+
+  <div>
+    {isLogin ? (DEFAULT_NULL_VALUE) : (<HoverCardText
+>isLogin : Symbol(isLogin, Decl(a.tsx, 1, 13))
+>DEFAULT_NULL_VALUE : Symbol(DEFAULT_NULL_VALUE, Decl(a.tsx, 2, 13))
+>HoverCardText : Symbol(HoverCardText, Decl(a.tsx, 3, 13))
+
+      label={<div>{('', { s1: (1, { precision: '' }), s2: (2, { precision: '' }) })}</div>}></HoverCardText>)}
+>label : Symbol(label, Decl(a.tsx, 8, 53))
+>s1 : Symbol(s1, Decl(a.tsx, 9, 25))
+>precision : Symbol(precision, Decl(a.tsx, 9, 35))
+>s2 : Symbol(s2, Decl(a.tsx, 9, 53))
+>precision : Symbol(precision, Decl(a.tsx, 9, 63))
+>HoverCardText : Symbol(HoverCardText, Decl(a.tsx, 3, 13))
+
+  </div>
+);
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 12, 5))
+

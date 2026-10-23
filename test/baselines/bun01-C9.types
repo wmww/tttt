@@ -1,0 +1,28 @@
+//// [test/cases/bun01-C9.ts] ////
+
+=== a_umd.d.ts ===
+export const v: number; export as namespace UX; export as namespace UC;
+>v : number
+>UX : typeof import("./a_umd")
+>UC : typeof import("./a_umd")
+
+=== b_glob.d.ts ===
+declare namespace UX { const extra: number; } declare namespace UC { const other: number; }
+>UX : typeof import("./a_umd")
+>extra : number
+>UC : typeof import("./a_umd")
+>other : number
+
+=== c.ts ===
+UX.extra; UC.extra;
+>UX.extra : number
+>UX : typeof import("./a_umd")
+>extra : number
+>UC.extra : any
+>UC : typeof import("./a_umd")
+>extra : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

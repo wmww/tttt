@@ -1,0 +1,14 @@
+a.ts(1,59): error TS7052: Element implicitly has an 'any' type because type 'Map<string, 1>' has no index signature. Did you mean to call 'c.#p.get'?
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C { #p = new Map<string, 1>(); f(c: C, k: string) { c.#p[k]; } }
+                                                              ~~~~~~~
+!!! error TS7052: Element implicitly has an 'any' type because type 'Map<string, 1>' has no index signature. Did you mean to call 'c.#p.get'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

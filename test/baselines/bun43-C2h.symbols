@@ -1,0 +1,6 @@
+//// [test/cases/bun43-C2h.ts] ////
+
+=== a.ts ===
+var y = 1 \u0061s number;
+>y : Symbol(y, Decl(a.ts, 0, 3))
+

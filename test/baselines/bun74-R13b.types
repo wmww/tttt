@@ -1,0 +1,19 @@
+//// [test/cases/bun74-R13b.ts] ////
+
+=== a.ts ===
+x = (...
+>x = (... : (...: any[]) => any
+>x : any
+>(... : (...: any[]) => any
+> : any[]
+> : any
+
+=== b.ts ===
+x = async (... // c
+>x = async (... : (...: any[]) => any
+>x : any
+>async (... : (...: any[]) => any
+
+> : any[]
+> : any
+

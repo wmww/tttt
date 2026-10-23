@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C26d.ts] ////
+
+=== a.ts ===
+declare namespace N { for (let a,;;) {} }
+>N : Symbol(N, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 30))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

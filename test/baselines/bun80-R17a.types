@@ -1,0 +1,35 @@
+//// [test/cases/bun80-R17a.ts] ////
+
+=== a.ts ===
+import { X } from "./m";
+>X : typeof X
+
+/** Sets things up, see {@link X}. */
+(function () {})();
+>(function () {})() : void
+>(function () {}) : () => void
+>function () {} : () => void
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import { X } from "./m";
+>X : typeof X
+
+/** {@link X} */
+(globalThis as any).foo = 1;
+>(globalThis as any).foo = 1 : 1
+>(globalThis as any).foo : any
+>(globalThis as any) : any
+>globalThis as any : any
+>globalThis : typeof globalThis
+>foo : any
+>1 : 1
+
+export {};
+=== m.ts ===
+export class X {}
+>X : X
+

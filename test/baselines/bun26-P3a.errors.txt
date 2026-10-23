@@ -1,0 +1,19 @@
+a.ts(4,11): error TS2345: Argument of type 'C' is not assignable to parameter of type 'this'.
+  'C' is assignable to the constraint of type 'this', but 'this' could be instantiated with a different subtype of constraint 'C'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C {
+      h = ((x) => 1) satisfies (x: this) => number;
+    }
+    new C().h(new C());
+              ~~~~~~~
+!!! error TS2345: Argument of type 'C' is not assignable to parameter of type 'this'.
+!!! error TS2345:   'C' is assignable to the constraint of type 'this', but 'this' could be instantiated with a different subtype of constraint 'C'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

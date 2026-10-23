@@ -1,0 +1,27 @@
+a.ts(1,23): error TS2809: Declaration or statement expected. This '=' follows a block of statements, so if you intended to write a destructuring assignment, you might need to wrap the whole assignment in parentheses.
+a.ts(1,25): error TS1005: ',' expected.
+a.ts(2,16): error TS2809: Declaration or statement expected. This '=' follows a block of statements, so if you intended to write a destructuring assignment, you might need to wrap the whole assignment in parentheses.
+a.ts(2,18): error TS1005: ')' expected.
+a.ts(2,19): error TS1005: ';' expected.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    var x = function() {} = 1;
+                          ~
+!!! error TS2809: Declaration or statement expected. This '=' follows a block of statements, so if you intended to write a destructuring assignment, you might need to wrap the whole assignment in parentheses.
+                            ~
+!!! error TS1005: ',' expected.
+    (function() {} = 1);
+                   ~
+!!! error TS2809: Declaration or statement expected. This '=' follows a block of statements, so if you intended to write a destructuring assignment, you might need to wrap the whole assignment in parentheses.
+                     ~
+!!! error TS1005: ')' expected.
+                      ~
+!!! error TS1005: ';' expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,11 @@
+//// [test/cases/bun03-C8a.ts] ////
+
+=== a.ts ===
+import type D, { X } from "./missing";
+>D : any
+>X : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

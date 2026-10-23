@@ -1,0 +1,268 @@
+//// [test/cases/bun99-I2.ts] ////
+
+=== a.ts ===
+type Hydrated<T> = T extends { x: {} } ? T : T & { [P in keyof T]: T[P] extends Lazy<infer U> ? Lazy<U> : T[P] };
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>x : Symbol(x, Decl(a.ts, 0, 30))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>P : Symbol(P, Decl(a.ts, 0, 52))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>P : Symbol(P, Decl(a.ts, 0, 52))
+>Lazy : Symbol(Lazy, Decl(a.ts, 0, 113))
+>U : Symbol(U, Decl(a.ts, 0, 90))
+>Lazy : Symbol(Lazy, Decl(a.ts, 0, 113))
+>U : Symbol(U, Decl(a.ts, 0, 90))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>P : Symbol(P, Decl(a.ts, 0, 52))
+
+declare class Lazy<T> { brand: T }
+>Lazy : Symbol(Lazy, Decl(a.ts, 0, 113))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>brand : Symbol(Lazy.brand, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+
+declare class Collection<T> { hydrate(): Hydrated<T> }
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>T : Symbol(T, Decl(a.ts, 2, 25))
+>hydrate : Symbol(Collection.hydrate, Decl(a.ts, 2, 29))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 2, 25))
+
+declare class M1 { assert(): this is Hydrated<this>; }
+>M1 : Symbol(M1, Decl(a.ts, 2, 54))
+>assert : Symbol(M1.assert, Decl(a.ts, 3, 18))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C1 extends Collection<M1> {}
+>C1 : Symbol(C1, Decl(a.ts, 3, 54))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M1 : Symbol(M1, Decl(a.ts, 2, 54))
+
+declare function r1<T extends M1>(ctor: new () => Collection<NoInfer<T>>): void;
+>r1 : Symbol(r1, Decl(a.ts, 4, 34))
+>T : Symbol(T, Decl(a.ts, 5, 20))
+>M1 : Symbol(M1, Decl(a.ts, 2, 54))
+>ctor : Symbol(ctor, Decl(a.ts, 5, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 5, 20))
+
+r1(C1);
+>r1 : Symbol(r1, Decl(a.ts, 4, 34))
+>C1 : Symbol(C1, Decl(a.ts, 3, 54))
+
+declare class M2 { self(): this; assert(): this is Hydrated<this>; }
+>M2 : Symbol(M2, Decl(a.ts, 6, 7))
+>self : Symbol(M2.self, Decl(a.ts, 7, 18))
+>assert : Symbol(M2.assert, Decl(a.ts, 7, 32))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C2 extends Collection<M2> {}
+>C2 : Symbol(C2, Decl(a.ts, 7, 68))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M2 : Symbol(M2, Decl(a.ts, 6, 7))
+
+declare function r2<T extends M2>(ctor: new () => Collection<NoInfer<T>>): void;
+>r2 : Symbol(r2, Decl(a.ts, 8, 34))
+>T : Symbol(T, Decl(a.ts, 9, 20))
+>M2 : Symbol(M2, Decl(a.ts, 6, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 9, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 9, 20))
+
+r2(C2);
+>r2 : Symbol(r2, Decl(a.ts, 8, 34))
+>C2 : Symbol(C2, Decl(a.ts, 7, 68))
+
+declare class M3 { assert(): this is Hydrated<this>; self(): this; }
+>M3 : Symbol(M3, Decl(a.ts, 10, 7))
+>assert : Symbol(M3.assert, Decl(a.ts, 11, 18))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+>self : Symbol(M3.self, Decl(a.ts, 11, 52))
+
+class C3 extends Collection<M3> {}
+>C3 : Symbol(C3, Decl(a.ts, 11, 68))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M3 : Symbol(M3, Decl(a.ts, 10, 7))
+
+declare function r3<T extends M3>(ctor: new () => Collection<NoInfer<T>>): void;
+>r3 : Symbol(r3, Decl(a.ts, 12, 34))
+>T : Symbol(T, Decl(a.ts, 13, 20))
+>M3 : Symbol(M3, Decl(a.ts, 10, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 13, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 13, 20))
+
+r3(C3);
+>r3 : Symbol(r3, Decl(a.ts, 12, 34))
+>C3 : Symbol(C3, Decl(a.ts, 11, 68))
+
+declare class M4 { other(): void; assert(): this is Hydrated<this>; }
+>M4 : Symbol(M4, Decl(a.ts, 14, 7))
+>other : Symbol(M4.other, Decl(a.ts, 15, 18))
+>assert : Symbol(M4.assert, Decl(a.ts, 15, 33))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C4 extends Collection<M4> {}
+>C4 : Symbol(C4, Decl(a.ts, 15, 69))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M4 : Symbol(M4, Decl(a.ts, 14, 7))
+
+declare function r4<T extends M4>(ctor: new () => Collection<NoInfer<T>>): void;
+>r4 : Symbol(r4, Decl(a.ts, 16, 34))
+>T : Symbol(T, Decl(a.ts, 17, 20))
+>M4 : Symbol(M4, Decl(a.ts, 14, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 17, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 17, 20))
+
+r4(C4);
+>r4 : Symbol(r4, Decl(a.ts, 16, 34))
+>C4 : Symbol(C4, Decl(a.ts, 15, 69))
+
+declare class M5 { n: number; assert(): this is Hydrated<this>; }
+>M5 : Symbol(M5, Decl(a.ts, 18, 7))
+>n : Symbol(M5.n, Decl(a.ts, 19, 18))
+>assert : Symbol(M5.assert, Decl(a.ts, 19, 29))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C5 extends Collection<M5> {}
+>C5 : Symbol(C5, Decl(a.ts, 19, 65))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M5 : Symbol(M5, Decl(a.ts, 18, 7))
+
+declare function r5<T extends M5>(ctor: new () => Collection<NoInfer<T>>): void;
+>r5 : Symbol(r5, Decl(a.ts, 20, 34))
+>T : Symbol(T, Decl(a.ts, 21, 20))
+>M5 : Symbol(M5, Decl(a.ts, 18, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 21, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 21, 20))
+
+r5(C5);
+>r5 : Symbol(r5, Decl(a.ts, 20, 34))
+>C5 : Symbol(C5, Decl(a.ts, 19, 65))
+
+declare class M6 { other(): void; self(): this; assert(): this is Hydrated<this>; }
+>M6 : Symbol(M6, Decl(a.ts, 22, 7))
+>other : Symbol(M6.other, Decl(a.ts, 23, 18))
+>self : Symbol(M6.self, Decl(a.ts, 23, 33))
+>assert : Symbol(M6.assert, Decl(a.ts, 23, 47))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C6 extends Collection<M6> {}
+>C6 : Symbol(C6, Decl(a.ts, 23, 83))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M6 : Symbol(M6, Decl(a.ts, 22, 7))
+
+declare function r6<T extends M6>(ctor: new () => Collection<NoInfer<T>>): void;
+>r6 : Symbol(r6, Decl(a.ts, 24, 34))
+>T : Symbol(T, Decl(a.ts, 25, 20))
+>M6 : Symbol(M6, Decl(a.ts, 22, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 25, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 25, 20))
+
+r6(C6);
+>r6 : Symbol(r6, Decl(a.ts, 24, 34))
+>C6 : Symbol(C6, Decl(a.ts, 23, 83))
+
+declare class M7 { self(): this; other(): void; assert(): this is Hydrated<this>; }
+>M7 : Symbol(M7, Decl(a.ts, 26, 7))
+>self : Symbol(M7.self, Decl(a.ts, 27, 18))
+>other : Symbol(M7.other, Decl(a.ts, 27, 32))
+>assert : Symbol(M7.assert, Decl(a.ts, 27, 47))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C7 extends Collection<M7> {}
+>C7 : Symbol(C7, Decl(a.ts, 27, 83))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M7 : Symbol(M7, Decl(a.ts, 26, 7))
+
+declare function r7<T extends M7>(ctor: new () => Collection<NoInfer<T>>): void;
+>r7 : Symbol(r7, Decl(a.ts, 28, 34))
+>T : Symbol(T, Decl(a.ts, 29, 20))
+>M7 : Symbol(M7, Decl(a.ts, 26, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 29, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 29, 20))
+
+r7(C7);
+>r7 : Symbol(r7, Decl(a.ts, 28, 34))
+>C7 : Symbol(C7, Decl(a.ts, 27, 83))
+
+declare class M8 { is(): this is {}; assert(): Hydrated<this>; }
+>M8 : Symbol(M8, Decl(a.ts, 30, 7))
+>is : Symbol(M8.is, Decl(a.ts, 31, 18))
+>assert : Symbol(M8.assert, Decl(a.ts, 31, 36))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C8 extends Collection<M8> {}
+>C8 : Symbol(C8, Decl(a.ts, 31, 64))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M8 : Symbol(M8, Decl(a.ts, 30, 7))
+
+declare function r8<T extends M8>(ctor: new () => Collection<NoInfer<T>>): void;
+>r8 : Symbol(r8, Decl(a.ts, 32, 34))
+>T : Symbol(T, Decl(a.ts, 33, 20))
+>M8 : Symbol(M8, Decl(a.ts, 30, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 33, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 33, 20))
+
+r8(C8);
+>r8 : Symbol(r8, Decl(a.ts, 32, 34))
+>C8 : Symbol(C8, Decl(a.ts, 31, 64))
+
+declare class M9 { assert(): this is Hydrated<this>; again(): this is Hydrated<this>; }
+>M9 : Symbol(M9, Decl(a.ts, 34, 7))
+>assert : Symbol(M9.assert, Decl(a.ts, 35, 18))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+>again : Symbol(M9.again, Decl(a.ts, 35, 52))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+
+class C9 extends Collection<M9> {}
+>C9 : Symbol(C9, Decl(a.ts, 35, 87))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>M9 : Symbol(M9, Decl(a.ts, 34, 7))
+
+declare function r9<T extends M9>(ctor: new () => Collection<NoInfer<T>>): void;
+>r9 : Symbol(r9, Decl(a.ts, 36, 34))
+>T : Symbol(T, Decl(a.ts, 37, 20))
+>M9 : Symbol(M9, Decl(a.ts, 34, 7))
+>ctor : Symbol(ctor, Decl(a.ts, 37, 34))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 37, 20))
+
+r9(C9);
+>r9 : Symbol(r9, Decl(a.ts, 36, 34))
+>C9 : Symbol(C9, Decl(a.ts, 35, 87))
+
+declare function value<T extends M2>(c: Collection<NoInfer<T>>): void;
+>value : Symbol(value, Decl(a.ts, 38, 7))
+>T : Symbol(T, Decl(a.ts, 39, 23))
+>M2 : Symbol(M2, Decl(a.ts, 6, 7))
+>c : Symbol(c, Decl(a.ts, 39, 37))
+>Collection : Symbol(Collection, Decl(a.ts, 1, 34))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 39, 23))
+
+value(new C2());
+>value : Symbol(value, Decl(a.ts, 38, 7))
+>C2 : Symbol(C2, Decl(a.ts, 7, 68))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 41, 5))
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun23-C3c.ts] ////
+
+=== a.ts ===
+interface A { readonly "x-y": unique symbol }
+>"x-y" : unique symbol
+
+const s1: { (e: A["x-y"]): void } = {};
+>s1 : (e: A["x-y"]) => void
+>e : unique symbol
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

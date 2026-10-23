@@ -1,0 +1,49 @@
+//// [test/cases/bun78-R07.ts] ////
+
+=== a.ts ===
+function q1(a = await 1): void; function q1(a: any) {}
+>q1 : Symbol(q1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 31))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+>q1 : Symbol(q1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 31))
+>a : Symbol(a, Decl(a.ts, 0, 44))
+
+function q2(a = (await "s")): void; function q2(a: any) {}
+>q2 : Symbol(q2, Decl(a.ts, 0, 54), Decl(a.ts, 1, 35))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>q2 : Symbol(q2, Decl(a.ts, 0, 54), Decl(a.ts, 1, 35))
+>a : Symbol(a, Decl(a.ts, 1, 48))
+
+function q3(a = await await true): void; function q3(a: any) {}
+>q3 : Symbol(q3, Decl(a.ts, 1, 58), Decl(a.ts, 2, 40))
+>a : Symbol(a, Decl(a.ts, 2, 12))
+>q3 : Symbol(q3, Decl(a.ts, 1, 58), Decl(a.ts, 2, 40))
+>a : Symbol(a, Decl(a.ts, 2, 53))
+
+declare function q4(a = await 1): void; q4();
+>q4 : Symbol(q4, Decl(a.ts, 2, 63))
+>a : Symbol(a, Decl(a.ts, 3, 20))
+>q4 : Symbol(q4, Decl(a.ts, 2, 63))
+
+class K { m(a = await 1): void; m(a: any) {} }
+>K : Symbol(K, Decl(a.ts, 3, 45))
+>m : Symbol(K.m, Decl(a.ts, 4, 9), Decl(a.ts, 4, 31))
+>a : Symbol(a, Decl(a.ts, 4, 12))
+>m : Symbol(K.m, Decl(a.ts, 4, 9), Decl(a.ts, 4, 31))
+>a : Symbol(a, Decl(a.ts, 4, 34))
+
+// tsc reports these: the operand is not a literal, or the initializer is not the `await` itself
+function r1(a = await -1): void; function r1(a: any) {}
+>r1 : Symbol(r1, Decl(a.ts, 4, 46), Decl(a.ts, 6, 32))
+>a : Symbol(a, Decl(a.ts, 6, 12))
+>r1 : Symbol(r1, Decl(a.ts, 4, 46), Decl(a.ts, 6, 32))
+>a : Symbol(a, Decl(a.ts, 6, 45))
+
+function r2(a = [await 1]): void; function r2(a: any) {}
+>r2 : Symbol(r2, Decl(a.ts, 6, 55), Decl(a.ts, 7, 33))
+>a : Symbol(a, Decl(a.ts, 7, 12))
+>r2 : Symbol(r2, Decl(a.ts, 6, 55), Decl(a.ts, 7, 33))
+>a : Symbol(a, Decl(a.ts, 7, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

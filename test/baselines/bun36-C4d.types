@@ -1,0 +1,237 @@
+//// [test/cases/bun36-C4d.ts] ////
+
+=== a.ts ===
+import { which as w1 } from "v1"; const x1: 0 = w1;
+>which : "index [>= 4.0]"
+>w1 : "index [>= 4.0]"
+>x1 : 0
+>w1 : "index [>= 4.0]"
+
+import { which as w2 } from "v2"; const x2: 0 = w2;
+>which : "index [v7.0.2]"
+>w2 : "index [v7.0.2]"
+>x2 : 0
+>w2 : "index [v7.0.2]"
+
+import { which as w3 } from "v3"; const x3: 0 = w3;
+>which : "index [latest]"
+>w3 : "index [latest]"
+>x3 : 0
+>w3 : "index [latest]"
+
+import { which as w4 } from "v4"; const x4: 0 = w4;
+>which : "index [foo]"
+>w4 : "index [foo]"
+>x4 : 0
+>w4 : "index [foo]"
+
+import { which as w5 } from "v5"; const x5: 0 = w5;
+>which : "index [07]"
+>w5 : "index [07]"
+>x5 : 0
+>w5 : "index [07]"
+
+import { which as w6 } from "v6"; const x6: 0 = w6;
+>which : "index [7.0.2.1]"
+>w6 : "index [7.0.2.1]"
+>x6 : 0
+>w6 : "index [7.0.2.1]"
+
+import { which as w7 } from "v7"; const x7: 0 = w7;
+>which : "index [>=4.0,<8]"
+>w7 : "index [>=4.0,<8]"
+>x7 : 0
+>w7 : "index [>=4.0,<8]"
+
+import { which as w8 } from "v8"; const x8: 0 = w8;
+>which : "index [==7.0.2]"
+>w8 : "index [==7.0.2]"
+>x8 : 0
+>w8 : "index [==7.0.2]"
+
+import { which as w9 } from "v9"; const x9: 0 = w9;
+>which : "index [!7]"
+>w9 : "index [!7]"
+>x9 : 0
+>w9 : "index [!7]"
+
+import { which as w10 } from "v10"; const x10: 0 = w10;
+>which : "index [~>7.0]"
+>w10 : "index [~>7.0]"
+>x10 : 0
+>w10 : "index [~>7.0]"
+
+import { which as w11 } from "v11"; const x11: 0 = w11;
+>which : "index [>x]"
+>w11 : "index [>x]"
+>x11 : 0
+>w11 : "index [>x]"
+
+import { which as w12 } from "v12"; const x12: 0 = w12;
+>which : "index [<*]"
+>w12 : "index [<*]"
+>x12 : 0
+>w12 : "index [<*]"
+
+import { which as w13 } from "v13"; const x13: 0 = w13;
+>which : "index [> 4]"
+>w13 : "index [> 4]"
+>x13 : 0
+>w13 : "index [> 4]"
+
+import { which as w14 } from "v14"; const x14: 0 = w14;
+>which : "index [<= 8]"
+>w14 : "index [<= 8]"
+>x14 : 0
+>w14 : "index [<= 8]"
+
+import { which as w15 } from "v15"; const x15: 0 = w15;
+>which : "index [^ 7]"
+>w15 : "index [^ 7]"
+>x15 : 0
+>w15 : "index [^ 7]"
+
+import { which as w16 } from "v16"; const x16: 0 = w16;
+>which : "index [~ 7]"
+>w16 : "index [~ 7]"
+>x16 : 0
+>w16 : "index [~ 7]"
+
+import { which as w17 } from "v17"; const x17: 0 = w17;
+>which : "index [=v7]"
+>w17 : "index [=v7]"
+>x17 : 0
+>w17 : "index [=v7]"
+
+import { which as w18 } from "v18"; const x18: 0 = w18;
+>which : "index [>=v4]"
+>w18 : "index [>=v4]"
+>x18 : 0
+>w18 : "index [>=v4]"
+
+import { which as w19 } from "v19"; const x19: 0 = w19;
+>which : "index [>=4 || foo]"
+>w19 : "index [>=4 || foo]"
+>x19 : 0
+>w19 : "index [>=4 || foo]"
+
+import { which as w20 } from "v20"; const x20: 0 = w20;
+>which : "index [foo || >=4]"
+>w20 : "index [foo || >=4]"
+>x20 : 0
+>w20 : "index [foo || >=4]"
+
+import { which as w21 } from "v21"; const x21: 0 = w21;
+>which : "index [ - 8]"
+>w21 : "index [ - 8]"
+>x21 : 0
+>w21 : "index [ - 8]"
+
+import { which as w22 } from "v22"; const x22: 0 = w22;
+>which : "index [4 -8]"
+>w22 : "index [4 -8]"
+>x22 : 0
+>w22 : "index [4 -8]"
+
+import { which as w23 } from "v23"; const x23: 0 = w23;
+>which : "index [4- 8]"
+>w23 : "index [4- 8]"
+>x23 : 0
+>w23 : "index [4- 8]"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/v1/index.d.ts ===
+export declare const which: "index [>= 4.0]";
+>which : "index [>= 4.0]"
+
+=== node_modules/v10/index.d.ts ===
+export declare const which: "index [~>7.0]";
+>which : "index [~>7.0]"
+
+=== node_modules/v11/index.d.ts ===
+export declare const which: "index [>x]";
+>which : "index [>x]"
+
+=== node_modules/v12/index.d.ts ===
+export declare const which: "index [<*]";
+>which : "index [<*]"
+
+=== node_modules/v13/index.d.ts ===
+export declare const which: "index [> 4]";
+>which : "index [> 4]"
+
+=== node_modules/v14/index.d.ts ===
+export declare const which: "index [<= 8]";
+>which : "index [<= 8]"
+
+=== node_modules/v15/index.d.ts ===
+export declare const which: "index [^ 7]";
+>which : "index [^ 7]"
+
+=== node_modules/v16/index.d.ts ===
+export declare const which: "index [~ 7]";
+>which : "index [~ 7]"
+
+=== node_modules/v17/index.d.ts ===
+export declare const which: "index [=v7]";
+>which : "index [=v7]"
+
+=== node_modules/v18/index.d.ts ===
+export declare const which: "index [>=v4]";
+>which : "index [>=v4]"
+
+=== node_modules/v19/index.d.ts ===
+export declare const which: "index [>=4 || foo]";
+>which : "index [>=4 || foo]"
+
+=== node_modules/v2/index.d.ts ===
+export declare const which: "index [v7.0.2]";
+>which : "index [v7.0.2]"
+
+=== node_modules/v20/index.d.ts ===
+export declare const which: "index [foo || >=4]";
+>which : "index [foo || >=4]"
+
+=== node_modules/v21/index.d.ts ===
+export declare const which: "index [ - 8]";
+>which : "index [ - 8]"
+
+=== node_modules/v22/index.d.ts ===
+export declare const which: "index [4 -8]";
+>which : "index [4 -8]"
+
+=== node_modules/v23/index.d.ts ===
+export declare const which: "index [4- 8]";
+>which : "index [4- 8]"
+
+=== node_modules/v3/index.d.ts ===
+export declare const which: "index [latest]";
+>which : "index [latest]"
+
+=== node_modules/v4/index.d.ts ===
+export declare const which: "index [foo]";
+>which : "index [foo]"
+
+=== node_modules/v5/index.d.ts ===
+export declare const which: "index [07]";
+>which : "index [07]"
+
+=== node_modules/v6/index.d.ts ===
+export declare const which: "index [7.0.2.1]";
+>which : "index [7.0.2.1]"
+
+=== node_modules/v7/index.d.ts ===
+export declare const which: "index [>=4.0,<8]";
+>which : "index [>=4.0,<8]"
+
+=== node_modules/v8/index.d.ts ===
+export declare const which: "index [==7.0.2]";
+>which : "index [==7.0.2]"
+
+=== node_modules/v9/index.d.ts ===
+export declare const which: "index [!7]";
+>which : "index [!7]"
+

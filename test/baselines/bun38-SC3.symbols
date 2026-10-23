@@ -1,0 +1,23 @@
+//// [test/cases/bun38-SC3.ts] ////
+
+=== a.ts ===
+import { make } from "pkg"; export const x = make();
+>make : Symbol(make, Decl(a.ts, 0, 8))
+>x : Symbol(x, Decl(a.ts, 0, 40))
+>make : Symbol(make, Decl(a.ts, 0, 8))
+
+=== b.ts ===
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(b.ts, 0, 12))
+
+=== node_modules/pkg/index.d.ts ===
+import { Inner } from "./internal"; export declare function make(): Inner;
+>Inner : Symbol(Inner, Decl(index.d.ts, 0, 8))
+>make : Symbol(make, Decl(index.d.ts, 0, 35))
+>Inner : Symbol(Inner, Decl(index.d.ts, 0, 8))
+
+=== node_modules/pkg/internal.d.ts ===
+export interface Inner { a: number }
+>Inner : Symbol(Inner, Decl(internal.d.ts, 0, 0))
+>a : Symbol(Inner.a, Decl(internal.d.ts, 0, 24))
+

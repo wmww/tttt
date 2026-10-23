@@ -1,0 +1,25 @@
+//// [test/cases/bun31-C3b.ts] ////
+
+=== a.ts ===
+declare function isNum(x: unknown): x is number;
+>isNum : (x: unknown) => x is number
+>x : unknown
+
+function n(a?: { b: unknown }) { if (isNum((a?.b))) a.b; }
+>n : (a?: { b: unknown; }) => void
+>a : { b: unknown; } | undefined
+>b : unknown
+>isNum((a?.b)) : boolean
+>isNum : (x: unknown) => x is number
+>(a?.b) : unknown
+>a?.b : unknown
+>a : { b: unknown; } | undefined
+>b : unknown
+>a.b : number
+>a : { b: unknown; } | undefined
+>b : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

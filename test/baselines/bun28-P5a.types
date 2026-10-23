@@ -1,0 +1,10 @@
+//// [test/cases/bun28-P5a.ts] ////
+
+=== a.ts ===
+interface X { get p: number }
+>p : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

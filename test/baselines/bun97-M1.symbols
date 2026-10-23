@@ -1,0 +1,104 @@
+//// [test/cases/bun97-M1.ts] ////
+
+=== a.ts ===
+import { I } from "./lib";
+>I : Symbol(I, Decl(a.ts, 0, 8))
+
+export const v = 1 & I;
+>v : Symbol(v, Decl(a.ts, 1, 12))
+
+=== b.ts ===
+import { A } from "./lib";
+>A : Symbol(A, Decl(b.ts, 0, 8))
+
+export const v = A;
+>v : Symbol(v, Decl(b.ts, 1, 12))
+
+=== c.ts ===
+import { N } from "./lib";
+>N : Symbol(N, Decl(c.ts, 0, 8))
+
+export const v = N;
+>v : Symbol(v, Decl(c.ts, 1, 12))
+
+=== d.ts ===
+interface J { x: number }
+>J : Symbol(J, Decl(d.ts, 0, 0))
+>x : Symbol(J.x, Decl(d.ts, 0, 13))
+
+export const v = J;
+>v : Symbol(v, Decl(d.ts, 1, 12))
+
+=== f.ts ===
+import type { K } from "./lib";
+>K : Symbol(K, Decl(f.ts, 0, 13))
+
+export const v = new K();
+>v : Symbol(v, Decl(f.ts, 1, 12))
+>K : Symbol(K, Decl(f.ts, 0, 13))
+
+=== g.ts ===
+import { I } from "./lib";
+>I : Symbol(I, Decl(g.ts, 0, 8))
+
+export const v = I;
+>v : Symbol(v, Decl(g.ts, 1, 12))
+
+export const w: I = { x: 1 };
+>w : Symbol(w, Decl(g.ts, 2, 12))
+>I : Symbol(I, Decl(g.ts, 0, 8))
+>x : Symbol(x, Decl(g.ts, 2, 21))
+
+=== h.ts ===
+import { I, A } from "./lib";
+>I : Symbol(I, Decl(h.ts, 0, 8))
+>A : Symbol(A, Decl(h.ts, 0, 11))
+
+export const v = I.x;
+>v : Symbol(v, Decl(h.ts, 1, 12))
+
+export const w = A();
+>w : Symbol(w, Decl(h.ts, 2, 12))
+
+=== j.ts ===
+import { I } from "./lib";
+>I : Symbol(I, Decl(j.ts, 0, 8))
+
+export const v = { I };
+>v : Symbol(v, Decl(j.ts, 1, 12))
+>I : Symbol(I, Decl(j.ts, 1, 18))
+
+=== k.ts ===
+import { I } from "./lib";
+>I : Symbol(I, Decl(k.ts, 0, 8))
+
+export { I };
+>I : Symbol(I, Decl(k.ts, 1, 8))
+
+=== l.ts ===
+import { I } from "./lib";
+>I : Symbol(I, Decl(l.ts, 0, 8))
+
+export const v = ({}) instanceof I;
+>v : Symbol(v, Decl(l.ts, 1, 12))
+
+=== lib.ts ===
+export interface I { x: number }
+>I : Symbol(I, Decl(lib.ts, 0, 0))
+>x : Symbol(I.x, Decl(lib.ts, 0, 20))
+
+export type A = { y: number };
+>A : Symbol(A, Decl(lib.ts, 0, 32))
+>y : Symbol(y, Decl(lib.ts, 1, 17))
+
+export declare namespace N { interface T {} }
+>N : Symbol(N, Decl(lib.ts, 1, 30))
+>T : Symbol(T, Decl(lib.ts, 2, 28))
+
+export class K {}
+>K : Symbol(K, Decl(lib.ts, 2, 45))
+
+=== z.ts ===
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(z.ts, 0, 12))
+

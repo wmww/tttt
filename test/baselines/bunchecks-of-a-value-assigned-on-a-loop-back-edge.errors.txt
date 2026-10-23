@@ -1,0 +1,1469 @@
+a0.ts(7,17): error TS2322: Type 'Item' is not assignable to type 'never'.
+a0.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a1.ts(6,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(8,62): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(10,63): error TS2322: Type '1' is not assignable to type 'never'.
+a1.ts(12,70): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(14,65): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(16,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(18,67): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(20,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(22,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(24,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(34,64): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(36,68): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(38,64): error TS2322: Type '5' is not assignable to type 'never'.
+a1.ts(38,64): error TS2322: Type 'number' is not assignable to type 'never'.
+a1.ts(40,68): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(42,67): error TS2322: Type 'Item[]' is not assignable to type 'never'.
+a1.ts(46,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(50,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(52,71): error TS2322: Type '1' is not assignable to type 'never'.
+a1.ts(54,66): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(56,63): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a1.ts(58,65): error TS2322: Type '"x"' is not assignable to type 'never'.
+a1.ts(60,67): error TS2322: Type 'Item[]' is not assignable to type 'never'.
+a1.ts(62,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(62,75): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(64,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(66,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(68,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(70,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(72,63): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(74,70): error TS2322: Type 'Item' is not assignable to type 'never'.
+a1.ts(75,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a2.ts(8,74): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+a2.ts(12,68): error TS2339: Property 'b' does not exist on type 'never'.
+  The intersection 'A & B' was reduced to 'never' because property 'k' has conflicting types in some constituents.
+a2.ts(19,67): error TS2365: Operator '<' cannot be applied to types 'string' and 'number'.
+a2.ts(19,67): error TS2365: Operator '<' cannot be applied to types 'string | number' and 'number'.
+a2.ts(25,85): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a2.ts(27,97): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(28,103): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(29,116): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(30,116): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(31,122): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(32,92): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(34,122): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(35,126): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(36,99): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(39,94): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(41,91): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(42,113): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(43,108): error TS7022: 't' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a2.ts(46,152): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(47,139): error TS2322: Type 'Item' is not assignable to type 'never'.
+a2.ts(48,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a3.ts(2,75): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(4,75): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(6,85): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(7,68): error TS2695: Left side of comma operator is unused and has no side effects.
+a3.ts(8,68): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(9,71): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(10,72): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(11,69): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(12,68): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(13,70): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(16,75): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(18,68): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(20,75): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(21,76): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(24,76): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(25,69): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(27,72): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a3.ts(28,68): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a3.ts(32,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a4.ts(4,75): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a4.ts(5,84): error TS2801: This condition will always return true since this 'Promise<number>' is always defined.
+a4.ts(6,76): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(7,77): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(8,77): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(9,76): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(10,84): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(11,85): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(12,77): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(13,77): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(14,76): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(15,76): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(16,117): error TS2322: Type 'Item' is not assignable to type 'never'.
+a4.ts(17,84): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a4.ts(18,77): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a4.ts(19,76): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a4.ts(20,84): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+a4.ts(21,64): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+a4.ts(22,70): error TS2731: Implicit conversion of a 'symbol' to a 'string' will fail at runtime. Consider wrapping this expression in 'String(...)'.
+a4.ts(23,64): error TS2698: Spread types may only be created from object types.
+a4.ts(24,80): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+a4.ts(25,83): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(26,76): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(27,91): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(29,80): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(30,68): error TS2695: Left side of comma operator is unused and has no side effects.
+a4.ts(30,82): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(31,65): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(32,71): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(33,83): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(34,69): error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a4.ts(35,99): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(36,61): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(37,75): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(38,95): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(39,90): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(40,105): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a4.ts(41,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(8,86): error TS2349: This expression is not callable.
+  Not all constituents of type 'string | (() => void)' are callable.
+    Type 'string' has no call signatures.
+a5.ts(8,86): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+a5.ts(9,71): error TS2339: Property 'b' does not exist on type 'A'.
+a5.ts(10,88): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a5.ts(10,88): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(11,81): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(11,81): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(12,91): error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+a5.ts(13,82): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(13,82): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(14,83): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a5.ts(15,83): error TS1360: Type 'string' does not satisfy the expected type 'number'.
+a5.ts(15,83): error TS1360: Type 'string | number' does not satisfy the expected type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(16,122): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(16,122): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(17,81): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(17,81): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(18,81): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(18,81): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(19,81): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(19,81): error TS2322: Type 'string | number' is not assignable to type 'number | undefined'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(20,86): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(20,86): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(21,82): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(21,82): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(22,88): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a5.ts(22,88): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(23,81): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(23,81): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(23,90): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(23,90): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(24,81): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(24,81): error TS2365: Operator '+=' cannot be applied to types 'number' and 'string | number'.
+a5.ts(25,86): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(25,86): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(26,82): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(26,82): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(27,85): error TS2588: Cannot assign to 'arrN' because it is a constant.
+a5.ts(28,81): error TS2352: Conversion of type 'string | number' to type 'boolean' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'number' is not comparable to type 'boolean'.
+a5.ts(29,81): error TS2352: Conversion of type 'string | number' to type 'boolean' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'number' is not comparable to type 'boolean'.
+a5.ts(30,81): error TS2695: Left side of comma operator is unused and has no side effects.
+a5.ts(31,86): error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+a5.ts(32,81): error TS2695: Left side of comma operator is unused and has no side effects.
+a5.ts(32,88): error TS2322: Type 'string' is not assignable to type 'object'.
+a5.ts(32,88): error TS2322: Type 'string | number' is not assignable to type 'object'.
+  Type 'string' is not assignable to type 'object'.
+a5.ts(33,85): error TS2351: This expression is not constructable.
+  Type 'String' has no construct signatures.
+a5.ts(33,85): error TS2351: This expression is not constructable.
+  No constituent of type 'string | number' is constructable.
+a5.ts(34,81): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+a5.ts(34,81): error TS2349: This expression is not callable.
+  No constituent of type 'string | number' is callable.
+a5.ts(34,81): error TS2695: Left side of comma operator is unused and has no side effects.
+a5.ts(35,81): error TS2695: Left side of comma operator is unused and has no side effects.
+a5.ts(35,83): error TS2698: Spread types may only be created from object types.
+a5.ts(36,85): error TS2488: Type 'string | number' must have a '[Symbol.iterator]()' method that returns an iterator.
+a5.ts(37,81): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+a5.ts(38,82): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(39,88): error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+  Type '"extra"' is not assignable to type '"k" | "v"'.
+a5.ts(40,81): error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+  Type '"extra"' is not assignable to type '"k" | "v"'.
+a5.ts(41,95): error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+  Type '"extra"' is not assignable to type '"k" | "v"'.
+a5.ts(42,82): error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+  Type '"extra"' is not assignable to type '"k" | "v"'.
+a5.ts(43,81): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a5.ts(43,84): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a5.ts(44,22): error TS7034: Variable 'a' implicitly has type 'any[]' in some locations where its type cannot be determined.
+a5.ts(44,49): error TS7005: Variable 'a' implicitly has an 'any[]' type.
+a5.ts(47,72): error TS2322: Type 'Item' is not assignable to type 'never'.
+a5.ts(48,80): error TS2322: Type 'Item' is not assignable to type 'never'.
+a5.ts(49,52): error TS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.
+a5.ts(50,65): error TS2322: Type 'string' is not assignable to type 'number'.
+a5.ts(50,65): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a5.ts(53,120): error TS2322: Type 'Item' is not assignable to type 'never'.
+a5.ts(54,117): error TS2322: Type 'Item' is not assignable to type 'never'.
+a5.ts(55,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a6.ts(7,95): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+a6.ts(8,89): error TS18048: 'o' is possibly 'undefined'.
+a6.ts(9,89): error TS18048: 'o' is possibly 'undefined'.
+a6.ts(12,105): error TS18048: 'C' is possibly 'undefined'.
+a6.ts(13,119): error TS2349: This expression is not callable.
+  Not all constituents of type '((s: TemplateStringsArray) => void) | undefined' are callable.
+    Type 'undefined' has no call signatures.
+a6.ts(13,119): error TS2349: This expression is not callable.
+  Type 'undefined' has no call signatures.
+a6.ts(13,119): error TS2695: Left side of comma operator is unused and has no side effects.
+a6.ts(15,69): error TS7053: Element implicitly has an 'any' type because expression of type '"b"' can't be used to index type 'A'.
+  Property 'b' does not exist on type 'A'.
+a6.ts(15,69): error TS7053: Element implicitly has an 'any' type because expression of type '"b"' can't be used to index type 'A | B'.
+  Property 'b' does not exist on type 'A | B'.
+a6.ts(16,71): error TS2339: Property 'b' does not exist on type 'A'.
+a6.ts(16,71): error TS2339: Property 'b' does not exist on type 'A | B'.
+a6.ts(17,83): error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+  Type '"extra"' is not assignable to type '"k" | "v"'.
+a6.ts(18,79): error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+  Type '"extra"' is not assignable to type '"k" | "v"'.
+a6.ts(24,95): error TS2322: Type 'Item' is not assignable to type 'never'.
+a6.ts(25,93): error TS2339: Property 'next' does not exist on type 'never'.
+a6.ts(29,86): error TS2790: The operand of a 'delete' operator must be optional.
+a6.ts(30,81): error TS2322: Type 'Item' is not assignable to type 'never'.
+a6.ts(32,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a7.ts(5,91): error TS2339: Property 'extra' does not exist on type 'A2 | B2'.
+  Property 'extra' does not exist on type 'B2'.
+a7.ts(6,101): error TS1360: Type 'string | number' does not satisfy the expected type 'string'.
+  Type 'number' is not assignable to type 'string'.
+a7.ts(7,88): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a7.ts(7,88): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a7.ts(8,101): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+a7.ts(9,94): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+a7.ts(10,94): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+a7.ts(11,83): error TS1360: Type 'number' does not satisfy the expected type 'string'.
+a7.ts(13,86): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+a7.ts(14,86): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+a7.ts(14,102): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a7.ts(15,63): error TS2322: Type 'unknown' is not assignable to type 'string | number'.
+a7.ts(15,88): error TS2345: Argument of type '(v: string) => number' is not assignable to parameter of type '(value: string | number, index: number, array: (string | number)[]) => number'.
+  Types of parameters 'v' and 'value' are incompatible.
+    Type 'string | number' is not assignable to type 'string'.
+      Type 'number' is not assignable to type 'string'.
+a7.ts(16,82): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a7.ts(16,83): error TS7022: 'v' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a7.ts(16,95): error TS2339: Property 'length' does not exist on type 'string | number'.
+  Property 'length' does not exist on type 'number'.
+a7.ts(19,118): error TS2322: Type '(string | number)[]' is not assignable to type 'string[]'.
+  Type 'string | number' is not assignable to type 'string'.
+    Type 'number' is not assignable to type 'string'.
+a7.ts(20,117): error TS2322: Type '(string | number)[]' is not assignable to type 'string[]'.
+  Type 'string | number' is not assignable to type 'string'.
+    Type 'number' is not assignable to type 'string'.
+a7.ts(21,82): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a7.ts(22,90): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+a7.ts(23,90): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a7.ts(23,90): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a7.ts(24,82): error TS2322: Type 'string' is not assignable to type 'number'.
+a7.ts(24,82): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a7.ts(25,120): error TS2322: Type '(string | number)[][]' is not assignable to type 'string[][]'.
+  Type '(string | number)[]' is not assignable to type 'string[]'.
+    Type 'string | number' is not assignable to type 'string'.
+      Type 'number' is not assignable to type 'string'.
+a7.ts(26,125): error TS2322: Type '(string | number)[]' is not assignable to type 'string[]'.
+  Type 'string | number' is not assignable to type 'string'.
+    Type 'number' is not assignable to type 'string'.
+a7.ts(27,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a8.ts(6,110): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(7,110): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(8,111): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(10,109): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(11,125): error TS2322: Type '0' is not assignable to type 'never'.
+a8.ts(13,113): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(14,117): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(14,141): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(15,176): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(16,109): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(16,129): error TS2322: Type '"s"' is not assignable to type 'never'.
+a8.ts(16,129): error TS2322: Type 'string' is not assignable to type 'number'.
+a8.ts(17,109): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(17,129): error TS2322: Type 'string' is not assignable to type 'number'.
+a8.ts(18,139): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(18,159): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a8.ts(19,141): error TS2322: Type 'Item' is not assignable to type 'never'.
+a8.ts(19,185): error TS2322: Type 'string' is not assignable to type 'number'.
+a8.ts(19,185): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+a8.ts(20,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a9.ts(2,83): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a9.ts(3,84): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a9.ts(3,97): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a9.ts(4,66): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+a9.ts(5,84): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a9.ts(5,101): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+a9.ts(6,84): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a9.ts(7,82): error TS7053: Element implicitly has an 'any' type because expression of type '"toFixed"' can't be used to index type 'string | number'.
+  Property 'toFixed' does not exist on type 'string | number'.
+a9.ts(7,84): error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+a9.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b0.ts(3,68): error TS2322: Type 'string' is not assignable to type 'number'.
+b0.ts(5,58): error TS2322: Type 'string' is not assignable to type 'number'.
+b0.ts(6,71): error TS2322: Type 'string' is not assignable to type 'number'.
+b0.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b4.ts(4,81): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+b4.ts(5,82): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b4.ts(6,87): error TS2322: Type 'string' is not assignable to type 'number'.
+b4.ts(6,87): error TS2322: Type 'string | number' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+b4.ts(7,92): error TS2349: This expression is not callable.
+  Not all constituents of type 'string | (() => void)' are callable.
+    Type 'string' has no call signatures.
+b4.ts(7,92): error TS2349: This expression is not callable.
+  Type 'String' has no call signatures.
+b4.ts(8,94): error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+  Type '"extra"' is not assignable to type '"k" | "v"'.
+b4.ts(9,89): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+b4.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b5.ts(4,193): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+b5.ts(5,100): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+b5.ts(6,95): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+b5.ts(6,95): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+b5.ts(7,201): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+b5.ts(8,206): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+b5.ts(8,206): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+b5.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b6.ts(7,104): error TS18047: 'best' is possibly 'null'.
+b6.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b7.ts(2,88): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+b7.ts(3,88): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(4,98): error TS2349: This expression is not callable.
+  Not all constituents of type 'string | (() => void)' are callable.
+    Type 'string' has no call signatures.
+b7.ts(6,91): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+b7.ts(7,93): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(8,90): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(9,94): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(9,105): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(10,93): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(11,92): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(12,83): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+b7.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "target": "es2022", "lib": ["es2022"] } }
+==== a0.ts (2 errors) ====
+    interface Item { next: Item | null }
+    declare const more: boolean; declare const item: Item;
+    function base() {
+      let last: Item | null = null;
+      while (more) {
+        if (last === null) last = item;
+        else last = last.next = item;
+                    ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a1.ts (32 errors) ====
+    interface Item { next: Item | null; n: number; s: string; arr: Item[]; cb: (x: Item) => Item; opt?: Item }
+    declare const more: boolean; declare const item: Item; declare const items: Item[];
+    declare function id<T>(x: T): T;
+    declare function two<T>(a: T, b: T): T;
+    function a01() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next = item); } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a02() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = last["next"] = item; } }
+                                                                 ~~~~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a03() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.n = 1, item); } }
+                                                                  ~~~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    function a04() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = more ? (last.next = item) : item; } }
+                                                                         ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a05() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = id(last.next = item); } }
+                                                                    ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a06() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = [last.next = item][0]; } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a07() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = { v: last.next = item }.v; } }
+                                                                      ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a08() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next ??= item); } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a09() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next ||= item); } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a10() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next &&= item) ?? item; } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a11() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.n += 1, item); } }
+    function a12() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.s += "a", item); } }
+    function a13() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.n++, item); } }
+    function a14() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (delete last.opt, item); } }
+    function a15() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = ([last.next] = [item], item); } }
+                                                                   ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a16() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = ({ a: last.next } = { a: item }, item); } }
+                                                                       ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a17() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = ([last.n = 5] = [1], item); } }
+                                                                   ~~~~~~
+!!! error TS2322: Type '5' is not assignable to type 'never'.
+                                                                   ~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    function a18() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = ({ a: last.next = item } = { a: item }, item); } }
+                                                                       ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a19() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = ([...last.arr] = items, item); } }
+                                                                      ~~~~~~~~
+!!! error TS2322: Type 'Item[]' is not assignable to type 'never'.
+    function a20() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = last.cb(last.next = item); } }
+    function a21() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next = item)!; } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a22() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next = item) as Item; } }
+    function a23() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next = item) satisfies Item; } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a24() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = last.arr[last.n = 1]; } }
+                                                                          ~~~~~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    function a25() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = two(last.next = item, item); } }
+                                                                     ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a26() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (() => last!.next = item)(); } }
+                                                                  ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function a27() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = `${last.s = "x"}` ? item : item; } }
+                                                                    ~~~~~~
+!!! error TS2322: Type '"x"' is not assignable to type 'never'.
+    function a28() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = [...(last.arr = items)][0]; } }
+                                                                      ~~~~~~~~
+!!! error TS2322: Type 'Item[]' is not assignable to type 'never'.
+    function a29() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next = last.next = item); } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+                                                                              ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a30() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.next = item) && item; } }
+                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a31() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.arr[0] = item); } }
+                                                                  ~~~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a32() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last.arr[0].next = item); } }
+                                                                  ~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a33() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = ((last).next = item); } }
+                                                                  ~~~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a34() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = (last!.next = item); } }
+                                                                  ~~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function a35() { let last: Item | null = null;
+      while (more) { if (last === null) last = item; else last = typeof (last.next = item) === "object" ? item : item; } }
+                                                                         ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a2.ts (21 errors) ====
+    interface Item { next: Item | null; n: number; s: string; arr: Item[] }
+    interface A { k: "a"; v: string; set(x: string): void } interface B { k: "b"; v: number; b: number; set(x: number): void }
+    declare const more: boolean; declare const item: Item; declare const items: Item[]; declare const av: A; declare const bv: B;
+    declare function two<T>(a: T, b: T): T;
+    declare function isB(x: A | B): x is B;
+    function b01() { let x: string | number = "a"; while (more) { x = x === 5 ? "b" : 5; } }
+    function b02() { let s: "a" | "b" = "a"; while (more) { s = s === "b" ? "a" : "b"; } }
+    function b03() { let x: string | number = "a"; while (more) { x = two(x, 5); } }
+                                                                             ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    function b04() { let x: string | number = "a"; while (more) { x = x !== 5 ? 5 : "b"; } }
+    function b05() { let o: A | B = av; while (more) { o = o.k === "b" ? av : bv; } }
+    function b06() { let o: A | B = av; while (more) { o = o.k === "b" ? (o.b, av) : bv; } }
+    function b07() { let o: A | B = av; while (more) { o = isB(o) ? (o.b, av) : bv; } }
+                                                                       ~
+!!! error TS2339: Property 'b' does not exist on type 'never'.
+!!! error TS2339:   The intersection 'A & B' was reduced to 'never' because property 'k' has conflicting types in some constituents.
+    function b08() { let o: A | B = av; while (more) { o = "b" in o ? (o.b, av) : bv; } }
+    function b09() { let x: string | number = "a"; while (more) { x = typeof x === "number" ? x.toFixed() : 5; } }
+    function b10() { let x: string | number = "a"; while (more) { x = (x as number) + 1; } }
+    function b11() { let x: string | number | null = null; while (more) { x = x === null ? 5 : x satisfies number | string; } }
+    function b12() { let x: string | number = "a"; while (more) { x = x == 5 ? "b" : 5; } }
+    function b13() { let x: string | number = "a"; while (more) { x = [5].includes(x as never) ? 1 : "a"; } }
+    function b14() { let x: string | number = "a"; while (more) { x = x < 5 ? 1 : "a"; } }
+                                                                      ~~~~~
+!!! error TS2365: Operator '<' cannot be applied to types 'string' and 'number'.
+                                                                      ~~~~~
+!!! error TS2365: Operator '<' cannot be applied to types 'string | number' and 'number'.
+    function b15() { let x: string | boolean = "a"; while (more) { x = x === true ? "b" : true; } }
+    function b16() { let x: 1 | 2 | 3 = 1; while (more) { x = x === 3 ? 1 : x === 1 ? 2 : 3; } }
+    function b17() { let x: 1 | 2 | 3 = 1; while (more) { switch (x) { case 3: x = 1; break; case 1: x = 2; break; default: x = 3; } } }
+    function b18() { let x: 1 | 2 | 3 = 1; while (more) { x = (() => { switch (x) { case 3: return 1; default: return 3; } })(); } }
+    function b19() { let o: A | B = av; while (more) { o = (o.set(o.v as never), o.k === "a" ? bv : av); } }
+    function b20() { let x: string | number = "a"; while (more) { x = `${x}` === "5" && x === 5 ? "b" : 5; } }
+                                                                                        ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    // loop variants, silentNever target
+    function c01() { let last: Item | null = null; do { if (last === null) last = item; else last = last.next = item; } while (more); }
+                                                                                                    ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c02() { let last: Item | null = null; for (;;) { if (last === null) last = item; else last = last.next = item; if (more) break; } }
+                                                                                                          ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c03() { let last: Item | null = null; for (const it of items) { if (last === null) last = it; else last = last.next = it; } }
+                                                                                                                       ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c04() { let last: Item | null = null; for (const k in item) { if (last === null) last = item; else last = last.next = item; } }
+                                                                                                                       ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c05() { let last: Item | null = null; for (let i = 0; i < 3; i++) { if (last === null) last = item; else last = last.next = item; } }
+                                                                                                                             ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c06() { let last: Item | null = null; for (; more; last = last === null ? item : (last.next = item)) { } }
+                                                                                               ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c07() { let last: Item | null = null; outer: while (more) { while (more) { if (last === null) { last = item; continue outer; } last = last.next = item; } } }
+    function c08() { let last: Item | null = null; while (more) { while (more) { if (last === null) last = item; else last = last.next = item; } } }
+                                                                                                                             ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c09() { let last: Item | null = null; while (more) { switch (last) { case null: last = item; break; default: last = last.next = item; } } }
+                                                                                                                                 ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c10() { let last: Item | null = null; while (more) { if (!last) last = item; else last = last.next = item; } }
+                                                                                                      ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c11() { let last: Item | undefined; while (more) { if (last === undefined) last = item; else last = last.next = item; } }
+    function c12() { let last: Item | undefined; while (more) { if (last) last = last.next = item; else last = item; } }
+    function c13() { let last: Item | null = null; while (more) { last = last === null ? item : (last.next = item); } }
+                                                                                                 ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c14() { let last: Item | null = null; while (more) { last = last && (last.next = item); last = item; } }
+    function c15() { let last: Item | null = null; while (more) { if (last !== null) { last = last.next = item; continue; } last = item; } }
+                                                                                              ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c16() { let last: Item | null = null; while (more) { try { if (last === null) last = item; else last = last.next = item; } finally { } } }
+                                                                                                                    ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c17() { let last: Item | null = null; while (more) { if (last === null) last = item; else { const t = last.next = item; last = t; } } }
+                                                                                                               ~
+!!! error TS7022: 't' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function c18() { let last: Item | null = null; while (more) { if (last === null) last = item; else { const t: Item = last.next = item; last = t; } } }
+    function c19() { let last: Item | null = null; while (more) { if (last === null) last = item; else { last.next = item; last = last.next; } } }
+    function c20() { let last: Item | null = null; let prev: Item | null = null; while (more) { if (last === null) last = item; else { prev = last; last = prev.next = item; } } }
+                                                                                                                                                           ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function c21() { let last: Item | null = null; let prev: Item | null = null; while (more) { if (prev === null) prev = item; else { last = prev.next = item; prev = last; } } }
+                                                                                                                                              ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a3.ts (19 errors) ====
+    declare const more: boolean; declare function str(x: unknown): string;
+    function d01() { let x: string | number = "a"; while (more) { x = more && x === 5 ? "b" : 5; } }
+                                                                              ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d02() { let x: string | number = "a"; while (more) { x = x === 5 && more ? "b" : 5; } }
+    function d03() { let x: string | number = "a"; while (more) { x = more || x === 5 ? "b" : 5; } }
+                                                                              ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d04() { let x: string | number = "a"; while (more) { x = `${x}` === "5" ? "b" : 5; } }
+    function d05() { let x: string | number = "a"; while (more) { x = str(x) === "5" && x === 5 ? "b" : 5; } }
+                                                                                        ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d06() { let x: string | number = "a"; while (more) { x = (x, x === 5) ? "b" : 5; } }
+                                                                       ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    function d07() { let x: string | number = "a"; while (more) { x = [x === 5][0] ? "b" : 5; } }
+                                                                       ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d08() { let x: string | number = "a"; while (more) { x = str(x === 5) ? "b" : 5; } }
+                                                                          ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d09() { let x: string | number = "a"; while (more) { x = { p: x === 5 }.p ? "b" : 5; } }
+                                                                           ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d10() { let x: string | number = "a"; while (more) { x = !(x === 5) ? "b" : 5; } }
+                                                                        ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d11() { let x: string | number = "a"; while (more) { x = (x === 5)! ? "b" : 5; } }
+                                                                       ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d12() { let x: string | number = "a"; while (more) { x = `${x === 5}` ? "b" : 5; } }
+                                                                         ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d13() { let x: string | number = "a"; while (more) { x = (x === 5 ? 1 : 2) === 1 ? "b" : 5; } }
+    function d14() { let x: string | number = "a"; while (more) { x = x === 5 || x === "q" ? "b" : 5; } }
+    function d15() { let x: string | number = "a"; while (more) { x = typeof (x === 5) === "boolean" ? "b" : 5; } }
+                                                                              ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d16() { let x: string | number = "a"; while (more) { x = (x === 5) as boolean ? "b" : 5; } }
+    function d17() { let x: string | number = "a"; while (more) { x = (x === 5) satisfies boolean ? "b" : 5; } }
+                                                                       ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d18() { let x: string | number = "a"; while (more) { x = more ? (x === 5 ? "b" : 5) : 5; } }
+    function d19() { let x: string | number = "a"; while (more) { x = more && x === 5 ? "b" : 5; } }
+                                                                              ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d20() { let x: string | number = "a"; while (more) { x = (more && x === 5) ? "b" : 5; } }
+                                                                               ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d21() { let x: string | number = "a"; while (more) { x = (x === 5 ? "b" : 5); } }
+    function d22() { let x: string | number = "a"; while (more) { x = more ? "b" : x === 5 ? 1 : 2; } }
+    function d23() { let x: string | number = "a"; while (more) { x = (more ?? x === 5) ? "b" : 5; } }
+                                                                               ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d24() { let x: string | number = "a"; while (more) { x = +(x === 5) ; } }
+                                                                        ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d25() { let x: string | number = "a"; while (more) { x = (void (x === 5), 5); } }
+    function d26() { let x: string | number = "a"; while (more) { x = [...[x === 5]].length; } }
+                                                                           ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function d27() { let x: string | number = "a"; while (more) { x = (() => x === 5)() ? 1 : "a"; } }
+                                                                       ~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function d28() { let x: string | number = "a"; while (more) { x = { get p() { return x === 5; } }.p ? 1 : "a"; } }
+    function d29() { let x: string | number = "a"; let y = false; while (more) { x = (y = x === 5) ? 1 : "a"; } }
+    function d30() { let x: string | number = "a"; while (more) { x = more ? "b" : 5; if (x === 5) { } } }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a4.ts (38 errors) ====
+    interface Item { next: Item | null; n: number }
+    declare const more: boolean; declare const item: Item; declare const fn: () => void; declare const pr: Promise<number>;
+    class Foo { f = 1 } declare const foo: Foo; declare const sym: symbol;
+    function e01() { let f: (() => void) | undefined = fn; while (more) { f = f ? undefined : fn; } }
+                                                                              ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    async function e02() { let p: Promise<number> | undefined = pr; while (more) { p = p ? undefined : pr; } }
+                                                                                       ~
+!!! error TS2801: This condition will always return true since this 'Promise<number>' is always defined.
+!!! related TS2773 a4.ts:5:84: Did you forget to use 'await'?
+    function e03() { let x: string | number = "a"; while (more) { x = (more && x === 5) && more ? "b" : 5; } }
+                                                                               ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e04() { let x: string | number = "a"; while (more) { x = ((more && x === 5) && 5) || "a"; } }
+                                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e05() { let x: string | number = "a"; while (more) { x = ((more || x === 5) && 5) || "a"; } }
+                                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e06() { let x: string | number = "a"; while (more) { x = more && (x === 5 ? 1 : 2) ? "b" : 5; } }
+                                                                               ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e07() { let x: string | number = "a"; while (more) { x = (more && more && x === 5) ? "b" : 5; } }
+                                                                                       ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e08() { let x: string | number = "a"; while (more) { x = (more && (more || x === 5)) ? "b" : 5; } }
+                                                                                        ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e09() { let x: string | number = "a"; while (more) { x = ((more && x === 5)) ? "b" : 5; } }
+                                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e10() { let x: string | number = "a"; while (more) { x = !(more && x === 5) ? "b" : 5; } }
+                                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e11() { let x: string | number = "a"; while (more) { x = (more && x !== 5) ? "b" : 5; } }
+                                                                               ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e12() { let x: string | number = "a"; while (more) { x = (more && x == 5) ? "b" : 5; } }
+                                                                               ~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e13() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = (more && (last.next = item)) ? item : item; } }
+                                                                                                                        ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function e14() { let f: (() => void) | undefined = fn; while (more) { f = (more && f) ? undefined : fn; } }
+                                                                                       ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    function e15() { let f: (() => void) | undefined = fn; while (more) { f = ((f && more) ? undefined : fn); } }
+                                                                                ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    function e16() { let f: (() => void) | undefined = fn; while (more) { f = (f && more) || more ? undefined : fn; } }
+                                                                               ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    function e17() { let f: (() => void) | undefined = fn; while (more) { f = (more || f) && more ? undefined : fn; } }
+                                                                                       ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    function e18() { let x: string | Foo = "a"; while (more) { x = x instanceof Foo ? "b" : foo; } }
+                                                                   ~
+!!! error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+    function e19() { let x: string | symbol = "a"; while (more) { x = `${x}` ? sym : "a"; } }
+                                                                         ~
+!!! error TS2731: Implicit conversion of a 'symbol' to a 'string' will fail at runtime. Consider wrapping this expression in 'String(...)'.
+    function e20() { let x: number | Foo = 1; while (more) { x = { ...x }.f ? 1 : foo; } }
+                                                                   ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    function e21() { let x: string | number = "a"; while (more) { x = [x].includes(5) ? "a" : 5; } }
+                                                                                   ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    function e22() { let x: string | number = "a"; while (more) { x = more ? (more && x === 5 ? "b" : 5) : 5; } }
+                                                                                      ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e23() { let x: string | number = "a"; while (more) { x = [more && x === 5 ? "b" : 5][0]; } }
+                                                                               ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e24() { let x: string | number = "a"; let y = 0; while (more) { x = (y = more && x === 5 ? 1 : 2) ? "b" : 5; } }
+                                                                                              ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e25() { let x: string | number = "a"; while (more) { x = (more && x === 5 ? "b" : 5) as string | number; } }
+    function e26() { let x: string | number = "a"; while (more) { x = { p: more && x === 5 ? "b" : 5 }.p; } }
+                                                                                   ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e27() { let x: string | number = "a"; while (more) { x = (more, more && x === 5 ? "b" : 5); } }
+                                                                       ~~~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                                                                                     ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e28() { let x: string | number = "a"; do { x = more && x === 5 ? "b" : 5; } while (more); }
+                                                                    ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e29() { let x: string | number = "a"; for (;;) { x = more && x === 5 ? "b" : 5; } }
+                                                                          ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e30() { let x: string | number = "a"; for (const _ of [1]) { x = more && x === 5 ? "b" : 5; } }
+                                                                                      ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e31() { let x: string | number = "a"; while (more) { const y = more && x === 5 ? "b" : 5; x = y; } }
+                                                                        ~
+!!! error TS7022: 'y' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function e32() { let x: string | number = "a"; while (more) { let y: string | number; y = more && x === 5 ? "b" : 5; x = y; } }
+                                                                                                      ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e33() { let x; x = "a"; while (more) { x = more && x === 5 ? "b" : 5; } }
+                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e34() { let x: string | number = "a"; while (more) { x = more && x === 5 ? "b" : 5; x = "a"; } }
+                                                                              ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e35() { let x: string | number = "a"; while (more) { if (more) continue; x = more && x === 5 ? "b" : 5; } }
+                                                                                                  ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e36() { let x: string | number = "a"; while (more) { while (more) { x = more && x === 5 ? "b" : 5; } } }
+                                                                                             ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function e37() { let x: string | number = "a"; let z: string | number = "a"; while (more) { z = more && x === 5 ? "b" : 5; x = z; } }
+                                                                                                            ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a5.ts (71 errors) ====
+    interface Item { next: Item | null; n: number }
+    interface A { k: "a"; v: string } interface B { k: "b"; v: number; b: number }
+    interface A2 { k: 1; v: 1; extra: 1 } interface B2 { k: 2; v: 2 }
+    type OnlyKV<K extends "k" | "v"> = K;
+    declare const more: boolean; declare const item: Item; declare const fn: () => void; declare const av: A; declare const bv: B; declare const a2: A2; declare const b2: B2;
+    declare function takeNum(n: number): number; declare function id<T>(x: T): T;
+    declare let numVar: number; declare const objN: { n: number }; declare const arrN: number[]; declare let numU: number | undefined;
+    function g01() { let f: string | (() => void) = "a"; while (more) { f = more ? fn : (f(), "a"); } }
+                                                                                         ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Not all constituents of type 'string | (() => void)' are callable.
+!!! error TS2349:     Type 'string' has no call signatures.
+                                                                                         ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'String' has no call signatures.
+    function g02() { let o: A | B = av; while (more) { o = more ? bv : (o.b, av); } }
+                                                                          ~
+!!! error TS2339: Property 'b' does not exist on type 'A'.
+    function g03() { let x: string | number = "a"; while (more) { x = more ? "a" : takeNum(x); } }
+                                                                                           ~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+                                                                                           ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    function g04() { let x: string | number = "a"; while (more) { x = more ? "a" : (numVar = x, 5); } }
+                                                                                    ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                    ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g05() { let x: string | number = "a"; while (more) { x = more ? "a" : (numVar -= x, 5); } }
+                                                                                              ~
+!!! error TS2363: The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+    function g06() { let x: string | number = "a"; while (more) { x = more ? "a" : ([numVar] = [x], 5); } }
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g07() { let x: string | number = "a"; while (more) { x = more ? "a" : (x.toFixed(), 5); } }
+                                                                                      ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+    function g08() { let x: string | number = "a"; while (more) { x = more ? "a" : (x satisfies number, 5); } }
+                                                                                      ~~~~~~~~~
+!!! error TS1360: Type 'string' does not satisfy the expected type 'number'.
+                                                                                      ~~~~~~~~~
+!!! error TS1360: Type 'string | number' does not satisfy the expected type 'number'.
+!!! error TS1360:   Type 'string' is not assignable to type 'number'.
+    function* g09(): Generator<number, void, unknown> { let x: string | number = "a"; while (more) { x = more ? "a" : (yield x, 5); } }
+                                                                                                                             ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                                                             ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g10() { let x: string | number = "a"; while (more) { x = more ? "a" : (objN.n = x, 5); } }
+                                                                                    ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                    ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g11() { let x: string | number = "a"; while (more) { x = more ? "a" : (arrN[0] = x, 5); } }
+                                                                                    ~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                    ~~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g12() { let x: string | number = "a"; while (more) { x = more ? "a" : (numU ??= x, 5); } }
+                                                                                    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                    ~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number | undefined'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g13() { let x: string | number = "a"; while (more) { x = more ? "a" : ({ n: numVar } = { n: x }, 5); } }
+                                                                                         ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                         ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g14() { let x: string | number = "a"; while (more) { x = more ? "a" : ([numVar = x] = [], 5); } }
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g15() { let x: string | number = "a"; while (more) { x = more ? "a" : takeNum(...[x] as const); } }
+                                                                                           ~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+                                                                                           ~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    function g16() { let x: string | number = "a"; while (more) { x = more ? "a" : (numVar = numVar = x, 5); } }
+                                                                                    ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                    ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+                                                                                             ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                             ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g17() { let x: string | number = "a"; while (more) { x = more ? "a" : (numVar += x, 5); } }
+                                                                                    ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                    ~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types 'number' and 'string | number'.
+    function g18() { let x: string | number = "a"; while (more) { x = more ? "a" : ({ n: numVar = 1 } = { n: x }, 5); } }
+                                                                                         ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                         ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g19() { let x: string | number = "a"; while (more) { x = more ? "a" : ([objN.n] = [x], 5); } }
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function g20() { let x: string | number = "a"; while (more) { x = more ? "a" : ([...arrN] = [x], 5); } }
+                                                                                        ~~~~
+!!! error TS2588: Cannot assign to 'arrN' because it is a constant.
+    function g21() { let x: string | number = "a"; while (more) { x = more ? "a" : (x as boolean, 5); } }
+                                                                                    ~~~~~~~~~~~~
+!!! error TS2352: Conversion of type 'string | number' to type 'boolean' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+!!! error TS2352:   Type 'number' is not comparable to type 'boolean'.
+    function g22() { let x: string | number = "a"; while (more) { x = more ? "a" : (<boolean>x, 5); } }
+                                                                                    ~~~~~~~~~~
+!!! error TS2352: Conversion of type 'string | number' to type 'boolean' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+!!! error TS2352:   Type 'number' is not comparable to type 'boolean'.
+    function g23() { let x: string | number = "a"; while (more) { x = more ? "a" : (-x, 5); } }
+                                                                                    ~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    function g24() { let x: string | number = "a"; while (more) { x = more ? "a" : (arrN[x], 5); } }
+                                                                                         ~
+!!! error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+    function g25() { let x: string | number = "a"; while (more) { x = more ? "a" : ("k" in x, 5); } }
+                                                                                    ~~~~~~~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                                                                                           ~
+!!! error TS2322: Type 'string' is not assignable to type 'object'.
+                                                                                           ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'object'.
+!!! error TS2322:   Type 'string' is not assignable to type 'object'.
+    function g26() { let x: string | number = "a"; while (more) { x = more ? "a" : (new x(), 5); } }
+                                                                                        ~
+!!! error TS2351: This expression is not constructable.
+!!! error TS2351:   Type 'String' has no construct signatures.
+                                                                                        ~
+!!! error TS2351: This expression is not constructable.
+!!! error TS2351:   No constituent of type 'string | number' is constructable.
+    function g27() { let x: string | number = "a"; while (more) { x = more ? "a" : (x`a`, 5); } }
+                                                                                    ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'String' has no call signatures.
+                                                                                    ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   No constituent of type 'string | number' is callable.
+                                                                                    ~~~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    function g28() { let x: string | number = "a"; while (more) { x = more ? "a" : ({ ...x }, 5); } }
+                                                                                    ~~~~~~~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+                                                                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    function g29() { let x: string | number = "a"; while (more) { x = more ? "a" : ([...x].length); } }
+                                                                                        ~
+!!! error TS2488: Type 'string | number' must have a '[Symbol.iterator]()' method that returns an iterator.
+    function g30() { let x: string | number = "a"; while (more) { x = more ? "a" : (x * 2); } }
+                                                                                    ~
+!!! error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+    function f01() { let x: string | number = "a"; while (more) { x = more ? "a" : ((a: number = x) => a)(); } }
+                                                                                     ~~~~~~~~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function f02() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : ((null! as OnlyKV<keyof typeof o>), a2); } }
+                                                                                           ~~~~~~~~~~~~~~
+!!! error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+!!! error TS2344:   Type '"extra"' is not assignable to type '"k" | "v"'.
+    function f03() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : (id<OnlyKV<keyof typeof o>>(null!), a2); } }
+                                                                                    ~~~~~~~~~~~~~~
+!!! error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+!!! error TS2344:   Type '"extra"' is not assignable to type '"k" | "v"'.
+    function f04() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : ((null! satisfies OnlyKV<keyof typeof o>), a2); } }
+                                                                                                  ~~~~~~~~~~~~~~
+!!! error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+!!! error TS2344:   Type '"extra"' is not assignable to type '"k" | "v"'.
+    function f05() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : ((id<OnlyKV<keyof typeof o>>), a2); } }
+                                                                                     ~~~~~~~~~~~~~~
+!!! error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+!!! error TS2344:   Type '"extra"' is not assignable to type '"k" | "v"'.
+    function f06() { let x: string | number = "a"; while (more) { x = more ? "a" : (({ a = x }: { a?: number }) => a)({}); } }
+                                                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+                                                                                       ~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    function h02() { let a = []; while (more) { a = a.concat(1); } return a; }
+                         ~
+!!! error TS7034: Variable 'a' implicitly has type 'any[]' in some locations where its type cannot be determined.
+                                                    ~
+!!! error TS7005: Variable 'a' implicitly has an 'any[]' type.
+    function h03() { let a = []; while (more) { a.push(a.length); } return a; }
+    function h04() { let a = []; while (more) { a[a.length] = a.length ? "s" : 1; } return a; }
+    function h05() { let x = null; while (more) { x = x === null ? item : (x.next = item); } }
+                                                                           ~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function h06() { let x; while (more) { if (x === undefined) x = item; else x = x.next = item; } }
+                                                                                   ~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function h07() { let a = []; while (more) { a[0] = a.length === "s" ? 1 : 2; } return a; }
+                                                       ~~~~~~~~~~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.
+    function h08() { let x; x = "a"; while (more) { x = more ? 5 : (numVar = x, "a"); } }
+                                                                    ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                    ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function i01() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = { m() { return last!.next = item; } }.m(); } }
+    function i02() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = new (class { p = (last!.next = item); })().p; } }
+    async function j01() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = await (last.next = item); } }
+                                                                                                                           ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function* j02() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ((yield (last.next = item)), item); } }
+                                                                                                                        ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a6.ts (18 errors) ====
+    interface Item { next: Item | null; n: number }
+    interface A { k: "a"; v: string } interface B { k: "b"; v: number; b: number }
+    interface A2 { k: 1; v: 1; extra: 1 } interface B2 { k: 2; v: 2 }
+    type OnlyKV<K extends "k" | "v"> = K; class Box<T extends "k" | "v"> { p!: T }
+    declare const more: boolean; declare const item: Item; declare const fn: () => void; declare const av: A; declare const bv: B; declare const a2: A2; declare const b2: B2;
+    declare const Ctor: new () => Item; declare const tag: (s: TemplateStringsArray) => void; declare let numVar: number;
+    function k01() { let f: (() => void) | undefined = undefined; while (more) { f = more ? fn : (f(), undefined); } }
+                                                                                                  ~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+    function k02() { let o: Item | undefined = undefined; while (more) { o = more ? item : (o.n, undefined); } }
+                                                                                            ~
+!!! error TS18048: 'o' is possibly 'undefined'.
+    function k03() { let o: Item | undefined = undefined; while (more) { o = more ? item : (o.n = 1, undefined); } }
+                                                                                            ~
+!!! error TS18048: 'o' is possibly 'undefined'.
+    function k04() { let o: Item | null = null; while (more) { o = more ? item : (o!.next = item); } }
+    function k05() { let o: Item | null = null; while (more) { o = more ? item : o!.next; } }
+    function k06() { let C: (new () => Item) | undefined = undefined; while (more) { C = more ? Ctor : (new C(), undefined); } }
+                                                                                                            ~
+!!! error TS18048: 'C' is possibly 'undefined'.
+    function k07() { let f: ((s: TemplateStringsArray) => void) | undefined = undefined; while (more) { f = more ? tag : (f`a`, undefined); } }
+                                                                                                                          ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Not all constituents of type '((s: TemplateStringsArray) => void) | undefined' are callable.
+!!! error TS2349:     Type 'undefined' has no call signatures.
+                                                                                                                          ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'undefined' has no call signatures.
+                                                                                                                          ~~~~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    function k08() { let o: Item | null = null; while (more) { o = more ? item : o!["next"]; } }
+    function k09() { let o: A | B = av; while (more) { o = more ? bv : (o["b"], av); } }
+                                                                        ~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"b"' can't be used to index type 'A'.
+!!! error TS7053:   Property 'b' does not exist on type 'A'.
+                                                                        ~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"b"' can't be used to index type 'A | B'.
+!!! error TS7053:   Property 'b' does not exist on type 'A | B'.
+    function k10() { let o: A | B = av; while (more) { o = more ? bv : ({ b: numVar } = o, av); } }
+                                                                          ~
+!!! error TS2339: Property 'b' does not exist on type 'A'.
+                                                                          ~
+!!! error TS2339: Property 'b' does not exist on type 'A | B'.
+    function k11() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : (((p: OnlyKV<keyof typeof o>) => 1)(null!), a2); } }
+                                                                                      ~~~~~~~~~~~~~~
+!!! error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+!!! error TS2344:   Type '"extra"' is not assignable to type '"k" | "v"'.
+    function k12() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : (new Box<keyof typeof o>(), a2); } }
+                                                                                  ~~~~~~~~~~~~~~
+!!! error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+!!! error TS2344:   Type '"extra"' is not assignable to type '"k" | "v"'.
+    function k13() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : ((null! as (typeof o)["extra"]), a2); } }
+    function k14() { let o: Item | null = null; while (more) { o = more ? item : (o!.next!.next = item); } }
+    function k15() { let o: Item | null = null; while (more) { o = more ? item : o!; } }
+    function k16() { let o: Item | null = null; while (more) { o = more ? item : (o as Item).next; } }
+    function k17() { let o: Item | null = null; while (more) { o = more ? item : (numVar = o!.n, item); } }
+    function k18() { let o: Item | null = null; while (more) { if (o === null) o = item; else o = o!.next = item; } }
+                                                                                                  ~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function k19() { let o: Item | null | undefined = null; while (more) { o = more ? item : o?.next; } }
+                                                                                                ~~~~
+!!! error TS2339: Property 'next' does not exist on type 'never'.
+    function k20() { let o: Item | null = null; let p: Item | null = null; while (more) { p = o; o = more ? item : (p!.next = item); } }
+    function k21() { let head: Item | null = null, tail: Item | null = null; while (more) { if (!head) head = tail = item; else tail = tail!.next = item; } return head; }
+    function k22() { let o: Item | null = null; while (more) { o = more ? item : (o!.n++, item); } }
+    function k23() { let o: Item | null = null; while (more) { o = more ? item : (delete o!.n, item); } }
+                                                                                         ~~~~
+!!! error TS2790: The operand of a 'delete' operator must be optional.
+    function k24() { let o: Item | null = null; for (const it of [item]) { o = o ? (o!.next = it) : it; } }
+                                                                                    ~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function k25() { let o: Item | null = null; while (more) { o = more ? item : (({ n: o!.n } = item), item); } }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a7.ts (27 errors) ====
+    interface A2 { k: 1; v: 1; extra: 1 } interface B2 { k: 2; v: 2 }
+    declare const more: boolean; declare const a2: A2; declare const b2: B2; declare let numVar: number;
+    declare function takeNum(n: number): number; declare function id<T>(x: T): T;
+    declare function apply<T>(a: T, cb: (v: T) => number): number;
+    function m01() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : ((null! as typeof o).extra, a2); } }
+                                                                                              ~~~~~
+!!! error TS2339: Property 'extra' does not exist on type 'A2 | B2'.
+!!! error TS2339:   Property 'extra' does not exist on type 'B2'.
+    function m02() { let x: string | number = "a"; while (more) { x = more ? "a" : ((null! as typeof x) satisfies string, 5); } }
+                                                                                                        ~~~~~~~~~
+!!! error TS1360: Type 'string | number' does not satisfy the expected type 'string'.
+!!! error TS1360:   Type 'number' is not assignable to type 'string'.
+    function m03() { let x: string | number = "a"; while (more) { x = more ? "a" : takeNum(null! as typeof x); } }
+                                                                                           ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+                                                                                           ~~~~~~~~~~~~~~~~~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    function m05() { let x: string | number = "a"; while (more) { x = more ? "a" : ((p: typeof x) => 5)(x); } }
+                                                                                                        ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+!!! error TS2345:   Type 'number' is not assignable to type 'string'.
+    function m06() { let x: string | number = "a"; while (more) { x = more ? "a" : (id<typeof x>(x), 5); } }
+                                                                                                 ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+!!! error TS2345:   Type 'number' is not assignable to type 'string'.
+    function m07() { let x: string | number = "a"; while (more) { x = more ? "a" : (id<typeof x>(5), 5); } }
+                                                                                                 ~
+!!! error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+    function m08() { let x: string | number = "a"; while (more) { x = more ? "a" : (5 satisfies typeof x, 5); } }
+                                                                                      ~~~~~~~~~
+!!! error TS1360: Type 'number' does not satisfy the expected type 'string'.
+    function m09() { let x: string | number = "a"; while (more) { x = more ? "a" : (5 as typeof x, 5); } }
+    function m10() { let x: string | number = "a"; while (more) { x = more ? "a" : apply(x, v => v.length); } }
+                                                                                         ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+!!! error TS2345:   Type 'number' is not assignable to type 'string'.
+    function m11() { let x: string | number = "a"; while (more) { x = more ? "a" : apply(x, v => takeNum(v)); } }
+                                                                                         ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+!!! error TS2345:   Type 'number' is not assignable to type 'string'.
+                                                                                                         ~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    function m12() { let x: string | number = "a"; while (more) { x = more ? "a" : [x].map(v => v.length)[0]; } }
+                                                                  ~
+!!! error TS2322: Type 'unknown' is not assignable to type 'string | number'.
+                                                                                           ~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '(v: string) => number' is not assignable to parameter of type '(value: string | number, index: number, array: (string | number)[]) => number'.
+!!! error TS2345:   Types of parameters 'v' and 'value' are incompatible.
+!!! error TS2345:     Type 'string | number' is not assignable to type 'string'.
+!!! error TS2345:       Type 'number' is not assignable to type 'string'.
+    function m13() { let x: string | number = "a"; while (more) { x = more ? "a" : (((v = x) => v.length)(), 5); } }
+                                                                                     ~~~~~~~~~~~~~~~~~~~
+!!! error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+                                                                                      ~~~~~
+!!! error TS7022: 'v' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                                                                  ~~~~~~
+!!! error TS2339: Property 'length' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'length' does not exist on type 'number'.
+    function m14() { let x: string | number = "a"; while (more) { x = more ? "a" : (numVar = (null! as typeof x extends string ? number : string), 5); } }
+    function m15() { let x: string | number = "a"; while (more) { x = more ? "a" : (numVar = (null! as (typeof x)[]).length, 5); const y: typeof x = 5; } }
+    function n01() { let a = []; let x: string | number = "a"; while (more) { a.push(x); x = a.length ? 5 : "a"; } const r: string[] = a; }
+                                                                                                                         ~
+!!! error TS2322: Type '(string | number)[]' is not assignable to type 'string[]'.
+!!! error TS2322:   Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    function n02() { let a = []; let x: string | number = "a"; while (more) { a[0] = x; x = a.length ? 5 : "a"; } const r: string[] = a; }
+                                                                                                                        ~
+!!! error TS2322: Type '(string | number)[]' is not assignable to type 'string[]'.
+!!! error TS2322:   Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    function n03() { let a = []; let x: string | number = "a"; while (more) { a.push(x === 5); x = a.length ? 5 : "a"; } return a; }
+                                                                                     ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function n04() { let a = []; let x: string | number = "a"; while (more) { a.push(more && x === 5 ? 1 : 2); x = a.length ? 5 : "a"; } return a; }
+                                                                                             ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    function n05() { let a = []; let x: string | number = "a"; while (more) { a.push(takeNum(x)); x = a.length ? 5 : "a"; } return a; }
+                                                                                             ~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+                                                                                             ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    function n06() { let a = []; let x: string | number = "a"; while (more) { a.push(numVar = x); x = a.length ? 5 : "a"; } return a; }
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                     ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function n07() { let a = []; let x: string | number = "a"; while (more) { a.push([x]); x = a.length ? 5 : "a"; } const r: string[][] = a; }
+                                                                                                                           ~
+!!! error TS2322: Type '(string | number)[][]' is not assignable to type 'string[][]'.
+!!! error TS2322:   Type '(string | number)[]' is not assignable to type 'string[]'.
+!!! error TS2322:     Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:       Type 'number' is not assignable to type 'string'.
+    function n08() { let a = []; let x: string | number = "a"; while (more) { a.unshift(x); x = a[0] === "a" ? 5 : "a"; } const r: string[] = a; }
+                                                                                                                                ~
+!!! error TS2322: Type '(string | number)[]' is not assignable to type 'string[]'.
+!!! error TS2322:   Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:     Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a8.ts (20 errors) ====
+    interface Item { next: Item | null; n: number }
+    declare const more: boolean; declare const item: Item; declare const items: Item[];
+    declare function ov(a: Item): Item; declare function ov(a: Item, b: number): Item;
+    declare function gen<T>(a: T, cb: (v: T) => T): T;
+    declare function ctx(o: { it: Item; f: (i: Item) => Item }): Item;
+    function r01() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ov(last.next = item); } }
+                                                                                                                 ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function r02() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ov(last.next = item, 1); } }
+                                                                                                                 ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function r03() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = gen(last.next = item, v => v); } }
+                                                                                                                  ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function r04() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ctx({ it: last.next = item, f: i => i }); } }
+    function r05() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ([last.next = item] as const)[0]; } }
+                                                                                                                ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function r06() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = items.map(i => i)[last.n = 0]; } }
+                                                                                                                                ~~~~~~
+!!! error TS2322: Type '0' is not assignable to type 'never'.
+    function r07() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = gen(item, v => (last!.next = v)); } }
+    function r08() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ov(ov(last.next = item)); } }
+                                                                                                                    ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function r09() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = more ? ov(last.next = item) : gen(last.next = item, v => v); } }
+                                                                                                                        ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+                                                                                                                                                ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function r10() { let last: Item | null = null; let other: Item | null = null; while (more) { if (last === null || other === null) { last = item; other = item; } else { last = other.next = item; other = last.next = item; } } }
+                                                                                                                                                                                   ~~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+    function r11() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ((last.next = item), (last.n = "s"), item); } }
+                                                                                                                ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+                                                                                                                                    ~~~~~~
+!!! error TS2322: Type '"s"' is not assignable to type 'never'.
+                                                                                                                                    ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    function r12() { let last: Item | null = null; while (more) { if (last === null) last = item; else last = ((last.next = item), (item.n = "s"), item); } }
+                                                                                                                ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+                                                                                                                                    ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    function r13() { let last: Item | null = null; let x: string | number = "a"; while (more) { if (last === null) last = item; else last = ((last.next = item), (item.n = x), item); x = more ? "a" : 5; } }
+                                                                                                                                              ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+                                                                                                                                                                  ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    function r14() { let last: Item | null = null; let x: string | number = "a"; while (more) { if (last === null) last = item; else { last = ((last.next = item), item); x = more ? "a" : (item.n = x, 5); } } }
+                                                                                                                                                ~~~~~~~~~
+!!! error TS2322: Type 'Item' is not assignable to type 'never'.
+                                                                                                                                                                                            ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                                                                                                                            ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== a9.ts (10 errors) ====
+    declare const more: boolean;
+    function g07() { let x: string | number = "a"; while (more) { x = more ? "a" : (x.toFixed(), 5); } }
+                                                                                      ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+    function g07b() { let x: string | number = "a"; while (more) { x = more ? "a" : (x.toFixed(), x.toFixed(), 5); } }
+                                                                                       ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+                                                                                                    ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+    function g07c() { let x: string | number = "a"; while (more) { x.toFixed(); x = more ? "a" : 5; } }
+                                                                     ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+    function g07d() { let x: string | number = "a"; while (more) { x = more ? "a" : (x.toFixed(), 5); x.toFixed(); } }
+                                                                                       ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+                                                                                                        ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+    function g07e() { let x: string | number = "a"; while (more) { x = more ? "a" : (x.toFixed, 5); } }
+                                                                                       ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+    function g07f() { let x: string | number = "a"; while (more) { x = more ? "a" : (x["toFixed"](), 5); } }
+                                                                                     ~~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"toFixed"' can't be used to index type 'string | number'.
+!!! error TS7053:   Property 'toFixed' does not exist on type 'string | number'.
+                                                                                       ~~~~~~~~~
+!!! error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export {};
+==== b0.ts (4 errors) ====
+    interface A { next: number } interface B { next: string }
+    declare const a: A, b: B, more: boolean;
+    export function r1() { let last: A | B = a; while (more) { last = (last.next = "s", b); } }
+                                                                       ~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export function r2() { let last: A | B = a; while (more) { last = (last.next = 1, b); } }
+    export function r3() { let last: A | B = a; do { last = (last.next = "s", b); } while (more); }
+                                                             ~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    export function r4() { let last: A | B = a; for (;;) { last = more ? (last.next = "s", b) : a; } }
+                                                                          ~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b4.ts (9 errors) ====
+    declare const more: boolean; declare const fn: () => void; declare let numVar: number;
+    interface A2 { k: 1; v: 1; extra: 1 } interface B2 { k: 2; v: 2 } declare const a2: A2; declare const b2: B2;
+    type OnlyKV<K extends "k" | "v"> = K;
+    export function a1() { let f: (() => void) | undefined = fn; while (more) { f = f ? undefined : fn; } }
+                                                                                    ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    export function a2_() { let x: string | number = "a"; while (more) { x = more && x === 5 ? "b" : 5; } }
+                                                                                     ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    export function b1() { let x: string | number = "a"; while (more) { x = more ? "a" : (numVar = x, 5); } }
+                                                                                          ~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+                                                                                          ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    export function c1() { let f: string | (() => void) = "a"; while (more) { f = more ? fn : (f(), "a"); } }
+                                                                                               ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Not all constituents of type 'string | (() => void)' are callable.
+!!! error TS2349:     Type 'string' has no call signatures.
+                                                                                               ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'String' has no call signatures.
+    export function d1() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : ((null! as OnlyKV<keyof typeof o>), a2); } }
+                                                                                                 ~~~~~~~~~~~~~~
+!!! error TS2344: Type 'keyof A2' does not satisfy the constraint '"k" | "v"'.
+!!! error TS2344:   Type '"extra"' is not assignable to type '"k" | "v"'.
+    export function e1() { let x: string | number = "a"; while (more) { x = more ? "a" : (x.toFixed(), 5); } }
+                                                                                            ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+    export function f1() { let o: A2 | B2 = a2; while (more) { o = more ? b2 : ((null! as (typeof o)["extra"]), a2); } }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b5.ts (8 errors) ====
+    interface Item { next: Item | null; n: number; cb(x: number): Item }
+    declare const more: boolean; declare const item: Item;
+    declare function takeNum(n: number): number;
+    export function r1() { let last: Item | null = null; let x: string | number = "a"; while (more) { x = last === null ? "a" : last.n; if (last === null) last = item; else last = last.cb(takeNum(x)); } }
+                                                                                                                                                                                                    ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    export function r2() { let x: string | number = "a"; while (more) { x = more ? "a" : (void takeNum(x), 5); } }
+                                                                                                       ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    export function r3() { let x: string | number = "a"; while (more) { x = more ? "a" : (takeNum(x), 5); } }
+                                                                                                  ~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+                                                                                                  ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    export function r4() { let last: Item | null = null; let x: string | number = "a"; while (more) { x = last === null ? "a" : last.n; if (last === null) last = item; else last = last.cb(takeNum(takeNum(x))); } }
+                                                                                                                                                                                                            ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    export function r5() { let last: Item | null = null; let x: string | number = "a"; while (more) { x = last === null ? "a" : last.n; if (last === null) last = item; else last = new (last.cb as any)(takeNum(x)); } }
+                                                                                                                                                                                                                 ~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+                                                                                                                                                                                                                 ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b6.ts (2 errors) ====
+    interface Result { score: number; name: string }
+    declare const results: Result[]; declare const byName: Record<string, Result>; declare const more: boolean;
+    export function u1() { let best: Result | null = null; for (const it of results) { if (best === null || it.score > best.score) best = it; } return best === null ? 0 : best.score; }
+    export function u2() { let best: Result | null = null; for (const it of results) { best = it; } if (best) return best.name; return ""; }
+    export function u3() { let best: Result | null = null; for (const key in byName) { best = byName[key]!; } return best?.score; }
+    export function u4() { let best: Result | null = null; for (const it of results) { if (more) continue; best = best === null ? it : best.score > it.score ? best : it; } return best !== null && best.name; }
+    export function u5() { let best: Result | null = null; for (const it of results) { best = it; } return best.score; }
+                                                                                                           ~~~~
+!!! error TS18047: 'best' is possibly 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b7.ts (12 errors) ====
+    declare const more: boolean; declare const fn: () => void; declare const item: { next: unknown };
+    export function p1() { let g: (() => void) | undefined = fn; while (more) { for (g of [g ? undefined : fn]) {} } }
+                                                                                           ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    export function p2() { let x: string | number = "a"; while (more) { for (x of [more && x === 5 ? "b" : 5]) {} } }
+                                                                                           ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    export function p3() { let g: (() => void) | string = fn; while (more) { for (g of [more ? fn : (g(), "a")]) {} } }
+                                                                                                     ~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Not all constituents of type 'string | (() => void)' are callable.
+!!! error TS2349:     Type 'string' has no call signatures.
+    export function p4() { let k: string = "a"; let g: (() => void) | undefined = fn; while (more) { for (k in (g ? { a: 1 } : { b: 2 })) {} g = more ? undefined : fn; } }
+    export function p5() { let g: (() => void) | undefined = fn; while (more) { for ([g] of [[g ? undefined : fn]]) {} } }
+                                                                                              ~
+!!! error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+    export function q1(y: string) { let x: string | number = "a"; while (more) { x; x = more && y === 5 ? "b" : 5; } }
+                                                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    export function q2(y: string) { let x: string | number = "a"; while (more) { x = more && y === 5 ? "b" : 5; } }
+                                                                                             ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    export function q3(y: string) { let x: string | number = "a"; while (more) { x; x = more && (y === 5 || y === 6) ? "b" : 5; } }
+                                                                                                 ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+                                                                                                            ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    export function q4(y: string) { let x: string | number = "a"; while (more) { x; x = more || y !== 5 ? "b" : 5; } }
+                                                                                                ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    export function q5(y: string) { let x: string | number = "a"; while (more) { if (x) {} x = y === 5 ? "b" : 5; } }
+                                                                                               ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    export function q6(y: string) { let x: string | number = "a"; do { x; x = more && y === 5 ? "b" : 5; } while (more); }
+                                                                                      ~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

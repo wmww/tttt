@@ -1,0 +1,20 @@
+//// [test/cases/bun32-C2.ts] ////
+
+=== a.ts ===
+declare const o: { x: any };
+>o : { x: any; }
+>x : any
+
+(o.x) = function () { this; };
+>(o.x) = function () { this; } : () => void
+>(o.x) : any
+>o.x : any
+>o : { x: any; }
+>x : any
+>function () { this; } : () => void
+>this : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+//// [test/cases/bun20-C16a.ts] ////
+
+=== a.ts ===
+class A { a = 1 }
+>A : A
+>a : number
+>1 : 1
+
+function z1<TA extends A>(x: Partial<TA>) { switch (x) { case "a": break; } }
+>z1 : <TA extends A>(x: Partial<TA>) => void
+>x : Partial<TA>
+>x : Partial<TA>
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

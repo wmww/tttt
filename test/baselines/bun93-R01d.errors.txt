@@ -1,0 +1,23 @@
+a.ts(1,49): error TS2339: Property 'a' does not exist on type 'M'.
+a.ts(2,12): error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+a.ts(3,32): error TS2339: Property 'b' does not exist on type 'M'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    type M = { [K in keyof N as A["a"] & string]: M["a"] };
+                                                    ~~~
+!!! error TS2339: Property 'a' does not exist on type 'M'.
+    type A = { a: N["a"]; b: 1 };
+               ~
+!!! error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+    type N = { [P in "a" | "b"]: M["b"] };
+                                   ~~~
+!!! error TS2339: Property 'b' does not exist on type 'M'.
+    let m: M = 1;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

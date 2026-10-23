@@ -1,0 +1,15 @@
+//// [test/cases/bun33-P7b.ts] ////
+
+=== a.ts ===
+type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+>X : [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A]
+
+const a = null! as X<X<X<X<[0]>>>>;
+>a : any
+>null! as X<X<X<X<[0]>>>> : any
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

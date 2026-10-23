@@ -1,0 +1,26 @@
+//// [test/cases/bun20-C1.ts] ////
+
+=== a.ts ===
+declare function assert(x: unknown): asserts x;
+>assert : (x: unknown) => asserts x
+>x : unknown
+
+function t1(x?: { f(): boolean }) { assert(x?.f()); x.f(); }
+>t1 : (x?: { f(): boolean; }) => void
+>x : { f(): boolean; } | undefined
+>f : () => boolean
+>assert(x?.f()) : void
+>assert : (x: unknown) => asserts x
+>x?.f() : boolean | undefined
+>x?.f : (() => boolean) | undefined
+>x : { f(): boolean; } | undefined
+>f : (() => boolean) | undefined
+>x.f() : boolean
+>x.f : () => boolean
+>x : { f(): boolean; } | undefined
+>f : () => boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

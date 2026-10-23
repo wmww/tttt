@@ -1,0 +1,198 @@
+//// [test/cases/bun72-R15a.ts] ////
+
+=== a.ts ===
+function f1(a: string, b?: ReturnType<typeof g1>): string;
+>f1 : { (a: string, b?: ReturnType<typeof g1>): string; (a: number, b?: number): number; }
+>a : string
+>b : number | undefined
+>g1 : () => number
+
+function f1(a: number, b?: number): number;
+>f1 : { (a: string, b?: ReturnType<typeof g1>): string; (a: number, b?: number): number; }
+>a : number
+>b : number | undefined
+
+function f1(a: any, b?: any) { return a; }
+>f1 : { (a: string, b?: ReturnType<typeof g1>): string; (a: number, b?: number): number; }
+>a : any
+>b : any
+>a : any
+
+function g1() { return f1(1, 2); }
+>g1 : () => number
+>f1(1, 2) : number
+>f1 : { (a: string, b?: ReturnType<typeof g1>): string; (a: number, b?: number): number; }
+>1 : 1
+>2 : 2
+
+function g2() { return f2(1, 2); }
+>g2 : () => number
+>f2(1, 2) : number
+>f2 : { (a: string, b?: ReturnType<typeof g2>): string; (a: number, b?: number): number; }
+>1 : 1
+>2 : 2
+
+function f2(a: string, b?: ReturnType<typeof g2>): string;
+>f2 : { (a: string, b?: ReturnType<typeof g2>): string; (a: number, b?: number): number; }
+>a : string
+>b : number | undefined
+>g2 : () => number
+
+function f2(a: number, b?: number): number;
+>f2 : { (a: string, b?: ReturnType<typeof g2>): string; (a: number, b?: number): number; }
+>a : number
+>b : number | undefined
+
+function f2(a: any, b?: any) { return a; }
+>f2 : { (a: string, b?: ReturnType<typeof g2>): string; (a: number, b?: number): number; }
+>a : any
+>b : any
+>a : any
+
+declare function f3(a: string, b?: typeof v3): string;
+>f3 : { (a: string, b?: typeof v3): string; (a: number, b?: number): number; }
+>a : string
+>b : number[] | undefined
+>v3 : number[]
+
+declare function f3(a: number, b?: number): number;
+>f3 : { (a: string, b?: typeof v3): string; (a: number, b?: number): number; }
+>a : number
+>b : number | undefined
+
+const v3 = [f3(1, 2)];
+>v3 : number[]
+>[f3(1, 2)] : number[]
+>f3(1, 2) : number
+>f3 : { (a: string, b?: typeof v3): string; (a: number, b?: number): number; }
+>1 : 1
+>2 : 2
+
+class C4 {
+>C4 : C4
+
+  m(a: string, b?: ReturnType<C4["n"]>): string;
+>m : { (a: string, b?: ReturnType<C4["n"]>): string; (a: number, b?: number): number; }
+>a : string
+>b : number[] | undefined
+
+  m(a: number, b?: number): number;
+>m : { (a: string, b?: ReturnType<C4["n"]>): string; (a: number, b?: number): number; }
+>a : number
+>b : number | undefined
+
+  m(a: any, b?: any) { return a; }
+>m : { (a: string, b?: ReturnType<C4["n"]>): string; (a: number, b?: number): number; }
+>a : any
+>b : any
+>a : any
+
+  n() { return [this.m(1, 2)]; }
+>n : () => number[]
+>[this.m(1, 2)] : number[]
+>this.m(1, 2) : number
+>this.m : { (a: string, b?: ReturnType<C4["n"]>): string; (a: number, b?: number): number; }
+>this : this
+>m : { (a: string, b?: ReturnType<C4["n"]>): string; (a: number, b?: number): number; }
+>1 : 1
+>2 : 2
+}
+interface I5 { (a: string, b?: typeof v5): string; (a: number, b?: number): number }
+>a : string
+>b : number[] | undefined
+>v5 : number[]
+>a : number
+>b : number | undefined
+
+declare const i5: I5;
+>i5 : I5
+
+const v5 = [i5(1, 2)];
+>v5 : number[]
+>[i5(1, 2)] : number[]
+>i5(1, 2) : number
+>i5 : I5
+>1 : 1
+>2 : 2
+
+declare class C6 { constructor(a: string, b?: typeof v6); constructor(a: number, b?: number); }
+>C6 : C6
+>a : string
+>b : C6[] | undefined
+>v6 : C6[]
+>a : number
+>b : number | undefined
+
+const v6 = [new C6(1, 2)];
+>v6 : C6[]
+>[new C6(1, 2)] : C6[]
+>new C6(1, 2) : C6
+>C6 : typeof C6
+>1 : 1
+>2 : 2
+
+declare function f7(a: string, ...b: (typeof v7)[]): string;
+>f7 : { (a: string, ...b: (typeof v7)[]): string; (a: number, ...b: number[]): number; }
+>a : string
+>b : any
+>v7 : any
+
+declare function f7(a: number, ...b: number[]): number;
+>f7 : { (a: string, ...b: (typeof v7)[]): string; (a: number, ...b: number[]): number; }
+>a : number
+>b : number[]
+
+const v7 = [f7(1, 2)];
+>v7 : any
+>[f7(1, 2)] : number[]
+>f7(1, 2) : number
+>f7 : { (a: string, ...b: (typeof v7)[]): string; (a: number, ...b: number[]): number; }
+>1 : 1
+>2 : 2
+
+declare function f8(a: string, b: typeof v8, c?: 1): string;
+>f8 : { (a: string, b: typeof v8, c?: 1): string; (a: number, b: number, c?: 1): number; }
+>a : string
+>b : any
+>v8 : any
+>c : 1 | undefined
+
+declare function f8(a: number, b: number, c?: 1): number;
+>f8 : { (a: string, b: typeof v8, c?: 1): string; (a: number, b: number, c?: 1): number; }
+>a : number
+>b : number
+>c : 1 | undefined
+
+const v8 = [f8(1, 2, 1)];
+>v8 : any
+>[f8(1, 2, 1)] : number[]
+>f8(1, 2, 1) : number
+>f8 : { (a: string, b: typeof v8, c?: 1): string; (a: number, b: number, c?: 1): number; }
+>1 : 1
+>2 : 2
+>1 : 1
+
+declare function f9<T>(a: string, b?: typeof v9, c?: T): string;
+>f9 : { <T>(a: string, b?: typeof v9, c?: T): string; (a: number, b?: number): number; }
+>a : string
+>b : any
+>v9 : any
+>c : T | undefined
+
+declare function f9(a: number, b?: number): number;
+>f9 : { <T>(a: string, b?: typeof v9, c?: T): string; (a: number, b?: number): number; }
+>a : number
+>b : number | undefined
+
+const v9 = [f9(1, 2)];
+>v9 : any
+>[f9(1, 2)] : number[]
+>f9(1, 2) : number
+>f9 : { <T>(a: string, b?: typeof v9, c?: T): string; (a: number, b?: number): number; }
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

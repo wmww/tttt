@@ -1,0 +1,30 @@
+a.js(1,14): error TS8017: Signature declarations can only be used in TypeScript files.
+a.js(1,16): error TS1005: '{' expected.
+a.js(2,14): error TS8017: Signature declarations can only be used in TypeScript files.
+a.js(2,18): error TS7033: Property 'a' implicitly has type 'any', because its get accessor lacks a return type annotation.
+a.js(2,20): error TS1005: '{' expected.
+a.js(3,14): error TS8017: Signature declarations can only be used in TypeScript files.
+a.js(3,22): error TS1005: '{' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "allowJs": true, "checkJs": true } }
+==== a.js (7 errors) ====
+    const v1 = { m() };
+                 ~~~
+!!! error TS8017: Signature declarations can only be used in TypeScript files.
+                   ~
+!!! error TS1005: '{' expected.
+    const v2 = { get a() };
+                 ~~~~~~~
+!!! error TS8017: Signature declarations can only be used in TypeScript files.
+                     ~
+!!! error TS7033: Property 'a' implicitly has type 'any', because its get accessor lacks a return type annotation.
+                       ~
+!!! error TS1005: '{' expected.
+    const v3 = { async n() };
+                 ~~~~~~~~~
+!!! error TS8017: Signature declarations can only be used in TypeScript files.
+                         ~
+!!! error TS1005: '{' expected.
+    

@@ -1,0 +1,18 @@
+//// [test/cases/bun24-C7.ts] ////
+
+=== a.ts ===
+const p = (function n() { return n; });
+>p : () => any
+>(function n() { return n; }) : () => any
+>function n() { return n; } : () => any
+>n : () => any
+>n : () => any
+
+const c: 1 = p;
+>c : 1
+>p : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

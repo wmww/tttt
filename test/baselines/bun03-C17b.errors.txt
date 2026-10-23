@@ -1,0 +1,17 @@
+a.ts(1,1): error TS1120: An export assignment cannot have modifiers.
+a.ts(1,18): error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "erasableSyntaxOnly": true } }
+==== a.ts (3 errors) ====
+    declare export = 1;
+    ~~~~~~~
+!!! error TS1120: An export assignment cannot have modifiers.
+                     ~
+!!! error TS2714: The expression of an export assignment must be an identifier or qualified name in an ambient context.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

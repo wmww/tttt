@@ -1,0 +1,32 @@
+//// [test/cases/bun57-L04b.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : any
+
+{ export = <Missing1>o }
+><Missing1>o : Missing1
+>o : any
+
+{ export = missing2() }
+>missing2() : any
+>missing2 : any
+
+function f() { export = missing3() }
+>f : { (): void; "export=": any; }
+>missing3() : any
+>missing3 : any
+
+{ export default missing4() }
+>missing4() : any
+>missing4 : any
+
+function g() { export default <Missing5>o }
+>g : { (): void; default: Missing5; }
+><Missing5>o : Missing5
+>o : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

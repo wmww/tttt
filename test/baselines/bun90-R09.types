@@ -1,0 +1,22 @@
+//// [test/cases/bun90-R09.ts] ////
+
+=== a.ts ===
+interface U2 extends U1, U3 {}
+interface U1 extends U2 {}
+interface U3 { m(): this }
+>m : () => this
+
+declare const u1: U1;
+>u1 : U1
+
+const k1: number = u1.m();
+>k1 : number
+>u1.m() : U2
+>u1.m : () => U2
+>u1 : U1
+>m : () => U2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+a.ts(1,26): error TS2842: '\u0062' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(2,17): error TS2842: '\u{62}c' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(3,22): error TS2842: 'b' is an unused renaming of '\u0061'. Did you intend to use it as a type annotation?
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare function f1({ a: \u0062 }: any): void;
+                             ~~~~~~
+!!! error TS2842: '\u0062' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    type T7 = ({ a: \u{62}c }: any) => void;
+                    ~~~~~~~
+!!! error TS2842: '\u{62}c' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    type T8 = ({ \u0061: b }: any) => void;
+                         ~
+!!! error TS2842: 'b' is an unused renaming of '\u0061'. Did you intend to use it as a type annotation?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

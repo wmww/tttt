@@ -1,0 +1,22 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+m.d.ts(2,22): error TS1066: In ambient enum declarations member initializer must be constant expression.
+m.d.ts(2,29): error TS1102: 'delete' cannot be called on an identifier in strict mode.
+m.d.ts(2,29): error TS2703: The operand of a 'delete' operator must be a property reference.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.d.ts (3 errors) ====
+    declare var y: any;
+    declare enum E { A = delete y }
+                         ~~~~~~~~
+!!! error TS1066: In ambient enum declarations member initializer must be constant expression.
+                                ~
+!!! error TS1102: 'delete' cannot be called on an identifier in strict mode.
+                                ~
+!!! error TS2703: The operand of a 'delete' operator must be a property reference.
+    

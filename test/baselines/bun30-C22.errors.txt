@@ -1,0 +1,17 @@
+a.ts(1,1): error TS1211: A class declaration without the 'default' modifier must have a name.
+a.ts(1,28): error TS2322: Type 'typeof __missing' is not assignable to type 'number'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class { static m() { const a: number = this; } }
+    ~~~~~
+!!! error TS1211: A class declaration without the 'default' modifier must have a name.
+                               ~
+!!! error TS2322: Type 'typeof __missing' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

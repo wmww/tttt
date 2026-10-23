@@ -1,0 +1,18 @@
+a.ts(1,58): error TS1225: Cannot find parameter 'p'.
+a.ts(2,66): error TS1225: Cannot find parameter 'p'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function t(p: () => void) { if (p) { const g = (x: any): p is any => true; } }
+                                                             ~
+!!! error TS1225: Cannot find parameter 'p'.
+    function u(p: () => void) { if (p) { const g = (x: any): asserts p => {}; } }
+                                                                     ~
+!!! error TS1225: Cannot find parameter 'p'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

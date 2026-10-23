@@ -1,0 +1,30 @@
+a.ts(3,112): error TS2367: This comparison appears to be unintentional because the types 'number' and 'Item | null' have no overlap.
+a.ts(3,112): error TS2367: This comparison appears to be unintentional because the types 'string | number' and 'Item | null' have no overlap.
+a.ts(4,143): error TS2367: This comparison appears to be unintentional because the types 'number' and 'Item | null' have no overlap.
+a.ts(4,143): error TS2367: This comparison appears to be unintentional because the types 'string | number' and 'Item | null' have no overlap.
+a.ts(5,111): error TS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "types": [], "lib": ["es2022"] }, "files": ["c.ts", "b.ts", "a.ts"] }
+==== a.ts (5 errors) ====
+    interface Item { next: Item | null }
+    declare const more: boolean; declare const item: Item;
+    export function build() { let last: Item | null = null; let n: number | string = 0; while (more) { n = more && n === last ? "s" : 5; last = n === 0 ? item : null; } return last; }
+                                                                                                                   ~~~~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'number' and 'Item | null' have no overlap.
+                                                                                                                   ~~~~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string | number' and 'Item | null' have no overlap.
+    export function build2() { let last: Item | null = null; let n: number | string = 0; while (more) { last = n === 0 ? item : null; n = more && n === last ? "s" : 5; } return n; }
+                                                                                                                                                  ~~~~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'number' and 'Item | null' have no overlap.
+                                                                                                                                                  ~~~~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'string | number' and 'Item | null' have no overlap.
+    export function build3() { let a: number | string = 0; let b: number | string = 0; while (more) { a = more && b === "x" ? "s" : 5; b = more && a === "y" ? "t" : 6; } return b; }
+                                                                                                                  ~~~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types 'number' and 'string' have no overlap.
+==== b.ts (0 errors) ====
+    import { build, build2, build3 } from "./a"; export const x = build(); export const y = build2(); export const z = build3();
+==== c.ts (0 errors) ====
+    import { build3, build2, build } from "./a"; export const z = build3(); export const y = build2(); export const x = build();
+    

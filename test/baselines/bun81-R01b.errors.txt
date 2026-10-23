@@ -1,0 +1,32 @@
+a.ts(2,32): error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(3,19): error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(4,19): error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+a.ts(6,35): error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(7,28): error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    const kz = "z";
+    const w10 = { set z(v) {}, get [kz]() { return w10.z } };
+                                   ~~~~
+!!! error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const w11 = { get [kz]() { return w11.z }, set z(v) {} };
+                      ~~~~
+!!! error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const w15 = { get [kz](): typeof w15.z { return 1 }, set z(v) {} };
+                      ~~~~
+!!! error TS2502: 'z' is referenced directly or indirectly in its own type annotation.
+    // a class, or the getter with the plain name: the two agree
+    const w12 = { set [kz](v) {}, get z() { return w12.z } };
+                                      ~
+!!! error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    class K1 { set z(v) {} get [kz]() { return this.z } }
+                               ~~~~
+!!! error TS7023: 'z' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

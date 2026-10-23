@@ -1,0 +1,23 @@
+//// [test/cases/bun01-C2b.ts] ////
+
+=== a.tsx ===
+export {};
+declare global { namespace JSX { interface IntrinsicElements { div: any } interface Element {} } }
+>global : any
+>div : any
+
+const x1 = <div />;
+>x1 : JSX.Element
+><div /> : JSX.Element
+>div : any
+
+const React = { createElement(...a: any[]): any {} };
+>React : { createElement(...a: any[]): any; }
+>{ createElement(...a: any[]): any {} } : { createElement(...a: any[]): any; }
+>createElement : (...a: any[]) => any
+>a : any[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

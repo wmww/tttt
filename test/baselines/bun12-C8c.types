@@ -1,0 +1,26 @@
+//// [test/cases/bun12-C8c.ts] ////
+
+=== a.ts ===
+let full: string | undefined;
+>full : string | undefined
+
+[full] = /a/.exec("a")!;
+>[full] = /a/.exec("a")! : RegExpExecArray
+>[full] : [string | undefined]
+>full : string | undefined
+>/a/.exec("a")! : RegExpExecArray
+>/a/.exec("a") : RegExpExecArray | null
+>/a/.exec : (string: string) => RegExpExecArray | null
+>/a/ : RegExp
+>exec : (string: string) => RegExpExecArray | null
+>"a" : "a"
+
+full.length;
+>full.length : number
+>full : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,29 @@
+//// [test/cases/bun30-P21.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+exports.a = function () {};
+>exports.a = function () {} : { (): void; b: number; }
+>exports.a : { (): void; b: number; }
+>exports : typeof import("./f")
+>a : { (): void; b: number; }
+>function () {} : { (): void; b: number; }
+
+a.b = 1;
+>a.b = 1 : 1
+>a.b : any
+>a : any
+>b : any
+>1 : 1
+
+exports.a.b;
+>exports.a.b : number
+>exports.a : { (): void; b: number; }
+>exports : typeof import("./f")
+>a : { (): void; b: number; }
+>b : number
+

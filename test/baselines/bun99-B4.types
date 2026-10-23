@@ -1,0 +1,78 @@
+//// [test/cases/bun99-B4.ts] ////
+
+=== a.ts ===
+declare const enum A { X }
+>A : A
+>X : A.X
+
+import { B } from "./b";
+>B : typeof B
+
+export const v1 = A.X;
+>v1 : A.X
+>A.X : A
+>A : typeof A
+>X : A
+
+export const v2 = A!.X;
+>v2 : A.X
+>A!.X : A
+>A! : typeof A
+>A : typeof A
+>X : A
+
+export const v3 = A!!.X;
+>v3 : A.X
+>A!!.X : A
+>A!! : typeof A
+>A! : typeof A
+>A : typeof A
+>X : A
+
+export const v4 = A!!!.X;
+>v4 : A.X
+>A!!!.X : A
+>A!!! : typeof A
+>A!! : typeof A
+>A! : typeof A
+>A : typeof A
+>X : A
+
+export const v5 = (A!!)!.X;
+>v5 : A.X
+>(A!!)!.X : A
+>(A!!)! : typeof A
+>(A!!) : typeof A
+>A!! : typeof A
+>A! : typeof A
+>A : typeof A
+>X : A
+
+export const v6 = B!!.Y;
+>v6 : B.Y
+>B!!.Y : B
+>B!! : typeof B
+>B! : typeof B
+>B : typeof B
+>Y : B
+
+export const v7 = [A!!];
+>v7 : (typeof A)[]
+>[A!!] : (typeof A)[]
+>A!! : typeof A
+>A! : typeof A
+>A : typeof A
+
+export type T = typeof A;
+>T : typeof A
+>A : typeof A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.d.ts ===
+export declare const enum B { Y }
+>B : B
+>Y : B.Y
+

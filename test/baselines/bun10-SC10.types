@@ -1,0 +1,29 @@
+//// [test/cases/bun10-SC10.ts] ////
+
+=== a.ts ===
+declare let n: never; declare const kn: number;
+>n : never
+>kn : number
+
+class C1 { [kn] = 1; [+1] = "s"; }
+>C1 : C1
+>[kn] : number
+>kn : number
+>1 : 1
+>[+1] : string
+>+1 : 1
+>1 : 1
+>"s" : "s"
+
+n = new C1()[5];
+>n = new C1()[5] : string | number
+>n : never
+>new C1()[5] : string | number
+>new C1() : C1
+>C1 : typeof C1
+>5 : 5
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

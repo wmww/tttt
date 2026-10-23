@@ -1,0 +1,22 @@
+//// [test/cases/bun07-C12.ts] ////
+
+=== a.ts ===
+export {};
+(function nm() {}, 1);
+>(function nm() {}, 1) : 1
+>function nm() {}, 1 : 1
+>function nm() {} : () => void
+>nm : () => void
+>1 : 1
+
+(class Nm {}, 1);
+>(class Nm {}, 1) : 1
+>class Nm {}, 1 : 1
+>class Nm {} : typeof Nm
+>Nm : typeof Nm
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

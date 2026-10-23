@@ -1,0 +1,18 @@
+a.ts(1,44): error TS2532: Object is possibly 'undefined'.
+a.ts(2,33): error TS2488: Type 'number' must have a '[Symbol.iterator]()' method that returns an iterator.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const f: (opts?: { a: number }) => void = ({}) => {};
+                                               ~~
+!!! error TS2532: Object is possibly 'undefined'.
+    const g: (x: number) => void = ([]) => {};
+                                    ~~
+!!! error TS2488: Type 'number' must have a '[Symbol.iterator]()' method that returns an iterator.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

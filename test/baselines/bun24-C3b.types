@@ -1,0 +1,26 @@
+//// [test/cases/bun24-C3b.ts] ////
+
+=== a.ts ===
+namespace N { export function f<T>(x: T) { class L { v!: T } return new L(); } }
+>N : typeof N
+>f : <T>(x: T) => L
+>x : T
+>L : L
+>v : T
+>new L() : L
+>L : typeof L
+
+const e: 1 = { c: N.f(1) };
+>e : 1
+>{ c: N.f(1) } : { c: N.f.L; }
+>c : N.f.L
+>N.f(1) : N.f.L
+>N.f : <T>(x: T) => L
+>N : typeof N
+>f : <T>(x: T) => L
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

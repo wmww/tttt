@@ -1,0 +1,23 @@
+a.ts(2,2): error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+a.ts(3,1): error TS2365: Operator '+=' cannot be applied to types '[{ a?: number; }]' and 'number'.
+a.ts(4,2): error TS2365: Operator '+=' cannot be applied to types '{ x: { a?: number; }; }' and 'number'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare let a: number;
+    ({ a = 1 } += 1);
+     ~~~~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types '{ a?: number; }' and 'number'.
+    [{ a = 1 }] += 1;
+    ~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types '[{ a?: number; }]' and 'number'.
+    ({ x: { a = 1 } } += 1);
+     ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2365: Operator '+=' cannot be applied to types '{ x: { a?: number; }; }' and 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

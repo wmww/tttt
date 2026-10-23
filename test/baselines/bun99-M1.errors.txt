@@ -1,0 +1,224 @@
+a.ts(6,7): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+a.ts(7,7): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+a.ts(8,7): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+a.ts(9,7): error TS2322: Type 'K.ID' is not assignable to type 'never'.
+a.ts(10,7): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+a.ts(11,7): error TS2322: Type 'K' is not assignable to type 'never'.
+a.ts(12,7): error TS2322: Type 'K' is not assignable to type 'never'.
+a.ts(13,7): error TS2322: Type 'keyof NumItem' is not assignable to type 'never'.
+  Type 'Num.Zero' is not assignable to type 'never'.
+a.ts(14,7): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+a.ts(15,52): error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+a.ts(16,62): error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+a.ts(17,61): error TS2322: Type '{ n?: number | undefined; plain?: boolean | undefined; }' is not assignable to type 'never'.
+a.ts(18,60): error TS2322: Type '{ n: 1; }' is not assignable to type 'never'.
+a.ts(19,63): error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+a.ts(20,68): error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+a.ts(21,54): error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+a.ts(22,62): error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+a.ts(23,72): error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+a.ts(24,78): error TS2322: Type '{ n: number; plain: boolean; extra: 1; }' is not assignable to type 'never'.
+a.ts(25,75): error TS2322: Type '{ plain: boolean; }' is not assignable to type 'never'.
+a.ts(26,68): error TS2322: Type '{ n: number; }' is not assignable to type 'never'.
+b.ts(11,7): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+b.ts(12,7): error TS2322: Type '"plain" | K.ID' is not assignable to type 'never'.
+  Type '"plain"' is not assignable to type 'never'.
+b.ts(13,7): error TS2322: Type '"xid" | "xn"' is not assignable to type 'never'.
+  Type '"xid"' is not assignable to type 'never'.
+b.ts(14,7): error TS2322: Type 'K.N | L' is not assignable to type 'never'.
+  Type 'K.N' is not assignable to type 'never'.
+b.ts(15,7): error TS2322: Type '"id" | K.N' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+b.ts(16,7): error TS2322: Type '"id" | "n"' is not assignable to type 'never'.
+  Type '"id"' is not assignable to type 'never'.
+b.ts(17,7): error TS2322: Type '"also" | K.ID' is not assignable to type 'never'.
+  Type '"also"' is not assignable to type 'never'.
+b.ts(18,52): error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+b.ts(19,56): error TS2322: Type '{ plain: boolean; }' is not assignable to type 'never'.
+b.ts(20,49): error TS2322: Type '{ xn: K.N; }' is not assignable to type 'never'.
+b.ts(21,55): error TS2322: Type '{ id: K.ID; n: K.N; }' is not assignable to type 'never'.
+b.ts(22,55): error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+b.ts(23,54): error TS2322: Type '{ id: "id" | K.ID; n: K.N; }' is not assignable to type 'never'.
+b.ts(24,46): error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+b.ts(25,56): error TS2322: Type '{ id: K.ID; n: K.N; }' is not assignable to type 'never'.
+b.ts(26,48): error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+b.ts(27,52): error TS2322: Type '{ also: K.ID; }' is not assignable to type 'never'.
+b.ts(28,63): error TS2322: Type '{ id: string; n: number; plain: boolean; }' is not assignable to type 'never'.
+b.ts(29,76): error TS2322: Type 'Omit<Required<T>, K.ID>' is not assignable to type 'never'.
+b.ts(30,86): error TS2322: Type 'any' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler", "types": []}, "files": ["index.ts", "a.ts", "b.ts"]}
+==== a.ts (21 errors) ====
+    enum K { ID = "id", N = "n" }
+    enum Num { Zero, One }
+    declare const sym: unique symbol;
+    type Item = { [K.ID]: string; [K.N]: number; plain: boolean };
+    type NumItem = { [Num.Zero]: string; [Num.One]: number };
+    const k1: never = null! as keyof Item;
+          ~~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const k2: never = null! as keyof Required<Item>;
+          ~~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const k3: never = null! as keyof Partial<Item>;
+          ~~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const k4: never = null! as keyof Pick<Item, K.ID>;
+          ~~
+!!! error TS2322: Type 'K.ID' is not assignable to type 'never'.
+    const k5: never = null! as keyof { [P in keyof Item]: Item[P] };
+          ~~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const k6: never = null! as keyof { [P in K]: 1 };
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+    const k7: never = null! as keyof Record<K, 1>;
+          ~~
+!!! error TS2322: Type 'K' is not assignable to type 'never'.
+    const k8: never = null! as keyof Required<NumItem>;
+          ~~
+!!! error TS2322: Type 'keyof NumItem' is not assignable to type 'never'.
+!!! error TS2322:   Type 'Num.Zero' is not assignable to type 'never'.
+    const k9: never = null! as keyof Readonly<Required<Item>>;
+          ~~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    function r1({ [K.ID]: id, ...rest }: Item) { const x: never = rest; }
+                                                       ~
+!!! error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+    function r2({ [K.ID]: id, ...rest }: Required<Item>) { const x: never = rest; }
+                                                                 ~
+!!! error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+    function r3({ [K.ID]: id, ...rest }: Partial<Item>) { const x: never = rest; }
+                                                                ~
+!!! error TS2322: Type '{ n?: number | undefined; plain?: boolean | undefined; }' is not assignable to type 'never'.
+    function r4({ [K.ID]: id, ...rest }: Record<K, 1>) { const x: never = rest; }
+                                                               ~
+!!! error TS2322: Type '{ n: 1; }' is not assignable to type 'never'.
+    function r5({ [K.ID]: id, ...rest }: { [P in K]: P }) { const x: never = rest; }
+                                                                  ~
+!!! error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+    function r6({ [Num.Zero]: z, ...rest }: Required<NumItem>) { const x: never = rest; }
+                                                                       ~
+!!! error TS2322: Type '{ 1: number; }' is not assignable to type 'never'.
+    function r7({ id, ...rest }: Required<Item>) { const x: never = rest; }
+                                                         ~
+!!! error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+    function r8({ ["id"]: id, ...rest }: Required<Item>) { const x: never = rest; }
+                                                                 ~
+!!! error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+    function r9({ [K.ID]: id, ...rest }: Readonly<Required<Item>>) { const x: never = rest; }
+                                                                           ~
+!!! error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+    function r10({ [K.ID]: id, ...rest }: Required<Item> & { extra: 1 }) { const x: never = rest; }
+                                                                                 ~
+!!! error TS2322: Type '{ n: number; plain: boolean; extra: 1; }' is not assignable to type 'never'.
+    function r11({ [K.ID]: id, ...rest }: Pick<Item, K.ID | "plain">) { const x: never = rest; }
+                                                                              ~
+!!! error TS2322: Type '{ plain: boolean; }' is not assignable to type 'never'.
+    function r12({ [K.ID]: id, ...rest }: Omit<Item, "plain">) { const x: never = rest; }
+                                                                       ~
+!!! error TS2322: Type '{ n: number; }' is not assignable to type 'never'.
+    export {};
+==== b.ts (20 errors) ====
+    enum K { ID = "id", N = "n" }
+    enum L { ID = "id" }
+    type Item = { [K.ID]: string; [K.N]: number; plain: boolean };
+    type Same = { [P in keyof Item as P]: Item[P] };
+    type Filtered = { [P in keyof Item as Exclude<P, K.N>]: Item[P] };
+    type Prefixed = { [P in K as `x${P}`]: P };
+    type ToOther = { [P in K as P extends K.ID ? L.ID : P]: P };
+    type Merged = { [P in K | "id" as P extends K.ID ? "id" : P]: P };
+    type ToString = { [P in K as `${P}`]: P };
+    type Two = { [P in K.ID as P | "also"]: P };
+    const k1: never = null! as keyof Same;
+          ~~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const k2: never = null! as keyof Filtered;
+          ~~
+!!! error TS2322: Type '"plain" | K.ID' is not assignable to type 'never'.
+!!! error TS2322:   Type '"plain"' is not assignable to type 'never'.
+    const k3: never = null! as keyof Prefixed;
+          ~~
+!!! error TS2322: Type '"xid" | "xn"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"xid"' is not assignable to type 'never'.
+    const k4: never = null! as keyof ToOther;
+          ~~
+!!! error TS2322: Type 'K.N | L' is not assignable to type 'never'.
+!!! error TS2322:   Type 'K.N' is not assignable to type 'never'.
+    const k5: never = null! as keyof Merged;
+          ~~
+!!! error TS2322: Type '"id" | K.N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    const k6: never = null! as keyof ToString;
+          ~~
+!!! error TS2322: Type '"id" | "n"' is not assignable to type 'never'.
+!!! error TS2322:   Type '"id"' is not assignable to type 'never'.
+    const k7: never = null! as keyof Two;
+          ~~
+!!! error TS2322: Type '"also" | K.ID' is not assignable to type 'never'.
+!!! error TS2322:   Type '"also"' is not assignable to type 'never'.
+    function s1({ [K.ID]: id, ...rest }: Same) { const x: never = rest; }
+                                                       ~
+!!! error TS2322: Type '{ n: number; plain: boolean; }' is not assignable to type 'never'.
+    function s2({ [K.ID]: id, ...rest }: Filtered) { const x: never = rest; }
+                                                           ~
+!!! error TS2322: Type '{ plain: boolean; }' is not assignable to type 'never'.
+    function s3({ xid, ...rest }: Prefixed) { const x: never = rest; }
+                                                    ~
+!!! error TS2322: Type '{ xn: K.N; }' is not assignable to type 'never'.
+    function s4({ [K.ID]: id, ...rest }: ToOther) { const x: never = rest; }
+                                                          ~
+!!! error TS2322: Type '{ id: K.ID; n: K.N; }' is not assignable to type 'never'.
+    function s5({ [L.ID]: id, ...rest }: ToOther) { const x: never = rest; }
+                                                          ~
+!!! error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+    function s6({ [K.ID]: id, ...rest }: Merged) { const x: never = rest; }
+                                                         ~
+!!! error TS2322: Type '{ id: "id" | K.ID; n: K.N; }' is not assignable to type 'never'.
+    function s7({ id, ...rest }: Merged) { const x: never = rest; }
+                                                 ~
+!!! error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+    function s8({ [K.ID]: id, ...rest }: ToString) { const x: never = rest; }
+                                                           ~
+!!! error TS2322: Type '{ id: K.ID; n: K.N; }' is not assignable to type 'never'.
+    function s9({ id, ...rest }: ToString) { const x: never = rest; }
+                                                   ~
+!!! error TS2322: Type '{ n: K.N; }' is not assignable to type 'never'.
+    function s10({ [K.ID]: id, ...rest }: Two) { const x: never = rest; }
+                                                       ~
+!!! error TS2322: Type '{ also: K.ID; }' is not assignable to type 'never'.
+    function s11({ [L.ID]: id, ...rest }: Required<Item>) { const x: never = rest; }
+                                                                  ~
+!!! error TS2322: Type '{ id: string; n: number; plain: boolean; }' is not assignable to type 'never'.
+    function s12<T extends Item>({ [K.ID]: id, ...rest }: Required<T>) { const x: never = rest; }
+                                                                               ~
+!!! error TS2322: Type 'Omit<Required<T>, K.ID>' is not assignable to type 'never'.
+    function s13(o: Required<Item>) { let id, rest; ({ [K.ID]: id, ...rest } = o); const x: never = rest; }
+                                                                                         ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    export {};
+==== index.ts (0 errors) ====
+    enum K {
+      ID = "id",
+    }
+    
+    type Item = { [K.ID]: string };
+    
+    export function f({ [K.ID]: id, ...rest }: Required<Item>): Item {
+      return { [K.ID]: id, ...rest };
+    }
+    

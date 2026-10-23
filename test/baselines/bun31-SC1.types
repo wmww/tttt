@@ -1,0 +1,54 @@
+//// [test/cases/bun31-SC1.ts] ////
+
+=== a.ts ===
+declare let c: boolean; declare function fail(): never; declare function assertS(x: unknown): asserts x is string;
+>c : boolean
+>fail : () => never
+>assertS : (x: unknown) => asserts x is string
+>x : unknown
+
+declare function get(): (x: unknown) => asserts x is string;
+>get : () => (x: unknown) => asserts x is string
+>x : unknown
+
+function g1(x: unknown) { for (assertS(x); c;) { x.length; } }
+>g1 : (x: unknown) => void
+>x : unknown
+>assertS(x) : void
+>assertS : (x: unknown) => asserts x is string
+>x : unknown
+>c : boolean
+>x.length : any
+>x : unknown
+>length : any
+
+function g2(): number { for (fail(); c;) { } }
+>g2 : () => number
+>fail() : never
+>fail : () => never
+>c : boolean
+
+function g3() { let y: number; for (fail(); c;) { } y.toFixed(); }
+>g3 : () => void
+>y : number
+>fail() : never
+>fail : () => never
+>c : boolean
+>y.toFixed() : string
+>y.toFixed : (fractionDigits?: number) => string
+>y : number
+>toFixed : (fractionDigits?: number) => string
+
+function g4(x: unknown) { for (get()(x); c;) { } }
+>g4 : (x: unknown) => void
+>x : unknown
+>get()(x) : void
+>get() : (x: unknown) => asserts x is string
+>get : () => (x: unknown) => asserts x is string
+>x : unknown
+>c : boolean
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

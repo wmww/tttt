@@ -1,0 +1,14 @@
+//// [test/cases/bun03-C21.ts] ////
+
+=== a.ts ===
+declare namespace A { throw
+>A : typeof A
+
+ 1; }
+> : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

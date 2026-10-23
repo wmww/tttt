@@ -1,0 +1,29 @@
+//// [test/cases/bun04-C7b.ts] ////
+
+=== a.ts ===
+export {};
+interface N { parent?: N }
+>parent : N | undefined
+
+declare function require(n: N): N | undefined;
+>require : (n: N) => N | undefined
+>n : N
+
+function w3(root: N) { let n: N | undefined = root; while (n) { const p = require(n); n = p; } }
+>w3 : (root: N) => void
+>root : N
+>n : N | undefined
+>root : N
+>n : N | undefined
+>p : N | undefined
+>require(n) : N | undefined
+>require : (n: N) => N | undefined
+>n : N
+>n = p : N | undefined
+>n : N | undefined
+>p : N | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

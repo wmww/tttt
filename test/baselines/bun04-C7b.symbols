@@ -1,0 +1,32 @@
+//// [test/cases/bun04-C7b.ts] ////
+
+=== a.ts ===
+export {};
+interface N { parent?: N }
+>N : Symbol(N, Decl(a.ts, 0, 10))
+>parent : Symbol(N.parent, Decl(a.ts, 1, 13))
+>N : Symbol(N, Decl(a.ts, 0, 10))
+
+declare function require(n: N): N | undefined;
+>require : Symbol(require, Decl(a.ts, 1, 26))
+>n : Symbol(n, Decl(a.ts, 2, 25))
+>N : Symbol(N, Decl(a.ts, 0, 10))
+>N : Symbol(N, Decl(a.ts, 0, 10))
+
+function w3(root: N) { let n: N | undefined = root; while (n) { const p = require(n); n = p; } }
+>w3 : Symbol(w3, Decl(a.ts, 2, 46))
+>root : Symbol(root, Decl(a.ts, 3, 12))
+>N : Symbol(N, Decl(a.ts, 0, 10))
+>n : Symbol(n, Decl(a.ts, 3, 26))
+>N : Symbol(N, Decl(a.ts, 0, 10))
+>root : Symbol(root, Decl(a.ts, 3, 12))
+>n : Symbol(n, Decl(a.ts, 3, 26))
+>p : Symbol(p, Decl(a.ts, 3, 69))
+>require : Symbol(require, Decl(a.ts, 1, 26))
+>n : Symbol(n, Decl(a.ts, 3, 26))
+>n : Symbol(n, Decl(a.ts, 3, 26))
+>p : Symbol(p, Decl(a.ts, 3, 69))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

@@ -1,0 +1,20 @@
+a.ts(1,23): error TS2313: Type parameter 'T' has a circular constraint.
+a.ts(1,49): error TS2322: Type 'T' is not assignable to type 'T[keyof T]'.
+  'T[keyof T]' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function f6<T extends T[keyof T]>(t: T) { const a: T[keyof T] = t; }
+                          ~~~~~~~~~~
+!!! error TS2313: Type parameter 'T' has a circular constraint.
+!!! related TS2751 a.ts:1:49: Circularity originates in type at this location.
+                                                    ~
+!!! error TS2322: Type 'T' is not assignable to type 'T[keyof T]'.
+!!! error TS2322:   'T[keyof T]' could be instantiated with an arbitrary type which could be unrelated to 'T'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,18 @@
+//// [test/cases/bun18-C10b.ts] ////
+
+=== a.ts ===
+declare function f3(...args: [...a: [number], b: string]): void;
+>f3 : (args_0: number, b: string) => void
+>args : [number, b: string]
+
+let u3: typeof f3 = (p: string, q: string) => {};
+>u3 : (args_0: number, b: string) => void
+>f3 : (args_0: number, b: string) => void
+>(p: string, q: string) => {} : (p: string, q: string) => void
+>p : string
+>q : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

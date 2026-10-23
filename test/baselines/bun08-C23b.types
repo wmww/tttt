@@ -1,0 +1,29 @@
+//// [test/cases/bun08-C23b.ts] ////
+
+=== a.js ===
+const { F } = require("./lib");
+>F : () => void
+>require("./lib") : { F: () => void; }
+>require : any
+>"./lib" : "./lib"
+
+/** @type {F.Inner} */
+let t;
+>t : F.Inner
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== lib.js ===
+function F() {}
+>F : () => void
+
+module.exports = { F };
+>module.exports = { F } : { F: () => void; }
+>module.exports : { F: () => void; }
+>module : { exports: { F: () => void; }; }
+>exports : { F: () => void; }
+>{ F } : { F: () => void; }
+>F : () => void
+

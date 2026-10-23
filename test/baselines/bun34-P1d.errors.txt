@@ -1,0 +1,21 @@
+a.ts(2,22): error TS1005: ',' expected.
+a.ts(2,24): error TS2693: 'X' only refers to a type, but is being used as a value here.
+a.ts(2,26): error TS1005: ';' expected.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    interface X {}
+    class C implements X | X {}
+                         ~
+!!! error TS1005: ',' expected.
+                           ~
+!!! error TS2693: 'X' only refers to a type, but is being used as a value here.
+                             ~
+!!! error TS1005: ';' expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

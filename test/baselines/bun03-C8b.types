@@ -1,0 +1,15 @@
+//// [test/cases/bun03-C8b.ts] ////
+
+=== a.ts ===
+import type { type Nope } from "./c";
+>Nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== c.ts ===
+export const c = 1;
+>c : 1
+>1 : 1
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun03-SC9.ts] ////
+
+=== a.ts ===
+declare const x: any;
+>x : any
+
+with (x) { interface K { a: number; a: string } }
+>x : any
+>a : any
+>a : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

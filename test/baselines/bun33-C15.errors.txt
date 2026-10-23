@@ -1,0 +1,18 @@
+a.ts(1,15): error TS1191: An import declaration cannot have modifiers.
+a.ts(1,29): error TS1147: Import declarations in a namespace cannot reference a module.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    namespace M { export import "x"; }
+                  ~~~~~~
+!!! error TS1191: An import declaration cannot have modifiers.
+                                ~~~
+!!! error TS1147: Import declarations in a namespace cannot reference a module.
+    M;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

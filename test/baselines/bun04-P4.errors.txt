@@ -1,0 +1,24 @@
+a.ts(7,34): error TS2322: Type '"async"' is not assignable to type 'never'.
+a.ts(8,32): error TS2322: Type '"aug"' is not assignable to type 'never'.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "target": "esnext", "module": "esnext", "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    declare global {
+      interface Array<T> { [Symbol.asyncIterator](): AsyncIterator<"async">; }
+      interface String { [Symbol.iterator](): Iterator<"aug">; }
+    }
+    declare const a: number[];
+    for await (const x of a) { const n: never = x; }
+                                     ~
+!!! error TS2322: Type '"async"' is not assignable to type 'never'.
+    for (const x of "abc") { const n: never = x; }
+                                   ~
+!!! error TS2322: Type '"aug"' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

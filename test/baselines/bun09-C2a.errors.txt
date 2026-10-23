@@ -1,0 +1,17 @@
+a.ts(4,4): error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function f1(a: number): void;
+    declare function f2(a: number): void;
+    declare const u4: Parameters<typeof f1> | Parameters<typeof f2>;
+    f1(...u4);
+       ~~~~~
+!!! error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,16 @@
+a.ts(2,81): error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function dec(...x: any[]): any;
+    function o() { let y: string | number = 1; class K { static { y = "a"; } @dec(y.toFixed()) p: any; } }
+                                                                                    ~~~~~~~
+!!! error TS2551: Property 'toFixed' does not exist on type 'string'. Did you mean 'fixed'?
+!!! related TS2728 lib.es2015.core.d.ts:--:--: 'fixed' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

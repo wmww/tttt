@@ -1,0 +1,24 @@
+//// [test/cases/bun29-C7b.ts] ////
+
+=== a.ts ===
+import { mk } from "./m";
+>mk : Symbol(mk, Decl(a.ts, 0, 8))
+
+export const v = mk();
+>v : Symbol(v, Decl(a.ts, 1, 12))
+>mk : Symbol(mk, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+namespace Hid { export interface I { i: 1 } }
+>Hid : Symbol(Hid, Decl(m.ts, 0, 0))
+>I : Symbol(I, Decl(m.ts, 0, 15))
+>i : Symbol(I.i, Decl(m.ts, 0, 36))
+
+export declare function mk(): Hid.I;
+>mk : Symbol(mk, Decl(m.ts, 0, 45))
+>Hid : Symbol(Hid, Decl(m.ts, 0, 0))
+>I : Symbol(Hid.I, Decl(m.ts, 0, 15))
+

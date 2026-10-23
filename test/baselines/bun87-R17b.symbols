@@ -1,0 +1,29 @@
+//// [test/cases/bun87-R17b.ts] ////
+
+=== a.ts ===
+import "pkg";
+declare module "pkg" { enum E { B } enum F { B = 2 } const enum G { B = 2 } }
+>"pkg" : Symbol("pkg", Decl(index.d.ts, 0, 0), Decl(a.ts, 0, 13))
+>E : Symbol(E, Decl(index.d.ts, 0, 0), Decl(a.ts, 1, 22))
+>B : Symbol(E.B, Decl(a.ts, 1, 31))
+>F : Symbol(F, Decl(a.ts, 1, 35))
+>B : Symbol(F.B, Decl(a.ts, 1, 44))
+>G : Symbol(G, Decl(a.ts, 1, 52))
+>B : Symbol(G.B, Decl(a.ts, 1, 67))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/pkg/index.d.ts ===
+export declare enum E { A }
+>E : Symbol(E, Decl(index.d.ts, 0, 0), Decl(a.ts, 1, 22))
+>A : Symbol(E.A, Decl(index.d.ts, 0, 23))
+
+export declare const enum F { A = 1 }
+>F : Symbol(F, Decl(index.d.ts, 0, 27))
+>A : Symbol(F.A, Decl(index.d.ts, 1, 29))
+
+export declare enum G { A = 1 }
+>G : Symbol(G, Decl(index.d.ts, 1, 37))
+>A : Symbol(G.A, Decl(index.d.ts, 2, 23))
+

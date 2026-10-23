@@ -1,0 +1,13 @@
+//// [test/cases/bun32-C12.ts] ////
+
+=== a.ts ===
+function f(a = 1) { return "use strict"; }
+>f : (a?: number) => string
+>a : number
+>1 : 1
+>"use strict" : "use strict"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

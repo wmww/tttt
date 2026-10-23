@@ -1,0 +1,16 @@
+b.ts(1,10): error TS2432: In an enum with multiple declarations, only one declaration can omit an initializer for its first enum element.
+b.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "skipLibCheck": true } }
+==== a.d.ts (0 errors) ====
+    declare enum E { A }
+==== b.ts (2 errors) ====
+    enum E { B }
+             ~
+!!! error TS2432: In an enum with multiple declarations, only one declaration can omit an initializer for its first enum element.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

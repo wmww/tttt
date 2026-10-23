@@ -1,0 +1,15 @@
+a.tsx(2,17): error TS2373: Parameter 'p' cannot reference identifier 'div' declared after it.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { div: {} } }
+    function f(p = <div />, React: any) { return 1; }
+                    ~~~
+!!! error TS2373: Parameter 'p' cannot reference identifier 'div' declared after it.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

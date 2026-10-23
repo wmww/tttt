@@ -1,0 +1,13 @@
+//// [test/cases/bun30-C3.ts] ////
+
+=== a.ts ===
+function f() {}
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+@(f.a = 1 as any) class C {}
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 0, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

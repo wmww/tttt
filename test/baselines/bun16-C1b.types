@@ -1,0 +1,19 @@
+//// [test/cases/bun16-C1b.ts] ////
+
+=== a.ts ===
+interface Id extends Pick<typeof xd, "a"> {}
+>xd : any
+
+declare const yd: Id | undefined;
+>yd : Id | undefined
+
+const xd = yd && 1;
+>xd : any
+>yd && 1 : 1 | undefined
+>yd : Id | undefined
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

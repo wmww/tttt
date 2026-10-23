@@ -1,0 +1,11 @@
+//// [test/cases/bun32-C11.ts] ////
+
+=== a.ts ===
+export function f(public h: number) {}
+>f : (h: number) => void
+>h : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

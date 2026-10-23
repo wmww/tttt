@@ -1,0 +1,39 @@
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "declaration": true, "emitDeclarationOnly": true, "outDir": "out", "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    import { make, make2, make3 } from "other";
+    export const x = make();
+    export const x2 = make2();
+    export const x3 = make3();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/dep/a.d.ts (0 errors) ====
+    export interface Thing { a: number }
+==== node_modules/dep/package.json (0 errors) ====
+    { "name": "dep", "version": "1.0.0", "exports": { "./a": "./a.d.ts", "#x": "./x.d.ts" } }
+==== node_modules/dep2/a.d.ts (0 errors) ====
+    export interface Thing2 { a: number }
+==== node_modules/dep2/package.json (0 errors) ====
+    { "name": "dep2", "version": "1.0.0", "exports": { "": "./x.d.ts", "./a": "./a.d.ts" } }
+==== node_modules/dep3/a.d.ts (0 errors) ====
+    export interface Thing3 { a: number }
+==== node_modules/dep3/package.json (0 errors) ====
+    { "name": "dep3", "version": "1.0.0", "exports": { "./a": "./a.d.ts" } }
+==== node_modules/other/index.d.ts (0 errors) ====
+    import { Thing } from "dep/a";
+    import { Thing2 } from "dep2/a";
+    import { Thing3 } from "dep3/a";
+    export declare function make(): Thing;
+    export declare function make2(): Thing2;
+    export declare function make3(): Thing3;
+==== node_modules/other/package.json (0 errors) ====
+    { "name": "other", "version": "1.0.0", "types": "index.d.ts" }
+==== out/a.d.ts (0 errors) ====
+    export declare const x: import("dep/a").Thing;
+    export declare const x2: import("dep2/a").Thing2;
+    export declare const x3: import("dep3/a").Thing3;
+    

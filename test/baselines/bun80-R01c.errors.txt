@@ -1,0 +1,22 @@
+a.ts(1,19): error TS17012: '#constructor' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?
+a.ts(2,19): error TS17012: '#meta' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?
+a.ts(3,39): error TS17012: '#a' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "jsx": "preserve" } }
+==== a.ts (4 errors) ====
+    const m1 = import.#constructor;
+                      ~~~~~~~~~~~~
+!!! error TS17012: '#constructor' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?
+    const m2 = import.#meta;
+                      ~~~~~
+!!! error TS17012: '#meta' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?
+    class K { #a = 1; m() { return import.#a; } }
+                                          ~~
+!!! error TS17012: '#a' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

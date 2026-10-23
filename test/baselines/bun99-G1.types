@@ -1,0 +1,127 @@
+//// [test/cases/bun99-G1.ts] ////
+
+=== case.ts ===
+export type A = globalThis.ErrorConstructor;
+>A : ErrorConstructor
+>globalThis : any
+
+export type B = globalThis.Console;
+>B : Console
+>globalThis : any
+
+export type C = globalThis.console.Options;
+>C : c.Options
+>globalThis : any
+>console : any
+
+export const d: never = globalThis.console;
+>d : never
+>globalThis.console : Console
+>globalThis : typeof globalThis
+>console : Console
+
+import c = require("console");
+>c : Console
+
+export const e: never = c;
+>e : never
+>c : Console
+
+export type F = c.Console;
+>F : c.Console
+>c : any
+
+export type G = c.Options;
+>G : c.Options
+>c : any
+
+export type H = globalThis.Later;
+>H : Later
+>globalThis : any
+
+export type I = globalThis.LaterNs.T;
+>I : 1
+>globalThis : any
+>LaterNs : any
+
+export const j: never = globalThis.later;
+>j : never
+>globalThis.later : Later
+>globalThis : typeof globalThis
+>later : Later
+
+export interface Extended extends globalThis.Later { z?: 1 }
+>globalThis : any
+>z : 1 | undefined
+
+export const k: Extended = { l: 1 };
+>k : Extended
+>{ l: 1 } : { l: 1; }
+>l : 1
+>1 : 1
+
+type Return = ReturnType<any[][typeof Symbol.iterator]> extends globalThis.Iterator<any, infer R> ? R : any;
+>Return : undefined
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>globalThis : any
+
+export const probe: [Return] extends [undefined] ? true : false = true;
+>probe : true
+>true : true
+>false : false
+>true : true
+
+export type L = globalThis.NoSuchType;
+>L : globalThis.NoSuchType
+>globalThis : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== n.d.ts ===
+declare module "console" {
+>"console" : typeof import("console")
+
+    import console = require("node:console");
+>console : Console
+
+    export = console;
+>console : Console
+}
+declare module "node:console" {
+>"node:console" : typeof import("node:console")
+
+    global {
+>global : typeof global
+
+        interface Console { log(): void }
+>log : () => void
+
+        namespace console { interface Options { a?: 1 } }
+>a : 1 | undefined
+
+        var console: Console;
+>console : Console
+    }
+    export = globalThis.console;
+>globalThis.console : Console
+>globalThis : typeof globalThis
+>console : Console
+}
+=== o.d.ts ===
+export {};
+declare module "console" {
+>"console" : globalThis.Console
+
+  interface Console { extra(): void }
+>extra : () => void
+}
+declare global { interface Later { l: 1 } var later: Later; namespace LaterNs { type T = 1 } }
+>global : typeof global
+>l : 1
+>later : Later
+>T : 1
+

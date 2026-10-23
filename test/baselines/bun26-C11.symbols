@@ -1,0 +1,29 @@
+//// [test/cases/bun26-C11.ts] ////
+
+=== a.ts ===
+type H<X, T> = { p: T extends string ? X : 2 };
+>H : Symbol(H, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+>p : Symbol(p, Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 9))
+>X : Symbol(X, Decl(a.ts, 0, 7))
+
+function f<A, B>(x: H<B, A>["p"] | H<A, A | B>["p"]) { const n: never = x; }
+>f : Symbol(f, Decl(a.ts, 0, 47))
+>A : Symbol(A, Decl(a.ts, 1, 11))
+>B : Symbol(B, Decl(a.ts, 1, 13))
+>x : Symbol(x, Decl(a.ts, 1, 17))
+>H : Symbol(H, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 1, 13))
+>A : Symbol(A, Decl(a.ts, 1, 11))
+>H : Symbol(H, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 1, 11))
+>A : Symbol(A, Decl(a.ts, 1, 11))
+>B : Symbol(B, Decl(a.ts, 1, 13))
+>n : Symbol(n, Decl(a.ts, 1, 60))
+>x : Symbol(x, Decl(a.ts, 1, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

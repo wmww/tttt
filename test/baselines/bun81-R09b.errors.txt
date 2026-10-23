@@ -1,0 +1,35 @@
+a.ts(1,13): error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+a.ts(2,13): error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+a.ts(3,13): error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+a.ts(4,13): error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+a.ts(5,14): error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+a.ts(7,13): error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    function h1(this: ReturnType<typeof h1>, x = this) { return 1; }
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+    function h2(this: Parameters<typeof h2>[0], x = this) {}
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+    function h3(this: ThisParameterType<typeof h3>, x = [this]) {}
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+    function h8(this: ReturnType<typeof h8>, x: typeof this) { return 1; }
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+    class K1 { m(this: ReturnType<K1["m"]>, x = this) { return x; } }
+                 ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'this' is referenced directly or indirectly in its own type annotation.
+    // an ordinary first parameter: the two agree
+    function p1(a: ReturnType<typeof p1>, x = a) { return x; }
+                ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2502: 'a' is referenced directly or indirectly in its own type annotation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

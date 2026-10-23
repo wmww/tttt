@@ -1,0 +1,16 @@
+//// [test/cases/bun15-C4b.ts] ////
+
+=== a.ts ===
+const C1: { new(): {}; 2: number } = class { static [+2] = 1; };
+>C1 : { new (): {}; 2: number; }
+>2 : number
+>class { static [+2] = 1; } : typeof C1
+>[+2] : number
+>+2 : 2
+>2 : 2
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

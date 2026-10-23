@@ -1,0 +1,16 @@
+a.ts(3,31): error TS2322: Type 'typeof w' is not assignable to type 'typeof s'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const s: unique symbol;
+    type TL = { readonly w: unique symbol };
+    declare let x: TL["w"]; const y: typeof s = x;
+                                  ~
+!!! error TS2322: Type 'typeof w' is not assignable to type 'typeof s'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

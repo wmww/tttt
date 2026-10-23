@@ -1,0 +1,23 @@
+//// [test/cases/bun30-C16b.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== d.ts ===
+import "./m";
+function f() { export * as ns from "./m"; }
+>f : { (): void; ns: typeof import("./m"); }
+>ns : typeof import("./m")
+
+f.ns;
+>f.ns : typeof import("./m")
+>f : { (): void; ns: typeof import("./m"); }
+>ns : typeof import("./m")
+
+=== m.ts ===
+export const m1 = 1;
+>m1 : 1
+>1 : 1
+

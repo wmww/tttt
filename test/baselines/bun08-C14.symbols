@@ -1,0 +1,21 @@
+//// [test/cases/bun08-C14.ts] ////
+
+=== a.ts ===
+import d1 from "./e1"; d1.length; d1.a;
+>d1 : Symbol(d1, Decl(a.ts, 0, 6))
+>d1.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>d1 : Symbol(d1, Decl(a.ts, 0, 6))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>d1 : Symbol(d1, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== e1.d.ts ===
+declare const v: { default: string; __esModule: true; a: number }; export = v;
+>v : Symbol(v, Decl(e1.d.ts, 0, 13))
+>default : Symbol(default, Decl(e1.d.ts, 0, 18))
+>__esModule : Symbol(__esModule, Decl(e1.d.ts, 0, 35))
+>a : Symbol(a, Decl(e1.d.ts, 0, 53))
+>v : Symbol(v, Decl(e1.d.ts, 0, 13))
+

@@ -1,0 +1,20 @@
+//// [test/cases/bun14-C1.ts] ////
+
+=== a.ts ===
+interface Box<T> { v: T }
+>v : T
+
+function f<T extends Box<T["v"]>>(t: T) {
+>f : <T extends Box<T["v"]>>(t: T) => void
+>t : T
+
+  const z: boolean = t.v;
+>z : boolean
+>t.v : T["v"]
+>t : T
+>v : T["v"]
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

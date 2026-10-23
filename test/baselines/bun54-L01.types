@@ -1,0 +1,19 @@
+//// [test/cases/bun54-L01.ts] ////
+
+=== a.ts ===
+import type D1, {} from "./m";
+>D1 : D1
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export default class D {}
+>D : D
+
+export const x = 1;
+>x : 1
+>1 : 1
+

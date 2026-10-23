@@ -1,0 +1,14 @@
+//// [test/cases/bun35-C11b.ts] ////
+
+=== a.ts ===
+import * as m16 from "./node_modules/loose";
+>m16 : typeof m16
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/loose.d.ts ===
+export const v: 1;
+>v : 1
+

@@ -1,0 +1,27 @@
+//// [test/cases/bun15-C3a.ts] ////
+
+=== a.tsx ===
+import type React from "./r";
+>React : any
+
+export const a = <div />;
+>a : JSX.Element
+><div /> : JSX.Element
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== jsx.d.ts ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } }
+>div : {}
+
+=== r.ts ===
+const React = { createElement(...a: any[]): any {} }; export default React;
+>React : { createElement(...a: any[]): any; }
+>{ createElement(...a: any[]): any {} } : { createElement(...a: any[]): any; }
+>createElement : (...a: any[]) => any
+>a : any[]
+>React : { createElement(...a: any[]): any; }
+

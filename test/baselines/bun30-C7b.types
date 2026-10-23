@@ -1,0 +1,11 @@
+//// [test/cases/bun30-C7b.ts] ////
+
+=== a.ts ===
+export enum E { #constructor }
+>E : E
+>#constructor : (typeof E)["\uFFFDmissing"]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

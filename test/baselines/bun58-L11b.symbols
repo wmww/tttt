@@ -1,0 +1,18 @@
+//// [test/cases/bun58-L11b.ts] ////
+
+=== a.ts ===
+/// <reference path="__inferred type names__.ts" />
+const f: 0 = foo;
+>f : Symbol(f, Decl(a.ts, 1, 5))
+>foo : Symbol(foo, Decl(index.d.ts, 0, 13))
+
+const g: 0 = c;
+>g : Symbol(g, Decl(a.ts, 2, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== node_modules/@types/foo/index.d.ts ===
+declare const foo: 1;
+>foo : Symbol(foo, Decl(index.d.ts, 0, 13))
+

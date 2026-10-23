@@ -1,0 +1,16 @@
+//// [test/cases/bun01-C10.ts] ////
+
+=== a.ts ===
+import { v } from "x.foo";
+>v : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== s.d.ts ===
+declare namespace NS { module "*.foo" { export const v: number; } }
+>NS : typeof NS
+>"*.foo" : typeof import("*.foo")
+>v : number
+

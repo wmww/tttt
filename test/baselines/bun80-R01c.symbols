@@ -1,0 +1,17 @@
+//// [test/cases/bun80-R01c.ts] ////
+
+=== a.ts ===
+const m1 = import.#constructor;
+>m1 : Symbol(m1, Decl(a.ts, 0, 5))
+
+const m2 = import.#meta;
+>m2 : Symbol(m2, Decl(a.ts, 1, 5))
+
+class K { #a = 1; m() { return import.#a; } }
+>K : Symbol(K, Decl(a.ts, 1, 24))
+>#a : Symbol(K.#a, Decl(a.ts, 2, 9))
+>m : Symbol(K.m, Decl(a.ts, 2, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

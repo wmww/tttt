@@ -1,0 +1,53 @@
+a.ts(2,31): error TS2322: Type 'number' is not assignable to type 'never'.
+a.ts(3,31): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(4,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(4,24): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(4,24): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(5,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(5,24): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(5,24): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(6,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(6,23): error TS1117: An object literal cannot have multiple properties with the same name.
+a.ts(7,14): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (12 errors) ====
+    declare const o: { "0x10n": number; "16n": string; "0xffn": 1; "255n": 2 };
+    const { 0x10n: a } = o; const a1: never = a;
+                                  ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    const { 0XFFn: c } = o; const c1: never = c;
+                                  ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    const o1 = { 0b11n: 1, 3n: 2 };
+                 ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                           ~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                           ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const o2 = { 0XFFn: 1, 0xffn: 2 };
+                 ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                           ~~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+                           ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const o4 = { 0o7n: 1, "7n": 2 };
+                 ~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+                          ~~~~
+!!! error TS1117: An object literal cannot have multiple properties with the same name.
+    const o6 = { 0b11n: 1, "0b11n": 2 };
+                 ~~~~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    declare function dec(t: any, c: { name: "0xffn" }): void;
+    declare function dec2(t: any, c: { name: "3n" }): void;
+    class C { @dec 0XFFn() {} @dec2 0b11n() {} }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

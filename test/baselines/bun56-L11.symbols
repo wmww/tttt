@@ -1,0 +1,23 @@
+//// [test/cases/bun56-L11.ts] ////
+
+=== a.ts ===
+export {};
+declare const x: any;
+>x : Symbol(x, Decl(a.ts, 1, 13))
+
+const { [await]: a } = x;
+>a : Symbol(a, Decl(a.ts, 2, 7))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+
+interface I { [await]: 1 }
+>I : Symbol(I, Decl(a.ts, 2, 25))
+>[await] : Symbol(I[await], Decl(a.ts, 3, 13))
+
+interface J { [await](): void; [await.x]: 1 }
+>J : Symbol(J, Decl(a.ts, 3, 26))
+>[await] : Symbol(J[await], Decl(a.ts, 4, 13))
+>[await.x] : Symbol(J[await.x], Decl(a.ts, 4, 30))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

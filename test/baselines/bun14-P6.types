@@ -1,0 +1,10 @@
+//// [test/cases/bun14-P6.ts] ////
+
+=== a.ts ===
+type X<K extends "a"> = { [P in "a"]: X<K> }[K];
+>X : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

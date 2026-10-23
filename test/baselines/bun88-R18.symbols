@@ -1,0 +1,6 @@
+//// [test/cases/bun88-R18.ts] ////
+
+=== xꟍ/a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+

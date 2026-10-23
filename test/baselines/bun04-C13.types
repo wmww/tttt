@@ -1,0 +1,10 @@
+//// [test/cases/bun04-C13.ts] ////
+
+=== a.ts ===
+type Foo<T> = intrinsic;
+>Foo : intrinsic
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

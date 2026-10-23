@@ -1,0 +1,53 @@
+//// [test/cases/bun93-P01a.ts] ////
+
+=== a.ts ===
+export {};
+declare const p: Promise<string>, q: Promise<number>, x: any;
+>p : Promise<string>
+>q : Promise<number>
+>x : any
+
+const o1 = { [await p]: 1 };
+>o1 : { [x: string]: number; }
+>{ [await p]: 1 } : { [x: string]: number; }
+>[await p] : number
+>await p : string
+>p : Promise<string>
+>1 : 1
+
+const o2 = { [await p]: await q };
+>o2 : { [x: string]: number; }
+>{ [await p]: await q } : { [x: string]: number; }
+>[await p] : number
+>await p : string
+>p : Promise<string>
+>await q : number
+>q : Promise<number>
+
+const o3 = { [await p]: await (q) };
+>o3 : { [x: string]: number; }
+>{ [await p]: await (q) } : { [x: string]: number; }
+>[await p] : number
+>await p : string
+>p : Promise<string>
+>await (q) : number
+>(q) : Promise<number>
+>q : Promise<number>
+
+const { [await p]: a } = x;
+>await p : string
+>p : Promise<string>
+>a : any
+>x : any
+
+class C { [await p] = 1 }
+>C : C
+>[await p] : number
+>await p : string
+>p : Promise<string>
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

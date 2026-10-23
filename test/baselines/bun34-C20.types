@@ -1,0 +1,27 @@
+//// [test/cases/bun34-C20.ts] ////
+
+=== a.ts ===
+export {};
+declare const key: string;
+>key : string
+
+class P { f = class { static x = 1 }; [key] = class { static x = 1 }; }
+>P : P
+>f : typeof (Anonymous class)
+>class { static x = 1 } : typeof (Anonymous class)
+>x : number
+>1 : 1
+>[key] : typeof (Anonymous class)
+>key : string
+>class { static x = 1 } : typeof (Anonymous class)
+>x : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : () => void
+

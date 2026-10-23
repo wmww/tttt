@@ -1,0 +1,12 @@
+//// [test/cases/bun10-SC8.ts] ////
+
+=== a.ts ===
+interface Foo {}
+export type F1 = (Foo) => void;
+>F1 : F1
+>Foo : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,14 @@
+//// [test/cases/bun03-C7.ts] ////
+
+=== a.ts ===
+class C { static { let g = 1; var g = 2; } }
+>C : C
+>g : number
+>1 : 1
+>g : number
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

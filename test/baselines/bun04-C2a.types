@@ -1,0 +1,22 @@
+//// [test/cases/bun04-C2a.ts] ////
+
+=== a.ts ===
+type BadReturn = { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+>BadReturn : BadReturn
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : number
+
+function f1<T extends BadReturn>(t: T) { for (const x of t) {} }
+>f1 : <T extends BadReturn>(t: T) => void
+>t : T
+>x : number
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun40-C7b.ts] ////
+
+=== a.ts ===
+const d: Document = 1;
+>d : Document
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/index.js ===
+module.exports = {}
+>module.exports = {} : {}
+>module.exports : {}
+>module : { exports: {}; }
+>exports : {}
+>{} : {}
+

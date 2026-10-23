@@ -1,0 +1,25 @@
+//// [test/cases/bun23-C16.ts] ////
+
+=== a.ts ===
+const cs = "k";
+>cs : "k"
+>"k" : "k"
+
+const o3 = { [cs]: 1, b: 2, [cs]: 3 }; const y3: 1 = o3;
+>o3 : { k: number; b: number; }
+>{ [cs]: 1, b: 2, [cs]: 3 } : { k: number; b: number; }
+>[cs] : number
+>cs : "k"
+>1 : 1
+>b : number
+>2 : 2
+>[cs] : number
+>cs : "k"
+>3 : 3
+>y3 : 1
+>o3 : { k: number; b: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

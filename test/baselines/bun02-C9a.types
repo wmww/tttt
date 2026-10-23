@@ -1,0 +1,16 @@
+//// [test/cases/bun02-C9a.ts] ////
+
+=== a.ts ===
+class A19 { static get constructor() { return 1 } }
+>A19 : A19
+>constructor : number
+>1 : 1
+
+class A25 { static *constructor() {} }
+>A25 : A25
+>constructor : () => Generator<never, void, unknown>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

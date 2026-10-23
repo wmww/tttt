@@ -1,0 +1,28 @@
+//// [test/cases/bun71-R12b.ts] ////
+
+=== a.ts ===
+export {};
+declare function dec(...x: any[]): (c: any, ctx: any) => void;
+>dec : Symbol(dec, Decl(a.ts, 0, 10))
+>x : Symbol(x, Decl(a.ts, 1, 21))
+>c : Symbol(c, Decl(a.ts, 1, 36))
+>ctx : Symbol(ctx, Decl(a.ts, 1, 43))
+
+class Out { #i = "outer"; m(x: Out) { return @dec(x.#i.length, #i in x) class { #i = 1; }; } }
+>Out : Symbol(Out, Decl(a.ts, 1, 62))
+>#i : Symbol(Out.#i, Decl(a.ts, 2, 11))
+>m : Symbol(Out.m, Decl(a.ts, 2, 25))
+>x : Symbol(x, Decl(a.ts, 2, 28))
+>Out : Symbol(Out, Decl(a.ts, 1, 62))
+>dec : Symbol(dec, Decl(a.ts, 0, 10))
+>x.#i.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x.#i : Symbol(Out.#i, Decl(a.ts, 2, 11))
+>x : Symbol(x, Decl(a.ts, 2, 28))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>#i : Symbol(Out.#i, Decl(a.ts, 2, 11))
+>x : Symbol(x, Decl(a.ts, 2, 28))
+>#i : Symbol((Anonymous class).#i, Decl(a.ts, 2, 79))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

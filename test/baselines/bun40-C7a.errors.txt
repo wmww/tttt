@@ -1,0 +1,18 @@
+a.ts(1,21): error TS6504: File 'node_modules/@typescript/lib-dom/index.js' is a JavaScript file. Did you mean to enable the 'allowJs' option?
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "libReplacement": true } }
+==== a.ts (2 errors) ====
+    /// <reference lib="dom" />
+                        ~~~
+!!! error TS6504: File 'node_modules/@typescript/lib-dom/index.js' is a JavaScript file. Did you mean to enable the 'allowJs' option?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@typescript/lib-dom/index.js (0 errors) ====
+    module.exports = {}
+==== node_modules/@typescript/lib-dom/package.json (0 errors) ====
+    {"name":"@typescript/lib-dom","version":"1.0.0","main":"index.js"}
+    

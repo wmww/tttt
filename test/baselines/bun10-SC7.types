@@ -1,0 +1,29 @@
+//// [test/cases/bun10-SC7.ts] ////
+
+=== j.js ===
+/** @type {{ m(): void, n: () => void }} */
+const o = { m(a) {}, n(a) {} };
+>o : { m(): void; n: () => void; }
+>{ m(a) {}, n(a) {} } : { m(a: any): void; n(a: any): void; }
+>m : (a: any) => void
+>a : any
+>n : (a: any) => void
+>a : any
+
+/** @param {{ m(): void }} x */
+function take(x) {}
+>take : (x: { m(): void; }) => void
+>x : { m(): void; }
+
+take({ m(a) {} });
+>take({ m(a) {} }) : void
+>take : (x: { m(): void; }) => void
+>{ m(a) {} } : { m(a: any): void; }
+>m : (a: any) => void
+>a : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

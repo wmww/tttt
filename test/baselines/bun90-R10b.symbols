@@ -1,0 +1,89 @@
+//// [test/cases/bun90-R10b.ts] ////
+
+=== a.ts ===
+import c = K.v; c; class K { static v = 1 }
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>K : Symbol(K, Decl(a.ts, 0, 18))
+>v : Symbol(K.v, Decl(a.ts, 0, 28))
+
+import d = L.v; d; let L = { v: 1 };
+>d : Symbol(d, Decl(a.ts, 0, 43))
+>d : Symbol(d, Decl(a.ts, 0, 43))
+>L : Symbol(L, Decl(a.ts, 1, 22))
+>v : Symbol(v, Decl(a.ts, 1, 28))
+
+import e = En.X.y; e; enum En { X }
+>e : Symbol(e, Decl(a.ts, 1, 36))
+>En : Symbol(En, Decl(a.ts, 2, 21))
+>e : Symbol(e, Decl(a.ts, 1, 36))
+>En : Symbol(En, Decl(a.ts, 2, 21))
+>X : Symbol(En.X, Decl(a.ts, 2, 31))
+
+import type { G1 as TO } from "./t";
+>G1 : Symbol(TO, Decl(t.ts, 1, 30))
+>TO : Symbol(TO, Decl(a.ts, 3, 13))
+
+import f = TO.v; f;
+>f : Symbol(f, Decl(a.ts, 3, 36))
+>f : Symbol(f, Decl(a.ts, 3, 36))
+
+function fn(p = g) { } import g = P.v; const P = { v: 1 };
+>fn : Symbol(fn, Decl(a.ts, 4, 19))
+>p : Symbol(p, Decl(a.ts, 5, 12))
+>g : Symbol(g, Decl(a.ts, 5, 22))
+>g : Symbol(g, Decl(a.ts, 5, 22))
+>P : Symbol(P, Decl(a.ts, 5, 44))
+>v : Symbol(v, Decl(a.ts, 5, 50))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 12))
+
+=== t.ts ===
+export interface Reflect { x: 1 }
+>Reflect : Symbol(Reflect, Decl(t.ts, 0, 0))
+>x : Symbol(Reflect.x, Decl(t.ts, 0, 26))
+
+export interface Intl { x: 1 }
+>Intl : Symbol(Intl, Decl(t.ts, 0, 33))
+>x : Symbol(Intl.x, Decl(t.ts, 1, 23))
+
+export interface G1 { x: 1 }
+>G1 : Symbol(G1, Decl(t.ts, 1, 30))
+>x : Symbol(G1.x, Decl(t.ts, 2, 21))
+
+export interface G2 { x: 1 }
+>G2 : Symbol(G2, Decl(t.ts, 2, 28))
+>x : Symbol(G2.x, Decl(t.ts, 3, 21))
+
+export interface G3 { x: 1 }
+>G3 : Symbol(G3, Decl(t.ts, 3, 28))
+>x : Symbol(G3.x, Decl(t.ts, 4, 21))
+
+export interface G4 { x: 1 }
+>G4 : Symbol(G4, Decl(t.ts, 4, 28))
+>x : Symbol(G4.x, Decl(t.ts, 5, 21))
+
+export interface G5 { x: 1 }
+>G5 : Symbol(G5, Decl(t.ts, 5, 28))
+>x : Symbol(G5.x, Decl(t.ts, 6, 21))
+
+export interface G6 { x: 1 }
+>G6 : Symbol(G6, Decl(t.ts, 6, 28))
+>x : Symbol(G6.x, Decl(t.ts, 7, 21))
+
+export interface G7 { x: 1 }
+>G7 : Symbol(G7, Decl(t.ts, 7, 28))
+>x : Symbol(G7.x, Decl(t.ts, 8, 21))
+
+export interface G8 { x: 1 }
+>G8 : Symbol(G8, Decl(t.ts, 8, 28))
+>x : Symbol(G8.x, Decl(t.ts, 9, 21))
+
+export type G9 = 1;
+>G9 : Symbol(G9, Decl(t.ts, 9, 28))
+
+export default interface GD { x: 1 }
+>GD : Symbol(GD, Decl(t.ts, 10, 19))
+>x : Symbol(GD.x, Decl(t.ts, 11, 29))
+

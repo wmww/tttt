@@ -1,0 +1,33 @@
+//// [test/cases/bun54-L02c.ts] ////
+
+=== a.mts ===
+import t1 from "x.json";
+>t1 : { amb: number; }
+
+t1.amb; t1.k;
+>t1.amb : number
+>t1 : { amb: number; }
+>amb : number
+>t1.k : any
+>t1 : { amb: number; }
+>k : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== amb.d.ts ===
+declare module "x.json" { const v: { amb: number }; export default v; }
+>"x.json" : typeof import("x.json")
+>v : { amb: number; }
+>amb : number
+>v : { amb: number; }
+
+=== typed.d.json.ts ===
+declare const v: { k: number };
+>v : { k: number; }
+>k : number
+
+export default v;
+>v : { k: number; }
+

@@ -1,0 +1,20 @@
+a.tsx(2,19): error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler", "jsx": "react" } }
+==== a.tsx (2 errors) ====
+    import type React from "./r";
+    export const a = <div />;
+                      ~~~
+!!! error TS1361: 'React' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 a.tsx:1:8: 'React' was imported here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== jsx.d.ts (0 errors) ====
+    declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } }
+==== r.ts (0 errors) ====
+    const React = { createElement(...a: any[]): any {} }; export default React;
+    

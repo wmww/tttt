@@ -1,0 +1,24 @@
+//// [test/cases/bun20-C5c.ts] ////
+
+=== a.ts ===
+function c1(x: { a?: number }) { if ((x.hasOwnProperty)("a")) { x.a.toFixed(); } }
+>c1 : (x: { a?: number; }) => void
+>x : { a?: number; }
+>a : number | undefined
+>(x.hasOwnProperty)("a") : boolean
+>(x.hasOwnProperty) : (v: PropertyKey) => boolean
+>x.hasOwnProperty : (v: PropertyKey) => boolean
+>x : { a?: number; }
+>hasOwnProperty : (v: PropertyKey) => boolean
+>"a" : "a"
+>x.a.toFixed() : string
+>x.a.toFixed : (fractionDigits?: number) => string
+>x.a : number | undefined
+>x : { a?: number; }
+>a : number | undefined
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,17 @@
+a.ts(4,7): error TS2322: Type 'unknown' is not assignable to type '{} | null | undefined'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function mk<T>(t: T) { return {}; }
+    const r = mk(1);
+    declare const u: unknown;
+    const t1: typeof r | null | undefined = u;
+          ~~
+!!! error TS2322: Type 'unknown' is not assignable to type '{} | null | undefined'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

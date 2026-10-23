@@ -1,0 +1,25 @@
+//// [test/cases/bun74-R13a.ts] ////
+
+=== a.ts ===
+let f: (a: string, ...
+>f : Symbol(f, Decl(a.ts, 0, 3))
+>a : Symbol(a, Decl(a.ts, 0, 8))
+> : Symbol((Missing), Decl(a.ts, 0, 18))
+> : Symbol(unknown)
+
+=== b.ts ===
+interface I { m(...
+>I : Symbol(I, Decl(b.ts, 0, 0))
+>m : Symbol(I.m, Decl(b.ts, 0, 13))
+
+// c
+> : Symbol((Missing), Decl(b.ts, 0, 16))
+
+=== c.ts ===
+type F = new (a, @dec 
+>F : Symbol(F, Decl(c.ts, 0, 0))
+>a : Symbol(a, Decl(c.ts, 0, 14))
+
+> : Symbol((Missing), Decl(c.ts, 0, 16))
+> : Symbol(unknown)
+

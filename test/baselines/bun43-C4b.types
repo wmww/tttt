@@ -1,0 +1,17 @@
+//// [test/cases/bun43-C4b.ts] ////
+
+=== a.tsx ===
+var v = <a<<b>() => void> />;
+>v : boolean
+><a<<b>() : boolean
+><a<<b : number
+><a : any
+>a : any
+>b : any
+>() : any
+> : any
+>void> /> : boolean
+>void : undefined
+> : any
+>/> : RegExp
+

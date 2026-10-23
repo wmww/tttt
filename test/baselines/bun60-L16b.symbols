@@ -1,0 +1,192 @@
+//// [test/cases/bun60-L16b.ts] ////
+
+=== a.ts ===
+type A = (x: unknown) => asserts x is string;
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 10))
+>x : Symbol(x, Decl(a.ts, 0, 10))
+
+const inferred = (x: unknown): asserts x is string => {};
+>inferred : Symbol(inferred, Decl(a.ts, 1, 5))
+>x : Symbol(x, Decl(a.ts, 1, 18))
+>x : Symbol(x, Decl(a.ts, 1, 18))
+
+const obj = { a: inferred, m(x: unknown): asserts x is string {} };
+>obj : Symbol(obj, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+>inferred : Symbol(inferred, Decl(a.ts, 1, 5))
+>m : Symbol(m, Decl(a.ts, 2, 26))
+>x : Symbol(x, Decl(a.ts, 2, 29))
+>x : Symbol(x, Decl(a.ts, 2, 29))
+
+declare const v: unknown;
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+interface I { a: A; m(x: unknown): asserts x is string }
+>I : Symbol(I, Decl(a.ts, 3, 25))
+>a : Symbol(I.a, Decl(a.ts, 4, 13))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>m : Symbol(I.m, Decl(a.ts, 4, 19))
+>x : Symbol(x, Decl(a.ts, 4, 22))
+>x : Symbol(x, Decl(a.ts, 4, 22))
+
+type Id<T> = { [K in keyof T]: T[K] };
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>K : Symbol(K, Decl(a.ts, 5, 16))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>T : Symbol(T, Decl(a.ts, 5, 8))
+>K : Symbol(K, Decl(a.ts, 5, 16))
+
+declare const x1: Id<{ a: A } & typeof obj>; x1.a(v);
+>x1 : Symbol(x1, Decl(a.ts, 6, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>a : Symbol(a, Decl(a.ts, 6, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>obj : Symbol(obj, Decl(a.ts, 2, 5))
+>x1.a : Symbol(a, Decl(a.ts, 6, 22), Decl(a.ts, 2, 13))
+>x1 : Symbol(x1, Decl(a.ts, 6, 13))
+>a : Symbol(a, Decl(a.ts, 6, 22), Decl(a.ts, 2, 13))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x2: Id<typeof obj & { a: A }>; x2.a(v);
+>x2 : Symbol(x2, Decl(a.ts, 7, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>obj : Symbol(obj, Decl(a.ts, 2, 5))
+>a : Symbol(a, Decl(a.ts, 7, 35))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x2.a : Symbol(a, Decl(a.ts, 2, 13), Decl(a.ts, 7, 35))
+>x2 : Symbol(x2, Decl(a.ts, 7, 13))
+>a : Symbol(a, Decl(a.ts, 2, 13), Decl(a.ts, 7, 35))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x3: Id<{ a: A } & { a: A }>; x3.a(v);
+>x3 : Symbol(x3, Decl(a.ts, 8, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>a : Symbol(a, Decl(a.ts, 8, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 8, 33))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x3.a : Symbol(a, Decl(a.ts, 8, 22), Decl(a.ts, 8, 33))
+>x3 : Symbol(x3, Decl(a.ts, 8, 13))
+>a : Symbol(a, Decl(a.ts, 8, 22), Decl(a.ts, 8, 33))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x4: Id<I & { z: 1 }>; x4.a(v); x4.m(v);
+>x4 : Symbol(x4, Decl(a.ts, 9, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>I : Symbol(I, Decl(a.ts, 3, 25))
+>z : Symbol(z, Decl(a.ts, 9, 26))
+>x4.a : Symbol(a, Decl(a.ts, 4, 13))
+>x4 : Symbol(x4, Decl(a.ts, 9, 13))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+>x4.m : Symbol(m, Decl(a.ts, 4, 19))
+>x4 : Symbol(x4, Decl(a.ts, 9, 13))
+>m : Symbol(m, Decl(a.ts, 4, 19))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x5: Id<I & I>; x5.a(v);
+>x5 : Symbol(x5, Decl(a.ts, 10, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>I : Symbol(I, Decl(a.ts, 3, 25))
+>I : Symbol(I, Decl(a.ts, 3, 25))
+>x5.a : Symbol(a, Decl(a.ts, 4, 13))
+>x5 : Symbol(x5, Decl(a.ts, 10, 13))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x6: Id<{ a: A } | { a: A }>; x6.a(v);
+>x6 : Symbol(x6, Decl(a.ts, 11, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>a : Symbol(a, Decl(a.ts, 11, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 11, 33))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x6.a : Symbol(a, Decl(a.ts, 11, 22), Decl(a.ts, 11, 33))
+>x6 : Symbol(x6, Decl(a.ts, 11, 13))
+>a : Symbol(a, Decl(a.ts, 11, 22), Decl(a.ts, 11, 33))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x7: Id<Id<I>>; x7.a(v); x7.m(v);
+>x7 : Symbol(x7, Decl(a.ts, 12, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>I : Symbol(I, Decl(a.ts, 3, 25))
+>x7.a : Symbol(a, Decl(a.ts, 4, 13))
+>x7 : Symbol(x7, Decl(a.ts, 12, 13))
+>a : Symbol(a, Decl(a.ts, 4, 13))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+>x7.m : Symbol(m, Decl(a.ts, 4, 19))
+>x7 : Symbol(x7, Decl(a.ts, 12, 13))
+>m : Symbol(m, Decl(a.ts, 4, 19))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x8: Id<Id<typeof obj>>; x8.a(v); x8.m(v);
+>x8 : Symbol(x8, Decl(a.ts, 13, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>obj : Symbol(obj, Decl(a.ts, 2, 5))
+>x8.a : Symbol(a, Decl(a.ts, 2, 13))
+>x8 : Symbol(x8, Decl(a.ts, 13, 13))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+>x8.m : Symbol(m, Decl(a.ts, 2, 26))
+>x8 : Symbol(x8, Decl(a.ts, 13, 13))
+>m : Symbol(m, Decl(a.ts, 2, 26))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const x9: Id<{ m(x: unknown): asserts x is string } & { m: A }>; x9.m(v);
+>x9 : Symbol(x9, Decl(a.ts, 14, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>m : Symbol(m, Decl(a.ts, 14, 22))
+>x : Symbol(x, Decl(a.ts, 14, 25))
+>x : Symbol(x, Decl(a.ts, 14, 25))
+>m : Symbol(m, Decl(a.ts, 14, 63))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>x9.m : Symbol(m, Decl(a.ts, 14, 22), Decl(a.ts, 14, 63))
+>x9 : Symbol(x9, Decl(a.ts, 14, 13))
+>m : Symbol(m, Decl(a.ts, 14, 22), Decl(a.ts, 14, 63))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const y1: Id<{ m: A } & { m(x: unknown): asserts x is string }>; y1.m(v);
+>y1 : Symbol(y1, Decl(a.ts, 15, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>m : Symbol(m, Decl(a.ts, 15, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>m : Symbol(m, Decl(a.ts, 15, 33))
+>x : Symbol(x, Decl(a.ts, 15, 36))
+>x : Symbol(x, Decl(a.ts, 15, 36))
+>y1.m : Symbol(m, Decl(a.ts, 15, 22), Decl(a.ts, 15, 33))
+>y1 : Symbol(y1, Decl(a.ts, 15, 13))
+>m : Symbol(m, Decl(a.ts, 15, 22), Decl(a.ts, 15, 33))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const y2: Id<{ a: A } & { a: (x: unknown) => asserts x is string }>; y2.a(v);
+>y2 : Symbol(y2, Decl(a.ts, 16, 13))
+>Id : Symbol(Id, Decl(a.ts, 4, 56))
+>a : Symbol(a, Decl(a.ts, 16, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 16, 33))
+>x : Symbol(x, Decl(a.ts, 16, 38))
+>x : Symbol(x, Decl(a.ts, 16, 38))
+>y2.a : Symbol(a, Decl(a.ts, 16, 22), Decl(a.ts, 16, 33))
+>y2 : Symbol(y2, Decl(a.ts, 16, 13))
+>a : Symbol(a, Decl(a.ts, 16, 22), Decl(a.ts, 16, 33))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+declare const y3: { a: A } & { a: (x: unknown) => asserts x is string }; y3.a(v);
+>y3 : Symbol(y3, Decl(a.ts, 17, 13))
+>a : Symbol(a, Decl(a.ts, 17, 19))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 17, 30))
+>x : Symbol(x, Decl(a.ts, 17, 35))
+>x : Symbol(x, Decl(a.ts, 17, 35))
+>y3.a : Symbol(a, Decl(a.ts, 17, 19), Decl(a.ts, 17, 30))
+>y3 : Symbol(y3, Decl(a.ts, 17, 13))
+>a : Symbol(a, Decl(a.ts, 17, 19), Decl(a.ts, 17, 30))
+>v : Symbol(v, Decl(a.ts, 3, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+

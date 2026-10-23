@@ -1,0 +1,35 @@
+a.ts(3,23): error TS4043: Return type of public getter 'foo' from exported class has or is using private name 's'.
+a.ts(4,53): error TS4106: Parameter 'v' of accessor has or is using private name 's'.
+a.ts(5,23): error TS4043: Return type of public getter '[k]' from exported class has or is using private name 's'.
+a.ts(5,53): error TS4106: Parameter 'v' of accessor has or is using private name 's'.
+a.ts(6,37): error TS4043: Return type of public getter 'foo' from exported class has or is using private name 's'.
+a.ts(7,30): error TS4040: Return type of public static getter 'foo' from exported class has or is using private name 's'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    function f() { const s = Symbol(); return { [s]: 1 }; }
+    const k = "foo";
+    export class H1 { get foo() { return f(); } set [k](v) {} }
+                          ~~~
+!!! error TS4043: Return type of public getter 'foo' from exported class has or is using private name 's'.
+    export class H2 { get [k]() { return f(); } set foo(v) {} }
+                                                        ~
+!!! error TS4106: Parameter 'v' of accessor has or is using private name 's'.
+    export class H3 { get [k]() { return f(); } set [k](v) {} }
+                          ~~~
+!!! error TS4043: Return type of public getter '[k]' from exported class has or is using private name 's'.
+                                                        ~
+!!! error TS4106: Parameter 'v' of accessor has or is using private name 's'.
+    export class H4 { set [k](v) {} get foo() { return f(); } }
+                                        ~~~
+!!! error TS4043: Return type of public getter 'foo' from exported class has or is using private name 's'.
+    export class H5 { static get foo() { return f(); } static set [k](v) {} }
+                                 ~~~
+!!! error TS4040: Return type of public static getter 'foo' from exported class has or is using private name 's'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

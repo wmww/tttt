@@ -1,0 +1,115 @@
+a.ts(5,10): error TS2339: Property 'x' does not exist on type 'C1'.
+a.ts(5,22): error TS2339: Property 'b' does not exist on type 'C1'.
+a.ts(10,22): error TS2339: Property 'b' does not exist on type 'C2'.
+a.ts(15,1): error TS7053: Element implicitly has an 'any' type because expression of type 'unique symbol' can't be used to index type 'C3'.
+  Property '[s3]' does not exist on type 'C3'.
+a.ts(15,24): error TS2339: Property 'b' does not exist on type 'C3'.
+a.ts(19,17): error TS2488: Type 'C4' must have a '[Symbol.iterator]()' method that returns an iterator.
+a.ts(19,39): error TS2339: Property 'b' does not exist on type 'C4'.
+a.ts(24,4): error TS2339: Property 'x' does not exist on type 'typeof C5'.
+a.ts(24,10): error TS2339: Property 'b' does not exist on type 'typeof C5'.
+a.ts(34,10): error TS2339: Property 'x' does not exist on type 'C7'.
+a.ts(34,22): error TS2339: Property 'b' does not exist on type 'C7'.
+a.ts(40,10): error TS2339: Property 'x' does not exist on type 'D8'.
+a.ts(40,22): error TS2339: Property 'b' does not exist on type 'D8'.
+a.ts(45,13): error TS2339: Property 'x' does not exist on type 'C9<1>'.
+a.ts(45,28): error TS2339: Property 'x' does not exist on type 'C9<2>'.
+a.ts(45,43): error TS2339: Property 'b' does not exist on type 'C9<2>'.
+a.ts(48,77): error TS2339: Property 'x' does not exist on type 'C10'.
+a.ts(48,85): error TS2339: Property 'b' does not exist on type 'C10'.
+a.ts(50,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (19 errors) ====
+    // 1 an independent late name first: it starts the binding (getLateBoundSymbol), the key after it is typed in the meantime
+    declare const j1: "x";
+    class C1 { a: "b" = "b"; [j1]: string = ""; [k1]: number = 1 }
+    declare const k1: C1["a"];
+    new C1().x; new C1().b; new C1().a;
+             ~
+!!! error TS2339: Property 'x' does not exist on type 'C1'.
+                         ~
+!!! error TS2339: Property 'b' does not exist on type 'C1'.
+    // 2 the circular key first
+    declare const j2: "x";
+    class C2 { a: "b" = "b"; [k2]: number = 1; [j2]: string = "" }
+    declare const k2: C2["a"];
+    new C2().x; new C2().b; new C2().a;
+                         ~
+!!! error TS2339: Property 'b' does not exist on type 'C2'.
+    // 3 unique symbol first
+    declare const s3: unique symbol;
+    class C3 { a: "b" = "b"; [s3]: string = ""; [k3]: number = 1 }
+    declare const k3: C3["a"];
+    new C3()[s3]; new C3().b;
+    ~~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'unique symbol' can't be used to index type 'C3'.
+!!! error TS7053:   Property '[s3]' does not exist on type 'C3'.
+                           ~
+!!! error TS2339: Property 'b' does not exist on type 'C3'.
+    // 4 Symbol.iterator first
+    class C4 { a: "b" = "b"; *[Symbol.iterator]() { yield 1; } [k4]: number = 1 }
+    declare const k4: C4["a"];
+    for (const x of new C4()) {} new C4().b;
+                    ~~~~~~~~
+!!! error TS2488: Type 'C4' must have a '[Symbol.iterator]()' method that returns an iterator.
+                                          ~
+!!! error TS2339: Property 'b' does not exist on type 'C4'.
+    // 5 static side
+    declare const j5: "x";
+    class C5 { static a: "b" = "b"; static [j5]: string = ""; static [k5]: number = 1 }
+    declare const k5: (typeof C5)["a"];
+    C5.x; C5.b;
+       ~
+!!! error TS2339: Property 'x' does not exist on type 'typeof C5'.
+             ~
+!!! error TS2339: Property 'b' does not exist on type 'typeof C5'.
+    // 6 interface
+    declare const j6: "x";
+    interface I6 { a: "b"; [j6]: string; [k6]: number }
+    declare const k6: I6["a"];
+    declare const i6: I6; i6.x; i6.b;
+    // 7 declare class
+    declare const j7: "x";
+    declare class C7 { a: "b"; [j7]: string; [k7]: number }
+    declare const k7: C7["a"];
+    new C7().x; new C7().b;
+             ~
+!!! error TS2339: Property 'x' does not exist on type 'C7'.
+                         ~
+!!! error TS2339: Property 'b' does not exist on type 'C7'.
+    // 8 subclass sees it?
+    declare const j8: "x";
+    class C8 { a: "b" = "b"; [j8]: string = ""; [k8]: number = 1 }
+    declare const k8: C8["a"];
+    class D8 extends C8 {}
+    new D8().x; new D8().b;
+             ~
+!!! error TS2339: Property 'x' does not exist on type 'D8'.
+                         ~
+!!! error TS2339: Property 'b' does not exist on type 'D8'.
+    // 9 generic class, other instantiation
+    declare const j9: "x";
+    class C9<T> { a: "b" = "b"; [j9]: string = ""; [k9]: number = 1; t!: T }
+    declare const k9: C9<1>["a"];
+    new C9<1>().x; new C9<2>().x; new C9<2>().b;
+                ~
+!!! error TS2339: Property 'x' does not exist on type 'C9<1>'.
+                               ~
+!!! error TS2339: Property 'x' does not exist on type 'C9<2>'.
+                                              ~
+!!! error TS2339: Property 'b' does not exist on type 'C9<2>'.
+    // 10 type of `this` inside
+    declare const j10: "x";
+    class C10 { a: "b" = "b"; [j10]: string = ""; [k10]: number = 1; m() { this.x; this.b; } }
+                                                                                ~
+!!! error TS2339: Property 'x' does not exist on type 'C10'.
+                                                                                        ~
+!!! error TS2339: Property 'b' does not exist on type 'C10'.
+    declare const k10: C10["a"];
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

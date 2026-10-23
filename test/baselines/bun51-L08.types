@@ -1,0 +1,62 @@
+//// [test/cases/bun51-L08.ts] ////
+
+=== f.js ===
+const k1 = "a", k2 = "b";
+>k1 : "a"
+>"a" : "a"
+>k2 : "b"
+>"b" : "b"
+
+export class Q {
+>Q : Q
+
+  static m() {
+>m : () => void
+
+    /** @type {(x: number) => void} */
+    this[k1] = (x) => {};
+>this[k1] = (x) => {} : (x: number) => void
+>this[k1] : (x: number) => void
+>this : typeof Q
+>k1 : "a"
+>(x) => {} : (x: number) => void
+>x : number
+
+    this[k2] = (y) => {};
+>this[k2] = (y) => {} : (y: any) => void
+>this[k2] : any
+>this : typeof Q
+>k2 : "b"
+>(y) => {} : (y: any) => void
+>y : any
+  }
+}
+export class R {
+>R : R
+
+  static m() {
+>m : () => void
+
+    this[k2] = (y) => {};
+>this[k2] = (y) => {} : (y: any) => void
+>this[k2] : (y: any) => void
+>this : typeof R
+>k2 : "b"
+>(y) => {} : (y: any) => void
+>y : any
+
+    /** @type {(x: number) => void} */
+    this[k1] = (x) => {};
+>this[k1] = (x) => {} : (x: number) => void
+>this[k1] : (x: number) => void
+>this : typeof R
+>k1 : "a"
+>(x) => {} : (x: number) => void
+>x : number
+  }
+}
+/** @type {number} */
+export const sentinel = "";
+>sentinel : number
+>"" : ""
+

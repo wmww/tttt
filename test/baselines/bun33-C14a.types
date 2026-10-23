@@ -1,0 +1,18 @@
+//// [test/cases/bun33-C14a.ts] ////
+
+=== j.js ===
+exports.a = 1;
+>exports.a = 1 : 1
+>exports.a : 1
+>exports : typeof import("./j")
+>a : 1
+>1 : 1
+
+export as namespace Foo;
+>Foo : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

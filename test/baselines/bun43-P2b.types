@@ -1,0 +1,11 @@
+//// [test/cases/bun43-P2b.ts] ////
+
+=== a.ts ===
+var s = async (x = #!);
+>s : any
+>async (x = #!) : any
+>async : any
+>x = : any
+>x : any
+> : any
+

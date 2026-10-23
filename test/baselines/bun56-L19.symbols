@@ -1,0 +1,23 @@
+//// [test/cases/bun56-L19.ts] ////
+
+=== a.ts ===
+type A<T> = T extends infer #a ? 1 : 2;
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>#a : Symbol(#a, Decl(a.ts, 0, 27))
+
+type B<T> = T extends [infer #a extends string] ? 1 : 2;
+>B : Symbol(B, Decl(a.ts, 0, 39))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>#a : Symbol(#a, Decl(a.ts, 1, 28))
+
+declare function f(x: any): asserts #a;
+>f : Symbol(f, Decl(a.ts, 1, 56))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+
+declare function g(x: any): asserts #a is string;
+>g : Symbol(g, Decl(a.ts, 2, 39))
+>x : Symbol(x, Decl(a.ts, 3, 19))
+

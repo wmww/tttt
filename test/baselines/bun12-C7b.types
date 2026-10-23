@@ -1,0 +1,27 @@
+//// [test/cases/bun12-C7b.ts] ////
+
+=== a.ts ===
+function h<T, U>(t: T, u: U): T extends string ? [T, U] : never {
+>h : <T, U>(t: T, u: U) => T extends string ? [T, U] : never
+>t : T
+>u : U
+
+  const r = h(null! as U | string, 1);
+>r : [string, number]
+>h(null! as U | string, 1) : [string, number]
+>h : <T, U>(t: T, u: U) => T extends string ? [T, U] : never
+>null! as U | string : string | U
+>null! : never
+>1 : 1
+
+  const bad: boolean = r;
+>bad : boolean
+>r : [string, number]
+
+  return null!;
+>null! : never
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,6 @@
+//// [test/cases/bun04-C18.ts] ////
+
+=== a.ts ===
+export type X1 = intrinsic | 1;
+>X1 : Symbol(X1, Decl(a.ts, 0, 0))
+

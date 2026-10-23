@@ -1,0 +1,149 @@
+//// [test/cases/bun97-M2.ts] ////
+
+=== a.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : any
+>Values : any
+>get : (o: unknown, p?: number | null) => unknown
+
+// Used as it is written: the alias of the import.
+export function f<V extends Values>(b: FieldPath<V>) {
+>f : <V extends Values>(b: FieldPath<V>) => void
+>b : FieldPath<V>
+
+  const n: number = b;
+>n : number
+>b : FieldPath<V>
+}
+=== b.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : any
+>Values : any
+>get : (o: unknown, p?: number | null) => unknown
+
+// Instantiated, by a mapper that does not map V: the alias of the conditional type itself.
+export function f<V extends Values>(bs: ReadonlyArray<FieldPath<V>>) {
+>f : <V extends Values>(bs: ReadonlyArray<FieldPath<V>>) => void
+>bs : readonly FieldPath<V>[]
+
+  bs.map(name => get({}, name));
+>bs.map(name => get({}, name)) : unknown[]
+>bs.map : <U>(callbackfn: (value: FieldPath<V>, index: number, array: readonly FieldPath<V>[]) => U, thisArg?: any) => U[]
+>bs : readonly FieldPath<V>[]
+>map : <U>(callbackfn: (value: FieldPath<V>, index: number, array: readonly FieldPath<V>[]) => U, thisArg?: any) => U[]
+>name => get({}, name) : (name: import("./lib").Path<V>) => unknown
+>name : import("./lib").Path<V>
+>get({}, name) : unknown
+>get : (o: unknown, p?: number | null) => unknown
+>{} : {}
+>name : import("./lib").Path<V>
+}
+=== c.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : any
+>Values : any
+>get : (o: unknown, p?: number | null) => unknown
+
+declare function isString(v: unknown): v is string;
+>isString : (v: unknown) => v is string
+>v : unknown
+
+export function f<V extends Values>() {
+>f : <V extends Values>() => (names?: FieldPath<V> | ReadonlyArray<FieldPath<V>>) => unknown
+
+  return (names?: FieldPath<V> | ReadonlyArray<FieldPath<V>>) =>
+>(names?: FieldPath<V> | ReadonlyArray<FieldPath<V>>) =>    names === undefined ? 1 : isString(names) ? get({}, names) : names.map(name => get({}, name)) : (names?: FieldPath<V> | ReadonlyArray<FieldPath<V>>) => unknown
+>names : readonly FieldPath<V>[] | FieldPath<V> | undefined
+
+    names === undefined ? 1 : isString(names) ? get({}, names) : names.map(name => get({}, name));
+>names === undefined ? 1 : isString(names) ? get({}, names) : names.map(name => get({}, name)) : unknown
+>names === undefined : boolean
+>names : readonly FieldPath<V>[] | FieldPath<V> | undefined
+>undefined : undefined
+>1 : 1
+>isString(names) ? get({}, names) : names.map(name => get({}, name)) : unknown
+>isString(names) : boolean
+>isString : (v: unknown) => v is string
+>names : readonly FieldPath<V>[] | FieldPath<V>
+>get({}, names) : unknown
+>get : (o: unknown, p?: number | null) => unknown
+>{} : {}
+>names : FieldPath<V>
+>names.map(name => get({}, name)) : unknown[]
+>names.map : <U>(callbackfn: (value: FieldPath<V>, index: number, array: readonly FieldPath<V>[]) => U, thisArg?: any) => U[]
+>names : readonly FieldPath<V>[]
+>map : <U>(callbackfn: (value: FieldPath<V>, index: number, array: readonly FieldPath<V>[]) => U, thisArg?: any) => U[]
+>name => get({}, name) : (name: import("./lib").Path<V>) => unknown
+>name : import("./lib").Path<V>
+>get({}, name) : unknown
+>get : (o: unknown, p?: number | null) => unknown
+>{} : {}
+>name : import("./lib").Path<V>
+}
+=== f.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : any
+>Values : any
+>get : (o: unknown, p?: number | null) => unknown
+
+export function f<V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) {
+>f : <V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) => 1 | unknown[]
+>names : readonly FieldPath<V>[] | FieldPath<V>
+
+  return typeof names === "string" ? 1 : names.map(name => get({}, name));
+>typeof names === "string" ? 1 : names.map(name => get({}, name)) : 1 | unknown[]
+>typeof names === "string" : boolean
+>typeof names : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>names : readonly FieldPath<V>[] | FieldPath<V>
+>"string" : "string"
+>1 : 1
+>names.map(name => get({}, name)) : unknown[]
+>names.map : <U>(callbackfn: (value: FieldPath<V>, index: number, array: readonly FieldPath<V>[]) => U, thisArg?: any) => U[]
+>names : readonly FieldPath<V>[]
+>map : <U>(callbackfn: (value: FieldPath<V>, index: number, array: readonly FieldPath<V>[]) => U, thisArg?: any) => U[]
+>name => get({}, name) : (name: import("./lib").Path<V>) => unknown
+>name : import("./lib").Path<V>
+>get({}, name) : unknown
+>get : (o: unknown, p?: number | null) => unknown
+>{} : {}
+>name : import("./lib").Path<V>
+}
+=== g.ts ===
+import { FieldPath, Values, get } from "./lib";
+>FieldPath : any
+>Values : any
+>get : (o: unknown, p?: number | null) => unknown
+
+export function f<V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) {
+>f : <V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) => void
+>names : readonly FieldPath<V>[] | FieldPath<V>
+
+  get({}, names);
+>get({}, names) : unknown
+>get : (o: unknown, p?: number | null) => unknown
+>{} : {}
+>names : readonly FieldPath<V>[] | FieldPath<V>
+}
+=== lib.ts ===
+type Inner<T> = keyof T & string;
+>Inner : Inner<T>
+
+export type Values = Record<string, any>;
+>Values : Values
+
+export type Path<T> = T extends any ? Inner<T> : never;
+>Path : Path<T>
+
+export type FieldPath<T extends Values> = Path<T>;
+>FieldPath : FieldPath<T>
+
+export declare function get(o: unknown, p?: number | null): unknown;
+>get : (o: unknown, p?: number | null) => unknown
+>o : unknown
+>p : number | null | undefined
+
+=== z.ts ===
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

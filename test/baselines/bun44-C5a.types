@@ -1,0 +1,20 @@
+//// [test/cases/bun44-C5a.ts] ////
+
+=== a.ts ===
+function f<T extends object>(options: (T & { a?: 1 }) | string) {
+>f : <T extends object>(options: (T & { a?: 1; }) | string) => void
+>options : string | (T & { a?: 1; })
+>a : 1 | undefined
+
+  const { url, other } = options;
+>url : any
+>other : any
+>options : string | (T & { a?: 1; })
+
+  url;
+>url : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun17-C11.ts] ////
+
+=== a.ts ===
+class A { static #p = 1; static a: number = 1; }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>#p : Symbol(A.#p, Decl(a.ts, 0, 9))
+>a : Symbol(A.a, Decl(a.ts, 0, 24))
+
+declare function f<T>(x: { a: T; zzz: string; prototype: any }): T;
+>f : Symbol(f, Decl(a.ts, 0, 48))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>x : Symbol(x, Decl(a.ts, 1, 22))
+>a : Symbol(a, Decl(a.ts, 1, 26))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+>zzz : Symbol(zzz, Decl(a.ts, 1, 32))
+>prototype : Symbol(prototype, Decl(a.ts, 1, 45))
+>T : Symbol(T, Decl(a.ts, 1, 19))
+
+f(A);
+>f : Symbol(f, Decl(a.ts, 0, 48))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

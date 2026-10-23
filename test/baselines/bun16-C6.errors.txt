@@ -1,0 +1,18 @@
+a.ts(1,49): error TS2322: Type '{ m(): void; }' is not assignable to type 'never'.
+a.ts(1,65): error TS2339: Property 'x' does not exist on type 'never'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    const t1: { a: never } & ThisType<{ x: 1 }> = { a: { m() { this.x; } } };
+                                                    ~
+!!! error TS2322: Type '{ m(): void; }' is not assignable to type 'never'.
+!!! related TS6500 a.ts:1:13: The expected type comes from property 'a' which is declared here on type '{ a: never; } & ThisType<{ x: 1; }>'
+                                                                    ~
+!!! error TS2339: Property 'x' does not exist on type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

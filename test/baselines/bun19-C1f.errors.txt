@@ -1,0 +1,16 @@
+a.ts(1,56): error TS2322: Type 'this' is not assignable to type 'this extends string ? this : this'.
+  Type 'K' is not assignable to type 'this extends string ? this : this'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class K { p!: this extends string ? this : this; m() { this.p = this; } }
+                                                           ~~~~~~
+!!! error TS2322: Type 'this' is not assignable to type 'this extends string ? this : this'.
+!!! error TS2322:   Type 'K' is not assignable to type 'this extends string ? this : this'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

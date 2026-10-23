@@ -1,0 +1,18 @@
+//// [test/cases/bun36-C5.ts] ////
+
+=== a.ts ===
+import { which } from "q/sub";
+>which : "ts.d.ts"
+
+const x: 0 = which;
+>x : 0
+>which : "ts.d.ts"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/q/ts.d.ts ===
+export declare const which: "ts.d.ts";
+>which : "ts.d.ts"
+

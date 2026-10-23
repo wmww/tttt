@@ -1,0 +1,37 @@
+//// [test/cases/bun31-SC6.ts] ////
+
+=== a.ts ===
+import { Foo } from "./b"; import { Bar } from "./b"; import { Baz } from "./b";
+>Foo : Symbol(Foo, Decl(a.ts, 0, 8))
+>Bar : Symbol(Bar, Decl(a.ts, 0, 35))
+>Baz : Symbol(Baz, Decl(a.ts, 0, 62))
+
+export type F1 = (Foo) => void;
+>F1 : Symbol(F1, Decl(a.ts, 0, 80))
+>Foo : Symbol(Foo, Decl(a.ts, 1, 18))
+
+export interface F2 { m(Bar): void; (Baz): void }
+>F2 : Symbol(F2, Decl(a.ts, 1, 31))
+>m : Symbol(F2.m, Decl(a.ts, 2, 21))
+>Bar : Symbol(Bar, Decl(a.ts, 2, 24))
+>Baz : Symbol(Baz, Decl(a.ts, 2, 37))
+
+export type F4 = <T>(T) => void;
+>F4 : Symbol(F4, Decl(a.ts, 2, 49))
+>T : Symbol(T, Decl(a.ts, 3, 18), Decl(a.ts, 3, 21))
+>T : Symbol(T, Decl(a.ts, 3, 18), Decl(a.ts, 3, 21))
+
+export type F9 = (Local) => void; type Local = 1;
+>F9 : Symbol(F9, Decl(a.ts, 3, 32))
+>Local : Symbol(Local, Decl(a.ts, 4, 18))
+>Local : Symbol(Local, Decl(a.ts, 4, 33))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 12))
+
+=== b.ts ===
+export interface Foo { } export interface Bar { } export interface Baz { }
+>Foo : Symbol(Foo, Decl(b.ts, 0, 0))
+>Bar : Symbol(Bar, Decl(b.ts, 0, 24))
+>Baz : Symbol(Baz, Decl(b.ts, 0, 49))
+

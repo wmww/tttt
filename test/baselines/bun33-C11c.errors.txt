@@ -1,0 +1,19 @@
+a.ts(3,18): error TS2666: Exports and export assignments are not permitted in module augmentations.
+a.ts(3,27): error TS2303: Circular definition of import alias 'v'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export {};
+    const v = 1;
+    declare global { export { v }; }
+                     ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+                              ~
+!!! error TS2303: Circular definition of import alias 'v'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

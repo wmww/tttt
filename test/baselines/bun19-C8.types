@@ -1,0 +1,16 @@
+//// [test/cases/bun19-C8.ts] ////
+
+=== a.ts ===
+declare const key: string;
+>key : string
+
+function f({ [key]: a = 1 }) {}
+>f : ({ [key]: a }: {}) => void
+>key : string
+>a : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

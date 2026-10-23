@@ -1,0 +1,66 @@
+//// [test/cases/bun94-R07.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : any
+
+  interface String { me(): this; [Symbol.iterator](): IterableIterator<this>; }
+>me : () => this
+>[Symbol.iterator] : { (): StringIterator<string>; (): IterableIterator<this>; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+  interface Number { me(): this }
+>me : () => this
+}
+function f<D extends string, N extends number>(d: D, n: N) {
+>f : <D extends string, N extends number>(d: D, n: N) => void
+>d : D
+>n : N
+
+  const a: D = d.me();
+>a : D
+>d.me() : String
+>d.me : () => String
+>d : D
+>me : () => String
+
+  const b: string = d.me();
+>b : string
+>d.me() : String
+>d.me : () => String
+>d : D
+>me : () => String
+
+  const c: N = n.me();
+>c : N
+>n.me() : Number
+>n.me : () => Number
+>n : N
+>me : () => Number
+
+  const e: number = n.me();
+>e : number
+>n.me() : Number
+>n.me : () => Number
+>n : N
+>me : () => Number
+
+  for (const z of d) { const g: D = z; }
+>z : string & String
+>d : D
+>g : D
+>z : string & String
+
+  const [h]: D[] = [...d];
+>h : D
+>[...d] : (string & String)[]
+>...d : string & String
+>d : D
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

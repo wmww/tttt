@@ -1,0 +1,16 @@
+//// [test/cases/bun10-C10b.ts] ////
+
+=== a.ts ===
+const p8 = { set x(v: typeof p8.x) {} };
+>p8 : { x: typeof p8.x; }
+>{ set x(v: typeof p8.x) {} } : { x: typeof p8.x; }
+>x : any
+>v : any
+>p8.x : any
+>p8 : { x: typeof p8.x; }
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

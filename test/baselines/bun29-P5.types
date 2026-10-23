@@ -1,0 +1,14 @@
+//// [test/cases/bun29-P5.ts] ////
+
+=== a.ts ===
+let n: number = (x: { 1n: 6 }) => 1;
+>n : number
+>(x: { 1n: 6 }) => 1 : (x: { 1n: 6; }) => number
+>x : {}
+>1n : 6
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

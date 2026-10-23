@@ -1,0 +1,10 @@
+//// [test/cases/bun06-C11b.ts] ////
+
+=== b.js ===
+globalThis = 1;
+>globalThis : Symbol(globalThis)
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(z.ts, 0, 5))
+

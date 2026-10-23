@@ -1,0 +1,60 @@
+a.ts(1,10): error TS6133: 'I' is declared but its value is never read.
+a.ts(2,10): error TS6133: 'T' is declared but its value is never read.
+a.ts(3,10): error TS6133: 'NT' is declared but its value is never read.
+a.ts(4,8): error TS6133: 'D' is declared but its value is never read.
+a.ts(6,8): error TS6133: 'M' is declared but its value is never read.
+a.ts(7,19): error TS2693: 'I' only refers to a type, but is being used as a value here.
+a.ts(8,19): error TS2693: 'T' only refers to a type, but is being used as a value here.
+a.ts(9,19): error TS2708: Cannot use namespace 'NT' as a value.
+a.ts(10,19): error TS2693: 'D' only refers to a type, but is being used as a value here.
+a.ts(11,19): error TS2708: Cannot use namespace 'M' as a value.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(12,7): error TS6133: 'sentinel' is declared but its value is never read.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler", "noUnusedLocals": true, "noUnusedParameters": true } }
+==== a.ts (12 errors) ====
+    import { I } from "./m";
+             ~
+!!! error TS6133: 'I' is declared but its value is never read.
+    import { T } from "./m";
+             ~
+!!! error TS6133: 'T' is declared but its value is never read.
+    import { NT } from "./m";
+             ~~
+!!! error TS6133: 'NT' is declared but its value is never read.
+    import D from "./m";
+           ~
+!!! error TS6133: 'D' is declared but its value is never read.
+    import * as ns from "./m";
+    import M = ns.NT;
+           ~
+!!! error TS6133: 'M' is declared but its value is never read.
+    export const t1 = I;
+                      ~
+!!! error TS2693: 'I' only refers to a type, but is being used as a value here.
+    export const t2 = T;
+                      ~
+!!! error TS2693: 'T' only refers to a type, but is being used as a value here.
+    export const t3 = NT;
+                      ~~
+!!! error TS2708: Cannot use namespace 'NT' as a value.
+    export const t4 = D;
+                      ~
+!!! error TS2693: 'D' only refers to a type, but is being used as a value here.
+    export const t5 = M;
+                      ~
+!!! error TS2708: Cannot use namespace 'M' as a value.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+          ~~~~~~~~
+!!! error TS6133: 'sentinel' is declared but its value is never read.
+==== m.ts (0 errors) ====
+    export interface I { i: number }
+    export type T = number;
+    export namespace NT { export type X = 1 }
+    export default interface D {}
+    export class C {}
+    

@@ -1,0 +1,13 @@
+//// [test/cases/bun28-C15.ts] ////
+
+=== a.ts ===
+const o = { async p: 1 };
+>o : { p: number; }
+>{ async p: 1 } : { p: number; }
+>p : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

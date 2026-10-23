@@ -1,0 +1,24 @@
+//// [test/cases/bun80-R17a.ts] ////
+
+=== a.ts ===
+import { X } from "./m";
+>X : Symbol(X, Decl(a.ts, 0, 8))
+
+/** Sets things up, see {@link X}. */
+(function () {})();
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 12))
+
+=== b.ts ===
+import { X } from "./m";
+>X : Symbol(X, Decl(b.ts, 0, 8))
+
+/** {@link X} */
+(globalThis as any).foo = 1;
+>globalThis : Symbol(globalThis)
+
+export {};
+=== m.ts ===
+export class X {}
+>X : Symbol(X, Decl(m.ts, 0, 0))
+

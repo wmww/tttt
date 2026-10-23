@@ -1,0 +1,23 @@
+//// [test/cases/bun08-C24a.ts] ////
+
+=== a.ts ===
+declare module "./r11" { namespace star { interface Added {} } }
+>"./r11" : Symbol("./r11", Decl(r11.ts, 0, 0), Decl(a.ts, 0, 0))
+>star : Symbol(star, Decl(n.ts, 0, 0), Decl(a.ts, 0, 24))
+>Added : Symbol(Added, Decl(a.ts, 0, 41))
+
+import { Zip } from "./n";
+>Zip : Symbol(Zip, Decl(a.ts, 1, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== n.ts ===
+export namespace N { export interface X {} }
+>N : Symbol(N, Decl(n.ts, 0, 0))
+>X : Symbol(X, Decl(n.ts, 0, 20))
+
+=== r11.ts ===
+export * as star from "./n";
+>star : Symbol(star, Decl(r11.ts, 0, 6))
+

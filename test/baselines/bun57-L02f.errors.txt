@@ -1,0 +1,15 @@
+a.ts(3,18): error TS1003: Identifier expected.
+a.ts(3,20): error TS7008: Member 'A' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const dec: any;
+    type A = 1;
+    export @dec type { A }
+                     ~
+!!! error TS1003: Identifier expected.
+                       ~
+!!! error TS7008: Member 'A' implicitly has an 'any' type.
+    

@@ -1,0 +1,22 @@
+//// [test/cases/bun22-C4c.ts] ////
+
+=== a.ts ===
+declare function f<U>(x: { me: U }): U;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 22))
+>me : Symbol(me, Decl(a.ts, 0, 26))
+>U : Symbol(U, Decl(a.ts, 0, 19))
+>U : Symbol(U, Decl(a.ts, 0, 19))
+
+class D { me = this; m(): this { return f(this); } }
+>D : Symbol(D, Decl(a.ts, 0, 39))
+>me : Symbol(D.me, Decl(a.ts, 1, 9))
+>this : Symbol(D, Decl(a.ts, 0, 39))
+>m : Symbol(D.m, Decl(a.ts, 1, 20))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>this : Symbol(D, Decl(a.ts, 0, 39))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

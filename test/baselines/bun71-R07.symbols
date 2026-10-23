@@ -1,0 +1,25 @@
+//// [test/cases/bun71-R07.ts] ////
+
+=== a.ts ===
+import d from "./m";
+>d : Symbol(d, Decl(a.ts, 0, 6))
+
+export const x = d.foo;
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>d : Symbol(d, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+import { x } from "./a";
+>x : Symbol(x, Decl(m.ts, 0, 8))
+
+const o = { foo: x };
+>o : Symbol(o, Decl(m.ts, 1, 5))
+>foo : Symbol(foo, Decl(m.ts, 1, 11))
+>x : Symbol(x, Decl(m.ts, 0, 8))
+
+export = o;
+>o : Symbol(o, Decl(m.ts, 1, 5))
+

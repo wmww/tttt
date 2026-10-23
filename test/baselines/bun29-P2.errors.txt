@@ -1,0 +1,22 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "declaration": true, "noEmit": true, "types": [], "lib": ["es2022"], "paths": { "@re": ["./sub/reexp.ts"] } } }
+==== a.ts (1 errors) ====
+    import { mk } from "pkg";
+    export const v = mk();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== sub/reexp.ts (0 errors) ====
+    import { Inner } from "../node_modules/pkg/node_modules/inner";
+    export default Inner;
+    
+==== node_modules/pkg/index.d.ts (0 errors) ====
+    import { Inner } from "inner";
+    export declare function mk(): Inner;
+==== node_modules/pkg/node_modules/inner/index.d.ts (0 errors) ====
+    export interface Inner { x: 1 }
+==== sub/package.json (0 errors) ====
+    {}

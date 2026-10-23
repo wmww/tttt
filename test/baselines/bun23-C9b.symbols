@@ -1,0 +1,22 @@
+//// [test/cases/bun23-C9b.ts] ////
+
+=== a.ts ===
+let p1: (x: any) => x is string = null! as (b: any) => b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9 };
+>p1 : Symbol(p1, Decl(a.ts, 0, 3))
+>x : Symbol(x, Decl(a.ts, 0, 9))
+>x : Symbol(x, Decl(a.ts, 0, 9))
+>b : Symbol(b, Decl(a.ts, 0, 44))
+>b : Symbol(b, Decl(a.ts, 0, 44))
+>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : Symbol(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, Decl(a.ts, 0, 61))
+>bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb : Symbol(bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, Decl(a.ts, 0, 106))
+>cccccccccccccccccccccccccccccccccccccccc : Symbol(cccccccccccccccccccccccccccccccccccccccc, Decl(a.ts, 0, 151))
+>dddddddddddddddddddddddddddddddddddddddd : Symbol(dddddddddddddddddddddddddddddddddddddddd, Decl(a.ts, 0, 196))
+>e : Symbol(e, Decl(a.ts, 0, 241))
+>f : Symbol(f, Decl(a.ts, 0, 247))
+>g : Symbol(g, Decl(a.ts, 0, 253))
+>h : Symbol(h, Decl(a.ts, 0, 259))
+>i : Symbol(i, Decl(a.ts, 0, 265))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

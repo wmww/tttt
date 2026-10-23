@@ -1,0 +1,30 @@
+//// [test/cases/bun84-R01.ts] ////
+
+=== b.js ===
+function h1(@dec x) {}
+>h1 : (x: any) => void
+>dec : any
+>x : any
+
+function h2(export @dec x) {}
+>h2 : (x: any) => void
+>dec : any
+>x : any
+
+function h3(export default @dec x) {}
+>h3 : (x: any) => void
+>dec : any
+>x : any
+
+class K { m(a, export @dec y) {} }
+>K : K
+>m : (a: any, y: any) => void
+>a : any
+>dec : any
+>y : any
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

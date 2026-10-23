@@ -1,0 +1,13 @@
+//// [test/cases/bun28-P14a.ts] ////
+
+=== a.ts ===
+interface I { [K in "a"]: number }
+>[K in "a"] : number
+>K in "a" : boolean
+>K : any
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

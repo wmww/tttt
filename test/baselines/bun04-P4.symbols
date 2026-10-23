@@ -1,0 +1,41 @@
+//// [test/cases/bun04-P4.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : Symbol(global, Decl(a.ts, 0, 10))
+
+  interface Array<T> { [Symbol.asyncIterator](): AsyncIterator<"async">; }
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>[Symbol.asyncIterator] : Symbol(Array[Symbol.asyncIterator], Decl(a.ts, 2, 22))
+>Symbol.asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>AsyncIterator : Symbol(AsyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+
+  interface String { [Symbol.iterator](): Iterator<"aug">; }
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>[Symbol.iterator] : Symbol(String[Symbol.iterator], Decl(lib.es2015.iterable.d.ts, --, --), Decl(a.ts, 3, 20))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Iterator : Symbol(Iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+}
+declare const a: number[];
+>a : Symbol(a, Decl(a.ts, 5, 13))
+
+for await (const x of a) { const n: never = x; }
+>x : Symbol(x, Decl(a.ts, 6, 16))
+>a : Symbol(a, Decl(a.ts, 5, 13))
+>n : Symbol(n, Decl(a.ts, 6, 32))
+>x : Symbol(x, Decl(a.ts, 6, 16))
+
+for (const x of "abc") { const n: never = x; }
+>x : Symbol(x, Decl(a.ts, 7, 10))
+>n : Symbol(n, Decl(a.ts, 7, 30))
+>x : Symbol(x, Decl(a.ts, 7, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

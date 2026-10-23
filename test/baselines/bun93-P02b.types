@@ -1,0 +1,17 @@
+//// [test/cases/bun93-P02b.ts] ////
+
+=== a.ts ===
+declare function mk<A>(a: A): A[];
+>mk : <A>(a: A) => A[]
+>a : A
+
+function g<T>() { return @null! as typeof mk<number>|; }
+>g : <T>() => typeof mk<number> | any
+>@null! as typeof mk<number>| : any
+>null! : never
+>mk : <A>(a: A) => A[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

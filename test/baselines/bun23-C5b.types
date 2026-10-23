@@ -1,0 +1,52 @@
+//// [test/cases/bun23-C5b.ts] ////
+
+=== a.ts ===
+namespace M1 { export class D { a = 1; static n() { return { self: D.n, d: new D() }; } } }
+>M1 : typeof M1
+>D : D
+>a : number
+>1 : 1
+>n : () => { self: typeof D.n; d: D; }
+>{ self: D.n, d: new D() } : { self: () => { self: typeof D.n; d: D; }; d: D; }
+>self : () => { self: typeof D.n; d: D; }
+>D.n : () => { self: typeof D.n; d: D; }
+>D : typeof D
+>n : () => { self: typeof D.n; d: D; }
+>d : D
+>new D() : D
+>D : typeof D
+
+namespace M2 { export class D { a = ""; static n() { return { self: D.n, d: new D() }; } } }
+>M2 : typeof M2
+>D : D
+>a : string
+>"" : ""
+>n : () => { self: typeof D.n; d: D; }
+>{ self: D.n, d: new D() } : { self: () => { self: typeof D.n; d: D; }; d: D; }
+>self : () => { self: typeof D.n; d: D; }
+>D.n : () => { self: typeof D.n; d: D; }
+>D : typeof D
+>n : () => { self: typeof D.n; d: D; }
+>d : D
+>new D() : D
+>D : typeof D
+
+let q1 = M1.D.n; q1 = M2.D.n;
+>q1 : () => { self: typeof M1.D.n; d: M1.D; }
+>M1.D.n : () => { self: typeof M1.D.n; d: M1.D; }
+>M1.D : typeof M1.D
+>M1 : typeof M1
+>D : typeof M1.D
+>n : () => { self: typeof M1.D.n; d: M1.D; }
+>q1 = M2.D.n : () => { self: typeof M2.D.n; d: M2.D; }
+>q1 : () => { self: typeof M1.D.n; d: M1.D; }
+>M2.D.n : () => { self: typeof M2.D.n; d: M2.D; }
+>M2.D : typeof M2.D
+>M2 : typeof M2
+>D : typeof M2.D
+>n : () => { self: typeof M2.D.n; d: M2.D; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

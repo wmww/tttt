@@ -1,0 +1,40 @@
+//// [test/cases/bun17-C4.ts] ////
+
+=== a.ts ===
+declare function f<T>(u: U, t: T): number;
+>f : <T>(u: U, t: T) => number
+>u : U
+>t : T
+
+const x = f({ k: 5 }, 1);
+>x : any
+>f({ k: 5 }, 1) : number
+>f : <T>(u: U, t: T) => number
+>{ k: 5 } : { k: 5; }
+>k : 5
+>5 : 5
+>1 : 1
+
+type U =
+>U : U
+
+  | { k: 1 | 2 } | { k: 3 | 4 } | { z?: typeof x; k: 5 | 6 } | { k: 7 | 8 } | { k: 9 | 10 }
+>k : 1 | 2
+>k : 3 | 4
+>z : any
+>x : any
+>k : 5 | 6
+>k : 7 | 8
+>k : 9 | 10
+
+  | { k: 11 | 12 } | { k: 13 | 14 } | { k: 15 | 16 } | { k: 17 | 18 } | { k: 19 | 20 };
+>k : 11 | 12
+>k : 13 | 14
+>k : 15 | 16
+>k : 17 | 18
+>k : 19 | 20
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

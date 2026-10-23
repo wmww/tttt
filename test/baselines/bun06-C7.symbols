@@ -1,0 +1,16 @@
+//// [test/cases/bun06-C7.ts] ////
+
+=== a.js ===
+/** @param {(a: number) => void} cb */
+function takes(cb) {}
+>takes : Symbol(takes, Decl(a.js, 0, 0))
+>cb : Symbol(cb, Decl(a.js, 1, 15))
+
+takes((a = []) => {});
+>takes : Symbol(takes, Decl(a.js, 0, 0))
+>a : Symbol(a, Decl(a.js, 2, 7))
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(z.ts, 0, 5))
+

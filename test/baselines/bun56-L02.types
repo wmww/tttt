@@ -1,0 +1,9 @@
+//// [test/cases/bun56-L02.ts] ////
+
+=== a.ts ===
+type X<T> = T extends [infer U \u0065xtends string] ? U : never;
+>X : X<T>
+
+type Z<T> = T extends infer U \u0065xtends string ? U : never;
+>Z : Z<T>
+

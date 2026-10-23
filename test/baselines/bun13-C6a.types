@@ -1,0 +1,36 @@
+//// [test/cases/bun13-C6a.ts] ////
+
+=== a.ts ===
+interface I { m(): this extends { a: 1 } ? "yes" : "no"; }
+>m : () => this extends { a: 1; } ? "yes" : "no"
+>a : 1
+
+interface A extends I { a: 1 }
+>a : 1
+
+interface B extends I { b: 1 }
+>b : 1
+
+function f<T extends I>(x: T) { return x.m(); }
+>f : <T extends I>(x: T) => T extends { a: 1; } ? "yes" : "no"
+>x : T
+>x.m() : T extends { a: 1; } ? "yes" : "no"
+>x.m : () => T extends { a: 1; } ? "yes" : "no"
+>x : T
+>m : () => T extends { a: 1; } ? "yes" : "no"
+
+const r = f({} as A | B);
+>r : "no" | "yes"
+>f({} as A | B) : "no" | "yes"
+>f : <T extends I>(x: T) => T extends { a: 1; } ? "yes" : "no"
+>{} as A | B : A | B
+>{} : {}
+
+const r1: never = r;
+>r1 : never
+>r : "no" | "yes"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

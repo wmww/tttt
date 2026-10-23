@@ -1,0 +1,103 @@
+a01.ts(2,39): error TS1109: Expression expected.
+a01.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a02.ts(2,38): error TS1109: Expression expected.
+a02.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a03.ts(2,42): error TS1109: Expression expected.
+a03.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a11.ts(2,18): error TS1109: Expression expected.
+a11.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a14.ts(2,43): error TS1109: Expression expected.
+a14.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a16.ts(2,42): error TS1110: Type expected.
+a16.ts(2,43): error TS1109: Expression expected.
+a16.ts(2,57): error TS1005: ':' expected.
+a16.ts(2,64): error TS1005: ';' expected.
+a16.ts(2,65): error TS1131: Property or signature expected.
+a16.ts(2,67): error TS7008: Member 'void' implicitly has an 'any' type.
+a16.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a17.ts(2,39): error TS1109: Expression expected.
+a17.ts(2,65): error TS1109: Expression expected.
+a17.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a19.ts(2,37): error TS1109: Expression expected.
+a19.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a01.ts (2 errors) ====
+    export {}; declare const dec: any;
+    async function f() { interface I { m(@await y: any): void } }
+                                          ~~~~~
+!!! error TS1109: Expression expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a02.ts (2 errors) ====
+    export {}; declare const dec: any;
+    async function f() { interface I { (@await y: any): void } }
+                                         ~~~~~
+!!! error TS1109: Expression expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a03.ts (2 errors) ====
+    export {}; declare const dec: any;
+    async function f() { interface I { new (@await y: any): void } }
+                                             ~~~~~
+!!! error TS1109: Expression expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a11.ts (2 errors) ====
+    export {}; declare const dec: any;
+    interface I { m(@await y: any): void }
+                     ~~~~~
+!!! error TS1109: Expression expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a14.ts (2 errors) ====
+    export {}; declare const dec: any;
+    async function f() { interface I { set s(@await y: any) } }
+                                              ~~~~~
+!!! error TS1109: Expression expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a16.ts (7 errors) ====
+    export {}; declare const dec: any;
+    async function f() { interface I { m(a: (@await y: any) => void): void; n(a: new (@await y: any) => void): void } }
+                                             ~
+!!! error TS1110: Type expected.
+                                              ~~~~~
+!!! error TS1109: Expression expected.
+                                                            ~~
+!!! error TS1005: ':' expected.
+                                                                   ~
+!!! error TS1005: ';' expected.
+                                                                    ~
+!!! error TS1131: Property or signature expected.
+                                                                      ~~~~
+!!! error TS7008: Member 'void' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a17.ts (3 errors) ====
+    export {}; declare const dec: any;
+    async function f() { interface I { m(@await.x y: any): void; n(@await() y: any): void } }
+                                          ~~~~~
+!!! error TS1109: Expression expected.
+                                                                    ~~~~~
+!!! error TS1109: Expression expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== a19.ts (2 errors) ====
+    export {}; declare const dec: any;
+    class K { static { interface I { m(@await y: any): void; n(@dec(await 1) y: any): void } } }
+                                        ~~~~~
+!!! error TS1109: Expression expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

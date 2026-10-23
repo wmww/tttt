@@ -1,0 +1,52 @@
+//// [test/cases/bun55-L18b.ts] ////
+
+=== a.ts ===
+declare function one<T>(v: T): { a: T; b: T };
+>one : <T>(v: T) => { a: T; b: T; }
+>v : T
+>a : T
+>b : T
+
+const { a: [n, s], b = JSON.parse("[]") } = one([1, "hi"]);
+>a : any
+>n : string | number
+>s : string | number
+>b : any
+>JSON.parse("[]") : any
+>JSON.parse : (text: string, reviver?: (this: any, key: string, value: any) => any) => any
+>JSON : JSON
+>parse : (text: string, reviver?: (this: any, key: string, value: any) => any) => any
+>"[]" : "[]"
+>one([1, "hi"]) : { a: (string | number)[]; b: (string | number)[]; }
+>one : <T>(v: T) => { a: T; b: T; }
+>[1, "hi"] : (string | number)[]
+>1 : 1
+>"hi" : "hi"
+
+s.length;
+>s.length : any
+>s : string | number
+>length : any
+
+// without the default of type `any` the pattern makes the argument a tuple in both
+const { a: [n2, s2], b: b2 } = one([1, "hi"]);
+>a : any
+>n2 : number
+>s2 : string
+>b : any
+>b2 : [number, string]
+>one([1, "hi"]) : { a: [number, string]; b: [number, string]; }
+>one : <T>(v: T) => { a: T; b: T; }
+>[1, "hi"] : [number, string]
+>1 : 1
+>"hi" : "hi"
+
+s2.length;
+>s2.length : number
+>s2 : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

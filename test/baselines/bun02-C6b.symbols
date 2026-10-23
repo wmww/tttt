@@ -1,0 +1,21 @@
+//// [test/cases/bun02-C6b.ts] ////
+
+=== a.ts ===
+class K { foo() {}
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>foo : Symbol(K.foo, Decl(a.ts, 0, 9))
+
+  m() { if (this.foo) { (function (this: K) { this.foo(); }); } }
+>m : Symbol(K.m, Decl(a.ts, 0, 18))
+>this.foo : Symbol(K.foo, Decl(a.ts, 0, 9))
+>this : Symbol(K, Decl(a.ts, 0, 0))
+>foo : Symbol(K.foo, Decl(a.ts, 0, 9))
+>this : Symbol(this, Decl(a.ts, 1, 35))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>this.foo : Symbol(K.foo, Decl(a.ts, 0, 9))
+>this : Symbol(this, Decl(a.ts, 1, 35))
+>foo : Symbol(K.foo, Decl(a.ts, 0, 9))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,31 @@
+//// [test/cases/bun57-L03.ts] ////
+
+=== a.ts ===
+let x: any;
+>x : Symbol(x, Decl(a.ts, 0, 3))
+
+({ 1n: x } = {});
+>1n : Symbol(1n, Decl(a.ts, 1, 2))
+>x : Symbol(x, Decl(a.ts, 0, 3))
+
+[{ 1n: x }] = [{}];
+>1n : Symbol(1n, Decl(a.ts, 2, 2))
+>x : Symbol(x, Decl(a.ts, 0, 3))
+
+for ({ 1n: x } of [{}]) {}
+>1n : Symbol(1n, Decl(a.ts, 3, 6))
+>x : Symbol(x, Decl(a.ts, 0, 3))
+
+({ a: { 1n: x } } = { a: {} });
+>a : Symbol(a, Decl(a.ts, 4, 2))
+>1n : Symbol(1n, Decl(a.ts, 4, 7))
+>x : Symbol(x, Decl(a.ts, 0, 3))
+>a : Symbol(a, Decl(a.ts, 4, 21))
+
+({ 1n: x = 3 } = {});
+>1n : Symbol(1n, Decl(a.ts, 5, 2))
+>x : Symbol(x, Decl(a.ts, 0, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

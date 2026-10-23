@@ -1,0 +1,18 @@
+a.ts(3,65): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type A = { [Symbol.iterator](): Iterator<number>; [Symbol.iterator](x?: string): Iterator<boolean> };
+    type B = { [Symbol.iterator](): Iterator<string>; [Symbol.iterator](x?: number): Iterator<bigint> };
+    function f9<T extends A | B>(t: T) { for (const x of t) { const n: never = x; } }
+                                                                    ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

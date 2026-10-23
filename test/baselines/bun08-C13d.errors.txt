@@ -1,0 +1,16 @@
+a.ts(1,24): error TS2339: Property 'w' does not exist on type 'I10'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const k10: I10[typeof k10b];
+                           ~~~~~~~~~~~
+!!! error TS2339: Property 'w' does not exist on type 'I10'.
+    declare const k10b: "w";
+    interface I10 { [k10b]: "v"; [k10]: 2 }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

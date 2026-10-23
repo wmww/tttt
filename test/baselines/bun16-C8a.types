@@ -1,0 +1,35 @@
+//// [test/cases/bun16-C8a.ts] ////
+
+=== a.ts ===
+type F = () => void;
+>F : F
+
+declare const r1: Record<string, F>;
+>r1 : Record<string, F>
+
+if (r1.foo) {}
+>r1.foo : F
+>r1 : Record<string, F>
+>foo : F
+
+declare const r3: { [k: string]: F } | { [k: string]: () => number };
+>r3 : { [k: string]: F; } | { [k: string]: () => number; }
+>k : string
+>k : string
+
+if (r3.foo) {}
+>r3.foo : F | (() => number)
+>r3 : { [k: string]: F; } | { [k: string]: () => number; }
+>foo : F | (() => number)
+
+function g<T extends Record<string, F>>(t: T) { if (t.foo) {} }
+>g : <T extends Record<string, F>>(t: T) => void
+>t : T
+>t.foo : F
+>t : T
+>foo : F
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

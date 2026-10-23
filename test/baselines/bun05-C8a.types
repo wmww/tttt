@@ -1,0 +1,21 @@
+//// [test/cases/bun05-C8a.ts] ////
+
+=== a.ts ===
+const i1 = import("./m");
+>i1 : any
+>import("./m") : any
+>"./m" : "./m"
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== lib.d.ts ===
+
+interface Array<T> {} interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+=== m.ts ===
+export const v = 1;
+>v : 1
+>1 : 1
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun02-C16.ts] ////
+
+=== a.ts ===
+import { T1 } from "./b";
+>T1 : typeof T1
+
+export const /** {@link T1} */ v1 = 1;
+>v1 : 1
+>1 : 1
+
+const sentinel: number = ""; sentinel;
+>sentinel : number
+>"" : ""
+>sentinel : number
+
+=== b.ts ===
+export class T1 {}
+>T1 : T1
+

@@ -1,0 +1,44 @@
+//// [test/cases/bun01-P2.ts] ////
+
+=== a.ts ===
+interface Array<T> {}
+interface Object {}
+interface Function {}
+interface String {}
+interface Number {}
+interface Boolean {}
+interface RegExp {}
+interface IArguments {}
+interface CallableFunction {}
+interface NewableFunction {}
+interface Symbol {}
+interface SymbolConstructor { readonly iterator: unique symbol; }
+>iterator : unique symbol
+
+declare var Symbol: SymbolConstructor;
+>Symbol : SymbolConstructor
+
+interface Iterator<T, TReturn = any, TNext = any> { next(): { done: boolean; value: T }; }
+>next : () => { done: boolean; value: T; }
+>done : boolean
+>value : T
+
+interface Iterable<T, TReturn = any, TNext = any> { [Symbol.iterator](): Iterator<T, TReturn, TNext>; }
+>[Symbol.iterator] : () => Iterator<T, TReturn, TNext>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+function f(t: [number], w: number[]) { for (const q of t) {} for (const q of w) {} }
+>f : (t: [number], w: number[]) => void
+>t : [number]
+>w : number[]
+>q : any
+>t : [number]
+>q : any
+>w : number[]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun32-C17.ts] ////
+
+=== a.ts ===
+const s = (Symbol)();
+>s : Symbol(s, Decl(a.ts, 0, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+const t: typeof s = Symbol();
+>t : Symbol(t, Decl(a.ts, 1, 5))
+>s : Symbol(s, Decl(a.ts, 0, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

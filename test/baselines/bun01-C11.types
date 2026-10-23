@@ -1,0 +1,16 @@
+//// [test/cases/bun01-C11.ts] ////
+
+=== a.ts ===
+export {};
+namespace N { const a = 1; export { a as b }; b; }
+>N : typeof N
+>a : 1
+>1 : 1
+>a : 1
+>b : 1
+>b : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

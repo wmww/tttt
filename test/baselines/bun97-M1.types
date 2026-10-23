@@ -1,0 +1,119 @@
+//// [test/cases/bun97-M1.ts] ////
+
+=== a.ts ===
+import { I } from "./lib";
+>I : any
+
+export const v = 1 & I;
+>v : number
+>1 & I : number
+>1 : 1
+>I : any
+
+=== b.ts ===
+import { A } from "./lib";
+>A : any
+
+export const v = A;
+>v : any
+>A : any
+
+=== c.ts ===
+import { N } from "./lib";
+>N : any
+
+export const v = N;
+>v : any
+>N : any
+
+=== d.ts ===
+interface J { x: number }
+>x : number
+
+export const v = J;
+>v : any
+>J : any
+
+=== f.ts ===
+import type { K } from "./lib";
+>K : K
+
+export const v = new K();
+>v : K
+>new K() : K
+>K : typeof K
+
+=== g.ts ===
+import { I } from "./lib";
+>I : any
+
+export const v = I;
+>v : any
+>I : any
+
+export const w: I = { x: 1 };
+>w : I
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+=== h.ts ===
+import { I, A } from "./lib";
+>I : any
+>A : any
+
+export const v = I.x;
+>v : any
+>I.x : any
+>I : any
+>x : any
+
+export const w = A();
+>w : any
+>A() : any
+>A : any
+
+=== j.ts ===
+import { I } from "./lib";
+>I : any
+
+export const v = { I };
+>v : { I: any; }
+>{ I } : { I: any; }
+>I : any
+
+=== k.ts ===
+import { I } from "./lib";
+>I : any
+
+export { I };
+>I : any
+
+=== l.ts ===
+import { I } from "./lib";
+>I : any
+
+export const v = ({}) instanceof I;
+>v : boolean
+>({}) instanceof I : boolean
+>({}) : {}
+>{} : {}
+>I : any
+
+=== lib.ts ===
+export interface I { x: number }
+>x : number
+
+export type A = { y: number };
+>A : A
+>y : number
+
+export declare namespace N { interface T {} }
+export class K {}
+>K : K
+
+=== z.ts ===
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

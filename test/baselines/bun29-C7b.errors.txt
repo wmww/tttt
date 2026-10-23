@@ -1,0 +1,18 @@
+a.ts(2,14): error TS4023: Exported variable 'v' has or is using name 'Hid.I' from external module "m" but cannot be named.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import { mk } from "./m";
+    export const v = mk();
+                 ~
+!!! error TS4023: Exported variable 'v' has or is using name 'Hid.I' from external module "m" but cannot be named.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    namespace Hid { export interface I { i: 1 } }
+    export declare function mk(): Hid.I;
+    

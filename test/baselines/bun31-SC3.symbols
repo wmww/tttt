@@ -1,0 +1,41 @@
+//// [test/cases/bun31-SC3.ts] ////
+
+=== a.ts ===
+import { i1 } from "./b";
+>i1 : Symbol(i1, Decl(a.ts, 0, 8))
+
+export function k1(
+>k1 : Symbol(k1, Decl(a.ts, 0, 25))
+
+  /** {@link v} */
+  a: number) { let v = 1; return a }
+>a : Symbol(a, Decl(a.ts, 1, 19))
+>v : Symbol(v, Decl(a.ts, 3, 18))
+>a : Symbol(a, Decl(a.ts, 1, 19))
+
+export function k2(
+>k2 : Symbol(k2, Decl(a.ts, 3, 36))
+
+  /** {@link L} */
+  a: number) { type L = 1; return a }
+>a : Symbol(a, Decl(a.ts, 4, 19))
+>L : Symbol(L, Decl(a.ts, 6, 14))
+>a : Symbol(a, Decl(a.ts, 4, 19))
+
+export function k3(
+>k3 : Symbol(k3, Decl(a.ts, 6, 37))
+
+  /** {@link i1} */
+  a: number) { let i1 = 1; return a + i1 }
+>a : Symbol(a, Decl(a.ts, 7, 19))
+>i1 : Symbol(i1, Decl(a.ts, 9, 18))
+>a : Symbol(a, Decl(a.ts, 7, 19))
+>i1 : Symbol(i1, Decl(a.ts, 9, 18))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 12))
+
+=== b.ts ===
+export const i1 = 1;
+>i1 : Symbol(i1, Decl(b.ts, 0, 12))
+

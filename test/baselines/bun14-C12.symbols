@@ -1,0 +1,16 @@
+//// [test/cases/bun14-C12.ts] ////
+
+=== a.ts ===
+function f0<T>() {
+>f0 : Symbol(f0, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+
+  type A = { a: 1 }[{ [K in keyof T]: 1 }];
+>A : Symbol(A, Decl(a.ts, 0, 18))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>K : Symbol(K, Decl(a.ts, 1, 23))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

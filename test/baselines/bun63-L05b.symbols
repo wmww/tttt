@@ -1,0 +1,56 @@
+//// [test/cases/bun63-L05b.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { } }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(Element, Decl(a.tsx, 0, 23))
+>e : Symbol(Element.e, Decl(a.tsx, 0, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 0, 50))
+
+declare const cond: boolean;
+>cond : Symbol(cond, Decl(a.tsx, 1, 13))
+
+const o1 = { q: 1 }, o2 = { r: 2 };
+>o1 : Symbol(o1, Decl(a.tsx, 2, 5))
+>q : Symbol(q, Decl(a.tsx, 2, 12))
+>o2 : Symbol(o2, Decl(a.tsx, 2, 20))
+>r : Symbol(r, Decl(a.tsx, 2, 27))
+
+declare function Gen<T>(props: T & { pick?: keyof T }): JSX.Element;
+>Gen : Symbol(Gen, Decl(a.tsx, 2, 35))
+>T : Symbol(T, Decl(a.tsx, 3, 21))
+>props : Symbol(props, Decl(a.tsx, 3, 24))
+>T : Symbol(T, Decl(a.tsx, 3, 21))
+>pick : Symbol(pick, Decl(a.tsx, 3, 36))
+>T : Symbol(T, Decl(a.tsx, 3, 21))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+const x1 = <Gen {...(cond ? o2 : o1)} pick="q" />;
+>x1 : Symbol(x1, Decl(a.tsx, 4, 5))
+>Gen : Symbol(Gen, Decl(a.tsx, 2, 35))
+>cond : Symbol(cond, Decl(a.tsx, 1, 13))
+>o2 : Symbol(o2, Decl(a.tsx, 2, 20))
+>o1 : Symbol(o1, Decl(a.tsx, 2, 5))
+>pick : Symbol(pick, Decl(a.tsx, 4, 37))
+
+declare function Req<T>(props: T & { z: 1 }): JSX.Element;
+>Req : Symbol(Req, Decl(a.tsx, 4, 50))
+>T : Symbol(T, Decl(a.tsx, 5, 21))
+>props : Symbol(props, Decl(a.tsx, 5, 24))
+>T : Symbol(T, Decl(a.tsx, 5, 21))
+>z : Symbol(z, Decl(a.tsx, 5, 36))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 0, 23))
+
+const x2 = <Req {...(cond ? o2 : o1)} k="" />;
+>x2 : Symbol(x2, Decl(a.tsx, 6, 5))
+>Req : Symbol(Req, Decl(a.tsx, 4, 50))
+>cond : Symbol(cond, Decl(a.tsx, 1, 13))
+>o2 : Symbol(o2, Decl(a.tsx, 2, 20))
+>o1 : Symbol(o1, Decl(a.tsx, 2, 5))
+>k : Symbol(k, Decl(a.tsx, 6, 37))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 7, 5))
+

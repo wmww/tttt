@@ -1,0 +1,21 @@
+//// [test/cases/bun21-C1b.ts] ////
+
+=== a.ts ===
+declare const helper: (n: number) => typeof k;
+>helper : Symbol(helper, Decl(a.ts, 0, 13))
+>n : Symbol(n, Decl(a.ts, 0, 23))
+>k : Symbol(k, Decl(a.ts, 1, 5))
+
+const k = compute(1);
+>k : Symbol(k, Decl(a.ts, 1, 5))
+>compute : Symbol(compute, Decl(a.ts, 1, 21))
+
+function compute(v: number) { helper(1); return v; }
+>compute : Symbol(compute, Decl(a.ts, 1, 21))
+>v : Symbol(v, Decl(a.ts, 2, 17))
+>helper : Symbol(helper, Decl(a.ts, 0, 13))
+>v : Symbol(v, Decl(a.ts, 2, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

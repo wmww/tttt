@@ -1,0 +1,13 @@
+//// [test/cases/bun10-C15b.ts] ////
+
+=== a.ts ===
+function h5<T extends ReturnType<typeof h5>>(x: T) { return x; }
+>h5 : <T>(x: T) => any
+>h5 : <T>(x: T) => any
+>x : T
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

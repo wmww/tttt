@@ -1,0 +1,24 @@
+//// [test/cases/bun07-C5.ts] ////
+
+=== a.ts ===
+export {};
+declare const obj: { x: any; y: number };
+>obj : { x: any; y: number; }
+>x : any
+>y : number
+
+(obj.x) = function () { return this.y; };
+>(obj.x) = function () { return this.y; } : () => any
+>(obj.x) : any
+>obj.x : any
+>obj : { x: any; y: number; }
+>x : any
+>function () { return this.y; } : () => any
+>this.y : any
+>this : any
+>y : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

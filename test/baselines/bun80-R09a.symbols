@@ -1,0 +1,21 @@
+//// [test/cases/bun80-R09a.ts] ////
+
+=== a.ts ===
+let t1: new ({ a b }) => void;
+>t1 : Symbol(t1, Decl(a.ts, 0, 3))
+>a : Symbol(a, Decl(a.ts, 0, 14))
+>b : Symbol(b, Decl(a.ts, 0, 16))
+
+=== b.ts ===
+let t2: { m({ a b }): void };
+>t2 : Symbol(t2, Decl(b.ts, 0, 3))
+>m : Symbol(m, Decl(b.ts, 0, 9))
+>a : Symbol(a, Decl(b.ts, 0, 13))
+>b : Symbol(b, Decl(b.ts, 0, 15))
+
+=== c.ts ===
+let t3: new ([ a b ]) => void;
+>t3 : Symbol(t3, Decl(c.ts, 0, 3))
+>a : Symbol(a, Decl(c.ts, 0, 14))
+>b : Symbol(b, Decl(c.ts, 0, 16))
+

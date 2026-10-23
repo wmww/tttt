@@ -1,0 +1,47 @@
+//// [test/cases/bun31-SC1.ts] ////
+
+=== a.ts ===
+declare let c: boolean; declare function fail(): never; declare function assertS(x: unknown): asserts x is string;
+>c : Symbol(c, Decl(a.ts, 0, 11))
+>fail : Symbol(fail, Decl(a.ts, 0, 23))
+>assertS : Symbol(assertS, Decl(a.ts, 0, 55))
+>x : Symbol(x, Decl(a.ts, 0, 81))
+>x : Symbol(x, Decl(a.ts, 0, 81))
+
+declare function get(): (x: unknown) => asserts x is string;
+>get : Symbol(get, Decl(a.ts, 0, 114))
+>x : Symbol(x, Decl(a.ts, 1, 25))
+>x : Symbol(x, Decl(a.ts, 1, 25))
+
+function g1(x: unknown) { for (assertS(x); c;) { x.length; } }
+>g1 : Symbol(g1, Decl(a.ts, 1, 60))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+>assertS : Symbol(assertS, Decl(a.ts, 0, 55))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+>c : Symbol(c, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+
+function g2(): number { for (fail(); c;) { } }
+>g2 : Symbol(g2, Decl(a.ts, 2, 62))
+>fail : Symbol(fail, Decl(a.ts, 0, 23))
+>c : Symbol(c, Decl(a.ts, 0, 11))
+
+function g3() { let y: number; for (fail(); c;) { } y.toFixed(); }
+>g3 : Symbol(g3, Decl(a.ts, 3, 46))
+>y : Symbol(y, Decl(a.ts, 4, 19))
+>fail : Symbol(fail, Decl(a.ts, 0, 23))
+>c : Symbol(c, Decl(a.ts, 0, 11))
+>y.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(a.ts, 4, 19))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+function g4(x: unknown) { for (get()(x); c;) { } }
+>g4 : Symbol(g4, Decl(a.ts, 4, 66))
+>x : Symbol(x, Decl(a.ts, 5, 12))
+>get : Symbol(get, Decl(a.ts, 0, 114))
+>x : Symbol(x, Decl(a.ts, 5, 12))
+>c : Symbol(c, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

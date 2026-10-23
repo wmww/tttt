@@ -1,0 +1,19 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+f.js(2,1): error TS2303: Circular definition of import alias 'a'.
+f.js(2,13): error TS2304: Cannot find name 'a'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== f.js (2 errors) ====
+    exports.a = 1;
+    exports.a = a;
+    ~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'a'.
+                ~
+!!! error TS2304: Cannot find name 'a'.
+    

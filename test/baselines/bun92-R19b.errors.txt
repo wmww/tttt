@@ -1,0 +1,40 @@
+a.ts(8,27): error TS2322: Type 'string' is not assignable to type '10'.
+a.ts(8,32): error TS2322: Type 'number' is not assignable to type '"7" | "8"'.
+a.ts(8,58): error TS2322: Type 'string' is not assignable to type '10'.
+a.ts(8,63): error TS2322: Type 'number' is not assignable to type '"7"'.
+a.ts(8,89): error TS2322: Type 'string' is not assignable to type '10'.
+a.ts(8,94): error TS2322: Type 'number' is not assignable to type '"7" | "8"'.
+a.ts(9,47): error TS2322: Type 'number' is not assignable to type 'M'.
+a.ts(10,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+    declare const g3: { readonly 7: 1; readonly "8": 1; 9: 1; 10: 1 };
+    const { 9: _c, ...r3 } = g3;
+    const g1 = { get 7() { return 1 }, set 8(v: number) {}, 9: 1, 10: 1 };
+    const { 9: _a, ...r1 } = g1;
+    class G2 { readonly 7 = 1; 9 = 1; 10 = 1 }
+    const { 9: _b, ...r2 } = new G2();
+    const t1: S<typeof r1> = ["?", -99], t2: S<typeof r2> = ["?", -99], t3: S<typeof r3> = ["?", -99];
+                              ~~~
+!!! error TS2322: Type 'string' is not assignable to type '10'.
+                                   ~~~
+!!! error TS2322: Type 'number' is not assignable to type '"7" | "8"'.
+                                                             ~~~
+!!! error TS2322: Type 'string' is not assignable to type '10'.
+                                                                  ~~~
+!!! error TS2322: Type 'number' is not assignable to type '"7"'.
+                                                                                            ~~~
+!!! error TS2322: Type 'string' is not assignable to type '10'.
+                                                                                                 ~~~
+!!! error TS2322: Type 'number' is not assignable to type '"7" | "8"'.
+    type M = { [K in keyof typeof r3]: K }; const m: M = 0;
+                                                  ~
+!!! error TS2322: Type 'number' is not assignable to type 'M'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

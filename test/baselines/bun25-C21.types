@@ -1,0 +1,17 @@
+//// [test/cases/bun25-C21.ts] ////
+
+=== a.ts ===
+export {}; declare const x: number; declare module "./plain" { export = x; }
+>x : number
+>"./plain" : typeof import("./plain")
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== plain.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+

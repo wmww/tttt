@@ -1,0 +1,28 @@
+//// [test/cases/bun30-C23.ts] ////
+
+=== a.ts ===
+import { a, b } from "./m";
+>a : Symbol(a, Decl(a.ts, 0, 8))
+>b : Symbol(b, Decl(a.ts, 0, 11))
+
+export { a as aa };
+>a : Symbol(a, Decl(a.ts, 0, 8))
+>aa : Symbol(aa, Decl(a.ts, 1, 8))
+
+b;
+>b : Symbol(b, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== b.ts ===
+import { b } from "./a";
+>b : Symbol(b, Decl(b.ts, 0, 8))
+
+=== m.ts ===
+const o = { a: 1, b: 2 }; export = o;
+>o : Symbol(o, Decl(m.ts, 0, 5))
+>a : Symbol(a, Decl(m.ts, 0, 11))
+>b : Symbol(b, Decl(m.ts, 0, 17))
+>o : Symbol(o, Decl(m.ts, 0, 5))
+

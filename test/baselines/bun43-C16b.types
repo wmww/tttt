@@ -1,0 +1,12 @@
+//// [test/cases/bun43-C16b.ts] ////
+
+=== a.ts ===
+namespace N {}
+let u: N.N\u006fpe;
+>u : N.Nope
+>N : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

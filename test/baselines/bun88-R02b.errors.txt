@@ -1,0 +1,40 @@
+index.ts(2,18): error TS2322: Type 'number' is not assignable to type 'string'.
+index.ts(3,7): error TS2322: Type 'number' is not assignable to type 'string'.
+index.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+index.ts(7,7): error TS2322: Type 'number' is not assignable to type 'string'.
+index.ts(8,1): error TS2304: Cannot find name 'window'.
+index.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "target": "es2015", "libReplacement": true, "noEmit": true, "strict": true, "types": [], "allowJs": true, "checkJs": true, "skipLibCheck": true }, "files": ["index.ts"] }
+==== index.ts (6 errors) ====
+    /// <reference lib="dom" />
+    const a: ABC = { abc: 1 };
+                     ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const b: string = libValue;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    const c: number = libBad;
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const d: string = libFn(1, 2);
+    const e: string = new LibClass().m();
+    const f: string = new LibClass().p;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    window.localStorage;
+    ~~~~~~
+!!! error TS2304: Cannot find name 'window'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@typescript/lib-dom/index.js (0 errors) ====
+    /** @typedef {{ abc: string }} ABC */
+    var libValue = 1;
+    /** @type {string} */
+    var libBad = 2;
+    function libFn(a, b) { return a + b + missingName; }
+    class LibClass { constructor() { this.p = 1; } m() { return this.p.nope; } }
+    

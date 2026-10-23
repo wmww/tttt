@@ -1,0 +1,23 @@
+//// [test/cases/bun12-C8b.ts] ////
+
+=== a.ts ===
+declare const r: [string, ...number[]];
+>r : Symbol(r, Decl(a.ts, 0, 13))
+
+let f: string | number, g: number | boolean | undefined;
+>f : Symbol(f, Decl(a.ts, 1, 3))
+>g : Symbol(g, Decl(a.ts, 1, 23))
+
+[f, g] = r;
+>f : Symbol(f, Decl(a.ts, 1, 3))
+>g : Symbol(g, Decl(a.ts, 1, 23))
+>r : Symbol(r, Decl(a.ts, 0, 13))
+
+if (typeof g !== "number") { const u: boolean = g; }
+>g : Symbol(g, Decl(a.ts, 1, 23))
+>u : Symbol(u, Decl(a.ts, 3, 34))
+>g : Symbol(g, Decl(a.ts, 1, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

@@ -1,0 +1,92 @@
+//// [test/cases/bun55-L03.ts] ////
+
+=== a.ts ===
+declare function box<T extends { a: string | number }>(o: T): T;
+>box : <T extends { a: string | number; }>(o: T) => T
+>a : string | number
+>o : T
+
+declare function both<T>(o: T & { a: string | number }): T;
+>both : <T>(o: T & { a: string | number; }) => T
+>o : T & { a: string | number; }
+>a : string | number
+
+declare function key<K extends PropertyKey>(o: { key: K }): K;
+>key : <K extends PropertyKey>(o: { key: K; }) => K
+>o : { key: K; }
+>key : K
+
+class C {
+>C : C
+
+  r!: string | number;
+>r : string | number
+
+  m(x: this["r"]) {
+>m : (x: this["r"]) => void
+>x : this["r"]
+
+    let u = both({ a: x });
+>u : { a: this["r"]; }
+>both({ a: x }) : { a: this["r"]; }
+>both : <T>(o: T & { a: string | number; }) => T
+>{ a: x } : { a: this["r"]; }
+>a : this["r"]
+>x : this["r"]
+
+    u = 1;
+>u = 1 : 1
+>u : { a: this["r"]; }
+>1 : 1
+
+    if (typeof x === "string") return;
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : this["r"]
+>"string" : "string"
+
+    const n: number = box({ a: x }).a;
+>n : number
+>box({ a: x }).a : string | number
+>box({ a: x }) : { a: this["r"]; }
+>box : <T extends { a: string | number; }>(o: T) => T
+>{ a: x } : { a: this["r"]; }
+>a : this["r"]
+>x : this["r"]
+>a : string | number
+
+    let v = box({ a: x });
+>v : { a: this["r"]; }
+>box({ a: x }) : { a: this["r"]; }
+>box : <T extends { a: string | number; }>(o: T) => T
+>{ a: x } : { a: this["r"]; }
+>a : this["r"]
+>x : this["r"]
+
+    v = 1;
+>v = 1 : 1
+>v : { a: this["r"]; }
+>1 : 1
+  }
+  n(name: keyof this) {
+>n : (name: keyof this) => void
+>name : keyof this
+
+    let got = key({ key: name });
+>got : keyof this
+>key({ key: name }) : keyof this
+>key : <K extends PropertyKey>(o: { key: K; }) => K
+>{ key: name } : { key: keyof this; }
+>key : keyof this
+>name : keyof this
+
+    got = 1;
+>got = 1 : 1
+>got : keyof this
+>1 : 1
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

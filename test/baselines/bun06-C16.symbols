@@ -1,0 +1,16 @@
+//// [test/cases/bun06-C16.ts] ////
+
+=== a.ts ===
+namespace NI { export interface Inner<T> { } export const v = 1; }
+>NI : Symbol(NI, Decl(a.ts, 0, 0))
+>Inner : Symbol(Inner, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 38))
+>v : Symbol(v, Decl(a.ts, 0, 57))
+
+const x1 = NI.Inner<string>;
+>x1 : Symbol(x1, Decl(a.ts, 1, 5))
+>NI : Symbol(NI, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

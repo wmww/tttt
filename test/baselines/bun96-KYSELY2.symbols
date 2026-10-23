@@ -1,0 +1,42 @@
+//// [test/cases/bun96-KYSELY2.ts] ////
+
+=== a.ts ===
+declare class K<D> { d: D; e(): K<[D]>; x(): string }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>D : Symbol(D, Decl(a.ts, 0, 16))
+>d : Symbol(K.d, Decl(a.ts, 0, 20))
+>D : Symbol(D, Decl(a.ts, 0, 16))
+>e : Symbol(K.e, Decl(a.ts, 0, 26))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>D : Symbol(D, Decl(a.ts, 0, 16))
+>x : Symbol(K.x, Decl(a.ts, 0, 39))
+
+declare class S<D> { d: D; e(): S<[D]>; x(): D extends [[any]] ? number : string }
+>S : Symbol(S, Decl(a.ts, 0, 53))
+>D : Symbol(D, Decl(a.ts, 1, 16))
+>d : Symbol(S.d, Decl(a.ts, 1, 20))
+>D : Symbol(D, Decl(a.ts, 1, 16))
+>e : Symbol(S.e, Decl(a.ts, 1, 26))
+>S : Symbol(S, Decl(a.ts, 0, 53))
+>D : Symbol(D, Decl(a.ts, 1, 16))
+>x : Symbol(S.x, Decl(a.ts, 1, 39))
+>D : Symbol(D, Decl(a.ts, 1, 16))
+
+declare class R extends K<number> {}
+>R : Symbol(R, Decl(a.ts, 1, 82))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+
+declare function mk<X>(): S<X>
+>mk : Symbol(mk, Decl(a.ts, 2, 36))
+>X : Symbol(X, Decl(a.ts, 3, 20))
+>S : Symbol(S, Decl(a.ts, 0, 53))
+>X : Symbol(X, Decl(a.ts, 3, 20))
+
+const k: K<number> = mk<number>()
+>k : Symbol(k, Decl(a.ts, 4, 5))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>mk : Symbol(mk, Decl(a.ts, 2, 36))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

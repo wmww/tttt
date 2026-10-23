@@ -1,0 +1,16 @@
+//// [test/cases/bun33-C11c.ts] ////
+
+=== a.ts ===
+export {};
+const v = 1;
+>v : 1
+>1 : 1
+
+declare global { export { v }; }
+>global : typeof global
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

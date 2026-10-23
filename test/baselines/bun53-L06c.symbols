@@ -1,0 +1,23 @@
+//// [test/cases/bun53-L06c.ts] ////
+
+=== a.ts ===
+let v;
+>v : Symbol(v, Decl(a.ts, 0, 3))
+
+v = 1;
+>v : Symbol(v, Decl(a.ts, 0, 3))
+
+const h = o;
+>h : Symbol(h, Decl(a.ts, 2, 5))
+>o : Symbol(o, Decl(u.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== u.ts ===
+// @ts-nocheck
+const o = { g() { return v; } };
+>o : Symbol(o, Decl(u.ts, 1, 5))
+>g : Symbol(g, Decl(u.ts, 1, 11))
+>v : Symbol(v, Decl(a.ts, 0, 3))
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun05-C5.ts] ////
+
+=== a.ts ===
+declare const arr: number[];
+>arr : Symbol(arr, Decl(a.ts, 0, 13))
+
+function ff() {}
+>ff : Symbol(ff, Decl(a.ts, 0, 28))
+
+for (ff in arr) { const x: number = arr[ff]; }
+>ff : Symbol(ff, Decl(a.ts, 0, 28))
+>arr : Symbol(arr, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 2, 23))
+>arr : Symbol(arr, Decl(a.ts, 0, 13))
+>ff : Symbol(ff, Decl(a.ts, 0, 28))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

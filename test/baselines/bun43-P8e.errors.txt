@@ -1,0 +1,14 @@
+a.tsx(1,10): error TS2304: Cannot find name '#a'.
+a.tsx(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    var v = <#a />;
+             ~~
+!!! error TS2304: Cannot find name '#a'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

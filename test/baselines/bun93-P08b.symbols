@@ -1,0 +1,10 @@
+//// [test/cases/bun93-P08b.ts] ////
+
+=== a.ts ===
+var x = function() {} += 1, y = ;
+>x : Symbol(x, Decl(a.ts, 0, 3))
+>y : Symbol(y, Decl(a.ts, 0, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

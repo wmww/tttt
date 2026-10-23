@@ -1,0 +1,75 @@
+//// [test/cases/bun99-WD.ts] ////
+
+=== index.ts ===
+import { css, Style } from './lib';
+>css : (style: Style) => void
+>Style : any
+
+css({ ':hover': { notAProperty: '1' } });
+>css({ ':hover': { notAProperty: '1' } }) : void
+>css : (style: Style) => void
+>{ ':hover': { notAProperty: '1' } } : { ':hover': { notAProperty: string; }; }
+>':hover' : { notAProperty: string; }
+>{ notAProperty: '1' } : { notAProperty: string; }
+>notAProperty : string
+>'1' : "1"
+
+const p: Pick<Style, ':hover'> = {};
+>p : Pick<Style, ":hover">
+>{} : {}
+
+const q: Pick<Style, ':hover' | 'top'> = {};
+>q : Pick<Style, ":hover" | "top">
+>{} : {}
+
+const o: Omit<Style, 'top'> = {};
+>o : Omit<Style, "top">
+>{} : {}
+
+const r: Readonly<Style> = {};
+>r : Readonly<Style>
+>{} : {}
+
+const all: Required<Pick<Style, ':hover'>> = {};
+>all : Required<Pick<Style, ":hover">>
+>{} : {}
+
+declare const picked: Pick<Style, 'top'>;
+>picked : Pick<Style, "top">
+
+picked.top = '';
+>picked.top = '' : ""
+>picked.top : any
+>picked : Pick<Style, "top">
+>top : any
+>'' : ""
+
+const hover: never = null! as Style[':hover'];
+>hover : never
+>null! as Style[':hover'] : Omit<Style, ":hover"> | undefined
+>null! : never
+
+const keys: never = null! as keyof Pick<Style, ':hover' | 'top'>;
+>keys : never
+>null! as keyof Pick<Style, ':hover' | 'top'> : ":hover" | "top"
+>null! : never
+
+export const sentinel: number = '';
+>sentinel : number
+>'' : ""
+
+=== lib.d.ts ===
+type Pseudos = ':hover';
+>Pseudos : ":hover"
+
+export type CSSPseudos = { [P in Pseudos]?: Omit<Style, Pseudos> };
+>CSSPseudos : CSSPseudos
+
+export type Style = CSSPseudos & { readonly top?: string };
+>Style : Style
+>top : string | undefined
+
+export declare function css(style: Style): void;
+>css : (style: Style) => void
+>style : Style
+

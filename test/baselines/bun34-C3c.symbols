@@ -1,0 +1,24 @@
+//// [test/cases/bun34-C3c.ts] ////
+
+=== a.ts ===
+declare function o<T>(cb1: (x: T) => void, ob: { m(this: any): T }): void;
+>o : Symbol(o, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>cb1 : Symbol(cb1, Decl(a.ts, 0, 22))
+>x : Symbol(x, Decl(a.ts, 0, 28))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>ob : Symbol(ob, Decl(a.ts, 0, 42))
+>m : Symbol(m, Decl(a.ts, 0, 48))
+>this : Symbol(this, Decl(a.ts, 0, 51))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+o(x => x.toFixed(), { m(this) { return 1 } });
+>o : Symbol(o, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 2))
+>x : Symbol(x, Decl(a.ts, 1, 2))
+>m : Symbol(m, Decl(a.ts, 1, 21))
+>this : Symbol(this, Decl(a.ts, 1, 24))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

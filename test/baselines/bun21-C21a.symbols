@@ -1,0 +1,20 @@
+//// [test/cases/bun21-C21a.ts] ////
+
+=== a.ts ===
+function f({ kind, v }: { kind: "a"; v: string } | { kind: "b"; v: number }) { var kind: "a" | "b"; if (kind === "a") v.length; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>kind : Symbol(kind, Decl(a.ts, 0, 12), Decl(a.ts, 0, 82))
+>v : Symbol(v, Decl(a.ts, 0, 18))
+>kind : Symbol(kind, Decl(a.ts, 0, 25))
+>v : Symbol(v, Decl(a.ts, 0, 36))
+>kind : Symbol(kind, Decl(a.ts, 0, 52))
+>v : Symbol(v, Decl(a.ts, 0, 63))
+>kind : Symbol(kind, Decl(a.ts, 0, 12), Decl(a.ts, 0, 82))
+>kind : Symbol(kind, Decl(a.ts, 0, 12), Decl(a.ts, 0, 82))
+>v.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>v : Symbol(v, Decl(a.ts, 0, 18))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

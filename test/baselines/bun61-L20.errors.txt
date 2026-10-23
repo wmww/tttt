@@ -1,0 +1,32 @@
+a.ts(4,10): error TS7023: 'getRoot' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(5,10): error TS7023: 'build' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(7,10): error TS7023: 'g1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(8,10): error TS7023: 'g6' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    export {};
+    interface Tree { children: Tree[] }
+    let root: Tree | undefined;
+    function getRoot() { return root ??= build() as Tree; }
+             ~~~~~~~
+!!! error TS7023: 'getRoot' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function build() { return { children: [getRoot()] }; }
+             ~~~~~
+!!! error TS7023: 'build' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    let x: number;
+    function g1() { return x = g1() as number; }
+             ~~
+!!! error TS7023: 'g1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function g6() { return [x = g6() as number]; }
+             ~~
+!!! error TS7023: 'g6' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function g10() { x = g10() as number; return x; }
+    function f4() { const r = f4() as number; return r; }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

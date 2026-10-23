@@ -1,0 +1,22 @@
+//// [test/cases/bun23-C3f.ts] ////
+
+=== a.ts ===
+class K { static readonly "x-y": unique symbol = Symbol(); }
+>K : K
+>"x-y" : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+const o: 1 = { [K["x-y"]]: 1 };
+>o : 1
+>{ [K["x-y"]]: 1 } : { [K["x-y"]]: number; }
+>[K["x-y"]] : number
+>K["x-y"] : unique symbol
+>K : typeof K
+>"x-y" : "x-y"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

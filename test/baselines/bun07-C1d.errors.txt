@@ -1,0 +1,20 @@
+a.ts(5,46): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export {};
+    declare function observable<T>(o: T): T;
+    const store = observable({
+      items: [{ done: true }],
+      get doneItems() { return this.items.filter(x => x.done); },
+                                                 ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+      add() { this.items.push({ done: false }); },
+    });
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

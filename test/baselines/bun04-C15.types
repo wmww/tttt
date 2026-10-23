@@ -1,0 +1,18 @@
+//// [test/cases/bun04-C15.ts] ////
+
+=== a.ts ===
+class A { foo() {} }
+>A : A
+>foo : () => void
+
+class B extends A { static constructor() { super.foo; } }
+>B : B
+>A : A
+>super.foo : any
+>super : any
+>foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

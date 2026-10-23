@@ -1,0 +1,69 @@
+//// [test/cases/bun99-WC.ts] ////
+
+=== before.ts ===
+css2({ ':hover': { notAProperty: '1' } });
+>css2 : Symbol(css2, Decl(before.ts, 0, 42))
+>':hover' : Symbol(':hover', Decl(before.ts, 0, 6))
+>notAProperty : Symbol(notAProperty, Decl(before.ts, 0, 18))
+
+export declare function css2(style: Style2): void;
+>css2 : Symbol(css2, Decl(before.ts, 0, 42))
+>style : Symbol(style, Decl(before.ts, 1, 29))
+>Style2 : Symbol(Style2, Decl(before.ts, 3, 71))
+
+type Pseudos2 = ':hover';
+>Pseudos2 : Symbol(Pseudos2, Decl(before.ts, 1, 50))
+
+export type CSSPseudos2 = { [P in Pseudos2]?: Omit<Style2, Pseudos2> };
+>CSSPseudos2 : Symbol(CSSPseudos2, Decl(before.ts, 2, 25))
+>P : Symbol(P, Decl(before.ts, 3, 29))
+>Pseudos2 : Symbol(Pseudos2, Decl(before.ts, 1, 50))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Style2 : Symbol(Style2, Decl(before.ts, 3, 71))
+>Pseudos2 : Symbol(Pseudos2, Decl(before.ts, 1, 50))
+
+export type Style2 = CSSPseudos2 & { top?: string };
+>Style2 : Symbol(Style2, Decl(before.ts, 3, 71))
+>CSSPseudos2 : Symbol(CSSPseudos2, Decl(before.ts, 2, 25))
+>top : Symbol(top, Decl(before.ts, 4, 36))
+
+=== other.ts ===
+import { CSSPseudos2, css2 } from './before';
+>CSSPseudos2 : Symbol(CSSPseudos2, Decl(other.ts, 0, 8))
+>css2 : Symbol(css2, Decl(other.ts, 0, 21))
+
+type T = CSSPseudos2 & { x: 1 };
+>T : Symbol(T, Decl(other.ts, 0, 45))
+>CSSPseudos2 : Symbol(CSSPseudos2, Decl(other.ts, 0, 8))
+>x : Symbol(x, Decl(other.ts, 1, 24))
+
+declare const t: T;
+>t : Symbol(t, Decl(other.ts, 2, 13))
+>T : Symbol(T, Decl(other.ts, 0, 45))
+
+const a: { x: 1 } = t;
+>a : Symbol(a, Decl(other.ts, 3, 5))
+>x : Symbol(x, Decl(other.ts, 3, 10))
+>t : Symbol(t, Decl(other.ts, 2, 13))
+
+const b: never = t;
+>b : Symbol(b, Decl(other.ts, 4, 5))
+>t : Symbol(t, Decl(other.ts, 2, 13))
+
+css2({ ':hover': { notAProperty: '2' } });
+>css2 : Symbol(css2, Decl(other.ts, 0, 21))
+>':hover' : Symbol(':hover', Decl(other.ts, 5, 6))
+>notAProperty : Symbol(notAProperty, Decl(other.ts, 5, 18))
+
+=== zleaf.ts ===
+import { css2 } from './before';
+>css2 : Symbol(css2, Decl(zleaf.ts, 0, 8))
+
+css2({ ':hover': { notAProperty: '3' } });
+>css2 : Symbol(css2, Decl(zleaf.ts, 0, 8))
+>':hover' : Symbol(':hover', Decl(zleaf.ts, 1, 6))
+>notAProperty : Symbol(notAProperty, Decl(zleaf.ts, 1, 18))
+
+export const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(zleaf.ts, 2, 12))
+

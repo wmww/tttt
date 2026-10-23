@@ -1,0 +1,23 @@
+//// [test/cases/bun29-C7b.ts] ////
+
+=== a.ts ===
+import { mk } from "./m";
+>mk : () => Hid.I
+
+export const v = mk();
+>v : Hid.I
+>mk() : Hid.I
+>mk : () => Hid.I
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+namespace Hid { export interface I { i: 1 } }
+>i : 1
+
+export declare function mk(): Hid.I;
+>mk : () => Hid.I
+>Hid : any
+

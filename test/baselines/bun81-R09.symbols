@@ -1,0 +1,53 @@
+//// [test/cases/bun81-R09.ts] ////
+
+=== a.ts ===
+const w1 = function (this: typeof w1, x = this) {};
+>w1 : Symbol(w1, Decl(a.ts, 0, 5))
+>this : Symbol(this, Decl(a.ts, 0, 21))
+>w1 : Symbol(w1, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 37))
+>this : Symbol(this, Decl(a.ts, 0, 21))
+
+const w3 = function (this: typeof w3, x: number, y = this) {};
+>w3 : Symbol(w3, Decl(a.ts, 1, 5))
+>this : Symbol(this, Decl(a.ts, 1, 21))
+>w3 : Symbol(w3, Decl(a.ts, 1, 5))
+>x : Symbol(x, Decl(a.ts, 1, 37))
+>y : Symbol(y, Decl(a.ts, 1, 48))
+>this : Symbol(this, Decl(a.ts, 1, 21))
+
+const w7 = { m(this: typeof w7, x = this) {} };
+>w7 : Symbol(w7, Decl(a.ts, 2, 5))
+>m : Symbol(m, Decl(a.ts, 2, 12))
+>this : Symbol(this, Decl(a.ts, 2, 15))
+>w7 : Symbol(w7, Decl(a.ts, 2, 5))
+>x : Symbol(x, Decl(a.ts, 2, 31))
+>this : Symbol(this, Decl(a.ts, 2, 15))
+
+const e2 = function (this: ReturnType<typeof e2>, x = this) { return x; };
+>e2 : Symbol(e2, Decl(a.ts, 3, 5))
+>this : Symbol(this, Decl(a.ts, 3, 21))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>e2 : Symbol(e2, Decl(a.ts, 3, 5))
+>x : Symbol(x, Decl(a.ts, 3, 49))
+>this : Symbol(this, Decl(a.ts, 3, 21))
+>x : Symbol(x, Decl(a.ts, 3, 49))
+
+// an ordinary first parameter, or a default that does not read `this` at once: the two agree
+const w4 = function (a: typeof w4, x = a) {};
+>w4 : Symbol(w4, Decl(a.ts, 5, 5))
+>a : Symbol(a, Decl(a.ts, 5, 21))
+>w4 : Symbol(w4, Decl(a.ts, 5, 5))
+>x : Symbol(x, Decl(a.ts, 5, 34))
+>a : Symbol(a, Decl(a.ts, 5, 21))
+
+const w5 = function (this: typeof w5, x = () => this) {};
+>w5 : Symbol(w5, Decl(a.ts, 6, 5))
+>this : Symbol(this, Decl(a.ts, 6, 21))
+>w5 : Symbol(w5, Decl(a.ts, 6, 5))
+>x : Symbol(x, Decl(a.ts, 6, 37))
+>this : Symbol(this, Decl(a.ts, 6, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

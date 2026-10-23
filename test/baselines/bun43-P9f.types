@@ -1,0 +1,6 @@
+//// [test/cases/bun43-P9f.ts] ////
+
+=== a.ts ===
+type T = X extends infer
+>T : any
+

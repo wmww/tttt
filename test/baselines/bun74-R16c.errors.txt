@@ -1,0 +1,40 @@
+a.tsx(1,10): error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+a.tsx(1,12): error TS2300: Duplicate identifier 'a'.
+a.tsx(1,12): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.tsx(1,19): error TS1005: '</' expected.
+a.tsx(2,1): error TS1185: Merge conflict marker encountered.
+a.tsx(3,1): error TS1138: Parameter declaration expected.
+a.tsx(3,3): error TS2300: Duplicate identifier 'a'.
+a.tsx(3,3): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a.tsx(3,4): error TS1005: ',' expected.
+a.tsx(3,5): error TS1109: Expression expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (10 errors) ====
+    function f(a = <a>
+             ~
+!!! error TS7010: 'f', which lacks return-type annotation, implicitly has an 'any' return type.
+               ~
+!!! error TS2300: Duplicate identifier 'a'.
+               ~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+                      
+    <<<<<<< x
+    ~~~~~~~~~
+!!! error TS1005: '</' expected.
+    ~~~~~~~
+!!! error TS1185: Merge conflict marker encountered.
+    </a>) {}
+    ~~
+!!! error TS1138: Parameter declaration expected.
+      ~
+!!! error TS2300: Duplicate identifier 'a'.
+      ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+       ~
+!!! error TS1005: ',' expected.
+        ~
+!!! error TS1109: Expression expected.
+    

@@ -1,0 +1,11 @@
+//// [test/cases/bun31-SC10.ts] ////
+
+=== a.ts ===
+function b1() { let x: arguments; }
+>b1 : Symbol(b1, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 19))
+>arguments : Symbol(arguments)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

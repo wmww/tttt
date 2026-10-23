@@ -1,0 +1,13 @@
+//// [test/cases/bun23-C8a.ts] ////
+
+=== a.ts ===
+const b: Required<{ ["foo"]: 1 }> = {};
+>b : Required<{ foo: 1; }>
+>["foo"] : 1
+>"foo" : "foo"
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

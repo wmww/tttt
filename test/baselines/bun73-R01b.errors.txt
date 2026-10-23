@@ -1,0 +1,61 @@
+a.ts(8,5): error TS2322: Type 'string | number' is not assignable to type 'string | 1 | boolean'.
+  Type 'number' is not assignable to type 'string | 1 | boolean'.
+a.ts(18,5): error TS2322: Type 'string | number' is not assignable to type 'string | boolean'.
+  Type 'number' is not assignable to type 'string | boolean'.
+a.ts(28,12): error TS1360: Type 'string | 1' does not satisfy the expected type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(28,12): error TS1360: Type 'string | number' does not satisfy the expected type 'never'.
+  Type 'string' is not assignable to type 'never'.
+a.ts(32,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare function c(): boolean;
+    function missed() {
+      let x: string | 1 | boolean = "";
+      let y: string | number = "";
+      while (c()) {
+        x;
+        if (y === 1) { }
+        x = y;
+        ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'string | 1 | boolean'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string | 1 | boolean'.
+        if (c()) y = 0;
+      }
+    }
+    function otherText() {
+      let x: string | boolean = "";
+      let y: string | number = "";
+      while (c()) {
+        x;
+        if (y === 1) { }
+        x = y;
+        ~
+!!! error TS2322: Type 'string | number' is not assignable to type 'string | boolean'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string | boolean'.
+        if (c()) y = 0;
+      }
+    }
+    function reportedTwice() {
+      let x: string | number | boolean = "";
+      let y: string | number = "";
+      while (c()) {
+        x;
+        if (y === 1) { }
+        x = (y satisfies never);
+               ~~~~~~~~~
+!!! error TS1360: Type 'string | 1' does not satisfy the expected type 'never'.
+!!! error TS1360:   Type 'string' is not assignable to type 'never'.
+               ~~~~~~~~~
+!!! error TS1360: Type 'string | number' does not satisfy the expected type 'never'.
+!!! error TS1360:   Type 'string' is not assignable to type 'never'.
+        if (c()) y = 0;
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

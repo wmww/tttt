@@ -1,0 +1,12 @@
+//// [test/cases/bun02-C15.ts] ////
+
+=== a.ts ===
+declare class D34 { static prototype: any; static prototype: any }
+>D34 : D34
+>prototype : D34
+>prototype : D34
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

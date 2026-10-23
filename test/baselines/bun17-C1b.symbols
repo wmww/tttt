@@ -1,0 +1,42 @@
+//// [test/cases/bun17-C1b.ts] ////
+
+=== a.ts ===
+type P<T> = [Q<T>]; type Q<T> = [T];
+>P : Symbol(P, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>Q : Symbol(Q, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 7))
+>Q : Symbol(Q, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 0, 27))
+
+type P2<T> = [Q2<T>]; type Q2<T> = [T];
+>P2 : Symbol(P2, Decl(a.ts, 0, 36))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>Q2 : Symbol(Q2, Decl(a.ts, 1, 21))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>Q2 : Symbol(Q2, Decl(a.ts, 1, 21))
+>T : Symbol(T, Decl(a.ts, 1, 30))
+>T : Symbol(T, Decl(a.ts, 1, 30))
+
+declare function fp<T>(m: P<T>): T;
+>fp : Symbol(fp, Decl(a.ts, 1, 39))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+>m : Symbol(m, Decl(a.ts, 2, 23))
+>P : Symbol(P, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+>T : Symbol(T, Decl(a.ts, 2, 20))
+
+declare let p2: P2<number>;
+>p2 : Symbol(p2, Decl(a.ts, 3, 11))
+>P2 : Symbol(P2, Decl(a.ts, 0, 36))
+
+fp(p2).toFixed();
+>fp(p2).toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>fp : Symbol(fp, Decl(a.ts, 1, 39))
+>p2 : Symbol(p2, Decl(a.ts, 3, 11))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

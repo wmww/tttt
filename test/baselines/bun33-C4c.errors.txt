@@ -1,0 +1,18 @@
+a.ts(2,15): error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+a.ts(2,21): error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const v: any;
+    interface B { [v as this]: number }
+                  ~~~~~~~~~~~
+!!! error TS1169: A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.
+                        ~~~~
+!!! error TS2526: A 'this' type is available only in a non-static member of a class or interface.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

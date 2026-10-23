@@ -1,0 +1,26 @@
+//// [test/cases/bun03-SC3.ts] ////
+
+=== a.ts ===
+const x = 1; type T = 1;
+>x : 1
+>1 : 1
+>T : 1
+
+export = x;
+>x : 1
+
+export { T as Y };
+>T : any
+>Y : 1
+
+export const Y = 1;
+>Y : 1
+>1 : 1
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+export {};
+

@@ -1,0 +1,84 @@
+//// [test/cases/bun62-L01.ts] ////
+
+=== a.ts ===
+type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+>X : [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A]
+
+const x1 = f1();
+>x1 : any
+>f1() : any
+>f1 : () => X<X<X<X<[1]>>>>
+
+const x2 = new C2();
+>x2 : any
+>new C2() : any
+>C2 : new () => X<X<X<X<[2]>>>>
+
+async function g() {
+>g : () => Promise<void>
+
+  const x3 = await f3();
+>x3 : any
+>await f3() : any
+>f3() : any
+>f3 : () => X<X<X<X<[3]>>>>
+
+  const x4 = await (0 as any as X<X<X<X<[4]>>>>);
+>x4 : any
+>await (0 as any as X<X<X<X<[4]>>>>) : any
+>(0 as any as X<X<X<X<[4]>>>>) : any
+>0 as any as X<X<X<X<[4]>>>> : any
+>0 as any : any
+>0 : 0
+}
+function h(p = f5()) {}
+>h : (p?: any) => void
+>p : any
+>f5() : any
+>f5 : () => X<X<X<X<[5]>>>>
+
+class K { q = f6(); }
+>K : K
+>q : any
+>f6() : any
+>f6 : () => X<X<X<X<[6]>>>>
+
+const { a = f7() } = {} as { a?: number };
+>a : any
+>f7() : any
+>f7 : () => X<X<X<X<[7]>>>>
+>{} as { a?: number } : { a?: number; }
+>{} : {}
+>a : number | undefined
+
+const x9 = (f9());
+>x9 : any
+>(f9()) : any
+>f9() : any
+>f9 : () => X<X<X<X<[9]>>>>
+
+declare function f1(): X<X<X<X<[1]>>>>;
+>f1 : () => X<X<X<X<[1]>>>>
+
+declare const C2: new () => X<X<X<X<[2]>>>>;
+>C2 : new () => X<X<X<X<[2]>>>>
+
+declare function f3(): X<X<X<X<[3]>>>>;
+>f3 : () => X<X<X<X<[3]>>>>
+
+declare function f5(): X<X<X<X<[5]>>>>;
+>f5 : () => X<X<X<X<[5]>>>>
+
+declare function f6(): X<X<X<X<[6]>>>>;
+>f6 : () => X<X<X<X<[6]>>>>
+
+declare function f7(): X<X<X<X<[7]>>>>;
+>f7 : () => X<X<X<X<[7]>>>>
+
+declare function f9(): X<X<X<X<[9]>>>>;
+>f9 : () => X<X<X<X<[9]>>>>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

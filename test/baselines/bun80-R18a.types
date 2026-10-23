@@ -1,0 +1,37 @@
+//// [test/cases/bun80-R18a.ts] ////
+
+=== a.ts ===
+const A = { b: 1 };
+>A : { b: number; }
+>{ b: 1 } : { b: number; }
+>b : number
+>1 : 1
+
+export namespace W {
+>W : typeof W
+
+  namespace A {}
+  export let t: A.b;
+>t : A.b
+>A : any
+}
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+class A { static q = 1 }
+>A : A
+>q : number
+>1 : 1
+
+export namespace W {
+>W : typeof W
+
+  namespace A {}
+  export import x = A.b;
+>x : any
+>A : any
+>b : any
+}
+

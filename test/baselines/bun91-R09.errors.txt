@@ -1,0 +1,41 @@
+a.js(3,35): error TS1228: A type predicate is only allowed in return type position for functions and methods.
+a.js(5,24): error TS18046: 'v' is of type 'unknown'.
+a.js(7,18): error TS1228: A type predicate is only allowed in return type position for functions and methods.
+a.js(13,26): error TS2339: Property 'l' does not exist on type 'K'.
+a.js(14,35): error TS1228: A type predicate is only allowed in return type position for functions and methods.
+a.js(17,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (6 errors) ====
+    /** @type {unknown} */
+    const v = null;
+    /** @param {unknown} x @returns {(asserts x is string)} */
+                                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS1228: A type predicate is only allowed in return type position for functions and methods.
+    function p1(x) {}
+    function t1() { p1(v); v.length; }
+                           ~
+!!! error TS18046: 'v' is of type 'unknown'.
+    class K {
+      /** @returns {(asserts this is L)} */
+                     ~~~~~~~~~~~~~~~~~
+!!! error TS1228: A type predicate is only allowed in return type position for functions and methods.
+      n() {}
+    }
+    class L extends K { l = 1 }
+    /** @type {K} */
+    const k = new K();
+    function t2() { k.n(); k.l; }
+                             ~
+!!! error TS2339: Property 'l' does not exist on type 'K'.
+    /** @param {unknown} x @returns {(asserts x is string)} */
+                                      ~~~~~~~~~~~~~~~~~~~
+!!! error TS1228: A type predicate is only allowed in return type position for functions and methods.
+    const p3 = x => {};
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

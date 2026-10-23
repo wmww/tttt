@@ -1,0 +1,12 @@
+//// [test/cases/bun08-C19.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== x.d.ts ===
+export {};
+declare module "./comp" { interface A {} }
+>"./comp" : Symbol("./comp", Decl(x.d.ts, 0, 10))
+>A : Symbol(A, Decl(x.d.ts, 1, 25))
+

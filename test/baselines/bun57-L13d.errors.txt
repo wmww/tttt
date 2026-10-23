@@ -1,0 +1,22 @@
+a.ts(4,39): error TS2322: Type '(string | number)[]' is not assignable to type '1'.
+a.ts(6,39): error TS2322: Type '(string | number)[]' is not assignable to type '1'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true } }
+==== a.ts (3 errors) ====
+    interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+    declare class Array<T> { filter<S extends T>(f: (x: T) => x is S): S[]; filter(f: (x: T) => unknown): T[] }
+    declare const u: string[] | number[];
+    const r1 = u.filter(x => true); const t1: 1 = r1;
+                                          ~~
+!!! error TS2322: Type '(string | number)[]' is not assignable to type '1'.
+    declare const v: readonly string[] | number[];
+    const r2 = v.filter(x => true); const t2: 1 = r2;
+                                          ~~
+!!! error TS2322: Type '(string | number)[]' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

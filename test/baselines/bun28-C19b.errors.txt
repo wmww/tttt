@@ -1,0 +1,17 @@
+a.ts(1,1): error TS2391: Function implementation is missing or not immediately following the declaration.
+a.ts(1,24): error TS1222: An overload signature cannot be declared as a generator.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    export default function* (): any;
+    ~~~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+                           ~
+!!! error TS1222: An overload signature cannot be declared as a generator.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

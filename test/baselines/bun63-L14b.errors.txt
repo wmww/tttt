@@ -1,0 +1,90 @@
+a.ts(4,13): error TS2322: Type 'typeof P' is not assignable to type '1'.
+a.ts(5,7): error TS2322: Type 'typeof P' is not assignable to type '1'.
+a.ts(7,13): error TS2322: Type 'typeof E' is not assignable to type '1'.
+a.ts(9,13): error TS2322: Type 'typeof NS' is not assignable to type '1'.
+a.ts(11,13): error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+a.ts(14,13): error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+a.ts(17,13): error TS2322: Type 'typeof Box' is not assignable to type '1'.
+a.ts(18,4): error TS2339: Property 'a' does not exist on type 'typeof P'.
+a.ts(18,13): error TS2322: Type 'typeof P' is not assignable to type '1'.
+a.ts(20,13): error TS2322: Type '{ b: number; } | { b: number; }' is not assignable to type '1'.
+  Type '{ b: number; }' is not assignable to type '1'.
+a.ts(22,13): error TS2322: Type 'typeof ce' is not assignable to type '1'.
+a.ts(25,13): error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+a.ts(26,10): error TS2698: Spread types may only be created from object types.
+a.ts(26,13): error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+a.ts(28,13): error TS2741: Property 'c' is missing in type 'typeof P' but required in type '{ b: number; c: number; }'.
+a.ts(29,17): error TS2322: Type 'typeof P' is not assignable to type '1'.
+a.ts(30,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (17 errors) ====
+    let r: 1; let x: any;
+    class P { a = 1; b = 2; }
+    declare const p: P;
+    ({ a: x, ...r } = p);
+                ~
+!!! error TS2322: Type 'typeof P' is not assignable to type '1'.
+    ({ ...r } = p);
+          ~
+!!! error TS2322: Type 'typeof P' is not assignable to type '1'.
+    enum E { A, B }
+    ({ A: x, ...r } = E);
+                ~
+!!! error TS2322: Type 'typeof E' is not assignable to type '1'.
+    namespace NS { export const a = 1, b = 2; }
+    ({ a: x, ...r } = NS);
+                ~
+!!! error TS2322: Type 'typeof NS' is not assignable to type '1'.
+    function f() {} f.a = 1; f.b = 2;
+    ({ a: x, ...r } = f);
+                ~
+!!! error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+    interface I { a: number; b: number }
+    declare const i: I;
+    ({ a: x, ...r } = i);
+                ~
+!!! error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+    class Box<T> { a!: T; b!: T[]; }
+    declare const bx: Box<string>;
+    ({ a: x, ...r } = bx);
+                ~
+!!! error TS2322: Type 'typeof Box' is not assignable to type '1'.
+    ({ a: x, ...r } = P);
+       ~
+!!! error TS2339: Property 'a' does not exist on type 'typeof P'.
+                ~
+!!! error TS2322: Type 'typeof P' is not assignable to type '1'.
+    declare const u: P | I;
+    ({ a: x, ...r } = u);
+                ~
+!!! error TS2322: Type '{ b: number; } | { b: number; }' is not assignable to type '1'.
+!!! error TS2322:   Type '{ b: number; }' is not assignable to type '1'.
+    const ce = class { a = 1; b = 2 };
+    ({ a: x, ...r } = new ce());
+                ~
+!!! error TS2322: Type 'typeof ce' is not assignable to type '1'.
+    type TL = { a: number; b: number };
+    declare const tl: TL;
+    ({ a: x, ...r } = tl);
+                ~
+!!! error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+    ({ a: x, ...r } = { a: 1, b: 2 });
+             ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+                ~
+!!! error TS2322: Type '{ b: number; }' is not assignable to type '1'.
+    let need: { b: number; c: number };
+    ({ a: x, ...need } = p);
+                ~~~~
+!!! error TS2741: Property 'c' is missing in type 'typeof P' but required in type '{ b: number; c: number; }'.
+!!! related TS2728 a.ts:27:24: 'c' is declared here.
+    for ({ a: x, ...r } of [p]) {}
+                    ~
+!!! error TS2322: Type 'typeof P' is not assignable to type '1'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

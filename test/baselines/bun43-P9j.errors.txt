@@ -1,0 +1,13 @@
+a.ts(1,10): error TS2503: Cannot find namespace 'A'.
+a.ts(1,12): error TS1003: Identifier expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type T = A.
+             ~
+!!! error TS2503: Cannot find namespace 'A'.
+               
+!!! error TS1003: Identifier expected.
+    

@@ -1,0 +1,10 @@
+//// [test/cases/bun05-C7.ts] ////
+
+=== a.ts ===
+const i5 = import(...[1]);
+>i5 : Symbol(i5, Decl(a.ts, 0, 5))
+
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

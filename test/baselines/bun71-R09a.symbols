@@ -1,0 +1,59 @@
+//// [test/cases/bun71-R09a.ts] ////
+
+=== a.ts ===
+import { I } from "./m";
+>I : Symbol(I, Decl(a.ts, 0, 8))
+
+import { T } from "./m";
+>T : Symbol(T, Decl(a.ts, 1, 8))
+
+import { NT } from "./m";
+>NT : Symbol(NT, Decl(a.ts, 2, 8))
+
+import D from "./m";
+>D : Symbol(D, Decl(a.ts, 3, 6))
+
+import * as ns from "./m";
+>ns : Symbol(ns, Decl(a.ts, 4, 6))
+
+import M = ns.NT;
+>M : Symbol(M, Decl(a.ts, 4, 26))
+>ns : Symbol(ns, Decl(a.ts, 4, 6))
+>NT : Symbol(NT, Decl(m.ts, 1, 23))
+
+export const t1 = I;
+>t1 : Symbol(t1, Decl(a.ts, 6, 12))
+
+export const t2 = T;
+>t2 : Symbol(t2, Decl(a.ts, 7, 12))
+
+export const t3 = NT;
+>t3 : Symbol(t3, Decl(a.ts, 8, 12))
+
+export const t4 = D;
+>t4 : Symbol(t4, Decl(a.ts, 9, 12))
+
+export const t5 = M;
+>t5 : Symbol(t5, Decl(a.ts, 10, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+
+=== m.ts ===
+export interface I { i: number }
+>I : Symbol(I, Decl(m.ts, 0, 0))
+>i : Symbol(I.i, Decl(m.ts, 0, 20))
+
+export type T = number;
+>T : Symbol(T, Decl(m.ts, 0, 32))
+
+export namespace NT { export type X = 1 }
+>NT : Symbol(NT, Decl(m.ts, 1, 23))
+>X : Symbol(X, Decl(m.ts, 2, 21))
+
+export default interface D {}
+>D : Symbol(D, Decl(m.ts, 2, 41))
+
+export class C {}
+>C : Symbol(C, Decl(m.ts, 3, 29))
+

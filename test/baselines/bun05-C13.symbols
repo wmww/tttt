@@ -1,0 +1,28 @@
+//// [test/cases/bun05-C13.ts] ////
+
+=== a.ts ===
+const p1 = (Symbol)(); const q1: number = p1;
+>p1 : Symbol(p1, Decl(a.ts, 0, 5))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>q1 : Symbol(q1, Decl(a.ts, 0, 28))
+>p1 : Symbol(p1, Decl(a.ts, 0, 5))
+
+const p2 = (Symbol).for("a"); const q2: number = p2;
+>p2 : Symbol(p2, Decl(a.ts, 1, 5))
+>(Symbol).for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+>q2 : Symbol(q2, Decl(a.ts, 1, 35))
+>p2 : Symbol(p2, Decl(a.ts, 1, 5))
+
+const p3 = (Symbol.for)("a"); const q3: number = p3;
+>p3 : Symbol(p3, Decl(a.ts, 2, 5))
+>Symbol.for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>for : Symbol(SymbolConstructor.for, Decl(lib.es2015.symbol.d.ts, --, --))
+>q3 : Symbol(q3, Decl(a.ts, 2, 35))
+>p3 : Symbol(p3, Decl(a.ts, 2, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,21 @@
+a.ts(1,1): error TS2686: 'Foob' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+u.d.ts(2,10): error TS2304: Cannot find name 'nothing'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (2 errors) ====
+    Foob;
+    ~~~~
+!!! error TS2686: 'Foob' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+    export {};
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== u.d.ts (1 errors) ====
+    export as namespace Foob;
+    export = nothing;
+             ~~~~~~~
+!!! error TS2304: Cannot find name 'nothing'.
+    

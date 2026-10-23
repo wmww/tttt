@@ -1,0 +1,17 @@
+a.ts(1,35): error TS2322: Type '(this: any, a?: undefined) => void' is not assignable to type 'never'.
+a.ts(1,52): error TS2345: Argument of type '1' is not assignable to parameter of type 'undefined'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    (function f(this: any, a) { const n: never = f; })(1);
+                                      ~
+!!! error TS2322: Type '(this: any, a?: undefined) => void' is not assignable to type 'never'.
+                                                       ~
+!!! error TS2345: Argument of type '1' is not assignable to parameter of type 'undefined'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

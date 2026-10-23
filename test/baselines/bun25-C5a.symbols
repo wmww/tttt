@@ -1,0 +1,14 @@
+//// [test/cases/bun25-C5a.ts] ////
+
+=== a.ts ===
+const a = { m() { return this.z; }, f() { return this.z; }, g: () => 1 + {} };
+>a : Symbol(a, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 11))
+>this : Symbol(a, Decl(a.ts, 0, 9))
+>f : Symbol(f, Decl(a.ts, 0, 35))
+>this : Symbol(a, Decl(a.ts, 0, 9))
+>g : Symbol(g, Decl(a.ts, 0, 59))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

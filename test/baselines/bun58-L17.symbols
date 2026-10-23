@@ -1,0 +1,36 @@
+//// [test/cases/bun58-L17.ts] ////
+
+=== a.ts ===
+const o = 1; const v = "";
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>v : Symbol(v, Decl(a.ts, 0, 18))
+
+namespace N { export { v as o }; const t: boolean = o; }
+>N : Symbol(N, Decl(a.ts, 0, 26))
+>v : Symbol(v, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 1, 22))
+>t : Symbol(t, Decl(a.ts, 1, 38))
+>o : Symbol(o, Decl(a.ts, 1, 22))
+
+namespace M { const w = true; export { w as o }; const t: null = o; function f() { const u: null = o; } }
+>M : Symbol(M, Decl(a.ts, 1, 56))
+>w : Symbol(w, Decl(a.ts, 2, 19))
+>w : Symbol(w, Decl(a.ts, 2, 19))
+>o : Symbol(o, Decl(a.ts, 2, 38))
+>t : Symbol(t, Decl(a.ts, 2, 54))
+>o : Symbol(o, Decl(a.ts, 2, 38))
+>f : Symbol(f, Decl(a.ts, 2, 67))
+>u : Symbol(u, Decl(a.ts, 2, 88))
+>o : Symbol(o, Decl(a.ts, 2, 38))
+
+namespace P { export { v as o }; export namespace Q { const t: null = o; } }
+>P : Symbol(P, Decl(a.ts, 2, 105))
+>v : Symbol(v, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 3, 22))
+>Q : Symbol(Q, Decl(a.ts, 3, 32))
+>t : Symbol(t, Decl(a.ts, 3, 59))
+>o : Symbol(o, Decl(a.ts, 3, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

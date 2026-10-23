@@ -1,0 +1,17 @@
+a.ts(1,27): error TS2566: A rest element cannot have a property name.
+a.ts(1,27): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    declare function f({...a: b}: any): void;
+                              ~
+!!! error TS2566: A rest element cannot have a property name.
+                              ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

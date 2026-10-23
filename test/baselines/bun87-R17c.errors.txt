@@ -1,0 +1,27 @@
+a.ts(1,5): error TS2397: Declaration name conflicts with built-in global identifier 'globalThis'.
+a.ts(3,7): error TS2322: Type 'typeof globalThis' is not assignable to type '0'.
+a.ts(4,7): error TS2322: Type 'number' is not assignable to type '0'.
+a.ts(5,7): error TS2322: Type 'number' is not assignable to type 'typeof globalThis'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    var globalThis: number;
+        ~~~~~~~~~~
+!!! error TS2397: Declaration name conflicts with built-in global identifier 'globalThis'.
+    var x1 = 1;
+    const r1: 0 = globalThis;
+          ~~
+!!! error TS2322: Type 'typeof globalThis' is not assignable to type '0'.
+    const r2: 0 = globalThis.x1;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type '0'.
+    const r3: typeof globalThis = 1;
+          ~~
+!!! error TS2322: Type 'number' is not assignable to type 'typeof globalThis'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

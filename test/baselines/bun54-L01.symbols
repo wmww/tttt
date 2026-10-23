@@ -1,0 +1,17 @@
+//// [test/cases/bun54-L01.ts] ////
+
+=== a.ts ===
+import type D1, {} from "./m";
+>D1 : Symbol(D1, Decl(a.ts, 0, 6))
+
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+export default class D {}
+>D : Symbol(D, Decl(m.ts, 0, 0))
+
+export const x = 1;
+>x : Symbol(x, Decl(m.ts, 1, 12))
+

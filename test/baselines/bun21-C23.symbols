@@ -1,0 +1,17 @@
+//// [test/cases/bun21-C23.ts] ////
+
+=== a.ts ===
+function f(x: string | number) { if (typeof x === "string") () => x.length; enum E { A = (x = 1) } }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>E : Symbol(E, Decl(a.ts, 0, 75))
+>A : Symbol(E.A, Decl(a.ts, 0, 84))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

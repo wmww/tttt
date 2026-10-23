@@ -1,0 +1,36 @@
+a.js(2,5): error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.js(4,26): error TS2322: Type 'any' is not assignable to type 'never'.
+a.js(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.js(1,21): error TS2565: Property 'z' is used before being assigned.
+b.js(4,5): error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+b.js(5,26): error TS2322: Type 'any' is not assignable to type 'never'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "module": "commonjs", "types": [], "lib": ["es2022"] } }
+==== a.js (3 errors) ====
+    var p = r;
+    var r = [r, require("./b").y];
+        ~
+!!! error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    exports.k = 1;
+    /** @type {never} */ var tp = p;
+                             ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.js (3 errors) ====
+    exports.y = exports.z;
+                        ~
+!!! error TS2565: Property 'z' is used before being assigned.
+    exports.z = 1;
+    var p = r;
+    var r = [r, exports];
+        ~
+!!! error TS7022: 'r' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    /** @type {never} */ var tp = p;
+                             ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    

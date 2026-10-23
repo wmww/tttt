@@ -1,0 +1,28 @@
+//// [test/cases/bun07-C6b.ts] ////
+
+=== a.ts ===
+export {};
+type Action = { kind: 'A', payload: number } | { kind: 'B', payload: string };
+>Action : Action
+>kind : "A"
+>payload : number
+>kind : "B"
+>payload : string
+
+function f1({ kind, payload }: Action) { var kind: 'A' | 'B'; if (kind === 'A') { payload.toFixed(); } }
+>f1 : ({ kind, payload }: Action) => void
+>kind : "A" | "B"
+>payload : string | number
+>kind : "A" | "B"
+>kind === 'A' : boolean
+>kind : "A" | "B"
+>'A' : "A"
+>payload.toFixed() : string
+>payload.toFixed : (fractionDigits?: number) => string
+>payload : number
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

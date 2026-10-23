@@ -1,0 +1,26 @@
+a.ts(2,9): error TS2322: Type '{ (): void; id: ((x: any) => void) | ((x: any) => void); }' is not assignable to type 'T'.
+  '{ (): void; id: ((x: any) => void) | ((x: any) => void); }' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '{ (): void; id: (x: number) => void; }'.
+a.ts(3,10): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(4,13): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    function g<T extends { (): void; id: (x: number) => void }>() {
+      const F: T = () => {};
+            ~
+!!! error TS2322: Type '{ (): void; id: ((x: any) => void) | ((x: any) => void); }' is not assignable to type 'T'.
+!!! error TS2322:   '{ (): void; id: ((x: any) => void) | ((x: any) => void); }' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint '{ (): void; id: (x: number) => void; }'.
+      F.id = x => {};
+             ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+      F["id"] = x => {};
+                ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

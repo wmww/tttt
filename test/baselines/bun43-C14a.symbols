@@ -1,0 +1,8 @@
+//// [test/cases/bun43-C14a.ts] ////
+
+=== a.ts ===
+var s12 = (x = €) => x;
+>s12 : Symbol(s12, Decl(a.ts, 0, 3))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 11))
+

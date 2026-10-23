@@ -1,0 +1,19 @@
+//// [test/cases/bun06-C16.ts] ////
+
+=== a.ts ===
+namespace NI { export interface Inner<T> { } export const v = 1; }
+>NI : typeof NI
+>v : 1
+>1 : 1
+
+const x1 = NI.Inner<string>;
+>x1 : any
+>NI.Inner<string> : any
+>NI.Inner : any
+>NI : typeof NI
+>Inner : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

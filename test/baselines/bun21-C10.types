@@ -1,0 +1,27 @@
+//// [test/cases/bun21-C10.ts] ////
+
+=== a.ts ===
+declare const rec: Record<string, string | undefined>;
+>rec : Record<string, string | undefined>
+
+function outer() { let n: number; function inc(k: string) { if (rec[k]) rec[k]; n++; } n = 0; }
+>outer : () => void
+>n : number
+>inc : (k: string) => void
+>k : string
+>rec[k] : string | undefined
+>rec : Record<string, string | undefined>
+>k : string
+>rec[k] : string
+>rec : Record<string, string | undefined>
+>k : string
+>n++ : number
+>n : number
+>n = 0 : 0
+>n : number
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

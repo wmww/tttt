@@ -1,0 +1,19 @@
+a.js(2,12): error TS2503: Cannot find namespace 'F'.
+a.js(4,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    const { F } = require("./lib");
+    /** @type {F.Inner} */
+               ~
+!!! error TS2503: Cannot find namespace 'F'.
+    let t;
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== lib.js (0 errors) ====
+    function F() {}
+    module.exports = { F };
+    

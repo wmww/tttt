@@ -1,0 +1,21 @@
+//// [test/cases/bun18-C9b.ts] ////
+
+=== a.ts ===
+declare let p8: (...{ length }: [number, number]) => void;
+>p8 : (arg_0: number, arg_1: number) => void
+>length : 2
+
+declare let p4: (a: number, b: string) => void;
+>p4 : (a: number, b: string) => void
+>a : number
+>b : string
+
+p8 = p4;
+>p8 = p4 : (a: number, b: string) => void
+>p8 : (arg_0: number, arg_1: number) => void
+>p4 : (a: number, b: string) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

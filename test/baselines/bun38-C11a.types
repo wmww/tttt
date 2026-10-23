@@ -1,0 +1,19 @@
+//// [test/cases/bun38-C11a.ts] ////
+
+=== b.ts ===
+export const b = 1;
+>b : 1
+>1 : 1
+
+=== sub/s.ts ===
+import { b } from "./b";
+>b : 1
+
+export const fromSub: string = b;
+>fromSub : string
+>b : 1
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

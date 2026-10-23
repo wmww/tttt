@@ -1,0 +1,21 @@
+//// [test/cases/bun24-C8.ts] ////
+
+=== a.ts ===
+class G<T> { static readonly s: unique symbol; }
+>G : G<T>
+>s : unique symbol
+
+const t: { (a: { [G.s]: 1 }): void; (q: 1): 1 } = {};
+>t : { (a: { [G.s]: 1; }): void; (q: 1): 1; }
+>a : { [G.s]: 1; }
+>[G.s] : 1
+>G.s : unique symbol
+>G : typeof G
+>s : unique symbol
+>q : 1
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

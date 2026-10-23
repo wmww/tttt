@@ -1,0 +1,35 @@
+//// [test/cases/bun61-L12.ts] ////
+
+=== a.ts ===
+export {};
+import.defer?.("./nope");
+>import.defer?.("./nope") : Promise<any>
+>defer : any
+>"./nope" : "./nope"
+
+import.defer?.<string>("./nope");
+>import.defer?.<string>("./nope") : Promise<any>
+>defer : any
+>"./nope" : "./nope"
+
+const x1: number = import.defer?.("./b");
+>x1 : number
+>import.defer?.("./b") : Promise<typeof import("./b")>
+>defer : any
+>"./b" : "./b"
+
+const x2: number = import.defer("./b");
+>x2 : number
+>import.defer("./b") : Promise<typeof import("./b")>
+>defer : any
+>"./b" : "./b"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export const b = 1;
+>b : 1
+>1 : 1
+

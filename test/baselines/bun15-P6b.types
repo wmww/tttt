@@ -1,0 +1,16 @@
+//// [test/cases/bun15-P6b.ts] ////
+
+=== a.ts ===
+const { a = () => 1 } = { a: () => 2 };
+>a : () => any
+>() => 1 : () => any
+>1 : 1
+>{ a: () => 2 } : { a?: () => any; }
+>a : () => any
+>() => 2 : () => any
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

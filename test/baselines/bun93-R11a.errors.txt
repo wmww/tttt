@@ -1,0 +1,32 @@
+a.ts(3,5): error TS2322: Type 'number' is not assignable to type '((u: 5) => 5) | ((u: 5) => 5)'.
+a.ts(5,5): error TS2322: Type 'number' is not assignable to type '((u: 6) => 6) | ((u: 6) => 6)'.
+a.ts(7,5): error TS2322: Type 'number' is not assignable to type '((u: 7) => 7) | ((u: 7) => 7)'.
+a.ts(10,5): error TS2322: Type 'number' is not assignable to type '(u: 8) => 8'.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare function id<U>(u: U): U;
+    class C<T> { w = ({ m() { return 1; }, id }).id<5>; }
+    let w: C<string>["w"] | C<boolean>["w"] = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '((u: 5) => 5) | ((u: 5) => 5)'.
+    function g<T>(a = ({ m() { return 1; }, id }).id<6>) { return a; }
+    let a: ReturnType<typeof g<string>> | ReturnType<typeof g<boolean>> = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '((u: 6) => 6) | ((u: 6) => 6)'.
+    const h = <T,>() => ({ m() { return 1; }, id }).id<7>;
+    let b: ReturnType<typeof h<string>> | ReturnType<typeof h<boolean>> = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '((u: 7) => 7) | ((u: 7) => 7)'.
+    // with a return type annotation the method does not count: one type in both tools
+    class D<T> { w = ({ m(): number { return 1; }, id }).id<8>; }
+    let d: D<string>["w"] | D<boolean>["w"] = 1;
+        ~
+!!! error TS2322: Type 'number' is not assignable to type '(u: 8) => 8'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

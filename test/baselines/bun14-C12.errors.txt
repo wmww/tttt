@@ -1,0 +1,16 @@
+a.ts(2,21): error TS2538: Type '{ [K in keyof T]: 1; }' cannot be used as an index type.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function f0<T>() {
+      type A = { a: 1 }[{ [K in keyof T]: 1 }];
+                        ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2538: Type '{ [K in keyof T]: 1; }' cannot be used as an index type.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

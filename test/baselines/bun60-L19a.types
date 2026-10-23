@@ -1,0 +1,63 @@
+//// [test/cases/bun60-L19a.ts] ////
+
+=== a.ts ===
+declare class G1 { static get prototype(): number; }
+>G1 : G1
+>prototype : number
+
+const a1: number = G1.prototype;
+>a1 : number
+>G1.prototype : number
+>G1 : typeof G1
+>prototype : number
+
+declare class G2 { static set prototype(v: number); }
+>G2 : G2
+>prototype : number
+>v : number
+
+G2.prototype = 1; G2.prototype = new G2();
+>G2.prototype = 1 : 1
+>G2.prototype : number
+>G2 : typeof G2
+>prototype : number
+>1 : 1
+>G2.prototype = new G2() : G2
+>G2.prototype : number
+>G2 : typeof G2
+>prototype : number
+>new G2() : G2
+>G2 : typeof G2
+
+declare class G4 { static accessor prototype: number; }
+>G4 : G4
+>prototype : number
+
+const a5: number = G4.prototype;
+>a5 : number
+>G4.prototype : number
+>G4 : typeof G4
+>prototype : number
+
+const s1 = { ...G1 }; const a14: null = s1;
+>s1 : {}
+>{ ...G1 } : {}
+>G1 : typeof G1
+>a14 : null
+>s1 : {}
+
+class C4 { static get prototype() { return 1; } }
+>C4 : C4
+>prototype : number
+>1 : 1
+
+const p4: null = C4.prototype;
+>p4 : null
+>C4.prototype : number
+>C4 : typeof C4
+>prototype : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

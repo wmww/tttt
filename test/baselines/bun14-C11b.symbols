@@ -1,0 +1,23 @@
+//// [test/cases/bun14-C11b.ts] ////
+
+=== a.ts ===
+declare const o: { 0: number; z: number };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>0 : Symbol(0, Decl(a.ts, 0, 18))
+>z : Symbol(z, Decl(a.ts, 0, 29))
+
+const { [/*c*/ 0]: a0, ...rest } = o;
+>0 : Symbol(a0, Decl(a.ts, 1, 7))
+>a0 : Symbol(a0, Decl(a.ts, 1, 7))
+>rest : Symbol(rest, Decl(a.ts, 1, 22))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+
+const r: { z: number; x: 1 } = rest;
+>r : Symbol(r, Decl(a.ts, 2, 5))
+>z : Symbol(z, Decl(a.ts, 2, 10))
+>x : Symbol(x, Decl(a.ts, 2, 21))
+>rest : Symbol(rest, Decl(a.ts, 1, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

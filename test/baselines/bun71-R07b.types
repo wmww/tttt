@@ -1,0 +1,36 @@
+//// [test/cases/bun71-R07b.ts] ////
+
+=== a.ts ===
+import d from "./m";
+>d : any
+
+export const x = d.foo;
+>x : any
+>d.foo : any
+>d : any
+>foo : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.js ===
+const { x } = require("./a");
+>x : any
+>require("./a") : typeof import("./a")
+>require : any
+>"./a" : "./a"
+
+const o = { foo: x };
+>o : any
+>{ foo: x } : { foo: any; }
+>foo : any
+>x : any
+
+module.exports = o;
+>module.exports = o : any
+>module.exports : any
+>module : { exports: any; }
+>exports : any
+>o : any
+

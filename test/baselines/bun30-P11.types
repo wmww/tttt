@@ -1,0 +1,22 @@
+//// [test/cases/bun30-P11.ts] ////
+
+=== a.ts ===
+export class A { #a = 1; m(o: A) { let x; ({ #a: x } = o); return x; } }
+>A : A
+>#a : number
+>1 : 1
+>m : (o: A) => any
+>o : A
+>x : any
+>({ #a: x } = o) : A
+>{ #a: x } = o : A
+>{ #a: x } : { #a: any; }
+>#a : any
+>x : any
+>o : A
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

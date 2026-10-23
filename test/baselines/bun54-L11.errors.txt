@@ -1,0 +1,89 @@
+a.ts(1,24): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(2,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(3,44): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(4,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(5,74): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(6,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(9,7): error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+a.ts(10,7): error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+a.ts(11,7): error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+a.ts(12,7): error TS2322: Type '{ get a(): number; set a(v: string | number); }' is not assignable to type 'boolean'.
+a.ts(14,26): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(15,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(16,7): error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+a.ts(17,24): error TS1119: An object literal cannot have property and accessor with the same name.
+a.ts(18,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(19,7): error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+a.ts(20,7): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(21,6): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(22,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(23,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (20 errors) ====
+    const o1 = { a: 2, get a(): number { return 1 }, set a(v: string | number) {} };
+                           ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o1.a = "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const o2 = { get a(): number { return 1 }, a: 2, set a(v: string | number) {} };
+                                               ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o2.a = "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const o3 = { get a(): number { return 1 }, set a(v: string | number) {}, a: 2 };
+                                                                             ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o3.a = "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const o4 = { get a(): number { return 1 }, set a(v: string | number) {} };
+    o4.a = "s";
+    const p1: boolean = o1;
+          ~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+    const p2: boolean = o2;
+          ~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+    const p3: boolean = o3;
+          ~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+    const p4: boolean = o4;
+          ~~
+!!! error TS2322: Type '{ get a(): number; set a(v: string | number); }' is not assignable to type 'boolean'.
+    const k = "a";
+    const o5 = { [k]: 2, get a(): number { return 1 }, set a(v: string | number) {} };
+                             ~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o5.a = "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const p5: boolean = o5;
+          ~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+    const o6 = { a: 2, get [k](): number { return 1 }, set [k](v: string | number) {} };
+                           ~~~
+!!! error TS1119: An object literal cannot have property and accessor with the same name.
+    o6.a = "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const p6: boolean = o6;
+          ~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+    ({ a: o1.a } = { a: "s" });
+          ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    for (o1.a of ["s"]) {}
+         ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    o1.a += "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

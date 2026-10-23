@@ -1,0 +1,28 @@
+//// [test/cases/bun11-P5.ts] ////
+
+=== a.ts ===
+function h(v: string | number) { if (p(v)) { return v; } return 0; }
+>h : (v: string | number) => any
+>v : string | number
+>p(v) : boolean
+>p : (x: string | number) => boolean
+>v : string | number
+>v : string | number
+>0 : 0
+
+function p(x: string | number) { return x ? h(x) === 0 : false; }
+>p : (x: string | number) => boolean
+>x : string | number
+>x ? h(x) === 0 : false : boolean
+>x : string | number
+>h(x) === 0 : boolean
+>h(x) : any
+>h : (v: string | number) => any
+>x : string | number
+>0 : 0
+>false : false
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

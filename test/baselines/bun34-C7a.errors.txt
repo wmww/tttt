@@ -1,0 +1,13 @@
+a.ts(1,8): error TS1260: Keywords cannot contain escape characters.
+a.ts(1,28): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    let w: \u0061ny = 1; const sentinel: number = "";
+           ~~~~~~~~
+!!! error TS1260: Keywords cannot contain escape characters.
+                               ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

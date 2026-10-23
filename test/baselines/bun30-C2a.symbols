@@ -1,0 +1,10 @@
+//// [test/cases/bun30-C2a.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== m.d.ts ===
+export declare const arguments: number;
+>arguments : Symbol(arguments, Decl(m.d.ts, 0, 20))
+

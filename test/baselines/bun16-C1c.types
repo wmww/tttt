@@ -1,0 +1,25 @@
+//// [test/cases/bun16-C1c.ts] ////
+
+=== a.ts ===
+declare function mk<T>(x: T): new () => {};
+>mk : <T>(x: T) => new () => {}
+>x : T
+
+class C extends mk(x) {}
+>C : C
+>mk(x) : new () => {}
+>mk : <T>(x: T) => new () => {}
+>x : any
+
+declare const y: C | undefined;
+>y : C | undefined
+
+const x = y!;
+>x : any
+>y! : C
+>y : C | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

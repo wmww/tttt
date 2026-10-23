@@ -1,0 +1,61 @@
+//// [test/cases/bun71-R09a.ts] ////
+
+=== a.ts ===
+import { I } from "./m";
+>I : any
+
+import { T } from "./m";
+>T : any
+
+import { NT } from "./m";
+>NT : any
+
+import D from "./m";
+>D : any
+
+import * as ns from "./m";
+>ns : typeof ns
+
+import M = ns.NT;
+>M : any
+>ns : typeof ns
+>NT : any
+
+export const t1 = I;
+>t1 : any
+>I : any
+
+export const t2 = T;
+>t2 : any
+>T : any
+
+export const t3 = NT;
+>t3 : any
+>NT : any
+
+export const t4 = D;
+>t4 : any
+>D : any
+
+export const t5 = M;
+>t5 : any
+>M : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export interface I { i: number }
+>i : number
+
+export type T = number;
+>T : number
+
+export namespace NT { export type X = 1 }
+>X : 1
+
+export default interface D {}
+export class C {}
+>C : C
+

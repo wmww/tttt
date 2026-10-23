@@ -1,0 +1,30 @@
+//// [test/cases/bun19-C3c.ts] ////
+
+=== a.ts ===
+import * as m4 from "./m4";
+>m4 : typeof m4
+
+declare function pick<T>(x: { a?: T }): T;
+>pick : <T>(x: { a?: T; }) => T
+>x : { a?: T; }
+>a : T | undefined
+
+const t: string = pick(m4);
+>t : string
+>pick(m4) : string
+>pick : <T>(x: { a?: T; }) => T
+>m4 : typeof m4
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m1.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+
+=== m4.ts ===
+
+export type * from "./m1";
+

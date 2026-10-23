@@ -1,0 +1,54 @@
+//// [test/cases/bun84-R06.ts] ////
+
+=== a.ts ===
+declare function g(...a: boolean[]): void;
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 19))
+
+declare const x: unknown, b: number, c: number, d: number, an: any;
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>b : Symbol(b, Decl(a.ts, 1, 25))
+>c : Symbol(c, Decl(a.ts, 1, 36))
+>d : Symbol(d, Decl(a.ts, 1, 47))
+>an : Symbol(an, Decl(a.ts, 1, 58))
+
+declare let n: number;
+>n : Symbol(n, Decl(a.ts, 2, 11))
+
+g(x as number < b, c > (d));
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>b : Symbol(b, Decl(a.ts, 1, 25))
+>c : Symbol(c, Decl(a.ts, 1, 36))
+>d : Symbol(d, Decl(a.ts, 1, 47))
+
+g(x satisfies unknown as number < b, c > (d));
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>b : Symbol(b, Decl(a.ts, 1, 25))
+>c : Symbol(c, Decl(a.ts, 1, 36))
+>d : Symbol(d, Decl(a.ts, 1, 47))
+
+const t = [x as number < b, c > (d)];
+>t : Symbol(t, Decl(a.ts, 5, 5))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>b : Symbol(b, Decl(a.ts, 1, 25))
+>c : Symbol(c, Decl(a.ts, 1, 36))
+>d : Symbol(d, Decl(a.ts, 1, 47))
+
+const u = x as any < b > (an);
+>u : Symbol(u, Decl(a.ts, 6, 5))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>b : Symbol(b, Decl(a.ts, 1, 25))
+>an : Symbol(an, Decl(a.ts, 1, 58))
+
+g(n++ < b, c > (d));
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>n : Symbol(n, Decl(a.ts, 2, 11))
+>b : Symbol(b, Decl(a.ts, 1, 25))
+>c : Symbol(c, Decl(a.ts, 1, 36))
+>d : Symbol(d, Decl(a.ts, 1, 47))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

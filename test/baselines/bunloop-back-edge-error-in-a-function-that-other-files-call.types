@@ -1,0 +1,67 @@
+//// [test/cases/bunloop-back-edge-error-in-a-function-that-other-files-call.ts] ////
+
+=== a.ts ===
+interface P { k: "p"; next: P | Q | null } interface Q { k: "q"; next: P | Q | null }
+>k : "p"
+>next : P | Q | null
+>k : "q"
+>next : P | Q | null
+
+declare const more: boolean; declare const p: P; declare const q: Q;
+>more : boolean
+>p : P
+>q : Q
+
+export function build() {
+>build : () => P | Q | null
+
+  let last: P | Q | null = null;
+>last : P | Q | null
+
+  while (more) {
+>more : boolean
+
+    if (last === null) last = more ? p : q;
+>last === null : boolean
+>last : P | Q | null
+>last = more ? p : q : P | Q
+>last : P | Q | null
+>more ? p : q : P | Q
+>more : true
+>p : P
+>q : Q
+
+    else last = last.next = more ? q : p;
+>last = last.next = more ? q : p : P | Q
+>last : P | Q | null
+>last.next = more ? q : p : P | Q
+>last.next : P | Q | null
+>last : P | Q
+>next : P | Q | null
+>more ? q : p : P | Q
+>more : true
+>q : Q
+>p : P
+  }
+  return last;
+>last : P | Q | null
+}
+=== b.ts ===
+import { build } from "./a";
+>build : () => P | Q | null
+
+export const x = build();
+>x : P | Q | null
+>build() : P | Q | null
+>build : () => P | Q | null
+
+=== c.ts ===
+import { build } from "./a";
+>build : () => P | Q | null
+
+export const y = [build()];
+>y : (P | Q | null)[]
+>[build()] : (P | Q | null)[]
+>build() : P | Q | null
+>build : () => P | Q | null
+

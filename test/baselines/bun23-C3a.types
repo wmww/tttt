@@ -1,0 +1,18 @@
+//// [test/cases/bun23-C3a.ts] ////
+
+=== a.ts ===
+interface A { readonly w: unique symbol }
+>w : unique symbol
+
+interface B { readonly w: unique symbol }
+>w : unique symbol
+
+declare let x: A["w"]; const y: B["w"] = x;
+>x : unique symbol
+>y : unique symbol
+>x : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

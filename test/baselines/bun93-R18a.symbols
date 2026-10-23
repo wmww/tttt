@@ -1,0 +1,56 @@
+//// [test/cases/bun93-R18a.ts] ////
+
+=== a.ts ===
+interface Bad { then(): void }
+>Bad : Symbol(Bad, Decl(a.ts, 0, 0))
+>then : Symbol(Bad.then, Decl(a.ts, 0, 15))
+
+declare const p: Promise<string | Bad>; declare const u: string | Bad;
+>p : Symbol(p, Decl(a.ts, 1, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Bad : Symbol(Bad, Decl(a.ts, 0, 0))
+>u : Symbol(u, Decl(a.ts, 1, 53))
+>Bad : Symbol(Bad, Decl(a.ts, 0, 0))
+
+async function f() { await p; await u; }
+>f : Symbol(f, Decl(a.ts, 1, 70))
+>p : Symbol(p, Decl(a.ts, 1, 13))
+>u : Symbol(u, Decl(a.ts, 1, 53))
+
+interface Bad2 { then(): void; x: 1 }
+>Bad2 : Symbol(Bad2, Decl(a.ts, 2, 40))
+>then : Symbol(Bad2.then, Decl(a.ts, 3, 16))
+>x : Symbol(Bad2.x, Decl(a.ts, 3, 30))
+
+declare const p2: Promise<string | Bad2>; declare const u2: string | Bad2;
+>p2 : Symbol(p2, Decl(a.ts, 4, 13))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Bad2 : Symbol(Bad2, Decl(a.ts, 2, 40))
+>u2 : Symbol(u2, Decl(a.ts, 4, 55))
+>Bad2 : Symbol(Bad2, Decl(a.ts, 2, 40))
+
+async function g() { await u2; await p2; }
+>g : Symbol(g, Decl(a.ts, 4, 74))
+>u2 : Symbol(u2, Decl(a.ts, 4, 55))
+>p2 : Symbol(p2, Decl(a.ts, 4, 13))
+
+type S = string | Promise<S>;
+>S : Symbol(S, Decl(a.ts, 5, 42))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>S : Symbol(S, Decl(a.ts, 5, 42))
+
+declare const s: S; declare const ps: Promise<S>;
+>s : Symbol(s, Decl(a.ts, 7, 13))
+>S : Symbol(S, Decl(a.ts, 5, 42))
+>ps : Symbol(ps, Decl(a.ts, 7, 33))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>S : Symbol(S, Decl(a.ts, 5, 42))
+
+async function h() { await ps; await s; }
+>h : Symbol(h, Decl(a.ts, 7, 49))
+>ps : Symbol(ps, Decl(a.ts, 7, 33))
+>s : Symbol(s, Decl(a.ts, 7, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

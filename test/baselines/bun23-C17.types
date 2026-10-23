@@ -1,0 +1,15 @@
+//// [test/cases/bun23-C17.ts] ////
+
+=== a.ts ===
+const u1: 1 = null! as { a: [U<"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">, U<"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy">]; b: { p: 1 } };
+>u1 : 1
+>null! as { a: [U<"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">, U<"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy">]; b: { p: 1 } } : { a: [U<"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">, U<"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy">]; b: { p: 1; }; }
+>null! : never
+>a : [U<"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">, U<"yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy">]
+>b : { p: 1; }
+>p : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

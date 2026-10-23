@@ -1,0 +1,12 @@
+//// [test/cases/bun34-C5a.ts] ////
+
+=== a.ts ===
+class G { @x [k: string]: any }
+>G : G
+>x : any
+>k : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

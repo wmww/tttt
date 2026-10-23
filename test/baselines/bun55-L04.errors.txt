@@ -1,0 +1,31 @@
+a.ts(2,21): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+a.ts(2,30): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(2,30): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(3,22): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(3,22): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(3,70): error TS2339: Property 'length' does not exist on type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowUnreachableCode": false } }
+==== a.ts (7 errors) ====
+    declare function fail(): never;
+    function f(o: any): number { with (fail()) { } }
+                        ~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+                                 ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                                 ~~~~~~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+    function g(o: any) { with (fail()) { } let x: string | number = 1; x.length; }
+                         ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                         ~~~~~~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                                                         ~~~~~~
+!!! error TS2339: Property 'length' does not exist on type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

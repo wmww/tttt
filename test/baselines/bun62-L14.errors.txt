@@ -1,0 +1,57 @@
+a.ts(5,9): error TS2322: Type '{}' is not assignable to type 'I'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(6,9): error TS2322: Type '{}' is not assignable to type 'I'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(7,20): error TS2322: Type '{}' is not assignable to type 'I'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(8,9): error TS2322: Type '{}' is not assignable to type 'I'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(9,9): error TS2322: Type '{}' is not assignable to type 'I'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(10,9): error TS2322: Type '{}' is not assignable to type 'I'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(11,9): error TS2322: Type '{}' is not assignable to type 'I'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (8 errors) ====
+    declare const u: unknown; declare const a: {}; declare const c: boolean;
+    let e = {}; const { x, ...rest2 } = { x: 1 };
+    type I = { [k: string]: number };
+    if (u) {
+      const t1: I = c ? u : { ...a };
+            ~~
+!!! error TS2322: Type '{}' is not assignable to type 'I'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+      const t2: I = c ? { ...a } : u;
+            ~~
+!!! error TS2322: Type '{}' is not assignable to type 'I'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+      const t3: I[] = [u, { ...a }];
+                       ~
+!!! error TS2322: Type '{}' is not assignable to type 'I'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+      const t4: I = c ? u : { ...{} };
+            ~~
+!!! error TS2322: Type '{}' is not assignable to type 'I'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+      const t5: I = c ? u : { ...a, ...a };
+            ~~
+!!! error TS2322: Type '{}' is not assignable to type 'I'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+      const t6: I = c ? u : { ...e };
+            ~~
+!!! error TS2322: Type '{}' is not assignable to type 'I'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+      const t7: I = c ? u : { ...rest2 };
+            ~~
+!!! error TS2322: Type '{}' is not assignable to type 'I'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

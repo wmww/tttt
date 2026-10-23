@@ -1,0 +1,20 @@
+//// [test/cases/bun19-C2.ts] ////
+
+=== a.ts ===
+function f({ a = 1 }) {}
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 12))
+
+declare let p: Parameters<typeof f>[0];
+>p : Symbol(p, Decl(a.ts, 1, 11))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const r: { [k: string]: number } = p;
+>r : Symbol(r, Decl(a.ts, 2, 5))
+>k : Symbol(k, Decl(a.ts, 2, 12))
+>p : Symbol(p, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

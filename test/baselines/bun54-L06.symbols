@@ -1,0 +1,126 @@
+//// [test/cases/bun54-L06.ts] ////
+
+=== a.ts ===
+import { A1, A2, A3, A4, A5, A6, A7, A8, A9 } from "./p";
+>A1 : Symbol(A1, Decl(a.ts, 0, 8))
+>A2 : Symbol(A2, Decl(a.ts, 0, 12))
+>A3 : Symbol(A3, Decl(a.ts, 0, 16))
+>A4 : Symbol(A4, Decl(a.ts, 0, 20))
+>A5 : Symbol(A5, Decl(a.ts, 0, 24))
+>A6 : Symbol(A6, Decl(a.ts, 0, 28))
+>A7 : Symbol(A7, Decl(a.ts, 0, 32))
+>A8 : Symbol(A8, Decl(a.ts, 0, 36))
+>A9 : Symbol(A9, Decl(a.ts, 0, 40))
+
+/**
+ * @typedef {Object} T
+ * @property {string} a see {@link A1}
+ */
+export const s1 = 1;
+>s1 : Symbol(s1, Decl(a.ts, 5, 12))
+
+/** @callback F
+ * @param {string} a see {@link A2}
+ * @returns {string} see {@link A3}
+ */
+export const s2 = 1;
+>s2 : Symbol(s2, Decl(a.ts, 10, 12))
+
+/** @param {Object} o see {@link A4}
+ * @param {string} o.a see {@link A5}
+ * @param {string} b see {@link A6}
+ */
+export function s12(o: any, b: any) { return [o, b]; }
+>s12 : Symbol(s12, Decl(a.ts, 10, 20))
+>o : Symbol(o, Decl(a.ts, 15, 20))
+>b : Symbol(b, Decl(a.ts, 15, 27))
+>o : Symbol(o, Decl(a.ts, 15, 20))
+>b : Symbol(b, Decl(a.ts, 15, 27))
+
+/**
+ * @overload
+ * @param {string} a see {@link A7}
+ * @returns {string} see {@link A8}
+ */
+/**
+ * @param {string} a see {@link A9}
+ */
+export function s13(a: any) { return a; }
+>s13 : Symbol(s13, Decl(a.ts, 15, 54))
+>a : Symbol(a, Decl(a.ts, 24, 20))
+>a : Symbol(a, Decl(a.ts, 24, 20))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 25, 12))
+
+=== b.js ===
+import { A1, A2, A3, A4, A5, A6, A7, A8, A9 } from "./p";
+>A1 : Symbol(A1, Decl(b.js, 0, 8))
+>A2 : Symbol(A2, Decl(b.js, 0, 12))
+>A3 : Symbol(A3, Decl(b.js, 0, 16))
+>A4 : Symbol(A4, Decl(b.js, 0, 20))
+>A5 : Symbol(A5, Decl(b.js, 0, 24))
+>A6 : Symbol(A6, Decl(b.js, 0, 28))
+>A7 : Symbol(A7, Decl(b.js, 0, 32))
+>A8 : Symbol(A8, Decl(b.js, 0, 36))
+>A9 : Symbol(A9, Decl(b.js, 0, 40))
+
+/**
+ * @typedef {Object} T
+ * @property {string} a see {@link A1}
+ */
+/** @callback F
+ * @param {string} a see {@link A2}
+ * @returns {string} see {@link A3}
+ */
+/** @param {Object} o see {@link A4}
+ * @param {string} o.a see {@link A5}
+ * @param {string} b see {@link A6}
+ */
+export function s12(o, b) { return [o, b]; }
+>s12 : Symbol(s12, Decl(b.js, 0, 57))
+>o : Symbol(o, Decl(b.js, 13, 20))
+>b : Symbol(b, Decl(b.js, 13, 22))
+>o : Symbol(o, Decl(b.js, 13, 20))
+>b : Symbol(b, Decl(b.js, 13, 22))
+
+/**
+ * @overload
+ * @param {string} a see {@link A7}
+ * @returns {string} see {@link A8}
+ */
+/**
+ * @param {string} a see {@link A9}
+ */
+export function s13(a) { return a; }
+>s13 : Symbol(s13, Decl(b.js, 15, 4), Decl(b.js, 13, 44))
+>a : Symbol(a, Decl(b.js, 22, 20))
+>a : Symbol(a, Decl(b.js, 22, 20))
+
+/** @type {number} */
+export const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 24, 12))
+
+=== p.ts ===
+export class A1 {} export class A2 {} export class A3 {} export class A4 {} export class A5 {} export class A6 {} export class A7 {} export class A8 {} export class A9 {}
+>A1 : Symbol(A1, Decl(p.ts, 0, 0))
+>A2 : Symbol(A2, Decl(p.ts, 0, 18))
+>A3 : Symbol(A3, Decl(p.ts, 0, 37))
+>A4 : Symbol(A4, Decl(p.ts, 0, 56))
+>A5 : Symbol(A5, Decl(p.ts, 0, 75))
+>A6 : Symbol(A6, Decl(p.ts, 0, 94))
+>A7 : Symbol(A7, Decl(p.ts, 0, 113))
+>A8 : Symbol(A8, Decl(p.ts, 0, 132))
+>A9 : Symbol(A9, Decl(p.ts, 0, 151))
+
+export class B1 {} export class B2 {} export class B3 {} export class B4 {} export class B5 {} export class B6 {} export class B7 {} export class B8 {} export class B9 {}
+>B1 : Symbol(B1, Decl(p.ts, 0, 170))
+>B2 : Symbol(B2, Decl(p.ts, 1, 18))
+>B3 : Symbol(B3, Decl(p.ts, 1, 37))
+>B4 : Symbol(B4, Decl(p.ts, 1, 56))
+>B5 : Symbol(B5, Decl(p.ts, 1, 75))
+>B6 : Symbol(B6, Decl(p.ts, 1, 94))
+>B7 : Symbol(B7, Decl(p.ts, 1, 113))
+>B8 : Symbol(B8, Decl(p.ts, 1, 132))
+>B9 : Symbol(B9, Decl(p.ts, 1, 151))
+

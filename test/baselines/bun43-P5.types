@@ -1,0 +1,17 @@
+//// [test/cases/bun43-P5.ts] ////
+
+=== a.js ===
+module.exports = { a: exports };
+>module.exports = { a: exports } : { a: any; }
+>module.exports : any
+>module : { exports: any; }
+>exports : any
+>{ a: exports } : { a: any; }
+>a : any
+>exports : any
+
+=== b.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

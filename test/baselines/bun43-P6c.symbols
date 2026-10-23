@@ -1,0 +1,13 @@
+//// [test/cases/bun43-P6c.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+<T extends U>(x);
+>T : Symbol(T)
+>U : Symbol(U)
+> : Symbol(unknown)
+> : Symbol(unknown)
+>x : Symbol(x, Decl(a.ts, 0, 11))
+

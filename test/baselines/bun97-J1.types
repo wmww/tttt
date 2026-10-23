@@ -1,0 +1,13 @@
+//// [test/cases/bun97-J1.ts] ////
+
+=== c.tsx ===
+export const e = <div />;
+>e : any
+><div /> : any
+>div : any
+
+=== s.ts ===
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

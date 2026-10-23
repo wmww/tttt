@@ -1,0 +1,19 @@
+//// [test/cases/bun03-C5.ts] ////
+
+=== a.ts ===
+class B { foo = () => {}; }
+>B : Symbol(B, Decl(a.ts, 0, 0))
+>foo : Symbol(B.foo, Decl(a.ts, 0, 9))
+
+class D extends B {}
+>D : Symbol(D, Decl(a.ts, 0, 27), Decl(b.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+interface D { foo(): void }
+>D : Symbol(D, Decl(a.ts, 0, 27), Decl(b.ts, 0, 0))
+>foo : Symbol(D.foo, Decl(b.ts, 0, 13))
+

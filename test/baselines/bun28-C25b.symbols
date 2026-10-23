@@ -1,0 +1,9 @@
+//// [test/cases/bun28-C25b.ts] ////
+
+=== a.ts ===
+for (var a: string, in {}) {}
+>a : Symbol(a, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

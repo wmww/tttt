@@ -1,0 +1,84 @@
+//// [test/cases/bun72-R10c.ts] ////
+
+=== a.ts ===
+type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 0, 10))
+>y : Symbol(y, Decl(a.ts, 0, 44))
+>z : Symbol(z, Decl(a.ts, 0, 55))
+
+class Base<T> { b!: T }
+>Base : Symbol(Base, Decl(a.ts, 0, 63))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+>b : Symbol(Base.b, Decl(a.ts, 1, 15))
+>T : Symbol(T, Decl(a.ts, 1, 11))
+
+declare const pre: C1; pre.x;
+>pre : Symbol(pre, Decl(a.ts, 2, 13))
+>C1 : Symbol(C1, Decl(a.ts, 2, 29))
+>pre.x : Symbol(C1.x, Decl(a.ts, 3, 33))
+>pre : Symbol(pre, Decl(a.ts, 2, 13))
+>x : Symbol(C1.x, Decl(a.ts, 3, 33))
+
+class C1 extends Base<Cond<C1>> { x = 1 }
+>C1 : Symbol(C1, Decl(a.ts, 2, 29))
+>Base : Symbol(Base, Decl(a.ts, 0, 63))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>C1 : Symbol(C1, Decl(a.ts, 2, 29))
+>x : Symbol(C1.x, Decl(a.ts, 3, 33))
+
+function early(c: C2) { return c.x; }
+>early : Symbol(early, Decl(a.ts, 3, 41))
+>c : Symbol(c, Decl(a.ts, 4, 15))
+>C2 : Symbol(C2, Decl(a.ts, 4, 37))
+>c.x : Symbol(C2.x, Decl(a.ts, 5, 33))
+>c : Symbol(c, Decl(a.ts, 4, 15))
+>x : Symbol(C2.x, Decl(a.ts, 5, 33))
+
+class C2 extends Base<Cond<C2>> { x = 1 }
+>C2 : Symbol(C2, Decl(a.ts, 4, 37))
+>Base : Symbol(Base, Decl(a.ts, 0, 63))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>C2 : Symbol(C2, Decl(a.ts, 4, 37))
+>x : Symbol(C2.x, Decl(a.ts, 5, 33))
+
+let t3: Cond<C3>;
+>t3 : Symbol(t3, Decl(a.ts, 6, 3))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>C3 : Symbol(C3, Decl(a.ts, 6, 17))
+
+class C3 extends Base<Cond<C3>> { x = 1 }
+>C3 : Symbol(C3, Decl(a.ts, 6, 17))
+>Base : Symbol(Base, Decl(a.ts, 0, 63))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>C3 : Symbol(C3, Decl(a.ts, 6, 17))
+>x : Symbol(C3.x, Decl(a.ts, 7, 33))
+
+let t4: C4 | undefined;
+>t4 : Symbol(t4, Decl(a.ts, 8, 3))
+>C4 : Symbol(C4, Decl(a.ts, 8, 23))
+
+class C4 extends Base<Cond<C4>> { x = 1 }
+>C4 : Symbol(C4, Decl(a.ts, 8, 23))
+>Base : Symbol(Base, Decl(a.ts, 0, 63))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>C4 : Symbol(C4, Decl(a.ts, 8, 23))
+>x : Symbol(C4.x, Decl(a.ts, 9, 33))
+
+let t5 = (c: C5): string | number => c;
+>t5 : Symbol(t5, Decl(a.ts, 10, 3))
+>c : Symbol(c, Decl(a.ts, 10, 10))
+>C5 : Symbol(C5, Decl(a.ts, 10, 39))
+>c : Symbol(c, Decl(a.ts, 10, 10))
+
+class C5 extends Base<Cond<C5>> { x = 1 }
+>C5 : Symbol(C5, Decl(a.ts, 10, 39))
+>Base : Symbol(Base, Decl(a.ts, 0, 63))
+>Cond : Symbol(Cond, Decl(a.ts, 0, 0))
+>C5 : Symbol(C5, Decl(a.ts, 10, 39))
+>x : Symbol(C5.x, Decl(a.ts, 11, 33))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 5))
+

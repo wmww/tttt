@@ -1,0 +1,13 @@
+//// [test/cases/bun10-C7c.ts] ////
+
+=== a.ts ===
+function f11() { return (f11)(); }
+>f11 : () => any
+>(f11)() : any
+>(f11) : () => any
+>f11 : () => any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

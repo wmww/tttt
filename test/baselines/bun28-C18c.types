@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C18c.ts] ////
+
+=== a.ts ===
+declare function f() { async function g() { } }
+>f : () => void
+>g : () => Promise<void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,12 @@
+//// [test/cases/bun35-C3a.ts] ////
+
+=== a.ts ===
+import "j";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.ts ===
+
+export {};
+

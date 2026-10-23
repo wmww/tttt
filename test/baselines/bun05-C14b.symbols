@@ -1,0 +1,15 @@
+//// [test/cases/bun05-C14b.ts] ////
+
+=== a.ts ===
+declare var Promise: PromiseConstructor;
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --) ... and 1 more)
+>PromiseConstructor : Symbol(PromiseConstructor, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2020.promise.d.ts, --, --), Decl(lib.es2021.promise.d.ts, --, --))
+
+new Promise(resolve => resolve());
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --) ... and 1 more)
+>resolve : Symbol(resolve, Decl(a.ts, 1, 12))
+>resolve : Symbol(resolve, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

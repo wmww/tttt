@@ -1,0 +1,21 @@
+//// [test/cases/bun93-P02c.ts] ////
+
+=== a.ts ===
+xport clatypeof ss B { m(@dec(a) x: number) { return x; } }
+>xport : any
+>clatypeof : any
+>ss : any
+>B : any
+>m(@dec(a) x: number) : any
+>m : any
+>dec(a) : any
+>dec : any
+>a : any
+>x : any
+>number : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

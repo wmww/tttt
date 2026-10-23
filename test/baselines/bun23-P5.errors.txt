@@ -1,0 +1,17 @@
+a.ts(2,1): error TS7053: Element implicitly has an 'any' type because expression of type 'unique symbol' can't be used to index type '{}'.
+  Property '[o.k]' does not exist on type '{}'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const o: { readonly k: unique symbol };
+    ({})[o.k];
+    ~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'unique symbol' can't be used to index type '{}'.
+!!! error TS7053:   Property '[o.k]' does not exist on type '{}'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

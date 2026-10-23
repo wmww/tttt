@@ -1,0 +1,16 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,100): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+tsconfig.json(1,100): error TS5024: Compiler option 'files' requires a value of type Array.
+
+
+==== tsconfig.json (2 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": [#a] }
+                                                                                                       ~~
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+                                                                                                       ~~
+!!! error TS5024: Compiler option 'files' requires a value of type Array.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

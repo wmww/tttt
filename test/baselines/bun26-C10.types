@@ -1,0 +1,22 @@
+//// [test/cases/bun26-C10.ts] ////
+
+=== a.ts ===
+function r<T>({ a, ...rest }: { a: 1; b: 2 }) { return rest; }
+>r : <T>({ a, ...rest }: { a: 1; b: 2; }) => { b: 2; }
+>a : 1
+>rest : { b: 2; }
+>a : 1
+>b : 2
+>rest : { b: 2; }
+
+const n: never = null! as ReturnType<typeof r<1>> | ReturnType<typeof r<2>>;
+>n : never
+>null! as ReturnType<typeof r<1>> | ReturnType<typeof r<2>> : { b: 2; } | { b: 2; }
+>null! : never
+>r : <T>({ a, ...rest }: { a: 1; b: 2; }) => { b: 2; }
+>r : <T>({ a, ...rest }: { a: 1; b: 2; }) => { b: 2; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

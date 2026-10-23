@@ -1,0 +1,56 @@
+//// [test/cases/bun60-L19b.ts] ////
+
+=== a.ts ===
+declare class G6 { static readonly prototype: G6; }
+>G6 : G6
+>prototype : G6
+
+G6.prototype = new G6();
+>G6.prototype = new G6() : G6
+>G6.prototype : any
+>G6 : typeof G6
+>prototype : any
+>new G6() : G6
+>G6 : typeof G6
+
+declare class G7 { private static prototype: G7; }
+>G7 : G7
+>prototype : G7
+
+G7.prototype;
+>G7.prototype : G7
+>G7 : typeof G7
+>prototype : G7
+
+type K7 = keyof typeof G7; const a13: null = null! as K7;
+>K7 : never
+>G7 : typeof G7
+>a13 : null
+>null! as K7 : never
+>null! : never
+
+declare class G9 { protected static prototype: G9; }
+>G9 : G9
+>prototype : G9
+
+G9.prototype;
+>G9.prototype : G9
+>G9 : typeof G9
+>prototype : G9
+
+declare class G5 { static prototype: G5; }
+>G5 : G5
+>prototype : G5
+
+G5.prototype = new G5();
+>G5.prototype = new G5() : G5
+>G5.prototype : G5
+>G5 : typeof G5
+>prototype : G5
+>new G5() : G5
+>G5 : typeof G5
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

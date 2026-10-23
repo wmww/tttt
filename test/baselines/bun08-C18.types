@@ -1,0 +1,33 @@
+//// [test/cases/bun08-C18.ts] ////
+
+=== a.ts ===
+async function f() {
+>f : () => Promise<void>
+
+  (await import(("./m"))).nope;
+>(await import(("./m"))).nope : any
+>(await import(("./m"))) : any
+>await import(("./m")) : any
+>import(("./m")) : Promise<any>
+>("./m") : "./m"
+>"./m" : "./m"
+>nope : any
+
+  (await import(("./missing"))).nope;
+>(await import(("./missing"))).nope : any
+>(await import(("./missing"))) : any
+>await import(("./missing")) : any
+>import(("./missing")) : Promise<any>
+>("./missing") : "./missing"
+>"./missing" : "./missing"
+>nope : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const a = 1;
+>a : 1
+>1 : 1
+

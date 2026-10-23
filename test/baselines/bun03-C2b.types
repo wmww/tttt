@@ -1,0 +1,16 @@
+//// [test/cases/bun03-C2b.ts] ////
+
+=== a.ts ===
+declare const MB: new () => Readonly<{ a: () => void }>;
+>MB : new () => Readonly<{ a: () => void; }>
+>a : () => void
+
+class D extends MB { a() {} }
+>D : D
+>MB : Readonly<{ a: () => void; }>
+>a : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

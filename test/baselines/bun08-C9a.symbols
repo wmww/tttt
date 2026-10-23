@@ -1,0 +1,20 @@
+//// [test/cases/bun08-C9a.ts] ////
+
+=== a.js ===
+const { ...rest2 } = require("./esm2");
+>rest2 : Symbol(rest2, Decl(a.js, 0, 7))
+>require : Symbol(require)
+>"./esm2" : Symbol("./esm2", Decl(esm2.ts, 0, 0))
+
+const [arr2] = require("./esm2");
+>arr2 : Symbol(arr2, Decl(a.js, 1, 7))
+>require : Symbol(require)
+>"./esm2" : Symbol("./esm2", Decl(esm2.ts, 0, 0))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 2, 27))
+
+=== esm2.ts ===
+export const a = 1;
+>a : Symbol(a, Decl(esm2.ts, 0, 12))
+

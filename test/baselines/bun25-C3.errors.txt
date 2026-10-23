@@ -1,0 +1,19 @@
+a.ts(2,7): error TS2417: Class static side 'typeof D' incorrectly extends base class static side 'typeof B'.
+  Types of property '"#x"' are incompatible.
+    Type 'string' is not assignable to type 'number'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class B { static "#x" = 1; }
+    class D extends B { static "#x" = ""; }
+          ~
+!!! error TS2417: Class static side 'typeof D' incorrectly extends base class static side 'typeof B'.
+!!! error TS2417:   Types of property '"#x"' are incompatible.
+!!! error TS2417:     Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

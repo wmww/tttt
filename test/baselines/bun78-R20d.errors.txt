@@ -1,0 +1,26 @@
+a.ts(2,42): error TS2537: Type '{}' has no matching index signature for type 'string'.
+a.ts(3,33): error TS2537: Type '{}' has no matching index signature for type 'string'.
+a.ts(5,24): error TS2537: Type '{}' has no matching index signature for type 'string'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare const key: string;
+    function o1(a: {}): void; function o1({ [key]: a = 1 }) {}
+                                             ~~~
+!!! error TS2537: Type '{}' has no matching index signature for type 'string'.
+    class O2 { m(a: {}): void; m({ [key]: a = 1 }) {} }
+                                    ~~~
+!!! error TS2537: Type '{}' has no matching index signature for type 'string'.
+    // both report TS2537: a call before the declaration
+    e3({}); function e3({ [key]: a = 1 }) {}
+                           ~~~
+!!! error TS2537: Type '{}' has no matching index signature for type 'string'.
+    // both are silent
+    function e4({ [key]: a = 1 }) {}
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

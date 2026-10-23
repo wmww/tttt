@@ -1,0 +1,17 @@
+//// [test/cases/bun18-C11.ts] ////
+
+=== a.ts ===
+function f<T extends unknown[]>(a = 1, ...r: T) {}
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>a : Symbol(a, Decl(a.ts, 0, 32))
+>r : Symbol(r, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+const x1: 0 = f<[string]>;
+>x1 : Symbol(x1, Decl(a.ts, 1, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

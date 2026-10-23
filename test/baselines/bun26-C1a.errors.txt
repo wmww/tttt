@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '"abc"' is not assignable to type '"x" | { next: "x" | any; }'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type F<T, U> = T extends string ? T : { next: F<U | "x", 1> };
+    const r: F<0, string>["next"] = "abc";
+          ~
+!!! error TS2322: Type '"abc"' is not assignable to type '"x" | { next: "x" | any; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

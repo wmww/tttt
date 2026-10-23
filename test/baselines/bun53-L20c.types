@@ -1,0 +1,35 @@
+//// [test/cases/bun53-L20c.ts] ////
+
+=== a.ts ===
+class B {} class C {}
+>B : B
+>C : C
+
+/** @augments B */
+class A0 extends C {}
+>A0 : A0
+>C : C
+
+/** @augments B {@link C} */
+class A1 extends C {}
+>A1 : A1
+>C : C
+
+/**
+ * @see C
+ * @extends B
+ */
+export class A2 extends C {}
+>A2 : A2
+>C : C
+
+/** {@link C} */
+/** @augments B */
+class A3 extends C {}
+>A3 : A3
+>C : C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

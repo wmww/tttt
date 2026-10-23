@@ -1,0 +1,31 @@
+//// [test/cases/bun24-SC10.ts] ////
+
+=== a.ts ===
+declare const o: { get a(): 1; set a(v: 2) };
+>o : { get a(): 1; set a(v: 2); }
+>a : 1
+>a : 1
+>v : 2
+
+const v: string = null! as { k: typeof o; fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: 1; p0: 1; p1: 1; p2: 1; p3: 1; p4: 1; p5: 1; p6: 1; p7: 1; p8: 1; p9: 1 };
+>v : string
+>null! as { k: typeof o; fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: 1; p0: 1; p1: 1; p2: 1; p3: 1; p4: 1; p5: 1; p6: 1; p7: 1; p8: 1; p9: 1 } : { k: typeof o; fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: 1; p0: 1; p1: 1; p2: 1; p3: 1; p4: 1; p5: 1; p6: 1; p7: 1; p8: 1; p9: 1; }
+>null! : never
+>k : { get a(): 1; set a(v: 2); }
+>o : { get a(): 1; set a(v: 2); }
+>fxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx : 1
+>p0 : 1
+>p1 : 1
+>p2 : 1
+>p3 : 1
+>p4 : 1
+>p5 : 1
+>p6 : 1
+>p7 : 1
+>p8 : 1
+>p9 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+//// [test/cases/bun17-C2a.ts] ////
+
+=== a.ts ===
+type Opt<T> = { [K in keyof T]?: number };
+>Opt : Opt<T>
+
+function g<T extends { a: string }>(x: Opt<T>, y: { c: number }) {
+>g : <T extends { a: string; }>(x: Opt<T>, y: { c: number; }) => void
+>a : string
+>x : Opt<T>
+>y : { c: number; }
+>c : number
+
+  x = y;
+>x = y : { c: number; }
+>x : Opt<T>
+>y : { c: number; }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

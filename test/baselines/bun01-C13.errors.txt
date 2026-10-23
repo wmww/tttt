@@ -1,0 +1,25 @@
+a.ts(4,30): error TS2304: Cannot find name 'Itm'.
+a.ts(5,23): error TS2304: Cannot find name 'Itm'.
+a.ts(6,29): error TS2304: Cannot find name 'Itm'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    export {};
+    declare function foo<T>(): string;
+    declare function base<T>(): new () => {};
+    class C1<Item> { static m(x: Itm) {} }
+                                 ~~~
+!!! error TS2304: Cannot find name 'Itm'.
+    class C4<Item> { [foo<Itm>()]() {} }
+                          ~~~
+!!! error TS2304: Cannot find name 'Itm'.
+    class C5<Item> extends base<Itm>() {}
+                                ~~~
+!!! error TS2304: Cannot find name 'Itm'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

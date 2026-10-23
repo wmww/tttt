@@ -1,0 +1,33 @@
+j.js(1,27): error TS7008: Member 'x' implicitly has an 'any' type.
+j.js(2,27): error TS7008: Member 'x' implicitly has an 'any' type.
+j.js(3,33): error TS7034: Variable 't' implicitly has type 'any' in some locations where its type cannot be determined.
+j.js(3,55): error TS7005: Variable 't' implicitly has an 'any' type.
+j.js(4,43): error TS7008: Member 'y' implicitly has an 'any' type.
+j.js(5,45): error TS7008: Member 'x' implicitly has an 'any' type.
+j.js(6,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== j.js (7 errors) ====
+    class B { constructor() { this.x = new B().x; } m() { return this.x; } }
+                              ~~~~~~~~~~~~~~~~~~
+!!! error TS7008: Member 'x' implicitly has an 'any' type.
+    class D { constructor() { this.x = mk().x; } m() { return this.x; } } /** @returns {D} */ function mk() { return new D(); }
+                              ~~~~~~~~~~~~~~~
+!!! error TS7008: Member 'x' implicitly has an 'any' type.
+    class E { constructor() { const t = mk2().x; this.x = t; } m() { return this.x; } } /** @returns {E} */ function mk2() { return new E(); }
+                                    ~
+!!! error TS7034: Variable 't' implicitly has type 'any' in some locations where its type cannot be determined.
+                                                          ~
+!!! error TS7005: Variable 't' implicitly has an 'any' type.
+    class K { constructor() { this.x = new K; this.y = new K().x.y; } m() { return [this.x, this.y]; } }
+                                              ~~~~~~~~~~~~~~~~~~~~
+!!! error TS7008: Member 'y' implicitly has an 'any' type.
+    class O { constructor(/** @type {O} */ o) { this.x = o.x; } m() { return this.x; } }
+                                                ~~~~~~~~~~~~
+!!! error TS7008: Member 'x' implicitly has an 'any' type.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

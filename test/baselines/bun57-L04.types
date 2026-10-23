@@ -1,0 +1,57 @@
+//// [test/cases/bun57-L04.ts] ////
+
+=== a.ts ===
+declare const o: any;
+>o : any
+
+declare class A<T> {}
+>A : A<T>
+
+interface J<T> {}
+class C2 extends A<1>, A<{ 2n: 1 }> {}
+>C2 : C2
+>A : A<1>
+>A : A<1>
+>2n : 1
+
+interface I2 implements J<{ 1n: 1 }> {}
+>1n : 1
+
+class C3 extends A<1> extends A<{ 1n: 1 }> {}
+>C3 : C3
+>A : A<1>
+>A : A<1>
+>1n : 1
+
+class C4 implements J<1> implements J<{ 1n: 1 }> {}
+>C4 : C4
+>1n : 1
+
+interface I3 extends J<1> extends J<{ 1n: 1 }> {}
+>1n : 1
+
+class C5 extends A<1>, (class { 1n = 1 }) {}
+>C5 : C5
+>A : A<1>
+>(class { 1n = 1 }) : A<1>
+>class { 1n = 1 } : typeof (Anonymous class)
+>1n : number
+>1 : 1
+
+with (o) { var v: { 1n: 1 }; var w = <{ 1n: 1 }>o; }
+>o : any
+>v : any
+>1n : any
+>w : any
+><{ 1n: 1 }>o : any
+>1n : any
+>o : any
+
+v; w;
+>v : {}
+>w : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

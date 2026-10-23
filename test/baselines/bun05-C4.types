@@ -1,0 +1,21 @@
+//// [test/cases/bun05-C4.ts] ////
+
+=== a.ts ===
+declare const sy: symbol;
+>sy : symbol
+
+declare function tag2(s: TemplateStringsArray, x: number): void;
+>tag2 : (s: TemplateStringsArray, x: number) => void
+>s : TemplateStringsArray
+>x : number
+
+tag2`${sy}`;
+>tag2`${sy}` : void
+>tag2 : (s: TemplateStringsArray, x: number) => void
+>`${sy}` : string
+>sy : symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

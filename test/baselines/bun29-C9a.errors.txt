@@ -1,0 +1,17 @@
+a.ts(2,1): error TS2322: Type '{}' is not assignable to type '(x: { "\u00E9-x": 1; }) => void'.
+  Type '{}' provides no match for the signature '(x: { "é-x": 1; }): void'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare let f: { (x: { "é-x": 1 }): void };
+    f = {};
+    ~
+!!! error TS2322: Type '{}' is not assignable to type '(x: { "\u00E9-x": 1; }) => void'.
+!!! error TS2322:   Type '{}' provides no match for the signature '(x: { "é-x": 1; }): void'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

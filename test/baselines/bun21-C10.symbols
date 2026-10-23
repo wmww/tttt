@@ -1,0 +1,22 @@
+//// [test/cases/bun21-C10.ts] ////
+
+=== a.ts ===
+declare const rec: Record<string, string | undefined>;
+>rec : Symbol(rec, Decl(a.ts, 0, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+function outer() { let n: number; function inc(k: string) { if (rec[k]) rec[k]; n++; } n = 0; }
+>outer : Symbol(outer, Decl(a.ts, 0, 54))
+>n : Symbol(n, Decl(a.ts, 1, 22))
+>inc : Symbol(inc, Decl(a.ts, 1, 33))
+>k : Symbol(k, Decl(a.ts, 1, 47))
+>rec : Symbol(rec, Decl(a.ts, 0, 13))
+>k : Symbol(k, Decl(a.ts, 1, 47))
+>rec : Symbol(rec, Decl(a.ts, 0, 13))
+>k : Symbol(k, Decl(a.ts, 1, 47))
+>n : Symbol(n, Decl(a.ts, 1, 22))
+>n : Symbol(n, Decl(a.ts, 1, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

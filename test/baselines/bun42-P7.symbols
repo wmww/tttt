@@ -1,0 +1,7 @@
+//// [test/cases/bun42-P7.ts] ////
+
+=== a.ts ===
+import {} from "dep/sub/";
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

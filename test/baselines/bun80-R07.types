@@ -1,0 +1,30 @@
+//// [test/cases/bun80-R07.ts] ////
+
+=== a.js ===
+@dec declare module "zz" {}
+>dec : () => void
+>"zz" : typeof import("zz")
+
+@dec declare module "yy";
+>dec : () => void
+>"yy" : any
+
+function dec() {}
+>dec : () => void
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== b.js ===
+@dec export as namespace X;
+>dec : () => void
+>X : any
+
+=== c.js ===
+@dec declare global {}
+>dec : () => void
+>global : any
+
+export {};
+

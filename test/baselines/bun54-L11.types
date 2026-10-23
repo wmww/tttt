@@ -1,0 +1,164 @@
+//// [test/cases/bun54-L11.ts] ////
+
+=== a.ts ===
+const o1 = { a: 2, get a(): number { return 1 }, set a(v: string | number) {} };
+>o1 : { a: number; }
+>{ a: 2, get a(): number { return 1 }, set a(v: string | number) {} } : { a: number; }
+>a : number
+>2 : 2
+>a : number
+>1 : 1
+>a : number
+>v : string | number
+
+o1.a = "s";
+>o1.a = "s" : "s"
+>o1.a : number
+>o1 : { a: number; }
+>a : number
+>"s" : "s"
+
+const o2 = { get a(): number { return 1 }, a: 2, set a(v: string | number) {} };
+>o2 : { a: number; }
+>{ get a(): number { return 1 }, a: 2, set a(v: string | number) {} } : { a: number; }
+>a : number
+>1 : 1
+>a : number
+>2 : 2
+>a : number
+>v : string | number
+
+o2.a = "s";
+>o2.a = "s" : "s"
+>o2.a : number
+>o2 : { a: number; }
+>a : number
+>"s" : "s"
+
+const o3 = { get a(): number { return 1 }, set a(v: string | number) {}, a: 2 };
+>o3 : { a: number; }
+>{ get a(): number { return 1 }, set a(v: string | number) {}, a: 2 } : { a: number; }
+>a : number
+>1 : 1
+>a : number
+>v : string | number
+>a : number
+>2 : 2
+
+o3.a = "s";
+>o3.a = "s" : "s"
+>o3.a : number
+>o3 : { a: number; }
+>a : number
+>"s" : "s"
+
+const o4 = { get a(): number { return 1 }, set a(v: string | number) {} };
+>o4 : { get a(): number; set a(v: string | number); }
+>{ get a(): number { return 1 }, set a(v: string | number) {} } : { get a(): number; set a(v: string | number); }
+>a : number
+>1 : 1
+>a : number
+>v : string | number
+
+o4.a = "s";
+>o4.a = "s" : "s"
+>o4.a : string | number
+>o4 : { get a(): number; set a(v: string | number); }
+>a : string | number
+>"s" : "s"
+
+const p1: boolean = o1;
+>p1 : boolean
+>o1 : { a: number; }
+
+const p2: boolean = o2;
+>p2 : boolean
+>o2 : { a: number; }
+
+const p3: boolean = o3;
+>p3 : boolean
+>o3 : { a: number; }
+
+const p4: boolean = o4;
+>p4 : boolean
+>o4 : { get a(): number; set a(v: string | number); }
+
+const k = "a";
+>k : "a"
+>"a" : "a"
+
+const o5 = { [k]: 2, get a(): number { return 1 }, set a(v: string | number) {} };
+>o5 : { a: number; }
+>{ [k]: 2, get a(): number { return 1 }, set a(v: string | number) {} } : { a: number; }
+>[k] : number
+>k : "a"
+>2 : 2
+>a : number
+>1 : 1
+>a : number
+>v : string | number
+
+o5.a = "s";
+>o5.a = "s" : "s"
+>o5.a : number
+>o5 : { a: number; }
+>a : number
+>"s" : "s"
+
+const p5: boolean = o5;
+>p5 : boolean
+>o5 : { a: number; }
+
+const o6 = { a: 2, get [k](): number { return 1 }, set [k](v: string | number) {} };
+>o6 : { a: number; }
+>{ a: 2, get [k](): number { return 1 }, set [k](v: string | number) {} } : { a: number; }
+>a : number
+>2 : 2
+>[k] : number
+>k : "a"
+>1 : 1
+>[k] : number
+>k : "a"
+>v : string | number
+
+o6.a = "s";
+>o6.a = "s" : "s"
+>o6.a : number
+>o6 : { a: number; }
+>a : number
+>"s" : "s"
+
+const p6: boolean = o6;
+>p6 : boolean
+>o6 : { a: number; }
+
+({ a: o1.a } = { a: "s" });
+>({ a: o1.a } = { a: "s" }) : { a: string; }
+>{ a: o1.a } = { a: "s" } : { a: string; }
+>{ a: o1.a } : { a: number; }
+>a : number
+>o1.a : number
+>o1 : { a: number; }
+>a : number
+>{ a: "s" } : { a: string; }
+>a : string
+>"s" : "s"
+
+for (o1.a of ["s"]) {}
+>o1.a : number
+>o1 : { a: number; }
+>a : number
+>["s"] : string[]
+>"s" : "s"
+
+o1.a += "s";
+>o1.a += "s" : string
+>o1.a : number
+>o1 : { a: number; }
+>a : number
+>"s" : "s"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

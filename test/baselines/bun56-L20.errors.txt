@@ -1,0 +1,67 @@
+a.ts(2,21): error TS1174: Classes can only extend a single class.
+a.ts(3,23): error TS1175: 'implements' clause already seen.
+a.ts(4,20): error TS1172: 'extends' clause already seen.
+a.ts(5,21): error TS1174: Classes can only extend a single class.
+a.ts(6,21): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(7,24): error TS1172: 'extends' clause already seen.
+a.ts(8,22): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+a.ts(9,1): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+a.ts(10,21): error TS1174: Classes can only extend a single class.
+a.ts(11,22): error TS1174: Classes can only extend a single class.
+a.ts(12,22): error TS1174: Classes can only extend a single class.
+a.ts(13,22): error TS1174: Classes can only extend a single class.
+a.ts(14,22): error TS1174: Classes can only extend a single class.
+a.ts(15,22): error TS1174: Classes can only extend a single class.
+a.ts(16,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (15 errors) ====
+    declare class B<T = 1> {} declare class C {} declare class D {} interface I<T = 1> {} declare const a: any;
+    class A1 extends B, class extends C, D {} {}
+                        ~~~~~
+!!! error TS1174: Classes can only extend a single class.
+    class A2 implements I implements (class extends C, D {}) {}
+                          ~~~~~~~~~~
+!!! error TS1175: 'implements' clause already seen.
+    class A3 extends B extends class extends C, D {} {}
+                       ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    class A4 extends B, class<> {} {}
+                        ~~~~~
+!!! error TS1174: Classes can only extend a single class.
+    class A5 implements (class extends C, D {}) {}
+                        ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    interface A6 extends I extends (class extends C, D {}) {}
+                           ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    interface A7 extends (class extends C, D {}) {}
+                         ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    public class A8 extends B, class extends C, D {} {}
+    ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+    class A9 extends B, (a?.b`x`) {}
+                        ~
+!!! error TS1174: Classes can only extend a single class.
+    class A10 extends B, (0 as I<>) {}
+                         ~
+!!! error TS1174: Classes can only extend a single class.
+    class A11 extends B, (a<>()) {}
+                         ~
+!!! error TS1174: Classes can only extend a single class.
+    class A12 extends B, (import<string>) {}
+                         ~
+!!! error TS1174: Classes can only extend a single class.
+    class A13 extends B, ((x: I<1,>) => 1) {}
+                         ~
+!!! error TS1174: Classes can only extend a single class.
+    class A14 extends B, (function (p?, q) {}) {}
+                         ~
+!!! error TS1174: Classes can only extend a single class.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

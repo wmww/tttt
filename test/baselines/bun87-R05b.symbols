@@ -1,0 +1,1046 @@
+//// [test/cases/bun87-R05b.ts] ////
+
+=== a.ts ===
+interface I0 { n: I1 }
+>I0 : Symbol(I0, Decl(a.ts, 0, 0))
+>n : Symbol(I0.n, Decl(a.ts, 0, 14))
+>I1 : Symbol(I1, Decl(a.ts, 0, 22))
+
+interface I1 { n: I2 }
+>I1 : Symbol(I1, Decl(a.ts, 0, 22))
+>n : Symbol(I1.n, Decl(a.ts, 1, 14))
+>I2 : Symbol(I2, Decl(a.ts, 1, 22))
+
+interface I2 { n: I3 }
+>I2 : Symbol(I2, Decl(a.ts, 1, 22))
+>n : Symbol(I2.n, Decl(a.ts, 2, 14))
+>I3 : Symbol(I3, Decl(a.ts, 2, 22))
+
+interface I3 { n: I4 }
+>I3 : Symbol(I3, Decl(a.ts, 2, 22))
+>n : Symbol(I3.n, Decl(a.ts, 3, 14))
+>I4 : Symbol(I4, Decl(a.ts, 3, 22))
+
+interface I4 { n: I5 }
+>I4 : Symbol(I4, Decl(a.ts, 3, 22))
+>n : Symbol(I4.n, Decl(a.ts, 4, 14))
+>I5 : Symbol(I5, Decl(a.ts, 4, 22))
+
+interface I5 { n: I6 }
+>I5 : Symbol(I5, Decl(a.ts, 4, 22))
+>n : Symbol(I5.n, Decl(a.ts, 5, 14))
+>I6 : Symbol(I6, Decl(a.ts, 5, 22))
+
+interface I6 { n: I7 }
+>I6 : Symbol(I6, Decl(a.ts, 5, 22))
+>n : Symbol(I6.n, Decl(a.ts, 6, 14))
+>I7 : Symbol(I7, Decl(a.ts, 6, 22))
+
+interface I7 { n: I8 }
+>I7 : Symbol(I7, Decl(a.ts, 6, 22))
+>n : Symbol(I7.n, Decl(a.ts, 7, 14))
+>I8 : Symbol(I8, Decl(a.ts, 7, 22))
+
+interface I8 { n: I9 }
+>I8 : Symbol(I8, Decl(a.ts, 7, 22))
+>n : Symbol(I8.n, Decl(a.ts, 8, 14))
+>I9 : Symbol(I9, Decl(a.ts, 8, 22))
+
+interface I9 { n: I10 }
+>I9 : Symbol(I9, Decl(a.ts, 8, 22))
+>n : Symbol(I9.n, Decl(a.ts, 9, 14))
+>I10 : Symbol(I10, Decl(a.ts, 9, 23))
+
+interface I10 { n: I11 }
+>I10 : Symbol(I10, Decl(a.ts, 9, 23))
+>n : Symbol(I10.n, Decl(a.ts, 10, 15))
+>I11 : Symbol(I11, Decl(a.ts, 10, 24))
+
+interface I11 { n: I12 }
+>I11 : Symbol(I11, Decl(a.ts, 10, 24))
+>n : Symbol(I11.n, Decl(a.ts, 11, 15))
+>I12 : Symbol(I12, Decl(a.ts, 11, 24))
+
+interface I12 { n: I13 }
+>I12 : Symbol(I12, Decl(a.ts, 11, 24))
+>n : Symbol(I12.n, Decl(a.ts, 12, 15))
+>I13 : Symbol(I13, Decl(a.ts, 12, 24))
+
+interface I13 { n: I14 }
+>I13 : Symbol(I13, Decl(a.ts, 12, 24))
+>n : Symbol(I13.n, Decl(a.ts, 13, 15))
+>I14 : Symbol(I14, Decl(a.ts, 13, 24))
+
+interface I14 { n: I15 }
+>I14 : Symbol(I14, Decl(a.ts, 13, 24))
+>n : Symbol(I14.n, Decl(a.ts, 14, 15))
+>I15 : Symbol(I15, Decl(a.ts, 14, 24))
+
+interface I15 { n: I16 }
+>I15 : Symbol(I15, Decl(a.ts, 14, 24))
+>n : Symbol(I15.n, Decl(a.ts, 15, 15))
+>I16 : Symbol(I16, Decl(a.ts, 15, 24))
+
+interface I16 { n: I17 }
+>I16 : Symbol(I16, Decl(a.ts, 15, 24))
+>n : Symbol(I16.n, Decl(a.ts, 16, 15))
+>I17 : Symbol(I17, Decl(a.ts, 16, 24))
+
+interface I17 { n: I18 }
+>I17 : Symbol(I17, Decl(a.ts, 16, 24))
+>n : Symbol(I17.n, Decl(a.ts, 17, 15))
+>I18 : Symbol(I18, Decl(a.ts, 17, 24))
+
+interface I18 { n: I19 }
+>I18 : Symbol(I18, Decl(a.ts, 17, 24))
+>n : Symbol(I18.n, Decl(a.ts, 18, 15))
+>I19 : Symbol(I19, Decl(a.ts, 18, 24))
+
+interface I19 { n: I20 }
+>I19 : Symbol(I19, Decl(a.ts, 18, 24))
+>n : Symbol(I19.n, Decl(a.ts, 19, 15))
+>I20 : Symbol(I20, Decl(a.ts, 19, 24))
+
+interface I20 { n: I21 }
+>I20 : Symbol(I20, Decl(a.ts, 19, 24))
+>n : Symbol(I20.n, Decl(a.ts, 20, 15))
+>I21 : Symbol(I21, Decl(a.ts, 20, 24))
+
+interface I21 { n: I22 }
+>I21 : Symbol(I21, Decl(a.ts, 20, 24))
+>n : Symbol(I21.n, Decl(a.ts, 21, 15))
+>I22 : Symbol(I22, Decl(a.ts, 21, 24))
+
+interface I22 { n: I23 }
+>I22 : Symbol(I22, Decl(a.ts, 21, 24))
+>n : Symbol(I22.n, Decl(a.ts, 22, 15))
+>I23 : Symbol(I23, Decl(a.ts, 22, 24))
+
+interface I23 { n: I24 }
+>I23 : Symbol(I23, Decl(a.ts, 22, 24))
+>n : Symbol(I23.n, Decl(a.ts, 23, 15))
+>I24 : Symbol(I24, Decl(a.ts, 23, 24))
+
+interface I24 { n: I25 }
+>I24 : Symbol(I24, Decl(a.ts, 23, 24))
+>n : Symbol(I24.n, Decl(a.ts, 24, 15))
+>I25 : Symbol(I25, Decl(a.ts, 24, 24))
+
+interface I25 { n: I26 }
+>I25 : Symbol(I25, Decl(a.ts, 24, 24))
+>n : Symbol(I25.n, Decl(a.ts, 25, 15))
+>I26 : Symbol(I26, Decl(a.ts, 25, 24))
+
+interface I26 { n: I27 }
+>I26 : Symbol(I26, Decl(a.ts, 25, 24))
+>n : Symbol(I26.n, Decl(a.ts, 26, 15))
+>I27 : Symbol(I27, Decl(a.ts, 26, 24))
+
+interface I27 { n: I28 }
+>I27 : Symbol(I27, Decl(a.ts, 26, 24))
+>n : Symbol(I27.n, Decl(a.ts, 27, 15))
+>I28 : Symbol(I28, Decl(a.ts, 27, 24))
+
+interface I28 { n: I29 }
+>I28 : Symbol(I28, Decl(a.ts, 27, 24))
+>n : Symbol(I28.n, Decl(a.ts, 28, 15))
+>I29 : Symbol(I29, Decl(a.ts, 28, 24))
+
+interface I29 { n: I30 }
+>I29 : Symbol(I29, Decl(a.ts, 28, 24))
+>n : Symbol(I29.n, Decl(a.ts, 29, 15))
+>I30 : Symbol(I30, Decl(a.ts, 29, 24))
+
+interface I30 { n: I31 }
+>I30 : Symbol(I30, Decl(a.ts, 29, 24))
+>n : Symbol(I30.n, Decl(a.ts, 30, 15))
+>I31 : Symbol(I31, Decl(a.ts, 30, 24))
+
+interface I31 { n: I32 }
+>I31 : Symbol(I31, Decl(a.ts, 30, 24))
+>n : Symbol(I31.n, Decl(a.ts, 31, 15))
+>I32 : Symbol(I32, Decl(a.ts, 31, 24))
+
+interface I32 { n: I33 }
+>I32 : Symbol(I32, Decl(a.ts, 31, 24))
+>n : Symbol(I32.n, Decl(a.ts, 32, 15))
+>I33 : Symbol(I33, Decl(a.ts, 32, 24))
+
+interface I33 { n: I34 }
+>I33 : Symbol(I33, Decl(a.ts, 32, 24))
+>n : Symbol(I33.n, Decl(a.ts, 33, 15))
+>I34 : Symbol(I34, Decl(a.ts, 33, 24))
+
+interface I34 { n: I35 }
+>I34 : Symbol(I34, Decl(a.ts, 33, 24))
+>n : Symbol(I34.n, Decl(a.ts, 34, 15))
+>I35 : Symbol(I35, Decl(a.ts, 34, 24))
+
+interface I35 { n: I36 }
+>I35 : Symbol(I35, Decl(a.ts, 34, 24))
+>n : Symbol(I35.n, Decl(a.ts, 35, 15))
+>I36 : Symbol(I36, Decl(a.ts, 35, 24))
+
+interface I36 { n: I37 }
+>I36 : Symbol(I36, Decl(a.ts, 35, 24))
+>n : Symbol(I36.n, Decl(a.ts, 36, 15))
+>I37 : Symbol(I37, Decl(a.ts, 36, 24))
+
+interface I37 { n: I38 }
+>I37 : Symbol(I37, Decl(a.ts, 36, 24))
+>n : Symbol(I37.n, Decl(a.ts, 37, 15))
+>I38 : Symbol(I38, Decl(a.ts, 37, 24))
+
+interface I38 { n: I39 }
+>I38 : Symbol(I38, Decl(a.ts, 37, 24))
+>n : Symbol(I38.n, Decl(a.ts, 38, 15))
+>I39 : Symbol(I39, Decl(a.ts, 38, 24))
+
+interface I39 { n: I40 }
+>I39 : Symbol(I39, Decl(a.ts, 38, 24))
+>n : Symbol(I39.n, Decl(a.ts, 39, 15))
+>I40 : Symbol(I40, Decl(a.ts, 39, 24))
+
+interface I40 { n: I41 }
+>I40 : Symbol(I40, Decl(a.ts, 39, 24))
+>n : Symbol(I40.n, Decl(a.ts, 40, 15))
+>I41 : Symbol(I41, Decl(a.ts, 40, 24))
+
+interface I41 { n: I42 }
+>I41 : Symbol(I41, Decl(a.ts, 40, 24))
+>n : Symbol(I41.n, Decl(a.ts, 41, 15))
+>I42 : Symbol(I42, Decl(a.ts, 41, 24))
+
+interface I42 { n: I43 }
+>I42 : Symbol(I42, Decl(a.ts, 41, 24))
+>n : Symbol(I42.n, Decl(a.ts, 42, 15))
+>I43 : Symbol(I43, Decl(a.ts, 42, 24))
+
+interface I43 { n: I44 }
+>I43 : Symbol(I43, Decl(a.ts, 42, 24))
+>n : Symbol(I43.n, Decl(a.ts, 43, 15))
+>I44 : Symbol(I44, Decl(a.ts, 43, 24))
+
+interface I44 { n: I45 }
+>I44 : Symbol(I44, Decl(a.ts, 43, 24))
+>n : Symbol(I44.n, Decl(a.ts, 44, 15))
+>I45 : Symbol(I45, Decl(a.ts, 44, 24))
+
+interface I45 { n: I46 }
+>I45 : Symbol(I45, Decl(a.ts, 44, 24))
+>n : Symbol(I45.n, Decl(a.ts, 45, 15))
+>I46 : Symbol(I46, Decl(a.ts, 45, 24))
+
+interface I46 { n: I47 }
+>I46 : Symbol(I46, Decl(a.ts, 45, 24))
+>n : Symbol(I46.n, Decl(a.ts, 46, 15))
+>I47 : Symbol(I47, Decl(a.ts, 46, 24))
+
+interface I47 { n: I48 }
+>I47 : Symbol(I47, Decl(a.ts, 46, 24))
+>n : Symbol(I47.n, Decl(a.ts, 47, 15))
+>I48 : Symbol(I48, Decl(a.ts, 47, 24))
+
+interface I48 { n: I49 }
+>I48 : Symbol(I48, Decl(a.ts, 47, 24))
+>n : Symbol(I48.n, Decl(a.ts, 48, 15))
+>I49 : Symbol(I49, Decl(a.ts, 48, 24))
+
+interface I49 { n: I50 }
+>I49 : Symbol(I49, Decl(a.ts, 48, 24))
+>n : Symbol(I49.n, Decl(a.ts, 49, 15))
+>I50 : Symbol(I50, Decl(a.ts, 49, 24))
+
+interface I50 { n: I51 }
+>I50 : Symbol(I50, Decl(a.ts, 49, 24))
+>n : Symbol(I50.n, Decl(a.ts, 50, 15))
+>I51 : Symbol(I51, Decl(a.ts, 50, 24))
+
+interface I51 { n: I52 }
+>I51 : Symbol(I51, Decl(a.ts, 50, 24))
+>n : Symbol(I51.n, Decl(a.ts, 51, 15))
+>I52 : Symbol(I52, Decl(a.ts, 51, 24))
+
+interface I52 { n: I53 }
+>I52 : Symbol(I52, Decl(a.ts, 51, 24))
+>n : Symbol(I52.n, Decl(a.ts, 52, 15))
+>I53 : Symbol(I53, Decl(a.ts, 52, 24))
+
+interface I53 { n: I54 }
+>I53 : Symbol(I53, Decl(a.ts, 52, 24))
+>n : Symbol(I53.n, Decl(a.ts, 53, 15))
+>I54 : Symbol(I54, Decl(a.ts, 53, 24))
+
+interface I54 { n: I55 }
+>I54 : Symbol(I54, Decl(a.ts, 53, 24))
+>n : Symbol(I54.n, Decl(a.ts, 54, 15))
+>I55 : Symbol(I55, Decl(a.ts, 54, 24))
+
+interface I55 { n: I56 }
+>I55 : Symbol(I55, Decl(a.ts, 54, 24))
+>n : Symbol(I55.n, Decl(a.ts, 55, 15))
+>I56 : Symbol(I56, Decl(a.ts, 55, 24))
+
+interface I56 { n: I57 }
+>I56 : Symbol(I56, Decl(a.ts, 55, 24))
+>n : Symbol(I56.n, Decl(a.ts, 56, 15))
+>I57 : Symbol(I57, Decl(a.ts, 56, 24))
+
+interface I57 { n: I58 }
+>I57 : Symbol(I57, Decl(a.ts, 56, 24))
+>n : Symbol(I57.n, Decl(a.ts, 57, 15))
+>I58 : Symbol(I58, Decl(a.ts, 57, 24))
+
+interface I58 { n: I59 }
+>I58 : Symbol(I58, Decl(a.ts, 57, 24))
+>n : Symbol(I58.n, Decl(a.ts, 58, 15))
+>I59 : Symbol(I59, Decl(a.ts, 58, 24))
+
+interface I59 { n: I60 }
+>I59 : Symbol(I59, Decl(a.ts, 58, 24))
+>n : Symbol(I59.n, Decl(a.ts, 59, 15))
+>I60 : Symbol(I60, Decl(a.ts, 59, 24))
+
+interface I60 { n: I61 }
+>I60 : Symbol(I60, Decl(a.ts, 59, 24))
+>n : Symbol(I60.n, Decl(a.ts, 60, 15))
+>I61 : Symbol(I61, Decl(a.ts, 60, 24))
+
+interface I61 { n: I62 }
+>I61 : Symbol(I61, Decl(a.ts, 60, 24))
+>n : Symbol(I61.n, Decl(a.ts, 61, 15))
+>I62 : Symbol(I62, Decl(a.ts, 61, 24))
+
+interface I62 { n: I63 }
+>I62 : Symbol(I62, Decl(a.ts, 61, 24))
+>n : Symbol(I62.n, Decl(a.ts, 62, 15))
+>I63 : Symbol(I63, Decl(a.ts, 62, 24))
+
+interface I63 { n: I64 }
+>I63 : Symbol(I63, Decl(a.ts, 62, 24))
+>n : Symbol(I63.n, Decl(a.ts, 63, 15))
+>I64 : Symbol(I64, Decl(a.ts, 63, 24))
+
+interface I64 { n: I65 }
+>I64 : Symbol(I64, Decl(a.ts, 63, 24))
+>n : Symbol(I64.n, Decl(a.ts, 64, 15))
+>I65 : Symbol(I65, Decl(a.ts, 64, 24))
+
+interface I65 { n: I66 }
+>I65 : Symbol(I65, Decl(a.ts, 64, 24))
+>n : Symbol(I65.n, Decl(a.ts, 65, 15))
+>I66 : Symbol(I66, Decl(a.ts, 65, 24))
+
+interface I66 { n: I67 }
+>I66 : Symbol(I66, Decl(a.ts, 65, 24))
+>n : Symbol(I66.n, Decl(a.ts, 66, 15))
+>I67 : Symbol(I67, Decl(a.ts, 66, 24))
+
+interface I67 { n: I68 }
+>I67 : Symbol(I67, Decl(a.ts, 66, 24))
+>n : Symbol(I67.n, Decl(a.ts, 67, 15))
+>I68 : Symbol(I68, Decl(a.ts, 67, 24))
+
+interface I68 { n: I69 }
+>I68 : Symbol(I68, Decl(a.ts, 67, 24))
+>n : Symbol(I68.n, Decl(a.ts, 68, 15))
+>I69 : Symbol(I69, Decl(a.ts, 68, 24))
+
+interface I69 { n: I70 }
+>I69 : Symbol(I69, Decl(a.ts, 68, 24))
+>n : Symbol(I69.n, Decl(a.ts, 69, 15))
+>I70 : Symbol(I70, Decl(a.ts, 69, 24))
+
+interface I70 { n: I71 }
+>I70 : Symbol(I70, Decl(a.ts, 69, 24))
+>n : Symbol(I70.n, Decl(a.ts, 70, 15))
+>I71 : Symbol(I71, Decl(a.ts, 70, 24))
+
+interface I71 { n: I72 }
+>I71 : Symbol(I71, Decl(a.ts, 70, 24))
+>n : Symbol(I71.n, Decl(a.ts, 71, 15))
+>I72 : Symbol(I72, Decl(a.ts, 71, 24))
+
+interface I72 { n: I73 }
+>I72 : Symbol(I72, Decl(a.ts, 71, 24))
+>n : Symbol(I72.n, Decl(a.ts, 72, 15))
+>I73 : Symbol(I73, Decl(a.ts, 72, 24))
+
+interface I73 { n: I74 }
+>I73 : Symbol(I73, Decl(a.ts, 72, 24))
+>n : Symbol(I73.n, Decl(a.ts, 73, 15))
+>I74 : Symbol(I74, Decl(a.ts, 73, 24))
+
+interface I74 { n: I75 }
+>I74 : Symbol(I74, Decl(a.ts, 73, 24))
+>n : Symbol(I74.n, Decl(a.ts, 74, 15))
+>I75 : Symbol(I75, Decl(a.ts, 74, 24))
+
+interface I75 { n: I76 }
+>I75 : Symbol(I75, Decl(a.ts, 74, 24))
+>n : Symbol(I75.n, Decl(a.ts, 75, 15))
+>I76 : Symbol(I76, Decl(a.ts, 75, 24))
+
+interface I76 { n: I77 }
+>I76 : Symbol(I76, Decl(a.ts, 75, 24))
+>n : Symbol(I76.n, Decl(a.ts, 76, 15))
+>I77 : Symbol(I77, Decl(a.ts, 76, 24))
+
+interface I77 { n: I78 }
+>I77 : Symbol(I77, Decl(a.ts, 76, 24))
+>n : Symbol(I77.n, Decl(a.ts, 77, 15))
+>I78 : Symbol(I78, Decl(a.ts, 77, 24))
+
+interface I78 { n: I79 }
+>I78 : Symbol(I78, Decl(a.ts, 77, 24))
+>n : Symbol(I78.n, Decl(a.ts, 78, 15))
+>I79 : Symbol(I79, Decl(a.ts, 78, 24))
+
+interface I79 { n: I80 }
+>I79 : Symbol(I79, Decl(a.ts, 78, 24))
+>n : Symbol(I79.n, Decl(a.ts, 79, 15))
+>I80 : Symbol(I80, Decl(a.ts, 79, 24))
+
+interface I80 { n: I81 }
+>I80 : Symbol(I80, Decl(a.ts, 79, 24))
+>n : Symbol(I80.n, Decl(a.ts, 80, 15))
+>I81 : Symbol(I81, Decl(a.ts, 80, 24))
+
+interface I81 { n: I82 }
+>I81 : Symbol(I81, Decl(a.ts, 80, 24))
+>n : Symbol(I81.n, Decl(a.ts, 81, 15))
+>I82 : Symbol(I82, Decl(a.ts, 81, 24))
+
+interface I82 { n: I83 }
+>I82 : Symbol(I82, Decl(a.ts, 81, 24))
+>n : Symbol(I82.n, Decl(a.ts, 82, 15))
+>I83 : Symbol(I83, Decl(a.ts, 82, 24))
+
+interface I83 { n: I84 }
+>I83 : Symbol(I83, Decl(a.ts, 82, 24))
+>n : Symbol(I83.n, Decl(a.ts, 83, 15))
+>I84 : Symbol(I84, Decl(a.ts, 83, 24))
+
+interface I84 { n: I85 }
+>I84 : Symbol(I84, Decl(a.ts, 83, 24))
+>n : Symbol(I84.n, Decl(a.ts, 84, 15))
+>I85 : Symbol(I85, Decl(a.ts, 84, 24))
+
+interface I85 { n: I86 }
+>I85 : Symbol(I85, Decl(a.ts, 84, 24))
+>n : Symbol(I85.n, Decl(a.ts, 85, 15))
+>I86 : Symbol(I86, Decl(a.ts, 85, 24))
+
+interface I86 { n: I87 }
+>I86 : Symbol(I86, Decl(a.ts, 85, 24))
+>n : Symbol(I86.n, Decl(a.ts, 86, 15))
+>I87 : Symbol(I87, Decl(a.ts, 86, 24))
+
+interface I87 { n: I88 }
+>I87 : Symbol(I87, Decl(a.ts, 86, 24))
+>n : Symbol(I87.n, Decl(a.ts, 87, 15))
+>I88 : Symbol(I88, Decl(a.ts, 87, 24))
+
+interface I88 { n: I89 }
+>I88 : Symbol(I88, Decl(a.ts, 87, 24))
+>n : Symbol(I88.n, Decl(a.ts, 88, 15))
+>I89 : Symbol(I89, Decl(a.ts, 88, 24))
+
+interface I89 { n: I90 }
+>I89 : Symbol(I89, Decl(a.ts, 88, 24))
+>n : Symbol(I89.n, Decl(a.ts, 89, 15))
+>I90 : Symbol(I90, Decl(a.ts, 89, 24))
+
+interface I90 { n: I91 }
+>I90 : Symbol(I90, Decl(a.ts, 89, 24))
+>n : Symbol(I90.n, Decl(a.ts, 90, 15))
+>I91 : Symbol(I91, Decl(a.ts, 90, 24))
+
+interface I91 { n: I92 }
+>I91 : Symbol(I91, Decl(a.ts, 90, 24))
+>n : Symbol(I91.n, Decl(a.ts, 91, 15))
+>I92 : Symbol(I92, Decl(a.ts, 91, 24))
+
+interface I92 { n: I93 }
+>I92 : Symbol(I92, Decl(a.ts, 91, 24))
+>n : Symbol(I92.n, Decl(a.ts, 92, 15))
+>I93 : Symbol(I93, Decl(a.ts, 92, 24))
+
+interface I93 { n: I94 }
+>I93 : Symbol(I93, Decl(a.ts, 92, 24))
+>n : Symbol(I93.n, Decl(a.ts, 93, 15))
+>I94 : Symbol(I94, Decl(a.ts, 93, 24))
+
+interface I94 { n: I95 }
+>I94 : Symbol(I94, Decl(a.ts, 93, 24))
+>n : Symbol(I94.n, Decl(a.ts, 94, 15))
+>I95 : Symbol(I95, Decl(a.ts, 94, 24))
+
+interface I95 { n: I96 }
+>I95 : Symbol(I95, Decl(a.ts, 94, 24))
+>n : Symbol(I95.n, Decl(a.ts, 95, 15))
+>I96 : Symbol(I96, Decl(a.ts, 95, 24))
+
+interface I96 { n: I97 }
+>I96 : Symbol(I96, Decl(a.ts, 95, 24))
+>n : Symbol(I96.n, Decl(a.ts, 96, 15))
+>I97 : Symbol(I97, Decl(a.ts, 96, 24))
+
+interface I97 { n: I98 }
+>I97 : Symbol(I97, Decl(a.ts, 96, 24))
+>n : Symbol(I97.n, Decl(a.ts, 97, 15))
+>I98 : Symbol(I98, Decl(a.ts, 97, 24))
+
+interface I98 { n: I99 }
+>I98 : Symbol(I98, Decl(a.ts, 97, 24))
+>n : Symbol(I98.n, Decl(a.ts, 98, 15))
+>I99 : Symbol(I99, Decl(a.ts, 98, 24))
+
+interface I99 { n: I100 }
+>I99 : Symbol(I99, Decl(a.ts, 98, 24))
+>n : Symbol(I99.n, Decl(a.ts, 99, 15))
+>I100 : Symbol(I100, Decl(a.ts, 99, 25))
+
+interface I100 { n: 1 }
+>I100 : Symbol(I100, Decl(a.ts, 99, 25))
+>n : Symbol(I100.n, Decl(a.ts, 100, 16))
+
+interface J0 { n: J1 }
+>J0 : Symbol(J0, Decl(a.ts, 100, 23))
+>n : Symbol(J0.n, Decl(a.ts, 101, 14))
+>J1 : Symbol(J1, Decl(a.ts, 101, 22))
+
+interface J1 { n: J2 }
+>J1 : Symbol(J1, Decl(a.ts, 101, 22))
+>n : Symbol(J1.n, Decl(a.ts, 102, 14))
+>J2 : Symbol(J2, Decl(a.ts, 102, 22))
+
+interface J2 { n: J3 }
+>J2 : Symbol(J2, Decl(a.ts, 102, 22))
+>n : Symbol(J2.n, Decl(a.ts, 103, 14))
+>J3 : Symbol(J3, Decl(a.ts, 103, 22))
+
+interface J3 { n: J4 }
+>J3 : Symbol(J3, Decl(a.ts, 103, 22))
+>n : Symbol(J3.n, Decl(a.ts, 104, 14))
+>J4 : Symbol(J4, Decl(a.ts, 104, 22))
+
+interface J4 { n: J5 }
+>J4 : Symbol(J4, Decl(a.ts, 104, 22))
+>n : Symbol(J4.n, Decl(a.ts, 105, 14))
+>J5 : Symbol(J5, Decl(a.ts, 105, 22))
+
+interface J5 { n: J6 }
+>J5 : Symbol(J5, Decl(a.ts, 105, 22))
+>n : Symbol(J5.n, Decl(a.ts, 106, 14))
+>J6 : Symbol(J6, Decl(a.ts, 106, 22))
+
+interface J6 { n: J7 }
+>J6 : Symbol(J6, Decl(a.ts, 106, 22))
+>n : Symbol(J6.n, Decl(a.ts, 107, 14))
+>J7 : Symbol(J7, Decl(a.ts, 107, 22))
+
+interface J7 { n: J8 }
+>J7 : Symbol(J7, Decl(a.ts, 107, 22))
+>n : Symbol(J7.n, Decl(a.ts, 108, 14))
+>J8 : Symbol(J8, Decl(a.ts, 108, 22))
+
+interface J8 { n: J9 }
+>J8 : Symbol(J8, Decl(a.ts, 108, 22))
+>n : Symbol(J8.n, Decl(a.ts, 109, 14))
+>J9 : Symbol(J9, Decl(a.ts, 109, 22))
+
+interface J9 { n: J10 }
+>J9 : Symbol(J9, Decl(a.ts, 109, 22))
+>n : Symbol(J9.n, Decl(a.ts, 110, 14))
+>J10 : Symbol(J10, Decl(a.ts, 110, 23))
+
+interface J10 { n: J11 }
+>J10 : Symbol(J10, Decl(a.ts, 110, 23))
+>n : Symbol(J10.n, Decl(a.ts, 111, 15))
+>J11 : Symbol(J11, Decl(a.ts, 111, 24))
+
+interface J11 { n: J12 }
+>J11 : Symbol(J11, Decl(a.ts, 111, 24))
+>n : Symbol(J11.n, Decl(a.ts, 112, 15))
+>J12 : Symbol(J12, Decl(a.ts, 112, 24))
+
+interface J12 { n: J13 }
+>J12 : Symbol(J12, Decl(a.ts, 112, 24))
+>n : Symbol(J12.n, Decl(a.ts, 113, 15))
+>J13 : Symbol(J13, Decl(a.ts, 113, 24))
+
+interface J13 { n: J14 }
+>J13 : Symbol(J13, Decl(a.ts, 113, 24))
+>n : Symbol(J13.n, Decl(a.ts, 114, 15))
+>J14 : Symbol(J14, Decl(a.ts, 114, 24))
+
+interface J14 { n: J15 }
+>J14 : Symbol(J14, Decl(a.ts, 114, 24))
+>n : Symbol(J14.n, Decl(a.ts, 115, 15))
+>J15 : Symbol(J15, Decl(a.ts, 115, 24))
+
+interface J15 { n: J16 }
+>J15 : Symbol(J15, Decl(a.ts, 115, 24))
+>n : Symbol(J15.n, Decl(a.ts, 116, 15))
+>J16 : Symbol(J16, Decl(a.ts, 116, 24))
+
+interface J16 { n: J17 }
+>J16 : Symbol(J16, Decl(a.ts, 116, 24))
+>n : Symbol(J16.n, Decl(a.ts, 117, 15))
+>J17 : Symbol(J17, Decl(a.ts, 117, 24))
+
+interface J17 { n: J18 }
+>J17 : Symbol(J17, Decl(a.ts, 117, 24))
+>n : Symbol(J17.n, Decl(a.ts, 118, 15))
+>J18 : Symbol(J18, Decl(a.ts, 118, 24))
+
+interface J18 { n: J19 }
+>J18 : Symbol(J18, Decl(a.ts, 118, 24))
+>n : Symbol(J18.n, Decl(a.ts, 119, 15))
+>J19 : Symbol(J19, Decl(a.ts, 119, 24))
+
+interface J19 { n: J20 }
+>J19 : Symbol(J19, Decl(a.ts, 119, 24))
+>n : Symbol(J19.n, Decl(a.ts, 120, 15))
+>J20 : Symbol(J20, Decl(a.ts, 120, 24))
+
+interface J20 { n: J21 }
+>J20 : Symbol(J20, Decl(a.ts, 120, 24))
+>n : Symbol(J20.n, Decl(a.ts, 121, 15))
+>J21 : Symbol(J21, Decl(a.ts, 121, 24))
+
+interface J21 { n: J22 }
+>J21 : Symbol(J21, Decl(a.ts, 121, 24))
+>n : Symbol(J21.n, Decl(a.ts, 122, 15))
+>J22 : Symbol(J22, Decl(a.ts, 122, 24))
+
+interface J22 { n: J23 }
+>J22 : Symbol(J22, Decl(a.ts, 122, 24))
+>n : Symbol(J22.n, Decl(a.ts, 123, 15))
+>J23 : Symbol(J23, Decl(a.ts, 123, 24))
+
+interface J23 { n: J24 }
+>J23 : Symbol(J23, Decl(a.ts, 123, 24))
+>n : Symbol(J23.n, Decl(a.ts, 124, 15))
+>J24 : Symbol(J24, Decl(a.ts, 124, 24))
+
+interface J24 { n: J25 }
+>J24 : Symbol(J24, Decl(a.ts, 124, 24))
+>n : Symbol(J24.n, Decl(a.ts, 125, 15))
+>J25 : Symbol(J25, Decl(a.ts, 125, 24))
+
+interface J25 { n: J26 }
+>J25 : Symbol(J25, Decl(a.ts, 125, 24))
+>n : Symbol(J25.n, Decl(a.ts, 126, 15))
+>J26 : Symbol(J26, Decl(a.ts, 126, 24))
+
+interface J26 { n: J27 }
+>J26 : Symbol(J26, Decl(a.ts, 126, 24))
+>n : Symbol(J26.n, Decl(a.ts, 127, 15))
+>J27 : Symbol(J27, Decl(a.ts, 127, 24))
+
+interface J27 { n: J28 }
+>J27 : Symbol(J27, Decl(a.ts, 127, 24))
+>n : Symbol(J27.n, Decl(a.ts, 128, 15))
+>J28 : Symbol(J28, Decl(a.ts, 128, 24))
+
+interface J28 { n: J29 }
+>J28 : Symbol(J28, Decl(a.ts, 128, 24))
+>n : Symbol(J28.n, Decl(a.ts, 129, 15))
+>J29 : Symbol(J29, Decl(a.ts, 129, 24))
+
+interface J29 { n: J30 }
+>J29 : Symbol(J29, Decl(a.ts, 129, 24))
+>n : Symbol(J29.n, Decl(a.ts, 130, 15))
+>J30 : Symbol(J30, Decl(a.ts, 130, 24))
+
+interface J30 { n: J31 }
+>J30 : Symbol(J30, Decl(a.ts, 130, 24))
+>n : Symbol(J30.n, Decl(a.ts, 131, 15))
+>J31 : Symbol(J31, Decl(a.ts, 131, 24))
+
+interface J31 { n: J32 }
+>J31 : Symbol(J31, Decl(a.ts, 131, 24))
+>n : Symbol(J31.n, Decl(a.ts, 132, 15))
+>J32 : Symbol(J32, Decl(a.ts, 132, 24))
+
+interface J32 { n: J33 }
+>J32 : Symbol(J32, Decl(a.ts, 132, 24))
+>n : Symbol(J32.n, Decl(a.ts, 133, 15))
+>J33 : Symbol(J33, Decl(a.ts, 133, 24))
+
+interface J33 { n: J34 }
+>J33 : Symbol(J33, Decl(a.ts, 133, 24))
+>n : Symbol(J33.n, Decl(a.ts, 134, 15))
+>J34 : Symbol(J34, Decl(a.ts, 134, 24))
+
+interface J34 { n: J35 }
+>J34 : Symbol(J34, Decl(a.ts, 134, 24))
+>n : Symbol(J34.n, Decl(a.ts, 135, 15))
+>J35 : Symbol(J35, Decl(a.ts, 135, 24))
+
+interface J35 { n: J36 }
+>J35 : Symbol(J35, Decl(a.ts, 135, 24))
+>n : Symbol(J35.n, Decl(a.ts, 136, 15))
+>J36 : Symbol(J36, Decl(a.ts, 136, 24))
+
+interface J36 { n: J37 }
+>J36 : Symbol(J36, Decl(a.ts, 136, 24))
+>n : Symbol(J36.n, Decl(a.ts, 137, 15))
+>J37 : Symbol(J37, Decl(a.ts, 137, 24))
+
+interface J37 { n: J38 }
+>J37 : Symbol(J37, Decl(a.ts, 137, 24))
+>n : Symbol(J37.n, Decl(a.ts, 138, 15))
+>J38 : Symbol(J38, Decl(a.ts, 138, 24))
+
+interface J38 { n: J39 }
+>J38 : Symbol(J38, Decl(a.ts, 138, 24))
+>n : Symbol(J38.n, Decl(a.ts, 139, 15))
+>J39 : Symbol(J39, Decl(a.ts, 139, 24))
+
+interface J39 { n: J40 }
+>J39 : Symbol(J39, Decl(a.ts, 139, 24))
+>n : Symbol(J39.n, Decl(a.ts, 140, 15))
+>J40 : Symbol(J40, Decl(a.ts, 140, 24))
+
+interface J40 { n: J41 }
+>J40 : Symbol(J40, Decl(a.ts, 140, 24))
+>n : Symbol(J40.n, Decl(a.ts, 141, 15))
+>J41 : Symbol(J41, Decl(a.ts, 141, 24))
+
+interface J41 { n: J42 }
+>J41 : Symbol(J41, Decl(a.ts, 141, 24))
+>n : Symbol(J41.n, Decl(a.ts, 142, 15))
+>J42 : Symbol(J42, Decl(a.ts, 142, 24))
+
+interface J42 { n: J43 }
+>J42 : Symbol(J42, Decl(a.ts, 142, 24))
+>n : Symbol(J42.n, Decl(a.ts, 143, 15))
+>J43 : Symbol(J43, Decl(a.ts, 143, 24))
+
+interface J43 { n: J44 }
+>J43 : Symbol(J43, Decl(a.ts, 143, 24))
+>n : Symbol(J43.n, Decl(a.ts, 144, 15))
+>J44 : Symbol(J44, Decl(a.ts, 144, 24))
+
+interface J44 { n: J45 }
+>J44 : Symbol(J44, Decl(a.ts, 144, 24))
+>n : Symbol(J44.n, Decl(a.ts, 145, 15))
+>J45 : Symbol(J45, Decl(a.ts, 145, 24))
+
+interface J45 { n: J46 }
+>J45 : Symbol(J45, Decl(a.ts, 145, 24))
+>n : Symbol(J45.n, Decl(a.ts, 146, 15))
+>J46 : Symbol(J46, Decl(a.ts, 146, 24))
+
+interface J46 { n: J47 }
+>J46 : Symbol(J46, Decl(a.ts, 146, 24))
+>n : Symbol(J46.n, Decl(a.ts, 147, 15))
+>J47 : Symbol(J47, Decl(a.ts, 147, 24))
+
+interface J47 { n: J48 }
+>J47 : Symbol(J47, Decl(a.ts, 147, 24))
+>n : Symbol(J47.n, Decl(a.ts, 148, 15))
+>J48 : Symbol(J48, Decl(a.ts, 148, 24))
+
+interface J48 { n: J49 }
+>J48 : Symbol(J48, Decl(a.ts, 148, 24))
+>n : Symbol(J48.n, Decl(a.ts, 149, 15))
+>J49 : Symbol(J49, Decl(a.ts, 149, 24))
+
+interface J49 { n: J50 }
+>J49 : Symbol(J49, Decl(a.ts, 149, 24))
+>n : Symbol(J49.n, Decl(a.ts, 150, 15))
+>J50 : Symbol(J50, Decl(a.ts, 150, 24))
+
+interface J50 { n: J51 }
+>J50 : Symbol(J50, Decl(a.ts, 150, 24))
+>n : Symbol(J50.n, Decl(a.ts, 151, 15))
+>J51 : Symbol(J51, Decl(a.ts, 151, 24))
+
+interface J51 { n: J52 }
+>J51 : Symbol(J51, Decl(a.ts, 151, 24))
+>n : Symbol(J51.n, Decl(a.ts, 152, 15))
+>J52 : Symbol(J52, Decl(a.ts, 152, 24))
+
+interface J52 { n: J53 }
+>J52 : Symbol(J52, Decl(a.ts, 152, 24))
+>n : Symbol(J52.n, Decl(a.ts, 153, 15))
+>J53 : Symbol(J53, Decl(a.ts, 153, 24))
+
+interface J53 { n: J54 }
+>J53 : Symbol(J53, Decl(a.ts, 153, 24))
+>n : Symbol(J53.n, Decl(a.ts, 154, 15))
+>J54 : Symbol(J54, Decl(a.ts, 154, 24))
+
+interface J54 { n: J55 }
+>J54 : Symbol(J54, Decl(a.ts, 154, 24))
+>n : Symbol(J54.n, Decl(a.ts, 155, 15))
+>J55 : Symbol(J55, Decl(a.ts, 155, 24))
+
+interface J55 { n: J56 }
+>J55 : Symbol(J55, Decl(a.ts, 155, 24))
+>n : Symbol(J55.n, Decl(a.ts, 156, 15))
+>J56 : Symbol(J56, Decl(a.ts, 156, 24))
+
+interface J56 { n: J57 }
+>J56 : Symbol(J56, Decl(a.ts, 156, 24))
+>n : Symbol(J56.n, Decl(a.ts, 157, 15))
+>J57 : Symbol(J57, Decl(a.ts, 157, 24))
+
+interface J57 { n: J58 }
+>J57 : Symbol(J57, Decl(a.ts, 157, 24))
+>n : Symbol(J57.n, Decl(a.ts, 158, 15))
+>J58 : Symbol(J58, Decl(a.ts, 158, 24))
+
+interface J58 { n: J59 }
+>J58 : Symbol(J58, Decl(a.ts, 158, 24))
+>n : Symbol(J58.n, Decl(a.ts, 159, 15))
+>J59 : Symbol(J59, Decl(a.ts, 159, 24))
+
+interface J59 { n: J60 }
+>J59 : Symbol(J59, Decl(a.ts, 159, 24))
+>n : Symbol(J59.n, Decl(a.ts, 160, 15))
+>J60 : Symbol(J60, Decl(a.ts, 160, 24))
+
+interface J60 { n: J61 }
+>J60 : Symbol(J60, Decl(a.ts, 160, 24))
+>n : Symbol(J60.n, Decl(a.ts, 161, 15))
+>J61 : Symbol(J61, Decl(a.ts, 161, 24))
+
+interface J61 { n: J62 }
+>J61 : Symbol(J61, Decl(a.ts, 161, 24))
+>n : Symbol(J61.n, Decl(a.ts, 162, 15))
+>J62 : Symbol(J62, Decl(a.ts, 162, 24))
+
+interface J62 { n: J63 }
+>J62 : Symbol(J62, Decl(a.ts, 162, 24))
+>n : Symbol(J62.n, Decl(a.ts, 163, 15))
+>J63 : Symbol(J63, Decl(a.ts, 163, 24))
+
+interface J63 { n: J64 }
+>J63 : Symbol(J63, Decl(a.ts, 163, 24))
+>n : Symbol(J63.n, Decl(a.ts, 164, 15))
+>J64 : Symbol(J64, Decl(a.ts, 164, 24))
+
+interface J64 { n: J65 }
+>J64 : Symbol(J64, Decl(a.ts, 164, 24))
+>n : Symbol(J64.n, Decl(a.ts, 165, 15))
+>J65 : Symbol(J65, Decl(a.ts, 165, 24))
+
+interface J65 { n: J66 }
+>J65 : Symbol(J65, Decl(a.ts, 165, 24))
+>n : Symbol(J65.n, Decl(a.ts, 166, 15))
+>J66 : Symbol(J66, Decl(a.ts, 166, 24))
+
+interface J66 { n: J67 }
+>J66 : Symbol(J66, Decl(a.ts, 166, 24))
+>n : Symbol(J66.n, Decl(a.ts, 167, 15))
+>J67 : Symbol(J67, Decl(a.ts, 167, 24))
+
+interface J67 { n: J68 }
+>J67 : Symbol(J67, Decl(a.ts, 167, 24))
+>n : Symbol(J67.n, Decl(a.ts, 168, 15))
+>J68 : Symbol(J68, Decl(a.ts, 168, 24))
+
+interface J68 { n: J69 }
+>J68 : Symbol(J68, Decl(a.ts, 168, 24))
+>n : Symbol(J68.n, Decl(a.ts, 169, 15))
+>J69 : Symbol(J69, Decl(a.ts, 169, 24))
+
+interface J69 { n: J70 }
+>J69 : Symbol(J69, Decl(a.ts, 169, 24))
+>n : Symbol(J69.n, Decl(a.ts, 170, 15))
+>J70 : Symbol(J70, Decl(a.ts, 170, 24))
+
+interface J70 { n: J71 }
+>J70 : Symbol(J70, Decl(a.ts, 170, 24))
+>n : Symbol(J70.n, Decl(a.ts, 171, 15))
+>J71 : Symbol(J71, Decl(a.ts, 171, 24))
+
+interface J71 { n: J72 }
+>J71 : Symbol(J71, Decl(a.ts, 171, 24))
+>n : Symbol(J71.n, Decl(a.ts, 172, 15))
+>J72 : Symbol(J72, Decl(a.ts, 172, 24))
+
+interface J72 { n: J73 }
+>J72 : Symbol(J72, Decl(a.ts, 172, 24))
+>n : Symbol(J72.n, Decl(a.ts, 173, 15))
+>J73 : Symbol(J73, Decl(a.ts, 173, 24))
+
+interface J73 { n: J74 }
+>J73 : Symbol(J73, Decl(a.ts, 173, 24))
+>n : Symbol(J73.n, Decl(a.ts, 174, 15))
+>J74 : Symbol(J74, Decl(a.ts, 174, 24))
+
+interface J74 { n: J75 }
+>J74 : Symbol(J74, Decl(a.ts, 174, 24))
+>n : Symbol(J74.n, Decl(a.ts, 175, 15))
+>J75 : Symbol(J75, Decl(a.ts, 175, 24))
+
+interface J75 { n: J76 }
+>J75 : Symbol(J75, Decl(a.ts, 175, 24))
+>n : Symbol(J75.n, Decl(a.ts, 176, 15))
+>J76 : Symbol(J76, Decl(a.ts, 176, 24))
+
+interface J76 { n: J77 }
+>J76 : Symbol(J76, Decl(a.ts, 176, 24))
+>n : Symbol(J76.n, Decl(a.ts, 177, 15))
+>J77 : Symbol(J77, Decl(a.ts, 177, 24))
+
+interface J77 { n: J78 }
+>J77 : Symbol(J77, Decl(a.ts, 177, 24))
+>n : Symbol(J77.n, Decl(a.ts, 178, 15))
+>J78 : Symbol(J78, Decl(a.ts, 178, 24))
+
+interface J78 { n: J79 }
+>J78 : Symbol(J78, Decl(a.ts, 178, 24))
+>n : Symbol(J78.n, Decl(a.ts, 179, 15))
+>J79 : Symbol(J79, Decl(a.ts, 179, 24))
+
+interface J79 { n: J80 }
+>J79 : Symbol(J79, Decl(a.ts, 179, 24))
+>n : Symbol(J79.n, Decl(a.ts, 180, 15))
+>J80 : Symbol(J80, Decl(a.ts, 180, 24))
+
+interface J80 { n: J81 }
+>J80 : Symbol(J80, Decl(a.ts, 180, 24))
+>n : Symbol(J80.n, Decl(a.ts, 181, 15))
+>J81 : Symbol(J81, Decl(a.ts, 181, 24))
+
+interface J81 { n: J82 }
+>J81 : Symbol(J81, Decl(a.ts, 181, 24))
+>n : Symbol(J81.n, Decl(a.ts, 182, 15))
+>J82 : Symbol(J82, Decl(a.ts, 182, 24))
+
+interface J82 { n: J83 }
+>J82 : Symbol(J82, Decl(a.ts, 182, 24))
+>n : Symbol(J82.n, Decl(a.ts, 183, 15))
+>J83 : Symbol(J83, Decl(a.ts, 183, 24))
+
+interface J83 { n: J84 }
+>J83 : Symbol(J83, Decl(a.ts, 183, 24))
+>n : Symbol(J83.n, Decl(a.ts, 184, 15))
+>J84 : Symbol(J84, Decl(a.ts, 184, 24))
+
+interface J84 { n: J85 }
+>J84 : Symbol(J84, Decl(a.ts, 184, 24))
+>n : Symbol(J84.n, Decl(a.ts, 185, 15))
+>J85 : Symbol(J85, Decl(a.ts, 185, 24))
+
+interface J85 { n: J86 }
+>J85 : Symbol(J85, Decl(a.ts, 185, 24))
+>n : Symbol(J85.n, Decl(a.ts, 186, 15))
+>J86 : Symbol(J86, Decl(a.ts, 186, 24))
+
+interface J86 { n: J87 }
+>J86 : Symbol(J86, Decl(a.ts, 186, 24))
+>n : Symbol(J86.n, Decl(a.ts, 187, 15))
+>J87 : Symbol(J87, Decl(a.ts, 187, 24))
+
+interface J87 { n: J88 }
+>J87 : Symbol(J87, Decl(a.ts, 187, 24))
+>n : Symbol(J87.n, Decl(a.ts, 188, 15))
+>J88 : Symbol(J88, Decl(a.ts, 188, 24))
+
+interface J88 { n: J89 }
+>J88 : Symbol(J88, Decl(a.ts, 188, 24))
+>n : Symbol(J88.n, Decl(a.ts, 189, 15))
+>J89 : Symbol(J89, Decl(a.ts, 189, 24))
+
+interface J89 { n: J90 }
+>J89 : Symbol(J89, Decl(a.ts, 189, 24))
+>n : Symbol(J89.n, Decl(a.ts, 190, 15))
+>J90 : Symbol(J90, Decl(a.ts, 190, 24))
+
+interface J90 { n: J91 }
+>J90 : Symbol(J90, Decl(a.ts, 190, 24))
+>n : Symbol(J90.n, Decl(a.ts, 191, 15))
+>J91 : Symbol(J91, Decl(a.ts, 191, 24))
+
+interface J91 { n: J92 }
+>J91 : Symbol(J91, Decl(a.ts, 191, 24))
+>n : Symbol(J91.n, Decl(a.ts, 192, 15))
+>J92 : Symbol(J92, Decl(a.ts, 192, 24))
+
+interface J92 { n: J93 }
+>J92 : Symbol(J92, Decl(a.ts, 192, 24))
+>n : Symbol(J92.n, Decl(a.ts, 193, 15))
+>J93 : Symbol(J93, Decl(a.ts, 193, 24))
+
+interface J93 { n: J94 }
+>J93 : Symbol(J93, Decl(a.ts, 193, 24))
+>n : Symbol(J93.n, Decl(a.ts, 194, 15))
+>J94 : Symbol(J94, Decl(a.ts, 194, 24))
+
+interface J94 { n: J95 }
+>J94 : Symbol(J94, Decl(a.ts, 194, 24))
+>n : Symbol(J94.n, Decl(a.ts, 195, 15))
+>J95 : Symbol(J95, Decl(a.ts, 195, 24))
+
+interface J95 { n: J96 }
+>J95 : Symbol(J95, Decl(a.ts, 195, 24))
+>n : Symbol(J95.n, Decl(a.ts, 196, 15))
+>J96 : Symbol(J96, Decl(a.ts, 196, 24))
+
+interface J96 { n: J97 }
+>J96 : Symbol(J96, Decl(a.ts, 196, 24))
+>n : Symbol(J96.n, Decl(a.ts, 197, 15))
+>J97 : Symbol(J97, Decl(a.ts, 197, 24))
+
+interface J97 { n: J98 }
+>J97 : Symbol(J97, Decl(a.ts, 197, 24))
+>n : Symbol(J97.n, Decl(a.ts, 198, 15))
+>J98 : Symbol(J98, Decl(a.ts, 198, 24))
+
+interface J98 { n: J99 }
+>J98 : Symbol(J98, Decl(a.ts, 198, 24))
+>n : Symbol(J98.n, Decl(a.ts, 199, 15))
+>J99 : Symbol(J99, Decl(a.ts, 199, 24))
+
+interface J99 { n: J100 }
+>J99 : Symbol(J99, Decl(a.ts, 199, 24))
+>n : Symbol(J99.n, Decl(a.ts, 200, 15))
+>J100 : Symbol(J100, Decl(a.ts, 200, 25))
+
+interface J100 { n: 1 }
+>J100 : Symbol(J100, Decl(a.ts, 200, 25))
+>n : Symbol(J100.n, Decl(a.ts, 201, 16))
+
+declare let i0: I0; declare let jj: J0; declare const c: boolean;
+>i0 : Symbol(i0, Decl(a.ts, 202, 11))
+>I0 : Symbol(I0, Decl(a.ts, 0, 0))
+>jj : Symbol(jj, Decl(a.ts, 202, 31))
+>J0 : Symbol(J0, Decl(a.ts, 100, 23))
+>c : Symbol(c, Decl(a.ts, 202, 53))
+
+const o: { p: J0 } = { p: i0 };
+>o : Symbol(o, Decl(a.ts, 203, 5))
+>p : Symbol(p, Decl(a.ts, 203, 10))
+>J0 : Symbol(J0, Decl(a.ts, 100, 23))
+>p : Symbol(p, Decl(a.ts, 203, 22))
+>i0 : Symbol(i0, Decl(a.ts, 202, 11))
+
+type T = I99 extends J99 ? 1 : 2;
+>T : Symbol(T, Decl(a.ts, 203, 31))
+>I99 : Symbol(I99, Decl(a.ts, 98, 24))
+>J99 : Symbol(J99, Decl(a.ts, 199, 24))
+
+const k: T = 0;
+>k : Symbol(k, Decl(a.ts, 205, 5))
+>T : Symbol(T, Decl(a.ts, 203, 31))
+
+type T50 = I50 extends J50 ? 1 : 2;
+>T50 : Symbol(T50, Decl(a.ts, 205, 15))
+>I50 : Symbol(I50, Decl(a.ts, 49, 24))
+>J50 : Symbol(J50, Decl(a.ts, 150, 24))
+
+const k50: T50 = 0;
+>k50 : Symbol(k50, Decl(a.ts, 207, 5))
+>T50 : Symbol(T50, Decl(a.ts, 205, 15))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 208, 5))
+

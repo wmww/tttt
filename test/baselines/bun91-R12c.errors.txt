@@ -1,0 +1,41 @@
+a.js(2,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.js(2,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.js(2,29): error TS2307: Cannot find module './nope1' or its corresponding type declarations.
+a.js(4,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.js(4,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.js(4,33): error TS2307: Cannot find module './nope2' or its corresponding type declarations.
+a.js(6,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.js(6,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.js(8,5): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true, "module": "commonjs" } }
+==== a.js (9 errors) ====
+    var o = /** @type {any} */ (null);
+    with (o) { var r1 = require("./nope1"); }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                ~~~~~~~~~
+!!! error TS2307: Cannot find module './nope1' or its corresponding type declarations.
+    r1;
+    with (o) { var { r2 } = require("./nope2"); }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                    ~~~~~~~~~
+!!! error TS2307: Cannot find module './nope2' or its corresponding type declarations.
+    r2;
+    with (o) { var r3 = require("./nope3"); }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+    /** @type {number} */
+    var sentinel = "";
+        ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

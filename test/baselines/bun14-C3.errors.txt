@@ -1,0 +1,22 @@
+a.ts(5,11): error TS2590: Expression produces a union type that is too complex to represent.
+a.ts(6,11): error TS2590: Expression produces a union type that is too complex to represent.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type Dg = 0|1|2|3|4|5|6|7|8|9;
+    type K = `${Dg}${Dg}${Dg}`;
+    type U<T> = T extends any ? {u: T} : never;
+    type V<T> = T extends any ? {v: T} : never;
+    type A1 = U<K> & V<K>;
+              ~~~~~~~~~~~
+!!! error TS2590: Expression produces a union type that is too complex to represent.
+    type A2 = U<K> & V<K>;
+              ~~~~~~~~~~~
+!!! error TS2590: Expression produces a union type that is too complex to represent.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

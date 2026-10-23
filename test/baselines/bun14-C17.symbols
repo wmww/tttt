@@ -1,0 +1,15 @@
+//// [test/cases/bun14-C17.ts] ////
+
+=== a.ts ===
+declare const o2: { m: Map<string, number> };
+>o2 : Symbol(o2, Decl(a.ts, 0, 13))
+>m : Symbol(m, Decl(a.ts, 0, 19))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+o2[`m`]["a"];
+>o2 : Symbol(o2, Decl(a.ts, 0, 13))
+>`m` : Symbol(m, Decl(a.ts, 0, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

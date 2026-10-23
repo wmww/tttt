@@ -1,0 +1,26 @@
+a.js(1,20): error TS7008: Member '[' implicitly has an 'any' type.
+a.js(1,21): error TS1109: Expression expected.
+a.js(2,7): error TS2322: Type 'number' is not assignable to type '{ [x: number]: any; a: 1; }'.
+a.js(3,8): error TS2339: Property 'nope' does not exist on type '{ [x: number]: any; a: 1; }'.
+a.js(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"],"allowJs":true,"checkJs":true } }
+==== a.js (5 errors) ====
+    /** @type {{ a: 1; [}} */
+                       ~
+!!! error TS7008: Member '[' implicitly has an 'any' type.
+                        ~
+!!! error TS1109: Expression expected.
+    const o = 0;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type '{ [x: number]: any; a: 1; }'.
+    o.a; o.nope;
+           ~~~~
+!!! error TS2339: Property 'nope' does not exist on type '{ [x: number]: any; a: 1; }'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

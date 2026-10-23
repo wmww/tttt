@@ -1,0 +1,706 @@
+both_never__cond__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__bool__assign_obj.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__assign_obj.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__bool__assign_wrong.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__assign_wrong.ts(11,9): error TS2322: Type 'A & { o: 2; }' is not assignable to type 'U'.
+  Type 'A & { o: 2; }' is not assignable to type 'A & CN<T> & N'.
+    Type 'A & { o: 2; }' is not assignable to type 'CN<T>'.
+both_never__cond__bool__assign_wrong.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__bool__context.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__context.ts(11,30): error TS7006: Parameter 'x' implicitly has an 'any' type.
+both_never__cond__bool__context.ts(11,43): error TS2322: Type 'any' is not assignable to type 'never'.
+both_never__cond__bool__context.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__bool__eq.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__eq.ts(11,29): error TS2322: Type 'U' is not assignable to type 'never'.
+  Type 'A & CO<T>' is not assignable to type 'never'.
+both_never__cond__bool__eq.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__bool__excess.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__excess.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__bool__switch.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__switch.ts(11,37): error TS2322: Type 'U' is not assignable to type 'never'.
+  Type 'A & CO<T>' is not assignable to type 'never'.
+both_never__cond__bool__switch.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__bool__truthy.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond__bool__truthy.ts(11,20): error TS2322: Type 'U' is not assignable to type 'never'.
+  Type 'A & CO<T>' is not assignable to type 'never'.
+both_never__cond__bool__truthy.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__num__assign.ts(10,9): error TS2322: Type '1' is not assignable to type 'never'.
+both_never__cond__num__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__str__assign.ts(10,9): error TS2322: Type '"a"' is not assignable to type 'never'.
+both_never__cond__str__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond__tmpl__assign.ts(10,9): error TS2322: Type '`x${string}`' is not assignable to type 'never'.
+both_never__cond__tmpl__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__cond_fn__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__cond_fn__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__obj_none__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__obj_none__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__obj_same__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__obj_same__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__obj_wide__bool__eq.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__obj_wide__bool__eq.ts(11,29): error TS2322: Type 'U' is not assignable to type 'never'.
+  Type 'A & { k: unknown; o?: 1 | undefined; }' is not assignable to type 'never'.
+both_never__obj_wide__bool__eq.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__param_obj__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+both_never__param_obj__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__param_obj__param__context.ts(10,9): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+both_never__param_obj__param__context.ts(11,9): error TS2322: Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'U'.
+  Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'A & P'.
+    Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'P'.
+      '{ k: M; f: (x: any) => void; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+both_never__param_obj__param__context.ts(11,27): error TS7006: Parameter 'x' implicitly has an 'any' type.
+both_never__param_obj__param__context.ts(11,40): error TS2322: Type 'any' is not assignable to type 'never'.
+both_never__param_obj__param__context.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__param_obj__param__excess.ts(10,9): error TS2322: Type 'M' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+both_never__param_obj__param__excess.ts(11,9): error TS2322: Type '{ k: M; o: 1; zzz: number; }' is not assignable to type 'U'.
+  Type '{ k: M; o: 1; zzz: number; }' is not assignable to type 'A & P'.
+    Type '{ k: M; o: 1; zzz: number; }' is not assignable to type 'P'.
+      '{ k: M; o: 1; zzz: number; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+both_never__param_obj__param__excess.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__param_obj__wide__context.ts(10,9): error TS2322: Type 'string' is not assignable to type 'never'.
+both_never__param_obj__wide__context.ts(11,9): error TS2322: Type '{ k: string; f: (x: any) => void; }' is not assignable to type 'U'.
+  Type '{ k: string; f: (x: any) => void; }' is not assignable to type 'A & P'.
+    Type '{ k: string; f: (x: any) => void; }' is not assignable to type 'P'.
+      '{ k: string; f: (x: any) => void; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+both_never__param_obj__wide__context.ts(11,29): error TS7006: Parameter 'x' implicitly has an 'any' type.
+both_never__param_obj__wide__context.ts(11,42): error TS2322: Type 'any' is not assignable to type 'never'.
+both_never__param_obj__wide__context.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+both_never__param_obj__wide__excess.ts(10,9): error TS2322: Type 'string' is not assignable to type 'never'.
+both_never__param_obj__wide__excess.ts(11,9): error TS2322: Type '{ k: string; o: 1; zzz: number; }' is not assignable to type 'U'.
+  Type '{ k: string; o: 1; zzz: number; }' is not assignable to type 'A & P'.
+    Type '{ k: string; o: 1; zzz: number; }' is not assignable to type 'P'.
+      '{ k: string; o: 1; zzz: number; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+both_never__param_obj__wide__excess.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+cond_never__cond__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+cond_never__cond__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+cond_obj__cond__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+cond_obj__cond__bool__assign.ts(11,9): error TS2322: Type 'A' is not assignable to type 'U'.
+  Type 'A' is not assignable to type 'A & CQ<T>'.
+    Type 'A' is not assignable to type 'CQ<T>'.
+cond_obj__cond__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+cond_other__cond__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+cond_other__cond__bool__assign.ts(11,9): error TS2322: Type 'A' is not assignable to type 'U'.
+  Type 'A' is not assignable to type 'A & CP<T>'.
+    Type 'A' is not assignable to type 'CP<T>'.
+cond_other__cond__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+conflict__param_obj__param__context.ts(10,9): error TS2322: Type 'M | (M & "other")' is not assignable to type 'never'.
+  Type 'M' is not assignable to type 'never'.
+    Type 'string' is not assignable to type 'never'.
+conflict__param_obj__param__context.ts(11,9): error TS2322: Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'U'.
+  Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'A & P'.
+    Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'P'.
+      '{ k: M; f: (x: any) => void; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+conflict__param_obj__param__context.ts(11,27): error TS7006: Parameter 'x' implicitly has an 'any' type.
+conflict__param_obj__param__context.ts(11,40): error TS2322: Type 'any' is not assignable to type 'never'.
+conflict__param_obj__param__context.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+param__cond__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+param__cond__bool__assign.ts(11,9): error TS2322: Type 'A' is not assignable to type 'U'.
+  Type 'A' is not assignable to type 'A & CO<T>'.
+    Type 'A' is not assignable to type 'CO<T>'.
+param__cond__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+param_never__cond__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+param_never__cond__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+plain__cond__bool__assign.ts(10,9): error TS2322: Type 'true' is not assignable to type 'never'.
+plain__cond__bool__assign.ts(11,9): error TS2322: Type 'A' is not assignable to type 'U'.
+  Type 'A' is not assignable to type 'A & CO<T>'.
+    Type 'A' is not assignable to type 'CO<T>'.
+plain__cond__bool__assign.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "lib": ["esnext"], "types": []}, "files": ["both_never__cond__bool__assign.ts", "both_never__cond__bool__assign_obj.ts", "both_never__cond__bool__assign_wrong.ts", "both_never__cond__bool__context.ts", "both_never__cond__bool__eq.ts", "both_never__cond__bool__excess.ts", "both_never__cond__bool__switch.ts", "both_never__cond__bool__truthy.ts", "both_never__cond__num__assign.ts", "both_never__cond__str__assign.ts", "both_never__cond__tmpl__assign.ts", "both_never__cond_fn__bool__assign.ts", "both_never__obj_none__bool__assign.ts", "both_never__obj_same__bool__assign.ts", "both_never__obj_wide__bool__eq.ts", "both_never__param_obj__bool__assign.ts", "both_never__param_obj__param__context.ts", "both_never__param_obj__param__excess.ts", "both_never__param_obj__wide__context.ts", "both_never__param_obj__wide__excess.ts", "cond_never__cond__bool__assign.ts", "cond_obj__cond__bool__assign.ts", "cond_other__cond__bool__assign.ts", "conflict__param_obj__param__context.ts", "param__cond__bool__assign.ts", "param_never__cond__bool__assign.ts", "plain__cond__bool__assign.ts", "report.ts"]}
+==== both_never__cond__bool__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__bool__assign_obj.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as { k: KT; o: 1; y: 1 };
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__bool__assign_wrong.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A & { o: 2 };
+            ~
+!!! error TS2322: Type 'A & { o: 2; }' is not assignable to type 'U'.
+!!! error TS2322:   Type 'A & { o: 2; }' is not assignable to type 'A & CN<T> & N'.
+!!! error TS2322:     Type 'A & { o: 2; }' is not assignable to type 'CN<T>'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__bool__context.ts (4 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = { k: true, f: x => { const p: never = x; } };
+                                 ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                                              ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__bool__eq.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      if (u.k === true) { const p: never = u; } else { const q: never = u; }
+                                ~
+!!! error TS2322: Type 'U' is not assignable to type 'never'.
+!!! error TS2322:   Type 'A & CO<T>' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__bool__excess.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = { k: true, o: 1, zzz: 1 };
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__bool__switch.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      switch (u.k) { case true: { const p: never = u; break } default: { const q: never = u; } }
+                                        ~
+!!! error TS2322: Type 'U' is not assignable to type 'never'.
+!!! error TS2322:   Type 'A & CO<T>' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__bool__truthy.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      if (u.k) { const p: never = u; } else { const q: never = u; }
+                       ~
+!!! error TS2322: Type 'U' is not assignable to type 'never'.
+!!! error TS2322:   Type 'A & CO<T>' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__num__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = 1;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__str__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = 'a';
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type '"a"' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond__tmpl__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = `x${string}`;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type '`x${string}`' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__cond_fn__bool__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & CO<T> & { f?: (x: number) => void });
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__obj_none__bool__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & { o?: 1 });
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__obj_same__bool__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & { k: KT; o?: 1 });
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__obj_wide__bool__eq.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & { k: unknown; o?: 1 });
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      if (u.k === true) { const p: never = u; } else { const q: never = u; }
+                                ~
+!!! error TS2322: Type 'U' is not assignable to type 'never'.
+!!! error TS2322:   Type 'A & { k: unknown; o?: 1 | undefined; }' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__param_obj__bool__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & P);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__param_obj__param__context.ts (5 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = M;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & P);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+      const r: U = { k: m, f: x => { const p: never = x; } };
+            ~
+!!! error TS2322: Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'U'.
+!!! error TS2322:   Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'A & P'.
+!!! error TS2322:     Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'P'.
+!!! error TS2322:       '{ k: M; f: (x: any) => void; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+                              ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                                           ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__param_obj__param__excess.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = M;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & P);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'M' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+      const r: U = { k: m, o: 1, zzz: 1 };
+            ~
+!!! error TS2322: Type '{ k: M; o: 1; zzz: number; }' is not assignable to type 'U'.
+!!! error TS2322:   Type '{ k: M; o: 1; zzz: number; }' is not assignable to type 'A & P'.
+!!! error TS2322:     Type '{ k: M; o: 1; zzz: number; }' is not assignable to type 'P'.
+!!! error TS2322:       '{ k: M; o: 1; zzz: number; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__param_obj__wide__context.ts (5 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = string;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & P);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+      const r: U = { k: 'a', f: x => { const p: never = x; } };
+            ~
+!!! error TS2322: Type '{ k: string; f: (x: any) => void; }' is not assignable to type 'U'.
+!!! error TS2322:   Type '{ k: string; f: (x: any) => void; }' is not assignable to type 'A & P'.
+!!! error TS2322:     Type '{ k: string; f: (x: any) => void; }' is not assignable to type 'P'.
+!!! error TS2322:       '{ k: string; f: (x: any) => void; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+                                ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                                             ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== both_never__param_obj__wide__excess.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = string;
+      type A = { k: KT };
+      type U = (A & CN<T> & N) | (A & P);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'string' is not assignable to type 'never'.
+      const r: U = { k: 'a', o: 1, zzz: 1 };
+            ~
+!!! error TS2322: Type '{ k: string; o: 1; zzz: number; }' is not assignable to type 'U'.
+!!! error TS2322:   Type '{ k: string; o: 1; zzz: number; }' is not assignable to type 'A & P'.
+!!! error TS2322:     Type '{ k: string; o: 1; zzz: number; }' is not assignable to type 'P'.
+!!! error TS2322:       '{ k: string; o: 1; zzz: number; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== cond_never__cond__bool__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CN<T>) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== cond_obj__cond__bool__assign.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CQ<T>) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+            ~
+!!! error TS2322: Type 'A' is not assignable to type 'U'.
+!!! error TS2322:   Type 'A' is not assignable to type 'A & CQ<T>'.
+!!! error TS2322:     Type 'A' is not assignable to type 'CQ<T>'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== cond_other__cond__bool__assign.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & CP<T>) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+            ~
+!!! error TS2322: Type 'A' is not assignable to type 'U'.
+!!! error TS2322:   Type 'A' is not assignable to type 'A & CP<T>'.
+!!! error TS2322:     Type 'A' is not assignable to type 'CP<T>'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== conflict__param_obj__param__context.ts (5 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = M;
+      type A = { k: KT };
+      type U = (A & B) | (A & P);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'M | (M & "other")' is not assignable to type 'never'.
+!!! error TS2322:   Type 'M' is not assignable to type 'never'.
+!!! error TS2322:     Type 'string' is not assignable to type 'never'.
+      const r: U = { k: m, f: x => { const p: never = x; } };
+            ~
+!!! error TS2322: Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'U'.
+!!! error TS2322:   Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'A & P'.
+!!! error TS2322:     Type '{ k: M; f: (x: any) => void; }' is not assignable to type 'P'.
+!!! error TS2322:       '{ k: M; f: (x: any) => void; }' is assignable to the constraint of type 'P', but 'P' could be instantiated with a different subtype of constraint '{ k: unknown; o?: 1 | undefined; }'.
+                              ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+                                           ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== param__cond__bool__assign.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & T) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+            ~
+!!! error TS2322: Type 'A' is not assignable to type 'U'.
+!!! error TS2322:   Type 'A' is not assignable to type 'A & CO<T>'.
+!!! error TS2322:     Type 'A' is not assignable to type 'CO<T>'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== param_never__cond__bool__assign.ts (2 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & N) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== plain__cond__bool__assign.ts (3 errors) ====
+    type CN<T> = T extends infer E ? (E extends { k: infer K } ? { k: K } : never) : never
+    type CO<T> = T extends { k: infer K } ? { k: K; o?: 1 } : never
+    type CQ<T> = T extends { k: infer K } ? { k: K } : never
+    type CP<T> = T extends string ? { z: 1 } : never
+    export function f<T, N extends never, B extends { k: 'other' }, P extends { k: unknown; o?: 1 }, M extends string>(m: M) {
+      type KT = true;
+      type A = { k: KT };
+      type U = (A & { y: 1 }) | (A & CO<T>);
+      const u = null! as U;
+      const t: never = u.k;
+            ~
+!!! error TS2322: Type 'true' is not assignable to type 'never'.
+      const r: U = null! as A;
+            ~
+!!! error TS2322: Type 'A' is not assignable to type 'U'.
+!!! error TS2322:   Type 'A' is not assignable to type 'A & CO<T>'.
+!!! error TS2322:     Type 'A' is not assignable to type 'CO<T>'.
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== report.ts (0 errors) ====
+    type Target<M extends 1> = {
+      [K in 1]: {
+        dataset: 'points'
+        major: K
+        variant: 'full' | 'commercial'
+      }
+    }[M]
+    
+    type Identity<C extends { watched: readonly unknown[] }> =
+      C['watched'][number] extends infer E
+        ? E extends { dataset: infer D; major: infer M; variant: infer V }
+          ? { dataset: D; major: M; variant: V }
+          : never
+        : never
+    
+    type Selector<I> =
+      | I
+      | (I extends { dataset: infer D; major: infer M; variant: infer V }
+          ? 'full' extends V
+            ? { dataset: D; major: M; variant?: V }
+            : never
+          : never)
+    
+    function test<M extends 1>(target: Target<M>) {
+      const result: { dataset: 'points'; major: M } &
+        Selector<Identity<{ watched: readonly [Target<M>] }>> = target
+      return result
+    }
+    

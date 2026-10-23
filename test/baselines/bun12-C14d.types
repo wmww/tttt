@@ -1,0 +1,32 @@
+//// [test/cases/bun12-C14d.ts] ////
+
+=== a.ts ===
+declare function unbox<T>(x: { [K in keyof T]: { v: T[K] } }): T;
+>unbox : <T>(x: { [K in keyof T]: { v: T[K]; }; }) => T
+>x : { [K in keyof T]: { v: T[K]; }; }
+>v : T[K]
+
+function g<Q>() { return unbox({ a: { v: 1 } }); }
+>g : <Q>() => { a: number; }
+>unbox({ a: { v: 1 } }) : { a: number; }
+>unbox : <T>(x: { [K in keyof T]: { v: T[K]; }; }) => T
+>{ a: { v: 1 } } : { a: { v: number; }; }
+>a : { v: number; }
+>{ v: 1 } : { v: number; }
+>v : number
+>1 : 1
+
+type U = ReturnType<typeof g<1>> | ReturnType<typeof g<2>>;
+>U : U
+>g : <Q>() => { a: number; }
+>g : <Q>() => { a: number; }
+
+const n: never = null! as U;
+>n : never
+>null! as U : U
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

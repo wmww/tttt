@@ -1,0 +1,16 @@
+a.ts(3,30): error TS4113: This member cannot have an 'override' modifier because it is not declared in the base class 'B'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const abcdefgh: unique symbol = Symbol();
+    class B { abcdefgh() {} }
+    class D extends B { override [abcdefgh]() {} }
+                                 ~~~~~~~~~~
+!!! error TS4113: This member cannot have an 'override' modifier because it is not declared in the base class 'B'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

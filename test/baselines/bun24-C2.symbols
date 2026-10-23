@@ -1,0 +1,23 @@
+//// [test/cases/bun24-C2.ts] ////
+
+=== a.ts ===
+const o = { m<A>(a: A) { class L { a!: A } return new L(); } };
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 11))
+>A : Symbol(A, Decl(a.ts, 0, 14))
+>a : Symbol(a, Decl(a.ts, 0, 17))
+>A : Symbol(A, Decl(a.ts, 0, 14))
+>L : Symbol(L, Decl(a.ts, 0, 24))
+>a : Symbol(L.a, Decl(a.ts, 0, 34))
+>A : Symbol(A, Decl(a.ts, 0, 14))
+>L : Symbol(L, Decl(a.ts, 0, 24))
+
+const v: 1 = o.m(1);
+>v : Symbol(v, Decl(a.ts, 1, 5))
+>o.m : Symbol(m, Decl(a.ts, 0, 11))
+>o : Symbol(o, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

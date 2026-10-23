@@ -1,0 +1,35 @@
+//// [test/cases/bun13-C6b.ts] ////
+
+=== a.ts ===
+interface I { m(): { [K in keyof this]: 1 } }
+>m : () => { [K in keyof this]: 1; }
+
+interface A extends I { a: 1 }
+>a : 1
+
+interface B extends I { b: 1 }
+>b : 1
+
+function f<T extends I>(x: T) { return x.m(); }
+>f : <T extends I>(x: T) => { [K in keyof T]: 1; }
+>x : T
+>x.m() : { [K in keyof T]: 1; }
+>x.m : () => { [K in keyof T]: 1; }
+>x : T
+>m : () => { [K in keyof T]: 1; }
+
+const r = f({} as A | B);
+>r : { m: 1; a: 1; } | { m: 1; b: 1; }
+>f({} as A | B) : { m: 1; a: 1; } | { m: 1; b: 1; }
+>f : <T extends I>(x: T) => { [K in keyof T]: 1; }
+>{} as A | B : A | B
+>{} : {}
+
+const r1: never = r;
+>r1 : never
+>r : { m: 1; a: 1; } | { m: 1; b: 1; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

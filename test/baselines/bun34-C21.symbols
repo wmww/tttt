@@ -1,0 +1,18 @@
+//// [test/cases/bun34-C21.ts] ////
+
+=== a.ts ===
+declare const m: { a: { get(k: string): 1 } }, k: string;
+>m : Symbol(m, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+>get : Symbol(get, Decl(a.ts, 0, 23))
+>k : Symbol(k, Decl(a.ts, 0, 28))
+>k : Symbol(k, Decl(a.ts, 0, 46))
+
+m[`a`][k];
+>m : Symbol(m, Decl(a.ts, 0, 13))
+>`a` : Symbol(a, Decl(a.ts, 0, 18))
+>k : Symbol(k, Decl(a.ts, 0, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

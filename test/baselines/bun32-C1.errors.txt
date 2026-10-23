@@ -1,0 +1,14 @@
+a.ts(1,58): error TS2540: Cannot assign to 'x' because it is a read-only property.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class R { readonly x: number = 0; constructor() { (this).x = 1; } }
+                                                             ~
+!!! error TS2540: Cannot assign to 'x' because it is a read-only property.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

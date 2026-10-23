@@ -1,0 +1,21 @@
+//// [test/cases/bun39-P5b.ts] ////
+
+=== a.ts ===
+export {};
+class C { m() { return g(); } }
+>C : C
+>m : () => never
+>g() : never
+>g : () => never
+
+const g = new C().m;
+>g : () => never
+>new C().m : () => never
+>new C() : C
+>C : typeof C
+>m : () => never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

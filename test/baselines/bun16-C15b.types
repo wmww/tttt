@@ -1,0 +1,29 @@
+//// [test/cases/bun16-C15b.ts] ////
+
+=== b.js ===
+/** @param {string[]} rest */
+function f1() { return class { arguments = 1 }; }
+>f1 : () => typeof (Anonymous class)
+>class { arguments = 1 } : typeof (Anonymous class)
+>arguments : number
+>1 : 1
+
+/** @param {string} n15 */
+function f2() { return class { arguments = 1 }; }
+>f2 : () => typeof (Anonymous class)
+>class { arguments = 1 } : typeof (Anonymous class)
+>arguments : number
+>1 : 1
+
+/** @param {string[]} rest */
+function f3() { arguments: while (1) { break arguments; } }
+>f3 : () => void
+>arguments : any
+>1 : 1
+>arguments : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

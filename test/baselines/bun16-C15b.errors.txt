@@ -1,0 +1,20 @@
+b.js(3,21): error TS8029: JSDoc '@param' tag has name 'n15', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+b.js(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== b.js (2 errors) ====
+    /** @param {string[]} rest */
+    function f1() { return class { arguments = 1 }; }
+    /** @param {string} n15 */
+                        ~~~
+!!! error TS8029: JSDoc '@param' tag has name 'n15', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+    function f2() { return class { arguments = 1 }; }
+    /** @param {string[]} rest */
+    function f3() { arguments: while (1) { break arguments; } }
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

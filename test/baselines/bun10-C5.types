@@ -1,0 +1,20 @@
+//// [test/cases/bun10-C5.ts] ////
+
+=== a.ts ===
+export namespace N9 { export class K extends M9.A {} }
+>N9 : typeof N9
+>K : K
+>M9.A : typeof K
+>M9 : typeof M9
+>A : typeof K
+
+export namespace M9 { export import A = N9.K; }
+>M9 : typeof M9
+>A : typeof A
+>N9 : typeof N9
+>K : A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,30 @@
+//// [test/cases/bun12-C3.ts] ////
+
+=== a.ts ===
+declare const a: unique symbol;
+>a : unique symbol
+
+declare const sym: symbol;
+>sym : symbol
+
+const c4: unique symbol = a;
+>c4 : unique symbol
+>a : unique symbol
+
+const c6: unique symbol = sym;
+>c6 : unique symbol
+>sym : symbol
+
+const c9: unique symbol = 1;
+>c9 : unique symbol
+>1 : 1
+
+class C { static readonly s: unique symbol = a; }
+>C : C
+>s : unique symbol
+>a : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

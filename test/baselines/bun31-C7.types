@@ -1,0 +1,11 @@
+//// [test/cases/bun31-C7.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.d.ts ===
+declare var arguments: any;
+>arguments : any
+

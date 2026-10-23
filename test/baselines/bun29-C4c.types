@@ -1,0 +1,30 @@
+//// [test/cases/bun29-C4c.ts] ////
+
+=== a.ts ===
+namespace P1 { export enum E { N = NaN } }
+>P1 : typeof P1
+>E : E
+>N : E.N
+>NaN : number
+
+namespace P2 { export enum E { N = NaN } }
+>P2 : typeof P2
+>E : E
+>N : E.N
+>NaN : number
+
+declare let q1: P1.E, q2: P2.E;
+>q1 : P1.E
+>P1 : any
+>q2 : P2.E
+>P2 : any
+
+q1 = q2;
+>q1 = q2 : P2.E
+>q1 : P1.E
+>q2 : P2.E
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

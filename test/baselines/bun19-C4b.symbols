@@ -1,0 +1,41 @@
+//// [test/cases/bun19-C4b.ts] ////
+
+=== a.ts ===
+interface I { p: this extends { z: 1 } ? 1 : 2 }
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>p : Symbol(I.p, Decl(a.ts, 0, 13))
+>z : Symbol(z, Decl(a.ts, 0, 31))
+
+interface A extends I { z: 1 }
+>A : Symbol(A, Decl(a.ts, 0, 48))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>z : Symbol(A.z, Decl(a.ts, 1, 23))
+
+interface B extends I { y: 1 }
+>B : Symbol(B, Decl(a.ts, 1, 30))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>y : Symbol(B.y, Decl(a.ts, 2, 23))
+
+function f<T extends I>(t: T) { return t.p; }
+>f : Symbol(f, Decl(a.ts, 2, 30))
+>T : Symbol(T, Decl(a.ts, 3, 11))
+>I : Symbol(I, Decl(a.ts, 0, 0))
+>t : Symbol(t, Decl(a.ts, 3, 24))
+>T : Symbol(T, Decl(a.ts, 3, 11))
+>t.p : Symbol(I.p, Decl(a.ts, 0, 13))
+>t : Symbol(t, Decl(a.ts, 3, 24))
+>p : Symbol(I.p, Decl(a.ts, 0, 13))
+
+declare let ab: A | B;
+>ab : Symbol(ab, Decl(a.ts, 4, 11))
+>A : Symbol(A, Decl(a.ts, 0, 48))
+>B : Symbol(B, Decl(a.ts, 1, 30))
+
+const bad: 2 = f(ab);
+>bad : Symbol(bad, Decl(a.ts, 5, 5))
+>f : Symbol(f, Decl(a.ts, 2, 30))
+>ab : Symbol(ab, Decl(a.ts, 4, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

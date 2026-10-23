@@ -1,0 +1,15 @@
+a.ts(2,49): error TS18048: 'x.a' is possibly 'undefined'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "exactOptionalPropertyTypes": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    interface H { a?: number; hasOwnProperty(k: string): this is H; }
+    function f(x: H) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+                                                    ~~~
+!!! error TS18048: 'x.a' is possibly 'undefined'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

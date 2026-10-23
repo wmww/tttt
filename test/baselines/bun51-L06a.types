@@ -1,0 +1,82 @@
+//// [test/cases/bun51-L06a.ts] ////
+
+=== f.js ===
+export const store = {
+>store : { format(n: number): string; pair: [number, number]; reset(): void; }
+>{  /** @param {number} n */  format(n) { return String(n); },  pair: /** @type {[number, number]} */ ([1, 2]),  reset() {    this.format = (n) => n.toFixed(2);    this.pair = [3, 4];  },} : { format(n: number): string; pair: [number, number]; reset(): void; }
+
+  /** @param {number} n */
+  format(n) { return String(n); },
+>format : (n: number) => string
+>n : number
+>String(n) : string
+>String : StringConstructor
+>n : number
+
+  pair: /** @type {[number, number]} */ ([1, 2]),
+>pair : [number, number]
+>([1, 2]) : [number, number]
+>[1, 2] : [number, number]
+>1 : 1
+>2 : 2
+
+  reset() {
+>reset : () => void
+
+    this.format = (n) => n.toFixed(2);
+>this.format = (n) => n.toFixed(2) : (n: number) => string
+>this.format : (n: number) => string
+>this : { format(n: number): string; pair: [number, number]; reset(): void; }
+>format : (n: number) => string
+>(n) => n.toFixed(2) : (n: number) => string
+>n : number
+>n.toFixed(2) : string
+>n.toFixed : (fractionDigits?: number) => string
+>n : number
+>toFixed : (fractionDigits?: number) => string
+>2 : 2
+
+    this.pair = [3, 4];
+>this.pair = [3, 4] : [number, number]
+>this.pair : [number, number]
+>this : { format(n: number): string; pair: [number, number]; reset(): void; }
+>pair : [number, number]
+>[3, 4] : [number, number]
+>3 : 3
+>4 : 4
+
+  },
+};
+export const later = {
+>later : { reset(): void; format(n: number): string; }
+>{  reset() {    this.format = (n) => String(n);  },  /** @param {number} n */  format(n) { return String(n); },} : { reset(): void; format(n: number): string; }
+
+  reset() {
+>reset : () => void
+
+    this.format = (n) => String(n);
+>this.format = (n) => String(n) : (n: any) => string
+>this.format : (n: number) => string
+>this : { reset(): void; format(n: number): string; }
+>format : (n: number) => string
+>(n) => String(n) : (n: any) => string
+>n : any
+>String(n) : string
+>String : StringConstructor
+>n : any
+
+  },
+  /** @param {number} n */
+  format(n) { return String(n); },
+>format : (n: number) => string
+>n : number
+>String(n) : string
+>String : StringConstructor
+>n : number
+
+};
+/** @type {number} */
+export const sentinel = "";
+>sentinel : number
+>"" : ""
+

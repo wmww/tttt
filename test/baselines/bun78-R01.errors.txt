@@ -1,0 +1,24 @@
+a.ts(3,10): error TS7023: 'g1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(4,10): error TS7023: 'g3' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(5,10): error TS7023: 'g7' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare function f1<T>(cb: () => { a: (x: number) => void; v?: unknown }, t: T): T;
+    declare function f3<T>(cb: () => { a: (x: number) => void; v?: T }, t: T): T;
+    function g1() { return f1(() => ({ a: x => {}, v: g1() }), 1); }
+             ~~
+!!! error TS7023: 'g1' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function g3() { return f3(() => ({ a: x => {}, v: g3() }), 1); }
+             ~~
+!!! error TS7023: 'g3' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    function g7() { return f1(function () { return { a: x => {}, v: g7() }; }, 1); }
+             ~~
+!!! error TS7023: 'g7' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,50 @@
+a.ts(8,3): error TS2416: Property 'p' in type 'R<D>' is not assignable to the same property in base type 'K<D>'.
+  Type '() => R<D>' is not assignable to type '() => K<D>'.
+    Type 'R<D>' is not assignable to type 'K<D>'.
+      The types returned by 'e().e().x()' are incompatible between these types.
+        Type 'unknown' is not assignable to type 'string'.
+a.ts(9,3): error TS2416: Property 'e' in type 'R<D>' is not assignable to the same property in base type 'K<D>'.
+  Type '<T>() => R<[D, T]>' is not assignable to type '<T>() => K<[D, T]>'.
+    Type 'R<[D, T]>' is not assignable to type 'K<[D, T]>'.
+      The types returned by 'e().x()' are incompatible between these types.
+        Type 'unknown' is not assignable to type 'string'.
+a.ts(10,3): error TS2416: Property 'x' in type 'R<D>' is not assignable to the same property in base type 'K<D>'.
+  Type '() => unknown' is not assignable to type '() => string'.
+    Type 'unknown' is not assignable to type 'string'.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    declare class K<D> {
+      d: D
+      p(): K<D>
+      e<T>(): K<[D, T]>
+      x(): string
+    }
+    declare class R<D> extends K<D> {
+      p(): R<D>
+      ~
+!!! error TS2416: Property 'p' in type 'R<D>' is not assignable to the same property in base type 'K<D>'.
+!!! error TS2416:   Type '() => R<D>' is not assignable to type '() => K<D>'.
+!!! error TS2416:     Type 'R<D>' is not assignable to type 'K<D>'.
+!!! error TS2416:       The types returned by 'e().e().x()' are incompatible between these types.
+!!! error TS2416:         Type 'unknown' is not assignable to type 'string'.
+      e<T>(): R<[D, T]>
+      ~
+!!! error TS2416: Property 'e' in type 'R<D>' is not assignable to the same property in base type 'K<D>'.
+!!! error TS2416:   Type '<T>() => R<[D, T]>' is not assignable to type '<T>() => K<[D, T]>'.
+!!! error TS2416:     Type 'R<[D, T]>' is not assignable to type 'K<[D, T]>'.
+!!! error TS2416:       The types returned by 'e().x()' are incompatible between these types.
+!!! error TS2416:         Type 'unknown' is not assignable to type 'string'.
+      x(): unknown
+      ~
+!!! error TS2416: Property 'x' in type 'R<D>' is not assignable to the same property in base type 'K<D>'.
+!!! error TS2416:   Type '() => unknown' is not assignable to type '() => string'.
+!!! error TS2416:     Type 'unknown' is not assignable to type 'string'.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

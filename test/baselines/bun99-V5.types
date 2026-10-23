@@ -1,0 +1,300 @@
+//// [test/cases/bun99-V5.ts] ////
+
+=== neighbours.ts ===
+export {}
+// A call through a union of two generic signatures: the return types are united first.
+declare const lists: number[] | ReadonlyArray<number>
+>lists : number[] | readonly number[]
+
+export const mapped: never = lists.map(n => String(n))
+>mapped : never
+>lists.map(n => String(n)) : string[]
+>lists.map : (<U>(callbackfn: (value: number, index: number, array: readonly number[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[])
+>lists : number[] | readonly number[]
+>map : (<U>(callbackfn: (value: number, index: number, array: readonly number[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[])
+>n => String(n) : (n: number) => string
+>n : number
+>String(n) : string
+>String : StringConstructor
+>n : number
+
+declare const sets: Set<number> | Map<number, number>
+>sets : Map<number, number> | Set<number>
+
+export const each: never = sets.forEach(v => v)
+>each : never
+>sets.forEach(v => v) : void
+>sets.forEach : ((callbackfn: (value: number, key: number, map: Map<number, number>) => void, thisArg?: any) => void) | ((callbackfn: (value: number, value2: number, set: Set<number>) => void, thisArg?: any) => void)
+>sets : Map<number, number> | Set<number>
+>forEach : ((callbackfn: (value: number, key: number, map: Map<number, number>) => void, thisArg?: any) => void) | ((callbackfn: (value: number, value2: number, set: Set<number>) => void, thisArg?: any) => void)
+>v => v : (v: number) => number
+>v : number
+>v : number
+
+declare const thenables: Promise<number> | PromiseLike<number> | Promise<string>
+>thenables : Promise<string> | Promise<number> | PromiseLike<number>
+
+export const three: never = thenables.then(v => v)
+>three : never
+>thenables.then(v => v) : Promise<string | number> | PromiseLike<string | number>
+>thenables.then : (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = string, TResult2 = never>(onfulfilled?: ((value: string) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>) | (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>thenables : Promise<string> | Promise<number> | PromiseLike<number>
+>then : (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = string, TResult2 = never>(onfulfilled?: ((value: string) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>) | (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>v => v : (v: string | number) => string | number
+>v : string | number
+>v : string | number
+
+declare const fns: (<T>(value: T) => Promise<T>) | (<U>(value: U) => PromiseLike<U>)
+>fns : (<T>(value: T) => Promise<T>) | (<U>(value: U) => PromiseLike<U>)
+>value : T
+>value : U
+
+export const called: never = fns(1)
+>called : never
+>fns(1) : Promise<number> | PromiseLike<number>
+>fns : (<T>(value: T) => Promise<T>) | (<U>(value: U) => PromiseLike<U>)
+>1 : 1
+
+declare const fns2: (<T>(value: T) => T[]) | (<U>(value: U) => ReadonlyArray<U>)
+>fns2 : (<T>(value: T) => T[]) | (<U>(value: U) => ReadonlyArray<U>)
+>value : T
+>value : U
+
+export const called2: never = fns2('a')
+>called2 : never
+>fns2('a') : string[] | readonly string[]
+>fns2 : (<T>(value: T) => T[]) | (<U>(value: U) => ReadonlyArray<U>)
+>'a' : "a"
+
+declare const one: (<T>(value: T) => Promise<T>) | ((value: number) => PromiseLike<number>)
+>one : (<T>(value: T) => Promise<T>) | ((value: number) => PromiseLike<number>)
+>value : T
+>value : number
+
+export const mixed: never = one(1)
+>mixed : never
+>one(1) : Promise<1> | PromiseLike<number>
+>one : (<T>(value: T) => Promise<T>) | ((value: number) => PromiseLike<number>)
+>1 : 1
+
+interface A { run<T>(value: T): { a: T } }
+>run : <T>(value: T) => { a: T; }
+>value : T
+>a : T
+
+interface B { run<U>(value: U): { a: U; b: U } }
+>run : <U>(value: U) => { a: U; b: U; }
+>value : U
+>a : U
+>b : U
+
+declare const ab: A | B
+>ab : A | B
+
+export const shapes: never = ab.run(1)
+>shapes : never
+>ab.run(1) : { a: number; } | { a: number; b: number; }
+>ab.run : (<T>(value: T) => { a: T; }) | (<U>(value: U) => { a: U; b: U; })
+>ab : A | B
+>run : (<T>(value: T) => { a: T; }) | (<U>(value: U) => { a: U; b: U; })
+>1 : 1
+
+declare const ba: B | A
+>ba : A | B
+
+export const shapes2: never = ba.run(1)
+>shapes2 : never
+>ba.run(1) : { a: number; } | { a: number; b: number; }
+>ba.run : (<T>(value: T) => { a: T; }) | (<U>(value: U) => { a: U; b: U; })
+>ba : A | B
+>run : (<T>(value: T) => { a: T; }) | (<U>(value: U) => { a: U; b: U; })
+>1 : 1
+
+declare const both: A & B
+>both : A & B
+
+export const overloads: never = both.run(1)
+>overloads : never
+>both.run(1) : { a: number; }
+>both.run : (<T>(value: T) => { a: T; }) & (<U>(value: U) => { a: U; b: U; })
+>both : A & B
+>run : (<T>(value: T) => { a: T; }) & (<U>(value: U) => { a: U; b: U; })
+>1 : 1
+
+async function settle(p: Promise<number> | PromiseLike<number>) {
+>settle : (p: Promise<number> | PromiseLike<number>) => Promise<number | "failed">
+>p : Promise<number> | PromiseLike<number>
+
+  const r = p.then(v => v + 1, () => 'failed' as const)
+>r : Promise<number | "failed"> | PromiseLike<number | "failed">
+>p.then(v => v + 1, () => 'failed' as const) : Promise<number | "failed"> | PromiseLike<number | "failed">
+>p.then : (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>p : Promise<number> | PromiseLike<number>
+>then : (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>v => v + 1 : (v: number) => number
+>v : number
+>v + 1 : number
+>v : number
+>1 : 1
+>() => 'failed' as const : () => "failed"
+>'failed' as const : "failed"
+>'failed' : "failed"
+
+  const probe: never = r
+>probe : never
+>r : Promise<number | "failed"> | PromiseLike<number | "failed">
+
+  if ('finally' in r) r.finally(() => {})
+>'finally' in r : boolean
+>'finally' : "finally"
+>r : Promise<number | "failed"> | PromiseLike<number | "failed">
+>r.finally(() => {}) : Promise<number | "failed">
+>r.finally : (onfinally?: (() => void) | undefined | null) => Promise<number | "failed">
+>r : Promise<number | "failed">
+>finally : (onfinally?: (() => void) | undefined | null) => Promise<number | "failed">
+>() => {} : () => void
+
+  return await r
+>await r : number | "failed"
+>r : Promise<number | "failed"> | PromiseLike<number | "failed">
+}
+export const settled: never = settle(Promise.resolve(1))
+>settled : never
+>settle(Promise.resolve(1)) : Promise<number | "failed">
+>settle : (p: Promise<number> | PromiseLike<number>) => Promise<number | "failed">
+>Promise.resolve(1) : Promise<number>
+>Promise.resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>Promise : PromiseConstructor
+>resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>1 : 1
+
+export const sentinel: number = ''
+>sentinel : number
+>'' : ""
+
+=== then_on_a_union.ts ===
+export {}
+declare const p: Promise<number> | PromiseLike<number>
+>p : Promise<number> | PromiseLike<number>
+
+const r = p.then(v => {})
+>r : Promise<void> | PromiseLike<void>
+>p.then(v => {}) : Promise<void> | PromiseLike<void>
+>p.then : (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>p : Promise<number> | PromiseLike<number>
+>then : (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = number, TResult2 = never>(onfulfilled?: ((value: number) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>v => {} : (v: number) => void
+>v : number
+
+export const probe_r: never = r
+>probe_r : never
+>r : Promise<void> | PromiseLike<void>
+
+if ('catch' in r) {
+>'catch' in r : boolean
+>'catch' : "catch"
+>r : Promise<void> | PromiseLike<void>
+
+  const narrowed: never = r
+>narrowed : never
+>r : Promise<void>
+
+  r.catch(reason => {})
+>r.catch(reason => {}) : Promise<void>
+>r.catch : <TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined) => Promise<void | TResult>
+>r : Promise<void>
+>catch : <TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined) => Promise<void | TResult>
+>reason => {} : (reason: any) => void
+>reason : any
+}
+class Holder<T> {
+>Holder : Holder<T>
+
+  promise: Promise<T> | PromiseLike<T>
+>promise : Promise<T> | PromiseLike<T>
+
+  constructor(arg: Promise<T> | PromiseLike<T>) {
+>arg : Promise<T> | PromiseLike<T>
+
+    this.promise = arg
+>this.promise = arg : Promise<T> | PromiseLike<T>
+>this.promise : Promise<T> | PromiseLike<T>
+>this : this
+>promise : Promise<T> | PromiseLike<T>
+>arg : Promise<T> | PromiseLike<T>
+
+    const thenReturn = this.promise.then(value => {})
+>thenReturn : Promise<void> | PromiseLike<void>
+>this.promise.then(value => {}) : Promise<void> | PromiseLike<void>
+>this.promise.then : (<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>this.promise : Promise<T> | PromiseLike<T>
+>this : this
+>promise : Promise<T> | PromiseLike<T>
+>then : (<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>value => {} : (value: T) => void
+>value : T
+
+    const probe: never = thenReturn
+>probe : never
+>thenReturn : Promise<void> | PromiseLike<void>
+
+    if ('catch' in thenReturn) {
+>'catch' in thenReturn : boolean
+>'catch' : "catch"
+>thenReturn : Promise<void> | PromiseLike<void>
+
+      const narrowed: never = thenReturn
+>narrowed : never
+>thenReturn : Promise<void>
+
+      thenReturn.catch(reason => {})
+>thenReturn.catch(reason => {}) : Promise<void>
+>thenReturn.catch : <TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined) => Promise<void | TResult>
+>thenReturn : Promise<void>
+>catch : <TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined) => Promise<void | TResult>
+>reason => {} : (reason: any) => void
+>reason : any
+    }
+  }
+}
+declare const q: Promise<void> | PromiseLike<void>
+>q : Promise<void> | PromiseLike<void>
+
+if ('catch' in q) { const narrowed: never = q }
+>'catch' in q : boolean
+>'catch' : "catch"
+>q : Promise<void> | PromiseLike<void>
+>narrowed : never
+>q : Promise<void>
+
+declare const u: PromiseLike<void> | Promise<void>
+>u : Promise<void> | PromiseLike<void>
+
+const r2 = u.then(() => 1)
+>r2 : Promise<number> | PromiseLike<number>
+>u.then(() => 1) : Promise<number> | PromiseLike<number>
+>u.then : (<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>u : Promise<void> | PromiseLike<void>
+>then : (<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => PromiseLike<TResult1 | TResult2>) | (<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined) => Promise<TResult1 | TResult2>)
+>() => 1 : () => number
+>1 : 1
+
+export const probe_r2: never = r2
+>probe_r2 : never
+>r2 : Promise<number> | PromiseLike<number>
+
+declare const both: { then(cb: () => void): Promise<void> } | { then(cb: () => void): PromiseLike<void> }
+>both : { then(cb: () => void): Promise<void>; } | { then(cb: () => void): PromiseLike<void>; }
+>then : (cb: () => void) => Promise<void>
+>cb : () => void
+>then : (cb: () => void) => PromiseLike<void>
+>cb : () => void
+
+export const probe_both: never = both.then(() => {})
+>probe_both : never
+>both.then(() => {}) : PromiseLike<void>
+>both.then : ((cb: () => void) => Promise<void>) | ((cb: () => void) => PromiseLike<void>)
+>both : { then(cb: () => void): Promise<void>; } | { then(cb: () => void): PromiseLike<void>; }
+>then : ((cb: () => void) => Promise<void>) | ((cb: () => void) => PromiseLike<void>)
+>() => {} : () => void
+

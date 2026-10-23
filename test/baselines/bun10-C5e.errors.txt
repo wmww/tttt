@@ -1,0 +1,30 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+ii.js(2,7): error TS2506: 'I' is referenced directly or indirectly in its own base expression.
+ii.js(3,1): error TS2303: Circular definition of import alias 'I'.
+jj.js(2,7): error TS2506: 'J' is referenced directly or indirectly in its own base expression.
+jj.js(3,1): error TS2303: Circular definition of import alias 'J'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== ii.js (2 errors) ====
+    const { J } = require("./jj");
+    class I extends J {}
+          ~
+!!! error TS2506: 'I' is referenced directly or indirectly in its own base expression.
+    module.exports.I = I;
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'I'.
+==== jj.js (2 errors) ====
+    const { I } = require("./ii");
+    class J extends I {}
+          ~
+!!! error TS2506: 'J' is referenced directly or indirectly in its own base expression.
+    module.exports.J = J;
+    ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'J'.
+    

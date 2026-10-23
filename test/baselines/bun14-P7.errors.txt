@@ -1,0 +1,15 @@
+a.ts(2,4): error TS2540: Cannot assign to '0' because it is a read-only property.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const mt: [number, number] | readonly [number, number];
+    mt[0] = 1;
+       ~
+!!! error TS2540: Cannot assign to '0' because it is a read-only property.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

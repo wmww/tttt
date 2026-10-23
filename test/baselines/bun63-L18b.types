@@ -1,0 +1,18 @@
+//// [test/cases/bun63-L18b.ts] ////
+
+=== a.ts ===
+import { x } from "./café";
+>x : any
+
+x;
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== café.ts ===
+export const x = 1;
+>x : 1
+>1 : 1
+

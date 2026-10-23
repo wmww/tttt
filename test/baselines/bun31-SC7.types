@@ -1,0 +1,63 @@
+//// [test/cases/bun31-SC7.ts] ////
+
+=== a.ts ===
+declare function use(...a: any[]): void;
+>use : (...a: any[]) => void
+>a : any[]
+
+type O = { b?: number } | undefined;
+>O : O
+>b : number | undefined
+
+function y1(o: O): number { o?.b ??= 1; }
+>y1 : (o: O) => number
+>o : O
+>o?.b ??= 1 : number
+>o?.b : number | undefined
+>o : O
+>b : number | undefined
+>1 : 1
+
+function y2(o: O) { let x: number; o?.b ||= 1; use(x); }
+>y2 : (o: O) => void
+>o : O
+>x : number
+>o?.b ||= 1 : number
+>o?.b : number | undefined
+>o : O
+>b : number | undefined
+>1 : 1
+>use(x) : void
+>use : (...a: any[]) => void
+>x : number
+
+function y3(o: O, s: string | number) { if (typeof s === "string") { o?.b &&= 1; const n: never = s; } }
+>y3 : (o: O, s: string | number) => void
+>o : O
+>s : string | number
+>typeof s === "string" : boolean
+>typeof s : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>s : string | number
+>"string" : "string"
+>o?.b &&= 1 : 0 | 1 | undefined
+>o?.b : number | undefined
+>o : O
+>b : number | undefined
+>1 : 1
+>n : never
+>s : string | number
+
+class Y4 { a: number; constructor(o: O) { o?.["b"] ??= 1; } }
+>Y4 : Y4
+>a : number
+>o : O
+>o?.["b"] ??= 1 : number
+>o?.["b"] : number | undefined
+>o : O
+>"b" : "b"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

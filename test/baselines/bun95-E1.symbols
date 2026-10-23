@@ -1,0 +1,124 @@
+//// [test/cases/bun95-E1.ts] ////
+
+=== a.ts ===
+interface Variance<E> { readonly _E: (_: never) => E }
+>Variance : Symbol(Variance, Decl(a.ts, 0, 0))
+>E : Symbol(E, Decl(a.ts, 0, 19))
+>_E : Symbol(Variance._E, Decl(a.ts, 0, 23))
+>_ : Symbol(_, Decl(a.ts, 0, 38))
+>E : Symbol(E, Decl(a.ts, 0, 19))
+
+interface Yieldable { readonly id: Variance<this>; }
+>Yieldable : Symbol(Yieldable, Decl(a.ts, 0, 54))
+>id : Symbol(Yieldable.id, Decl(a.ts, 1, 21))
+>Variance : Symbol(Variance, Decl(a.ts, 0, 0))
+
+type S<F> = { readonly [K in keyof F]: F[K] };
+>S : Symbol(S, Decl(a.ts, 1, 52))
+>F : Symbol(F, Decl(a.ts, 2, 7))
+>K : Symbol(K, Decl(a.ts, 2, 24))
+>F : Symbol(F, Decl(a.ts, 2, 7))
+>F : Symbol(F, Decl(a.ts, 2, 7))
+>K : Symbol(K, Decl(a.ts, 2, 24))
+
+declare function own<F>(f: F): new () => S<F> & Yieldable;
+>own : Symbol(own, Decl(a.ts, 2, 46))
+>F : Symbol(F, Decl(a.ts, 3, 21))
+>f : Symbol(f, Decl(a.ts, 3, 24))
+>F : Symbol(F, Decl(a.ts, 3, 21))
+>S : Symbol(S, Decl(a.ts, 1, 52))
+>F : Symbol(F, Decl(a.ts, 3, 21))
+>Yieldable : Symbol(Yieldable, Decl(a.ts, 0, 54))
+
+declare function lib<F>(f: F): new () => Readonly<F> & Yieldable;
+>lib : Symbol(lib, Decl(a.ts, 3, 58))
+>F : Symbol(F, Decl(a.ts, 4, 21))
+>f : Symbol(f, Decl(a.ts, 4, 24))
+>F : Symbol(F, Decl(a.ts, 4, 21))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>F : Symbol(F, Decl(a.ts, 4, 21))
+>Yieldable : Symbol(Yieldable, Decl(a.ts, 0, 54))
+
+declare function pick<F>(f: F): new () => Pick<F, keyof F> & Yieldable;
+>pick : Symbol(pick, Decl(a.ts, 4, 65))
+>F : Symbol(F, Decl(a.ts, 5, 22))
+>f : Symbol(f, Decl(a.ts, 5, 25))
+>F : Symbol(F, Decl(a.ts, 5, 22))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>F : Symbol(F, Decl(a.ts, 5, 22))
+>F : Symbol(F, Decl(a.ts, 5, 22))
+>Yieldable : Symbol(Yieldable, Decl(a.ts, 0, 54))
+
+declare function self<Self>(): <F>(f: F) => new () => S<F> & Yieldable;
+>self : Symbol(self, Decl(a.ts, 5, 71))
+>Self : Symbol(Self, Decl(a.ts, 6, 22))
+>F : Symbol(F, Decl(a.ts, 6, 32))
+>f : Symbol(f, Decl(a.ts, 6, 35))
+>F : Symbol(F, Decl(a.ts, 6, 32))
+>S : Symbol(S, Decl(a.ts, 1, 52))
+>F : Symbol(F, Decl(a.ts, 6, 32))
+>Yieldable : Symbol(Yieldable, Decl(a.ts, 0, 54))
+
+export class A extends own({ _tag: "A" as const }) {}
+>A : Symbol(A, Decl(a.ts, 6, 71))
+>own : Symbol(own, Decl(a.ts, 2, 46))
+>_tag : Symbol(_tag, Decl(a.ts, 7, 28))
+>const : Symbol(const)
+
+export class B extends lib({ _tag: "B" as const }) {}
+>B : Symbol(B, Decl(a.ts, 7, 53))
+>lib : Symbol(lib, Decl(a.ts, 3, 58))
+>_tag : Symbol(_tag, Decl(a.ts, 8, 28))
+>const : Symbol(const)
+
+export class C extends pick({ _tag: "C" as const }) {}
+>C : Symbol(C, Decl(a.ts, 8, 53))
+>pick : Symbol(pick, Decl(a.ts, 4, 65))
+>_tag : Symbol(_tag, Decl(a.ts, 9, 29))
+>const : Symbol(const)
+
+export class D extends self<D>()({ _tag: "D" as const }) {}
+>D : Symbol(D, Decl(a.ts, 9, 54))
+>self : Symbol(self, Decl(a.ts, 5, 71))
+>D : Symbol(D, Decl(a.ts, 9, 54))
+>_tag : Symbol(_tag, Decl(a.ts, 10, 34))
+>const : Symbol(const)
+
+declare const a: A;
+>a : Symbol(a, Decl(a.ts, 11, 13))
+>A : Symbol(A, Decl(a.ts, 6, 71))
+
+// `this` of the inherited member is the class. In a value of the base type it is the intersection.
+const n1: number = a.id;
+>n1 : Symbol(n1, Decl(a.ts, 13, 5))
+>a.id : Symbol(Yieldable.id, Decl(a.ts, 1, 21))
+>a : Symbol(a, Decl(a.ts, 11, 13))
+>id : Symbol(Yieldable.id, Decl(a.ts, 1, 21))
+
+const n2: number = new (own({ _tag: "A" as const }))().id;
+>n2 : Symbol(n2, Decl(a.ts, 14, 5))
+>new (own({ _tag: "A" as const }))().id : Symbol(Yieldable.id, Decl(a.ts, 1, 21))
+>own : Symbol(own, Decl(a.ts, 2, 46))
+>_tag : Symbol(_tag, Decl(a.ts, 14, 29))
+>const : Symbol(const)
+>id : Symbol(Yieldable.id, Decl(a.ts, 1, 21))
+
+export class E extends own({ _tag: "E" as const }) {
+>E : Symbol(E, Decl(a.ts, 14, 58))
+>own : Symbol(own, Decl(a.ts, 2, 46))
+>_tag : Symbol(_tag, Decl(a.ts, 15, 28))
+>const : Symbol(const)
+
+  m(): Variance<this> {
+>m : Symbol(E.m, Decl(a.ts, 15, 52))
+>Variance : Symbol(Variance, Decl(a.ts, 0, 0))
+
+    return this.id;
+>this.id : Symbol(Yieldable.id, Decl(a.ts, 1, 21))
+>this : Symbol(E, Decl(a.ts, 14, 58))
+>id : Symbol(Yieldable.id, Decl(a.ts, 1, 21))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 20, 5))
+

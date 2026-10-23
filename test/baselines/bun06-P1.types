@@ -1,0 +1,12 @@
+//// [test/cases/bun06-P1.ts] ////
+
+=== a.ts ===
+function* y1(): Generator<never> { yield* 1; }
+>y1 : () => Generator<never>
+>yield* 1 : any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

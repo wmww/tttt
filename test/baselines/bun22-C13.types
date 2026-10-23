@@ -1,0 +1,23 @@
+//// [test/cases/bun22-C13.ts] ////
+
+=== a.ts ===
+enum E { A = 1, B = 2 }
+>E : E
+>A : E.A
+>1 : 1
+>B : E.B
+>2 : 2
+
+declare function f1<T extends E>(x: `${T}`): T;
+>f1 : <T extends E>(x: `${T}`) => T
+>x : `${T}`
+
+f1("1.0");
+>f1("1.0") : E.A
+>f1 : <T extends E>(x: `${T}`) => T
+>"1.0" : "1.0"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

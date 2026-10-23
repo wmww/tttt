@@ -1,0 +1,45 @@
+a.ts(2,7): error TS2322: Type '1' is not assignable to type 'null'.
+a.ts(2,28): error TS2322: Type '1' is not assignable to type 'null'.
+a.ts(2,49): error TS2322: Type '1' is not assignable to type 'null'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "maxNodeModuleJsDepth": 3 }, "files": ["a.ts"] }
+==== a.ts (4 errors) ====
+    import { vx, px } from "x"; import { vy } from "y";
+    const n1: null = vx; const n2: null = px; const n3: null = vy;
+          ~~
+!!! error TS2322: Type '1' is not assignable to type 'null'.
+                               ~~
+!!! error TS2322: Type '1' is not assignable to type 'null'.
+                                                    ~~
+!!! error TS2322: Type '1' is not assignable to type 'null'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/deep/index.js (0 errors) ====
+    exports.d = 1;
+==== node_modules/deep/package.json (0 errors) ====
+    {"name":"deep","version":"1.0.0","main":"index.js"}
+==== node_modules/x/index.js (0 errors) ====
+    const m = require("mid"); const p = require("p"); exports.vx = m.v; exports.px = p.pv;
+==== node_modules/x/node_modules/mid/index.js (0 errors) ====
+    const d = require("deep"); exports.v = d.d;
+==== node_modules/x/node_modules/mid/package.json (0 errors) ====
+    {"name":"mid","version":"1.0.0","main":"index.js"}
+==== node_modules/x/node_modules/p/index.js (0 errors) ====
+    const m = require("mid"); exports.pv = m.v;
+==== node_modules/x/node_modules/p/package.json (0 errors) ====
+    {"name":"p","version":"1.0.0","main":"index.js"}
+==== node_modules/x/package.json (0 errors) ====
+    {"name":"x","version":"1.0.0","main":"index.js"}
+==== node_modules/y/index.js (0 errors) ====
+    const p = require("p"); exports.vy = p.pv;
+==== node_modules/y/node_modules/p/index.js (0 errors) ====
+    const m = require("mid"); exports.pv = m.v;
+==== node_modules/y/node_modules/p/package.json (0 errors) ====
+    {"name":"p","version":"1.0.0","main":"index.js"}
+==== node_modules/y/package.json (0 errors) ====
+    {"name":"y","version":"1.0.0","main":"index.js"}
+    

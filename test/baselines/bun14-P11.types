@@ -1,0 +1,18 @@
+//// [test/cases/bun14-P11.ts] ////
+
+=== a.ts ===
+async function run<T extends () => unknown>(f: T): Promise<Awaited<ReturnType<T>>> {
+>run : <T extends () => unknown>(f: T) => Promise<Awaited<ReturnType<T>>>
+>f : T
+
+  return await (f() as ReturnType<T>);
+>await (f() as ReturnType<T>) : Awaited<ReturnType<T>>
+>(f() as ReturnType<T>) : ReturnType<T>
+>f() as ReturnType<T> : ReturnType<T>
+>f() : unknown
+>f : T
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

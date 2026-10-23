@@ -1,0 +1,22 @@
+//// [test/cases/bun40-P3.ts] ////
+
+=== node_modules/b/node_modules/x/index.ts ===
+export const x = 1;
+>x : 1
+>1 : 1
+
+=== src/a.ts ===
+import "x";
+import "b";
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/b/index.d.ts ===
+
+import "x";
+=== node_modules/x/index.ts ===
+export const x = 1;
+>x : 1
+>1 : 1
+

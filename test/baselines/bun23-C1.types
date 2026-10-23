@@ -1,0 +1,13 @@
+//// [test/cases/bun23-C1.ts] ////
+
+=== a.ts ===
+import * as self from "./a";
+>self : any
+
+export { self };
+>self : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

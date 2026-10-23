@@ -1,0 +1,29 @@
+//// [test/cases/bun22-P4.ts] ////
+
+=== a.ts ===
+class K<T> { constructor(cb: T) {} }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>cb : Symbol(cb, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+class D<T> extends K<T> {}
+>D : Symbol(D, Decl(a.ts, 0, 36))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+
+declare const s: typeof D<(y: 1) => void>;
+>s : Symbol(s, Decl(a.ts, 2, 13))
+>D : Symbol(D, Decl(a.ts, 0, 36))
+>y : Symbol(y, Decl(a.ts, 2, 27))
+
+const t: typeof D<(y: 2) => void> = s;
+>t : Symbol(t, Decl(a.ts, 3, 5))
+>D : Symbol(D, Decl(a.ts, 0, 36))
+>y : Symbol(y, Decl(a.ts, 3, 19))
+>s : Symbol(s, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

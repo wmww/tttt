@@ -1,0 +1,70 @@
+//// [test/cases/bun94-R07.ts] ////
+
+=== a.ts ===
+export {};
+declare global {
+>global : Symbol(global, Decl(a.ts, 0, 10))
+
+  interface String { me(): this; [Symbol.iterator](): IterableIterator<this>; }
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>me : Symbol(String.me, Decl(a.ts, 2, 20))
+>[Symbol.iterator] : Symbol(String[Symbol.iterator], Decl(lib.es2015.iterable.d.ts, --, --), Decl(a.ts, 2, 32))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>IterableIterator : Symbol(IterableIterator, Decl(lib.es2015.iterable.d.ts, --, --))
+
+  interface Number { me(): this }
+>Number : Symbol(Number, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2020.number.d.ts, --, --), Decl(a.ts, 2, 79))
+>me : Symbol(Number.me, Decl(a.ts, 3, 20))
+}
+function f<D extends string, N extends number>(d: D, n: N) {
+>f : Symbol(f, Decl(a.ts, 4, 1))
+>D : Symbol(D, Decl(a.ts, 5, 11))
+>N : Symbol(N, Decl(a.ts, 5, 28))
+>d : Symbol(d, Decl(a.ts, 5, 47))
+>D : Symbol(D, Decl(a.ts, 5, 11))
+>n : Symbol(n, Decl(a.ts, 5, 52))
+>N : Symbol(N, Decl(a.ts, 5, 28))
+
+  const a: D = d.me();
+>a : Symbol(a, Decl(a.ts, 6, 7))
+>D : Symbol(D, Decl(a.ts, 5, 11))
+>d.me : Symbol(String.me, Decl(a.ts, 2, 20))
+>d : Symbol(d, Decl(a.ts, 5, 47))
+>me : Symbol(String.me, Decl(a.ts, 2, 20))
+
+  const b: string = d.me();
+>b : Symbol(b, Decl(a.ts, 7, 7))
+>d.me : Symbol(String.me, Decl(a.ts, 2, 20))
+>d : Symbol(d, Decl(a.ts, 5, 47))
+>me : Symbol(String.me, Decl(a.ts, 2, 20))
+
+  const c: N = n.me();
+>c : Symbol(c, Decl(a.ts, 8, 7))
+>N : Symbol(N, Decl(a.ts, 5, 28))
+>n.me : Symbol(Number.me, Decl(a.ts, 3, 20))
+>n : Symbol(n, Decl(a.ts, 5, 52))
+>me : Symbol(Number.me, Decl(a.ts, 3, 20))
+
+  const e: number = n.me();
+>e : Symbol(e, Decl(a.ts, 9, 7))
+>n.me : Symbol(Number.me, Decl(a.ts, 3, 20))
+>n : Symbol(n, Decl(a.ts, 5, 52))
+>me : Symbol(Number.me, Decl(a.ts, 3, 20))
+
+  for (const z of d) { const g: D = z; }
+>z : Symbol(z, Decl(a.ts, 10, 12))
+>d : Symbol(d, Decl(a.ts, 5, 47))
+>g : Symbol(g, Decl(a.ts, 10, 28))
+>D : Symbol(D, Decl(a.ts, 5, 11))
+>z : Symbol(z, Decl(a.ts, 10, 12))
+
+  const [h]: D[] = [...d];
+>h : Symbol(h, Decl(a.ts, 11, 9))
+>D : Symbol(D, Decl(a.ts, 5, 11))
+>d : Symbol(d, Decl(a.ts, 5, 47))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+

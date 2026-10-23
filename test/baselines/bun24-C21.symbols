@@ -1,0 +1,27 @@
+//// [test/cases/bun24-C21.ts] ////
+
+=== a.ts ===
+declare const tlv: { a: 1 };
+>tlv : Symbol(tlv, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+
+class K { static m() { return K.m; } }
+>K : Symbol(K, Decl(a.ts, 0, 28))
+>m : Symbol(K.m, Decl(a.ts, 1, 9))
+>K.m : Symbol(K.m, Decl(a.ts, 1, 9))
+>K : Symbol(K, Decl(a.ts, 0, 28))
+>m : Symbol(K.m, Decl(a.ts, 1, 9))
+
+const v: 1 = { z: null! as "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", q: K.m, last: tlv };
+>v : Symbol(v, Decl(a.ts, 2, 5))
+>z : Symbol(z, Decl(a.ts, 2, 14))
+>q : Symbol(q, Decl(a.ts, 2, 170))
+>K.m : Symbol(K.m, Decl(a.ts, 1, 9))
+>K : Symbol(K, Decl(a.ts, 0, 28))
+>m : Symbol(K.m, Decl(a.ts, 1, 9))
+>last : Symbol(last, Decl(a.ts, 2, 178))
+>tlv : Symbol(tlv, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

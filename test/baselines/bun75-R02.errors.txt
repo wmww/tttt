@@ -1,0 +1,40 @@
+a.ts(4,14): error TS4023: Exported variable 'v3' has or is using name 'N3.default' from external module "m" but cannot be named.
+a.ts(7,50): error TS4053: Return type of public method from exported class has or is using name 'N3.default' from external module "m" but cannot be named.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+m.ts(1,22): error TS1319: A default export can only be used in an ECMAScript-style module.
+m.ts(2,23): error TS1319: A default export can only be used in an ECMAScript-style module.
+m.ts(3,23): error TS1319: A default export can only be used in an ECMAScript-style module.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    import { make, make2, make3, cls } from "./m";
+    export const v = make();
+    export const v2 = make2();
+    export const v3 = make3();
+                 ~~
+!!! error TS4023: Exported variable 'v3' has or is using name 'N3.default' from external module "m" but cannot be named.
+    export const v4 = cls();
+    export function f(p = make()) { return [make2()]; }
+    export class C { p = make(); static s = make2(); m() { return make3(); } }
+                                                     ~
+!!! error TS4053: Return type of public method from exported class has or is using name 'N3.default' from external module "m" but cannot be named.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (3 errors) ====
+    namespace N { export default class Foo { x = 1 } }
+                         ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    namespace N2 { export default class { y = 1 } }
+                          ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    namespace N3 { export default interface Ifc { z: number } }
+                          ~~~~~~~
+!!! error TS1319: A default export can only be used in an ECMAScript-style module.
+    export function make() { return new N.default(); }
+    export function make2() { return new N2.default(); }
+    export function make3() { return null! as N3.default; }
+    export function cls() { return N.default; }
+    

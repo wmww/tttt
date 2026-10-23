@@ -1,0 +1,21 @@
+//// [test/cases/bun80-R13b.ts] ////
+
+=== a.ts ===
+import Missin from "./a";
+>Missin : Symbol(Missin, Decl(a.ts, 0, 6))
+
+export default Missing;
+=== b.ts ===
+export default Missing;
+import Missin from "./b";
+>Missin : Symbol(Missin, Decl(b.ts, 1, 6))
+
+=== c.ts ===
+import Missin = require("./c");
+>Missin : Symbol(Missin, Decl(c.ts, 0, 0))
+
+export = Missing;
+=== s.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(s.ts, 0, 5))
+

@@ -1,0 +1,25 @@
+//// [test/cases/bun27-C3b.ts] ////
+
+=== a.tsx ===
+import type * as React from "./lib";
+>React : Symbol(React, Decl(a.tsx, 0, 11))
+
+export const a = <div />;
+>a : Symbol(a, Decl(a.tsx, 1, 12))
+>div : Symbol(React.JSX.IntrinsicElements.div, Decl(lib.ts, 1, 87))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 2, 5))
+
+=== lib.ts ===
+export declare function createElement(...a: any[]): any;
+>createElement : Symbol(createElement, Decl(lib.ts, 0, 0))
+>a : Symbol(a, Decl(lib.ts, 0, 38))
+
+export declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { div: {} } }
+>JSX : Symbol(JSX, Decl(lib.ts, 0, 56))
+>Element : Symbol(Element, Decl(lib.ts, 1, 30))
+>e : Symbol(Element.e, Decl(lib.ts, 1, 50))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(lib.ts, 1, 57))
+>div : Symbol(IntrinsicElements.div, Decl(lib.ts, 1, 87))
+

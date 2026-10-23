@@ -1,0 +1,354 @@
+//// [test/cases/bun72-R14.ts] ////
+
+=== a.ts ===
+declare function id<T>(x: T): T;
+>id : <T>(x: T) => T
+>x : T
+
+type R = (x: number) => string;
+>R : R
+>x : number
+
+const objv = { z: 1, cb: (): R => null! };
+>objv : { z: number; cb: () => R; }
+>{ z: 1, cb: (): R => null! } : { z: number; cb: () => R; }
+>z : number
+>1 : 1
+>cb : () => R
+>(): R => null! : () => R
+>null! : never
+
+const { z, ...rest1 } = objv; declare function h1<T>(a: T, o: typeof rest1): T; h1(1, { cb: () => id });
+>z : number
+>rest1 : { cb: () => R; }
+>objv : { z: number; cb: () => R; }
+>h1 : <T>(a: T, o: typeof rest1) => T
+>a : T
+>o : { cb: () => R; }
+>rest1 : { cb: () => R; }
+>h1(1, { cb: () => id }) : 1
+>h1 : <T>(a: T, o: typeof rest1) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+const sp1 = { ...objv }; declare function h2<T>(a: T, o: typeof sp1): T; h2(1, { z: 1, cb: () => id });
+>sp1 : { z: number; cb: () => R; }
+>{ ...objv } : { z: number; cb: () => R; }
+>objv : { z: number; cb: () => R; }
+>h2 : <T>(a: T, o: typeof sp1) => T
+>a : T
+>o : { z: number; cb: () => R; }
+>sp1 : { z: number; cb: () => R; }
+>h2(1, { z: 1, cb: () => id }) : 1
+>h2 : <T>(a: T, o: typeof sp1) => T
+>1 : 1
+>{ z: 1, cb: () => id } : { z: number; cb: () => (x: number) => number; }
+>z : number
+>1 : 1
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+const sp2 = { ...objv, k: 1 }; declare function h3<T>(a: T, o: typeof sp2): T; h3(1, { z: 1, k: 1, cb: () => id });
+>sp2 : { z: number; cb: () => R; k: number; }
+>{ ...objv, k: 1 } : { z: number; cb: () => R; k: number; }
+>objv : { z: number; cb: () => R; }
+>k : number
+>1 : 1
+>h3 : <T>(a: T, o: typeof sp2) => T
+>a : T
+>o : { z: number; cb: () => R; k: number; }
+>sp2 : { z: number; cb: () => R; k: number; }
+>h3(1, { z: 1, k: 1, cb: () => id }) : 1
+>h3 : <T>(a: T, o: typeof sp2) => T
+>1 : 1
+>{ z: 1, k: 1, cb: () => id } : { z: number; k: number; cb: () => (x: number) => number; }
+>z : number
+>1 : 1
+>k : number
+>1 : 1
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+let wid = { cb: (): R => null!, n: null }; declare function h4<T>(a: T, o: typeof wid): T; h4(1, { n: null, cb: () => id });
+>wid : { cb: () => R; n: null; }
+>{ cb: (): R => null!, n: null } : { cb: () => R; n: null; }
+>cb : () => R
+>(): R => null! : () => R
+>null! : never
+>n : null
+>h4 : <T>(a: T, o: typeof wid) => T
+>a : T
+>o : { cb: () => R; n: null; }
+>wid : { cb: () => R; n: null; }
+>h4(1, { n: null, cb: () => id }) : 1
+>h4 : <T>(a: T, o: typeof wid) => T
+>1 : 1
+>{ n: null, cb: () => id } : { n: null; cb: () => (x: number) => number; }
+>n : null
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+const asg = Object.assign({ q: 1 }, objv); declare function h5<T>(a: T, o: typeof asg): T; h5(1, { q: 1, z: 1, cb: () => id });
+>asg : { q: number; } & { z: number; cb: () => R; }
+>Object.assign({ q: 1 }, objv) : { q: number; } & { z: number; cb: () => R; }
+>Object.assign : { <T extends {}, U>(target: T, source: U): T & U; <T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V; <T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W; (target: object, ...sources: any[]): any; }
+>Object : ObjectConstructor
+>assign : { <T extends {}, U>(target: T, source: U): T & U; <T extends {}, U, V>(target: T, source1: U, source2: V): T & U & V; <T extends {}, U, V, W>(target: T, source1: U, source2: V, source3: W): T & U & V & W; (target: object, ...sources: any[]): any; }
+>{ q: 1 } : { q: number; }
+>q : number
+>1 : 1
+>objv : { z: number; cb: () => R; }
+>h5 : <T>(a: T, o: typeof asg) => T
+>a : T
+>o : { q: number; } & { z: number; cb: () => R; }
+>asg : { q: number; } & { z: number; cb: () => R; }
+>h5(1, { q: 1, z: 1, cb: () => id }) : 1
+>h5 : <T>(a: T, o: typeof asg) => T
+>1 : 1
+>{ q: 1, z: 1, cb: () => id } : { q: number; z: number; cb: () => (x: number) => number; }
+>q : number
+>1 : 1
+>z : number
+>1 : 1
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+const cex = class { cb!: () => R }; declare function h6<T>(a: T, o: InstanceType<typeof cex>): T; h6(1, { cb: () => id });
+>cex : typeof cex
+>class { cb!: () => R } : typeof cex
+>cb : () => R
+>h6 : <T>(a: T, o: InstanceType<typeof cex>) => T
+>a : T
+>o : cex
+>cex : typeof cex
+>h6(1, { cb: () => id }) : 1
+>h6 : <T>(a: T, o: InstanceType<typeof cex>) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => <T>(x: T) => T; }
+>cb : () => <T>(x: T) => T
+>() => id : () => <T>(x: T) => T
+>id : <T>(x: T) => T
+
+enum E { A } namespace E { export const cb: () => R = null! } declare function h7<T>(a: T, o: typeof E): T; h7(1, { A: E.A, cb: () => id });
+>E : E
+>A : E.A
+>E : typeof E
+>cb : () => R
+>null! : never
+>h7 : <T>(a: T, o: typeof E) => T
+>a : T
+>o : typeof E
+>E : typeof E
+>h7(1, { A: E.A, cb: () => id }) : 1
+>h7 : <T>(a: T, o: typeof E) => T
+>1 : 1
+>{ A: E.A, cb: () => id } : { A: E; cb: () => <T>(x: T) => T; }
+>A : E
+>E.A : E
+>E : typeof E
+>A : E
+>cb : () => <T>(x: T) => T
+>() => id : () => <T>(x: T) => T
+>id : <T>(x: T) => T
+
+namespace V { export const cb: () => R = null! } declare function h8<T>(a: T, o: typeof V): T; h8(1, { cb: () => id });
+>V : typeof V
+>cb : () => R
+>null! : never
+>h8 : <T>(a: T, o: typeof V) => T
+>a : T
+>o : typeof V
+>V : typeof V
+>h8(1, { cb: () => id }) : 1
+>h8 : <T>(a: T, o: typeof V) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => <T>(x: T) => T; }
+>cb : () => <T>(x: T) => T
+>() => id : () => <T>(x: T) => T
+>id : <T>(x: T) => T
+
+function FN() {} namespace FN { export const cb: () => R = null! } declare function h9<T>(a: T, o: Pick<typeof FN, "cb">): T; h9(1, { cb: () => id });
+>FN : typeof FN
+>FN : typeof FN
+>cb : () => R
+>null! : never
+>h9 : <T>(a: T, o: Pick<typeof FN, "cb">) => T
+>a : T
+>o : Pick<typeof FN, "cb">
+>FN : typeof FN
+>h9(1, { cb: () => id }) : 1
+>h9 : <T>(a: T, o: Pick<typeof FN, "cb">) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+function withRest({ z, ...r }: typeof objv) { function h<T>(a: T, o: typeof r): T { return a } h(1, { cb: () => id }); }
+>withRest : ({ z, ...r }: typeof objv) => void
+>z : number
+>r : { cb: () => R; }
+>objv : { z: number; cb: () => R; }
+>h : <T>(a: T, o: typeof r) => T
+>a : T
+>o : { cb: () => R; }
+>r : { cb: () => R; }
+>a : T
+>h(1, { cb: () => id }) : 1
+>h : <T>(a: T, o: typeof r) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+const [, ...arest] = [1, (): R => null!] as [number, () => R]; declare function h10<T>(a: T, o: typeof arest): T; h10(1, [() => id]);
+>arest : [() => R]
+>[1, (): R => null!] as [number, () => R] : [number, () => R]
+>[1, (): R => null!] : [number, () => R]
+>1 : 1
+>(): R => null! : () => R
+>null! : never
+>h10 : <T>(a: T, o: typeof arest) => T
+>a : T
+>o : [() => R]
+>arest : [() => R]
+>h10(1, [() => id]) : 1
+>h10 : <T>(a: T, o: typeof arest) => T
+>1 : 1
+>[() => id] : [() => (x: number) => number]
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+declare const u: { z: 1; cb: () => R } | { z: 2; cb: () => R; w: 1 }; const { z: z2, ...rest2 } = u; declare function h11<T>(a: T, o: typeof rest2): T; h11(1, { cb: () => id });
+>u : { z: 1; cb: () => R; } | { z: 2; cb: () => R; w: 1; }
+>z : 1
+>cb : () => R
+>z : 2
+>cb : () => R
+>w : 1
+>z : any
+>z2 : 1 | 2
+>rest2 : { cb: () => R; } | { cb: () => R; w: 1; }
+>u : { z: 1; cb: () => R; } | { z: 2; cb: () => R; w: 1; }
+>h11 : <T>(a: T, o: typeof rest2) => T
+>a : T
+>o : { cb: () => R; } | { cb: () => R; w: 1; }
+>rest2 : { cb: () => R; } | { cb: () => R; w: 1; }
+>h11(1, { cb: () => id }) : 1
+>h11 : <T>(a: T, o: typeof rest2) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+const { ...rest3 } = objv; declare function h12<T>(a: T, o: typeof rest3): T; h12(1, { z: 1, cb: () => id });
+>rest3 : { z: number; cb: () => R; }
+>objv : { z: number; cb: () => R; }
+>h12 : <T>(a: T, o: typeof rest3) => T
+>a : T
+>o : { z: number; cb: () => R; }
+>rest3 : { z: number; cb: () => R; }
+>h12(1, { z: 1, cb: () => id }) : 1
+>h12 : <T>(a: T, o: typeof rest3) => T
+>1 : 1
+>{ z: 1, cb: () => id } : { z: number; cb: () => (x: number) => number; }
+>z : number
+>1 : 1
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+type RestAlias = typeof rest1; declare function h13<T>(a: T, o: RestAlias): T; h13(1, { cb: () => id });
+>RestAlias : { cb: () => R; }
+>rest1 : { cb: () => R; }
+>h13 : <T>(a: T, o: RestAlias) => T
+>a : T
+>o : { cb: () => R; }
+>h13(1, { cb: () => id }) : 1
+>h13 : <T>(a: T, o: RestAlias) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+declare function h14<T>(a: T, o: (typeof rest1)[]): T; h14(1, [{ cb: () => id }]);
+>h14 : <T>(a: T, o: (typeof rest1)[]) => T
+>a : T
+>o : { cb: () => R; }[]
+>rest1 : { cb: () => R; }
+>h14(1, [{ cb: () => id }]) : 1
+>h14 : <T>(a: T, o: (typeof rest1)[]) => T
+>1 : 1
+>[{ cb: () => id }] : { cb: () => (x: number) => number; }[]
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+declare function h15<T>(a: T, o: typeof rest1 | undefined): T; h15(1, { cb: () => id });
+>h15 : <T>(a: T, o: typeof rest1 | undefined) => T
+>a : T
+>o : { cb: () => R; } | undefined
+>rest1 : { cb: () => R; }
+>h15(1, { cb: () => id }) : 1
+>h15 : <T>(a: T, o: typeof rest1 | undefined) => T
+>1 : 1
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+declare function h16<T>(a: T, o: (typeof rest1)["cb"]): T; h16(1, () => id);
+>h16 : <T>(a: T, o: (typeof rest1)["cb"]) => T
+>a : T
+>o : () => R
+>rest1 : { cb: () => R; }
+>h16(1, () => id) : 1
+>h16 : <T>(a: T, o: (typeof rest1)["cb"]) => T
+>1 : 1
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+let r5; ({ z: r5, ...r5 } = objv);
+>r5 : any
+>({ z: r5, ...r5 } = objv) : { z: number; cb: () => R; }
+>{ z: r5, ...r5 } = objv : { z: number; cb: () => R; }
+>{ z: r5, ...r5 } : any
+>z : any
+>r5 : any
+>r5 : any
+>objv : { z: number; cb: () => R; }
+
+const nested = { in: rest1 }; declare function h17<T>(a: T, o: typeof nested): T; h17(1, { in: { cb: () => id } });
+>nested : { in: { cb: () => R; }; }
+>{ in: rest1 } : { in: { cb: () => R; }; }
+>in : { cb: () => R; }
+>rest1 : { cb: () => R; }
+>h17 : <T>(a: T, o: typeof nested) => T
+>a : T
+>o : { in: { cb: () => R; }; }
+>nested : { in: { cb: () => R; }; }
+>h17(1, { in: { cb: () => id } }) : 1
+>h17 : <T>(a: T, o: typeof nested) => T
+>1 : 1
+>{ in: { cb: () => id } } : { in: { cb: () => (x: number) => number; }; }
+>in : { cb: () => (x: number) => number; }
+>{ cb: () => id } : { cb: () => (x: number) => number; }
+>cb : () => (x: number) => number
+>() => id : () => (x: number) => number
+>id : <T>(x: T) => T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

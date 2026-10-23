@@ -1,0 +1,51 @@
+//// [test/cases/bun91-R09.ts] ////
+
+=== a.js ===
+/** @type {unknown} */
+const v = null;
+>v : Symbol(v, Decl(a.js, 1, 5))
+
+/** @param {unknown} x @returns {(asserts x is string)} */
+function p1(x) {}
+>p1 : Symbol(p1, Decl(a.js, 1, 15))
+>x : Symbol(x, Decl(a.js, 3, 12))
+
+function t1() { p1(v); v.length; }
+>t1 : Symbol(t1, Decl(a.js, 3, 17))
+>p1 : Symbol(p1, Decl(a.js, 1, 15))
+>v : Symbol(v, Decl(a.js, 1, 5))
+>v : Symbol(v, Decl(a.js, 1, 5))
+
+class K {
+>K : Symbol(K, Decl(a.js, 4, 34))
+
+  /** @returns {(asserts this is L)} */
+  n() {}
+>n : Symbol(K.n, Decl(a.js, 5, 9))
+}
+class L extends K { l = 1 }
+>L : Symbol(L, Decl(a.js, 8, 1))
+>K : Symbol(K, Decl(a.js, 4, 34))
+>l : Symbol(L.l, Decl(a.js, 9, 19))
+
+/** @type {K} */
+const k = new K();
+>k : Symbol(k, Decl(a.js, 11, 5))
+>K : Symbol(K, Decl(a.js, 4, 34))
+
+function t2() { k.n(); k.l; }
+>t2 : Symbol(t2, Decl(a.js, 11, 18))
+>k.n : Symbol(K.n, Decl(a.js, 5, 9))
+>k : Symbol(k, Decl(a.js, 11, 5))
+>n : Symbol(K.n, Decl(a.js, 5, 9))
+>k : Symbol(k, Decl(a.js, 11, 5))
+
+/** @param {unknown} x @returns {(asserts x is string)} */
+const p3 = x => {};
+>p3 : Symbol(p3, Decl(a.js, 14, 5))
+>x : Symbol(x, Decl(a.js, 14, 10))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 16, 5))
+

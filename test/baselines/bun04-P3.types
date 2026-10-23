@@ -1,0 +1,22 @@
+//// [test/cases/bun04-P3.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.js ===
+const w = require("./m");
+>w : typeof w
+>require("./m") : typeof w
+>require : any
+>"./m" : "./m"
+
+export class w {}
+>w : w
+
+=== m.ts ===
+export const v = 1;
+>v : 1
+>1 : 1
+

@@ -1,0 +1,16 @@
+//// [test/cases/bun08-C12.ts] ////
+
+=== a.ts ===
+const loc = 1;
+>loc : 1
+>1 : 1
+
+namespace Inner { export { loc }; }
+>Inner : typeof Inner
+>loc : any
+
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

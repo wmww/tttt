@@ -1,0 +1,27 @@
+//// [test/cases/bun18-C3b.ts] ////
+
+=== a.ts ===
+function g4<T extends U[K], U extends T, K extends keyof U>(t: T, u: U) { const a: U[K] = t; const b: T = u; }
+>g4 : Symbol(g4, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+>K : Symbol(K, Decl(a.ts, 0, 40))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>K : Symbol(K, Decl(a.ts, 0, 40))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+>t : Symbol(t, Decl(a.ts, 0, 60))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>u : Symbol(u, Decl(a.ts, 0, 65))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+>a : Symbol(a, Decl(a.ts, 0, 79))
+>U : Symbol(U, Decl(a.ts, 0, 27))
+>K : Symbol(K, Decl(a.ts, 0, 40))
+>t : Symbol(t, Decl(a.ts, 0, 60))
+>b : Symbol(b, Decl(a.ts, 0, 98))
+>T : Symbol(T, Decl(a.ts, 0, 12))
+>u : Symbol(u, Decl(a.ts, 0, 65))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

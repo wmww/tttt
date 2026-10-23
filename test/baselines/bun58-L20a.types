@@ -1,0 +1,70 @@
+//// [test/cases/bun58-L20a.ts] ////
+
+=== m.ts ===
+namespace obj { export interface p { t: 1 } }
+>t : 1
+
+const obj = { p: 1 };
+>obj : { p: number; }
+>{ p: 1 } : { p: number; }
+>p : number
+>1 : 1
+
+export = obj;
+>obj : { p: number; }
+
+=== mid.ts ===
+export { p } from "./m";
+>p : number
+
+=== mid2.ts ===
+import { p } from "./m"; export { p as p3 };
+>p : number
+>p : number
+>p3 : number
+
+=== u.ts ===
+import { p } from "./m";
+>p : number
+
+import { p as p2 } from "./mid";
+>p : number
+>p2 : number
+
+import * as mid from "./mid";
+>mid : typeof mid
+
+import { p3 } from "./mid2";
+>p3 : number
+
+const v: string = p; let t: p = {};
+>v : string
+>p : number
+>t : p
+>{} : {}
+
+const v2: string = p2; let t2: p2 = {};
+>v2 : string
+>p2 : number
+>t2 : p2
+>{} : {}
+
+const v3: string = mid.p; let t3: mid.p = {};
+>v3 : string
+>mid.p : number
+>mid : typeof mid
+>p : number
+>t3 : p2
+>mid : any
+>{} : {}
+
+const v4: string = p3; let t4: p3 = {};
+>v4 : string
+>p3 : number
+>t4 : p3
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

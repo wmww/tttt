@@ -1,0 +1,114 @@
+//// [test/cases/bun83-R20a.ts] ////
+
+=== a01.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a01.ts, 0, 24))
+
+async function f() { interface I { m(@await y: any): void } }
+>f : Symbol(f, Decl(a01.ts, 0, 34))
+>I : Symbol(I, Decl(a01.ts, 1, 20))
+>m : Symbol(I.m, Decl(a01.ts, 1, 34))
+>y : Symbol(y, Decl(a01.ts, 1, 37))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a01.ts, 2, 5))
+
+=== a02.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a02.ts, 0, 24))
+
+async function f() { interface I { (@await y: any): void } }
+>f : Symbol(f, Decl(a02.ts, 0, 34))
+>I : Symbol(I, Decl(a02.ts, 1, 20))
+>y : Symbol(y, Decl(a02.ts, 1, 36))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a02.ts, 2, 5))
+
+=== a03.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a03.ts, 0, 24))
+
+async function f() { interface I { new (@await y: any): void } }
+>f : Symbol(f, Decl(a03.ts, 0, 34))
+>I : Symbol(I, Decl(a03.ts, 1, 20))
+>y : Symbol(y, Decl(a03.ts, 1, 40))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a03.ts, 2, 5))
+
+=== a11.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a11.ts, 0, 24))
+
+interface I { m(@await y: any): void }
+>I : Symbol(I, Decl(a11.ts, 0, 34))
+>m : Symbol(I.m, Decl(a11.ts, 1, 13))
+>y : Symbol(y, Decl(a11.ts, 1, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a11.ts, 2, 5))
+
+=== a14.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a14.ts, 0, 24))
+
+async function f() { interface I { set s(@await y: any) } }
+>f : Symbol(f, Decl(a14.ts, 0, 34))
+>I : Symbol(I, Decl(a14.ts, 1, 20))
+>s : Symbol(I.s, Decl(a14.ts, 1, 34))
+>y : Symbol(y, Decl(a14.ts, 1, 41))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a14.ts, 2, 5))
+
+=== a16.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a16.ts, 0, 24))
+
+async function f() { interface I { m(a: (@await y: any) => void): void; n(a: new (@await y: any) => void): void } }
+>f : Symbol(f, Decl(a16.ts, 0, 34))
+>I : Symbol(I, Decl(a16.ts, 1, 20))
+>m : Symbol(I.m, Decl(a16.ts, 1, 34))
+>a : Symbol(a, Decl(a16.ts, 1, 37))
+> : Symbol(unknown)
+>y : Symbol(y, Decl(a16.ts, 1, 41))
+>void : Symbol(I.void, Decl(a16.ts, 1, 65))
+>n : Symbol(I.n, Decl(a16.ts, 1, 71))
+>a : Symbol(a, Decl(a16.ts, 1, 74))
+>y : Symbol(y, Decl(a16.ts, 1, 82))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a16.ts, 2, 5))
+
+=== a17.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a17.ts, 0, 24))
+
+async function f() { interface I { m(@await.x y: any): void; n(@await() y: any): void } }
+>f : Symbol(f, Decl(a17.ts, 0, 34))
+>I : Symbol(I, Decl(a17.ts, 1, 20))
+>m : Symbol(I.m, Decl(a17.ts, 1, 34))
+>y : Symbol(y, Decl(a17.ts, 1, 37))
+>n : Symbol(I.n, Decl(a17.ts, 1, 60))
+>y : Symbol(y, Decl(a17.ts, 1, 63))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a17.ts, 2, 5))
+
+=== a19.ts ===
+export {}; declare const dec: any;
+>dec : Symbol(dec, Decl(a19.ts, 0, 24))
+
+class K { static { interface I { m(@await y: any): void; n(@dec(await 1) y: any): void } } }
+>K : Symbol(K, Decl(a19.ts, 0, 34))
+>I : Symbol(I, Decl(a19.ts, 1, 18))
+>m : Symbol(I.m, Decl(a19.ts, 1, 32))
+>y : Symbol(y, Decl(a19.ts, 1, 35))
+>n : Symbol(I.n, Decl(a19.ts, 1, 56))
+>dec : Symbol(dec, Decl(a19.ts, 0, 24))
+>y : Symbol(y, Decl(a19.ts, 1, 59))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a19.ts, 2, 5))
+

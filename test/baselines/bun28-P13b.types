@@ -1,0 +1,19 @@
+//// [test/cases/bun28-P13b.ts] ////
+
+=== a.ts ===
+let b: any;
+>b : any
+
+({ #b: b } = {} as any);
+>({ #b: b } = {} as any) : any
+>{ #b: b } = {} as any : any
+>{ #b: b } : {}
+>#b : any
+>b : any
+>{} as any : any
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,67 @@
+//// [test/cases/bun78-R01.ts] ////
+
+=== a.ts ===
+declare function f1<T>(cb: () => { a: (x: number) => void; v?: unknown }, t: T): T;
+>f1 : <T>(cb: () => { a: (x: number) => void; v?: unknown; }, t: T) => T
+>cb : () => { a: (x: number) => void; v?: unknown; }
+>a : (x: number) => void
+>x : number
+>v : unknown
+>t : T
+
+declare function f3<T>(cb: () => { a: (x: number) => void; v?: T }, t: T): T;
+>f3 : <T>(cb: () => { a: (x: number) => void; v?: T; }, t: T) => T
+>cb : () => { a: (x: number) => void; v?: T; }
+>a : (x: number) => void
+>x : number
+>v : T | undefined
+>t : T
+
+function g1() { return f1(() => ({ a: x => {}, v: g1() }), 1); }
+>g1 : () => any
+>f1(() => ({ a: x => {}, v: g1() }), 1) : 1
+>f1 : <T>(cb: () => { a: (x: number) => void; v?: unknown; }, t: T) => T
+>() => ({ a: x => {}, v: g1() }) : () => { a: (x: number) => void; v: any; }
+>({ a: x => {}, v: g1() }) : { a: (x: number) => void; v: any; }
+>{ a: x => {}, v: g1() } : { a: (x: number) => void; v: any; }
+>a : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+>v : any
+>g1() : any
+>g1 : () => any
+>1 : 1
+
+function g3() { return f3(() => ({ a: x => {}, v: g3() }), 1); }
+>g3 : () => any
+>f3(() => ({ a: x => {}, v: g3() }), 1) : any
+>f3 : <T>(cb: () => { a: (x: number) => void; v?: T; }, t: T) => T
+>() => ({ a: x => {}, v: g3() }) : () => { a: (x: number) => void; v: any; }
+>({ a: x => {}, v: g3() }) : { a: (x: number) => void; v: any; }
+>{ a: x => {}, v: g3() } : { a: (x: number) => void; v: any; }
+>a : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+>v : any
+>g3() : any
+>g3 : () => any
+>1 : 1
+
+function g7() { return f1(function () { return { a: x => {}, v: g7() }; }, 1); }
+>g7 : () => any
+>f1(function () { return { a: x => {}, v: g7() }; }, 1) : 1
+>f1 : <T>(cb: () => { a: (x: number) => void; v?: unknown; }, t: T) => T
+>function () { return { a: x => {}, v: g7() }; } : () => { a: (x: number) => void; v: any; }
+>{ a: x => {}, v: g7() } : { a: (x: number) => void; v: any; }
+>a : (x: number) => void
+>x => {} : (x: number) => void
+>x : number
+>v : any
+>g7() : any
+>g7 : () => any
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

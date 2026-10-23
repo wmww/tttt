@@ -1,0 +1,26 @@
+a.ts(1,13): error TS2303: Circular definition of import alias 'ns'.
+a.ts(2,17): error TS7023: 'fa' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(2,25): error TS7023: 'g' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (3 errors) ====
+    import * as ns from "./b";
+                ~~
+!!! error TS2303: Circular definition of import alias 'ns'.
+    export function fa() { return ns.foo; }
+                    ~~
+!!! error TS7023: 'fa' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    ns.nope;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (1 errors) ====
+    import A = require("./a");
+    const o = { foo: 1, get g() { return A.fa(); }, default: 1 };
+                            ~
+!!! error TS7023: 'g' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+    export = o;
+    

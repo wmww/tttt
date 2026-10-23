@@ -1,0 +1,85 @@
+//// [test/cases/bun88-R05a.ts] ////
+
+=== a.ts ===
+export {};
+type Keys = "a" | "b";
+>Keys : Keys
+
+class C1 { [k: string]: any; [P in Keys]: number }
+>C1 : C1
+>k : string
+>[P in Keys] : number
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+class C2 { static [k: string]: any; static [P in Keys]: number }
+>C2 : C2
+>k : string
+>[P in Keys] : number
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+class C3 { [k: string]: any; [P in Keys]?: number }
+>C3 : C3
+>k : string
+>[P in Keys] : number | undefined
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+class C4 { [k: string]: any; readonly [P in Keys]: number }
+>C4 : C4
+>k : string
+>[P in Keys] : number
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+class C5 { [k: number]: any; [P in Keys]() {} }
+>C5 : C5
+>k : number
+>[P in Keys] : () => void
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+class C6 { [k: symbol]: any; get [P in Keys]() { return 1 } }
+>C6 : C6
+>k : symbol
+>[P in Keys] : number
+>P in Keys : boolean
+>P : any
+>Keys : any
+>1 : 1
+
+const E7 = class { [k: string]: any; [P in Keys]: number };
+>E7 : typeof E7
+>class { [k: string]: any; [P in Keys]: number } : typeof E7
+>k : string
+>[P in Keys] : number
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+declare class C8 { [k: string]: any; [P in Keys]: number }
+>C8 : C8
+>k : string
+>[P in Keys] : number
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+abstract class C9 { [k: string]: any; abstract [P in Keys]: number }
+>C9 : C9
+>k : string
+>[P in Keys] : number
+>P in Keys : boolean
+>P : any
+>Keys : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

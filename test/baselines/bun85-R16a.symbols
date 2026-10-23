@@ -1,0 +1,40 @@
+//// [test/cases/bun85-R16a.ts] ////
+
+=== a.ts ===
+import { p } from "./m";
+>p : Symbol(p, Decl(a.ts, 0, 8))
+
+export const y = p;
+>y : Symbol(y, Decl(a.ts, 1, 12))
+>p : Symbol(p, Decl(a.ts, 0, 8))
+
+const t: never = y;
+>t : Symbol(t, Decl(a.ts, 2, 5))
+>y : Symbol(y, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== m.ts ===
+import { y } from "./a";
+>y : Symbol(y, Decl(m.ts, 0, 8))
+
+interface B<T> { b: T }
+>B : Symbol(B, Decl(m.ts, 0, 24))
+>T : Symbol(T, Decl(m.ts, 1, 12))
+>b : Symbol(B.b, Decl(m.ts, 1, 16))
+>T : Symbol(T, Decl(m.ts, 1, 12))
+
+interface V extends B<typeof y> { p: number }
+>V : Symbol(V, Decl(m.ts, 1, 23))
+>B : Symbol(B, Decl(m.ts, 0, 24))
+>y : Symbol(y, Decl(m.ts, 0, 8))
+>p : Symbol(V.p, Decl(m.ts, 2, 33))
+
+declare const v: V;
+>v : Symbol(v, Decl(m.ts, 3, 13))
+>V : Symbol(V, Decl(m.ts, 1, 23))
+
+export = v;
+>v : Symbol(v, Decl(m.ts, 3, 13))
+

@@ -1,0 +1,15 @@
+//// [test/cases/bun01-C10.ts] ////
+
+=== a.ts ===
+import { v } from "x.foo";
+>v : Symbol(v, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== s.d.ts ===
+declare namespace NS { module "*.foo" { export const v: number; } }
+>NS : Symbol(NS, Decl(s.d.ts, 0, 0))
+>"*.foo" : Symbol("*.foo", Decl(s.d.ts, 0, 22))
+>v : Symbol(v, Decl(s.d.ts, 0, 52))
+

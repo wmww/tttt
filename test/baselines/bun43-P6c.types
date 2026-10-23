@@ -1,0 +1,11 @@
+//// [test/cases/bun43-P6c.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+<T extends U>(x);
+><T extends U>(x) : any
+>(x) : any
+>x : any
+

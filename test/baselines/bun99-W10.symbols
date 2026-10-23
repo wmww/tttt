@@ -1,0 +1,108 @@
+//// [test/cases/bun99-W10.ts] ////
+
+=== a.ts ===
+type Comp<P> = (p: P) => void;
+>Comp : Symbol(Comp, Decl(a.ts, 0, 0))
+>P : Symbol(P, Decl(a.ts, 0, 10))
+>p : Symbol(p, Decl(a.ts, 0, 16))
+>P : Symbol(P, Decl(a.ts, 0, 10))
+
+type M<T> = { [k in keyof T]: T };
+>M : Symbol(M, Decl(a.ts, 0, 30))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>k : Symbol(k, Decl(a.ts, 1, 15))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+>T : Symbol(T, Decl(a.ts, 1, 7))
+
+type GetProps<C> = C extends { x: Comp<any> } ? (C['x'] extends new () => 0 ? C : never) : never;
+>GetProps : Symbol(GetProps, Decl(a.ts, 1, 34))
+>C : Symbol(C, Decl(a.ts, 2, 14))
+>C : Symbol(C, Decl(a.ts, 2, 14))
+>x : Symbol(x, Decl(a.ts, 2, 30))
+>Comp : Symbol(Comp, Decl(a.ts, 0, 0))
+>C : Symbol(C, Decl(a.ts, 2, 14))
+>C : Symbol(C, Decl(a.ts, 2, 14))
+
+type Enh<I, N> = <C extends { x: Comp<GetProps<C>> }>(c: C) => Comp<M<GetProps<C> & N>>;
+>Enh : Symbol(Enh, Decl(a.ts, 2, 97))
+>I : Symbol(I, Decl(a.ts, 3, 9))
+>N : Symbol(N, Decl(a.ts, 3, 11))
+>C : Symbol(C, Decl(a.ts, 3, 18))
+>x : Symbol(x, Decl(a.ts, 3, 29))
+>Comp : Symbol(Comp, Decl(a.ts, 0, 0))
+>GetProps : Symbol(GetProps, Decl(a.ts, 1, 34))
+>C : Symbol(C, Decl(a.ts, 3, 18))
+>c : Symbol(c, Decl(a.ts, 3, 54))
+>C : Symbol(C, Decl(a.ts, 3, 18))
+>Comp : Symbol(Comp, Decl(a.ts, 0, 0))
+>M : Symbol(M, Decl(a.ts, 0, 30))
+>GetProps : Symbol(GetProps, Decl(a.ts, 1, 34))
+>C : Symbol(C, Decl(a.ts, 3, 18))
+>N : Symbol(N, Decl(a.ts, 3, 11))
+
+declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+>flow : Symbol(flow, Decl(a.ts, 3, 88))
+>A : Symbol(A, Decl(a.ts, 4, 22))
+>B : Symbol(B, Decl(a.ts, 4, 24))
+>C : Symbol(C, Decl(a.ts, 4, 27))
+>f : Symbol(f, Decl(a.ts, 4, 31))
+>a : Symbol(a, Decl(a.ts, 4, 35))
+>A : Symbol(A, Decl(a.ts, 4, 22))
+>B : Symbol(B, Decl(a.ts, 4, 24))
+>g : Symbol(g, Decl(a.ts, 4, 46))
+>b : Symbol(b, Decl(a.ts, 4, 51))
+>B : Symbol(B, Decl(a.ts, 4, 24))
+>C : Symbol(C, Decl(a.ts, 4, 27))
+>a : Symbol(a, Decl(a.ts, 4, 65))
+>A : Symbol(A, Decl(a.ts, 4, 22))
+>C : Symbol(C, Decl(a.ts, 4, 27))
+
+declare const hoc: <C extends { x: Comp<any> }>(c: C) => C;
+>hoc : Symbol(hoc, Decl(a.ts, 5, 13))
+>C : Symbol(C, Decl(a.ts, 5, 20))
+>x : Symbol(x, Decl(a.ts, 5, 31))
+>Comp : Symbol(Comp, Decl(a.ts, 0, 0))
+>c : Symbol(c, Decl(a.ts, 5, 48))
+>C : Symbol(C, Decl(a.ts, 5, 20))
+>C : Symbol(C, Decl(a.ts, 5, 20))
+
+declare const enh: Enh<{}, {}>;
+>enh : Symbol(enh, Decl(a.ts, 6, 13))
+>Enh : Symbol(Enh, Decl(a.ts, 2, 97))
+
+export const R = flow(hoc, enh);
+>R : Symbol(R, Decl(a.ts, 7, 12))
+>flow : Symbol(flow, Decl(a.ts, 3, 88))
+>hoc : Symbol(hoc, Decl(a.ts, 5, 13))
+>enh : Symbol(enh, Decl(a.ts, 6, 13))
+
+type F<T> = T extends { a: unknown } ? (T['a'] extends string ? 1 : 2) : 3;
+>F : Symbol(F, Decl(a.ts, 7, 32))
+>T : Symbol(T, Decl(a.ts, 8, 7))
+>T : Symbol(T, Decl(a.ts, 8, 7))
+>a : Symbol(a, Decl(a.ts, 8, 23))
+>T : Symbol(T, Decl(a.ts, 8, 7))
+
+export const f1: never = null! as F<{ a: 'x' }>;
+>f1 : Symbol(f1, Decl(a.ts, 9, 12))
+>F : Symbol(F, Decl(a.ts, 7, 32))
+>a : Symbol(a, Decl(a.ts, 9, 37))
+
+export const f2: never = null! as F<{ a: 1 }>;
+>f2 : Symbol(f2, Decl(a.ts, 10, 12))
+>F : Symbol(F, Decl(a.ts, 7, 32))
+>a : Symbol(a, Decl(a.ts, 10, 37))
+
+function g<T extends { a: unknown }>(t: T) { const x: never = null! as F<T>; }
+>g : Symbol(g, Decl(a.ts, 10, 46))
+>T : Symbol(T, Decl(a.ts, 11, 11))
+>a : Symbol(a, Decl(a.ts, 11, 22))
+>t : Symbol(t, Decl(a.ts, 11, 37))
+>T : Symbol(T, Decl(a.ts, 11, 11))
+>x : Symbol(x, Decl(a.ts, 11, 50))
+>F : Symbol(F, Decl(a.ts, 7, 32))
+>T : Symbol(T, Decl(a.ts, 11, 11))
+
+export const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(a.ts, 12, 12))
+

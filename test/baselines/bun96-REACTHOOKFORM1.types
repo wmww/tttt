@@ -1,0 +1,138 @@
+//// [test/cases/bun96-REACTHOOKFORM1.ts] ////
+
+=== a.ts ===
+import type { Message, Rule } from './types';
+>Message : Message<T>
+>Rule : Rule<T>
+
+declare function get<T>(rule: Rule<T> | Message<T>): void;
+>get : <T>(rule: Rule<T> | Message<T>) => void
+>rule : Rule<T>
+
+declare const rule: Rule<number> | undefined;
+>rule : Rule<number> | undefined
+
+get<number>(rule);
+>get<number>(rule) : void
+>get : <T>(rule: Rule<T> | Message<T>) => void
+>rule : Rule<number> | undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import type { Ctor, Dict, Fn, Message, Renamed, Rule, Two, ViaCtor, ViaDict, ViaFn, ViaTwo } from './barrel';
+>Ctor : Ctor<T>
+>Dict : Dict<K, V>
+>Fn : Fn<T>
+>Message : Message<T>
+>Renamed : Message<T>
+>Rule : Rule<T>
+>Two : Two<A, B>
+>ViaCtor : ViaCtor<T>
+>ViaDict : ViaDict<K, V>
+>ViaFn : ViaFn<T>
+>ViaTwo : ViaTwo<A>
+
+function f<T, K extends string>(
+>f : <T, K extends string>(literal: Rule<T> | Message<T>, renamed: Rule<T> | Renamed<T>, fn: ViaFn<T> | Fn<T>, ctor: ViaCtor<T> | Ctor<T>, dict: ViaDict<K, T> | Dict<K, T>, two: ViaTwo<T> | Two<T, T>, one: ViaTwo<T> | Two<T>) => void
+
+  literal: Rule<T> | Message<T>,
+>literal : Rule<T>
+
+  renamed: Rule<T> | Renamed<T>,
+>renamed : Rule<T>
+
+  fn: ViaFn<T> | Fn<T>,
+>fn : ViaFn<T>
+
+  ctor: ViaCtor<T> | Ctor<T>,
+>ctor : ViaCtor<T>
+
+  dict: ViaDict<K, T> | Dict<K, T>,
+>dict : ViaDict<K, T>
+
+  two: ViaTwo<T> | Two<T, T>,
+>two : ViaTwo<T>
+
+  // Two types in tsc too: the alias type arguments are those written at the reference.
+  one: ViaTwo<T> | Two<T>,
+>one : Two<T> | ViaTwo<T>
+
+) {
+  literal = null;
+>literal = null : null
+>literal : Rule<T>
+
+  renamed = null;
+>renamed = null : null
+>renamed : Rule<T>
+
+  fn = null;
+>fn = null : null
+>fn : ViaFn<T>
+
+  ctor = null;
+>ctor = null : null
+>ctor : ViaCtor<T>
+
+  dict = null;
+>dict = null : null
+>dict : ViaDict<K, T>
+
+  two = null;
+>two = null : null
+>two : ViaTwo<T>
+
+  one = null;
+>one = null : null
+>one : Two<T> | ViaTwo<T>
+}
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== barrel.ts ===
+export * from './types';
+export type { Message as Renamed } from './types';
+>Message : any
+>Renamed : import("./types").Message<T>
+
+=== types.ts ===
+export type Rule<T> = T | Message<T>;
+>Rule : Rule<T>
+
+export type Message<T> = { value: T };
+>Message : Message<T>
+>value : T
+
+// b.ts: the other kinds of alias body
+export type Fn<T> = (x: T) => void;
+>Fn : Fn<T>
+>x : T
+
+export type Ctor<T> = new (x: T) => object;
+>Ctor : Ctor<T>
+>x : T
+
+export type Dict<K extends string, V> = { [P in K]: V };
+>Dict : Dict<K, V>
+
+export type Two<A, B = A> = { a: A; b: B };
+>Two : Two<A, B>
+>a : A
+>b : B
+
+export type ViaFn<T> = 0 | Fn<T>;
+>ViaFn : ViaFn<T>
+
+export type ViaCtor<T> = 0 | Ctor<T>;
+>ViaCtor : ViaCtor<T>
+
+export type ViaDict<K extends string, V> = 0 | Dict<K, V>;
+>ViaDict : ViaDict<K, V>
+
+export type ViaTwo<A> = 0 | Two<A>;
+>ViaTwo : ViaTwo<A>
+

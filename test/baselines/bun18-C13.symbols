@@ -1,0 +1,22 @@
+//// [test/cases/bun18-C13.ts] ////
+
+=== a.ts ===
+declare let p1: (this: string, { a }: { a: number }) => void;
+>p1 : Symbol(p1, Decl(a.ts, 0, 11))
+>this : Symbol(this, Decl(a.ts, 0, 17))
+>a : Symbol(a, Decl(a.ts, 0, 32))
+>a : Symbol(a, Decl(a.ts, 0, 39))
+
+declare let p2: (this: string, x: { a: string }) => void;
+>p2 : Symbol(p2, Decl(a.ts, 1, 11))
+>this : Symbol(this, Decl(a.ts, 1, 17))
+>x : Symbol(x, Decl(a.ts, 1, 30))
+>a : Symbol(a, Decl(a.ts, 1, 35))
+
+p1 = p2;
+>p1 : Symbol(p1, Decl(a.ts, 0, 11))
+>p2 : Symbol(p2, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

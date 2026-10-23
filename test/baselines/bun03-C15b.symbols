@@ -1,0 +1,10 @@
+//// [test/cases/bun03-C15b.ts] ////
+
+=== a.ts ===
+import a from "./missing" with { type: 1 };
+>a : Symbol(a, Decl(a.ts, 0, 6))
+
+undeclared;
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

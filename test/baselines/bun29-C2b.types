@@ -1,0 +1,31 @@
+//// [test/cases/bun29-C2b.ts] ////
+
+=== a.ts ===
+import { X } from "./m";
+>X : 1
+
+type X = string;
+>X : string
+
+let n: number = () => mkX();
+>n : number
+>() => mkX() : () => X
+>mkX() : X
+>mkX : () => X
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== g.d.ts ===
+interface X { gx: number }
+>gx : number
+
+declare function mkX(): X;
+>mkX : () => X
+
+=== m.ts ===
+export const X = 1;
+>X : 1
+>1 : 1
+

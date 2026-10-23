@@ -1,0 +1,34 @@
+//// [test/cases/bun16-C9d.ts] ////
+
+=== a.ts ===
+declare const p: { foo(): void };
+>p : { foo(): void; }
+>foo : () => void
+
+p.foo && (({ foo: f } = p) => f);
+>p.foo && (({ foo: f } = p) => f) : ({ foo: f }?: { foo(): void; }) => () => void
+>p.foo : () => void
+>p : { foo(): void; }
+>foo : () => void
+>(({ foo: f } = p) => f) : ({ foo: f }?: { foo(): void; }) => () => void
+>({ foo: f } = p) => f : ({ foo: f }?: { foo(): void; }) => () => void
+>foo : any
+>f : () => void
+>p : { foo(): void; }
+>f : () => void
+
+p.foo && (() => { const { foo: f } = p; });
+>p.foo && (() => { const { foo: f } = p; }) : () => void
+>p.foo : () => void
+>p : { foo(): void; }
+>foo : () => void
+>(() => { const { foo: f } = p; }) : () => void
+>() => { const { foo: f } = p; } : () => void
+>foo : any
+>f : () => void
+>p : { foo(): void; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

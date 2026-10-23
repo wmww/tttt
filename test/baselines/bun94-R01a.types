@@ -1,0 +1,41 @@
+//// [test/cases/bun94-R01a.ts] ////
+
+=== a.ts ===
+import * as ns from "./b";
+>ns : any
+
+export function fa() { return ns.foo; }
+>fa : () => any
+>ns.foo : any
+>ns : any
+>foo : any
+
+ns.nope;
+>ns.nope : any
+>ns : any
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+import A = require("./a");
+>A : typeof A
+
+const o = { foo: 1, get g() { return A.fa(); }, default: 1 };
+>o : { foo: number; readonly g: any; default: number; }
+>{ foo: 1, get g() { return A.fa(); }, default: 1 } : { foo: number; readonly g: any; default: number; }
+>foo : number
+>1 : 1
+>g : any
+>A.fa() : any
+>A.fa : () => any
+>A : typeof A
+>fa : () => any
+>default : number
+>1 : 1
+
+export = o;
+>o : { foo: number; readonly g: any; default: number; }
+

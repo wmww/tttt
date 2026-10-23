@@ -1,0 +1,31 @@
+a.ts(1,8): error TS2303: Circular definition of import alias 'd'.
+a.ts(2,1): error TS2303: Circular definition of import alias 'd'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+u.ts(4,7): error TS2322: Type 'typeof import("a")' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (3 errors) ====
+    import d from "./b";
+           ~
+!!! error TS2303: Circular definition of import alias 'd'.
+    export default d;
+    ~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'd'.
+    const n: number = d;
+    d.nope;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    import a = require("./a");
+    export = a;
+==== u.ts (1 errors) ====
+    import d from "./a";
+    import b from "./b";
+    const n: number = d;
+    const m: number = b;
+          ~
+!!! error TS2322: Type 'typeof import("a")' is not assignable to type 'number'.
+    

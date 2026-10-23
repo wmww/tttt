@@ -1,0 +1,17 @@
+a.ts(1,16): error TS6196: 'T' is declared but never used.
+a.ts(5,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true, "noUnusedParameters": true } }
+==== a.ts (2 errors) ====
+    export class K<T> {
+                   ~
+!!! error TS6196: 'T' is declared but never used.
+      /** {@link T} */
+      static p = 1
+    }
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

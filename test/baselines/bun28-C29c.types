@@ -1,0 +1,15 @@
+//// [test/cases/bun28-C29c.ts] ////
+
+=== a.ts ===
+import<string>("./zz");
+>import<string>("./zz") : Promise<{ default: 1; }>
+>"./zz" : "./zz"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== zz.ts ===
+
+export = 1;
+

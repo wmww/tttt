@@ -1,0 +1,68 @@
+//// [test/cases/bun57-L13a.ts] ////
+
+=== a.tsx ===
+interface Iterable<T> {}
+>Iterable : Symbol(Iterable, Decl(a.tsx, 0, 0))
+>T : Symbol(T, Decl(a.tsx, 0, 19))
+
+declare namespace JSX { interface Element {} interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 24))
+>Element : Symbol(Element, Decl(a.tsx, 1, 23))
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(a.tsx, 1, 44))
+>children : Symbol(ElementChildrenAttribute.children, Decl(a.tsx, 1, 81))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 1, 96))
+
+declare function C(props: { children: number }): JSX.Element;
+>C : Symbol(C, Decl(a.tsx, 1, 129))
+>props : Symbol(props, Decl(a.tsx, 2, 19))
+>children : Symbol(children, Decl(a.tsx, 2, 27))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 24))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 1, 23))
+
+declare function D(props: { children: number[] }): JSX.Element;
+>D : Symbol(D, Decl(a.tsx, 2, 61))
+>props : Symbol(props, Decl(a.tsx, 3, 19))
+>children : Symbol(children, Decl(a.tsx, 3, 27))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 24))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 1, 23))
+
+declare function E(props: { children: number | string[] }): JSX.Element;
+>E : Symbol(E, Decl(a.tsx, 3, 63))
+>props : Symbol(props, Decl(a.tsx, 4, 19))
+>children : Symbol(children, Decl(a.tsx, 4, 27))
+>JSX : Symbol(JSX, Decl(a.tsx, 0, 24))
+>Element : Symbol(JSX.Element, Decl(a.tsx, 1, 23))
+
+const a1 = <C>{"x"}{"y"}</C>;
+>a1 : Symbol(a1, Decl(a.tsx, 5, 5))
+>C : Symbol(C, Decl(a.tsx, 1, 129))
+>C : Symbol(C, Decl(a.tsx, 1, 129))
+
+const a2 = <C>{"x"}</C>;
+>a2 : Symbol(a2, Decl(a.tsx, 6, 5))
+>C : Symbol(C, Decl(a.tsx, 1, 129))
+>C : Symbol(C, Decl(a.tsx, 1, 129))
+
+const a3 = <D>{"x"}{"y"}</D>;
+>a3 : Symbol(a3, Decl(a.tsx, 7, 5))
+>D : Symbol(D, Decl(a.tsx, 2, 61))
+>D : Symbol(D, Decl(a.tsx, 2, 61))
+
+const a4 = <D>{"x"}</D>;
+>a4 : Symbol(a4, Decl(a.tsx, 8, 5))
+>D : Symbol(D, Decl(a.tsx, 2, 61))
+>D : Symbol(D, Decl(a.tsx, 2, 61))
+
+const a5 = <E>{true}{"y"}</E>;
+>a5 : Symbol(a5, Decl(a.tsx, 9, 5))
+>E : Symbol(E, Decl(a.tsx, 3, 63))
+>E : Symbol(E, Decl(a.tsx, 3, 63))
+
+const a6 = <E>{true}</E>;
+>a6 : Symbol(a6, Decl(a.tsx, 10, 5))
+>E : Symbol(E, Decl(a.tsx, 3, 63))
+>E : Symbol(E, Decl(a.tsx, 3, 63))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 11, 5))
+

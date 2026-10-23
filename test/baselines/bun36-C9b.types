@@ -1,0 +1,18 @@
+//// [test/cases/bun36-C9b.ts] ////
+
+=== a.ts ===
+import { which } from "k";
+>which : "t"
+
+const x: 0 = which;
+>x : 0
+>which : "t"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/k/t.d.ts ===
+export declare const which: "t";
+>which : "t"
+

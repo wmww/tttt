@@ -1,0 +1,27 @@
+//// [test/cases/bun09-P1.ts] ////
+
+=== a.ts ===
+export const x = 1;
+>x : Symbol(x, Decl(a.ts, 0, 12))
+
+=== b.ts ===
+export const x = 2;
+>x : Symbol(x, Decl(b.ts, 0, 12))
+
+=== c.ts ===
+export const x = 3;
+>x : Symbol(x, Decl(c.ts, 0, 12))
+
+=== m.ts ===
+export * from "./a";
+export * from "./b";
+export * from "./c";
+import "./main";
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(m.ts, 4, 5))
+
+=== main.ts ===
+
+export * from "./a";
+export * from "./m";
+

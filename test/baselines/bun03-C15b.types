@@ -1,0 +1,14 @@
+//// [test/cases/bun03-C15b.ts] ////
+
+=== a.ts ===
+import a from "./missing" with { type: 1 };
+>a : any
+>type : any
+
+undeclared;
+>undeclared : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

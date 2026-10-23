@@ -1,0 +1,78 @@
+//// [test/cases/bun99-W7.ts] ////
+
+=== index.ts ===
+import { css, Style } from './lib';
+>css : Symbol(css, Decl(index.ts, 0, 8))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+css({ ':hover': { notAProperty: '1' } });
+>css : Symbol(css, Decl(index.ts, 0, 8))
+>':hover' : Symbol(':hover', Decl(index.ts, 1, 5))
+>notAProperty : Symbol(notAProperty, Decl(index.ts, 1, 17))
+
+const p: Partial<Style> = { ':hover': {} };
+>p : Symbol(p, Decl(index.ts, 2, 5))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+>':hover' : Symbol(':hover', Decl(index.ts, 2, 27))
+
+declare const style: Style;
+>style : Symbol(style, Decl(index.ts, 3, 13))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+const spread = { ...style };
+>spread : Symbol(spread, Decl(index.ts, 4, 5))
+>style : Symbol(style, Decl(index.ts, 3, 13))
+
+const hover: never = spread[':hover'];
+>hover : Symbol(hover, Decl(index.ts, 5, 5))
+>spread : Symbol(spread, Decl(index.ts, 4, 5))
+>':hover' : Symbol(":hover")
+
+const top: never = spread.top;
+>top : Symbol(top, Decl(index.ts, 6, 5))
+>spread.top : Symbol(top, Decl(lib.d.ts, --, --))
+>spread : Symbol(spread, Decl(index.ts, 4, 5))
+>top : Symbol(top, Decl(lib.d.ts, --, --))
+
+const required: Required<Style> = { top: '' };
+>required : Symbol(required, Decl(index.ts, 7, 5))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+>top : Symbol(top, Decl(index.ts, 7, 35))
+
+const picked: never = null! as keyof Partial<Style>;
+>picked : Symbol(picked, Decl(index.ts, 8, 5))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+
+const wrong: Style = { tpo: '' };
+>wrong : Symbol(wrong, Decl(index.ts, 9, 5))
+>Style : Symbol(Style, Decl(index.ts, 0, 13))
+>tpo : Symbol(tpo, Decl(index.ts, 9, 22))
+
+export const sentinel: number = '';
+>sentinel : Symbol(sentinel, Decl(index.ts, 10, 12))
+
+=== lib.d.ts ===
+type Pseudos = ':hover';
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+
+export type CSSPseudos = { [P in Pseudos]?: Omit<Style, Pseudos> };
+>CSSPseudos : Symbol(CSSPseudos, Decl(lib.d.ts, --, --))
+>P : Symbol(P, Decl(lib.d.ts, --, --))
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+>Pseudos : Symbol(Pseudos, Decl(lib.d.ts, --, --))
+
+export type Style = CSSPseudos & { top?: string };
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+>CSSPseudos : Symbol(CSSPseudos, Decl(lib.d.ts, --, --))
+>top : Symbol(top, Decl(lib.d.ts, --, --))
+
+export declare function css(style: Style): void;
+>css : Symbol(css, Decl(lib.d.ts, --, --))
+>style : Symbol(style, Decl(lib.d.ts, --, --))
+>Style : Symbol(Style, Decl(lib.d.ts, --, --))
+

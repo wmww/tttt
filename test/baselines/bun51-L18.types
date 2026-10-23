@@ -1,0 +1,31 @@
+//// [test/cases/bun51-L18.ts] ////
+
+=== a.ts ===
+export type F1 = ({ a: b }) => void;
+>F1 : F1
+>a : any
+>b : any
+
+export interface I7 { m({ a: b }): void }
+>m : ({ a: b }: { a: any; }) => void
+>a : any
+>b : any
+
+export declare class C8 { constructor({ a: b }); }
+>C8 : C8
+>a : any
+>b : any
+
+export class P { private a = 1; m() { return this.a; } }
+>P : P
+>a : number
+>1 : 1
+>m : () => number
+>this.a : number
+>this : this
+>a : number
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

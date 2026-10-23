@@ -1,0 +1,24 @@
+//// [test/cases/bun04-C9a.ts] ////
+
+=== a.ts ===
+declare const badReturn: { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+>badReturn : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+>[Symbol.iterator] : () => { next(): IteratorResult<number>; return: number; }
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>next : () => IteratorResult<number>
+>return : number
+
+for (const x of badReturn) {}
+>x : number
+>badReturn : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+
+for (const y of badReturn) {}
+>y : number
+>badReturn : { [Symbol.iterator](): { next(): IteratorResult<number>; return: number; }; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

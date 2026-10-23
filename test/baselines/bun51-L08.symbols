@@ -1,0 +1,47 @@
+//// [test/cases/bun51-L08.ts] ////
+
+=== f.js ===
+const k1 = "a", k2 = "b";
+>k1 : Symbol(k1, Decl(f.js, 0, 5))
+>k2 : Symbol(k2, Decl(f.js, 0, 15))
+
+export class Q {
+>Q : Symbol(Q, Decl(f.js, 0, 25))
+
+  static m() {
+>m : Symbol(Q.m, Decl(f.js, 1, 16))
+
+    /** @type {(x: number) => void} */
+    this[k1] = (x) => {};
+>this : Symbol(Q, Decl(f.js, 0, 25))
+>k1 : Symbol(k1, Decl(f.js, 0, 5))
+>x : Symbol(x, Decl(f.js, 4, 16))
+
+    this[k2] = (y) => {};
+>this : Symbol(Q, Decl(f.js, 0, 25))
+>k2 : Symbol(k2, Decl(f.js, 0, 15))
+>y : Symbol(y, Decl(f.js, 5, 16))
+  }
+}
+export class R {
+>R : Symbol(R, Decl(f.js, 7, 1))
+
+  static m() {
+>m : Symbol(R.m, Decl(f.js, 8, 16))
+
+    this[k2] = (y) => {};
+>this : Symbol(R, Decl(f.js, 7, 1))
+>k2 : Symbol(k2, Decl(f.js, 0, 15))
+>y : Symbol(y, Decl(f.js, 10, 16))
+
+    /** @type {(x: number) => void} */
+    this[k1] = (x) => {};
+>this : Symbol(R, Decl(f.js, 7, 1))
+>k1 : Symbol(k1, Decl(f.js, 0, 5))
+>x : Symbol(x, Decl(f.js, 12, 16))
+  }
+}
+/** @type {number} */
+export const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(f.js, 16, 12))
+

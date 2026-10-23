@@ -1,0 +1,30 @@
+//// [test/cases/bun51-L18.ts] ////
+
+=== a.ts ===
+export type F1 = ({ a: b }) => void;
+>F1 : Symbol(F1, Decl(a.ts, 0, 0))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 0, 19))
+
+export interface I7 { m({ a: b }): void }
+>I7 : Symbol(I7, Decl(a.ts, 0, 36))
+>m : Symbol(I7.m, Decl(a.ts, 1, 21))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 1, 25))
+
+export declare class C8 { constructor({ a: b }); }
+>C8 : Symbol(C8, Decl(a.ts, 1, 41))
+>a : Symbol(a)
+>b : Symbol(b, Decl(a.ts, 2, 39))
+
+export class P { private a = 1; m() { return this.a; } }
+>P : Symbol(P, Decl(a.ts, 2, 50))
+>a : Symbol(P.a, Decl(a.ts, 3, 16))
+>m : Symbol(P.m, Decl(a.ts, 3, 31))
+>this.a : Symbol(P.a, Decl(a.ts, 3, 16))
+>this : Symbol(P, Decl(a.ts, 2, 50))
+>a : Symbol(P.a, Decl(a.ts, 3, 16))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 12))
+

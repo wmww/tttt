@@ -1,0 +1,9 @@
+//// [test/cases/bun28-P6c.ts] ////
+
+=== a.ts ===
+interface A {}
+public interface B extends A, {}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

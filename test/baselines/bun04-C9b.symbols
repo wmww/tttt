@@ -1,0 +1,27 @@
+//// [test/cases/bun04-C9b.ts] ////
+
+=== a.ts ===
+type Bad2 = { [Symbol.iterator](): { next(): { done: boolean } } };
+>Bad2 : Symbol(Bad2, Decl(a.ts, 0, 0))
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(a.ts, 0, 13))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>next : Symbol(next, Decl(a.ts, 0, 36))
+>done : Symbol(done, Decl(a.ts, 0, 46))
+
+declare const bad2: Bad2;
+>bad2 : Symbol(bad2, Decl(a.ts, 1, 13))
+>Bad2 : Symbol(Bad2, Decl(a.ts, 0, 0))
+
+const q: Bad2 | number[] = [1];
+>q : Symbol(q, Decl(a.ts, 2, 5))
+>Bad2 : Symbol(Bad2, Decl(a.ts, 0, 0))
+
+const sp2 = [...bad2];
+>sp2 : Symbol(sp2, Decl(a.ts, 3, 5))
+>bad2 : Symbol(bad2, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

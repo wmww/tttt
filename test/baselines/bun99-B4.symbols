@@ -1,0 +1,62 @@
+//// [test/cases/bun99-B4.ts] ////
+
+=== a.ts ===
+declare const enum A { X }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>X : Symbol(A.X, Decl(a.ts, 0, 22))
+
+import { B } from "./b";
+>B : Symbol(B, Decl(a.ts, 1, 8))
+
+export const v1 = A.X;
+>v1 : Symbol(v1, Decl(a.ts, 2, 12))
+>A.X : Symbol(A.X, Decl(a.ts, 0, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>X : Symbol(A.X, Decl(a.ts, 0, 22))
+
+export const v2 = A!.X;
+>v2 : Symbol(v2, Decl(a.ts, 3, 12))
+>A!.X : Symbol(A.X, Decl(a.ts, 0, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>X : Symbol(A.X, Decl(a.ts, 0, 22))
+
+export const v3 = A!!.X;
+>v3 : Symbol(v3, Decl(a.ts, 4, 12))
+>A!!.X : Symbol(A.X, Decl(a.ts, 0, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>X : Symbol(A.X, Decl(a.ts, 0, 22))
+
+export const v4 = A!!!.X;
+>v4 : Symbol(v4, Decl(a.ts, 5, 12))
+>A!!!.X : Symbol(A.X, Decl(a.ts, 0, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>X : Symbol(A.X, Decl(a.ts, 0, 22))
+
+export const v5 = (A!!)!.X;
+>v5 : Symbol(v5, Decl(a.ts, 6, 12))
+>(A!!)!.X : Symbol(A.X, Decl(a.ts, 0, 22))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>X : Symbol(A.X, Decl(a.ts, 0, 22))
+
+export const v6 = B!!.Y;
+>v6 : Symbol(v6, Decl(a.ts, 7, 12))
+>B!!.Y : Symbol(B.Y, Decl(b.d.ts, 0, 29))
+>B : Symbol(B, Decl(a.ts, 1, 8))
+>Y : Symbol(B.Y, Decl(b.d.ts, 0, 29))
+
+export const v7 = [A!!];
+>v7 : Symbol(v7, Decl(a.ts, 8, 12))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+export type T = typeof A;
+>T : Symbol(T, Decl(a.ts, 8, 24))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+
+=== b.d.ts ===
+export declare const enum B { Y }
+>B : Symbol(B, Decl(b.d.ts, 0, 0))
+>Y : Symbol(B.Y, Decl(b.d.ts, 0, 29))
+

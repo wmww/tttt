@@ -1,0 +1,71 @@
+a.ts(1,16): error TS2300: Duplicate identifier 'a'.
+a.ts(1,45): error TS2300: Duplicate identifier 'a'.
+a.ts(1,70): error TS2300: Duplicate identifier 'a'.
+a.ts(2,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(3,25): error TS2300: Duplicate identifier 'a'.
+a.ts(3,42): error TS2300: Duplicate identifier 'a'.
+a.ts(3,65): error TS2300: Duplicate identifier 'a'.
+a.ts(4,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(5,7): error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+a.ts(6,20): error TS2300: Duplicate identifier 'a'.
+a.ts(6,37): error TS2300: Duplicate identifier 'a'.
+a.ts(6,60): error TS2300: Duplicate identifier 'a'.
+a.ts(8,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(9,12): error TS2300: Duplicate identifier 'a'.
+a.ts(9,23): error TS2300: Duplicate identifier 'a'.
+a.ts(9,52): error TS2300: Duplicate identifier 'a'.
+a.ts(10,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(11,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (18 errors) ====
+    class C2 { get a(): number { return 1 } set a(v: string | number) {} a = 2; }
+                   ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                                         ~
+!!! error TS2300: Duplicate identifier 'a'.
+    new C2().a = "s";
+    ~~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    declare const t1: { get a(): number; set a(v: string | number); a: number };
+                            ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                             ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                                    ~
+!!! error TS2300: Duplicate identifier 'a'.
+    t1.a = "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const p1: boolean = t1;
+          ~~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'boolean'.
+    interface I2 { get a(): number; set a(v: string | number); a: number }
+                       ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                        ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                               ~
+!!! error TS2300: Duplicate identifier 'a'.
+    declare const i2: I2;
+    i2.a = "s";
+    ~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    class C1 { a = 2; get a(): number { return 1 } set a(v: string | number) {} }
+               ~
+!!! error TS2300: Duplicate identifier 'a'.
+                          ~
+!!! error TS2300: Duplicate identifier 'a'.
+                                                       ~
+!!! error TS2300: Duplicate identifier 'a'.
+    new C1().a = "s";
+    ~~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

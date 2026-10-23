@@ -1,0 +1,15 @@
+//// [test/cases/bun04-C10b.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== g1.ts ===
+type GA<T> = 1;
+>GA : 1
+
+=== g2.ts ===
+declare const GA: number;
+>GA : number
+

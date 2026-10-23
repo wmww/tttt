@@ -1,0 +1,53 @@
+a.ts(3,27): error TS2322: Type '({ [k!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+a.ts(4,27): error TS2322: Type '({ [(k!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+a.ts(5,27): error TS2322: Type '({ [((k!)!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+a.ts(6,27): error TS2322: Type '({ [((k!)!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+a.ts(7,27): error TS2322: Type '({ [(((o!)!).p!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+a.ts(8,27): error TS2322: Type '({ [((k!)!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+a.ts(9,27): error TS2322: Type '([{ [(k!)!]: v }]: Record<string, number>[]) => number' is not assignable to type 'number'.
+a.ts(11,27): error TS2322: Type '({ [(k!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"], "declaration": true } }
+==== a.ts (9 errors) ====
+    declare const k: string | undefined;
+    declare const o: { p?: string } | undefined;
+    export const n1: number = ({ [k!]: v }: Record<string, number>) => v;
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '({ [k!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:3:27: Did you mean to call this expression?
+    export const n2: number = ({ [k!!]: v }: Record<string, number>) => v;
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '({ [(k!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:4:27: Did you mean to call this expression?
+    export const n3: number = ({ [k!!!]: v }: Record<string, number>) => v;
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '({ [((k!)!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:5:27: Did you mean to call this expression?
+    export const n4: number = ({ [(k!!)!]: v }: Record<string, number>) => v;
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '({ [((k!)!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:6:27: Did you mean to call this expression?
+    export const n5: number = ({ [o!!.p!!]: v }: Record<string, number>) => v;
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '({ [(((o!)!).p!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:7:27: Did you mean to call this expression?
+    export const n6: number = ({ [k! ! /* c */ !]: v }: Record<string, number>) => v;
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '({ [((k!)!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:8:27: Did you mean to call this expression?
+    export const n7: number = ([{ [k!!]: v }]: Record<string, number>[]) => v;
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type '([{ [(k!)!]: v }]: Record<string, number>[]) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:9:27: Did you mean to call this expression?
+    export function f({ [k!!]: v }: Record<string, number>) { return v; }
+    export const n8: number = f;
+                              ~
+!!! error TS2322: Type '({ [(k!)!]: v }: Record<string, number>) => number' is not assignable to type 'number'.
+!!! related TS6212 a.ts:11:27: Did you mean to call this expression?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

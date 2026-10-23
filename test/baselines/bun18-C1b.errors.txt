@@ -1,0 +1,31 @@
+a.ts(6,5): error TS2322: Type 'Foo<S>' is not assignable to type 'Bar'.
+  Types of property 'm' are incompatible.
+    Type '{ <U>(a: S, b: U): void; <U>(a: S, b: U, c: U): void; }' is not assignable to type '{ <U>(a: T, b: U): void; <U>(a: T, b: U, c: U): void; }'.
+      Types of parameters 'a' and 'a' are incompatible.
+        Types of parameters 'p' and 'p' are incompatible.
+          Type 'string | number' is not assignable to type 'string'.
+            Type 'number' is not assignable to type 'string'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type S = (p: string | number) => void;
+    type T = (p: string) => void;
+    interface Foo<X> { m<U>(a: X, b: U): void; m<U>(a: X, b: U, c: U): void }
+    interface Bar { m<U>(a: T, b: U): void; m<U>(a: T, b: U, c: U): void }
+    declare let foo: Foo<S>;
+    let bar: Bar = foo;
+        ~~~
+!!! error TS2322: Type 'Foo<S>' is not assignable to type 'Bar'.
+!!! error TS2322:   Types of property 'm' are incompatible.
+!!! error TS2322:     Type '{ <U>(a: S, b: U): void; <U>(a: S, b: U, c: U): void; }' is not assignable to type '{ <U>(a: T, b: U): void; <U>(a: T, b: U, c: U): void; }'.
+!!! error TS2322:       Types of parameters 'a' and 'a' are incompatible.
+!!! error TS2322:         Types of parameters 'p' and 'p' are incompatible.
+!!! error TS2322:           Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:             Type 'number' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

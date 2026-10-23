@@ -1,0 +1,30 @@
+//// [test/cases/bun01-C13.ts] ////
+
+=== a.ts ===
+export {};
+declare function foo<T>(): string;
+>foo : <T>() => string
+
+declare function base<T>(): new () => {};
+>base : <T>() => new () => {}
+
+class C1<Item> { static m(x: Itm) {} }
+>C1 : C1<Item>
+>m : (x: Itm) => void
+>x : Itm
+
+class C4<Item> { [foo<Itm>()]() {} }
+>C4 : C4<Item>
+>[foo<Itm>()] : () => void
+>foo<Itm>() : string
+>foo : <T>() => string
+
+class C5<Item> extends base<Itm>() {}
+>C5 : C5<Item>
+>base<Itm>() : {}
+>base : <T>() => new () => {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

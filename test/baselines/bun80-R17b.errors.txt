@@ -1,0 +1,22 @@
+a.ts(1,10): error TS6133: 'X' is declared but its value is never read.
+a.ts(4,3): error TS7006: Parameter 'a' implicitly has an 'any' type.
+a.ts(5,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "noUnusedLocals": true } }
+==== a.ts (3 errors) ====
+    import { X } from "./m";
+             ~
+!!! error TS6133: 'X' is declared but its value is never read.
+    export const f =
+      /** {@link X} */
+      a => a;
+      ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export class X {}
+    

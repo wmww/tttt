@@ -1,0 +1,21 @@
+//// [test/cases/bun23-P6.ts] ////
+
+=== a.ts ===
+class C { static readonly "x-y": unique symbol = Symbol(); }
+>C : C
+>"x-y" : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+({})[C["x-y"]];
+>({})[C["x-y"]] : any
+>({}) : {}
+>{} : {}
+>C["x-y"] : unique symbol
+>C : typeof C
+>"x-y" : "x-y"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

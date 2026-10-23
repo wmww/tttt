@@ -1,0 +1,86 @@
+//// [test/cases/bun53-L04.ts] ////
+
+=== a.ts ===
+let x: any;
+>x : any
+
+let s: string = "";
+>s : string
+>"" : ""
+
+declare const o: { "1n": number; a: number };
+>o : { "1n": number; a: number; }
+>"1n" : number
+>a : number
+
+({ 1n: x } = {});
+>({ 1n: x } = {}) : {}
+>{ 1n: x } = {} : {}
+>{ 1n: x } : {}
+>1n : any
+>x : any
+>{} : {}
+
+({ 1n: x } = [1, 2]);
+>({ 1n: x } = [1, 2]) : number[]
+>{ 1n: x } = [1, 2] : number[]
+>{ 1n: x } : {}
+>1n : any
+>x : any
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+
+({ 1n: s } = o);
+>({ 1n: s } = o) : { "1n": number; a: number; }
+>{ 1n: s } = o : { "1n": number; a: number; }
+>{ 1n: s } : {}
+>1n : string
+>s : string
+>o : { "1n": number; a: number; }
+
+({ 1n: { a: s } } = o);
+>({ 1n: { a: s } } = o) : { "1n": number; a: number; }
+>{ 1n: { a: s } } = o : { "1n": number; a: number; }
+>{ 1n: { a: s } } : {}
+>1n : { a: string; }
+>{ a: s } : { a: string; }
+>a : string
+>s : string
+>o : { "1n": number; a: number; }
+
+({ 1n: s = 1 } = o);
+>({ 1n: s = 1 } = o) : { "1n": number; a: number; }
+>{ 1n: s = 1 } = o : { "1n": number; a: number; }
+>{ 1n: s = 1 } : {}
+>1n : number
+>s = 1 : 1
+>s : string
+>1 : 1
+>o : { "1n": number; a: number; }
+
+for ({ 1n: s } of [o]) {}
+>{ 1n: s } : {}
+>1n : string
+>s : string
+>[o] : { "1n": number; a: number; }[]
+>o : { "1n": number; a: number; }
+
+class P { private "1n" = 1; }
+>P : P
+>"1n" : number
+>1 : 1
+
+({ 1n: s } = new P());
+>({ 1n: s } = new P()) : P
+>{ 1n: s } = new P() : P
+>{ 1n: s } : {}
+>1n : string
+>s : string
+>new P() : P
+>P : typeof P
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

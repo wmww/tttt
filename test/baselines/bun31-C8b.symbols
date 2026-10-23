@@ -1,0 +1,19 @@
+//// [test/cases/bun31-C8b.ts] ////
+
+=== a.ts ===
+declare function dec(...x: any[]): any;
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 21))
+
+function o() { let y: string | number = 1; class K { static { y = "a"; } @dec(y.toFixed()) p: any; } }
+>o : Symbol(o, Decl(a.ts, 0, 39))
+>y : Symbol(y, Decl(a.ts, 1, 18))
+>K : Symbol(K, Decl(a.ts, 1, 42))
+>y : Symbol(y, Decl(a.ts, 1, 18))
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 1, 18))
+>p : Symbol(K.p, Decl(a.ts, 1, 72))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

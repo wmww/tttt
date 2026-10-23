@@ -1,0 +1,13 @@
+//// [test/cases/bun42-P2.ts] ////
+
+=== a.ts ===
+import { sub } from "pkg//sub";
+>sub : Symbol(sub, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== sub.ts ===
+export const sub = 2;
+>sub : Symbol(sub, Decl(sub.ts, 0, 12))
+

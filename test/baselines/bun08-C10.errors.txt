@@ -1,0 +1,24 @@
+a.ts(2,16): error TS2300: Duplicate identifier 'k'.
+a.ts(2,16): error TS2687: All declarations of 'k' must have identical modifiers.
+a.ts(2,36): error TS2300: Duplicate identifier 'k'.
+a.ts(2,36): error TS2687: All declarations of '[k]' must have identical modifiers.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    const k = "k";
+    interface B3 { k: number; readonly [k]: number }
+                   ~
+!!! error TS2300: Duplicate identifier 'k'.
+                   ~
+!!! error TS2687: All declarations of 'k' must have identical modifiers.
+                                       ~~~
+!!! error TS2300: Duplicate identifier 'k'.
+                                       ~~~
+!!! error TS2687: All declarations of '[k]' must have identical modifiers.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

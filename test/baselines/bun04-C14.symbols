@@ -1,0 +1,23 @@
+//// [test/cases/bun04-C14.ts] ////
+
+=== a.ts ===
+import { v as Shadow } from "./m";
+>v : Symbol(Shadow, Decl(m.ts, 0, 12))
+>Shadow : Symbol(Shadow, Decl(a.ts, 0, 8))
+
+namespace Inner { declare const enum Shadow { A } export const y = Shadow.A; }
+>Inner : Symbol(Inner, Decl(a.ts, 0, 34))
+>Shadow : Symbol(Shadow, Decl(a.ts, 1, 17))
+>A : Symbol(Shadow.A, Decl(a.ts, 1, 45))
+>y : Symbol(y, Decl(a.ts, 1, 62))
+>Shadow.A : Symbol(Shadow.A, Decl(a.ts, 1, 45))
+>Shadow : Symbol(Shadow, Decl(a.ts, 1, 17))
+>A : Symbol(Shadow.A, Decl(a.ts, 1, 45))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m.ts ===
+export const v = 1;
+>v : Symbol(v, Decl(m.ts, 0, 12))
+

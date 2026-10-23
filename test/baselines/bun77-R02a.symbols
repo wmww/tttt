@@ -1,0 +1,94 @@
+//// [test/cases/bun77-R02a.ts] ////
+
+=== a.ts ===
+declare function call<T>(f: (x: T) => void, v: T): T;
+>call : Symbol(call, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 22))
+>f : Symbol(f, Decl(a.ts, 0, 25))
+>x : Symbol(x, Decl(a.ts, 0, 29))
+>T : Symbol(T, Decl(a.ts, 0, 22))
+>v : Symbol(v, Decl(a.ts, 0, 43))
+>T : Symbol(T, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 22))
+
+call(({ a } = { a: 1 }) => {}, { a: 2 });
+>call : Symbol(call, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 1, 7))
+>a : Symbol(a, Decl(a.ts, 1, 15))
+>a : Symbol(a, Decl(a.ts, 1, 32))
+
+call(([a] = [1]) => {}, [2]);
+>call : Symbol(call, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 2, 7))
+
+call(({ a } = { a: 1, z: 1 }) => {}, { a: 2, y: 3 });
+>call : Symbol(call, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 3, 7))
+>a : Symbol(a, Decl(a.ts, 3, 15))
+>z : Symbol(z, Decl(a.ts, 3, 21))
+>a : Symbol(a, Decl(a.ts, 3, 38))
+>y : Symbol(y, Decl(a.ts, 3, 44))
+
+call((x = { a: 1 }) => {}, { a: 2 });
+>call : Symbol(call, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 4, 6))
+>a : Symbol(a, Decl(a.ts, 4, 11))
+>a : Symbol(a, Decl(a.ts, 4, 28))
+
+declare function call3<T>(o: { f: (x: T) => void, v: T }): T;
+>call3 : Symbol(call3, Decl(a.ts, 4, 37))
+>T : Symbol(T, Decl(a.ts, 5, 23))
+>o : Symbol(o, Decl(a.ts, 5, 26))
+>f : Symbol(f, Decl(a.ts, 5, 30))
+>x : Symbol(x, Decl(a.ts, 5, 35))
+>T : Symbol(T, Decl(a.ts, 5, 23))
+>v : Symbol(v, Decl(a.ts, 5, 49))
+>T : Symbol(T, Decl(a.ts, 5, 23))
+>T : Symbol(T, Decl(a.ts, 5, 23))
+
+call3({ f({ a } = { a: 1 }) {}, v: { a: 2 } });
+>call3 : Symbol(call3, Decl(a.ts, 4, 37))
+>f : Symbol(f, Decl(a.ts, 6, 7))
+>a : Symbol(a, Decl(a.ts, 6, 11))
+>a : Symbol(a, Decl(a.ts, 6, 19))
+>v : Symbol(v, Decl(a.ts, 6, 31))
+>a : Symbol(a, Decl(a.ts, 6, 36))
+
+declare function call6<T>(f: (x: { p: T }) => void, v: T): T;
+>call6 : Symbol(call6, Decl(a.ts, 6, 47))
+>T : Symbol(T, Decl(a.ts, 7, 23))
+>f : Symbol(f, Decl(a.ts, 7, 26))
+>x : Symbol(x, Decl(a.ts, 7, 30))
+>p : Symbol(p, Decl(a.ts, 7, 34))
+>T : Symbol(T, Decl(a.ts, 7, 23))
+>v : Symbol(v, Decl(a.ts, 7, 51))
+>T : Symbol(T, Decl(a.ts, 7, 23))
+>T : Symbol(T, Decl(a.ts, 7, 23))
+
+call6(({ p } = { p: 1 }) => {}, 2);
+>call6 : Symbol(call6, Decl(a.ts, 6, 47))
+>p : Symbol(p, Decl(a.ts, 8, 8))
+>p : Symbol(p, Decl(a.ts, 8, 16))
+
+[{ a: 1 }].map(({ a } = { a: 1 }) => a);
+>[{ a: 1 }].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 9, 2))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 9, 17))
+>a : Symbol(a, Decl(a.ts, 9, 25))
+>a : Symbol(a, Decl(a.ts, 9, 17))
+
+[1].reduce(({ n } = { n: 0 }, x) => ({ n: n + x }), { n: 0 });
+>[1].reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>reduce : Symbol(Array.reduce, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>n : Symbol(n, Decl(a.ts, 10, 13))
+>n : Symbol(n, Decl(a.ts, 10, 21))
+>x : Symbol(x, Decl(a.ts, 10, 29))
+>n : Symbol(n, Decl(a.ts, 10, 38))
+>n : Symbol(n, Decl(a.ts, 10, 13))
+>x : Symbol(x, Decl(a.ts, 10, 29))
+>n : Symbol(n, Decl(a.ts, 10, 53))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 11, 5))
+

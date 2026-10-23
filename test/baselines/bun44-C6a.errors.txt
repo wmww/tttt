@@ -1,0 +1,17 @@
+a.ts(4,6): error TS2339: Property 'x' does not exist on type 'Readonly<{ id: string; }> & Readonly<{ id: string; }>'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type Base = Readonly<{ id: string }>;
+    declare function g<T>(t: T): T & Base;
+    declare const b: Base;
+    g(b).x;
+         ~
+!!! error TS2339: Property 'x' does not exist on type 'Readonly<{ id: string; }> & Readonly<{ id: string; }>'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,5 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+// @filename: a.ts
+declare class C { private m([a, b] = [1]): void; }
+const sentinel: number = "";

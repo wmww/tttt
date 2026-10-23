@@ -1,0 +1,105 @@
+//// [test/cases/bun99-B2.ts] ////
+
+=== a.ts ===
+const enum E { A, B }
+>E : E
+>A : E.A
+>B : E.B
+
+enum R { A }
+>R : R
+>A : R.A
+
+export const v1 = E!.A;
+>v1 : E.A
+>E!.A : E.A
+>E! : typeof E
+>E : typeof E
+>A : E.A
+
+export const v2 = E!!.A;
+>v2 : E.A
+>E!!.A : E.A
+>E!! : typeof E
+>E! : typeof E
+>E : typeof E
+>A : E.A
+
+export const v3 = E!!!.A;
+>v3 : E.A
+>E!!!.A : E.A
+>E!!! : typeof E
+>E!! : typeof E
+>E! : typeof E
+>E : typeof E
+>A : E.A
+
+export const v4 = E! ! /* c */ !.A;
+>v4 : E.A
+>E! ! /* c */ !.A : E.A
+>E! ! /* c */ ! : typeof E
+>E! ! : typeof E
+>E! : typeof E
+>E : typeof E
+>A : E.A
+
+export const v5 = (E!)!.A;
+>v5 : E.A
+>(E!)!.A : E.A
+>(E!)! : typeof E
+>(E!) : typeof E
+>E! : typeof E
+>E : typeof E
+>A : E.A
+
+export const v6 = (E!!)!.A;
+>v6 : E.A
+>(E!!)!.A : E.A
+>(E!!)! : typeof E
+>(E!!) : typeof E
+>E!! : typeof E
+>E! : typeof E
+>E : typeof E
+>A : E.A
+
+export const v7 = E!!["A"];
+>v7 : E.A
+>E!!["A"] : E.A
+>E!! : typeof E
+>E! : typeof E
+>E : typeof E
+>"A" : "A"
+
+export const v8 = R!!.A;
+>v8 : R.A
+>R!!.A : R
+>R!! : typeof R
+>R! : typeof R
+>R : typeof R
+>A : R
+
+export const v9 = [E!!];
+>v9 : (typeof E)[]
+>[E!!] : (typeof E)[]
+>E!! : typeof E
+>E! : typeof E
+>E : typeof E
+
+export const v10 = typeof E!!;
+>v10 : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>typeof E!! : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>E!! : typeof E
+>E! : typeof E
+>E : typeof E
+
+export const v11 = { ...E!! };
+>v11 : { [x: number]: string; A: E.A; B: E.B; }
+>{ ...E!! } : { [x: number]: string; A: E.A; B: E.B; }
+>E!! : typeof E
+>E! : typeof E
+>E : typeof E
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

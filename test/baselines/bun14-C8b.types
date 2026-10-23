@@ -1,0 +1,13 @@
+//// [test/cases/bun14-C8b.ts] ////
+
+=== a.ts ===
+function f<T extends NoInfer<T>>(t: T) { const z: boolean = t; }
+>f : <T>(t: T) => void
+>t : T
+>z : boolean
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

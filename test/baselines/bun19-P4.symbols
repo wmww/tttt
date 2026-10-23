@@ -1,0 +1,37 @@
+//// [test/cases/bun19-P4.ts] ////
+
+=== a.ts ===
+type N26 = 1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26;
+>N26 : Symbol(N26, Decl(a.ts, 0, 0))
+
+type U = { a: 1, z: typeof v } | { a: 2, z: string };
+>U : Symbol(U, Decl(a.ts, 0, 80))
+>a : Symbol(a, Decl(a.ts, 1, 10))
+>z : Symbol(z, Decl(a.ts, 1, 16))
+>v : Symbol(v, Decl(a.ts, 5, 5))
+>a : Symbol(a, Decl(a.ts, 1, 34))
+>z : Symbol(z, Decl(a.ts, 1, 40))
+
+declare function take(u: U): number;
+>take : Symbol(take, Decl(a.ts, 1, 53), Decl(a.ts, 2, 36))
+>u : Symbol(u, Decl(a.ts, 2, 22))
+>U : Symbol(U, Decl(a.ts, 0, 80))
+
+declare function take(u: unknown): string;
+>take : Symbol(take, Decl(a.ts, 1, 53), Decl(a.ts, 2, 36))
+>u : Symbol(u, Decl(a.ts, 3, 22))
+
+declare const src: { a: N26, z: string };
+>src : Symbol(src, Decl(a.ts, 4, 13))
+>a : Symbol(a, Decl(a.ts, 4, 20))
+>N26 : Symbol(N26, Decl(a.ts, 0, 0))
+>z : Symbol(z, Decl(a.ts, 4, 28))
+
+const v = take(src);
+>v : Symbol(v, Decl(a.ts, 5, 5))
+>take : Symbol(take, Decl(a.ts, 1, 53), Decl(a.ts, 2, 36))
+>src : Symbol(src, Decl(a.ts, 4, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

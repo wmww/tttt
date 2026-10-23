@@ -1,0 +1,18 @@
+//// [test/cases/bun52-L01.ts] ////
+
+=== a.ts ===
+export {};
+function f({ ...a: b }: { x: number }): void;
+>f : ({ ...a: b }: { x: number; }) => void
+>a : any
+>b : { x: number; }
+>x : number
+
+function f(x: any) {}
+>f : ({ ...a: b }: { x: number; }) => void
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

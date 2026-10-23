@@ -1,0 +1,26 @@
+//// [test/cases/bun12-C14e.ts] ////
+
+=== a.ts ===
+declare function mk<A>(a: A): A[];
+>mk : <A>(a: A) => A[]
+>a : A
+
+function g<T>() { return mk<number>; }
+>g : <T>() => (a: number) => number[]
+>mk<number> : (a: number) => number[]
+>mk : <A>(a: A) => A[]
+
+type U = ReturnType<typeof g<1>> | ReturnType<typeof g<2>>;
+>U : U
+>g : <T>() => (a: number) => number[]
+>g : <T>() => (a: number) => number[]
+
+const n: never = null! as U;
+>n : never
+>null! as U : U
+>null! : never
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,55 @@
+//// [test/cases/bun81-R09b.ts] ////
+
+=== a.ts ===
+function h1(this: ReturnType<typeof h1>, x = this) { return 1; }
+>h1 : (this: ReturnType<typeof h1>, x?: any) => number
+>this : any
+>h1 : (this: ReturnType<typeof h1>, x?: any) => number
+>x : any
+>this : any
+>1 : 1
+
+function h2(this: Parameters<typeof h2>[0], x = this) {}
+>h2 : (this: Parameters<typeof h2>[0], x?: any) => void
+>this : any
+>h2 : (this: Parameters<typeof h2>[0], x?: any) => void
+>x : any
+>this : any
+
+function h3(this: ThisParameterType<typeof h3>, x = [this]) {}
+>h3 : (this: ThisParameterType<typeof h3>, x?: any[]) => void
+>this : any
+>h3 : (this: ThisParameterType<typeof h3>, x?: any[]) => void
+>x : any[]
+>[this] : any[]
+>this : any
+
+function h8(this: ReturnType<typeof h8>, x: typeof this) { return 1; }
+>h8 : (this: ReturnType<typeof h8>, x: typeof this) => number
+>this : any
+>h8 : (this: ReturnType<typeof h8>, x: typeof this) => number
+>x : any
+>this : any
+>1 : 1
+
+class K1 { m(this: ReturnType<K1["m"]>, x = this) { return x; } }
+>K1 : K1
+>m : (this: ReturnType<K1["m"]>, x?: any) => any
+>this : any
+>x : any
+>this : any
+>x : any
+
+// an ordinary first parameter: the two agree
+function p1(a: ReturnType<typeof p1>, x = a) { return x; }
+>p1 : (a: ReturnType<typeof p1>, x?: any) => any
+>a : any
+>p1 : (a: ReturnType<typeof p1>, x?: any) => any
+>x : any
+>a : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

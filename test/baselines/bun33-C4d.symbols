@@ -1,0 +1,21 @@
+//// [test/cases/bun33-C4d.ts] ////
+
+=== a.ts ===
+declare const d: any;
+>d : Symbol(d, Decl(a.ts, 0, 13))
+
+class O { x = 1; m() { class I { @d((z: this) => z.x) p = 1 } } }
+>O : Symbol(O, Decl(a.ts, 0, 21))
+>x : Symbol(O.x, Decl(a.ts, 1, 9))
+>m : Symbol(O.m, Decl(a.ts, 1, 16))
+>I : Symbol(I, Decl(a.ts, 1, 22))
+>d : Symbol(d, Decl(a.ts, 0, 13))
+>z : Symbol(z, Decl(a.ts, 1, 37))
+>z.x : Symbol(O.x, Decl(a.ts, 1, 9))
+>z : Symbol(z, Decl(a.ts, 1, 37))
+>x : Symbol(O.x, Decl(a.ts, 1, 9))
+>p : Symbol(I.p, Decl(a.ts, 1, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

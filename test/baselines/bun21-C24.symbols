@@ -1,0 +1,20 @@
+//// [test/cases/bun21-C24.ts] ////
+
+=== a.ts ===
+k = "b"; export {}; let k = "a"; declare const rec: Record<string, string | undefined>;
+>k : Symbol(k, Decl(a.ts, 0, 23))
+>k : Symbol(k, Decl(a.ts, 0, 23))
+>rec : Symbol(rec, Decl(a.ts, 0, 46))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+if (rec[k]) rec[k].length;
+>rec : Symbol(rec, Decl(a.ts, 0, 46))
+>k : Symbol(k, Decl(a.ts, 0, 23))
+>rec[k].length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>rec : Symbol(rec, Decl(a.ts, 0, 46))
+>k : Symbol(k, Decl(a.ts, 0, 23))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

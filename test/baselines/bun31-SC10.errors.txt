@@ -1,0 +1,14 @@
+a.ts(1,24): error TS2749: 'arguments' refers to a value, but is being used as a type here. Did you mean 'typeof arguments'?
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function b1() { let x: arguments; }
+                           ~~~~~~~~~
+!!! error TS2749: 'arguments' refers to a value, but is being used as a type here. Did you mean 'typeof arguments'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

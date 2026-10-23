@@ -1,0 +1,25 @@
+//// [test/cases/bun02-C18b.ts] ////
+
+=== a.js ===
+module.exports = function () {};
+>module.exports = function () {} : () => void
+>module.exports : () => void
+>module : { exports: () => void; }
+>exports : () => void
+>function () {} : () => void
+
+if (typeof exports === "object" && module.exports) {}
+>typeof exports === "object" && module.exports : false | (() => void)
+>typeof exports === "object" : boolean
+>typeof exports : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>exports : () => void
+>"object" : "object"
+>module.exports : () => void
+>module : { exports: () => void; }
+>exports : () => void
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

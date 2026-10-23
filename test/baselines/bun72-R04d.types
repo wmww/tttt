@@ -1,0 +1,54 @@
+//// [test/cases/bun72-R04d.ts] ////
+
+=== a.ts ===
+import { T } from "./node_modules/third";
+>T : typeof T
+
+import "old";
+import "dep";
+import { take3 } from "dep3";
+>take3 : (t: T) => void
+
+take3(new T());
+>take3(new T()) : void
+>take3 : (t: T) => void
+>new T() : T
+>T : typeof T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/dep/index.d.ts ===
+
+import "old";
+export {};
+=== node_modules/dep/node_modules/old/index.d.ts ===
+import "third";
+>C : C
+>p : any
+
+export declare class C { private p; }
+=== node_modules/dep3/index.d.ts ===
+import { T } from "third";
+>T : typeof T
+
+export declare function take3(t: T): void;
+>take3 : (t: T) => void
+>t : T
+
+=== node_modules/dep3/node_modules/third/index.d.ts ===
+export declare class T { private t; }
+>T : T
+>t : any
+
+=== node_modules/old/index.d.ts ===
+export declare class C { private p; }
+>C : C
+>p : any
+
+=== node_modules/third/index.d.ts ===
+export declare class T { private t; }
+>T : T
+>t : any
+

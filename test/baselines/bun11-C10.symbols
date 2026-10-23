@@ -1,0 +1,23 @@
+//// [test/cases/bun11-C10.ts] ////
+
+=== a.ts ===
+import { a as a1 } from "./m1";
+>a : Symbol(a1, Decl(m1.ts, 0, 18))
+>a1 : Symbol(a1, Decl(a.ts, 0, 8))
+
+const r1: boolean = a1;
+>r1 : Symbol(r1, Decl(a.ts, 1, 5))
+>a1 : Symbol(a1, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== m1.ts ===
+declare const v: { a: 1 } | { [k: string]: 2 };
+>v : Symbol(v, Decl(m1.ts, 0, 13))
+>a : Symbol(a, Decl(m1.ts, 0, 18))
+>k : Symbol(k, Decl(m1.ts, 0, 31))
+
+export = v;
+>v : Symbol(v, Decl(m1.ts, 0, 13))
+

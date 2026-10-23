@@ -1,0 +1,19 @@
+//// [test/cases/bun09-C3.ts] ////
+
+=== a.ts ===
+declare let x1: { a?: number } & { a: number | undefined };
+>x1 : { a?: number; } & { a: number | undefined; }
+>a : number | undefined
+>a : number | undefined
+
+x1.a = undefined;
+>x1.a = undefined : undefined
+>x1.a : number
+>x1 : { a?: number; } & { a: number | undefined; }
+>a : number
+>undefined : undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

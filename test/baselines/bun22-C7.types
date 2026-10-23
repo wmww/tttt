@@ -1,0 +1,23 @@
+//// [test/cases/bun22-C7.ts] ////
+
+=== a.ts ===
+declare function f<T>(x: { [K in (keyof T & "a") | (keyof T & "b")]: T[K] }): T;
+>f : <T>(x: { [K in (keyof T & "a") | (keyof T & "b")]: T[K]; }) => T
+>x : { [K in (keyof T & "a") | (keyof T & "b")]: T[K]; }
+
+declare const s: { a: 1; c: 1 };
+>s : { a: 1; c: 1; }
+>a : 1
+>c : 1
+
+f(s).c;
+>f(s).c : 1
+>f(s) : { a: 1; c: 1; }
+>f : <T>(x: { [K in (keyof T & "a") | (keyof T & "b")]: T[K]; }) => T
+>s : { a: 1; c: 1; }
+>c : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

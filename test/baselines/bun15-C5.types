@@ -1,0 +1,20 @@
+//// [test/cases/bun15-C5.ts] ////
+
+=== a.tsx ===
+enum React { A }
+>React : React
+>A : React.A
+
+export const a = <div />;
+>a : JSX.Element
+><div /> : JSX.Element
+>div : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== jsx.d.ts ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } }
+>div : {}
+

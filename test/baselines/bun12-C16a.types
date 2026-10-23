@@ -1,0 +1,19 @@
+//// [test/cases/bun12-C16a.ts] ////
+
+=== a.ts ===
+interface I { readonly u: unique symbol }
+>u : unique symbol
+
+declare let i: I;
+>i : I
+
+let s9: string = i.u;
+>s9 : string
+>i.u : unique symbol
+>i : I
+>u : unique symbol
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,73 @@
+a.ts(11,14): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(11,35): error TS2698: Spread types may only be created from object types.
+a.ts(12,14): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(12,38): error TS2698: Spread types may only be created from object types.
+a.ts(13,14): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(13,28): error TS2698: Spread types may only be created from object types.
+a.ts(14,14): error TS2322: Type '{ id: number; } | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+a.ts(15,14): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(15,38): error TS2698: Spread types may only be created from object types.
+a.ts(16,14): error TS2322: Type 'any' is not assignable to type 'never'.
+a.ts(16,35): error TS2698: Spread types may only be created from object types.
+a.ts(17,44): error TS2698: Spread types may only be created from object types.
+a.ts(18,47): error TS2698: Spread types may only be created from object types.
+a.ts(19,28): error TS2698: Spread types may only be created from object types.
+a.ts(20,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2023"] } }
+==== a.ts (15 errors) ====
+    type A = { kind: "a"; x: 1 };
+    type B = { kind: "b"; y: 2 };
+    declare function id<T>(value: T): T;
+    declare function use<T>(select: () => T): { data: NoInfer<T> };
+    declare function both(): A & B;
+    declare const n: NoInfer<A & B>;
+    declare const m: NoInfer<A & B> | undefined;
+    const { data } = use(both);
+    type Cond<T> = T extends unknown ? A & B : never;
+    declare const c: NoInfer<Cond<1>>;
+    export const v1: never = { id: 1, ...n };
+                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v2: never = id({ id: 1, ...n });
+                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                         ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v3: never = { ...n, id: 1 };
+                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v4: never = id(m ? { id: 1, ...m } : undefined);
+                 ~~
+!!! error TS2322: Type '{ id: number; } | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    export const v5: never = id({ id: 1, ...data });
+                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                         ~~~~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v6: never = { id: 1, ...c };
+                 ~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                                      ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v7: { id: string } = { id: 1, ...n };
+                                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v8: { id: string } = id({ id: 1, ...n });
+                                                  ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    export const v9 = { id: 1, ...n }.nope;
+                               ~~~~
+!!! error TS2698: Spread types may only be created from object types.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

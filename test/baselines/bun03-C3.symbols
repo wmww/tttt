@@ -1,0 +1,15 @@
+//// [test/cases/bun03-C3.ts] ////
+
+=== a.ts ===
+declare const X: (new () => { a: number }) & { [k: string]: number };
+>X : Symbol(X, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 29))
+>k : Symbol(k, Decl(a.ts, 0, 48))
+
+class S extends X {}
+>S : Symbol(S, Decl(a.ts, 0, 69))
+>X : Symbol(X, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

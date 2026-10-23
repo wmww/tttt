@@ -1,0 +1,23 @@
+a.ts(1,30): error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+a.ts(1,40): error TS2451: Cannot redeclare block-scoped variable 'a'.
+a.ts(1,67): error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+a.ts(1,77): error TS2451: Cannot redeclare block-scoped variable 'a'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    namespace N { declare module "x" { let a: number } declare module "x" { let a: number } }
+                                 ~~~
+!!! error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+                                           ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'a'.
+                                                                      ~~~
+!!! error TS2435: Ambient modules cannot be nested in other modules or namespaces.
+                                                                                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'a'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

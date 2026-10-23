@@ -1,0 +1,82 @@
+//// [test/cases/bun96-REACTHOOKFORM2.ts] ////
+
+=== a.ts ===
+import type { Box, Field } from './types';
+>Box : Box<T>
+>Field : Field<T>
+
+type Local = { kind: 'local'; box: Box<number> };
+>Local : Local
+>kind : "local"
+>box : Box<number>
+
+declare const u: Field<number> | Local;
+>u : Field<number> | Local
+
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+>Equal : Equal<A, B>
+>true : true
+>false : false
+
+const same: Equal<(typeof u)['box'], Box<number>> = true;
+>same : true
+>u : Field<number> | Local
+>true : true
+
+interface Mine extends Both {}
+type Both = (typeof u)['box'];
+>Both : Box<number>
+>u : Field<number> | Local
+
+u.box = {};
+>u.box = {} : {}
+>u.box : Box<number>
+>u : Field<number> | Local
+>box : Box<number>
+>{} : {}
+
+u.box = { value: 1, extra: 2 };
+>u.box = { value: 1, extra: 2 } : { value: number; extra: number; }
+>u.box : Box<number>
+>u : Field<number> | Local
+>box : Box<number>
+>{ value: 1, extra: 2 } : { value: number; extra: number; }
+>value : number
+>1 : 1
+>extra : number
+>2 : 2
+
+u.box.valu;
+>u.box.valu : any
+>u.box : Box<number>
+>u : Field<number> | Local
+>box : Box<number>
+>valu : any
+
+const text: string = u.box;
+>text : string
+>u.box : Box<number>
+>u : Field<number> | Local
+>box : Box<number>
+
+declare let both: Box<number> & Field<number>['box'];
+>both : Box<number>
+
+both = null;
+>both = null : null
+>both : Box<number>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== types.ts ===
+export type Box<T> = { value: T };
+>Box : Box<T>
+>value : T
+
+export type Field<T> = { kind: 'field'; box: Box<T> };
+>Field : Field<T>
+>kind : "field"
+>box : Box<T>
+

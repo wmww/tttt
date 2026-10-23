@@ -1,0 +1,62 @@
+//// [test/cases/bun62-L19.ts] ////
+
+=== a.ts ===
+const l1 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 1 + {} }) };
+>l1 : Symbol(l1, Decl(a.ts, 0, 5))
+>m : Symbol(m, Decl(a.ts, 0, 12))
+>this : Symbol(l1, Decl(a.ts, 0, 10))
+>f : Symbol(f, Decl(a.ts, 0, 36))
+>this : Symbol(l1, Decl(a.ts, 0, 10))
+>g : Symbol(g, Decl(a.ts, 0, 60))
+>a : Symbol(a, Decl(a.ts, 0, 72))
+
+const l2 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: { b: 2 + {} } }) };
+>l2 : Symbol(l2, Decl(a.ts, 1, 5))
+>m : Symbol(m, Decl(a.ts, 1, 12))
+>this : Symbol(l2, Decl(a.ts, 1, 10))
+>f : Symbol(f, Decl(a.ts, 1, 36))
+>this : Symbol(l2, Decl(a.ts, 1, 10))
+>g : Symbol(g, Decl(a.ts, 1, 60))
+>a : Symbol(a, Decl(a.ts, 1, 72))
+>b : Symbol(b, Decl(a.ts, 1, 77))
+
+const l3 = { m() { return this.z; }, f() { return this.z; }, g: () => [{ a: 3 + {} }] };
+>l3 : Symbol(l3, Decl(a.ts, 2, 5))
+>m : Symbol(m, Decl(a.ts, 2, 12))
+>this : Symbol(l3, Decl(a.ts, 2, 10))
+>f : Symbol(f, Decl(a.ts, 2, 36))
+>this : Symbol(l3, Decl(a.ts, 2, 10))
+>g : Symbol(g, Decl(a.ts, 2, 60))
+>a : Symbol(a, Decl(a.ts, 2, 72))
+
+const l4 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ ["a"]: 4 + {} }) };
+>l4 : Symbol(l4, Decl(a.ts, 3, 5))
+>m : Symbol(m, Decl(a.ts, 3, 12))
+>this : Symbol(l4, Decl(a.ts, 3, 10))
+>f : Symbol(f, Decl(a.ts, 3, 36))
+>this : Symbol(l4, Decl(a.ts, 3, 10))
+>g : Symbol(g, Decl(a.ts, 3, 60))
+>["a"] : Symbol(["a"], Decl(a.ts, 3, 72))
+>"a" : Symbol(["a"], Decl(a.ts, 3, 72))
+
+const l5 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: 5 + {}, ...{} }) };
+>l5 : Symbol(l5, Decl(a.ts, 4, 5))
+>m : Symbol(m, Decl(a.ts, 4, 12))
+>this : Symbol(l5, Decl(a.ts, 4, 10))
+>f : Symbol(f, Decl(a.ts, 4, 36))
+>this : Symbol(l5, Decl(a.ts, 4, 10))
+>g : Symbol(g, Decl(a.ts, 4, 60))
+>a : Symbol(a, Decl(a.ts, 4, 72))
+
+const l8 = { m() { return this.z; }, f() { return this.z; }, g: () => ({ a: [8 + {}] }) };
+>l8 : Symbol(l8, Decl(a.ts, 5, 5))
+>m : Symbol(m, Decl(a.ts, 5, 12))
+>this : Symbol(l8, Decl(a.ts, 5, 10))
+>f : Symbol(f, Decl(a.ts, 5, 36))
+>this : Symbol(l8, Decl(a.ts, 5, 10))
+>g : Symbol(g, Decl(a.ts, 5, 60))
+>a : Symbol(a, Decl(a.ts, 5, 72))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

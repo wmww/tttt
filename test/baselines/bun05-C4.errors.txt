@@ -1,0 +1,19 @@
+a.ts(3,8): error TS2345: Argument of type 'symbol' is not assignable to parameter of type 'number'.
+a.ts(3,8): error TS2731: Implicit conversion of a 'symbol' to a 'string' will fail at runtime. Consider wrapping this expression in 'String(...)'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const sy: symbol;
+    declare function tag2(s: TemplateStringsArray, x: number): void;
+    tag2`${sy}`;
+           ~~
+!!! error TS2345: Argument of type 'symbol' is not assignable to parameter of type 'number'.
+           ~~
+!!! error TS2731: Implicit conversion of a 'symbol' to a 'string' will fail at runtime. Consider wrapping this expression in 'String(...)'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

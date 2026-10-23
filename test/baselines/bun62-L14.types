@@ -1,0 +1,84 @@
+//// [test/cases/bun62-L14.ts] ////
+
+=== a.ts ===
+declare const u: unknown; declare const a: {}; declare const c: boolean;
+>u : unknown
+>a : {}
+>c : boolean
+
+let e = {}; const { x, ...rest2 } = { x: 1 };
+>e : {}
+>{} : {}
+>x : number
+>rest2 : {}
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+type I = { [k: string]: number };
+>I : I
+>k : string
+
+if (u) {
+>u : unknown
+
+  const t1: I = c ? u : { ...a };
+>t1 : I
+>c ? u : { ...a } : {}
+>c : boolean
+>u : {}
+>{ ...a } : {}
+>a : {}
+
+  const t2: I = c ? { ...a } : u;
+>t2 : I
+>c ? { ...a } : u : {}
+>c : boolean
+>{ ...a } : {}
+>a : {}
+>u : {}
+
+  const t3: I[] = [u, { ...a }];
+>t3 : I[]
+>[u, { ...a }] : {}[]
+>u : {}
+>{ ...a } : {}
+>a : {}
+
+  const t4: I = c ? u : { ...{} };
+>t4 : I
+>c ? u : { ...{} } : {}
+>c : boolean
+>u : {}
+>{ ...{} } : {}
+>{} : {}
+
+  const t5: I = c ? u : { ...a, ...a };
+>t5 : I
+>c ? u : { ...a, ...a } : {}
+>c : boolean
+>u : {}
+>{ ...a, ...a } : {}
+>a : {}
+>a : {}
+
+  const t6: I = c ? u : { ...e };
+>t6 : I
+>c ? u : { ...e } : {}
+>c : boolean
+>u : {}
+>{ ...e } : {}
+>e : {}
+
+  const t7: I = c ? u : { ...rest2 };
+>t7 : I
+>c ? u : { ...rest2 } : {}
+>c : boolean
+>u : {}
+>{ ...rest2 } : {}
+>rest2 : {}
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

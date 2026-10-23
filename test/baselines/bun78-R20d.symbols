@@ -1,0 +1,37 @@
+//// [test/cases/bun78-R20d.ts] ////
+
+=== a.ts ===
+declare const key: string;
+>key : Symbol(key, Decl(a.ts, 0, 13))
+
+function o1(a: {}): void; function o1({ [key]: a = 1 }) {}
+>o1 : Symbol(o1, Decl(a.ts, 0, 26), Decl(a.ts, 1, 25))
+>a : Symbol(a, Decl(a.ts, 1, 12))
+>o1 : Symbol(o1, Decl(a.ts, 0, 26), Decl(a.ts, 1, 25))
+>key : Symbol(key, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 1, 39))
+
+class O2 { m(a: {}): void; m({ [key]: a = 1 }) {} }
+>O2 : Symbol(O2, Decl(a.ts, 1, 58))
+>m : Symbol(O2.m, Decl(a.ts, 2, 10), Decl(a.ts, 2, 26))
+>a : Symbol(a, Decl(a.ts, 2, 13))
+>m : Symbol(O2.m, Decl(a.ts, 2, 10), Decl(a.ts, 2, 26))
+>key : Symbol(key, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 2, 30))
+
+// both report TS2537: a call before the declaration
+e3({}); function e3({ [key]: a = 1 }) {}
+>e3 : Symbol(e3, Decl(a.ts, 4, 7))
+>e3 : Symbol(e3, Decl(a.ts, 4, 7))
+>key : Symbol(key, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 4, 21))
+
+// both are silent
+function e4({ [key]: a = 1 }) {}
+>e4 : Symbol(e4, Decl(a.ts, 4, 40))
+>key : Symbol(key, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 6, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

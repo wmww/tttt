@@ -1,0 +1,24 @@
+//// [test/cases/bun15-C3c.ts] ////
+
+=== a.tsx ===
+export function f(a = <div />, React: any) {}
+>f : (a: JSX.Element | undefined, React: any) => void
+>a : JSX.Element
+><div /> : JSX.Element
+>div : any
+>React : any
+
+export function g(React = <div />) {}
+>g : (React?: JSX.Element) => void
+>React : JSX.Element
+><div /> : JSX.Element
+>div : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== jsx.d.ts ===
+declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } }
+>div : {}
+

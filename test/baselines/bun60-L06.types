@@ -1,0 +1,120 @@
+//// [test/cases/bun60-L06.ts] ////
+
+=== a.ts ===
+class A1 { [+2] = 1; }
+>A1 : A1
+>[+2] : number
+>+2 : 2
+>2 : 2
+>1 : 1
+
+const m1: null = null! as keyof A1;
+>m1 : null
+>null! as keyof A1 : 2
+>null! : never
+
+interface I2 { [+2]: 1; [-0]: 2; [-3]: 3 }
+>[+2] : 1
+>+2 : 2
+>2 : 2
+>[-0] : 2
+>-0 : 0
+>0 : 0
+>[-3] : 3
+>-3 : -3
+>3 : 3
+
+const m2: null = null! as keyof I2;
+>m2 : null
+>null! as keyof I2 : keyof I2
+>null! : never
+
+type T3 = { [+2]: 1 };
+>T3 : T3
+>[+2] : 1
+>+2 : 2
+>2 : 2
+
+const m3: null = null! as keyof T3;
+>m3 : null
+>null! as keyof T3 : 2
+>null! : never
+
+const o4 = { [+2]: 1 };
+>o4 : { 2: number; }
+>{ [+2]: 1 } : { 2: number; }
+>[+2] : number
+>+2 : 2
+>2 : 2
+>1 : 1
+
+const m4: null = null! as keyof typeof o4;
+>m4 : null
+>null! as keyof typeof o4 : 2
+>null! : never
+>o4 : { 2: number; }
+
+type M5 = { [K in keyof I2]: K }; const m5: null = null! as M5;
+>M5 : M5
+>m5 : null
+>null! as M5 : M5
+>null! : never
+
+declare const a1: A1; a1[2]; a1["+2"]; a1["2"];
+>a1 : A1
+>a1[2] : any
+>a1 : A1
+>2 : 2
+>a1["+2"] : number
+>a1 : A1
+>"+2" : "+2"
+>a1["2"] : any
+>a1 : A1
+>"2" : "2"
+
+declare const i2: I2; i2[2]; i2["+2"]; i2[0]; i2["-0"]; i2[-0]; i2[-3]; i2["-3"];
+>i2 : I2
+>i2[2] : any
+>i2 : I2
+>2 : 2
+>i2["+2"] : 1
+>i2 : I2
+>"+2" : "+2"
+>i2[0] : any
+>i2 : I2
+>0 : 0
+>i2["-0"] : 2
+>i2 : I2
+>"-0" : "-0"
+>i2[-0] : any
+>i2 : I2
+>-0 : 0
+>0 : 0
+>i2[-3] : 3
+>i2 : I2
+>-3 : -3
+>3 : 3
+>i2["-3"] : 3
+>i2 : I2
+>"-3" : "-3"
+
+type P6 = Pick<I2, 2>; type P7 = Pick<I2, "+2">; type P8 = I2[2]; type P9 = I2["+2"];
+>P6 : P6
+>P7 : P7
+>P8 : any
+>P9 : 1
+
+const k10: keyof I2 = 2; const k11: keyof I2 = "+2"; const k12: keyof I2 = 0; const k13: keyof I2 = "-0";
+>k10 : keyof I2
+>2 : 2
+>k11 : keyof I2
+>"+2" : "+2"
+>k12 : keyof I2
+>0 : 0
+>k13 : keyof I2
+>"-0" : "-0"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

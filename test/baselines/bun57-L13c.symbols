@@ -1,0 +1,24 @@
+//// [test/cases/bun57-L13c.ts] ////
+
+=== a.ts ===
+declare const i1: { a: 1 };
+>i1 : Symbol(i1, Decl(a.ts, 0, 13))
+>a : Symbol(a, Decl(a.ts, 0, 19))
+
+function* g1() { yield* i1; }
+>g1 : Symbol(g1, Decl(a.ts, 0, 27))
+>i1 : Symbol(i1, Decl(a.ts, 0, 13))
+
+function* g2() { yield* [1]; }
+>g2 : Symbol(g2, Decl(a.ts, 1, 29))
+
+function* g3() { yield* ""; }
+>g3 : Symbol(g3, Decl(a.ts, 2, 30))
+
+async function* g4() { yield* i1; }
+>g4 : Symbol(g4, Decl(a.ts, 3, 29))
+>i1 : Symbol(i1, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

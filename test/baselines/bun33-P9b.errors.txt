@@ -1,0 +1,19 @@
+a.ts(1,10): error TS1340: Module './m' does not refer to a type, but is used as a type here. Did you mean 'typeof import('./m')'?
+a.ts(1,24): error TS1110: Type expected.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    type T = import("./m").;
+             ~~~~~~~~~~~~~~
+!!! error TS1340: Module './m' does not refer to a type, but is used as a type here. Did you mean 'typeof import('./m')'?
+                           ~
+!!! error TS1110: Type expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export {};
+    

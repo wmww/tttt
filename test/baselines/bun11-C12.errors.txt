@@ -1,0 +1,18 @@
+a.ts(3,19): error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  Property 'toUpperCase' does not exist on type 'number'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const a: string | number;
+    function isStr(this: void, x: string | number) { return typeof x === "string"; }
+    if (isStr(a)) { a.toUpperCase(); }
+                      ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toUpperCase' does not exist on type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

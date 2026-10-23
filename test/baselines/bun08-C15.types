@@ -1,0 +1,29 @@
+//// [test/cases/bun08-C15.ts] ////
+
+=== a.cts ===
+import m1 from "./esm.mjs";
+>m1 : { q: number; }
+
+import { default as m2 } from "./esm.mjs";
+>default : { q: number; }
+>m2 : { q: number; }
+
+export { default as m3 } from "./esm.mjs";
+>default : { q: number; }
+>m3 : { q: number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== esm.mts ===
+const me = { q: 1 };
+>me : { q: number; }
+>{ q: 1 } : { q: number; }
+>q : number
+>1 : 1
+
+export { me as "module.exports" };
+>me : { q: number; }
+>"module.exports" : { q: number; }
+

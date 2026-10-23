@@ -1,0 +1,17 @@
+//// [test/cases/bun18-C6b.ts] ////
+
+=== a.ts ===
+function f<T>(u: T & string) {
+>f : <T>(u: T & string) => void
+>u : T & string
+
+  u as { a: 1 } & { b: 2 };
+>u as { a: 1 } & { b: 2 } : { a: 1; } & { b: 2; }
+>u : T & string
+>a : 1
+>b : 2
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,23 @@
+//// [test/cases/bun26-P2.ts] ////
+
+=== a.ts ===
+type Inf<T> = T extends string ? Inf<`a${T}`> : never;
+>Inf : Inf<T>
+
+declare function f<A, B>(x: A): void;
+>f : <A, B>(x: A) => void
+>x : A
+
+function g<T>() { return f<T, Inf<T>>; }
+>g : <T>() => (x: T) => void
+>f<T, Inf<T>> : (x: T) => void
+>f : <A, B>(x: A) => void
+
+g<string>();
+>g<string>() : (x: string) => void
+>g : <T>() => (x: T) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

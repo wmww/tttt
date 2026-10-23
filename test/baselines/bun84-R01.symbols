@@ -1,0 +1,25 @@
+//// [test/cases/bun84-R01.ts] ////
+
+=== b.js ===
+function h1(@dec x) {}
+>h1 : Symbol(h1, Decl(b.js, 0, 0))
+>x : Symbol(x, Decl(b.js, 0, 12))
+
+function h2(export @dec x) {}
+>h2 : Symbol(h2, Decl(b.js, 0, 22))
+>x : Symbol(x, Decl(b.js, 1, 12))
+
+function h3(export default @dec x) {}
+>h3 : Symbol(h3, Decl(b.js, 1, 29))
+>x : Symbol(x, Decl(b.js, 2, 12))
+
+class K { m(a, export @dec y) {} }
+>K : Symbol(K, Decl(b.js, 2, 37))
+>m : Symbol(K.m, Decl(b.js, 3, 9))
+>a : Symbol(a, Decl(b.js, 3, 12))
+>y : Symbol(y, Decl(b.js, 3, 14))
+
+=== z.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(z.ts, 0, 5))
+

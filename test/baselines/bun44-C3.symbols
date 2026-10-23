@@ -1,0 +1,24 @@
+//// [test/cases/bun44-C3.ts] ////
+
+=== a.ts ===
+import { Kind } from "./kinds";
+>Kind : Symbol(Kind, Decl(a.ts, 0, 8))
+
+const o = { kind };
+>o : Symbol(o, Decl(a.ts, 1, 5))
+>kind : Symbol(kind, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== kinds.ts ===
+export * as Kind from "./kinds_";
+>Kind : Symbol(Kind, Decl(kinds.ts, 0, 6), Decl(kinds.ts, 0, 33))
+
+export type Kind = "Field";
+>Kind : Symbol(Kind, Decl(kinds.ts, 0, 6), Decl(kinds.ts, 0, 33))
+
+=== kinds_.ts ===
+export const FIELD = "Field";
+>FIELD : Symbol(FIELD, Decl(kinds_.ts, 0, 12))
+

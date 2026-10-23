@@ -1,0 +1,72 @@
+//// [test/cases/bun81-R01.ts] ////
+
+=== a.ts ===
+const kz = "z";
+>kz : "z"
+>"z" : "z"
+
+const v2 = { z: 1, get z() { return v2.z } };
+>v2 : any
+>{ z: 1, get z() { return v2.z } } : { readonly z: any; }
+>z : any
+>1 : 1
+>z : any
+>v2.z : any
+>v2 : any
+>z : any
+
+const v3 = { [kz]: 1, get [kz]() { return v3.z } };
+>v3 : any
+>{ [kz]: 1, get [kz]() { return v3.z } } : { readonly z: any; }
+>[kz] : any
+>kz : "z"
+>1 : 1
+>[kz] : any
+>kz : "z"
+>v3.z : any
+>v3 : any
+>z : any
+
+const v6 = { [kz]: 1, get z() { return v6.z } };
+>v6 : any
+>{ [kz]: 1, get z() { return v6.z } } : { readonly z: any; }
+>[kz] : any
+>kz : "z"
+>1 : 1
+>z : any
+>v6.z : any
+>v6 : any
+>z : any
+
+const w8 = { z: 1, set z(v: typeof w8) {} };
+>w8 : any
+>{ z: 1, set z(v: typeof w8) {} } : { z: any; }
+>z : any
+>1 : 1
+>z : any
+>v : any
+>w8 : any
+
+// the plain member last, or no plain member: the two agree
+const v9 = { get z() { return v9.z }, z: 1 };
+>v9 : { readonly z: number; }
+>{ get z() { return v9.z }, z: 1 } : { readonly z: number; }
+>z : number
+>v9.z : number
+>v9 : { readonly z: number; }
+>z : number
+>z : number
+>1 : 1
+
+const v1 = { get z() { return v1.z } };
+>v1 : { readonly z: any; }
+>{ get z() { return v1.z } } : { readonly z: any; }
+>z : any
+>v1.z : any
+>v1 : { readonly z: any; }
+>z : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

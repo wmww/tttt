@@ -1,0 +1,18 @@
+//// [test/cases/bun25-C8.ts] ////
+
+=== a.ts ===
+function f(x: string | number) { x! = ""; x.length; }
+>f : (x: string | number) => void
+>x : string | number
+>x! = "" : ""
+>x! : string | number
+>x : string | number
+>"" : ""
+>x.length : number
+>x : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,92 @@
+//// [test/cases/bun60-L06.ts] ////
+
+=== a.ts ===
+class A1 { [+2] = 1; }
+>A1 : Symbol(A1, Decl(a.ts, 0, 0))
+>[+2] : Symbol(A1[+2], Decl(a.ts, 0, 10))
+
+const m1: null = null! as keyof A1;
+>m1 : Symbol(m1, Decl(a.ts, 1, 5))
+>A1 : Symbol(A1, Decl(a.ts, 0, 0))
+
+interface I2 { [+2]: 1; [-0]: 2; [-3]: 3 }
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>[+2] : Symbol(I2[+2], Decl(a.ts, 2, 14))
+>[-0] : Symbol(I2[-0], Decl(a.ts, 2, 23))
+>[-3] : Symbol(I2[-3], Decl(a.ts, 2, 32))
+
+const m2: null = null! as keyof I2;
+>m2 : Symbol(m2, Decl(a.ts, 3, 5))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+
+type T3 = { [+2]: 1 };
+>T3 : Symbol(T3, Decl(a.ts, 3, 35))
+>[+2] : Symbol([+2], Decl(a.ts, 4, 11))
+
+const m3: null = null! as keyof T3;
+>m3 : Symbol(m3, Decl(a.ts, 5, 5))
+>T3 : Symbol(T3, Decl(a.ts, 3, 35))
+
+const o4 = { [+2]: 1 };
+>o4 : Symbol(o4, Decl(a.ts, 6, 5))
+>[+2] : Symbol([+2], Decl(a.ts, 6, 12))
+
+const m4: null = null! as keyof typeof o4;
+>m4 : Symbol(m4, Decl(a.ts, 7, 5))
+>o4 : Symbol(o4, Decl(a.ts, 6, 5))
+
+type M5 = { [K in keyof I2]: K }; const m5: null = null! as M5;
+>M5 : Symbol(M5, Decl(a.ts, 7, 42))
+>K : Symbol(K, Decl(a.ts, 8, 13))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>K : Symbol(K, Decl(a.ts, 8, 13))
+>m5 : Symbol(m5, Decl(a.ts, 8, 39))
+>M5 : Symbol(M5, Decl(a.ts, 7, 42))
+
+declare const a1: A1; a1[2]; a1["+2"]; a1["2"];
+>a1 : Symbol(a1, Decl(a.ts, 9, 13))
+>A1 : Symbol(A1, Decl(a.ts, 0, 0))
+>a1 : Symbol(a1, Decl(a.ts, 9, 13))
+>a1 : Symbol(a1, Decl(a.ts, 9, 13))
+>"+2" : Symbol(A1[+2], Decl(a.ts, 0, 10))
+>a1 : Symbol(a1, Decl(a.ts, 9, 13))
+
+declare const i2: I2; i2[2]; i2["+2"]; i2[0]; i2["-0"]; i2[-0]; i2[-3]; i2["-3"];
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>"+2" : Symbol(I2[+2], Decl(a.ts, 2, 14))
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>"-0" : Symbol(I2[-0], Decl(a.ts, 2, 23))
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>i2 : Symbol(i2, Decl(a.ts, 10, 13))
+>"-3" : Symbol(I2[-3], Decl(a.ts, 2, 32))
+
+type P6 = Pick<I2, 2>; type P7 = Pick<I2, "+2">; type P8 = I2[2]; type P9 = I2["+2"];
+>P6 : Symbol(P6, Decl(a.ts, 10, 81))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>P7 : Symbol(P7, Decl(a.ts, 11, 22))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>P8 : Symbol(P8, Decl(a.ts, 11, 48))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>P9 : Symbol(P9, Decl(a.ts, 11, 65))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+
+const k10: keyof I2 = 2; const k11: keyof I2 = "+2"; const k12: keyof I2 = 0; const k13: keyof I2 = "-0";
+>k10 : Symbol(k10, Decl(a.ts, 12, 5))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>k11 : Symbol(k11, Decl(a.ts, 12, 30))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>k12 : Symbol(k12, Decl(a.ts, 12, 58))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+>k13 : Symbol(k13, Decl(a.ts, 12, 83))
+>I2 : Symbol(I2, Decl(a.ts, 1, 35))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 13, 5))
+

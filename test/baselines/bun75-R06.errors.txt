@@ -1,0 +1,34 @@
+p1.ts(1,13): error TS2303: Circular definition of import alias 'n1'.
+p1.ts(1,38): error TS2303: Circular definition of import alias 'n1'.
+p1.ts(1,42): error TS2303: Circular definition of import alias 'm1'.
+p2.ts(1,13): error TS2303: Circular definition of import alias 'n2'.
+p2.ts(1,41): error TS2303: Circular definition of import alias 'o2'.
+p2.ts(1,66): error TS2303: Circular definition of import alias 'n2'.
+p2.ts(1,70): error TS2303: Circular definition of import alias 'o2'.
+p2.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions":{"strict":true,"noEmit":true,"types":[],"lib":["es2022"],"module":"esnext","moduleResolution":"bundler"},"files":["p1.ts","p2.ts"]}
+==== p1.ts (3 errors) ====
+    import * as n1 from "./p2"; export { n1, n1 as m1 }; export default 1;
+                ~~
+!!! error TS2303: Circular definition of import alias 'n1'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n1'.
+                                             ~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'm1'.
+==== p2.ts (5 errors) ====
+    import * as n2 from "./p1"; import * as o2 from "./p1"; export { n2, o2 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n2'.
+                                            ~~
+!!! error TS2303: Circular definition of import alias 'o2'.
+                                                                     ~~
+!!! error TS2303: Circular definition of import alias 'n2'.
+                                                                         ~~
+!!! error TS2303: Circular definition of import alias 'o2'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

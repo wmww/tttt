@@ -1,0 +1,27 @@
+//// [test/cases/bun15-P2.ts] ////
+
+=== a.ts ===
+interface MyAsyncIter { next(v: string): Promise<IteratorResult<Promise<number>, void>>; [Symbol.asyncIterator](): MyAsyncIter }
+>MyAsyncIter : Symbol(MyAsyncIter, Decl(a.ts, 0, 0))
+>next : Symbol(MyAsyncIter.next, Decl(a.ts, 0, 23))
+>v : Symbol(v, Decl(a.ts, 0, 29))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>IteratorResult : Symbol(IteratorResult, Decl(lib.es2015.iterable.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>[Symbol.asyncIterator] : Symbol(MyAsyncIter[Symbol.asyncIterator], Decl(a.ts, 0, 88))
+>Symbol.asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>asyncIterator : Symbol(SymbolConstructor.asyncIterator, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>MyAsyncIter : Symbol(MyAsyncIter, Decl(a.ts, 0, 0))
+
+const f: () => MyAsyncIter | AsyncGenerator<number, void, boolean> = async function* () { const x = yield 1; const b: boolean = x; };
+>f : Symbol(f, Decl(a.ts, 1, 5))
+>MyAsyncIter : Symbol(MyAsyncIter, Decl(a.ts, 0, 0))
+>AsyncGenerator : Symbol(AsyncGenerator, Decl(lib.es2018.asyncgenerator.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 95))
+>b : Symbol(b, Decl(a.ts, 1, 114))
+>x : Symbol(x, Decl(a.ts, 1, 95))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

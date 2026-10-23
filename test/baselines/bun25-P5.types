@@ -1,0 +1,17 @@
+//// [test/cases/bun25-P5.ts] ////
+
+=== a.ts ===
+class E { "#y" = 1; m(a: E) { delete a.#y; } }
+>E : E
+>"#y" : number
+>1 : 1
+>m : (a: E) => void
+>a : E
+>delete a.#y : boolean
+>a.#y : any
+>a : E
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

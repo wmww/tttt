@@ -1,0 +1,16 @@
+a.ts(1,47): error TS2588: Cannot assign to 'x' because it is a constant.
+a.ts(1,66): error TS1003: Identifier expected.
+a.ts(1,68): error TS1128: Declaration or statement expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare const a: any, b: any, x: any, f: any; x = class { p = a?.! }
+                                                  ~
+!!! error TS2588: Cannot assign to 'x' because it is a constant.
+                                                                     ~
+!!! error TS1003: Identifier expected.
+                                                                       ~
+!!! error TS1128: Declaration or statement expected.
+    

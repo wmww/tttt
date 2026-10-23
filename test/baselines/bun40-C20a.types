@@ -1,0 +1,7 @@
+//// [test/cases/bun40-C20a.ts] ////
+
+=== src/a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

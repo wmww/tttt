@@ -1,0 +1,16 @@
+//// [test/cases/bun02-C18a.ts] ////
+
+=== a.ts ===
+declare const module: { exports: () => void };
+>module : { exports: () => void; }
+>exports : () => void
+
+if (module.exports) {}
+>module.exports : () => void
+>module : { exports: () => void; }
+>exports : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

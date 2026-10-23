@@ -1,0 +1,50 @@
+//// [test/cases/bun99-E2.ts] ////
+
+=== index.ts ===
+import type { Fn } from "lib";
+>Fn : Fn
+
+export const f: Fn = (method: number) => {};
+>f : Fn
+>(method: number) => {} : (method: number) => void
+>method : number
+
+=== sentinel.ts ===
+import type { Fn, Method } from "lib";
+>Fn : Fn
+>Method : any
+
+import { Method as Value } from "lib";
+>Method : { a: number; }
+>Value : { a: number; }
+
+export const g: Fn = (method: string) => {};
+>g : Fn
+>(method: string) => {} : (method: string) => void
+>method : string
+
+export const asType: never = null! as Method;
+>asType : never
+>null! as Method : any
+>null! : never
+
+export const asValue: never = Value;
+>asValue : never
+>Value : { a: number; }
+
+=== node_modules/lib/index.d.ts ===
+export type Method = typeof Method;
+>Method : any
+>Method : any
+
+export declare const Method: { a: number };
+>Method : { a: number; }
+>a : number
+
+export type Method = "get" | "post";
+>Method : import("lib").Method
+
+export type Fn = (method: Method) => void;
+>Fn : Fn
+>method : any
+

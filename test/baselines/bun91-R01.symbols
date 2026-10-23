@@ -1,0 +1,46 @@
+//// [test/cases/bun91-R01.ts] ////
+
+=== a.ts ===
+declare let y: any;
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+declare let s: string;
+>s : Symbol(s, Decl(a.ts, 1, 11))
+
+(s = 1) = y;
+>s : Symbol(s, Decl(a.ts, 1, 11))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+[(s = 1)] = y;
+>s : Symbol(s, Decl(a.ts, 1, 11))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+({ a: (s = 1) } = y);
+>a : Symbol(a, Decl(a.ts, 4, 2))
+>s : Symbol(s, Decl(a.ts, 1, 11))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+for ((s = 1) of y) {}
+>s : Symbol(s, Decl(a.ts, 1, 11))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+({ a: ({ b: s } = { b: 1 }) } = y);
+>a : Symbol(a, Decl(a.ts, 6, 2))
+>b : Symbol(b, Decl(a.ts, 6, 8))
+>s : Symbol(s, Decl(a.ts, 1, 11))
+>b : Symbol(b, Decl(a.ts, 6, 19))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+({ a: ({ k() {} } = y) } = y);
+>a : Symbol(a, Decl(a.ts, 7, 2))
+>k : Symbol(k, Decl(a.ts, 7, 8))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+[s = 1] = y;
+>s : Symbol(s, Decl(a.ts, 1, 11))
+>y : Symbol(y, Decl(a.ts, 0, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

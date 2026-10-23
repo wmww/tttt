@@ -1,0 +1,23 @@
+//// [test/cases/bun07-C9.ts] ////
+
+=== a.ts ===
+export {};
+declare const eo: { x?: number };
+>eo : { x?: number; }
+>x : number | undefined
+
+[eo.x = undefined] = [1];
+>[eo.x = undefined] = [1] : [number]
+>[eo.x = undefined] : [undefined]
+>eo.x = undefined : undefined
+>eo.x : number
+>eo : { x?: number; }
+>x : number
+>undefined : undefined
+>[1] : [number]
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,17 @@
+error TS2428: All declarations of 'I' must have identical type parameters.
+a.ts(2,26): error TS2428: All declarations of 'I' must have identical type parameters.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2428: All declarations of 'I' must have identical type parameters.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export default class<T> { a!: T }
+    export default interface I<U> { b: U }
+                             ~
+!!! error TS2428: All declarations of 'I' must have identical type parameters.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

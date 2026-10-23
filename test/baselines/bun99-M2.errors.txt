@@ -1,0 +1,318 @@
+a.ts(6,67): error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(6,90): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(7,67): error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(7,90): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(8,66): error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+a.ts(8,89): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(9,68): error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+a.ts(9,91): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+a.ts(10,66): error TS2322: Type '{ b?: 2 | undefined; "1.5"?: 3 | undefined; "-1"?: 4 | undefined; "1e3"?: 5 | undefined; Infinity?: 6 | undefined; }' is not assignable to type 'never'.
+a.ts(10,89): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(11,66): error TS2322: Type '{ "0"?: 1 | undefined; b?: 2 | undefined; "-1"?: 4 | undefined; "1e3"?: 5 | undefined; Infinity?: 6 | undefined; }' is not assignable to type 'never'.
+a.ts(11,89): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(12,65): error TS2322: Type '{ 1?: 2 | undefined; }' is not assignable to type 'never'.
+a.ts(12,88): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(13,67): error TS2322: Type '{ 1?: 2 | undefined; b?: 3 | undefined; }' is not assignable to type 'never'.
+a.ts(13,90): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+a.ts(14,67): error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(14,90): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(15,68): error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(15,91): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(16,67): error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+a.ts(16,90): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(17,69): error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+a.ts(17,92): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+a.ts(18,76): error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(18,99): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(19,76): error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(19,99): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(20,74): error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+a.ts(20,97): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(21,78): error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+a.ts(21,101): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+a.ts(22,84): error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(22,107): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(23,84): error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(23,107): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(24,82): error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+a.ts(24,105): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(25,86): error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+a.ts(25,109): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+a.ts(26,89): error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(26,112): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(27,89): error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(27,112): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(28,87): error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+a.ts(28,110): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(29,91): error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+a.ts(29,114): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+a.ts(30,75): error TS2322: Type '{ [-1]: 1; 1.5: 1; "1e3": 1; Infinity: 1; b: 1; }' is not assignable to type 'never'.
+a.ts(30,98): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(31,75): error TS2322: Type '{ [-1]: 1; 0: 1; "1e3": 1; Infinity: 1; b: 1; }' is not assignable to type 'never'.
+a.ts(31,98): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(32,74): error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+a.ts(32,97): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(33,76): error TS2322: Type '{ 1: 1; b: 1; }' is not assignable to type 'never'.
+a.ts(33,99): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+a.ts(34,77): error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(34,100): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(35,77): error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+a.ts(35,100): error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+a.ts(36,76): error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+a.ts(36,99): error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+  Type 'N.Z' is not assignable to type 'never'.
+a.ts(37,78): error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+a.ts(37,101): error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+  Type '"0"' is not assignable to type 'never'.
+index.ts(4,7): error TS2322: Type 'E' is not assignable to type 'never'.
+  Type 'E.A' is not assignable to type 'never'.
+index.ts(5,53): error TS2322: Type '{ b: 2; "1.5": 3; }' is not assignable to type 'never'.
+sentinel.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "esnext", "module": "esnext", "moduleResolution": "bundler", "types": [], "skipLibCheck": true}, "files": ["index.ts", "a.ts", "sentinel.ts"]}
+==== a.ts (64 errors) ====
+    enum E { A = "0", B = "b", C = "1.5", D = "-1", F = "1e3", G = "Infinity" }
+    enum N { Z = 0, O = 1 }
+    type Item = { [E.A]: 1; [E.B]: 2; [E.C]: 3; [E.D]: 4; [E.F]: 5; [E.G]: 6 };
+    type Num = { [N.Z]: 1; [N.O]: 2 };
+    type Plain = { "0": 1; 1: 2; b: 3 };
+    export function f1({ [E.A]: a, ...rest }: Required<Item>) { const r: never = rest; const k: never = null! as keyof Required<Item>; return { [E.A]: a, ...rest }; }
+                                                                      ~
+!!! error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                             ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f2({ [E.C]: a, ...rest }: Required<Item>) { const r: never = rest; const k: never = null! as keyof Required<Item>; return { [E.C]: a, ...rest }; }
+                                                                      ~
+!!! error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                             ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f3({ [N.Z]: a, ...rest }: Required<Num>) { const r: never = rest; const k: never = null! as keyof Required<Num>; return { [N.Z]: a, ...rest }; }
+                                                                     ~
+!!! error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+                                                                                            ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f4({ ["0"]: a, ...rest }: Required<Plain>) { const r: never = rest; const k: never = null! as keyof Required<Plain>; return { ["0"]: a, ...rest }; }
+                                                                       ~
+!!! error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+                                                                                              ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    export function f5({ [E.A]: a, ...rest }: Partial<Item>) { const r: never = rest; const k: never = null! as keyof Partial<Item>; return { [E.A]: a, ...rest }; }
+                                                                     ~
+!!! error TS2322: Type '{ b?: 2 | undefined; "1.5"?: 3 | undefined; "-1"?: 4 | undefined; "1e3"?: 5 | undefined; Infinity?: 6 | undefined; }' is not assignable to type 'never'.
+                                                                                            ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f6({ [E.C]: a, ...rest }: Partial<Item>) { const r: never = rest; const k: never = null! as keyof Partial<Item>; return { [E.C]: a, ...rest }; }
+                                                                     ~
+!!! error TS2322: Type '{ "0"?: 1 | undefined; b?: 2 | undefined; "-1"?: 4 | undefined; "1e3"?: 5 | undefined; Infinity?: 6 | undefined; }' is not assignable to type 'never'.
+                                                                                            ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f7({ [N.Z]: a, ...rest }: Partial<Num>) { const r: never = rest; const k: never = null! as keyof Partial<Num>; return { [N.Z]: a, ...rest }; }
+                                                                    ~
+!!! error TS2322: Type '{ 1?: 2 | undefined; }' is not assignable to type 'never'.
+                                                                                           ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f8({ ["0"]: a, ...rest }: Partial<Plain>) { const r: never = rest; const k: never = null! as keyof Partial<Plain>; return { ["0"]: a, ...rest }; }
+                                                                      ~
+!!! error TS2322: Type '{ 1?: 2 | undefined; b?: 3 | undefined; }' is not assignable to type 'never'.
+                                                                                             ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    export function f9({ [E.A]: a, ...rest }: Readonly<Item>) { const r: never = rest; const k: never = null! as keyof Readonly<Item>; return { [E.A]: a, ...rest }; }
+                                                                      ~
+!!! error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                             ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f10({ [E.C]: a, ...rest }: Readonly<Item>) { const r: never = rest; const k: never = null! as keyof Readonly<Item>; return { [E.C]: a, ...rest }; }
+                                                                       ~
+!!! error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                              ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f11({ [N.Z]: a, ...rest }: Readonly<Num>) { const r: never = rest; const k: never = null! as keyof Readonly<Num>; return { [N.Z]: a, ...rest }; }
+                                                                      ~
+!!! error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+                                                                                             ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f12({ ["0"]: a, ...rest }: Readonly<Plain>) { const r: never = rest; const k: never = null! as keyof Readonly<Plain>; return { ["0"]: a, ...rest }; }
+                                                                        ~
+!!! error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+                                                                                               ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    export function f13({ [E.A]: a, ...rest }: Pick<Item, keyof Item>) { const r: never = rest; const k: never = null! as keyof Pick<Item, keyof Item>; return { [E.A]: a, ...rest }; }
+                                                                               ~
+!!! error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                      ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f14({ [E.C]: a, ...rest }: Pick<Item, keyof Item>) { const r: never = rest; const k: never = null! as keyof Pick<Item, keyof Item>; return { [E.C]: a, ...rest }; }
+                                                                               ~
+!!! error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                      ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f15({ [N.Z]: a, ...rest }: Pick<Num, keyof Num>) { const r: never = rest; const k: never = null! as keyof Pick<Num, keyof Num>; return { [N.Z]: a, ...rest }; }
+                                                                             ~
+!!! error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+                                                                                                    ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f16({ ["0"]: a, ...rest }: Pick<Plain, keyof Plain>) { const r: never = rest; const k: never = null! as keyof Pick<Plain, keyof Plain>; return { ["0"]: a, ...rest }; }
+                                                                                 ~
+!!! error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+                                                                                                        ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    export function f17({ [E.A]: a, ...rest }: { [K in keyof Item]: Item[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Item]: Item[K] }; return { [E.A]: a, ...rest }; }
+                                                                                       ~
+!!! error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                              ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f18({ [E.C]: a, ...rest }: { [K in keyof Item]: Item[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Item]: Item[K] }; return { [E.C]: a, ...rest }; }
+                                                                                       ~
+!!! error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                              ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f19({ [N.Z]: a, ...rest }: { [K in keyof Num]: Num[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Num]: Num[K] }; return { [N.Z]: a, ...rest }; }
+                                                                                     ~
+!!! error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+                                                                                                            ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f20({ ["0"]: a, ...rest }: { [K in keyof Plain]: Plain[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Plain]: Plain[K] }; return { ["0"]: a, ...rest }; }
+                                                                                         ~
+!!! error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+                                                                                                                ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    export function f21({ [E.A]: a, ...rest }: { [K in keyof Item as K]: Item[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Item as K]: Item[K] }; return { [E.A]: a, ...rest }; }
+                                                                                            ~
+!!! error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                                   ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f22({ [E.C]: a, ...rest }: { [K in keyof Item as K]: Item[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Item as K]: Item[K] }; return { [E.C]: a, ...rest }; }
+                                                                                            ~
+!!! error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                                   ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f23({ [N.Z]: a, ...rest }: { [K in keyof Num as K]: Num[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Num as K]: Num[K] }; return { [N.Z]: a, ...rest }; }
+                                                                                          ~
+!!! error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+                                                                                                                 ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f24({ ["0"]: a, ...rest }: { [K in keyof Plain as K]: Plain[K] }) { const r: never = rest; const k: never = null! as keyof { [K in keyof Plain as K]: Plain[K] }; return { ["0"]: a, ...rest }; }
+                                                                                              ~
+!!! error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+                                                                                                                     ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    export function f25({ [E.A]: a, ...rest }: Record<keyof Item, 1>) { const r: never = rest; const k: never = null! as keyof Record<keyof Item, 1>; return { [E.A]: a, ...rest }; }
+                                                                              ~
+!!! error TS2322: Type '{ [-1]: 1; 1.5: 1; "1e3": 1; Infinity: 1; b: 1; }' is not assignable to type 'never'.
+                                                                                                     ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f26({ [E.C]: a, ...rest }: Record<keyof Item, 1>) { const r: never = rest; const k: never = null! as keyof Record<keyof Item, 1>; return { [E.C]: a, ...rest }; }
+                                                                              ~
+!!! error TS2322: Type '{ [-1]: 1; 0: 1; "1e3": 1; Infinity: 1; b: 1; }' is not assignable to type 'never'.
+                                                                                                     ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f27({ [N.Z]: a, ...rest }: Record<keyof Num, 1>) { const r: never = rest; const k: never = null! as keyof Record<keyof Num, 1>; return { [N.Z]: a, ...rest }; }
+                                                                             ~
+!!! error TS2322: Type '{ 1: 1; }' is not assignable to type 'never'.
+                                                                                                    ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f28({ ["0"]: a, ...rest }: Record<keyof Plain, 1>) { const r: never = rest; const k: never = null! as keyof Record<keyof Plain, 1>; return { ["0"]: a, ...rest }; }
+                                                                               ~
+!!! error TS2322: Type '{ 1: 1; b: 1; }' is not assignable to type 'never'.
+                                                                                                      ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+    export function f29({ [E.A]: a, ...rest }: Required<Partial<Item>>) { const r: never = rest; const k: never = null! as keyof Required<Partial<Item>>; return { [E.A]: a, ...rest }; }
+                                                                                ~
+!!! error TS2322: Type '{ b: 2; "1.5": 3; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                       ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f30({ [E.C]: a, ...rest }: Required<Partial<Item>>) { const r: never = rest; const k: never = null! as keyof Required<Partial<Item>>; return { [E.C]: a, ...rest }; }
+                                                                                ~
+!!! error TS2322: Type '{ "0": 1; b: 2; "-1": 4; "1e3": 5; Infinity: 6; }' is not assignable to type 'never'.
+                                                                                                       ~
+!!! error TS2322: Type 'keyof Item' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f31({ [N.Z]: a, ...rest }: Required<Partial<Num>>) { const r: never = rest; const k: never = null! as keyof Required<Partial<Num>>; return { [N.Z]: a, ...rest }; }
+                                                                               ~
+!!! error TS2322: Type '{ 1: 2; }' is not assignable to type 'never'.
+                                                                                                      ~
+!!! error TS2322: Type 'keyof Num' is not assignable to type 'never'.
+!!! error TS2322:   Type 'N.Z' is not assignable to type 'never'.
+    export function f32({ ["0"]: a, ...rest }: Required<Partial<Plain>>) { const r: never = rest; const k: never = null! as keyof Required<Partial<Plain>>; return { ["0"]: a, ...rest }; }
+                                                                                 ~
+!!! error TS2322: Type '{ 1: 2; b: 3; }' is not assignable to type 'never'.
+                                                                                                        ~
+!!! error TS2322: Type 'keyof Plain' is not assignable to type 'never'.
+!!! error TS2322:   Type '"0"' is not assignable to type 'never'.
+==== index.ts (2 errors) ====
+    enum E { A = "0", B = "b", C = "1.5" }
+    type M = Required<{ [E.A]: 1; [E.B]: 2; [E.C]: 3 }>;
+    const k: E = null! as keyof M;
+    const n: never = null! as keyof M;
+          ~
+!!! error TS2322: Type 'E' is not assignable to type 'never'.
+!!! error TS2322:   Type 'E.A' is not assignable to type 'never'.
+    export function f({ [E.A]: a, ...rest }: M) { const r: never = rest; return { [E.A]: a, ...rest }; }
+                                                        ~
+!!! error TS2322: Type '{ b: 2; "1.5": 3; }' is not assignable to type 'never'.
+==== sentinel.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

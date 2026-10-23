@@ -1,0 +1,17 @@
+//// [test/cases/bun42-C4a.ts] ////
+
+=== a.ts ===
+enum N { z = -0 }
+>N : N
+>z : N.z
+>-0 : 0
+>0 : 0
+
+const b: N = 0;
+>b : N
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,26 @@
+//// [test/cases/bun21-C7.ts] ////
+
+=== a.ts ===
+function f(x: string | { length: 1 }) { if (typeof x === "string" && x.length === undefined) x.toUpperCase(); }
+>f : (x: string | { length: 1; }) => void
+>x : string | { length: 1; }
+>length : 1
+>typeof x === "string" && x.length === undefined : boolean
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | { length: 1; }
+>"string" : "string"
+>x.length === undefined : boolean
+>x.length : number
+>x : string
+>length : number
+>undefined : undefined
+>x.toUpperCase() : any
+>x.toUpperCase : any
+>x : never
+>toUpperCase : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

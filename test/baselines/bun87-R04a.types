@@ -1,0 +1,37 @@
+//// [test/cases/bun87-R04a.ts] ////
+
+=== a.ts ===
+function sp0<T>(t: T) { return { ...{} }; }
+>sp0 : <T>(t: T) => {}
+>t : T
+>{ ...{} } : {}
+>{} : {}
+
+function rs0<T>(t: T) { const { a, ...r } = { a: 1 }; return r; }
+>rs0 : <T>(t: T) => {}
+>t : T
+>a : number
+>r : {}
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+>r : {}
+
+function un(u: unknown) {
+>un : (u: unknown) => void
+>u : unknown
+
+  const a: ReturnType<typeof sp0<3>> | null | undefined = u;
+>a : {} | null | undefined
+>sp0 : <T>(t: T) => {}
+>u : unknown
+
+  const b: ReturnType<typeof rs0<3>> | null | undefined = u;
+>b : {} | null | undefined
+>rs0 : <T>(t: T) => {}
+>u : unknown
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

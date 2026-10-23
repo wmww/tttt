@@ -1,0 +1,42 @@
+//// [test/cases/bun77-R12b.ts] ////
+
+=== a.jsx ===
+/** @param {number} a @param {number} extra */
+function s1(a) { switch (a) { case <div arguments />: let arguments = 1; } }
+>s1 : (a: number) => void
+>a : number
+>a : number
+><div arguments /> : any
+>div : any
+>arguments : true
+>arguments : number
+>1 : 1
+
+/** @param {number} a @param {number} extra */
+function s5(a) { switch (a) { case 1: let arguments = 1; break; case <div arguments />: break; } }
+>s5 : (a: number) => void
+>a : number
+>a : number
+>1 : 1
+>arguments : number
+>1 : 1
+><div arguments /> : any
+>div : any
+>arguments : true
+
+/** @param {number} a @param {number} extra */
+function s8(a) { { const x = <div arguments />; let arguments = 1; } }
+>s8 : (a: number) => void
+>a : number
+>x : any
+><div arguments /> : any
+>div : any
+>arguments : true
+>arguments : number
+>1 : 1
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

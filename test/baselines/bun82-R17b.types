@@ -1,0 +1,6 @@
+//// [test/cases/bun82-R17b.ts] ////
+
+=== a.ts ===
+type T = A extends infer U \u0065xtends B ? C : D;
+>T : C
+

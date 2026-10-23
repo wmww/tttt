@@ -1,0 +1,21 @@
+//// [test/cases/bun06-C1.ts] ////
+
+=== a.ts ===
+async function* a1() { yield { then(x: number) { } }; }
+>a1 : Symbol(a1, Decl(a.ts, 0, 0))
+>then : Symbol(then, Decl(a.ts, 0, 30))
+>x : Symbol(x, Decl(a.ts, 0, 36))
+
+declare const abad: AsyncIterable<{ then(x: number): void }>;
+>abad : Symbol(abad, Decl(a.ts, 1, 13))
+>AsyncIterable : Symbol(AsyncIterable, Decl(lib.es2018.asynciterable.d.ts, --, --))
+>then : Symbol(then, Decl(a.ts, 1, 35))
+>x : Symbol(x, Decl(a.ts, 1, 41))
+
+async function* a2() { yield* abad; }
+>a2 : Symbol(a2, Decl(a.ts, 1, 61))
+>abad : Symbol(abad, Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

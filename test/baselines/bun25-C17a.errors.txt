@@ -1,0 +1,17 @@
+a.js(1,23): error TS8024: JSDoc '@param' tag has name 'z', but there is no parameter with that name.
+a.js(1,57): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+a.js(2,29): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (3 errors) ====
+    /** @param {number[]} z */ function j() { const o = {}; o[arguments[0]]; }
+                          ~
+!!! error TS8024: JSDoc '@param' tag has name 'z', but there is no parameter with that name.
+                                                            ~~~~~~~~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+    /** @type {number} */ const sentinel = "";
+                                ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

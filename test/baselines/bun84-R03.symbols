@@ -1,0 +1,40 @@
+//// [test/cases/bun84-R03.ts] ////
+
+=== a.js ===
+/** @type {NS.A.} */ let y1 = 1;
+>y1 : Symbol(y1, Decl(a.js, 0, 24))
+
+/** @type {Array<NS.A.>} */ let y2 = [1];
+>y2 : Symbol(y2, Decl(a.js, 1, 31))
+
+/** @type {import("./m").M.} */ let y3 = 1;
+>y3 : Symbol(y3, Decl(a.js, 2, 35))
+
+/** @type {typeof globalThis.} */ let y4 = 1;
+>y4 : Symbol(y4, Decl(a.js, 3, 37))
+
+/** @type {typeof p.} */ let y5 = 1;
+>y5 : Symbol(y5, Decl(a.js, 4, 28))
+
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 5, 27))
+
+=== m.d.ts ===
+export namespace M { interface X {} }
+>M : Symbol(M, Decl(m.d.ts, 0, 0))
+>X : Symbol(X, Decl(m.d.ts, 0, 20))
+
+=== n.d.ts ===
+declare namespace NS { interface A { a: number } }
+>NS : Symbol(NS, Decl(n.d.ts, 0, 0))
+>A : Symbol(A, Decl(n.d.ts, 0, 22))
+>a : Symbol(A.a, Decl(n.d.ts, 0, 36))
+
+declare class P { private "": number }
+>P : Symbol(P, Decl(n.d.ts, 0, 50))
+>"" : Symbol(P[""], Decl(n.d.ts, 1, 17))
+
+declare const p: P;
+>p : Symbol(p, Decl(n.d.ts, 2, 13))
+>P : Symbol(P, Decl(n.d.ts, 0, 50))
+

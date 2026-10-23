@@ -1,0 +1,28 @@
+//// [test/cases/bun95-J2.ts] ////
+
+=== a.d.ts ===
+declare module "m" {
+>"m" : typeof import("m")
+
+  class C {}
+>C : C
+
+  namespace C {
+    interface Options { a?: number }
+>a : number | undefined
+  }
+  export = C;
+>C : C
+}
+=== b.d.ts ===
+declare module "m" {
+>"m" : typeof import("m")
+
+  interface Options { b?: number }
+>b : number | undefined
+}
+=== c.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

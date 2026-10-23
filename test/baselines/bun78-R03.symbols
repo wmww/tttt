@@ -1,0 +1,67 @@
+//// [test/cases/bun78-R03.ts] ////
+
+=== a.ts ===
+declare function inject<U>(): U;
+>inject : Symbol(inject, Decl(a.ts, 0, 0))
+>U : Symbol(U, Decl(a.ts, 0, 24))
+>U : Symbol(U, Decl(a.ts, 0, 24))
+
+function g1<Q>(q: Q) { return inject() satisfies <T>(y: Q) => T[]; }
+>g1 : Symbol(g1, Decl(a.ts, 0, 32))
+>Q : Symbol(Q, Decl(a.ts, 1, 12))
+>q : Symbol(q, Decl(a.ts, 1, 15))
+>Q : Symbol(Q, Decl(a.ts, 1, 12))
+>inject : Symbol(inject, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 50))
+>y : Symbol(y, Decl(a.ts, 1, 53))
+>Q : Symbol(Q, Decl(a.ts, 1, 12))
+>T : Symbol(T, Decl(a.ts, 1, 50))
+
+g1(1)(2);
+>g1 : Symbol(g1, Decl(a.ts, 0, 32))
+
+const ok1: (y: number) => unknown = g1(1);
+>ok1 : Symbol(ok1, Decl(a.ts, 3, 5))
+>y : Symbol(y, Decl(a.ts, 3, 12))
+>g1 : Symbol(g1, Decl(a.ts, 0, 32))
+
+class Box<Q> { handlers = { on: inject() } satisfies { on<T>(y: Q): T | undefined }; }
+>Box : Symbol(Box, Decl(a.ts, 3, 42))
+>Q : Symbol(Q, Decl(a.ts, 4, 10))
+>handlers : Symbol(Box.handlers, Decl(a.ts, 4, 14))
+>on : Symbol(on, Decl(a.ts, 4, 27))
+>inject : Symbol(inject, Decl(a.ts, 0, 0))
+>on : Symbol(on, Decl(a.ts, 4, 54))
+>T : Symbol(T, Decl(a.ts, 4, 58))
+>y : Symbol(y, Decl(a.ts, 4, 61))
+>Q : Symbol(Q, Decl(a.ts, 4, 10))
+>T : Symbol(T, Decl(a.ts, 4, 58))
+
+new Box<string>().handlers.on("s");
+>new Box<string>().handlers.on : Symbol(on, Decl(a.ts, 4, 27))
+>new Box<string>().handlers : Symbol(Box.handlers, Decl(a.ts, 4, 14))
+>Box : Symbol(Box, Decl(a.ts, 3, 42))
+>handlers : Symbol(Box.handlers, Decl(a.ts, 4, 14))
+>on : Symbol(on, Decl(a.ts, 4, 27))
+
+g1(1).zzz;
+>g1 : Symbol(g1, Decl(a.ts, 0, 32))
+
+// a call signature is not instantiated in tsc either
+function g2<Q>(q: Q) { return inject() satisfies { <T>(y: Q): T[] }; }
+>g2 : Symbol(g2, Decl(a.ts, 6, 10))
+>Q : Symbol(Q, Decl(a.ts, 8, 12))
+>q : Symbol(q, Decl(a.ts, 8, 15))
+>Q : Symbol(Q, Decl(a.ts, 8, 12))
+>inject : Symbol(inject, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 8, 52))
+>y : Symbol(y, Decl(a.ts, 8, 55))
+>Q : Symbol(Q, Decl(a.ts, 8, 12))
+>T : Symbol(T, Decl(a.ts, 8, 52))
+
+g2(1).zzz;
+>g2 : Symbol(g2, Decl(a.ts, 6, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 10, 5))
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C19a.ts] ////
+
+=== a.ts ===
+declare const a: any = function* () {};
+>a : any
+>function* () {} : () => Generator<never, void, unknown>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

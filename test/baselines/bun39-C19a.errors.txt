@@ -1,0 +1,25 @@
+a.ts(3,7): error TS2420: Class 'C' incorrectly implements interface 'A'.
+  Property 'a' is missing in type 'C' but required in type 'A'.
+a.ts(3,7): error TS2420: Class 'C' incorrectly implements interface 'A$'.
+  Property 'b' is missing in type 'C' but required in type 'A$'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    interface A { a: number }
+    interface A$ { b: number }
+    class C implements A, A$ {}
+          ~
+!!! error TS2420: Class 'C' incorrectly implements interface 'A'.
+!!! error TS2420:   Property 'a' is missing in type 'C' but required in type 'A'.
+!!! related TS2728 a.ts:1:15: 'a' is declared here.
+          ~
+!!! error TS2420: Class 'C' incorrectly implements interface 'A$'.
+!!! error TS2420:   Property 'b' is missing in type 'C' but required in type 'A$'.
+!!! related TS2728 a.ts:2:16: 'b' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

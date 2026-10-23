@@ -1,0 +1,11 @@
+//// [test/cases/bun04-C6.ts] ////
+
+=== a.ts ===
+export function f(private x: number) {}
+>f : (x: number) => void
+>x : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

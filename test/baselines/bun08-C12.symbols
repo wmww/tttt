@@ -1,0 +1,14 @@
+//// [test/cases/bun08-C12.ts] ////
+
+=== a.ts ===
+const loc = 1;
+>loc : Symbol(loc, Decl(a.ts, 0, 5))
+
+namespace Inner { export { loc }; }
+>Inner : Symbol(Inner, Decl(a.ts, 0, 14))
+>loc : Symbol(loc, Decl(a.ts, 1, 26))
+
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,40 @@
+a.ts(2,4): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(2,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(3,4): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(3,4): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(4,8): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(5,9): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(5,9): error TS2538: Type 'bigint' cannot be used as an index type.
+a.ts(6,4): error TS1539: A 'bigint' literal cannot be used as a property name.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (9 errors) ====
+    let x: any;
+    ({ 1n: x } = {});
+       ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    [{ 1n: x }] = [{}];
+       ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+       ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    for ({ 1n: x } of [{}]) {}
+           ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    ({ a: { 1n: x } } = { a: {} });
+            ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+            ~~
+!!! error TS2538: Type 'bigint' cannot be used as an index type.
+    ({ 1n: x = 3 } = {});
+       ~~
+!!! error TS1539: A 'bigint' literal cannot be used as a property name.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

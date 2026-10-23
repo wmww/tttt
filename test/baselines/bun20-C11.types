@@ -1,0 +1,25 @@
+//// [test/cases/bun20-C11.ts] ////
+
+=== a.ts ===
+function t4<T>(x: unknown, t: T) {
+>t4 : <T>(x: unknown, t: T) => void
+>x : unknown
+>t : T
+
+    class C { v!: T }
+>C : C
+>v : T
+
+    if (x instanceof C) { const a: string = x.v; }
+>x instanceof C : boolean
+>x : unknown
+>C : typeof C
+>a : string
+>x.v : any
+>x : t4.C
+>v : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

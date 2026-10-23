@@ -1,0 +1,18 @@
+a.ts(4,8): error TS6196: 'Out' is declared but never used.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true, "noUnusedParameters": true } }
+==== a.ts (2 errors) ====
+    class Out {}
+    export interface I {
+      /** {@link Out} */
+      p: (<Out>() => void);
+           ~~~
+!!! error TS6196: 'Out' is declared but never used.
+    }
+    const sentinel: number = ""; sentinel;
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

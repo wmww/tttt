@@ -1,0 +1,19 @@
+a.js(2,12): error TS2503: Cannot find namespace 'm'.
+a.js(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs", "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    const m = (require("./m"));
+    /** @type {m.T} */ let t;
+               ~
+!!! error TS2503: Cannot find namespace 'm'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export interface T { a: number }
+    export class C { x = 1 }
+    

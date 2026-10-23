@@ -1,0 +1,22 @@
+//// [test/cases/bun14-C7.ts] ////
+
+=== a.ts ===
+declare const o: { readonly ro: number; rw: number };
+>o : { readonly ro: number; rw: number; }
+>ro : number
+>rw : number
+
+declare const k1: "aa" | "ro";
+>k1 : "aa" | "ro"
+
+o[k1] = 1;
+>o[k1] = 1 : 1
+>o[k1] : any
+>o : { readonly ro: number; rw: number; }
+>k1 : "aa" | "ro"
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

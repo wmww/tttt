@@ -1,0 +1,31 @@
+//// [test/cases/bun31-P8.ts] ////
+
+=== a.ts ===
+declare function f(): { y: boolean };
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>y : Symbol(y, Decl(a.ts, 0, 23))
+
+declare const o: { [k: string]: boolean };
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>k : Symbol(k, Decl(a.ts, 1, 20))
+
+function g() { return q; }
+>g : Symbol(g, Decl(a.ts, 1, 42))
+>q : Symbol(q, Decl(a.ts, 5, 5))
+
+const k = g() ? "a" : "b";
+>k : Symbol(k, Decl(a.ts, 3, 5))
+>g : Symbol(g, Decl(a.ts, 1, 42))
+
+o[k] = true;
+>o : Symbol(o, Decl(a.ts, 1, 13))
+>k : Symbol(k, Decl(a.ts, 3, 5))
+
+const q = f()["y"];
+>q : Symbol(q, Decl(a.ts, 5, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>"y" : Symbol(y, Decl(a.ts, 0, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

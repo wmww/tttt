@@ -1,0 +1,19 @@
+//// [test/cases/bun06-C13.ts] ////
+
+=== a.ts ===
+abstract class A1 { abstract x: number; constructor() { let z; ({ x: z } = (this)); } }
+>A1 : A1
+>x : number
+>z : any
+>({ x: z } = (this)) : this
+>{ x: z } = (this) : this
+>{ x: z } : { x: any; }
+>x : any
+>z : any
+>(this) : this
+>this : this
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

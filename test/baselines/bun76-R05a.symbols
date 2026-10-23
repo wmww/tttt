@@ -1,0 +1,139 @@
+//// [test/cases/bun76-R05a.ts] ////
+
+=== a.ts ===
+interface A { a: number }
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(A.a, Decl(a.ts, 0, 13))
+
+interface B { b: number }
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>b : Symbol(B.b, Decl(a.ts, 1, 13))
+
+interface X5<T> extends A, B { [k: string]: X5<T>["a"] }
+>X5 : Symbol(X5, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 2, 13))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>k : Symbol(k, Decl(a.ts, 2, 32))
+>X5 : Symbol(X5, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 2, 13))
+
+declare const x5: X5<string>;
+>x5 : Symbol(x5, Decl(a.ts, 3, 13))
+>X5 : Symbol(X5, Decl(a.ts, 1, 25))
+
+const y5: number = x5.zzz;
+>y5 : Symbol(y5, Decl(a.ts, 4, 5))
+>x5.zzz : Symbol(X5.__index, Decl(a.ts, 2, 30))
+>x5 : Symbol(x5, Decl(a.ts, 3, 13))
+>zzz : Symbol(X5.__index, Decl(a.ts, 2, 30))
+
+function f5<U>(x: X5<U>) { const r: number = x.zzz; }
+>f5 : Symbol(f5, Decl(a.ts, 4, 26))
+>U : Symbol(U, Decl(a.ts, 5, 12))
+>x : Symbol(x, Decl(a.ts, 5, 15))
+>X5 : Symbol(X5, Decl(a.ts, 1, 25))
+>U : Symbol(U, Decl(a.ts, 5, 12))
+>r : Symbol(r, Decl(a.ts, 5, 32))
+>x.zzz : Symbol(X5.__index, Decl(a.ts, 2, 30))
+>x : Symbol(x, Decl(a.ts, 5, 15))
+>zzz : Symbol(X5.__index, Decl(a.ts, 2, 30))
+
+interface Y5 extends X5<string> { more: 1 }
+>Y5 : Symbol(Y5, Decl(a.ts, 5, 53))
+>X5 : Symbol(X5, Decl(a.ts, 1, 25))
+>more : Symbol(Y5.more, Decl(a.ts, 6, 33))
+
+declare const yy5: Y5;
+>yy5 : Symbol(yy5, Decl(a.ts, 7, 13))
+>Y5 : Symbol(Y5, Decl(a.ts, 5, 53))
+
+const z5: number = yy5.zzz;
+>z5 : Symbol(z5, Decl(a.ts, 8, 5))
+>yy5.zzz : Symbol(X5.__index, Decl(a.ts, 2, 30))
+>yy5 : Symbol(yy5, Decl(a.ts, 7, 13))
+>zzz : Symbol(X5.__index, Decl(a.ts, 2, 30))
+
+// in tsc only the instantiation that the index signature names loses it
+interface X8<T> extends A, B { [k: string]: X8<string>["a"] }
+>X8 : Symbol(X8, Decl(a.ts, 8, 27))
+>T : Symbol(T, Decl(a.ts, 10, 13))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>k : Symbol(k, Decl(a.ts, 10, 32))
+>X8 : Symbol(X8, Decl(a.ts, 8, 27))
+
+declare const x8: X8<string>;
+>x8 : Symbol(x8, Decl(a.ts, 11, 13))
+>X8 : Symbol(X8, Decl(a.ts, 8, 27))
+
+const y8: number = x8.zzz;
+>y8 : Symbol(y8, Decl(a.ts, 12, 5))
+>x8 : Symbol(x8, Decl(a.ts, 11, 13))
+
+declare const x8n: X8<number>;
+>x8n : Symbol(x8n, Decl(a.ts, 13, 13))
+>X8 : Symbol(X8, Decl(a.ts, 8, 27))
+
+const y8n: number = x8n.zzz;
+>y8n : Symbol(y8n, Decl(a.ts, 14, 5))
+>x8n.zzz : Symbol(X8.__index, Decl(a.ts, 10, 30))
+>x8n : Symbol(x8n, Decl(a.ts, 13, 13))
+>zzz : Symbol(X8.__index, Decl(a.ts, 10, 30))
+
+// an interface with `this`: the type itself loses it, an interface derived from it does not
+interface X9 extends A, B { self: this; [k: string]: X9["a"] | this }
+>X9 : Symbol(X9, Decl(a.ts, 14, 28))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 0, 25))
+>self : Symbol(X9.self, Decl(a.ts, 16, 27))
+>k : Symbol(k, Decl(a.ts, 16, 41))
+>X9 : Symbol(X9, Decl(a.ts, 14, 28))
+
+declare const x9: X9;
+>x9 : Symbol(x9, Decl(a.ts, 17, 13))
+>X9 : Symbol(X9, Decl(a.ts, 14, 28))
+
+const y9: number | X9 = x9.zzz;
+>y9 : Symbol(y9, Decl(a.ts, 18, 5))
+>X9 : Symbol(X9, Decl(a.ts, 14, 28))
+>x9 : Symbol(x9, Decl(a.ts, 17, 13))
+
+interface Y9 extends X9 { more: 1 }
+>Y9 : Symbol(Y9, Decl(a.ts, 18, 31))
+>X9 : Symbol(X9, Decl(a.ts, 14, 28))
+>more : Symbol(Y9.more, Decl(a.ts, 19, 25))
+
+declare const yy9: Y9;
+>yy9 : Symbol(yy9, Decl(a.ts, 20, 13))
+>Y9 : Symbol(Y9, Decl(a.ts, 18, 31))
+
+const z9: number | Y9 = yy9.zzz;
+>z9 : Symbol(z9, Decl(a.ts, 21, 5))
+>Y9 : Symbol(Y9, Decl(a.ts, 18, 31))
+>yy9.zzz : Symbol(Y9.__index, Decl(a.ts, 16, 39))
+>yy9 : Symbol(yy9, Decl(a.ts, 20, 13))
+>zzz : Symbol(Y9.__index, Decl(a.ts, 16, 39))
+
+// one base: the two agree
+interface X7<T> extends A { [k: string]: X7<T>["a"] }
+>X7 : Symbol(X7, Decl(a.ts, 21, 32))
+>T : Symbol(T, Decl(a.ts, 23, 13))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>k : Symbol(k, Decl(a.ts, 23, 29))
+>X7 : Symbol(X7, Decl(a.ts, 21, 32))
+>T : Symbol(T, Decl(a.ts, 23, 13))
+
+declare const x7: X7<string>;
+>x7 : Symbol(x7, Decl(a.ts, 24, 13))
+>X7 : Symbol(X7, Decl(a.ts, 21, 32))
+
+const y7: number = x7.zzz;
+>y7 : Symbol(y7, Decl(a.ts, 25, 5))
+>x7.zzz : Symbol(X7.__index, Decl(a.ts, 23, 27))
+>x7 : Symbol(x7, Decl(a.ts, 24, 13))
+>zzz : Symbol(X7.__index, Decl(a.ts, 23, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 26, 5))
+

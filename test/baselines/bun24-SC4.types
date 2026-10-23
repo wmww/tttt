@@ -1,0 +1,25 @@
+//// [test/cases/bun24-SC4.ts] ////
+
+=== a.ts ===
+const ar = () => {}; ar['d-e'] = 3; ar['1'] = 1;
+>ar : { (): void; 'd-e': number; '1': number; }
+>() => {} : { (): void; 'd-e': number; '1': number; }
+>ar['d-e'] = 3 : 3
+>ar['d-e'] : number
+>ar : { (): void; 'd-e': number; '1': number; }
+>'d-e' : "d-e"
+>3 : 3
+>ar['1'] = 1 : 1
+>ar['1'] : number
+>ar : { (): void; 'd-e': number; '1': number; }
+>'1' : "1"
+>1 : 1
+
+const t2: string = ar;
+>t2 : string
+>ar : { (): void; 'd-e': number; '1': number; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

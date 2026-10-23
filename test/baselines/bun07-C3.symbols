@@ -1,0 +1,35 @@
+//// [test/cases/bun07-C3.ts] ////
+
+=== a.ts ===
+export {};
+declare const x: { f(): void; g: any };
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 1, 18))
+>g : Symbol(g, Decl(a.ts, 1, 29))
+
+((0, x.f))();
+>x.f : Symbol(f, Decl(a.ts, 1, 18))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 1, 18))
+
+((0), x.f)();
+>x.f : Symbol(f, Decl(a.ts, 1, 18))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 1, 18))
+
+(0, (x.f))();
+>x.f : Symbol(f, Decl(a.ts, 1, 18))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>f : Symbol(f, Decl(a.ts, 1, 18))
+
+(0, (eval))("1");
+>eval : Symbol(eval, Decl(lib.es5.d.ts, --, --))
+
+((0, x.g))``;
+>x.g : Symbol(g, Decl(a.ts, 1, 29))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>g : Symbol(g, Decl(a.ts, 1, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

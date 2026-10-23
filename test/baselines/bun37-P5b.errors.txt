@@ -1,0 +1,17 @@
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+x.json(1,8): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"], "resolveJsonModule": true }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    import x from "./x.json";
+    export { x };
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== x.json (1 errors) ====
+    { "a": <div></div> }
+           ~~~~~~~~~~~
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+    

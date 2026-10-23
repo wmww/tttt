@@ -1,0 +1,40 @@
+//// [test/cases/bun95-P1.ts] ////
+
+=== a.ts ===
+import x from "/c:/x";
+>x : Symbol(x, Decl(a.ts, 0, 6))
+
+import y from "/^/y";
+>y : Symbol(y, Decl(a.ts, 1, 6))
+
+type T = "/a:/b";
+>T : Symbol(T, Decl(a.ts, 1, 21))
+
+const t: T = "/q:/r";
+>t : Symbol(t, Decl(a.ts, 3, 5))
+>T : Symbol(T, Decl(a.ts, 1, 21))
+
+type U = `/z:/${string}`;
+>U : Symbol(U, Decl(a.ts, 3, 21))
+
+const u: U = "no";
+>u : Symbol(u, Decl(a.ts, 5, 5))
+>U : Symbol(U, Decl(a.ts, 3, 21))
+
+const o = { "/k:/p": 1 };
+>o : Symbol(o, Decl(a.ts, 6, 5))
+>"/k:/p" : Symbol("/k:/p", Decl(a.ts, 6, 11))
+
+o["/m:/n"];
+>o : Symbol(o, Decl(a.ts, 6, 5))
+
+export const all = [x, y, t, u];
+>all : Symbol(all, Decl(a.ts, 8, 12))
+>x : Symbol(x, Decl(a.ts, 0, 6))
+>y : Symbol(y, Decl(a.ts, 1, 6))
+>t : Symbol(t, Decl(a.ts, 3, 5))
+>u : Symbol(u, Decl(a.ts, 5, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

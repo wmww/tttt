@@ -1,0 +1,30 @@
+//// [test/cases/bun21-C6.ts] ////
+
+=== a.ts ===
+class A { isB(): this is B { return false; } }
+>A : A
+>isB : () => this is B
+>false : false
+
+class B extends A { b = 1; }
+>B : B
+>A : A
+>b : number
+>1 : 1
+
+function f(x: A) { if ((x.isB)()) x.b; }
+>f : (x: A) => void
+>x : A
+>(x.isB)() : boolean
+>(x.isB) : () => this is B
+>x.isB : () => this is B
+>x : A
+>isB : () => this is B
+>x.b : any
+>x : A
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

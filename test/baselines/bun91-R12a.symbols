@@ -1,0 +1,38 @@
+//// [test/cases/bun91-R12a.ts] ////
+
+=== a.ts ===
+import { C, v } from "./m";
+>C : Symbol(C, Decl(a.ts, 0, 8))
+>v : Symbol(v, Decl(a.ts, 0, 11))
+
+declare const o: any;
+>o : Symbol(o, Decl(a.ts, 1, 13))
+
+const local1 = 1;
+>local1 : Symbol(local1, Decl(a.ts, 2, 5))
+
+function fn1() {}
+>fn1 : Symbol(fn1, Decl(a.ts, 2, 17))
+
+with (o) { var a1 = new C(), a2 = v + local1, a3 = fn1(); }
+>o : Symbol(o, Decl(a.ts, 1, 13))
+
+a1; a2; a3;
+>a1 : Symbol(a1, Decl(a.ts, 4, 14))
+>a2 : Symbol(a2, Decl(a.ts, 4, 28))
+>a3 : Symbol(a3, Decl(a.ts, 4, 45))
+
+with (o) { var a4 = function (x: number, z: number) { let q = 1, r = 2; return x + q; }; }
+>o : Symbol(o, Decl(a.ts, 1, 13))
+
+a4;
+>a4 : Symbol(a4, Decl(a.ts, 6, 14))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 12))
+
+=== m.ts ===
+export class C {} export const v = 1;
+>C : Symbol(C, Decl(m.ts, 0, 0))
+>v : Symbol(v, Decl(m.ts, 0, 30))
+

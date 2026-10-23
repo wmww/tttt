@@ -1,0 +1,28 @@
+//// [test/cases/bun12-C8a.ts] ////
+
+=== a.ts ===
+interface TL extends Array<string | number> { 0: string }
+>0 : string
+
+declare const tl: TL;
+>tl : TL
+
+let a: string | number;
+>a : string | number
+
+[a] = tl;
+>[a] = tl : TL
+>[a] : [string | number]
+>a : string | number
+>tl : TL
+
+a.toUpperCase();
+>a.toUpperCase() : string
+>a.toUpperCase : () => string
+>a : string
+>toUpperCase : () => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

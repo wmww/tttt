@@ -1,0 +1,20 @@
+a.tsx(1,84): error TS2304: Cannot find name 'Undefined'.
+a.tsx(3,12): error TS2741: Property 'c' is missing in type '{}' but required in type '{ c: number; }'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (3 errors) ====
+    declare namespace JSX { interface Element { e: 1 } type IntrinsicClassAttributes = Undefined; interface IntrinsicElements {} }
+                                                                                       ~~~~~~~~~
+!!! error TS2304: Cannot find name 'Undefined'.
+    class K { constructor(p: { c: number }) {} }
+    const a = <K />;
+               ~
+!!! error TS2741: Property 'c' is missing in type '{}' but required in type '{ c: number; }'.
+!!! related TS2728 a.tsx:2:28: 'c' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

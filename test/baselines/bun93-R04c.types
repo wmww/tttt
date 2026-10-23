@@ -1,0 +1,127 @@
+//// [test/cases/bun93-R04c.ts] ////
+
+=== a.ts ===
+declare function id<T>(x: T): T; declare function abs(n: number): number;
+>id : <T>(x: T) => T
+>x : T
+>abs : (n: number) => number
+>n : number
+
+const a = { m() { return this.z; }, f() { return this.z; }, g: id(() => ({}).nope) };
+>a : { m(): any; f(): any; g: () => any; }
+>{ m() { return this.z; }, f() { return this.z; }, g: id(() => ({}).nope) } : { m(): any; f(): any; g: () => any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>g : () => any
+>id(() => ({}).nope) : () => any
+>id : <T>(x: T) => T
+>() => ({}).nope : () => any
+>({}).nope : any
+>({}) : {}
+>{} : {}
+>nope : any
+
+const b = { m() { return this.z; }, f() { return this.z; }, g: id(() => nope) };
+>b : { m(): any; f(): any; g: () => any; }
+>{ m() { return this.z; }, f() { return this.z; }, g: id(() => nope) } : { m(): any; f(): any; g: () => any; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => any; }
+>z : any
+>g : () => any
+>id(() => nope) : () => any
+>id : <T>(x: T) => T
+>() => nope : () => any
+>nope : any
+
+const c = { m() { return this.z; }, f() { return this.z; }, g: id(() => abs("")) };
+>c : { m(): any; f(): any; g: () => number; }
+>{ m() { return this.z; }, f() { return this.z; }, g: id(() => abs("")) } : { m(): any; f(): any; g: () => number; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => number; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => number; }
+>z : any
+>g : () => number
+>id(() => abs("")) : () => number
+>id : <T>(x: T) => T
+>() => abs("") : () => number
+>abs("") : number
+>abs : (n: number) => number
+>"" : ""
+
+const d = { m() { return this.z; }, f() { return this.z; }, g: id(function () { return abs(""); }) };
+>d : { m(): any; f(): any; g: () => number; }
+>{ m() { return this.z; }, f() { return this.z; }, g: id(function () { return abs(""); }) } : { m(): any; f(): any; g: () => number; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => number; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: () => number; }
+>z : any
+>g : () => number
+>id(function () { return abs(""); }) : () => number
+>id : <T>(x: T) => T
+>function () { return abs(""); } : () => number
+>abs("") : number
+>abs : (n: number) => number
+>"" : ""
+
+const e = { m() { return this.z; }, f() { return this.z; }, g: id({ h() { return abs(""); } }) };
+>e : { m(): any; f(): any; g: { h(): number; }; }
+>{ m() { return this.z; }, f() { return this.z; }, g: id({ h() { return abs(""); } }) } : { m(): any; f(): any; g: { h(): number; }; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: { h(): number; }; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: { h(): number; }; }
+>z : any
+>g : { h(): number; }
+>id({ h() { return abs(""); } }) : { h(): number; }
+>id : <T>(x: T) => T
+>{ h() { return abs(""); } } : { h(): number; }
+>h : () => number
+>abs("") : number
+>abs : (n: number) => number
+>"" : ""
+
+// not an argument of a generic call: both tools lose the error
+const h = { m() { return this.z; }, f() { return this.z; }, g: [() => abs("")] };
+>h : { m(): any; f(): any; g: (() => number)[]; }
+>{ m() { return this.z; }, f() { return this.z; }, g: [() => abs("")] } : { m(): any; f(): any; g: (() => number)[]; }
+>m : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: (() => number)[]; }
+>z : any
+>f : () => any
+>this.z : any
+>this : { m(): any; f(): any; g: (() => number)[]; }
+>z : any
+>g : (() => number)[]
+>[() => abs("")] : (() => number)[]
+>() => abs("") : () => number
+>abs("") : number
+>abs : (n: number) => number
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

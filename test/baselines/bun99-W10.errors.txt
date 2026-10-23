@@ -1,0 +1,38 @@
+a.ts(8,28): error TS2589: Type instantiation is excessively deep and possibly infinite.
+a.ts(10,14): error TS2322: Type '1' is not assignable to type 'never'.
+a.ts(11,14): error TS2322: Type '2' is not assignable to type 'never'.
+a.ts(12,52): error TS2322: Type 'F<T>' is not assignable to type 'never'.
+  Type '1 | 2' is not assignable to type 'never'.
+    Type '1' is not assignable to type 'never'.
+a.ts(13,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "module": "esnext", "moduleResolution": "bundler", "types": []}, "files": ["a.ts"]}
+==== a.ts (5 errors) ====
+    type Comp<P> = (p: P) => void;
+    type M<T> = { [k in keyof T]: T };
+    type GetProps<C> = C extends { x: Comp<any> } ? (C['x'] extends new () => 0 ? C : never) : never;
+    type Enh<I, N> = <C extends { x: Comp<GetProps<C>> }>(c: C) => Comp<M<GetProps<C> & N>>;
+    declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+    declare const hoc: <C extends { x: Comp<any> }>(c: C) => C;
+    declare const enh: Enh<{}, {}>;
+    export const R = flow(hoc, enh);
+                               ~~~
+!!! error TS2589: Type instantiation is excessively deep and possibly infinite.
+    type F<T> = T extends { a: unknown } ? (T['a'] extends string ? 1 : 2) : 3;
+    export const f1: never = null! as F<{ a: 'x' }>;
+                 ~~
+!!! error TS2322: Type '1' is not assignable to type 'never'.
+    export const f2: never = null! as F<{ a: 1 }>;
+                 ~~
+!!! error TS2322: Type '2' is not assignable to type 'never'.
+    function g<T extends { a: unknown }>(t: T) { const x: never = null! as F<T>; }
+                                                       ~
+!!! error TS2322: Type 'F<T>' is not assignable to type 'never'.
+!!! error TS2322:   Type '1 | 2' is not assignable to type 'never'.
+!!! error TS2322:     Type '1' is not assignable to type 'never'.
+    export const sentinel: number = '';
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

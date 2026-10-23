@@ -1,0 +1,37 @@
+//// [test/cases/bun92-R11g.ts] ////
+
+=== a.ts ===
+type M<T> = { [K in keyof T]: M<T>[K] };
+>M : M<T>
+
+type G<X extends string, T = { a: X }> = M<T>[keyof T];
+>G : G<X, T>
+>a : X
+
+declare function f<T>(x?: any): T;
+>f : <T>(x?: any) => T
+>x : any
+
+declare function tag<T>(s: TemplateStringsArray): T;
+>tag : <T>(s: TemplateStringsArray) => T
+>s : TemplateStringsArray
+
+declare class K<T> { k: T }
+>K : K<T>
+>k : T
+
+declare const e: any;
+>e : any
+
+interface IG<T> { g: T }
+>g : T
+
+const v1 = e as G<"1">;
+>v1 : any
+>e as G<"1"> : any
+>e : any
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

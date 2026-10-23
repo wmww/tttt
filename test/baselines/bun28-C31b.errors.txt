@@ -1,0 +1,18 @@
+a.ts(1,17): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(2,1): error TS2322: Type 'string' is not assignable to type 'number'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    class C { set a(this: number) { } }
+                    ~~~~~~~~~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+    new C().a = "";
+    ~~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,21 @@
+//// [test/cases/bun30-P5.ts] ////
+
+=== a.ts ===
+export class T { get a() { return 1 } a() {} }
+>T : T
+>a : number
+>1 : 1
+>a : () => void
+
+new T().a = 3;
+>new T().a = 3 : 3
+>new T().a : number
+>new T() : T
+>T : typeof T
+>a : number
+>3 : 3
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

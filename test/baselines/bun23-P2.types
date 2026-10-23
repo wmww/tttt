@@ -1,0 +1,22 @@
+//// [test/cases/bun23-P2.ts] ////
+
+=== a.mts ===
+export const x = require("pkg");
+>x : import("./node_modules/pkg").Foo
+>require("pkg") : import("./node_modules/pkg").Foo
+>require : (id: string) => import("pkg", { with: { "resolution-mode": "require" } }).Foo
+>"pkg" : "pkg"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== g.d.ts ===
+declare function require(id: string): import("pkg", { with: { "resolution-mode": "require" } }).Foo;
+>require : (id: string) => import("pkg", { with: { "resolution-mode": "require" } }).Foo
+>id : string
+
+=== node_modules/pkg/index.d.ts ===
+export interface Foo { a: 1 }
+>a : 1
+

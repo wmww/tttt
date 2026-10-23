@@ -1,0 +1,51 @@
+//// [test/cases/bun99-I1.ts] ////
+
+=== a.ts ===
+type Hydrated<T> = T extends { x: {} }
+>Hydrated : Hydrated<T>
+>x : {}
+
+  ? T
+  : T & {
+      [P in keyof T]: T[P] extends Lazy<infer U> ? Lazy<U> : T[P];
+    };
+
+declare class Lazy<T> {
+>Lazy : Lazy<T>
+
+  brand: T;
+>brand : T
+}
+
+declare class Model {
+>Model : Model
+
+  isHydrated(): this is {};
+>isHydrated : () => this is {}
+
+  assertHydrated(): this is Hydrated<this>;
+>assertHydrated : () => this is Hydrated<this>
+}
+declare class Collection<T> {
+>Collection : Collection<T>
+
+  hydrate(): Hydrated<T>;
+>hydrate : () => Hydrated<T>
+}
+class ChildCollection extends Collection<Model> {}
+>ChildCollection : ChildCollection
+>Collection : Collection<Model>
+
+declare function relation<T extends Model>(ctor: new () => Collection<NoInfer<T>>): void;
+>relation : <T extends Model>(ctor: new () => Collection<NoInfer<T>>) => void
+>ctor : new () => Collection<NoInfer<T>>
+
+relation(ChildCollection);
+>relation(ChildCollection) : void
+>relation : <T extends Model>(ctor: new () => Collection<NoInfer<T>>) => void
+>ChildCollection : typeof ChildCollection
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

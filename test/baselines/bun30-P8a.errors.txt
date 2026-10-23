@@ -1,0 +1,17 @@
+a.ts(1,34): error TS1003: Identifier expected.
+a.ts(1,42): error TS2552: Cannot find name 'A'. Did you mean 'a'?
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export async function a() { enum await { A } }
+                                     ~~~~~
+!!! error TS1003: Identifier expected.
+                                             ~
+!!! error TS2552: Cannot find name 'A'. Did you mean 'a'?
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

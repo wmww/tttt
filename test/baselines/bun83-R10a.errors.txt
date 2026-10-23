@@ -1,0 +1,76 @@
+a.ts(3,28): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(4,28): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(5,28): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(6,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(7,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(8,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(9,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(10,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(11,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(12,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(13,29): error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+a.ts(14,28): error TS1174: Classes can only extend a single class.
+a.ts(15,27): error TS1172: 'extends' clause already seen.
+a.ts(16,30): error TS1175: 'implements' clause already seen.
+a.ts(17,31): error TS1172: 'extends' clause already seen.
+a.ts(18,29): error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022", "noUnusedLocals": true, "noUnusedParameters": true, "noImplicitReturns": true, "allowUnreachableCode": false, "allowUnusedLabels": false, "noFallthroughCasesInSwitch": true } }
+==== a.ts (17 errors) ====
+    export {};
+    declare class B {} interface I {}
+    export class C1 implements (function () { const a: number = ""; return a; }) {}
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C7 implements (function () { return this; }) {}
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C9 implements (function (p: any) {}) {}
+                               ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C10 implements (function () { const u = 1; }) {}
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C12 implements (class { private p = 1; m(q: any) { const u = 1; } }) {}
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C13 implements ((p: any) => { const u = 1; }) {}
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C14 implements ({ m(p: any) { const u = 1; return this; } }) {}
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C15 implements (function <T>() {}) {}
+                                ~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C19 implements (function ({ a, b }) {}) {}
+                                ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export class C20 implements (function (...r) {}) {}
+                                ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    export interface J1 extends (function (p: any) { const u = 1; return this; }) {}
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2499: An interface can only extend an identifier/qualified-name with optional type arguments.
+    export class D1 extends B, (function (p: any) { const u = 1; return this; }) {}
+                               ~
+!!! error TS1174: Classes can only extend a single class.
+    export class D2 extends B extends (function (p: any) { const u = 1; return this; }) {}
+                              ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    export class D3 implements I implements (function (p: any) { const u = 1; return this; }) {}
+                                 ~~~~~~~~~~
+!!! error TS1175: 'implements' clause already seen.
+    export interface J2 extends I extends (function (p: any) { const u = 1; return this; }) {}
+                                  ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    export class C22 implements (function () { type U = 1; interface V {} enum W {} namespace X {} class Y {} }) {}
+                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2500: A class can only implement an identifier/qualified-name with optional type arguments.
+    const sentinel: number = ""; sentinel;
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

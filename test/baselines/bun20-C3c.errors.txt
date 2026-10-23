@@ -1,0 +1,21 @@
+a.ts(6,16): error TS2367: This comparison appears to be unintentional because the types '"a" | "b"' and '"d"' have no overlap.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function cond(): boolean;
+    declare const m: { a: "b"; b: "c"; c: "d"; d: "a" };
+    function q() {
+        let x: "a" | "b" | "c" | "d" = "a";
+        while (cond()) {
+            while (x !== "d") { x = m[x]; if (cond()) break; }
+                   ~~~~~~~~~
+!!! error TS2367: This comparison appears to be unintentional because the types '"a" | "b"' and '"d"' have no overlap.
+        }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,19 @@
+b.js(5,32): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+b.js(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== b.js (2 errors) ====
+    /**
+     * @type {(this: { a: number }) => void}
+     * @this {{ b: number }}
+     */
+    function both() { this.a; this.b; }
+                                   ~
+!!! error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

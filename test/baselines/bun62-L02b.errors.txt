@@ -1,0 +1,40 @@
+a.ts(2,16): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(3,7): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(5,16): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(6,3): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(7,7): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(8,25): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(13,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+    take1(function named(x) {});
+                   ~~~~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    take2((x) => {});
+          ~~~~~~~~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    declare let o: I3;
+    o.m = function named3(x) {};
+                   ~~~~~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    o.n = function (x) {};
+      ~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    o.k = (x) => {};
+          ~~~~~~~~~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    const o8: { m: F8 } = { m: function (x) {} };
+                            ~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    declare function take1(cb: (x: X<X<X<X<[1]>>>>) => void): void;
+    declare function take2(cb: (x: X<X<X<X<[2]>>>>) => void): void;
+    interface I3 { m(x: X<X<X<X<[3]>>>>): void; n(x: X<X<X<X<[4]>>>>): void; k(x: X<X<X<X<[5]>>>>): void }
+    type F8 = (x: X<X<X<X<[8]>>>>) => void;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

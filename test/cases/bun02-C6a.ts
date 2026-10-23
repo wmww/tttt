@@ -1,0 +1,6 @@
+// @filename: tsconfig.json
+{ "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+// @filename: a.ts
+declare const o: { f(): void };
+if (o.f) { let t: typeof o.f; }
+const sentinel: number = "";

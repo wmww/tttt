@@ -1,0 +1,36 @@
+//// [test/cases/bun05-C2.ts] ////
+
+=== a.ts ===
+interface AL<T> extends Array<T> {
+  filter(cb: (x: T, i: number, a: T[]) => unknown, thisArg?: any): AL<T>;
+>filter : { (cb: (x: T, i: number, a: T[]) => unknown, thisArg?: any): AL<T>; <S extends T>(cb: (x: T, i: number, a: T[]) => x is S, thisArg?: any): AL<S>; }
+>cb : (x: T, i: number, a: T[]) => unknown
+>x : T
+>i : number
+>a : T[]
+>thisArg : any
+
+  filter<S extends T>(cb: (x: T, i: number, a: T[]) => x is S, thisArg?: any): AL<S>;
+>filter : { (cb: (x: T, i: number, a: T[]) => unknown, thisArg?: any): AL<T>; <S extends T>(cb: (x: T, i: number, a: T[]) => x is S, thisArg?: any): AL<S>; }
+>cb : (x: T, i: number, a: T[]) => x is S
+>x : T
+>i : number
+>a : T[]
+>thisArg : any
+}
+declare const u8: AL<number> | string[];
+>u8 : AL<number> | string[]
+
+u8.filter(x => true);
+>u8.filter(x => true) : any
+>u8.filter : { <S extends string>(predicate: (value: string, index: number, array: string[]) => value is S, thisArg?: any): S[]; (predicate: (value: string, index: number, array: string[]) => unknown, thisArg?: any): string[]; } | { (cb: (x: number, i: number, a: number[]) => unknown, thisArg?: any): AL<number>; <S extends number>(cb: (x: number, i: number, a: number[]) => x is S, thisArg?: any): AL<S>; }
+>u8 : AL<number> | string[]
+>filter : { <S extends string>(predicate: (value: string, index: number, array: string[]) => value is S, thisArg?: any): S[]; (predicate: (value: string, index: number, array: string[]) => unknown, thisArg?: any): string[]; } | { (cb: (x: number, i: number, a: number[]) => unknown, thisArg?: any): AL<number>; <S extends number>(cb: (x: number, i: number, a: number[]) => x is S, thisArg?: any): AL<S>; }
+>x => true : (x: any) => boolean
+>x : any
+>true : true
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

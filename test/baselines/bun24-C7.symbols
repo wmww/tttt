@@ -1,0 +1,15 @@
+//// [test/cases/bun24-C7.ts] ////
+
+=== a.ts ===
+const p = (function n() { return n; });
+>p : Symbol(p, Decl(a.ts, 0, 5))
+>n : Symbol(n, Decl(a.ts, 0, 11))
+>n : Symbol(n, Decl(a.ts, 0, 11))
+
+const c: 1 = p;
+>c : Symbol(c, Decl(a.ts, 1, 5))
+>p : Symbol(p, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

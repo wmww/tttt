@@ -1,0 +1,12 @@
+//// [test/cases/bun34-C13.ts] ////
+
+=== a.ts ===
+enum E { [""] }
+>E : E
+>[""] : (typeof E)[""]
+>"" : ""
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,32 @@
+//// [test/cases/bun10-SC3.ts] ////
+
+=== j.js ===
+/** @type {{ new(): {}, a: string[] }} */
+const CE2 = class {};
+>CE2 : Symbol(CE2, Decl(j.js, 1, 5))
+
+CE2.a = [];
+>CE2.a : Symbol(a, Decl(j.js, 0, 23))
+>CE2 : Symbol(CE2, Decl(j.js, 1, 5))
+>a : Symbol(a, Decl(j.js, 0, 23))
+
+function F() {}
+>F : Symbol(F, Decl(j.js, 2, 11))
+
+/** @type {{ (): void, b: string[] }} */
+F.a = function () {};
+>F.a : Symbol(F.a, Decl(j.js, 3, 15))
+>F : Symbol(F, Decl(j.js, 2, 11))
+>a : Symbol(F.a, Decl(j.js, 3, 15))
+
+F.a.b = [];
+>F.a.b : Symbol(b, Decl(j.js, 4, 22))
+>F.a : Symbol(F.a, Decl(j.js, 3, 15))
+>F : Symbol(F, Decl(j.js, 2, 11))
+>a : Symbol(F.a, Decl(j.js, 3, 15))
+>b : Symbol(b, Decl(j.js, 4, 22))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(j.js, 8, 5))
+

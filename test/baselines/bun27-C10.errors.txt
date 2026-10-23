@@ -1,0 +1,17 @@
+a.tsx(3,16): error TS2322: Type 'number' is not assignable to type 'new (props: {}) => Element'.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } type LibraryManagedAttributes<C, P> = { c: C }; interface IntrinsicElements { div: {} } }
+    declare const Lit: "div";
+    const a = <Lit c={1} />;
+                   ~
+!!! error TS2322: Type 'number' is not assignable to type 'new (props: {}) => Element'.
+!!! related TS6500 a.tsx:1:92: The expected type comes from property 'c' which is declared here on type 'LibraryManagedAttributes<new (props: {}) => Element, {}>'
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

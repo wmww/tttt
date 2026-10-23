@@ -1,0 +1,18 @@
+//// [test/cases/bun28-C2.ts] ////
+
+=== a.ts ===
+declare function g(): any;
+>g : () => any
+
+class C { [g(), "a"]() {} }
+>C : C
+>[g(), "a"] : () => void
+>g(), "a" : "a"
+>g() : any
+>g : () => any
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

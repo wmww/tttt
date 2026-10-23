@@ -1,0 +1,29 @@
+//// [test/cases/bun61-L08.ts] ////
+
+=== a.ts ===
+export const a = f();
+>a : Symbol(a, Decl(a.ts, 0, 12))
+>f : Symbol(f, Decl(a.ts, 1, 28))
+
+export async function g() {}
+>g : Symbol(g, Decl(a.ts, 0, 21))
+
+function f() { return C.get(new C()); }
+>f : Symbol(f, Decl(a.ts, 1, 28))
+>C.get : Symbol(C.get, Decl(a.ts, 3, 17))
+>C : Symbol(C, Decl(a.ts, 2, 39))
+>get : Symbol(C.get, Decl(a.ts, 3, 17))
+>C : Symbol(C, Decl(a.ts, 2, 39))
+
+class C { #x = 1; static get(c: C) { return c.#x; } }
+>C : Symbol(C, Decl(a.ts, 2, 39))
+>#x : Symbol(C.#x, Decl(a.ts, 3, 9))
+>get : Symbol(C.get, Decl(a.ts, 3, 17))
+>c : Symbol(c, Decl(a.ts, 3, 29))
+>C : Symbol(C, Decl(a.ts, 2, 39))
+>c.#x : Symbol(C.#x, Decl(a.ts, 3, 9))
+>c : Symbol(c, Decl(a.ts, 3, 29))
+
+export const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 12))
+

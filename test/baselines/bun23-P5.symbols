@@ -1,0 +1,15 @@
+//// [test/cases/bun23-P5.ts] ////
+
+=== a.ts ===
+declare const o: { readonly k: unique symbol };
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>k : Symbol(k, Decl(a.ts, 0, 18))
+
+({})[o.k];
+>o.k : Symbol(k, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>k : Symbol(k, Decl(a.ts, 0, 18))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

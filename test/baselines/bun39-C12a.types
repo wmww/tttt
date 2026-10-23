@@ -1,0 +1,15 @@
+//// [test/cases/bun39-C12a.ts] ////
+
+=== a.ts ===
+let x;
+>x : any
+
+=== c.ts ===
+function f() { return x; }
+>f : () => any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

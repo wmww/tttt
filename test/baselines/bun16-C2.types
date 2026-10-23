@@ -1,0 +1,51 @@
+//// [test/cases/bun16-C2.ts] ////
+
+=== a.ts ===
+type AB = { kind: "a", a: 1, f(): void } | { kind: "b", b: 2 };
+>AB : AB
+>kind : "a"
+>a : 1
+>f : () => void
+>kind : "b"
+>b : 2
+
+function f1<T extends AB>(x: T) {
+>f1 : <T extends AB>(x: T) => void
+>x : T
+
+  if (x.kind === "a") {
+>x.kind === "a" : boolean
+>x.kind : "a" | "b"
+>x : AB
+>kind : "a" | "b"
+>"a" : "a"
+
+    x.a;
+>x.a : 1
+>x : { kind: "a"; a: 1; f(): void; }
+>a : 1
+
+    (x).a;
+>(x).a : any
+>(x) : T
+>x : T
+>a : any
+
+    (x)["a"];
+>(x)["a"] : any
+>(x) : T
+>x : T
+>"a" : "a"
+
+    (x).f();
+>(x).f() : any
+>(x).f : any
+>(x) : T
+>x : T
+>f : any
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

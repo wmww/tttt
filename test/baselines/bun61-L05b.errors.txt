@@ -1,0 +1,19 @@
+a.tsx(1,18): error TS6137: Cannot import type declaration files. Consider importing 'react/jsx-runtime' instead of '@types/react/jsx-runtime'.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react-jsx", "jsxImportSource": "@types/react", "module": "esnext", "moduleResolution": "bundler" } }
+==== a.tsx (2 errors) ====
+    export const a = <div />;
+                     ~~~~~~~
+!!! error TS6137: Cannot import type declaration files. Consider importing 'react/jsx-runtime' instead of '@types/react/jsx-runtime'.
+    export const b = <div />;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@types/react/jsx-runtime.d.ts (0 errors) ====
+    export namespace JSX { interface IntrinsicElements { div: {} } interface Element {} } export function jsx(): void;
+==== node_modules/@types/react/package.json (0 errors) ====
+    { "name": "@types/react", "version": "1.0.0" }
+    

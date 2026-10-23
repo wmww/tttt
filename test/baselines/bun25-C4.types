@@ -1,0 +1,15 @@
+//// [test/cases/bun25-C4.ts] ////
+
+=== a.ts ===
+function* g() { ({ [yield nope]() {} }); }
+>g : () => Generator<any, void, unknown>
+>({ [yield nope]() {} }) : { [x: number]: () => void; }
+>{ [yield nope]() {} } : { [x: number]: () => void; }
+>[yield nope] : () => void
+>yield nope : any
+>nope : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

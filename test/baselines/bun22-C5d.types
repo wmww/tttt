@@ -1,0 +1,29 @@
+//// [test/cases/bun22-C5d.ts] ////
+
+=== a.ts ===
+class K<T> { constructor(public x: T) {} }
+>K : K<T>
+>x : T
+
+function mk<X>() { return class D<T extends (a: X) => void> extends K<T> {} }
+>mk : <X>() => typeof D
+>class D<T extends (a: X) => void> extends K<T> {} : typeof D
+>D : typeof D
+>a : X
+>K : K<T>
+
+new (mk<string>())(a => a.length);
+>new (mk<string>())(a => a.length) : mk.D<(a: string) => number>
+>(mk<string>()) : typeof D
+>mk<string>() : typeof D
+>mk : <X>() => typeof D
+>a => a.length : (a: string) => number
+>a : string
+>a.length : number
+>a : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

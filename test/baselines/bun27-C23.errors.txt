@@ -1,0 +1,16 @@
+a.tsx(3,11): error TS2879: Using JSX fragments requires fragment factory 'Frag' to be in scope, but it could not be found.
+a.tsx(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve", "jsxFactory": "h", "jsxFragmentFactory": "Frag" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    enum Frag { A }
+    const f = <></>;
+              ~~
+!!! error TS2879: Using JSX fragments requires fragment factory 'Frag' to be in scope, but it could not be found.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,21 @@
+//// [test/cases/bun04-C4.ts] ////
+
+=== a.ts ===
+declare function dec(...a: any[]): any;
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 21))
+
+const a = 1;
+>a : Symbol(a, Decl(a.ts, 1, 5))
+
+export class B { m(@dec(a) x: number) { return x; } }
+>B : Symbol(B, Decl(a.ts, 1, 12))
+>m : Symbol(B.m, Decl(a.ts, 2, 16))
+>dec : Symbol(dec, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 1, 5))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+>x : Symbol(x, Decl(a.ts, 2, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,39 @@
+a.ts(3,7): error TS2322: Type '{ module: any; "": { a: number; }; }' is not assignable to type '0'.
+a.ts(3,23): error TS2322: Type '{ module: any; "": { a: number; }; }' is not assignable to type '0'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+d.json(1,1): error TS1005: '{' expected.
+d.json(1,1): error TS1136: Property assignment expected.
+d.json(1,7): error TS1327: String literal with double quotes expected.
+d.json(1,7): error TS1005: ',' expected.
+d.json(1,7): error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+d.json(2,1): error TS1005: '}' expected.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "resolveJsonModule": true, "esModuleInterop": true, "module": "commonjs", "moduleResolution": "bundler" } }
+==== a.ts (3 errors) ====
+    import * as ns from "./d.json";
+    import d from "./d.json";
+    const n: 0 = d; const m: 0 = ns;
+          ~
+!!! error TS2322: Type '{ module: any; "": { a: number; }; }' is not assignable to type '0'.
+                          ~
+!!! error TS2322: Type '{ module: any; "": { a: number; }; }' is not assignable to type '0'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== d.json (6 errors) ====
+    module.exports = { "a": 1 }
+    ~~~~~~
+!!! error TS1005: '{' expected.
+    ~~~~~~
+!!! error TS1136: Property assignment expected.
+          
+!!! error TS1327: String literal with double quotes expected.
+          ~
+!!! error TS1005: ',' expected.
+          ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1328: Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.
+    
+    
+!!! error TS1005: '}' expected.

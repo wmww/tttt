@@ -1,0 +1,16 @@
+//// [test/cases/bun06-C12b.ts] ////
+
+=== a.ts ===
+class PA { #p = 1; static m<T extends Missing3>(t: T) { t.#p; } }
+>PA : PA
+>#p : number
+>1 : 1
+>m : <T extends Missing3>(t: T) => void
+>t : T
+>t.#p : any
+>t : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

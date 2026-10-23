@@ -1,0 +1,13 @@
+//// [test/cases/bun62-L13b.ts] ////
+
+=== a.ts ===
+export default class<T> { a!: T }
+>a : T
+
+export default interface I<U> { b: U }
+>b : U
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

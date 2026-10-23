@@ -1,0 +1,66 @@
+a.js(3,16): error TS2314: Generic type 'A<T>' requires 1 type argument(s).
+a.js(3,17): error TS1099: Type argument list cannot be empty.
+a.js(3,18): error TS1005: '>' expected.
+a.js(4,17): error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+a.js(5,16): error TS2314: Generic type 'A<T>' requires 1 type argument(s).
+a.js(5,17): error TS1099: Type argument list cannot be empty.
+a.js(5,18): error TS1005: '>' expected.
+a.js(6,17): error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+a.js(7,15): error TS2314: Generic type 'A<T>' requires 1 type argument(s).
+a.js(7,16): error TS1099: Type argument list cannot be empty.
+a.js(7,17): error TS1005: '>' expected.
+a.js(8,17): error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+a.js(9,18): error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+a.js(9,19): error TS1099: Type argument list cannot be empty.
+a.js(9,20): error TS1005: '>' expected.
+a.js(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (16 errors) ====
+    /** @template T */
+    class A { /** @type {T | undefined} */ x = undefined; }
+    /** @augments {A<=} */
+                   ~~
+!!! error TS2314: Generic type 'A<T>' requires 1 type argument(s).
+                    ~~
+!!! error TS1099: Type argument list cannot be empty.
+                     ~
+!!! error TS1005: '>' expected.
+    class B extends A {}
+                    ~
+!!! error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+    /** @augments {A<<=} */
+                   ~~
+!!! error TS2314: Generic type 'A<T>' requires 1 type argument(s).
+                    ~~
+!!! error TS1099: Type argument list cannot be empty.
+                     ~~
+!!! error TS1005: '>' expected.
+    class C extends A {}
+                    ~
+!!! error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+    /** @augments A<= */
+                  ~~
+!!! error TS2314: Generic type 'A<T>' requires 1 type argument(s).
+                   ~~
+!!! error TS1099: Type argument list cannot be empty.
+                    ~
+!!! error TS1005: '>' expected.
+    class D extends A {}
+                    ~
+!!! error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+    /** @implements {A<=} */
+                     ~~
+!!! error TS8026: Expected A<T> type arguments; provide these with an '@extends' tag.
+                      ~~
+!!! error TS1099: Type argument list cannot be empty.
+                       ~
+!!! error TS1005: '>' expected.
+    class E { x = undefined }
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

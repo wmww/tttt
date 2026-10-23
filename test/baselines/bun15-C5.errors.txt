@@ -1,0 +1,17 @@
+a.tsx(1,6): error TS6196: 'React' is declared but never used.
+a.tsx(3,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true, "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    enum React { A }
+         ~~~~~
+!!! error TS6196: 'React' is declared but never used.
+    export const a = <div />;
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== jsx.d.ts (0 errors) ====
+    declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; } }
+    

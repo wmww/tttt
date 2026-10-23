@@ -1,0 +1,20 @@
+//// [test/cases/bun08-C13d.ts] ////
+
+=== a.ts ===
+declare const k10: I10[typeof k10b];
+>k10 : any
+>k10b : "w"
+
+declare const k10b: "w";
+>k10b : "w"
+
+interface I10 { [k10b]: "v"; [k10]: 2 }
+>[k10b] : "v"
+>k10b : "w"
+>[k10] : 2
+>k10 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

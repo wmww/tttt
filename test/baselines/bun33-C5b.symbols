@@ -1,0 +1,13 @@
+//// [test/cases/bun33-C5b.ts] ////
+
+=== a.ts ===
+namespace M { export interface I {} }
+>M : Symbol(M, Decl(a.ts, 0, 0))
+>I : Symbol(I, Decl(a.ts, 0, 13))
+
+class X implements (M).I {}
+>X : Symbol(X, Decl(a.ts, 0, 37))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

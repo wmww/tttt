@@ -1,0 +1,15 @@
+a.ts(2,14): error TS4025: Exported variable 'l1' has or is using private name 'H2.P'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export namespace Q { namespace H2 { export enum P { A, B } } export const v = H2.P.A as H2.P; }
+    export const l1 = Q.v;
+                 ~~
+!!! error TS4025: Exported variable 'l1' has or is using private name 'H2.P'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

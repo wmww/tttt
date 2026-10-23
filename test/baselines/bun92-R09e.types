@@ -1,0 +1,37 @@
+//// [test/cases/bun92-R09e.ts] ////
+
+=== a.ts ===
+interface Other { o: 1 } interface Base { b: 1 } interface Sub extends Base { }
+>o : 1
+>b : 1
+
+type Cond<T> = T extends string | number ? { y: 1 } : { z: 1 };
+>Cond : Cond<T>
+>y : 1
+>z : 1
+
+declare const B: new () => Cond<A>;
+>B : new () => Cond<A>
+
+class A extends B { x = 1 }
+>A : A
+>B : { z: 1; }
+>x : number
+>1 : 1
+
+declare const a: A; a.x; a.y; a.z;
+>a : A
+>a.x : number
+>a : A
+>x : number
+>a.y : any
+>a : A
+>y : any
+>a.z : 1
+>a : A
+>z : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

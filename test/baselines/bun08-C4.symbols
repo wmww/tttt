@@ -1,0 +1,29 @@
+//// [test/cases/bun08-C4.ts] ////
+
+=== a.ts ===
+import { Sub } from "graphics";
+>Sub : Symbol(Sub, Decl(a.ts, 0, 8))
+
+let s1: Sub.S;
+>s1 : Symbol(s1, Decl(a.ts, 1, 3))
+>Sub : Symbol(Sub, Decl(a.ts, 0, 8))
+>S : Symbol(Sub.S)
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== amb.d.ts ===
+declare namespace graphics { namespace Sub { interface S { s: 1 } } }
+>graphics : Symbol(graphics, Decl(amb.d.ts, 0, 0), Decl(amb.d.ts, 1, 11))
+>Sub : Symbol(Sub, Decl(amb.d.ts, 0, 28))
+>S : Symbol(S, Decl(amb.d.ts, 0, 44))
+>s : Symbol(S.s, Decl(amb.d.ts, 0, 58))
+
+declare var graphics: { Sub: string };
+>graphics : Symbol(graphics, Decl(amb.d.ts, 0, 0), Decl(amb.d.ts, 1, 11))
+>Sub : Symbol(Sub, Decl(amb.d.ts, 1, 23))
+
+declare module "graphics" { export = graphics; }
+>"graphics" : Symbol("graphics", Decl(amb.d.ts, 1, 38))
+>graphics : Symbol(graphics, Decl(amb.d.ts, 0, 0), Decl(amb.d.ts, 1, 11))
+

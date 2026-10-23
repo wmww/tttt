@@ -1,0 +1,23 @@
+//// [test/cases/bun13-P3.ts] ////
+
+=== a.ts ===
+declare function m<T>(a: T, b: T, c: (t: T) => void): T;
+>m : Symbol(m, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>b : Symbol(b, Decl(a.ts, 0, 27))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>c : Symbol(c, Decl(a.ts, 0, 33))
+>t : Symbol(t, Decl(a.ts, 0, 38))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+m([[[[[[[[[(x) => 1]]]]]]]]], [[[[[[[[[1]]]]]]]]], (t) => {});
+>m : Symbol(m, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>t : Symbol(t, Decl(a.ts, 1, 52))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,29 @@
+error TS2318: Cannot find global type 'ClassAccessorDecoratorContext'.
+error TS2318: Cannot find global type 'ClassAccessorDecoratorResult'.
+error TS2318: Cannot find global type 'ClassAccessorDecoratorTarget'.
+error TS2318: Cannot find global type 'ClassDecoratorContext'.
+a.ts(4,2): error TS1238: Unable to resolve signature of class decorator when called as an expression.
+  Argument of type 'unknown' is not assignable to parameter of type '{ name: string; }'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorContext'.
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorResult'.
+!!! error TS2318: Cannot find global type 'ClassAccessorDecoratorTarget'.
+!!! error TS2318: Cannot find global type 'ClassDecoratorContext'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "noLib": true, "target": "es2022" } }
+==== a.ts (2 errors) ====
+    interface Array<T> { length: number } interface Boolean {} interface Function {} interface IArguments {} interface Number {} interface Object {} interface RegExp {} interface String {}
+    interface CallableFunction extends Function {} interface NewableFunction extends Function {}
+    declare function dec(target: any, context: { name: string }): void;
+    @dec class C {
+     ~~~
+!!! error TS1238: Unable to resolve signature of class decorator when called as an expression.
+!!! error TS1238:   Argument of type 'unknown' is not assignable to parameter of type '{ name: string; }'.
+      @dec accessor g = 1;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

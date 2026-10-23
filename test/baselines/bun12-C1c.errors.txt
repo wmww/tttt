@@ -1,0 +1,16 @@
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    class C<T, U> {
+      m(): { [K in keyof T]: U } { return null! }
+      n(c: C<U, { a: 1 }>) {
+        const a: { a: 1 } = c.m().a;
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

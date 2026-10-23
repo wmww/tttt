@@ -1,0 +1,88 @@
+a.ts(4,9): error TS2322: Type 'FieldPath<V>' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+b.ts(4,26): error TS2345: Argument of type 'Path<V>' is not assignable to parameter of type 'number | null | undefined'.
+  Type 'string' is not assignable to type 'number'.
+c.ts(5,57): error TS2345: Argument of type 'FieldPath<V>' is not assignable to parameter of type 'number | null | undefined'.
+  Type 'string' is not assignable to type 'number'.
+c.ts(5,92): error TS2345: Argument of type 'Path<V>' is not assignable to parameter of type 'number | null | undefined'.
+  Type 'string' is not assignable to type 'number'.
+f.ts(3,68): error TS2345: Argument of type 'Path<V>' is not assignable to parameter of type 'number | null | undefined'.
+  Type 'string' is not assignable to type 'number'.
+g.ts(3,11): error TS2345: Argument of type 'readonly FieldPath<V>[] | FieldPath<V>' is not assignable to parameter of type 'number | null | undefined'.
+  Type 'readonly FieldPath<V>[]' is not assignable to type 'number'.
+z.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {
+     "compilerOptions": {
+      "strict": true,
+      "noEmit": true,
+      "target": "esnext",
+      "module": "esnext",
+      "moduleResolution": "bundler",
+      "lib": [
+       "esnext"
+      ],
+      "types": [],
+      "skipLibCheck": true
+     }
+    }
+==== a.ts (1 errors) ====
+    import { FieldPath, Values, get } from "./lib";
+    // Used as it is written: the alias of the import.
+    export function f<V extends Values>(b: FieldPath<V>) {
+      const n: number = b;
+            ~
+!!! error TS2322: Type 'FieldPath<V>' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    }
+==== b.ts (1 errors) ====
+    import { FieldPath, Values, get } from "./lib";
+    // Instantiated, by a mapper that does not map V: the alias of the conditional type itself.
+    export function f<V extends Values>(bs: ReadonlyArray<FieldPath<V>>) {
+      bs.map(name => get({}, name));
+                             ~~~~
+!!! error TS2345: Argument of type 'Path<V>' is not assignable to parameter of type 'number | null | undefined'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    }
+==== c.ts (2 errors) ====
+    import { FieldPath, Values, get } from "./lib";
+    declare function isString(v: unknown): v is string;
+    export function f<V extends Values>() {
+      return (names?: FieldPath<V> | ReadonlyArray<FieldPath<V>>) =>
+        names === undefined ? 1 : isString(names) ? get({}, names) : names.map(name => get({}, name));
+                                                            ~~~~~
+!!! error TS2345: Argument of type 'FieldPath<V>' is not assignable to parameter of type 'number | null | undefined'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+                                                                                               ~~~~
+!!! error TS2345: Argument of type 'Path<V>' is not assignable to parameter of type 'number | null | undefined'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    }
+==== f.ts (1 errors) ====
+    import { FieldPath, Values, get } from "./lib";
+    export function f<V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) {
+      return typeof names === "string" ? 1 : names.map(name => get({}, name));
+                                                                       ~~~~
+!!! error TS2345: Argument of type 'Path<V>' is not assignable to parameter of type 'number | null | undefined'.
+!!! error TS2345:   Type 'string' is not assignable to type 'number'.
+    }
+==== g.ts (1 errors) ====
+    import { FieldPath, Values, get } from "./lib";
+    export function f<V extends Values>(names: FieldPath<V> | ReadonlyArray<FieldPath<V>>) {
+      get({}, names);
+              ~~~~~
+!!! error TS2345: Argument of type 'readonly FieldPath<V>[] | FieldPath<V>' is not assignable to parameter of type 'number | null | undefined'.
+!!! error TS2345:   Type 'readonly FieldPath<V>[]' is not assignable to type 'number'.
+    }
+==== lib.ts (0 errors) ====
+    type Inner<T> = keyof T & string;
+    export type Values = Record<string, any>;
+    export type Path<T> = T extends any ? Inner<T> : never;
+    export type FieldPath<T extends Values> = Path<T>;
+    export declare function get(o: unknown, p?: number | null): unknown;
+==== z.ts (1 errors) ====
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

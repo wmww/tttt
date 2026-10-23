@@ -1,0 +1,7 @@
+//// [test/cases/bun34-C7c.ts] ////
+
+=== a.ts ===
+1 \u0061s number;
+>1 \u0061s number : number
+>1 : 1
+

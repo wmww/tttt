@@ -1,0 +1,15 @@
+a.ts(2,16): error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const t: [string, number];
+    const { [/*c*/ 2]: t2 } = t;
+                   ~
+!!! error TS2493: Tuple type '[string, number]' of length '2' has no element at index '2'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

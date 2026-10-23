@@ -1,0 +1,21 @@
+a.ts(8,16): error TS2800: Expression produces a tuple type that is too large to represent.
+a.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type T1 = [0,0,0,0,0,0,0,0,0,0]; type T2 = [...T1,...T1,...T1,...T1,...T1,...T1,...T1,...T1,...T1,...T1]; type T3 = [...T2,...T2,...T2,...T2,...T2,...T2,...T2,...T2,...T2,...T2];
+    type G<X extends string, Y extends any[] = T3> = [...Y,...Y,...Y,...Y,...Y,...Y,...Y,...Y,...Y,...Y, X];
+    declare function f<T>(x?: any): T;
+    declare function tag<T>(s: TemplateStringsArray): T;
+    declare class K<T> { k: T }
+    declare const e: any;
+    interface IG<T> { g: T }
+    function h67({ a = e as G<"67"> }) {}
+                   ~
+!!! error TS2800: Expression produces a tuple type that is too large to represent.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

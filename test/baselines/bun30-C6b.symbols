@@ -1,0 +1,13 @@
+//// [test/cases/bun30-C6b.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : Symbol(x, Decl(a.ts, 0, 11))
+
+@(x.#constructor) function f() {}
+>x : Symbol(x, Decl(a.ts, 0, 11))
+>f : Symbol(f, Decl(a.ts, 0, 19))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

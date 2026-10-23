@@ -1,0 +1,17 @@
+a.ts(1,24): error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+a.ts(1,34): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    export type S4 = ({ a: b }: any, c = b) => void;
+                           ~
+!!! error TS2842: 'b' is an unused renaming of 'a'. Did you intend to use it as a type annotation?
+                                     ~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

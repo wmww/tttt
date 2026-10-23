@@ -1,0 +1,30 @@
+a.ts(2,7): error TS2322: Type '{ m(this: { m(this: any): any; }): { m(this: any): any; }; }' is not assignable to type 'null'.
+a.ts(4,7): error TS2322: Type '{ m(this: { m(this: any): number; k: number; }): number; k: number; }' is not assignable to type 'null'.
+a.ts(6,7): error TS2322: Type '{ f: (this: { f: any; }) => { f: any; }; }' is not assignable to type 'null'.
+a.ts(8,1): error TS2322: Type 'number' is not assignable to type '(this: { m(this: any, x: number): number; }, x: number) => number'.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    const o1 = { m(this) { return this; } };
+    const t1: null = o1;
+          ~~
+!!! error TS2322: Type '{ m(this: { m(this: any): any; }): { m(this: any): any; }; }' is not assignable to type 'null'.
+    const o2 = { m(this) { return 1; }, k: 1 };
+    const t2: null = o2;
+          ~~
+!!! error TS2322: Type '{ m(this: { m(this: any): number; k: number; }): number; k: number; }' is not assignable to type 'null'.
+    const o3 = { f: function (this) { return this; } };
+    const t3: null = o3;
+          ~~
+!!! error TS2322: Type '{ f: (this: { f: any; }) => { f: any; }; }' is not assignable to type 'null'.
+    const o4 = { m(this, x: number) { return x; } };
+    o4.m = 1;
+    ~~~~
+!!! error TS2322: Type 'number' is not assignable to type '(this: { m(this: any, x: number): number; }, x: number) => number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

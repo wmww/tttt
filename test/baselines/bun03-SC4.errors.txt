@@ -1,0 +1,14 @@
+a.ts(1,26): error TS2354: This syntax requires an imported helper but module 'tslib' cannot be found.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2017", "importHelpers": true } }
+==== a.ts (2 errors) ====
+    export type F = ({ a, ...r }: { a: number; b: number }) => void;
+                             ~
+!!! error TS2354: This syntax requires an imported helper but module 'tslib' cannot be found.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

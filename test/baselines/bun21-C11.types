@@ -1,0 +1,24 @@
+//// [test/cases/bun21-C11.ts] ////
+
+=== a.ts ===
+function f() { const x = []; x.push(1); if (!x) x.push("a"); }
+>f : () => void
+>x : any[]
+>[] : never[]
+>x.push(1) : number
+>x.push : (...items: any[]) => number
+>x : any[]
+>push : (...items: any[]) => number
+>1 : 1
+>!x : false
+>x : number[]
+>x.push("a") : any
+>x.push : any
+>x : never
+>push : any
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

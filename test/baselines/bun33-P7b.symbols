@@ -1,0 +1,27 @@
+//// [test/cases/bun33-P7b.ts] ////
+
+=== a.ts ===
+type X<A extends unknown[]> = [...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A, ...A];
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+>A : Symbol(A, Decl(a.ts, 0, 7))
+
+const a = null! as X<X<X<X<[0]>>>>;
+>a : Symbol(a, Decl(a.ts, 1, 5))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+>X : Symbol(X, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

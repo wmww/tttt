@@ -1,0 +1,25 @@
+//// [test/cases/bun23-C6.ts] ////
+
+=== a.ts ===
+const obj = { meth<T>(x: T) { class M { a!: T } return new M(); } };
+>obj : { meth<T>(x: T): M; }
+>{ meth<T>(x: T) { class M { a!: T } return new M(); } } : { meth<T>(x: T): M; }
+>meth : <T>(x: T) => M
+>x : T
+>M : M
+>a : T
+>new M() : M
+>M : typeof M
+
+const p7: 1 = obj.meth(1);
+>p7 : 1
+>obj.meth(1) : obj.meth.M
+>obj.meth : <T>(x: T) => M
+>obj : { meth<T>(x: T): M; }
+>meth : <T>(x: T) => M
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

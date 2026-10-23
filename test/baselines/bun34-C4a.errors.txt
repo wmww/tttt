@@ -1,0 +1,18 @@
+a.ts(2,14): error TS1361: 'u' cannot be used as a value because it was imported using 'import type'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    import type { u } from "./m";
+    type F = ({ [u]: [] }: any) => void;
+                 ~
+!!! error TS1361: 'u' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 a.ts:1:15: 'u' was imported here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export const u = "k";
+    

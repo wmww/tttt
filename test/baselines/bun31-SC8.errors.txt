@@ -1,0 +1,49 @@
+a.ts(2,23): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(2,23): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(3,27): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(3,27): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(3,55): error TS2322: Type 'unknown' is not assignable to type 'never'.
+a.ts(5,17): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(5,17): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(6,21): error TS2451: Cannot redeclare block-scoped variable 'a'.
+a.ts(6,28): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(6,28): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(6,41): error TS2451: Cannot redeclare block-scoped variable 'a'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowUnreachableCode": false } }
+==== a.ts (12 errors) ====
+    declare function use(...a: any[]): void; declare function fail(): never; declare function assertS(x: unknown): asserts x is string;
+    function w1(x: any) { with (fail()) { } use(); }
+                          ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                          ~~~~~~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+    function w2(x: unknown) { with (assertS(x)) { } const n: never = x; }
+                              ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                              ~~~~~~~~~~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                                          ~
+!!! error TS2322: Type 'unknown' is not assignable to type 'never'.
+    declare let o: any;
+    function w3() { with (o) let a = 1; a; }
+                    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+    function w5() { let a = 1; with (o) let a = 2; a; }
+                        ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'a'.
+                               ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+                               ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                            ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'a'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

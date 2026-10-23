@@ -1,0 +1,13 @@
+//// [test/cases/bun17-P2.ts] ////
+
+=== a.ts ===
+interface Boolean { 0: string }
+>Boolean : Symbol(Boolean, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(a.ts, 0, 0))
+>0 : Symbol(Boolean[0], Decl(a.ts, 0, 19))
+
+const b: boolean = [1];
+>b : Symbol(b, Decl(a.ts, 1, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

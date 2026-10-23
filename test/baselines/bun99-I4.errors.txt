@@ -1,0 +1,714 @@
+date_fn_map__draft__notlocked__and_obj__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__and_obj__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__omit_and__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__omit_and__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__pick_and__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__pick_and__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked__as__and.ts(16,9): error TS2322: Type 'false | (((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer))' is not assignable to type 'never'.
+  Type 'false' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__as__and.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked__as__early.ts(16,9): error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer)' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__as__early.ts(17,9): error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__as__early.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked__as__in_if.ts(16,11): error TS2322: Type 'Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__as__in_if.ts(17,11): error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer)' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__as__in_if.ts(18,11): error TS2322: Type 'number' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__as__in_if.ts(23,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked__as__ternary.ts(16,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__as__ternary.ts(19,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked__call__empty_if.ts(18,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__call__empty_if.ts(21,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked__let__empty_if.ts(18,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__let__empty_if.ts(21,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked__prop__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked__prop__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__locked_fn__as__empty_if.ts(17,9): error TS2322: Type 'Customer & LockedTag & (() => void)' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__locked_fn__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft__notlocked__setreq__plain__as__empty_if.ts(17,9): error TS2322: Type 'Customer' is not assignable to type 'never'.
+date_fn_map__draft__notlocked__setreq__plain__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__draft_ret__notlocked__setreq__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__draft_ret__notlocked__setreq__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__keys__notlocked__setreq__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__keys__notlocked__setreq__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__none__notlocked__setreq__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__none__notlocked__setreq__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__partial__notlocked__setreq__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__partial__notlocked__setreq__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+date_fn_map__this__notlocked__setreq__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+date_fn_map__this__notlocked__setreq__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+fn__draft__cond__setreq__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+fn__draft__cond__setreq__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+fn_date__draft__cond__setreq__locked__as__early.ts(16,9): error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => 1) & ((produceFn: (state: WritableDraft<Customer>) => void) => 2)' is not assignable to type 'never'.
+fn_date__draft__cond__setreq__locked__as__early.ts(17,9): error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+fn_date__draft__cond__setreq__locked__as__early.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+fn_date__draft__draft__setreq__locked__as__early.ts(16,9): error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) & ((produceFn: (state: WritableDraft<Customer>) => void) => WritableDraft<Customer>)' is not assignable to type 'never'.
+fn_date__draft__draft__setreq__locked__as__early.ts(17,9): error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+fn_date__draft__draft__setreq__locked__as__early.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+fn_date__draft__notlocked__setreq__locked__param__and.ts(15,9): error TS2322: Type 'false | (((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer))' is not assignable to type 'never'.
+  Type 'false' is not assignable to type 'never'.
+fn_date__draft__notlocked__setreq__locked__param__and.ts(18,14): error TS2322: Type 'string' is not assignable to type 'number'.
+fn_date__draft__this__setreq__locked__as__early.ts(16,9): error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer)' is not assignable to type 'never'.
+fn_date__draft__this__setreq__locked__as__early.ts(17,9): error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+fn_date__draft__this__setreq__locked__as__early.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+fn_date__draft__void__setreq__locked__as__early.ts(16,9): error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => void) & ((produceFn: (state: WritableDraft<Customer>) => void) => void)' is not assignable to type 'never'.
+fn_date__draft__void__setreq__locked__as__early.ts(17,9): error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+fn_date__draft__void__setreq__locked__as__early.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+fn_regexp__draft__cond__setreq__locked__as__empty_if.ts(17,9): error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+fn_regexp__draft__cond__setreq__locked__as__empty_if.ts(20,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "target": "es2022", "lib": ["es2022"], "types": []}, "files": ["date_fn_map__draft__notlocked__and_obj__locked__as__empty_if.ts", "date_fn_map__draft__notlocked__omit_and__locked__as__empty_if.ts", "date_fn_map__draft__notlocked__pick_and__locked__as__empty_if.ts", "date_fn_map__draft__notlocked__setreq__locked__as__and.ts", "date_fn_map__draft__notlocked__setreq__locked__as__early.ts", "date_fn_map__draft__notlocked__setreq__locked__as__in_if.ts", "date_fn_map__draft__notlocked__setreq__locked__as__ternary.ts", "date_fn_map__draft__notlocked__setreq__locked__call__empty_if.ts", "date_fn_map__draft__notlocked__setreq__locked__let__empty_if.ts", "date_fn_map__draft__notlocked__setreq__locked__prop__empty_if.ts", "date_fn_map__draft__notlocked__setreq__locked_fn__as__empty_if.ts", "date_fn_map__draft__notlocked__setreq__plain__as__empty_if.ts", "date_fn_map__draft_ret__notlocked__setreq__locked__as__empty_if.ts", "date_fn_map__keys__notlocked__setreq__locked__as__empty_if.ts", "date_fn_map__none__notlocked__setreq__locked__as__empty_if.ts", "date_fn_map__partial__notlocked__setreq__locked__as__empty_if.ts", "date_fn_map__this__notlocked__setreq__locked__as__empty_if.ts", "fn__draft__cond__setreq__locked__as__empty_if.ts", "fn_date__draft__cond__setreq__locked__as__early.ts", "fn_date__draft__draft__setreq__locked__as__early.ts", "fn_date__draft__notlocked__setreq__locked__param__and.ts", "fn_date__draft__this__setreq__locked__as__early.ts", "fn_date__draft__void__setreq__locked__as__early.ts", "fn_regexp__draft__cond__setreq__locked__as__empty_if.ts", "report.ts"]}
+==== date_fn_map__draft__notlocked__and_obj__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is Customer & { readonly referredBy: number }
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__omit_and__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is Omit<Customer, 'referredBy'> & { readonly referredBy: number }
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__pick_and__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is Pick<Customer, 'merge'> & { readonly referredBy: number }
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked__as__and.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      const b = isReferredCustomer(customer) && customer.merge
+      const p1: never = b
+            ~~
+!!! error TS2322: Type 'false | (((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer))' is not assignable to type 'never'.
+!!! error TS2322:   Type 'false' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked__as__early.ts (3 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (!isReferredCustomer(customer)) return customer
+      const p1: never = customer.merge
+            ~~
+!!! error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer)' is not assignable to type 'never'.
+      const p2: never = null! as Parameters<typeof customer.merge>[0]
+            ~~
+!!! error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked__as__in_if.ts (4 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+        const p1: never = customer
+              ~~
+!!! error TS2322: Type 'Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }' is not assignable to type 'never'.
+        const p2: never = customer.merge
+              ~~
+!!! error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer)' is not assignable to type 'never'.
+        const p3: never = customer.referredBy
+              ~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+        return customer
+      }
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked__as__ternary.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      const t = isReferredCustomer(customer) ? customer : customer
+      const p1: never = t
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return t
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked__call__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    declare function get(): Locked<Customer>
+    export function f() {
+      const customer = get()
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked__let__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    declare let outer: Locked<Customer>
+    export function f() {
+      const customer = outer
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked__prop__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(o: { readonly c: Locked<Customer> }) {
+      const customer = o.c
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__locked_fn__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer> & { (): void }
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Customer & LockedTag & (() => void)' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft__notlocked__setreq__plain__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Customer
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Customer' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__draft_ret__notlocked__setreq__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => Draft<this>): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__keys__notlocked__setreq__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (k: keyof this) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__none__notlocked__setreq__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: () => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__partial__notlocked__setreq__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Partial<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== date_fn_map__this__notlocked__setreq__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Date | Function | Map<any, any>
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: this) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn__draft__cond__setreq__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Function
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): this extends { referredBy: number } ? 1 : 2
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn_date__draft__cond__setreq__locked__as__early.ts (3 errors) ====
+    type AtomicObject = Function | Date
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): this extends { referredBy: number } ? 1 : 2
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (!isReferredCustomer(customer)) return customer
+      const p1: never = customer.merge
+            ~~
+!!! error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => 1) & ((produceFn: (state: WritableDraft<Customer>) => void) => 2)' is not assignable to type 'never'.
+      const p2: never = null! as Parameters<typeof customer.merge>[0]
+            ~~
+!!! error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn_date__draft__draft__setreq__locked__as__early.ts (3 errors) ====
+    type AtomicObject = Function | Date
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): Draft<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (!isReferredCustomer(customer)) return customer
+      const p1: never = customer.merge
+            ~~
+!!! error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) & ((produceFn: (state: WritableDraft<Customer>) => void) => WritableDraft<Customer>)' is not assignable to type 'never'.
+      const p2: never = null! as Parameters<typeof customer.merge>[0]
+            ~~
+!!! error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn_date__draft__notlocked__setreq__locked__param__and.ts (2 errors) ====
+    type AtomicObject = Function | Date
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(customer: Locked<Customer>) {
+      const b = isReferredCustomer(customer) && customer.merge
+      const p1: never = b
+            ~~
+!!! error TS2322: Type 'false | (((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer))' is not assignable to type 'never'.
+!!! error TS2322:   Type 'false' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn_date__draft__this__setreq__locked__as__early.ts (3 errors) ====
+    type AtomicObject = Function | Date
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): this
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (!isReferredCustomer(customer)) return customer
+      const p1: never = customer.merge
+            ~~
+!!! error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }) & ((produceFn: (state: WritableDraft<Customer>) => void) => Customer)' is not assignable to type 'never'.
+      const p2: never = null! as Parameters<typeof customer.merge>[0]
+            ~~
+!!! error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn_date__draft__void__setreq__locked__as__early.ts (3 errors) ====
+    type AtomicObject = Function | Date
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): void
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (!isReferredCustomer(customer)) return customer
+      const p1: never = customer.merge
+            ~~
+!!! error TS2322: Type '((produceFn: (state: WritableDraft<Customer & LockedTag & Pick<Customer, "merge"> & { readonly referredBy: number; }>) => void) => void) & ((produceFn: (state: WritableDraft<Customer>) => void) => void)' is not assignable to type 'never'.
+      const p2: never = null! as Parameters<typeof customer.merge>[0]
+            ~~
+!!! error TS2322: Type '(state: WritableDraft<Customer>) => void' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== fn_regexp__draft__cond__setreq__locked__as__empty_if.ts (2 errors) ====
+    type AtomicObject = Function | RegExp
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject ? T : T extends object ? WritableDraft<T> : T
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>> & { [P in K]-?: NonNullable<T[P]> }
+    declare class LockedTag { private readonly locked: true }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): this extends { referredBy: number } ? 1 : 2
+      readonly referredBy: number | null
+    }
+    declare function isReferredCustomer(customer: Customer): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    export function f(x: unknown) {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      const p0: never = customer
+            ~~
+!!! error TS2322: Type 'Locked<Customer>' is not assignable to type 'never'.
+      return customer
+    }
+    export const sentinel: number = ""
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== report.ts (0 errors) ====
+    type AtomicObject = Function | Date
+    type WritableDraft<T> = { -readonly [K in keyof T]: Draft<T[K]> }
+    type Draft<T> = T extends AtomicObject
+      ? T
+      : T extends object
+        ? WritableDraft<T>
+        : T
+    
+    type SetRequiredNonNullable<T, K extends keyof T> = Pick<
+      T,
+      Exclude<keyof T, K>
+    > & { [P in K]-?: NonNullable<T[P]> }
+    
+    declare class LockedTag {
+      private readonly locked: true
+    }
+    type Locked<T> = T & LockedTag
+    type NotLocked<T> = T extends Locked<infer U> ? U : T
+    
+    declare class Customer {
+      merge(produceFn: (state: Draft<this>) => void): NotLocked<this>
+      readonly referredBy: number | null
+    }
+    
+    declare function isReferredCustomer(
+      customer: Customer,
+    ): customer is SetRequiredNonNullable<Customer, 'referredBy'>
+    
+    export function f(x: unknown): Locked<Customer> {
+      const customer = x as Locked<Customer>
+      if (isReferredCustomer(customer)) {
+      }
+      return customer
+    }
+    

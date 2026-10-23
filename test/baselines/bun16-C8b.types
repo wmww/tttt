@@ -1,0 +1,33 @@
+//// [test/cases/bun16-C8b.ts] ////
+
+=== a.ts ===
+type F = () => void;
+>F : F
+
+declare const o: { [k: string]: F };
+>o : { [k: string]: F; }
+>k : string
+
+if (o.foo) { o.bar(); }
+>o.foo : F
+>o : { [k: string]: F; }
+>foo : F
+>o.bar() : void
+>o.bar : F
+>o : { [k: string]: F; }
+>bar : F
+
+o.foo && o.bar();
+>o.foo && o.bar() : void
+>o.foo : F
+>o : { [k: string]: F; }
+>foo : F
+>o.bar() : void
+>o.bar : F
+>o : { [k: string]: F; }
+>bar : F
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

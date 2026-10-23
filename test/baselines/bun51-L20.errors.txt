@@ -1,0 +1,24 @@
+a.ts(4,19): error TS2341: Property 'a' is private and only accessible within class 'C'.
+a.ts(4,22): error TS2566: A rest element cannot have a property name.
+a.ts(5,22): error TS2566: A rest element cannot have a property name.
+a.ts(6,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    class C { private a = 1; b = 2; }
+    class D { a = 1; private b = 2; }
+    declare const c: C, d: D;
+    export const { ...a: x } = c;
+                      ~
+!!! error TS2341: Property 'a' is private and only accessible within class 'C'.
+                         ~
+!!! error TS2566: A rest element cannot have a property name.
+    export const { ...a: b } = d;
+                         ~
+!!! error TS2566: A rest element cannot have a property name.
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

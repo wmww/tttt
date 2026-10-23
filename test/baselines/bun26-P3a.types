@@ -1,0 +1,28 @@
+//// [test/cases/bun26-P3a.ts] ////
+
+=== a.ts ===
+class C {
+>C : C
+
+  h = ((x) => 1) satisfies (x: this) => number;
+>h : (x: this) => number
+>((x) => 1) satisfies (x: this) => number : (x: this) => number
+>((x) => 1) : (x: this) => number
+>(x) => 1 : (x: this) => number
+>x : this
+>1 : 1
+>x : this
+}
+new C().h(new C());
+>new C().h(new C()) : number
+>new C().h : (x: this) => number
+>new C() : C
+>C : typeof C
+>h : (x: this) => number
+>new C() : C
+>C : typeof C
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

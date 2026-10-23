@@ -1,0 +1,41 @@
+a.ts(1,16): error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+b.ts(1,16): error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+c.ts(1,10): error TS2649: Cannot augment module '(Missing)' with value exports because it resolves to a non-module entity.
+c.ts(1,11): error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+c.ts(1,11): error TS2304: Cannot find name 'class'.
+c.ts(1,17): error TS1005: ';' expected.
+d.ts(1,1): error TS1206: Decorators are not valid here.
+e.ts(1,1): error TS1206: Decorators are not valid here.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (1 errors) ====
+    @dec namespace class {}
+                   ~~~~~
+!!! error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+==== b.ts (1 errors) ====
+    @dec interface class {}
+                   ~~~~~
+!!! error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+==== c.ts (4 errors) ====
+    @dec type class = 1
+             
+!!! error TS2649: Cannot augment module '(Missing)' with value exports because it resolves to a non-module entity.
+              ~~~~~
+!!! error TS1359: Identifier expected. 'class' is a reserved word that cannot be used here.
+              ~~~~~
+!!! error TS2304: Cannot find name 'class'.
+                    ~
+!!! error TS1005: ';' expected.
+==== d.ts (1 errors) ====
+    @dec namespace
+    ~
+!!! error TS1206: Decorators are not valid here.
+    N {}
+==== e.ts (1 errors) ====
+    @dec interface
+    ~
+!!! error TS1206: Decorators are not valid here.
+    I {}
+    

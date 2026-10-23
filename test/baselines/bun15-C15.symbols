@@ -1,0 +1,15 @@
+//// [test/cases/bun15-C15.ts] ////
+
+=== a.ts ===
+const f1: (a: number, b: string, c: boolean) => void = (x, ...y, z) => {};
+>f1 : Symbol(f1, Decl(a.ts, 0, 5))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 21))
+>c : Symbol(c, Decl(a.ts, 0, 32))
+>x : Symbol(x, Decl(a.ts, 0, 56))
+>y : Symbol(y, Decl(a.ts, 0, 58))
+>z : Symbol(z, Decl(a.ts, 0, 64))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

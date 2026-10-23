@@ -1,0 +1,11 @@
+//// [test/cases/bun28-P5e.ts] ////
+
+=== a.ts ===
+interface X { export default: 1 }
+>export : any
+>default : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

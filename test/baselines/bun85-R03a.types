@@ -1,0 +1,76 @@
+//// [test/cases/bun85-R03a.ts] ////
+
+=== a1.js ===
+class C { p = [this.p, module]; }
+>C : C
+>p : any
+>[this.p, module] : any[]
+>this.p : any
+>this : this
+>p : any
+>module : { exports: typeof C; }
+
+module.exports = C;
+>module.exports = C : typeof C
+>module.exports : typeof C
+>module : { exports: typeof C; }
+>exports : typeof C
+>C : typeof C
+
+=== a2.js ===
+class C { static p = [C.p, exports]; }
+>C : C
+>p : any
+>[C.p, exports] : any[]
+>C.p : any
+>C : typeof C
+>p : any
+>exports : typeof import("./a2")
+
+exports.C = C;
+>exports.C = C : typeof C
+>exports.C : typeof C
+>exports : typeof import("./a2")
+>C : typeof C
+>C : typeof C
+
+=== a3.js ===
+function f() {}
+>f : { (): void; p: any; }
+
+f.p = [f.p, module];
+>f.p = [f.p, module] : any[]
+>f.p : any
+>f : { (): void; p: any; }
+>p : any
+>[f.p, module] : any[]
+>f.p : any
+>f : { (): void; p: any; }
+>p : any
+>module : { exports: { (): void; p: any; }; }
+
+module.exports = f;
+>module.exports = f : { (): void; p: any; }
+>module.exports : { (): void; p: any; }
+>module : { exports: { (): void; p: any; }; }
+>exports : { (): void; p: any; }
+>f : { (): void; p: any; }
+
+=== a4.js ===
+exports.a = [exports.a, module];
+>exports.a = [exports.a, module] : any[]
+>exports.a : any
+>exports : typeof import("./a4")
+>a : any
+>[exports.a, module] : any[]
+>exports.a : any
+>exports : typeof import("./a4")
+>a : any
+>module : { exports: typeof import("./a4"); }
+
+=== zz.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

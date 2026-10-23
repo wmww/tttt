@@ -1,0 +1,27 @@
+//// [test/cases/bun85-R03c.ts] ////
+
+=== f.js ===
+var p = r;
+>p : any
+>r : any
+
+var r = [module, r, exports];
+>r : any
+>[module, r, exports] : any[]
+>module : { exports: typeof import("./f"); }
+>r : any
+>exports : typeof import("./f")
+
+exports.zz = 1;
+>exports.zz = 1 : 1
+>exports.zz : 1
+>exports : typeof import("./f")
+>zz : 1
+>1 : 1
+
+=== zz.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

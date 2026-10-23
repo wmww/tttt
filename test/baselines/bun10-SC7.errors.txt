@@ -1,0 +1,25 @@
+j.js(2,15): error TS7006: Parameter 'a' implicitly has an 'any' type.
+j.js(2,24): error TS7006: Parameter 'a' implicitly has an 'any' type.
+j.js(5,10): error TS7006: Parameter 'a' implicitly has an 'any' type.
+j.js(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"] } }
+==== j.js (4 errors) ====
+    /** @type {{ m(): void, n: () => void }} */
+    const o = { m(a) {}, n(a) {} };
+                  ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+                           ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    /** @param {{ m(): void }} x */
+    function take(x) {}
+    take({ m(a) {} });
+             ~
+!!! error TS7006: Parameter 'a' implicitly has an 'any' type.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

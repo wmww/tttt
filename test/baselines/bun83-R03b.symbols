@@ -1,0 +1,160 @@
+//// [test/cases/bun83-R03b.ts] ////
+
+=== function_array.ts ===
+
+x = [f\u0075nction () {}];
+=== function_array2.ts ===
+
+x = [1, f\u0075nction () {}];
+=== function_arrow.ts ===
+
+x = () => f\u0075nction () {};
+=== function_call.ts ===
+
+f(f\u0075nction () {});
+=== function_call2.ts ===
+
+f(1, f\u0075nction () {});
+=== function_new.ts ===
+
+new X(f\u0075nction () {});
+=== function_opt.ts ===
+
+f?.(f\u0075nction () {});
+=== function_targ.ts ===
+f<T>(f\u0075nction () {});
+>T : Symbol(T)
+
+=== import_array.ts ===
+
+x = [i\u006dport("x")];
+=== import_array2.ts ===
+
+x = [1, i\u006dport("x")];
+=== import_arrow.ts ===
+
+x = () => i\u006dport("x");
+=== import_call.ts ===
+
+f(i\u006dport("x"));
+=== import_call2.ts ===
+
+f(1, i\u006dport("x"));
+=== import_new.ts ===
+
+new X(i\u006dport("x"));
+=== import_opt.ts ===
+
+f?.(i\u006dport("x"));
+=== import_targ.ts ===
+f<T>(i\u006dport("x"));
+>T : Symbol(T)
+
+=== new_array.ts ===
+
+x = [n\u0065w X()];
+=== new_array2.ts ===
+
+x = [1, n\u0065w X()];
+=== new_arrow.ts ===
+
+x = () => n\u0065w X();
+=== new_call.ts ===
+
+f(n\u0065w X());
+=== new_call2.ts ===
+
+f(1, n\u0065w X());
+=== new_new.ts ===
+
+new X(n\u0065w X());
+=== new_opt.ts ===
+
+f?.(n\u0065w X());
+=== new_targ.ts ===
+f<T>(n\u0065w X());
+>T : Symbol(T)
+
+=== null_array.ts ===
+
+x = [n\u0075ll];
+=== null_array2.ts ===
+
+x = [1, n\u0075ll];
+=== null_arrow.ts ===
+
+x = () => n\u0075ll;
+=== null_call.ts ===
+
+f(n\u0075ll);
+=== null_call2.ts ===
+
+f(1, n\u0075ll);
+=== null_new.ts ===
+
+new X(n\u0075ll);
+=== null_opt.ts ===
+
+f?.(n\u0075ll);
+=== null_targ.ts ===
+f<T>(n\u0075ll);
+>T : Symbol(T)
+
+=== this_array.ts ===
+x = [t\u0068is];
+>t\u0068is : Symbol(globalThis)
+
+=== this_array2.ts ===
+x = [1, t\u0068is];
+>t\u0068is : Symbol(globalThis)
+
+=== this_arrow.ts ===
+x = () => t\u0068is;
+>t\u0068is : Symbol(globalThis)
+
+=== this_call.ts ===
+f(t\u0068is);
+>t\u0068is : Symbol(globalThis)
+
+=== this_call2.ts ===
+f(1, t\u0068is);
+>t\u0068is : Symbol(globalThis)
+
+=== this_new.ts ===
+new X(t\u0068is);
+>t\u0068is : Symbol(globalThis)
+
+=== this_opt.ts ===
+f?.(t\u0068is);
+>t\u0068is : Symbol(globalThis)
+
+=== this_targ.ts ===
+f<T>(t\u0068is);
+>T : Symbol(T)
+>t\u0068is : Symbol(globalThis)
+
+=== void_array.ts ===
+
+x = [v\u006fid 0];
+=== void_array2.ts ===
+
+x = [1, v\u006fid 0];
+=== void_arrow.ts ===
+
+x = () => v\u006fid 0;
+=== void_call.ts ===
+
+f(v\u006fid 0);
+=== void_call2.ts ===
+
+f(1, v\u006fid 0);
+=== void_new.ts ===
+
+new X(v\u006fid 0);
+=== void_opt.ts ===
+
+f?.(v\u006fid 0);
+=== void_targ.ts ===
+f<T>(v\u006fid 0);
+>T : Symbol(T)
+

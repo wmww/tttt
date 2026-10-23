@@ -1,0 +1,58 @@
+a.ts(1,7): error TS7022: 'g1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(1,69): error TS2502: 'k1' is referenced directly or indirectly in its own type annotation.
+a.ts(2,7): error TS7022: 'g2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(2,75): error TS2502: 'k2' is referenced directly or indirectly in its own type annotation.
+a.ts(4,15): error TS2502: 'k4' is referenced directly or indirectly in its own type annotation.
+a.ts(4,43): error TS7022: 'g4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(5,46): error TS2448: Block-scoped variable 'k5' used before its declaration.
+a.ts(5,46): error TS2454: Variable 'k5' is used before being assigned.
+a.ts(6,87): error TS2339: Property 'b' does not exist on type '{ (): void; a: "b"; c: number; }'.
+a.ts(7,7): error TS7022: 'g7' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(7,48): error TS2502: 'k7' is referenced directly or indirectly in its own type annotation.
+a.ts(8,7): error TS7022: 'g8' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(8,57): error TS2502: 'k8' is referenced directly or indirectly in its own type annotation.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (14 errors) ====
+    const g1 = () => {}; g1.a = "b" as const; g1[k1] = 1; declare const k1: (typeof g1)["a"];
+          ~~
+!!! error TS7022: 'g1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                                        ~~
+!!! error TS2502: 'k1' is referenced directly or indirectly in its own type annotation.
+    const g2 = function () {}; g2.a = "b" as const; g2[k2] = 1; declare const k2: (typeof g2)["a"];
+          ~~
+!!! error TS7022: 'g2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                                              ~~
+!!! error TS2502: 'k2' is referenced directly or indirectly in its own type annotation.
+    function g3() {} g3.a = "b" as const; g3[k3] = 1; declare const k3: (typeof g3)["a"];
+    declare const k4: (typeof g4)["a"]; const g4 = () => {}; g4.a = "b" as const; g4[k4] = 1;
+                  ~~
+!!! error TS2502: 'k4' is referenced directly or indirectly in its own type annotation.
+                                              ~~
+!!! error TS7022: 'g4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const g5 = () => {}; g5.a = "b" as const; g5[k5] = 1; const k5 = "c"; g5.c;
+                                                 ~~
+!!! error TS2448: Block-scoped variable 'k5' used before its declaration.
+!!! related TS2728 a.ts:5:61: 'k5' is declared here.
+                                                 ~~
+!!! error TS2454: Variable 'k5' is used before being assigned.
+    const g6 = () => {}; g6.a = "b" as const; g6[k6] = 1; declare const k6: "c"; g6.c; g6.b;
+                                                                                          ~
+!!! error TS2339: Property 'b' does not exist on type '{ (): void; a: "b"; c: number; }'.
+    const g7 = () => {}; g7[k7] = 1; declare const k7: ReturnType<typeof g7> extends void ? "c" : "d"; g7.c;
+          ~~
+!!! error TS7022: 'g7' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                   ~~
+!!! error TS2502: 'k7' is referenced directly or indirectly in its own type annotation.
+    const g8 = () => {}; g8.a = "b" as const; declare const k8: (typeof g8)["a"]; g8[k8] = 1; g8.b;
+          ~~
+!!! error TS7022: 'g8' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                            ~~
+!!! error TS2502: 'k8' is referenced directly or indirectly in its own type annotation.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

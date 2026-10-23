@@ -1,0 +1,16 @@
+a.ts(2,3): error TS2862: Type 'Readonly<T>' is generic and can only be indexed for reading.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function f<T extends Record<string, number>>(o: Readonly<T>, k: string) {
+      o[k] += 1;
+      ~~~~
+!!! error TS2862: Type 'Readonly<T>' is generic and can only be indexed for reading.
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

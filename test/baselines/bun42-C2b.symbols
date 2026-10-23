@@ -1,0 +1,9 @@
+//// [test/cases/bun42-C2b.ts] ////
+
+=== a.ts ===
+const b: "16677181699666570" = `${3 ** 34}`;
+>b : Symbol(b, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

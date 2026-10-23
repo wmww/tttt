@@ -1,0 +1,23 @@
+//// [test/cases/bun27-C10.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } type LibraryManagedAttributes<C, P> = { c: C }; interface IntrinsicElements { div: {} } }
+>e : 1
+>LibraryManagedAttributes : LibraryManagedAttributes<C, P>
+>c : C
+>div : {}
+
+declare const Lit: "div";
+>Lit : "div"
+
+const a = <Lit c={1} />;
+>a : JSX.Element
+><Lit c={1} /> : JSX.Element
+>Lit : "div"
+>c : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

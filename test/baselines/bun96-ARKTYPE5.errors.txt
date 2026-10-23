@@ -1,0 +1,45 @@
+a.ts(4,7): error TS2322: Type '{ [x: string]: 1 | { [x: string]: 1 | any; b: 1; }; b: 1; }' is not assignable to type 'number'.
+a.ts(7,7): error TS2322: Type '{ [x: string]: 1 | any; b: 1; } | { [x: string]: 1 | { [x: string]: 1 | any; b: 1; }; b: 1; }' is not assignable to type 'number'.
+  Type '{ [x: string]: 1 | any; b: 1; }' is not assignable to type 'number'.
+a.ts(11,7): error TS2322: Type '{ [x: string]: 1 | { [x: string]: 1 | any; b: 1; }; b: 1; }' is not assignable to type 'number'.
+a.ts(15,7): error TS2322: Type '{ [x: string]: 1 | any; }' is not assignable to type 'number'.
+a.ts(18,7): error TS2322: Type '{ b: 1; p: 1 | any; }' is not assignable to type 'number'.
+a.ts(19,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    type show<t> = { [k in keyof t]: t[k] } & unknown
+    type R<d> = d extends object ? show<{ [k in keyof d as string]: R<d> | 1 } & { b: 1 }> : never
+    declare const s: R<{ a: 1 }>
+    const t: number = s
+          ~
+!!! error TS2322: Type '{ [x: string]: 1 | { [x: string]: 1 | any; b: 1; }; b: 1; }' is not assignable to type 'number'.
+    // the two types side by side
+    declare let u: typeof s | Exclude<(typeof s)[string], 1>
+    const v: number = u
+          ~
+!!! error TS2322: Type '{ [x: string]: 1 | any; b: 1; } | { [x: string]: 1 | { [x: string]: 1 | any; b: 1; }; b: 1; }' is not assignable to type 'number'.
+!!! error TS2322:   Type '{ [x: string]: 1 | any; b: 1; }' is not assignable to type 'number'.
+    // no `as` clause
+    type R3<d> = d extends object ? show<{ [k in string]: R3<d> | 1 } & { b: 1 }> : never
+    declare const s3: R3<{ a: 1 }>
+    const t3: number = s3
+          ~~
+!!! error TS2322: Type '{ [x: string]: 1 | { [x: string]: 1 | any; b: 1; }; b: 1; }' is not assignable to type 'number'.
+    // not an intersection, or a property in place of the index signature: one type in both tools
+    type R6<d> = d extends object ? show<{ [k in string]: R6<d> | 1 }> : never
+    declare const s6: R6<{ a: 1 }>
+    const t6: number = s6
+          ~~
+!!! error TS2322: Type '{ [x: string]: 1 | any; }' is not assignable to type 'number'.
+    type R7<d> = d extends object ? show<{ [k in "p"]: R7<d> | 1 } & { b: 1 }> : never
+    declare const s7: R7<{ a: 1 }>
+    const t7: number = s7
+          ~~
+!!! error TS2322: Type '{ b: 1; p: 1 | any; }' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

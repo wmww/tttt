@@ -1,0 +1,28 @@
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    import { C } from "pp";
+    import { c } from "dep";
+    const y: C = c;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/dep/index.d.ts (0 errors) ====
+    import { C } from "pp";
+    export declare const c: C;
+==== node_modules/dep/node_modules/peer/package.json (0 errors) ====
+    {"name":"peer","version":"2.0.0"}
+==== node_modules/dep/node_modules/pp/index.d.ts (0 errors) ====
+    export declare class C { private x: number; }
+==== node_modules/dep/node_modules/pp/package.json (0 errors) ====
+    {"name":"pp","version":"1.0.0","peerDependencies":{"peer":"*","peer":"*"}}
+==== node_modules/peer/package.json (0 errors) ====
+    {"name":"peer","version":"1.0.0"}
+==== node_modules/pp/index.d.ts (0 errors) ====
+    export declare class C { private x: number; }
+==== node_modules/pp/package.json (0 errors) ====
+    {"name":"pp","version":"1.0.0","peerDependencies":{"peer":"*","peer":"*"}}
+    

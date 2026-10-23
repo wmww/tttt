@@ -1,0 +1,23 @@
+a.ts(2,20): error TS2339: Property 'b' does not exist on type 'M'.
+a.ts(3,7): error TS7022: 'o' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(3,15): error TS2339: Property 'a' does not exist on type 'M'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    type M = { [K in "a" | "b" as Exclude<K, typeof o>]: N["a"] };
+    interface N { a: M["b"] }
+                       ~~~
+!!! error TS2339: Property 'b' does not exist on type 'M'.
+    const o = f().a;
+          ~
+!!! error TS7022: 'o' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                  ~
+!!! error TS2339: Property 'a' does not exist on type 'M'.
+    declare function f(): M;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

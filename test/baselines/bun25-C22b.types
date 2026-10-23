@@ -1,0 +1,10 @@
+//// [test/cases/bun25-C22b.ts] ////
+
+=== a.ts ===
+let s: unique unique symbol;
+>s : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

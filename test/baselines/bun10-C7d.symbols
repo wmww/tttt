@@ -1,0 +1,12 @@
+//// [test/cases/bun10-C7d.ts] ////
+
+=== a.ts ===
+import f from "./a";
+>f : Symbol(f, Decl(a.ts, 0, 6))
+
+export default function () { return f(); }
+>f : Symbol(f, Decl(a.ts, 0, 6))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

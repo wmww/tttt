@@ -1,0 +1,20 @@
+//// [test/cases/bun25-P4.ts] ////
+
+=== a.ts ===
+declare const o: { p(v: unknown): asserts v is string } | undefined;
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 18))
+>v : Symbol(v, Decl(a.ts, 0, 21))
+>v : Symbol(v, Decl(a.ts, 0, 21))
+
+function f(v: unknown) { o?.p(v); }
+>f : Symbol(f, Decl(a.ts, 0, 68))
+>v : Symbol(v, Decl(a.ts, 1, 11))
+>o?.p : Symbol(p, Decl(a.ts, 0, 18))
+>o : Symbol(o, Decl(a.ts, 0, 13))
+>p : Symbol(p, Decl(a.ts, 0, 18))
+>v : Symbol(v, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,21 @@
+//// [test/cases/bun05-C12.ts] ////
+
+=== a.ts ===
+declare function lo2(x: string): 1;
+>lo2 : { (x: string): 1; (x: ("a")): 2; }
+>x : string
+
+declare function lo2(x: ("a")): 2;
+>lo2 : { (x: string): 1; (x: ("a")): 2; }
+>x : "a"
+
+const lr2: 3 = lo2("a");
+>lr2 : 3
+>lo2("a") : 1
+>lo2 : { (x: string): 1; (x: ("a")): 2; }
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,16 @@
+a.js(1,23): error TS8024: JSDoc '@param' tag has name 'q', but there is no parameter with that name.
+a.js(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== a.js (2 errors) ====
+    /** @param {number[]} q */
+                          ~
+!!! error TS8024: JSDoc '@param' tag has name 'q', but there is no parameter with that name.
+    function f(a = arguments) {}
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

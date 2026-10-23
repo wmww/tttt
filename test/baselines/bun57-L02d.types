@@ -1,0 +1,14 @@
+//// [test/cases/bun57-L02d.ts] ////
+
+=== a.ts ===
+const \u0065num E {}
+>E : E
+
+=== b.ts ===
+export const \u0065num E {}
+>E : E
+
+=== c.ts ===
+declare const \u0065num E {}
+>E : E
+

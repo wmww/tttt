@@ -1,0 +1,46 @@
+//// [test/cases/bun62-L03a.ts] ////
+
+=== a.ts ===
+declare let a: number; declare let b: number;
+>a : number
+>b : number
+
+({ a = 1 } += 1);
+>({ a = 1 } += 1) : any
+>{ a = 1 } += 1 : any
+>{ a = 1 } : { a?: number; }
+>a : number
+>1 : 1
+>1 : 1
+
+({ a: b = 1 } += 1);
+>({ a: b = 1 } += 1) : any
+>{ a: b = 1 } += 1 : any
+>{ a: b = 1 } : { a?: number; }
+>a : number
+>b = 1 : 1
+>b : number
+>1 : 1
+>1 : 1
+
+[{ a = 1 }] += 1;
+>[{ a = 1 }] += 1 : any
+>[{ a = 1 }] : [{ a?: number; }]
+>{ a = 1 } : { a?: number; }
+>a : number
+>1 : 1
+>1 : 1
+
+({ a = 1, ...{} } += 1);
+>({ a = 1, ...{} } += 1) : any
+>{ a = 1, ...{} } += 1 : any
+>{ a = 1, ...{} } : { a?: number; }
+>a : number
+>1 : 1
+>{} : {}
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

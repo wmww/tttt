@@ -1,0 +1,38 @@
+a.ts(5,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(5,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(7,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(7,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(7,42): error TS6133: 'z' is declared but its value is never read.
+a.ts(7,66): error TS6133: 'r' is declared but its value is never read.
+a.ts(9,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "noUnusedLocals": true, "noUnusedParameters": true } }
+==== a.ts (7 errors) ====
+    import { C, v } from "./m";
+    declare const o: any;
+    const local1 = 1;
+    function fn1() {}
+    with (o) { var a1 = new C(), a2 = v + local1, a3 = fn1(); }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+    a1; a2; a3;
+    with (o) { var a4 = function (x: number, z: number) { let q = 1, r = 2; return x + q; }; }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+                                             ~
+!!! error TS6133: 'z' is declared but its value is never read.
+                                                                     ~
+!!! error TS6133: 'r' is declared but its value is never read.
+    a4;
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export class C {} export const v = 1;
+    

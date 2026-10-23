@@ -1,0 +1,37 @@
+//// [test/cases/bun55-L12d.ts] ////
+
+=== a.ts ===
+class C {
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+  static x: string | undefined;
+>x : Symbol(C.x, Decl(a.ts, 0, 9))
+
+  constructor() {
+    if (new.other.x) { new.target.x.length; }
+>new.other.x : Symbol(C.x, Decl(a.ts, 0, 9))
+>new.other : Symbol(C, Decl(a.ts, 0, 0))
+>x : Symbol(C.x, Decl(a.ts, 0, 9))
+>new.target.x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>new.target.x : Symbol(C.x, Decl(a.ts, 0, 9))
+>new.target : Symbol(C, Decl(a.ts, 0, 0))
+>target : Symbol(C, Decl(a.ts, 0, 0))
+>x : Symbol(C.x, Decl(a.ts, 0, 9))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+    if (new.target.x) { new.target.x.length; }
+>new.target.x : Symbol(C.x, Decl(a.ts, 0, 9))
+>new.target : Symbol(C, Decl(a.ts, 0, 0))
+>target : Symbol(C, Decl(a.ts, 0, 0))
+>x : Symbol(C.x, Decl(a.ts, 0, 9))
+>new.target.x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>new.target.x : Symbol(C.x, Decl(a.ts, 0, 9))
+>new.target : Symbol(C, Decl(a.ts, 0, 0))
+>target : Symbol(C, Decl(a.ts, 0, 0))
+>x : Symbol(C.x, Decl(a.ts, 0, 9))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 7, 5))
+

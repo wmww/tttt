@@ -1,0 +1,16 @@
+//// [test/cases/bun24-C6b.ts] ////
+
+=== a.ts ===
+class C { static #p() { return C.#p; } static t() { const z: 1 = C.#p; } }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>#p : Symbol(C.#p, Decl(a.ts, 0, 9))
+>C.#p : Symbol(C.#p, Decl(a.ts, 0, 9))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>t : Symbol(C.t, Decl(a.ts, 0, 38))
+>z : Symbol(z, Decl(a.ts, 0, 57))
+>C.#p : Symbol(C.#p, Decl(a.ts, 0, 9))
+>C : Symbol(C, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

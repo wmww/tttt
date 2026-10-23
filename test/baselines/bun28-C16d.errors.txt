@@ -1,0 +1,14 @@
+a.ts(1,18): error TS1273: 'export' modifier cannot appear on a type parameter
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    function f<const export T>() {}
+                     ~~~~~~
+!!! error TS1273: 'export' modifier cannot appear on a type parameter
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

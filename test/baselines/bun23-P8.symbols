@@ -1,0 +1,40 @@
+//// [test/cases/bun23-P8.ts] ////
+
+=== a.ts ===
+class G<T> { static readonly u: unique symbol = Symbol(); g!: T }
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>u : Symbol(G.u, Decl(a.ts, 0, 12))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>g : Symbol(G.g, Decl(a.ts, 0, 57))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+namespace A { export class X<Q> { a!: Q } }
+>A : Symbol(A, Decl(a.ts, 0, 65))
+>X : Symbol(X, Decl(a.ts, 1, 13))
+>Q : Symbol(Q, Decl(a.ts, 1, 29))
+>a : Symbol(X.a, Decl(a.ts, 1, 33))
+>Q : Symbol(Q, Decl(a.ts, 1, 29))
+
+namespace B { export class X<Q> { b!: Q } }
+>B : Symbol(B, Decl(a.ts, 1, 43))
+>X : Symbol(X, Decl(a.ts, 2, 13))
+>Q : Symbol(Q, Decl(a.ts, 2, 29))
+>b : Symbol(X.b, Decl(a.ts, 2, 33))
+>Q : Symbol(Q, Decl(a.ts, 2, 29))
+
+const s: { (p: [A.X<{ [K in typeof G.u]: 1 }>, B.X<1>]): void } = {};
+>s : Symbol(s, Decl(a.ts, 3, 5))
+>p : Symbol(p, Decl(a.ts, 3, 12))
+>A : Symbol(A, Decl(a.ts, 0, 65))
+>X : Symbol(A.X, Decl(a.ts, 1, 13))
+>K : Symbol(K, Decl(a.ts, 3, 23))
+>G.u : Symbol(G.u, Decl(a.ts, 0, 12))
+>G : Symbol(G, Decl(a.ts, 0, 0))
+>u : Symbol(G.u, Decl(a.ts, 0, 12))
+>B : Symbol(B, Decl(a.ts, 1, 43))
+>X : Symbol(B.X, Decl(a.ts, 2, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

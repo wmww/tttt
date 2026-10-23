@@ -1,0 +1,15 @@
+a.ts(2,6): error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    declare const dec: any;
+    @dec in class C {}
+         ~~
+!!! error TS1274: 'in' modifier can only appear on a type parameter of a class, interface or type alias
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

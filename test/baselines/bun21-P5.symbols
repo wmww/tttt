@@ -1,0 +1,19 @@
+//// [test/cases/bun21-P5.ts] ////
+
+=== a.ts ===
+function f(u: { kind: 0 } | { kind: 1; b: number }) { const { ...kind } = u; if (kind) u.b; }
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>u : Symbol(u, Decl(a.ts, 0, 11))
+>kind : Symbol(kind, Decl(a.ts, 0, 15))
+>kind : Symbol(kind, Decl(a.ts, 0, 29))
+>b : Symbol(b, Decl(a.ts, 0, 38))
+>kind : Symbol(kind, Decl(a.ts, 0, 61))
+>u : Symbol(u, Decl(a.ts, 0, 11))
+>kind : Symbol(kind, Decl(a.ts, 0, 61))
+>u.b : Symbol(b, Decl(a.ts, 0, 38))
+>u : Symbol(u, Decl(a.ts, 0, 11))
+>b : Symbol(b, Decl(a.ts, 0, 38))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,32 @@
+//// [test/cases/bun10-P3.ts] ////
+
+=== a.ts ===
+declare const other: Foo<string>;
+>other : Symbol(other, Decl(a.ts, 0, 13))
+>Foo : Symbol(Foo, Decl(a.ts, 0, 33))
+
+class Foo<T> {
+>Foo : Symbol(Foo, Decl(a.ts, 0, 33))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+
+  m<U>(b: U, t: T): void {
+>m : Symbol(Foo.m, Decl(a.ts, 1, 14))
+>U : Symbol(U, Decl(a.ts, 2, 4))
+>b : Symbol(b, Decl(a.ts, 2, 7))
+>U : Symbol(U, Decl(a.ts, 2, 4))
+>t : Symbol(t, Decl(a.ts, 2, 12))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+
+    other.m = <V>(b: U, t: string): void => {};
+>other.m : Symbol(Foo.m, Decl(a.ts, 1, 14))
+>other : Symbol(other, Decl(a.ts, 0, 13))
+>m : Symbol(Foo.m, Decl(a.ts, 1, 14))
+>V : Symbol(V, Decl(a.ts, 3, 15))
+>b : Symbol(b, Decl(a.ts, 3, 18))
+>U : Symbol(U, Decl(a.ts, 2, 4))
+>t : Symbol(t, Decl(a.ts, 3, 23))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

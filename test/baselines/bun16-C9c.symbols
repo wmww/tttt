@@ -1,0 +1,17 @@
+//// [test/cases/bun16-C9c.ts] ////
+
+=== a.ts ===
+function fm() {} namespace fm { export type T = 1 }
+>fm : Symbol(fm, Decl(a.ts, 0, 0), Decl(a.ts, 0, 16))
+>fm : Symbol(fm, Decl(a.ts, 0, 0), Decl(a.ts, 0, 16))
+>T : Symbol(T, Decl(a.ts, 0, 31))
+
+if (fm) { let x: fm.T; }
+>fm : Symbol(fm, Decl(a.ts, 0, 0), Decl(a.ts, 0, 16))
+>x : Symbol(x, Decl(a.ts, 1, 13))
+>fm : Symbol(fm, Decl(a.ts, 0, 0), Decl(a.ts, 0, 16))
+>T : Symbol(fm.T, Decl(a.ts, 0, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

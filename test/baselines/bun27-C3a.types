@@ -1,0 +1,22 @@
+//// [test/cases/bun27-C3a.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { div: {} } }
+>e : 1
+>div : {}
+
+const a = <div />;
+>a : JSX.Element
+><div /> : JSX.Element
+>div : any
+
+const React = { createElement: null as any };
+>React : { createElement: any; }
+>{ createElement: null as any } : { createElement: any; }
+>createElement : any
+>null as any : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

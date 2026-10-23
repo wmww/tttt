@@ -1,0 +1,108 @@
+//// [test/cases/bun54-L20a.ts] ////
+
+=== a.ts ===
+export {};
+type Action = { kind: 'A', payload: number } | { kind: 'B', payload: string };
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+>kind : Symbol(kind, Decl(a.ts, 1, 15))
+>payload : Symbol(payload, Decl(a.ts, 1, 26))
+>kind : Symbol(kind, Decl(a.ts, 1, 48))
+>payload : Symbol(payload, Decl(a.ts, 1, 59))
+
+function f1({ kind, payload }?: Action) {
+>f1 : Symbol(f1, Decl(a.ts, 1, 78))
+>kind : Symbol(kind, Decl(a.ts, 2, 13))
+>payload : Symbol(payload, Decl(a.ts, 2, 19))
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+
+  if (kind === 'A') { const t: null = payload; }
+>kind : Symbol(kind, Decl(a.ts, 2, 13))
+>t : Symbol(t, Decl(a.ts, 3, 27))
+>payload : Symbol(payload, Decl(a.ts, 2, 19))
+}
+function f2([kind, payload]?: ['A', number] | ['B', string]) {
+>f2 : Symbol(f2, Decl(a.ts, 4, 1))
+>kind : Symbol(kind, Decl(a.ts, 5, 13))
+>payload : Symbol(payload, Decl(a.ts, 5, 18))
+
+  if (kind === 'A') { const t: null = payload; }
+>kind : Symbol(kind, Decl(a.ts, 5, 13))
+>t : Symbol(t, Decl(a.ts, 6, 27))
+>payload : Symbol(payload, Decl(a.ts, 5, 18))
+}
+const f3 = function ({ kind, payload }?: Action) {
+>f3 : Symbol(f3, Decl(a.ts, 8, 5))
+>kind : Symbol(kind, Decl(a.ts, 8, 22))
+>payload : Symbol(payload, Decl(a.ts, 8, 28))
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+
+  if (kind === 'A') { const t: null = payload; }
+>kind : Symbol(kind, Decl(a.ts, 8, 22))
+>t : Symbol(t, Decl(a.ts, 9, 27))
+>payload : Symbol(payload, Decl(a.ts, 8, 28))
+
+};
+class C { m({ kind, payload }?: Action) { if (kind === 'A') { const t: null = payload; } } }
+>C : Symbol(C, Decl(a.ts, 10, 2))
+>m : Symbol(C.m, Decl(a.ts, 11, 9))
+>kind : Symbol(kind, Decl(a.ts, 11, 13))
+>payload : Symbol(payload, Decl(a.ts, 11, 19))
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+>kind : Symbol(kind, Decl(a.ts, 11, 13))
+>t : Symbol(t, Decl(a.ts, 11, 67))
+>payload : Symbol(payload, Decl(a.ts, 11, 19))
+
+function f4({ kind, payload }?: Action | undefined) {
+>f4 : Symbol(f4, Decl(a.ts, 11, 92))
+>kind : Symbol(kind, Decl(a.ts, 12, 13))
+>payload : Symbol(payload, Decl(a.ts, 12, 19))
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+
+  if (kind === 'A') { const t: null = payload; }
+>kind : Symbol(kind, Decl(a.ts, 12, 13))
+>t : Symbol(t, Decl(a.ts, 13, 27))
+>payload : Symbol(payload, Decl(a.ts, 12, 19))
+}
+function f5({ kind, payload }: Action | undefined) {
+>f5 : Symbol(f5, Decl(a.ts, 14, 1))
+>kind : Symbol(kind, Decl(a.ts, 15, 13))
+>payload : Symbol(payload, Decl(a.ts, 15, 19))
+>Action : Symbol(Action, Decl(a.ts, 0, 10))
+
+  if (kind === 'A') { const t: null = payload; }
+>kind : Symbol(kind, Decl(a.ts, 15, 13))
+>t : Symbol(t, Decl(a.ts, 16, 27))
+>payload : Symbol(payload, Decl(a.ts, 15, 19))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 18, 5))
+
+=== b.js ===
+export {};
+/** @typedef {{ kind: 'A', payload: number } | { kind: 'B', payload: string }} Action */
+/** @param {Action} [p] */
+function f1({ kind, payload }) {
+>f1 : Symbol(f1, Decl(b.js, 0, 10))
+>kind : Symbol(kind, Decl(b.js, 3, 13))
+>payload : Symbol(payload, Decl(b.js, 3, 19))
+
+  if (kind === 'A') { /** @type {null} */ const t = payload; }
+>kind : Symbol(kind, Decl(b.js, 3, 13))
+>t : Symbol(t, Decl(b.js, 4, 47))
+>payload : Symbol(payload, Decl(b.js, 3, 19))
+}
+/** @param {Action=} p */
+function f2({ kind, payload }) {
+>f2 : Symbol(f2, Decl(b.js, 5, 1))
+>kind : Symbol(kind, Decl(b.js, 7, 13))
+>payload : Symbol(payload, Decl(b.js, 7, 19))
+
+  if (kind === 'A') { /** @type {null} */ const t = payload; }
+>kind : Symbol(kind, Decl(b.js, 7, 13))
+>t : Symbol(t, Decl(b.js, 8, 47))
+>payload : Symbol(payload, Decl(b.js, 7, 19))
+}
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(b.js, 11, 5))
+

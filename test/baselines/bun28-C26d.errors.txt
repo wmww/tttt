@@ -1,0 +1,17 @@
+a.ts(1,23): error TS1036: Statements are not allowed in ambient contexts.
+a.ts(1,32): error TS7005: Variable 'a' implicitly has an 'any' type.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    declare namespace N { for (let a,;;) {} }
+                          ~~~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+                                   ~
+!!! error TS7005: Variable 'a' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

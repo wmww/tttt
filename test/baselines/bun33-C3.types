@@ -1,0 +1,12 @@
+//// [test/cases/bun33-C3.ts] ////
+
+=== a.ts ===
+interface I {}
+export default (I);
+>(I) : any
+>I : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

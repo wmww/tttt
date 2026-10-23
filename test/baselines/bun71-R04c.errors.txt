@@ -1,0 +1,19 @@
+a.tsx(4,22): error TS2322: Type '{}' is not assignable to type '{ (): void; x?: number | undefined; }'.
+  Type '{}' provides no match for the signature '(): void'.
+a.tsx(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element {} interface IntrinsicElements { div: {}; call: { (): void; x?: number } } }
+    declare function use(...x: any[]): void;
+    declare const ie: JSX.IntrinsicElements;
+    use(ie.call && <div><call /></div>);
+                         ~~~~
+!!! error TS2322: Type '{}' is not assignable to type '{ (): void; x?: number | undefined; }'.
+!!! error TS2322:   Type '{}' provides no match for the signature '(): void'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

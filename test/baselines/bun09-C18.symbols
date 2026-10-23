@@ -1,0 +1,12 @@
+//// [test/cases/bun09-C18.ts] ////
+
+=== a.ts ===
+declare class C { private m([a, b] = [1]): void; }
+>C : Symbol(C, Decl(a.ts, 0, 0))
+>m : Symbol(C.m, Decl(a.ts, 0, 17))
+>a : Symbol(a, Decl(a.ts, 0, 29))
+>b : Symbol(b, Decl(a.ts, 0, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

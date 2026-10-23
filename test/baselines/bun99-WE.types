@@ -1,0 +1,170 @@
+//// [test/cases/bun99-WE.ts] ////
+
+=== a.ts ===
+interface Box<X> {
+  m<T, U extends T>(t: T, u: U): [X, T, U];
+>m : <T, U extends T>(t: T, u: U) => [X, T, U]
+>t : T
+>u : U
+
+  n<T extends X, U extends T[]>(t: T, u: U): U;
+>n : <T extends X, U extends T[]>(t: T, u: U) => U
+>t : T
+>u : U
+}
+declare const b: Box<number>;
+>b : Box<number>
+
+declare function apply<U, R>(f: (x: U, y: U) => R): R;
+>apply : <U, R>(f: (x: U, y: U) => R) => R
+>f : (x: U, y: U) => R
+>x : U
+>y : U
+
+declare function compose<U, B, C>(f: (x: U, y: U) => B, g: (b: B) => C): (x: U, y: U) => C;
+>compose : <U, B, C>(f: (x: U, y: U) => B, g: (b: B) => C) => (x: U, y: U) => C
+>f : (x: U, y: U) => B
+>x : U
+>y : U
+>g : (b: B) => C
+>b : B
+>x : U
+>y : U
+
+declare function pipe2<T, U, R>(f: (t: T, u: U) => R): (t: T, u: U) => R;
+>pipe2 : <T, U, R>(f: (t: T, u: U) => R) => (t: T, u: U) => R
+>f : (t: T, u: U) => R
+>t : T
+>u : U
+>t : T
+>u : U
+
+export const r1 = apply(b.m);
+>r1 : [number, unknown, unknown]
+>apply(b.m) : [number, unknown, unknown]
+>apply : <U, R>(f: (x: U, y: U) => R) => R
+>b.m : <T, U extends T>(t: T, u: U) => [number, T, U]
+>b : Box<number>
+>m : <T, U extends T>(t: T, u: U) => [number, T, U]
+
+export const r2 = compose(b.m, x => x);
+>r2 : <T, U extends T>(x: U, y: U) => [number, T, U]
+>compose(b.m, x => x) : <T, U extends T>(x: U, y: U) => [number, T, U]
+>compose : <U, B, C>(f: (x: U, y: U) => B, g: (b: B) => C) => (x: U, y: U) => C
+>b.m : <T, U extends T>(t: T, u: U) => [number, T, U]
+>b : Box<number>
+>m : <T, U extends T>(t: T, u: U) => [number, T, U]
+>x => x : (x: [number, T, U]) => [number, T, U]
+>x : [number, T, U]
+>x : [number, T, U]
+
+export const r3 = pipe2(b.m);
+>r3 : <T, U extends T>(t: T, u: U) => [number, T, U]
+>pipe2(b.m) : <T, U extends T>(t: T, u: U) => [number, T, U]
+>pipe2 : <T, U, R>(f: (t: T, u: U) => R) => (t: T, u: U) => R
+>b.m : <T, U extends T>(t: T, u: U) => [number, T, U]
+>b : Box<number>
+>m : <T, U extends T>(t: T, u: U) => [number, T, U]
+
+export const r4 = pipe2(b.n);
+>r4 : <T extends number, U extends T[]>(t: T, u: U) => U
+>pipe2(b.n) : <T extends number, U extends T[]>(t: T, u: U) => U
+>pipe2 : <T, U, R>(f: (t: T, u: U) => R) => (t: T, u: U) => R
+>b.n : <T extends number, U extends T[]>(t: T, u: U) => U
+>b : Box<number>
+>n : <T extends number, U extends T[]>(t: T, u: U) => U
+
+export const r5 = apply(b.n);
+>r5 : unknown
+>apply(b.n) : unknown
+>apply : <U, R>(f: (x: U, y: U) => R) => R
+>b.n : <T extends number, U extends T[]>(t: T, u: U) => U
+>b : Box<number>
+>n : <T extends number, U extends T[]>(t: T, u: U) => U
+
+const c1: never = r1;
+>c1 : never
+>r1 : [number, unknown, unknown]
+
+const c2: never = r2;
+>c2 : never
+>r2 : <T, U extends T>(x: U, y: U) => [number, T, U]
+
+const c3: never = r3;
+>c3 : never
+>r3 : <T, U extends T>(t: T, u: U) => [number, T, U]
+
+const c4: never = r4;
+>c4 : never
+>r4 : <T extends number, U extends T[]>(t: T, u: U) => U
+
+const c5: never = r5;
+>c5 : never
+>r5 : unknown
+
+r3(1, 2);
+>r3(1, 2) : [number, number, number]
+>r3 : <T, U extends T>(t: T, u: U) => [number, T, U]
+>1 : 1
+>2 : 2
+
+r3('a', 'b');
+>r3('a', 'b') : [number, string, string]
+>r3 : <T, U extends T>(t: T, u: U) => [number, T, U]
+>'a' : "a"
+>'b' : "b"
+
+r4(1, [1]);
+>r4(1, [1]) : 1[]
+>r4 : <T extends number, U extends T[]>(t: T, u: U) => U
+>1 : 1
+>[1] : 1[]
+>1 : 1
+
+r4(1, ['']);
+>r4(1, ['']) : 1[]
+>r4 : <T extends number, U extends T[]>(t: T, u: U) => U
+>1 : 1
+>[''] : string[]
+>'' : ""
+
+class K<X> {
+>K : K<X>
+
+  m<T extends X, U extends T>(t: T, u: U): U { return u; }
+>m : <T extends X, U extends T>(t: T, u: U) => U
+>t : T
+>u : U
+>u : U
+}
+declare const k: K<string | number>;
+>k : K<string | number>
+
+export const r6 = pipe2(k.m);
+>r6 : <T extends string | number, U extends T>(t: T, u: U) => U
+>pipe2(k.m) : <T extends string | number, U extends T>(t: T, u: U) => U
+>pipe2 : <T, U, R>(f: (t: T, u: U) => R) => (t: T, u: U) => R
+>k.m : <T extends string | number, U extends T>(t: T, u: U) => U
+>k : K<string | number>
+>m : <T extends string | number, U extends T>(t: T, u: U) => U
+
+const c6: never = r6;
+>c6 : never
+>r6 : <T extends string | number, U extends T>(t: T, u: U) => U
+
+r6('a', 'a');
+>r6('a', 'a') : "a"
+>r6 : <T extends string | number, U extends T>(t: T, u: U) => U
+>'a' : "a"
+>'a' : "a"
+
+r6('a', 1);
+>r6('a', 1) : "a"
+>r6 : <T extends string | number, U extends T>(t: T, u: U) => U
+>'a' : "a"
+>1 : 1
+
+export const sentinel: number = '';
+>sentinel : number
+>'' : ""
+

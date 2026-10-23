@@ -1,0 +1,16 @@
+//// [test/cases/bun92-R03f.ts] ////
+
+=== a.js ===
+/** @import #a from "./b" */
+/** @type {number} */ const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 1, 27))
+
+=== b.ts ===
+export default interface D { d: 1 }
+>D : Symbol(D, Decl(b.ts, 0, 0))
+>d : Symbol(D.d, Decl(b.ts, 0, 28))
+
+export interface A { a: 1 }
+>A : Symbol(A, Decl(b.ts, 0, 35))
+>a : Symbol(A.a, Decl(b.ts, 1, 20))
+

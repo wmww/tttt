@@ -1,0 +1,17 @@
+a.ts(1,10): error TS1354: 'readonly' type modifier is only permitted on array and tuple literal types.
+a.ts(1,26): error TS1005: 'symbol' expected.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (3 errors) ====
+    type T = readonly unique symbol[];
+             ~~~~~~~~
+!!! error TS1354: 'readonly' type modifier is only permitted on array and tuple literal types.
+                             ~~~~~~~~
+!!! error TS1005: 'symbol' expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

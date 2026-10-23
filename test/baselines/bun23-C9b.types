@@ -1,0 +1,23 @@
+//// [test/cases/bun23-C9b.ts] ////
+
+=== a.ts ===
+let p1: (x: any) => x is string = null! as (b: any) => b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9 };
+>p1 : (x: any) => x is string
+>x : any
+>null! as (b: any) => b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9 } : (b: any) => b is { aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: 1; bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb: 2; cccccccccccccccccccccccccccccccccccccccc: 3; dddddddddddddddddddddddddddddddddddddddd: 4; e: 5; f: 6; g: 7; h: 8; i: 9; }
+>null! : never
+>b : any
+>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa : 1
+>bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb : 2
+>cccccccccccccccccccccccccccccccccccccccc : 3
+>dddddddddddddddddddddddddddddddddddddddd : 4
+>e : 5
+>f : 6
+>g : 7
+>h : 8
+>i : 9
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

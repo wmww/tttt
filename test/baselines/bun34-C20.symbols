@@ -1,0 +1,22 @@
+//// [test/cases/bun34-C20.ts] ////
+
+=== a.ts ===
+export {};
+declare const key: string;
+>key : Symbol(key, Decl(a.ts, 1, 13))
+
+class P { f = class { static x = 1 }; [key] = class { static x = 1 }; }
+>P : Symbol(P, Decl(a.ts, 1, 26))
+>f : Symbol(P.f, Decl(a.ts, 2, 9))
+>x : Symbol((Anonymous class).x, Decl(a.ts, 2, 21))
+>[key] : Symbol(P[key], Decl(a.ts, 2, 37))
+>key : Symbol(key, Decl(a.ts, 1, 13))
+>x : Symbol((Anonymous class).x, Decl(a.ts, 2, 53))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+
+=== node_modules/tslib/index.d.ts ===
+export declare function __nothing(): void;
+>__nothing : Symbol(__nothing, Decl(index.d.ts, 0, 0))
+

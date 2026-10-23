@@ -1,0 +1,23 @@
+//// [test/cases/bun09-C7b.ts] ////
+
+=== m4.ts ===
+import m4 = require("./m4");
+>m4 : any
+
+const obj = { p: 1, q: m4.p };
+>obj : any
+>{ p: 1, q: m4.p } : { p: number; q: any; }
+>p : number
+>1 : 1
+>q : any
+>m4.p : any
+>m4 : any
+>p : any
+
+export = obj;
+>obj : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

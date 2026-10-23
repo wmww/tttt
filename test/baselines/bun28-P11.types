@@ -1,0 +1,12 @@
+//// [test/cases/bun28-P11.ts] ////
+
+=== a.ts ===
+declare function f({...a: b}: any): void;
+>f : ({ ...a: b }: any) => void
+>a : any
+>b : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

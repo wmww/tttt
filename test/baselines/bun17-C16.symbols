@@ -1,0 +1,16 @@
+//// [test/cases/bun17-C16.ts] ////
+
+=== a.ts ===
+declare let o: object, e: {};
+>o : Symbol(o, Decl(a.ts, 0, 11))
+>e : Symbol(e, Decl(a.ts, 0, 22))
+
+[o, e, {}].push(1);
+>[o, e, {}].push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(a.ts, 0, 11))
+>e : Symbol(e, Decl(a.ts, 0, 22))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

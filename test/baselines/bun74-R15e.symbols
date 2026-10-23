@@ -1,0 +1,21 @@
+//// [test/cases/bun74-R15e.ts] ////
+
+=== a.ts ===
+declare const x: any; type T = any;
+>x : Symbol(x, Decl(a.ts, 0, 13))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+
+<T>(x?: number);
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>x : Symbol(x, Decl(a.ts, 0, 13))
+
+=== b.ts ===
+declare const x2: any, y2: any; type T2 = any;
+>x2 : Symbol(x2, Decl(b.ts, 0, 13))
+>y2 : Symbol(y2, Decl(b.ts, 0, 22))
+>T2 : Symbol(T2, Decl(b.ts, 0, 31))
+
+<T2>(x2? = 1);
+>T2 : Symbol(T2, Decl(b.ts, 0, 31))
+>x2 : Symbol(x2, Decl(b.ts, 0, 13))
+

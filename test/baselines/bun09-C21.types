@@ -1,0 +1,26 @@
+//// [test/cases/bun09-C21.ts] ////
+
+=== a.ts ===
+declare let o: { p: { a: string | number } };
+>o : { p: { a: string | number; }; }
+>p : { a: string | number; }
+>a : string | number
+
+let d6; (({ a: d6 }) = o.p); const l: never = d6;
+>d6 : any
+>(({ a: d6 }) = o.p) : { a: string | number; }
+>({ a: d6 }) = o.p : { a: string | number; }
+>({ a: d6 }) : { a: any; }
+>{ a: d6 } : { a: any; }
+>a : any
+>d6 : any
+>o.p : { a: string | number; }
+>o : { p: { a: string | number; }; }
+>p : { a: string | number; }
+>l : never
+>d6 : undefined
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

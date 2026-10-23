@@ -1,0 +1,24 @@
+//// [test/cases/bun26-P1.ts] ////
+
+=== a.ts ===
+function g<T extends U, U>(): T extends string ? (x: T) => U : 0 {
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>U : Symbol(U, Decl(a.ts, 0, 23))
+>U : Symbol(U, Decl(a.ts, 0, 23))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>x : Symbol(x, Decl(a.ts, 0, 50))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+>U : Symbol(U, Decl(a.ts, 0, 23))
+
+  const r: 0 | ((x: string) => unknown) = g<T, unknown>();
+>r : Symbol(r, Decl(a.ts, 1, 7))
+>x : Symbol(x, Decl(a.ts, 1, 17))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 11))
+
+  return null!;
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

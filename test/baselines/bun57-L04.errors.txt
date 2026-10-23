@@ -1,0 +1,48 @@
+a.ts(4,24): error TS1174: Classes can only extend a single class.
+a.ts(5,14): error TS1176: Interface declaration cannot have 'implements' clause.
+a.ts(6,23): error TS1172: 'extends' clause already seen.
+a.ts(7,26): error TS1175: 'implements' clause already seen.
+a.ts(8,27): error TS1172: 'extends' clause already seen.
+a.ts(9,24): error TS1174: Classes can only extend a single class.
+a.ts(10,1): error TS1101: 'with' statements are not allowed in strict mode.
+a.ts(10,1): error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+a.ts(11,1): error TS2454: Variable 'v' is used before being assigned.
+a.ts(12,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (10 errors) ====
+    declare const o: any;
+    declare class A<T> {}
+    interface J<T> {}
+    class C2 extends A<1>, A<{ 2n: 1 }> {}
+                           ~
+!!! error TS1174: Classes can only extend a single class.
+    interface I2 implements J<{ 1n: 1 }> {}
+                 ~~~~~~~~~~
+!!! error TS1176: Interface declaration cannot have 'implements' clause.
+    class C3 extends A<1> extends A<{ 1n: 1 }> {}
+                          ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    class C4 implements J<1> implements J<{ 1n: 1 }> {}
+                             ~~~~~~~~~~
+!!! error TS1175: 'implements' clause already seen.
+    interface I3 extends J<1> extends J<{ 1n: 1 }> {}
+                              ~~~~~~~
+!!! error TS1172: 'extends' clause already seen.
+    class C5 extends A<1>, (class { 1n = 1 }) {}
+                           ~
+!!! error TS1174: Classes can only extend a single class.
+    with (o) { var v: { 1n: 1 }; var w = <{ 1n: 1 }>o; }
+    ~~~~
+!!! error TS1101: 'with' statements are not allowed in strict mode.
+    ~~~~~~~~
+!!! error TS2410: The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.
+    v; w;
+    ~
+!!! error TS2454: Variable 'v' is used before being assigned.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

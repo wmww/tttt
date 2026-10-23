@@ -1,0 +1,31 @@
+//// [test/cases/bun08-C24b.ts] ////
+
+=== a.ts ===
+declare module "./r11" { namespace star { interface Added {} } }
+>"./r11" : typeof import("./r11")
+
+declare module "./r8" { namespace N { interface Y {} } }
+>"./r8" : typeof import("./r8")
+
+import { N } from "./n";
+>N : any
+
+let z1: N.Nope;
+>z1 : N.Nope
+>N : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== n.ts ===
+
+export namespace N { export interface X {} }
+=== r11.ts ===
+export * as star from "./n";
+>star : typeof import("./n")
+
+=== r8.ts ===
+export { N } from "./n";
+>N : any
+

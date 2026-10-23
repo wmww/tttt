@@ -1,0 +1,25 @@
+//// [test/cases/bun63-L16.ts] ////
+
+=== a.ts ===
+interface Array<T> { length: number } interface Boolean {} interface CallableFunction {} interface Function {} interface IArguments {} interface NewableFunction {} interface Number {} interface Object {} interface RegExp {} interface String {}
+>length : number
+
+namespace N { export type NoInfer<T> = intrinsic; }
+>NoInfer : intrinsic
+
+declare function g<T>(a: T, b: N.NoInfer<T>): { c: N.NoInfer<T[]> };
+>g : <T>(a: T, b: N.NoInfer<T>) => { c: N.NoInfer<T[]>; }
+>a : T
+>b : T
+>N : any
+>c : T[]
+>N : any
+
+const n: 1 = g;
+>n : 1
+>g : <T>(a: T, b: N.NoInfer<T>) => { c: N.NoInfer<T[]>; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

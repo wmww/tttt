@@ -1,0 +1,118 @@
+//// [test/cases/bun73-R01d.ts] ////
+
+=== a.ts ===
+declare function c(): boolean;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+declare function log(v: unknown): void;
+>log : Symbol(log, Decl(a.ts, 0, 30))
+>v : Symbol(v, Decl(a.ts, 1, 21))
+
+function likely(tokens: string[]) {
+>likely : Symbol(likely, Decl(a.ts, 1, 39))
+>tokens : Symbol(tokens, Decl(a.ts, 2, 16))
+
+  let current: string | null = "";
+>current : Symbol(current, Decl(a.ts, 3, 5))
+
+  let result: string | number | null = null;
+>result : Symbol(result, Decl(a.ts, 4, 5))
+
+  let total = 0;
+>total : Symbol(total, Decl(a.ts, 5, 5))
+
+  for (const t of tokens) {
+>t : Symbol(t, Decl(a.ts, 6, 12))
+>tokens : Symbol(tokens, Decl(a.ts, 2, 16))
+
+    if (result !== null) log(result);
+>result : Symbol(result, Decl(a.ts, 4, 5))
+>log : Symbol(log, Decl(a.ts, 0, 30))
+>result : Symbol(result, Decl(a.ts, 4, 5))
+
+    if (current) { log(current); }
+>current : Symbol(current, Decl(a.ts, 3, 5))
+>log : Symbol(log, Decl(a.ts, 0, 30))
+>current : Symbol(current, Decl(a.ts, 3, 5))
+
+    result = current ?? 0;
+>result : Symbol(result, Decl(a.ts, 4, 5))
+>current : Symbol(current, Decl(a.ts, 3, 5))
+
+    if (t === ";") current = null;
+>t : Symbol(t, Decl(a.ts, 6, 12))
+>current : Symbol(current, Decl(a.ts, 3, 5))
+
+    if (typeof result === "number") total += result.toFixed().length;
+>result : Symbol(result, Decl(a.ts, 4, 5))
+>total : Symbol(total, Decl(a.ts, 5, 5))
+>result.toFixed().length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>result.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>result : Symbol(result, Decl(a.ts, 4, 5))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+  }
+}
+function minimal() {
+>minimal : Symbol(minimal, Decl(a.ts, 13, 1))
+
+  let x: string | null = "";
+>x : Symbol(x, Decl(a.ts, 15, 5))
+
+  let y: string | number | null = null;
+>y : Symbol(y, Decl(a.ts, 16, 5))
+
+  while (c()) {
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+    y;
+>y : Symbol(y, Decl(a.ts, 16, 5))
+
+    if (x) { }
+>x : Symbol(x, Decl(a.ts, 15, 5))
+
+    y = x ?? 0;
+>y : Symbol(y, Decl(a.ts, 16, 5))
+>x : Symbol(x, Decl(a.ts, 15, 5))
+
+    if (c()) x = null;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 15, 5))
+
+    const p: never = y;
+>p : Symbol(p, Decl(a.ts, 22, 9))
+>y : Symbol(y, Decl(a.ts, 16, 5))
+  }
+}
+function nested() {
+>nested : Symbol(nested, Decl(a.ts, 24, 1))
+
+  let x: string | null = "";
+>x : Symbol(x, Decl(a.ts, 26, 5))
+
+  let y: string | number | null = null;
+>y : Symbol(y, Decl(a.ts, 27, 5))
+
+  while (y == null) {
+>y : Symbol(y, Decl(a.ts, 27, 5))
+
+    while (typeof x === "string" || c()) {
+>x : Symbol(x, Decl(a.ts, 26, 5))
+>c : Symbol(c, Decl(a.ts, 0, 0))
+
+      y = x ?? 0;
+>y : Symbol(y, Decl(a.ts, 27, 5))
+>x : Symbol(x, Decl(a.ts, 26, 5))
+    }
+    if (c()) x = null;
+>c : Symbol(c, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 26, 5))
+
+    const p: never = y;
+>p : Symbol(p, Decl(a.ts, 33, 9))
+>y : Symbol(y, Decl(a.ts, 27, 5))
+  }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 36, 5))
+

@@ -1,0 +1,28 @@
+//// [test/cases/bun27-C11b.ts] ////
+
+=== a.tsx ===
+declare namespace Other { type LMA<C, P> = P & { extra: number }; }
+>LMA : LMA<C, P>
+>extra : number
+
+declare namespace JSX { interface Element { e: 1 } export import LibraryManagedAttributes = Other.LMA; interface IntrinsicElements {} }
+>JSX : typeof JSX
+>e : 1
+>LibraryManagedAttributes : any
+>Other : any
+>LMA : LibraryManagedAttributes<C, P>
+
+declare function F(p: {}): JSX.Element;
+>F : (p: {}) => JSX.Element
+>p : {}
+>JSX : any
+
+const a = <F />;
+>a : JSX.Element
+><F /> : JSX.Element
+>F : (p: {}) => JSX.Element
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

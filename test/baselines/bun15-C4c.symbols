@@ -1,0 +1,11 @@
+//// [test/cases/bun15-C4c.ts] ////
+
+=== a.ts ===
+const g1: { 3: number } = { get [+3]() { return 1; } };
+>g1 : Symbol(g1, Decl(a.ts, 0, 5))
+>3 : Symbol(3, Decl(a.ts, 0, 11))
+>[+3] : Symbol([+3], Decl(a.ts, 0, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

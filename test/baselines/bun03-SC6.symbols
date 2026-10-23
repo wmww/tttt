@@ -1,0 +1,18 @@
+//// [test/cases/bun03-SC6.ts] ////
+
+=== a.d.ts ===
+declare module "x5" { namespace N { interface I {} } export = N; }
+>"x5" : Symbol("x5", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0))
+>N : Symbol(N, Decl(a.d.ts, 0, 21))
+>I : Symbol(I, Decl(a.d.ts, 0, 35))
+>N : Symbol(N, Decl(a.d.ts, 0, 21))
+
+=== b.d.ts ===
+declare module "x5" { export interface J {} }
+>"x5" : Symbol("x5", Decl(a.d.ts, 0, 0), Decl(b.d.ts, 0, 0))
+>J : Symbol(J, Decl(b.d.ts, 0, 21))
+
+=== f.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(f.ts, 0, 5))
+

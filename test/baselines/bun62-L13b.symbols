@@ -1,0 +1,17 @@
+//// [test/cases/bun62-L13b.ts] ////
+
+=== a.ts ===
+export default class<T> { a!: T }
+>T : Symbol(T, Decl(a.ts, 0, 21))
+>a : Symbol(I.a, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 0, 21))
+
+export default interface I<U> { b: U }
+>I : Symbol(I, Decl(a.ts, 0, 0), Decl(a.ts, 0, 33))
+>U : Symbol(U, Decl(a.ts, 1, 27))
+>b : Symbol(I.b, Decl(a.ts, 1, 31))
+>U : Symbol(U, Decl(a.ts, 1, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

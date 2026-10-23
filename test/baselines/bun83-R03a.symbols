@@ -1,0 +1,112 @@
+//// [test/cases/bun83-R03a.ts] ////
+
+=== a01.ts ===
+class C { a = 1 st\u0061tic "\x" = 2 }
+>C : Symbol(C, Decl(a01.ts, 0, 0))
+>a : Symbol(C.a, Decl(a01.ts, 0, 9))
+>"\x" : Symbol(C["x"], Decl(a01.ts, 0, 15))
+
+=== a03.ts ===
+class C { a = 1 st\u0061tic 1__0 = 2 }
+>C : Symbol(C, Decl(a03.ts, 0, 0))
+>a : Symbol(C.a, Decl(a03.ts, 0, 9))
+>1__0 : Symbol(C[1__0], Decl(a03.ts, 0, 15))
+
+=== a04.ts ===
+class C { a = 1 st\u0061tic "x
+>C : Symbol(C, Decl(a04.ts, 0, 0))
+>a : Symbol(C.a, Decl(a04.ts, 0, 9))
+>"x : Symbol(C["\"x"], Decl(a04.ts, 0, 15))
+}
+=== a05.ts ===
+class C { a = 1 st\u0061tic
+>C : Symbol(C, Decl(a05.ts, 0, 0))
+>a : Symbol(C.a, Decl(a05.ts, 0, 9))
+
+<<<<<<< x
+b = 2 }
+>b : Symbol(C.b, Decl(a05.ts, 0, 15))
+
+=== a06.ts ===
+class C { a = 1 publi\u0063 "\x" = 2 }
+>C : Symbol(C, Decl(a06.ts, 0, 0))
+>a : Symbol(C.a, Decl(a06.ts, 0, 9))
+>"\x" : Symbol(C["x"], Decl(a06.ts, 0, 15))
+
+=== a08.ts ===
+class C { a = 1 g\u0065t "\x"() { return 1 } }
+>C : Symbol(C, Decl(a08.ts, 0, 0))
+>a : Symbol(C.a, Decl(a08.ts, 0, 9))
+>"\x" : Symbol(C["x"], Decl(a08.ts, 0, 15))
+
+=== a10.ts ===
+class C { a = 1 \u0061sync "\x"() { } }
+>C : Symbol(C, Decl(a10.ts, 0, 0))
+>a : Symbol(C.a, Decl(a10.ts, 0, 9))
+>"\x" : Symbol(C["x"], Decl(a10.ts, 0, 15))
+
+=== a15.ts ===
+class C { a = 1 st\u0061tic 08 = 2 }
+>C : Symbol(C, Decl(a15.ts, 0, 0))
+>a : Symbol(C.a, Decl(a15.ts, 0, 9))
+>08 : Symbol(C[08], Decl(a15.ts, 0, 15))
+
+=== a19.ts ===
+class C { a = 1 g\u0065t
+>C : Symbol(C, Decl(a19.ts, 0, 0))
+>a : Symbol(C.a, Decl(a19.ts, 0, 9))
+
+<<<<<<< x
+b() { return 1 } }
+>b : Symbol(C.b, Decl(a19.ts, 0, 15))
+
+=== a20.ts ===
+var o = { a: 1 g\u0065t "\x"() { return 1 } }
+>o : Symbol(o, Decl(a20.ts, 0, 3), Decl(a22.ts, 0, 3), Decl(a23.ts, 0, 3))
+>a : Symbol(a, Decl(a20.ts, 0, 9))
+>"\x" : Symbol("\x", Decl(a20.ts, 0, 14))
+
+=== a22.ts ===
+var o = { a: 1 \u0061sync "\x"() { } }
+>o : Symbol(o, Decl(a20.ts, 0, 3), Decl(a22.ts, 0, 3), Decl(a23.ts, 0, 3))
+>a : Symbol(a, Decl(a22.ts, 0, 9))
+>"\x" : Symbol("\x", Decl(a22.ts, 0, 14))
+
+=== a23.ts ===
+var o = { a: 1 g\u0065t
+>o : Symbol(o, Decl(a20.ts, 0, 3), Decl(a22.ts, 0, 3), Decl(a23.ts, 0, 3))
+>a : Symbol(a, Decl(a23.ts, 0, 9))
+
+<<<<<<< x
+b() { return 1 } }
+>b : Symbol(b, Decl(a23.ts, 0, 14))
+
+=== a29.ts ===
+1 l\u0065t
+<<<<<<< x
+y = 1
+>y : Symbol(y, Decl(a29.ts, 0, 10))
+
+=== a38.ts ===
+1 modul\u0065 "\x" {}
+>"\x" : Symbol("\\x", Decl(a38.ts, 0, 1), Decl(a39.ts, 0, 1))
+
+=== a39.ts ===
+1 d\u0065clare module "\x" {}
+>"\x" : Symbol("\\x", Decl(a38.ts, 0, 1), Decl(a39.ts, 0, 1))
+
+=== b36.ts ===
+class C { a = 1 st\u0061tic
+>C : Symbol(C, Decl(b36.ts, 0, 0))
+>a : Symbol(C.a, Decl(b36.ts, 0, 9))
+
+<<<<<<< x
+{ } }
+=== b37.ts ===
+class C { a = 1 c\u006fnstructor
+>C : Symbol(C, Decl(b37.ts, 0, 0))
+>a : Symbol(C.a, Decl(b37.ts, 0, 9))
+
+<<<<<<< x
+() { } }
+

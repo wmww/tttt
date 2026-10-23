@@ -1,0 +1,28 @@
+a.ts(3,7): error TS2322: Type 'typeof a' is not assignable to type 'typeof c4'.
+a.ts(4,7): error TS2322: Type 'symbol' is not assignable to type 'unique symbol'.
+a.ts(5,7): error TS2322: Type '1' is not assignable to type 'unique symbol'.
+a.ts(6,27): error TS2322: Type 'typeof a' is not assignable to type 'typeof C.s'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    declare const a: unique symbol;
+    declare const sym: symbol;
+    const c4: unique symbol = a;
+          ~~
+!!! error TS2322: Type 'typeof a' is not assignable to type 'typeof c4'.
+    const c6: unique symbol = sym;
+          ~~
+!!! error TS2322: Type 'symbol' is not assignable to type 'unique symbol'.
+    const c9: unique symbol = 1;
+          ~~
+!!! error TS2322: Type '1' is not assignable to type 'unique symbol'.
+    class C { static readonly s: unique symbol = a; }
+                              ~
+!!! error TS2322: Type 'typeof a' is not assignable to type 'typeof C.s'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

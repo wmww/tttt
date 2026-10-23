@@ -1,0 +1,24 @@
+//// [test/cases/bun92-R03a.ts] ////
+
+=== a.js ===
+async function f() {
+>f : () => Promise<void>
+
+/** @import await from "./b" */
+/** @type {await} */
+const x = 1;
+>x : await
+>1 : 1
+}
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== b.ts ===
+export default interface D { d: 1 }
+>d : 1
+
+export interface A { a: 1 }
+>a : 1
+

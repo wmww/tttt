@@ -1,0 +1,26 @@
+//// [test/cases/bun84-R02.ts] ////
+
+=== a.ts ===
+type A = ([...a,]: any);
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 11))
+> : Symbol(unknown)
+
+=== b.ts ===
+type B = ({...a,}: any, b: string);
+>B : Symbol(B, Decl(b.ts, 0, 0))
+>a : Symbol(a, Decl(b.ts, 0, 11))
+>b : Symbol(b, Decl(b.ts, 0, 23))
+> : Symbol(unknown)
+
+=== c.ts ===
+type C = string | ([...a,]: any) => void;
+>C : Symbol(C, Decl(c.ts, 0, 0))
+>a : Symbol(a, Decl(c.ts, 0, 20))
+
+=== e.ts ===
+type D = ([...a,]?);
+>D : Symbol(D, Decl(e.ts, 0, 0))
+>a : Symbol(a, Decl(e.ts, 0, 11))
+> : Symbol(unknown)
+

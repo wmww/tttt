@@ -1,0 +1,14 @@
+//// [test/cases/bun25-P5.ts] ////
+
+=== a.ts ===
+class E { "#y" = 1; m(a: E) { delete a.#y; } }
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>"#y" : Symbol(E["#y"], Decl(a.ts, 0, 9))
+>m : Symbol(E.m, Decl(a.ts, 0, 19))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+>E : Symbol(E, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

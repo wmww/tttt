@@ -1,0 +1,20 @@
+//// [test/cases/bun26-P1.ts] ////
+
+=== a.ts ===
+function g<T extends U, U>(): T extends string ? (x: T) => U : 0 {
+>g : <T extends U, U>() => T extends string ? (x: T) => U : 0
+>x : T
+
+  const r: 0 | ((x: string) => unknown) = g<T, unknown>();
+>r : 0 | ((x: string) => unknown)
+>x : string
+>g<T, unknown>() : T extends string ? (x: T) => unknown : 0
+>g : <T extends U, U>() => T extends string ? (x: T) => U : 0
+
+  return null!;
+>null! : never
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

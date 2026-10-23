@@ -1,0 +1,21 @@
+//// [test/cases/bun10-C5b.ts] ////
+
+=== a.ts ===
+export namespace N10 { export import A = M10.B; export const z = A; }
+>N10 : typeof N10
+>A : any
+>M10 : typeof M10
+>B : any
+>z : any
+>A : any
+
+export namespace M10 { export import B = N10.z; }
+>M10 : typeof M10
+>B : any
+>N10 : typeof N10
+>z : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

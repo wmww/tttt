@@ -1,0 +1,33 @@
+a.ts(7,9): error TS2322: Type 'T & {}' is not assignable to type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(11,7): error TS2322: Type '{}' is not assignable to type '{ [k: string]: number; }'.
+  Index signature for type 'string' is missing in type '{}'.
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function entries<T>(t: T) {
+      if (t === null || t === undefined) return;
+      for (const [k, v] of Object.entries(t)) v.foo;
+    }
+    function record<T>(t: T) {
+      if (t === undefined || t === null) return;
+      const r: Record<string, unknown> = t;
+            ~
+!!! error TS2322: Type 'T & {}' is not assignable to type 'Record<string, unknown>'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+    }
+    function both<T>(t: T) { if (t === null) throw 0; if (t === undefined) throw 0; return t; }
+    const y = both(null! as unknown);
+    const r: { [k: string]: number } = y;
+          ~
+!!! error TS2322: Type '{}' is not assignable to type '{ [k: string]: number; }'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+    const { ...rest } = {}; const stays1: { [k: string]: number } = rest;
+    const spread = { ...{} }; const stays2: { [k: string]: number } = spread;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

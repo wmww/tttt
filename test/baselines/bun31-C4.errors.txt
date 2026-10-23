@@ -1,0 +1,16 @@
+a.ts(3,8): error TS2304: Cannot find name 'I'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    export default function f() {}
+    export default interface I {}
+    let v: I;
+           ~
+!!! error TS2304: Cannot find name 'I'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

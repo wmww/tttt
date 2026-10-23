@@ -1,0 +1,24 @@
+//// [test/cases/bun34-C2c.ts] ////
+
+=== a.tsx ===
+export {};
+declare global { namespace JSX { interface IntrinsicElements { div: any } } }
+>global : Symbol(global, Decl(a.tsx, 0, 10))
+>JSX : Symbol(JSX, Decl(a.tsx, 1, 16))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(a.tsx, 1, 32))
+>div : Symbol(IntrinsicElements.div, Decl(a.tsx, 1, 62))
+
+function g(React: any = <div />) {}
+>g : Symbol(g, Decl(a.tsx, 1, 77))
+>React : Symbol(React, Decl(a.tsx, 2, 11))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 1, 62))
+
+function h(a = <div />, React: any) {}
+>h : Symbol(h, Decl(a.tsx, 2, 35))
+>a : Symbol(a, Decl(a.tsx, 3, 11))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(a.tsx, 1, 62))
+>React : Symbol(React, Decl(a.tsx, 3, 23))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.tsx, 4, 5))
+

@@ -1,0 +1,21 @@
+a.ts(2,62): error TS2322: Type '(A extends string ? B : 2) | (A extends string ? A : 2) | (B extends string ? A : 2)' is not assignable to type 'never'.
+  Type 'A extends string ? B : 2' is not assignable to type 'never'.
+    Type '2 | B' is not assignable to type 'never'.
+      Type '2' is not assignable to type 'never'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    type H<X, T> = { p: T extends string ? X : 2 };
+    function f<A, B>(x: H<B, A>["p"] | H<A, A | B>["p"]) { const n: never = x; }
+                                                                 ~
+!!! error TS2322: Type '(A extends string ? B : 2) | (A extends string ? A : 2) | (B extends string ? A : 2)' is not assignable to type 'never'.
+!!! error TS2322:   Type 'A extends string ? B : 2' is not assignable to type 'never'.
+!!! error TS2322:     Type '2 | B' is not assignable to type 'never'.
+!!! error TS2322:       Type '2' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

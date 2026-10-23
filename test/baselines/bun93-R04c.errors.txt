@@ -1,0 +1,72 @@
+a.ts(2,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+a.ts(2,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+a.ts(2,78): error TS2339: Property 'nope' does not exist on type '{}'.
+a.ts(3,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+a.ts(3,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+a.ts(3,73): error TS2304: Cannot find name 'nope'.
+a.ts(4,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+a.ts(4,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+a.ts(4,77): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(5,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+a.ts(5,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+a.ts(5,92): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(6,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: { h(): number; }; }'.
+a.ts(6,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: { h(): number; }; }'.
+a.ts(6,86): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(8,31): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: (() => number)[]; }'.
+a.ts(8,55): error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: (() => number)[]; }'.
+a.ts(8,75): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+a.ts(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (19 errors) ====
+    declare function id<T>(x: T): T; declare function abs(n: number): number;
+    const a = { m() { return this.z; }, f() { return this.z; }, g: id(() => ({}).nope) };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+                                                                                 ~~~~
+!!! error TS2339: Property 'nope' does not exist on type '{}'.
+    const b = { m() { return this.z; }, f() { return this.z; }, g: id(() => nope) };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => any; }'.
+                                                                            ~~~~
+!!! error TS2304: Cannot find name 'nope'.
+    const c = { m() { return this.z; }, f() { return this.z; }, g: id(() => abs("")) };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+                                                                                ~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    const d = { m() { return this.z; }, f() { return this.z; }, g: id(function () { return abs(""); }) };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: () => number; }'.
+                                                                                               ~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    const e = { m() { return this.z; }, f() { return this.z; }, g: id({ h() { return abs(""); } }) };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: { h(): number; }; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: { h(): number; }; }'.
+                                                                                         ~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    // not an argument of a generic call: both tools lose the error
+    const h = { m() { return this.z; }, f() { return this.z; }, g: [() => abs("")] };
+                                  ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: (() => number)[]; }'.
+                                                          ~
+!!! error TS2339: Property 'z' does not exist on type '{ m(): any; f(): any; g: (() => number)[]; }'.
+                                                                              ~~
+!!! error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

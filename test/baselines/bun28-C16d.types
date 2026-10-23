@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C16d.ts] ////
+
+=== a.ts ===
+function f<const export T>() {}
+>f : <const T>() => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

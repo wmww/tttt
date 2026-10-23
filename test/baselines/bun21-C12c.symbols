@@ -1,0 +1,19 @@
+//// [test/cases/bun21-C12c.ts] ////
+
+=== a.ts ===
+function g(r: { 0: string } & Iterable<number>) { let [a]: Iterable<string | number> & { 0: string | number } = r; a.length; }
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>r : Symbol(r, Decl(a.ts, 0, 11))
+>0 : Symbol(0, Decl(a.ts, 0, 15))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 0, 55))
+>Iterable : Symbol(Iterable, Decl(lib.es2015.iterable.d.ts, --, --))
+>0 : Symbol(0, Decl(a.ts, 0, 88))
+>r : Symbol(r, Decl(a.ts, 0, 11))
+>a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(a.ts, 0, 55))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

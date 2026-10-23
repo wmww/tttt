@@ -1,0 +1,14 @@
+error TS5010: File specification cannot end in a recursive directory wildcard ('**'): 'src/**'.
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS5010: File specification cannot end in a recursive directory wildcard ('**'): 'src/**'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"] }, "extends": "./b.json" }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.json (0 errors) ====
+    { "include": ["src\\**", "a.ts"] }
+    

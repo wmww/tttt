@@ -1,0 +1,471 @@
+main.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+p1.ts(1,13): error TS2303: Circular definition of import alias 'n1'.
+p1.ts(1,38): error TS2303: Circular definition of import alias 'n1'.
+p10.ts(1,13): error TS2303: Circular definition of import alias 'n10'.
+p10.ts(1,40): error TS2303: Circular definition of import alias 'n10'.
+p11.ts(1,13): error TS2303: Circular definition of import alias 'n11'.
+p11.ts(1,40): error TS2303: Circular definition of import alias 'n11'.
+p12.ts(1,13): error TS2303: Circular definition of import alias 'n12'.
+p12.ts(1,40): error TS2303: Circular definition of import alias 'n12'.
+p13.ts(1,13): error TS2303: Circular definition of import alias 'n13'.
+p13.ts(1,40): error TS2303: Circular definition of import alias 'n13'.
+p14.ts(1,13): error TS2303: Circular definition of import alias 'n14'.
+p14.ts(1,40): error TS2303: Circular definition of import alias 'n14'.
+p15.ts(1,13): error TS2303: Circular definition of import alias 'n15'.
+p15.ts(1,40): error TS2303: Circular definition of import alias 'n15'.
+p16.ts(1,13): error TS2303: Circular definition of import alias 'n16'.
+p16.ts(1,40): error TS2303: Circular definition of import alias 'n16'.
+p17.ts(1,13): error TS2303: Circular definition of import alias 'n17'.
+p17.ts(1,40): error TS2303: Circular definition of import alias 'n17'.
+p18.ts(1,13): error TS2303: Circular definition of import alias 'n18'.
+p18.ts(1,40): error TS2303: Circular definition of import alias 'n18'.
+p19.ts(1,13): error TS2303: Circular definition of import alias 'n19'.
+p19.ts(1,40): error TS2303: Circular definition of import alias 'n19'.
+p2.ts(1,13): error TS2303: Circular definition of import alias 'n2'.
+p2.ts(1,38): error TS2303: Circular definition of import alias 'n2'.
+p20.ts(1,13): error TS2303: Circular definition of import alias 'n20'.
+p20.ts(1,40): error TS2303: Circular definition of import alias 'n20'.
+p21.ts(1,13): error TS2303: Circular definition of import alias 'n21'.
+p21.ts(1,40): error TS2303: Circular definition of import alias 'n21'.
+p22.ts(1,13): error TS2303: Circular definition of import alias 'n22'.
+p22.ts(1,40): error TS2303: Circular definition of import alias 'n22'.
+p23.ts(1,13): error TS2303: Circular definition of import alias 'n23'.
+p23.ts(1,40): error TS2303: Circular definition of import alias 'n23'.
+p24.ts(1,13): error TS2303: Circular definition of import alias 'n24'.
+p24.ts(1,40): error TS2303: Circular definition of import alias 'n24'.
+p25.ts(1,13): error TS2303: Circular definition of import alias 'n25'.
+p25.ts(1,40): error TS2303: Circular definition of import alias 'n25'.
+p26.ts(1,13): error TS2303: Circular definition of import alias 'n26'.
+p26.ts(1,40): error TS2303: Circular definition of import alias 'n26'.
+p27.ts(1,13): error TS2303: Circular definition of import alias 'n27'.
+p27.ts(1,40): error TS2303: Circular definition of import alias 'n27'.
+p28.ts(1,13): error TS2303: Circular definition of import alias 'n28'.
+p28.ts(1,40): error TS2303: Circular definition of import alias 'n28'.
+p29.ts(1,13): error TS2303: Circular definition of import alias 'n29'.
+p29.ts(1,40): error TS2303: Circular definition of import alias 'n29'.
+p3.ts(1,13): error TS2303: Circular definition of import alias 'n3'.
+p3.ts(1,38): error TS2303: Circular definition of import alias 'n3'.
+p30.ts(1,13): error TS2303: Circular definition of import alias 'n30'.
+p30.ts(1,40): error TS2303: Circular definition of import alias 'n30'.
+p31.ts(1,13): error TS2303: Circular definition of import alias 'n31'.
+p31.ts(1,40): error TS2303: Circular definition of import alias 'n31'.
+p32.ts(1,13): error TS2303: Circular definition of import alias 'n32'.
+p32.ts(1,40): error TS2303: Circular definition of import alias 'n32'.
+p33.ts(1,13): error TS2303: Circular definition of import alias 'n33'.
+p33.ts(1,40): error TS2303: Circular definition of import alias 'n33'.
+p34.ts(1,13): error TS2303: Circular definition of import alias 'n34'.
+p34.ts(1,40): error TS2303: Circular definition of import alias 'n34'.
+p35.ts(1,13): error TS2303: Circular definition of import alias 'n35'.
+p35.ts(1,40): error TS2303: Circular definition of import alias 'n35'.
+p36.ts(1,13): error TS2303: Circular definition of import alias 'n36'.
+p36.ts(1,40): error TS2303: Circular definition of import alias 'n36'.
+p37.ts(1,13): error TS2303: Circular definition of import alias 'n37'.
+p37.ts(1,40): error TS2303: Circular definition of import alias 'n37'.
+p38.ts(1,13): error TS2303: Circular definition of import alias 'n38'.
+p38.ts(1,40): error TS2303: Circular definition of import alias 'n38'.
+p39.ts(1,13): error TS2303: Circular definition of import alias 'n39'.
+p39.ts(1,40): error TS2303: Circular definition of import alias 'n39'.
+p4.ts(1,13): error TS2303: Circular definition of import alias 'n4'.
+p4.ts(1,38): error TS2303: Circular definition of import alias 'n4'.
+p40.ts(1,13): error TS2303: Circular definition of import alias 'n40'.
+p40.ts(1,40): error TS2303: Circular definition of import alias 'n40'.
+p41.ts(1,13): error TS2303: Circular definition of import alias 'n41'.
+p41.ts(1,40): error TS2303: Circular definition of import alias 'n41'.
+p42.ts(1,13): error TS2303: Circular definition of import alias 'n42'.
+p42.ts(1,40): error TS2303: Circular definition of import alias 'n42'.
+p43.ts(1,13): error TS2303: Circular definition of import alias 'n43'.
+p43.ts(1,40): error TS2303: Circular definition of import alias 'n43'.
+p44.ts(1,13): error TS2303: Circular definition of import alias 'n44'.
+p44.ts(1,40): error TS2303: Circular definition of import alias 'n44'.
+p45.ts(1,13): error TS2303: Circular definition of import alias 'n45'.
+p45.ts(1,40): error TS2303: Circular definition of import alias 'n45'.
+p46.ts(1,13): error TS2303: Circular definition of import alias 'n46'.
+p46.ts(1,40): error TS2303: Circular definition of import alias 'n46'.
+p47.ts(1,13): error TS2303: Circular definition of import alias 'n47'.
+p47.ts(1,40): error TS2303: Circular definition of import alias 'n47'.
+p48.ts(1,13): error TS2303: Circular definition of import alias 'n48'.
+p48.ts(1,40): error TS2303: Circular definition of import alias 'n48'.
+p49.ts(1,13): error TS2303: Circular definition of import alias 'n49'.
+p49.ts(1,40): error TS2303: Circular definition of import alias 'n49'.
+p5.ts(1,13): error TS2303: Circular definition of import alias 'n5'.
+p5.ts(1,38): error TS2303: Circular definition of import alias 'n5'.
+p50.ts(1,13): error TS2303: Circular definition of import alias 'n50'.
+p50.ts(1,40): error TS2303: Circular definition of import alias 'n50'.
+p51.ts(1,13): error TS2303: Circular definition of import alias 'n51'.
+p51.ts(1,39): error TS2303: Circular definition of import alias 'n51'.
+p6.ts(1,13): error TS2303: Circular definition of import alias 'n6'.
+p6.ts(1,38): error TS2303: Circular definition of import alias 'n6'.
+p7.ts(1,13): error TS2303: Circular definition of import alias 'n7'.
+p7.ts(1,38): error TS2303: Circular definition of import alias 'n7'.
+p8.ts(1,13): error TS2303: Circular definition of import alias 'n8'.
+p8.ts(1,38): error TS2303: Circular definition of import alias 'n8'.
+p9.ts(1,13): error TS2303: Circular definition of import alias 'n9'.
+p9.ts(1,39): error TS2303: Circular definition of import alias 'n9'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler"}, "files": ["main.ts"]}
+==== main.ts (1 errors) ====
+    import { n1 } from "./p1";
+    n1.nope;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== p1.ts (2 errors) ====
+    import * as n1 from "./p2"; export { n1 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n1'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n1'.
+    export const v1 = 1;
+==== p10.ts (2 errors) ====
+    import * as n10 from "./p11"; export { n10 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n10'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n10'.
+    export const v10 = 10;
+==== p11.ts (2 errors) ====
+    import * as n11 from "./p12"; export { n11 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n11'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n11'.
+    export const v11 = 11;
+==== p12.ts (2 errors) ====
+    import * as n12 from "./p13"; export { n12 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n12'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n12'.
+    export const v12 = 12;
+==== p13.ts (2 errors) ====
+    import * as n13 from "./p14"; export { n13 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n13'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n13'.
+    export const v13 = 13;
+==== p14.ts (2 errors) ====
+    import * as n14 from "./p15"; export { n14 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n14'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n14'.
+    export const v14 = 14;
+==== p15.ts (2 errors) ====
+    import * as n15 from "./p16"; export { n15 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n15'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n15'.
+    export const v15 = 15;
+==== p16.ts (2 errors) ====
+    import * as n16 from "./p17"; export { n16 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n16'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n16'.
+    export const v16 = 16;
+==== p17.ts (2 errors) ====
+    import * as n17 from "./p18"; export { n17 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n17'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n17'.
+    export const v17 = 17;
+==== p18.ts (2 errors) ====
+    import * as n18 from "./p19"; export { n18 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n18'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n18'.
+    export const v18 = 18;
+==== p19.ts (2 errors) ====
+    import * as n19 from "./p20"; export { n19 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n19'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n19'.
+    export const v19 = 19;
+==== p2.ts (2 errors) ====
+    import * as n2 from "./p3"; export { n2 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n2'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n2'.
+    export const v2 = 2;
+==== p20.ts (2 errors) ====
+    import * as n20 from "./p21"; export { n20 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n20'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n20'.
+    export const v20 = 20;
+==== p21.ts (2 errors) ====
+    import * as n21 from "./p22"; export { n21 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n21'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n21'.
+    export const v21 = 21;
+==== p22.ts (2 errors) ====
+    import * as n22 from "./p23"; export { n22 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n22'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n22'.
+    export const v22 = 22;
+==== p23.ts (2 errors) ====
+    import * as n23 from "./p24"; export { n23 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n23'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n23'.
+    export const v23 = 23;
+==== p24.ts (2 errors) ====
+    import * as n24 from "./p25"; export { n24 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n24'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n24'.
+    export const v24 = 24;
+==== p25.ts (2 errors) ====
+    import * as n25 from "./p26"; export { n25 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n25'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n25'.
+    export const v25 = 25;
+==== p26.ts (2 errors) ====
+    import * as n26 from "./p27"; export { n26 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n26'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n26'.
+    export const v26 = 26;
+==== p27.ts (2 errors) ====
+    import * as n27 from "./p28"; export { n27 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n27'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n27'.
+    export const v27 = 27;
+==== p28.ts (2 errors) ====
+    import * as n28 from "./p29"; export { n28 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n28'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n28'.
+    export const v28 = 28;
+==== p29.ts (2 errors) ====
+    import * as n29 from "./p30"; export { n29 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n29'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n29'.
+    export const v29 = 29;
+==== p3.ts (2 errors) ====
+    import * as n3 from "./p4"; export { n3 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n3'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n3'.
+    export const v3 = 3;
+==== p30.ts (2 errors) ====
+    import * as n30 from "./p31"; export { n30 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n30'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n30'.
+    export const v30 = 30;
+==== p31.ts (2 errors) ====
+    import * as n31 from "./p32"; export { n31 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n31'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n31'.
+    export const v31 = 31;
+==== p32.ts (2 errors) ====
+    import * as n32 from "./p33"; export { n32 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n32'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n32'.
+    export const v32 = 32;
+==== p33.ts (2 errors) ====
+    import * as n33 from "./p34"; export { n33 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n33'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n33'.
+    export const v33 = 33;
+==== p34.ts (2 errors) ====
+    import * as n34 from "./p35"; export { n34 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n34'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n34'.
+    export const v34 = 34;
+==== p35.ts (2 errors) ====
+    import * as n35 from "./p36"; export { n35 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n35'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n35'.
+    export const v35 = 35;
+==== p36.ts (2 errors) ====
+    import * as n36 from "./p37"; export { n36 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n36'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n36'.
+    export const v36 = 36;
+==== p37.ts (2 errors) ====
+    import * as n37 from "./p38"; export { n37 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n37'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n37'.
+    export const v37 = 37;
+==== p38.ts (2 errors) ====
+    import * as n38 from "./p39"; export { n38 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n38'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n38'.
+    export const v38 = 38;
+==== p39.ts (2 errors) ====
+    import * as n39 from "./p40"; export { n39 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n39'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n39'.
+    export const v39 = 39;
+==== p4.ts (2 errors) ====
+    import * as n4 from "./p5"; export { n4 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n4'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n4'.
+    export const v4 = 4;
+==== p40.ts (2 errors) ====
+    import * as n40 from "./p41"; export { n40 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n40'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n40'.
+    export const v40 = 40;
+==== p41.ts (2 errors) ====
+    import * as n41 from "./p42"; export { n41 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n41'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n41'.
+    export const v41 = 41;
+==== p42.ts (2 errors) ====
+    import * as n42 from "./p43"; export { n42 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n42'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n42'.
+    export const v42 = 42;
+==== p43.ts (2 errors) ====
+    import * as n43 from "./p44"; export { n43 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n43'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n43'.
+    export const v43 = 43;
+==== p44.ts (2 errors) ====
+    import * as n44 from "./p45"; export { n44 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n44'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n44'.
+    export const v44 = 44;
+==== p45.ts (2 errors) ====
+    import * as n45 from "./p46"; export { n45 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n45'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n45'.
+    export const v45 = 45;
+==== p46.ts (2 errors) ====
+    import * as n46 from "./p47"; export { n46 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n46'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n46'.
+    export const v46 = 46;
+==== p47.ts (2 errors) ====
+    import * as n47 from "./p48"; export { n47 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n47'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n47'.
+    export const v47 = 47;
+==== p48.ts (2 errors) ====
+    import * as n48 from "./p49"; export { n48 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n48'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n48'.
+    export const v48 = 48;
+==== p49.ts (2 errors) ====
+    import * as n49 from "./p50"; export { n49 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n49'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n49'.
+    export const v49 = 49;
+==== p5.ts (2 errors) ====
+    import * as n5 from "./p6"; export { n5 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n5'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n5'.
+    export const v5 = 5;
+==== p50.ts (2 errors) ====
+    import * as n50 from "./p51"; export { n50 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n50'.
+                                           ~~~
+!!! error TS2303: Circular definition of import alias 'n50'.
+    export const v50 = 50;
+==== p51.ts (2 errors) ====
+    import * as n51 from "./p1"; export { n51 };
+                ~~~
+!!! error TS2303: Circular definition of import alias 'n51'.
+                                          ~~~
+!!! error TS2303: Circular definition of import alias 'n51'.
+    export const v51 = 51;
+==== p6.ts (2 errors) ====
+    import * as n6 from "./p7"; export { n6 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n6'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n6'.
+    export const v6 = 6;
+==== p7.ts (2 errors) ====
+    import * as n7 from "./p8"; export { n7 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n7'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n7'.
+    export const v7 = 7;
+==== p8.ts (2 errors) ====
+    import * as n8 from "./p9"; export { n8 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n8'.
+                                         ~~
+!!! error TS2303: Circular definition of import alias 'n8'.
+    export const v8 = 8;
+==== p9.ts (2 errors) ====
+    import * as n9 from "./p10"; export { n9 };
+                ~~
+!!! error TS2303: Circular definition of import alias 'n9'.
+                                          ~~
+!!! error TS2303: Circular definition of import alias 'n9'.
+    export const v9 = 9;
+    

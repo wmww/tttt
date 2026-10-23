@@ -1,0 +1,11 @@
+//// [test/cases/bun93-P06b.ts] ////
+
+=== a.ts ===
+{ export class {} }
+function f() { export class {} }
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

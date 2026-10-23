@@ -1,0 +1,33 @@
+//// [test/cases/bun27-C16.ts] ////
+
+=== a.jsx ===
+/** @param {{ a?: string }} p */
+function F(p) { return /** @type {any} */ (null); }
+>F : (p: { a?: string; }) => any
+>p : { a?: string; }
+>(null) : any
+
+const a1 = <F q={x => x.nope} />;
+>a1 : JSX.Element
+><F q={x => x.nope} /> : JSX.Element
+>F : (p: { a?: string; }) => any
+>q : (x: any) => any
+>x => x.nope : (x: any) => any
+>x : any
+>x.nope : any
+>x : any
+>nope : any
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== g.d.ts ===
+declare namespace JSX { interface Element { e: 1 } type LibraryManagedAttributes<C, P, Q> = P & { q: (x: Q) => void }; interface IntrinsicElements { div: {} } }
+>e : 1
+>LibraryManagedAttributes : LibraryManagedAttributes<C, P, Q>
+>q : (x: Q) => void
+>x : Q
+>div : {}
+

@@ -1,0 +1,11 @@
+//// [test/cases/bun02-C19.ts] ////
+
+=== a.ts ===
+type F2 = ({ a: string }) => void;
+>F2 : Symbol(F2, Decl(a.ts, 0, 0))
+>a : Symbol(a)
+>string : Symbol(string, Decl(a.ts, 0, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

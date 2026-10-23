@@ -1,0 +1,19 @@
+a.ts(2,13): error TS2694: Namespace 'graphics.Sub' has no exported member 'S'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "commonjs" } }
+==== a.ts (2 errors) ====
+    import { Sub } from "graphics";
+    let s1: Sub.S;
+                ~
+!!! error TS2694: Namespace 'graphics.Sub' has no exported member 'S'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== amb.d.ts (0 errors) ====
+    declare namespace graphics { namespace Sub { interface S { s: 1 } } }
+    declare var graphics: { Sub: string };
+    declare module "graphics" { export = graphics; }
+    

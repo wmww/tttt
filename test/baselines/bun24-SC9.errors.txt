@@ -1,0 +1,18 @@
+a.ts(1,21): error TS1014: A rest parameter must be last in a parameter list.
+a.ts(2,7): error TS2322: Type '(...a: number[], b_0: string, b_1: number) => void' is not assignable to type 'string'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    declare function f1(...a: number[], ...b: [string, number]): void;
+                        ~~~
+!!! error TS1014: A rest parameter must be last in a parameter list.
+    const s1: string = f1;
+          ~~
+!!! error TS2322: Type '(...a: number[], b_0: string, b_1: number) => void' is not assignable to type 'string'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

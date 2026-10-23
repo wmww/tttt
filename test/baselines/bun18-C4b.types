@@ -1,0 +1,21 @@
+//// [test/cases/bun18-C4b.ts] ////
+
+=== a.ts ===
+declare let f1: (a: number, ...rest: [...string[], boolean]) => void;
+>f1 : (a: number, ...rest: [...string[], boolean]) => void
+>a : number
+>rest : [...string[], boolean]
+
+declare let f2: (...args: readonly [number, ...string[], boolean]) => void;
+>f2 : (...args: readonly [number, ...string[], boolean]) => void
+>args : readonly [number, ...string[], boolean]
+
+f2 = f1;
+>f2 = f1 : (a: number, ...rest: [...string[], boolean]) => void
+>f2 : (...args: readonly [number, ...string[], boolean]) => void
+>f1 : (a: number, ...rest: [...string[], boolean]) => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

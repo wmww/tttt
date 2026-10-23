@@ -1,0 +1,18 @@
+//// [test/cases/bun23-C9a.ts] ////
+
+=== a.ts ===
+declare const sy: unique symbol;
+>sy : unique symbol
+
+let p1: (x: any) => x is typeof sy = null! as (x: any) => x is string;
+>p1 : (x: any) => x is typeof sy
+>x : any
+>sy : unique symbol
+>null! as (x: any) => x is string : (x: any) => x is string
+>null! : never
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

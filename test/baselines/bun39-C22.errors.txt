@@ -1,0 +1,16 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,88): error TS5023: Unknown compiler option 'react-jsx'.
+tsconfig.json(1,88): error TS5089: Option 'jsxFactory' cannot be specified when option 'jsx' is 'react-jsx'.
+
+
+==== tsconfig.json (2 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "react-jsx": 1, "jsxFactory": "h", "jsx": "react-jsx" } }
+                                                                                           ~~~~~~~~~~~
+!!! error TS5023: Unknown compiler option 'react-jsx'.
+                                                                                           ~~~~~~~~~~~
+!!! error TS5089: Option 'jsxFactory' cannot be specified when option 'jsx' is 'react-jsx'.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,29 @@
+//// [test/cases/bun74-R19.ts] ////
+
+=== a.ts ===
+declare function need(n: number): number;
+>need : (n: number) => number
+>n : number
+
+const a1: number = Symbol.iterator;
+>a1 : number
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+var d1 = { x: need(Symbol.iterator), y: d1 };
+>d1 : any
+>{ x: need(Symbol.iterator), y: d1 } : { x: number; y: any; }
+>x : number
+>need(Symbol.iterator) : number
+>need : (n: number) => number
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+>y : any
+>d1 : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

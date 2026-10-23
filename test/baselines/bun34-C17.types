@@ -1,0 +1,21 @@
+//// [test/cases/bun34-C17.ts] ////
+
+=== a.tsx ===
+declare namespace JSX { interface IntrinsicElements { div: { a?: { c?: 1 } } } }
+>div : { a?: { c?: 1; }; }
+>a : { c?: 1; } | undefined
+>c : 1 | undefined
+
+<div {...{ a: { b: 1 } }} />;
+><div {...{ a: { b: 1 } }} /> : any
+>div : any
+>{ a: { b: 1 } } : { a: { b: number; }; }
+>a : { b: number; }
+>{ b: 1 } : { b: number; }
+>b : number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

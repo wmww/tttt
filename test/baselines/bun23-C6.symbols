@@ -1,0 +1,23 @@
+//// [test/cases/bun23-C6.ts] ////
+
+=== a.ts ===
+const obj = { meth<T>(x: T) { class M { a!: T } return new M(); } };
+>obj : Symbol(obj, Decl(a.ts, 0, 5))
+>meth : Symbol(meth, Decl(a.ts, 0, 13))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>x : Symbol(x, Decl(a.ts, 0, 22))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>M : Symbol(M, Decl(a.ts, 0, 29))
+>a : Symbol(M.a, Decl(a.ts, 0, 39))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>M : Symbol(M, Decl(a.ts, 0, 29))
+
+const p7: 1 = obj.meth(1);
+>p7 : Symbol(p7, Decl(a.ts, 1, 5))
+>obj.meth : Symbol(meth, Decl(a.ts, 0, 13))
+>obj : Symbol(obj, Decl(a.ts, 0, 5))
+>meth : Symbol(meth, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun29-C9b.ts] ////
+
+=== a.ts ===
+declare let f: { (y: typeof Symbol.iterator): void };
+>f : (y: typeof Symbol.iterator) => void
+>y : unique symbol
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+f = {};
+>f = {} : {}
+>f : (y: typeof Symbol.iterator) => void
+>{} : {}
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

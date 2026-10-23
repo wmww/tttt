@@ -1,0 +1,18 @@
+//// [test/cases/bun33-P8.ts] ////
+
+=== a.ts ===
+const k = "p";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+interface I { [k]: number }
+>I : Symbol(I, Decl(a.ts, 0, 14), Decl(a.ts, 1, 27))
+>[k] : Symbol(I.p, Decl(a.ts, 2, 13), Decl(a.ts, 1, 13))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+interface I { readonly p: number }
+>I : Symbol(I, Decl(a.ts, 0, 14), Decl(a.ts, 1, 27))
+>p : Symbol(I.p, Decl(a.ts, 2, 13), Decl(a.ts, 1, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

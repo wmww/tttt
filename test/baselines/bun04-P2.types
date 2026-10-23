@@ -1,0 +1,17 @@
+//// [test/cases/bun04-P2.ts] ////
+
+=== a.ts ===
+declare const u1: string | { a: number } | { a: number; b: string };
+>u1 : string | { a: number; } | { a: number; b: string; }
+>a : number
+>a : number
+>b : string
+
+for (const x of u1) {}
+>x : string
+>u1 : string | { a: number; } | { a: number; b: string; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

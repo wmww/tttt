@@ -1,0 +1,86 @@
+//// [test/cases/bun58-L05.ts] ////
+
+=== a.ts ===
+import { assertIsString, fail, Promise, Obj } from "./real";
+>assertIsString : Symbol(assertIsString, Decl(a.ts, 0, 8))
+>fail : Symbol(fail, Decl(a.ts, 0, 24))
+>Promise : Symbol(Promise, Decl(a.ts, 0, 30))
+>Obj : Symbol(Obj, Decl(a.ts, 0, 39))
+
+function t1(x: unknown) { assertIsString(x); x.length; }
+>t1 : Symbol(t1, Decl(a.ts, 0, 60))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>assertIsString : Symbol(assertIsString, Decl(globals.d.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+function t2(x: string | undefined) { if (!x) fail(); x.length; }
+>t2 : Symbol(t2, Decl(a.ts, 1, 56))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+>fail : Symbol(fail, Decl(globals.d.ts, 0, 65))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 2, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+function t3(): number { fail(); }
+>t3 : Symbol(t3, Decl(a.ts, 2, 64))
+>fail : Symbol(fail, Decl(globals.d.ts, 0, 65))
+
+function t4(x: unknown) { Obj.assert(x); x.length; }
+>t4 : Symbol(t4, Decl(a.ts, 3, 33))
+>x : Symbol(x, Decl(a.ts, 4, 12))
+>Obj.assert : Symbol(assert, Decl(globals.d.ts, 2, 20))
+>Obj : Symbol(Obj, Decl(globals.d.ts, 2, 13))
+>assert : Symbol(assert, Decl(globals.d.ts, 2, 20))
+>x : Symbol(x, Decl(a.ts, 4, 12))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 4, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+new Promise<number>(resolve => resolve());
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(resolve, Decl(a.ts, 5, 20))
+>resolve : Symbol(resolve, Decl(a.ts, 5, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+
+=== globals.d.ts ===
+declare function assertIsString(x: unknown): asserts x is string;
+>assertIsString : Symbol(assertIsString, Decl(globals.d.ts, 0, 0))
+>x : Symbol(x, Decl(globals.d.ts, 0, 32))
+>x : Symbol(x, Decl(globals.d.ts, 0, 32))
+
+declare function fail(): never;
+>fail : Symbol(fail, Decl(globals.d.ts, 0, 65))
+
+declare const Obj: { assert(x: unknown): asserts x is string };
+>Obj : Symbol(Obj, Decl(globals.d.ts, 2, 13))
+>assert : Symbol(assert, Decl(globals.d.ts, 2, 20))
+>x : Symbol(x, Decl(globals.d.ts, 2, 28))
+>x : Symbol(x, Decl(globals.d.ts, 2, 28))
+
+=== real.ts ===
+namespace g2 {
+>g2 : Symbol(g2, Decl(real.ts, 0, 0), Decl(real.ts, 3, 5))
+
+  export interface assertIsString { t: 1 } export interface fail { t: 1 } export interface Promise { t: 1 } export interface Obj { t: 1 }
+>assertIsString : Symbol(assertIsString, Decl(real.ts, 0, 14))
+>t : Symbol(assertIsString.t, Decl(real.ts, 1, 35))
+>fail : Symbol(fail, Decl(real.ts, 1, 42))
+>t : Symbol(fail.t, Decl(real.ts, 1, 66))
+>Promise : Symbol(Promise, Decl(real.ts, 1, 73))
+>t : Symbol(Promise.t, Decl(real.ts, 1, 100))
+>Obj : Symbol(Obj, Decl(real.ts, 1, 107))
+>t : Symbol(Obj.t, Decl(real.ts, 1, 130))
+}
+const g2 = { v: 1 };
+>g2 : Symbol(g2, Decl(real.ts, 0, 0), Decl(real.ts, 3, 5))
+>v : Symbol(v, Decl(real.ts, 3, 12))
+
+export = g2;
+>g2 : Symbol(g2, Decl(real.ts, 0, 0), Decl(real.ts, 3, 5))
+

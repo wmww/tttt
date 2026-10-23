@@ -1,0 +1,26 @@
+b.ts(2,39): error TS2666: Exports and export assignments are not permitted in module augmentations.
+c.ts(2,16): error TS2671: Cannot augment module './t' because it resolves to a non-module entity.
+c.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] }, "files": ["a.ts", "b.ts", "c.ts", "t.ts"] }
+==== a.ts (0 errors) ====
+    export {};
+    declare module "./t" { interface A {} }
+==== b.ts (1 errors) ====
+    export {};
+    declare module "./t" { interface I {} export = I; }
+                                          ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+==== c.ts (2 errors) ====
+    export {};
+    declare module "./t" { interface C {} }
+                   ~~~~~
+!!! error TS2671: Cannot augment module './t' because it resolves to a non-module entity.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== t.ts (0 errors) ====
+    export {};
+    

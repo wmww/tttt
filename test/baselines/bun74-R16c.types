@@ -1,0 +1,17 @@
+//// [test/cases/bun74-R16c.ts] ////
+
+=== a.tsx ===
+function f(a = <a>
+>f : (a: any, a: any) => any
+>a : any
+><a> : any
+>a : any
+
+<<<<<<< x
+</a>) {}
+> : any
+>a : any
+>> : boolean
+> : any
+> : any
+

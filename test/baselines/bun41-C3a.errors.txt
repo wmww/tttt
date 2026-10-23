@@ -1,0 +1,16 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,72): error TS5023: Unknown compiler option 'x'.
+tsconfig.json(1,80): error TS5023: Unknown compiler option 'x'.
+
+
+==== tsconfig.json (2 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "lib": ["es2022"], "x": 1, "x": 1 } }
+                                                                           ~~~
+!!! error TS5023: Unknown compiler option 'x'.
+                                                                                   ~~~
+!!! error TS5023: Unknown compiler option 'x'.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,39 @@
+//// [test/cases/bun55-L12d.ts] ////
+
+=== a.ts ===
+class C {
+>C : C
+
+  static x: string | undefined;
+>x : string | undefined
+
+  constructor() {
+    if (new.other.x) { new.target.x.length; }
+>new.other.x : string | undefined
+>new.other : typeof C
+>other : typeof C
+>x : string | undefined
+>new.target.x.length : number
+>new.target.x : string | undefined
+>new.target : typeof C
+>target : typeof C
+>x : string | undefined
+>length : number
+
+    if (new.target.x) { new.target.x.length; }
+>new.target.x : string | undefined
+>new.target : typeof C
+>target : typeof C
+>x : string | undefined
+>new.target.x.length : number
+>new.target.x : string
+>new.target : typeof C
+>target : typeof C
+>x : string
+>length : number
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,109 @@
+//// [test/cases/bun86-R08.ts] ////
+
+=== a.ts ===
+import { vx, px } from "x"; import { vy } from "y";
+>vx : 1
+>px : 1
+>vy : 1
+
+const n1: null = vx; const n2: null = px; const n3: null = vy;
+>n1 : null
+>vx : 1
+>n2 : null
+>px : 1
+>n3 : null
+>vy : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/deep/index.js ===
+exports.d = 1;
+>exports.d = 1 : 1
+>exports.d : 1
+>exports : typeof import("deep")
+>d : 1
+>1 : 1
+
+=== node_modules/x/index.js ===
+const m = require("mid"); const p = require("p"); exports.vx = m.v; exports.px = p.pv;
+>m : typeof m
+>require("mid") : typeof m
+>require : any
+>"mid" : "mid"
+>p : typeof p
+>require("p") : typeof p
+>require : any
+>"p" : "p"
+>exports.vx = m.v : 1
+>exports.vx : 1
+>exports : typeof import("x")
+>vx : 1
+>m.v : 1
+>m : typeof m
+>v : 1
+>exports.px = p.pv : 1
+>exports.px : 1
+>exports : typeof import("x")
+>px : 1
+>p.pv : 1
+>p : typeof p
+>pv : 1
+
+=== node_modules/x/node_modules/mid/index.js ===
+const d = require("deep"); exports.v = d.d;
+>d : typeof d
+>require("deep") : typeof d
+>require : any
+>"deep" : "deep"
+>exports.v = d.d : 1
+>exports.v : 1
+>exports : typeof import("x/node_modules/mid")
+>v : 1
+>d.d : 1
+>d : typeof d
+>d : 1
+
+=== node_modules/x/node_modules/p/index.js ===
+const m = require("mid"); exports.pv = m.v;
+>m : typeof m
+>require("mid") : typeof m
+>require : any
+>"mid" : "mid"
+>exports.pv = m.v : 1
+>exports.pv : 1
+>exports : typeof import("x/node_modules/p")
+>pv : 1
+>m.v : 1
+>m : typeof m
+>v : 1
+
+=== node_modules/y/index.js ===
+const p = require("p"); exports.vy = p.pv;
+>p : typeof p
+>require("p") : typeof p
+>require : any
+>"p" : "p"
+>exports.vy = p.pv : 1
+>exports.vy : 1
+>exports : typeof import("y")
+>vy : 1
+>p.pv : 1
+>p : typeof p
+>pv : 1
+
+=== node_modules/y/node_modules/p/index.js ===
+const m = require("mid"); exports.pv = m.v;
+>m : typeof m
+>require("mid") : typeof m
+>require : any
+>"mid" : "mid"
+>exports.pv = m.v : 1
+>exports.pv : 1
+>exports : typeof import("x/node_modules/p")
+>pv : 1
+>m.v : 1
+>m : typeof m
+>v : 1
+

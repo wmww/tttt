@@ -1,0 +1,27 @@
+//// [test/cases/bun84-R06b.ts] ////
+
+=== a.ts ===
+declare function f<T>(): void;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+f<<>() => void>();
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const q = f<<>() => void>;
+>q : Symbol(q, Decl(a.ts, 2, 5))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+f<new <>() => void>();
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+f<{ m<>(): void }>();
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>m : Symbol(m, Decl(a.ts, 4, 3))
+
+let ok: <>() => void;
+>ok : Symbol(ok, Decl(a.ts, 5, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

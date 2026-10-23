@@ -1,0 +1,27 @@
+//// [test/cases/bun80-R04.ts] ////
+
+=== a.ts ===
+declare export default (() => { for (;;) { break; } })();
+>(() => { for (;;) { break; } })() : void
+>(() => { for (;;) { break; } }) : () => void
+>() => { for (;;) { break; } } : () => void
+
+declare const c = () => { { 1; } };
+>c : () => void
+>() => { { 1; } } : () => void
+>1 : 1
+
+declare enum E { A = (() => { if (1) { 1; } return 1 })() }
+>E : E
+>A : E.A
+>(() => { if (1) { 1; } return 1 })() : number
+>(() => { if (1) { 1; } return 1 }) : () => number
+>() => { if (1) { 1; } return 1 } : () => number
+>1 : 1
+>1 : 1
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,38 @@
+a.ts(3,73): error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); s: number; prototype: g4.(Anonymous class); } & T' incorrectly extends base class static side '{ s: string; }'.
+  Types of property 's' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+a.ts(4,71): error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); s: number; f: number; prototype: g5.(Anonymous class); } & T' incorrectly extends base class static side '{ s: string; f(): void; }'.
+  Types of property 's' are incompatible.
+    Type 'number' is not assignable to type 'string'.
+a.ts(5,70): error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); s: string; prototype: g7.(Anonymous class); } & T' incorrectly extends base class static side '{ [k: string]: number; }'.
+  Index signature for type 'string' is missing in type '{ new (...a: any[]): (Anonymous class); s: string; prototype: g7.(Anonymous class); } & Ctor<{}>'.
+a.ts(6,83): error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); prototype: h14.(Anonymous class); } & T' incorrectly extends base class static side 'Record<K, number>'.
+a.ts(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022" } }
+==== a.ts (5 errors) ====
+    export {};
+    type Ctor<T = {}> = new (...a: any[]) => T;
+    function g4<T extends Ctor, U extends { s: string }>(B: T & U) { return class extends B { static s = 1; }; }
+                                                                            ~~~~~
+!!! error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); s: number; prototype: g4.(Anonymous class); } & T' incorrectly extends base class static side '{ s: string; }'.
+!!! error TS2417:   Types of property 's' are incompatible.
+!!! error TS2417:     Type 'number' is not assignable to type 'string'.
+    function g5<T extends Ctor>(B: T & { s: string; f(): void }) { return class extends B { static s = 1; static f = 1; }; }
+                                                                          ~~~~~
+!!! error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); s: number; f: number; prototype: g5.(Anonymous class); } & T' incorrectly extends base class static side '{ s: string; f(): void; }'.
+!!! error TS2417:   Types of property 's' are incompatible.
+!!! error TS2417:     Type 'number' is not assignable to type 'string'.
+    function g7<T extends Ctor>(B: T & { [k: string]: number }) { return class extends B { static s = "x"; }; }
+                                                                         ~~~~~
+!!! error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); s: string; prototype: g7.(Anonymous class); } & T' incorrectly extends base class static side '{ [k: string]: number; }'.
+!!! error TS2417:   Index signature for type 'string' is missing in type '{ new (...a: any[]): (Anonymous class); s: string; prototype: g7.(Anonymous class); } & Ctor<{}>'.
+    function h14<T extends Ctor, K extends string>(B: T & Record<K, number>) { return class extends B {}; }
+                                                                                      ~~~~~
+!!! error TS2417: Class static side '{ new (...a: any[]): (Anonymous class); prototype: h14.(Anonymous class); } & T' incorrectly extends base class static side 'Record<K, number>'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

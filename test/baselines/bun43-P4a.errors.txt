@@ -1,0 +1,17 @@
+a.ts(1,10): error TS6133: 'Foo' is declared but its value is never read.
+a.ts(3,14): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedLocals": true } }
+==== a.ts (2 errors) ====
+    import { Foo } from "./p";
+             ~~~
+!!! error TS6133: 'Foo' is declared but its value is never read.
+    /** @throws {@link Foo} */
+    export const sentinel: number = "";
+                 ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== p.ts (0 errors) ====
+    export class Foo {}
+    

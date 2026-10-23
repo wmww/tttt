@@ -1,0 +1,45 @@
+a.ts(6,3): error TS2345: Argument of type '{ k: 1; u: number; }' is not assignable to parameter of type '{ k: 1; u: string; } | { u: number; k: 1; more: 1; }'.
+  Property 'more' is missing in type '{ k: 1; u: number; }' but required in type '{ u: number; k: 1; more: 1; }'.
+a.ts(7,3): error TS2345: Argument of type '{ k: 1; u: number; }' is not assignable to parameter of type '{ k: 1; u: string; } | { z: number; }'.
+  Type '{ k: 1; u: number; }' is not assignable to type '{ k: 1; u: string; }'.
+    Types of property 'u' are incompatible.
+      Type 'number' is not assignable to type 'string'.
+a.ts(14,4): error TS2345: Argument of type '{ u: number; }' is not assignable to parameter of type '{ u: string; } | { u: number; more: 1; }'.
+  Property 'more' is missing in type '{ u: number; }' but required in type '{ u: number; more: 1; }'.
+a.ts(15,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    function mk<U>(u: U, x: { k: 1 }) { return { u, ...x }; }
+    const a = mk(1, { k: 1 });
+    const b = mk("", { k: 1 });
+    declare function f<T>(p: typeof b | T, q: T): T;
+    declare const c: { u: number; k: 1; more: 1 };
+    f(a, c);
+      ~
+!!! error TS2345: Argument of type '{ k: 1; u: number; }' is not assignable to parameter of type '{ k: 1; u: string; } | { u: number; k: 1; more: 1; }'.
+!!! error TS2345:   Property 'more' is missing in type '{ k: 1; u: number; }' but required in type '{ u: number; k: 1; more: 1; }'.
+!!! related TS2728 a.ts:5:37: 'more' is declared here.
+    f(a, { z: 1 });
+      ~
+!!! error TS2345: Argument of type '{ k: 1; u: number; }' is not assignable to parameter of type '{ k: 1; u: string; } | { z: number; }'.
+!!! error TS2345:   Type '{ k: 1; u: number; }' is not assignable to type '{ k: 1; u: string; }'.
+!!! error TS2345:     Types of property 'u' are incompatible.
+!!! error TS2345:       Type 'number' is not assignable to type 'string'.
+    // without the spread both agree
+    function mk2<U>(u: U) { return { u }; }
+    const a2 = mk2(1);
+    const b2 = mk2("");
+    declare function f2<T>(p: typeof b2 | T, q: T): T;
+    declare const c2: { u: number; more: 1 };
+    f2(a2, c2);
+       ~~
+!!! error TS2345: Argument of type '{ u: number; }' is not assignable to parameter of type '{ u: string; } | { u: number; more: 1; }'.
+!!! error TS2345:   Property 'more' is missing in type '{ u: number; }' but required in type '{ u: number; more: 1; }'.
+!!! related TS2728 a.ts:13:32: 'more' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

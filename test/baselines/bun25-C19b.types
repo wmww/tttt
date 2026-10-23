@@ -1,0 +1,13 @@
+//// [test/cases/bun25-C19b.ts] ////
+
+=== a.ts ===
+const p: never = null! as { "#a@1": 1 };
+>p : never
+>null! as { "#a@1": 1 } : { "#a@1": 1; }
+>null! : never
+>"#a@1" : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

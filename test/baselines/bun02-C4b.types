@@ -1,0 +1,10 @@
+//// [test/cases/bun02-C4b.ts] ////
+
+=== a.ts ===
+interface A4<T = `${A4 & string}`> { x: T }
+>x : T
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

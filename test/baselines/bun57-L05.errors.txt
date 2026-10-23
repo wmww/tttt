@@ -1,0 +1,71 @@
+a.ts(5,13): error TS2344: Type 'number | boolean' does not satisfy the constraint 'string'.
+  Type 'number' is not assignable to type 'string'.
+a.ts(6,13): error TS2344: Type '() => void' does not satisfy the constraint 'string'.
+a.ts(7,3): error TS2344: Type 'number' does not satisfy the constraint 'string'.
+a.ts(8,7): error TS2344: Type 'number' does not satisfy the constraint 'string'.
+a.ts(9,19): error TS2344: Type 'number' does not satisfy the constraint 'string'.
+a.ts(10,23): error TS2344: Type 'number' does not satisfy the constraint 'string'.
+a.ts(11,20): error TS2339: Property 'b' does not exist on type '{ a: 1; }'.
+a.ts(11,20): error TS2339: Property 'c' does not exist on type '{ a: 1; }'.
+a.ts(12,20): error TS2537: Type '{ a: 1; }' has no matching index signature for type 'number'.
+a.ts(13,20): error TS2538: Type 'boolean' cannot be used as an index type.
+a.ts(14,18): error TS2493: Tuple type '[1, 2]' of length '2' has no element at index '5'.
+a.ts(15,19): error TS2322: Type 'boolean' is not assignable to type 'string | number | symbol'.
+a.ts(16,26): error TS2322: Type 'boolean' is not assignable to type 'string | number | symbol'.
+a.ts(17,16): error TS2577: Return type annotation circularly references itself.
+a.ts(18,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (15 errors) ====
+    declare const o: any;
+    interface G<T extends string> {}
+    declare function g<T extends string>(): void;
+    declare class K<T extends string> {}
+    type X1 = G<(number | boolean)>;
+                ~~~~~~~~~~~~~~~~~~
+!!! error TS2344: Type 'number | boolean' does not satisfy the constraint 'string'.
+!!! error TS2344:   Type 'number' is not assignable to type 'string'.
+    type X2 = G<(() => void)>;
+                ~~~~~~~~~~~~
+!!! error TS2344: Type '() => void' does not satisfy the constraint 'string'.
+    g<(number)>();
+      ~~~~~~~~
+!!! error TS2344: Type 'number' does not satisfy the constraint 'string'.
+    new K<(number)>();
+          ~~~~~~~~
+!!! error TS2344: Type 'number' does not satisfy the constraint 'string'.
+    class L extends K<(number)> {}
+                      ~~~~~~~~
+!!! error TS2344: Type 'number' does not satisfy the constraint 'string'.
+    interface M extends G<(number)> {}
+                          ~~~~~~~~
+!!! error TS2344: Type 'number' does not satisfy the constraint 'string'.
+    type Y1 = { a: 1 }[("b" | "c")];
+                       ~~~~~~~~~~~
+!!! error TS2339: Property 'b' does not exist on type '{ a: 1; }'.
+                       ~~~~~~~~~~~
+!!! error TS2339: Property 'c' does not exist on type '{ a: 1; }'.
+    type Y2 = { a: 1 }[(number)];
+                       ~~~~~~~~
+!!! error TS2537: Type '{ a: 1; }' has no matching index signature for type 'number'.
+    type Y3 = { a: 1 }[(boolean)];
+                       ~~~~~~~~~
+!!! error TS2538: Type 'boolean' cannot be used as an index type.
+    type Y4 = [1, 2][(5)];
+                     ~~~
+!!! error TS2493: Tuple type '[1, 2]' of length '2' has no element at index '5'.
+    type M1 = { [K in (boolean)]: 1 };
+                      ~~~~~~~~~
+!!! error TS2322: Type 'boolean' is not assignable to type 'string | number | symbol'.
+    type M2 = { [K in "a" as (boolean)]: 1 };
+                             ~~~~~~~~~
+!!! error TS2322: Type 'boolean' is not assignable to type 'string | number | symbol'.
+    function f1(): (ReturnType<typeof f1>) { return o }
+                   ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2577: Return type annotation circularly references itself.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

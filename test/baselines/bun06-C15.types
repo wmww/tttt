@@ -1,0 +1,16 @@
+//// [test/cases/bun06-C15.ts] ////
+
+=== a.ts ===
+function* g1(): Generator<number[]> { yield* [[1], ["a"]]; }
+>g1 : () => Generator<number[]>
+>yield* [[1], ["a"]] : undefined
+>[[1], ["a"]] : (string[] | number[])[]
+>[1] : number[]
+>1 : 1
+>["a"] : string[]
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

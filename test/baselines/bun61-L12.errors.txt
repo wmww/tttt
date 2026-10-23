@@ -1,0 +1,32 @@
+a.ts(2,16): error TS2307: Cannot find module './nope' or its corresponding type declarations.
+a.ts(3,1): error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+a.ts(3,24): error TS2307: Cannot find module './nope' or its corresponding type declarations.
+a.ts(4,7): error TS2322: Type 'Promise<typeof import("b")>' is not assignable to type 'number'.
+a.ts(5,7): error TS2322: Type 'Promise<typeof import("b")>' is not assignable to type 'number'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (6 errors) ====
+    export {};
+    import.defer?.("./nope");
+                   ~~~~~~~~
+!!! error TS2307: Cannot find module './nope' or its corresponding type declarations.
+    import.defer?.<string>("./nope");
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS1326: This use of 'import' is invalid. 'import()' calls can be written, but they must have parentheses and cannot have type arguments.
+                           ~~~~~~~~
+!!! error TS2307: Cannot find module './nope' or its corresponding type declarations.
+    const x1: number = import.defer?.("./b");
+          ~~
+!!! error TS2322: Type 'Promise<typeof import("b")>' is not assignable to type 'number'.
+    const x2: number = import.defer("./b");
+          ~~
+!!! error TS2322: Type 'Promise<typeof import("b")>' is not assignable to type 'number'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    export const b = 1;
+    

@@ -1,0 +1,14 @@
+//// [test/cases/bun30-C25.ts] ////
+
+=== a.ts ===
+namespace N { declare module "x" { let a: number } declare module "x" { let a: number } }
+>N : typeof N
+>"x" : typeof import("x")
+>a : number
+>"x" : typeof import("x")
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

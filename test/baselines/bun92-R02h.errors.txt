@@ -1,0 +1,13 @@
+a.ts(1,43): error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+a.ts(1,45): error TS1358: Tagged template expressions are not permitted in an optional chain.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const a: any, b: any, T: any; a?.<T>`x`;
+                                              ~
+!!! error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+                                                ~~~
+!!! error TS1358: Tagged template expressions are not permitted in an optional chain.
+    

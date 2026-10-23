@@ -1,0 +1,24 @@
+j.js(1,27): error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+j.js(1,62): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'J'.
+j.js(4,9): error TS2339: Property 'b' does not exist on type 'J'.
+j.js(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "allowJs": true, "checkJs": true } }
+==== j.js (4 errors) ====
+    class J { constructor() { this.a = /** @type {"b"} */ ("b"); this[jk] = 1; } }
+                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7022: 'a' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+                                                                 ~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'J'.
+    /** @type {J["a"]} */
+    const jk = "b";
+    new J().b;
+            ~
+!!! error TS2339: Property 'b' does not exist on type 'J'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

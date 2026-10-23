@@ -1,0 +1,14 @@
+//// [test/cases/bun14-C11c.ts] ////
+
+=== a.ts ===
+declare const t: [string, number];
+>t : Symbol(t, Decl(a.ts, 0, 13))
+
+const { [/*c*/ 2]: t2 } = t;
+>2 : Symbol(t2, Decl(a.ts, 1, 7))
+>t2 : Symbol(t2, Decl(a.ts, 1, 7))
+>t : Symbol(t, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,24 @@
+//// [test/cases/bun10-C17.ts] ////
+
+=== a.ts ===
+const k = "key";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+class C3 { static [k] = 1 }
+>C3 : Symbol(C3, Decl(a.ts, 0, 16), Decl(a.ts, 1, 27))
+>[k] : Symbol(C3[k], Decl(a.ts, 1, 10))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+namespace C3 { export const key = "s"; }
+>C3 : Symbol(C3, Decl(a.ts, 0, 16), Decl(a.ts, 1, 27))
+>key : Symbol(key, Decl(a.ts, 2, 27))
+
+const t: boolean = C3.key;
+>t : Symbol(t, Decl(a.ts, 3, 5))
+>C3.key : Symbol(C3.key, Decl(a.ts, 2, 27))
+>C3 : Symbol(C3, Decl(a.ts, 0, 16), Decl(a.ts, 1, 27))
+>key : Symbol(C3.key, Decl(a.ts, 2, 27))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

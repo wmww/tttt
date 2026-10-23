@@ -1,0 +1,15 @@
+//// [test/cases/bun30-P7a.ts] ////
+
+=== a.ts ===
+declare var x: any;
+>x : any
+
+class C implements (x) {}
+>C : C
+>(x) : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

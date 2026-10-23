@@ -1,0 +1,24 @@
+//// [test/cases/bun29-C8a.ts] ////
+
+=== a.ts ===
+declare const u: unique symbol;
+>u : unique symbol
+
+declare let a: (x: unknown) => x is typeof u;
+>a : (x: unknown) => x is typeof u
+>x : unknown
+>u : unique symbol
+
+declare let b: (x: unknown) => x is 1;
+>b : (x: unknown) => x is 1
+>x : unknown
+
+a = b;
+>a = b : (x: unknown) => x is 1
+>a : (x: unknown) => x is typeof u
+>b : (x: unknown) => x is 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

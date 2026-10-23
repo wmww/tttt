@@ -1,0 +1,10 @@
+//// [test/cases/bun34-P6b.ts] ////
+
+=== a.ts ===
+type T = (public this: any) => void;
+>T : Symbol(T, Decl(a.ts, 0, 0))
+>this : Symbol(this, Decl(a.ts, 0, 10))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,14 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "noUnusedParameters": true } }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== g1.ts (0 errors) ====
+    interface GI { m<T>(): void; }
+==== g2.ts (0 errors) ====
+    interface GI { m<U>(x: number): void; }
+    

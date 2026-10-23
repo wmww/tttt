@@ -1,0 +1,17 @@
+a.ts(3,24): error TS2741: Property 'v' is missing in type 'K2.m.L' but required in type 'K1.m.L'.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class K1 { m<T>(x: T) { class L { v!: T } return new L(); } }
+    class K2 { m<T>(x: T) { class L { w!: T } return new L(); } }
+    let a = new K1().m(1); a = new K2().m(1);
+                           ~
+!!! error TS2741: Property 'v' is missing in type 'K2.m.L' but required in type 'K1.m.L'.
+!!! related TS2728 a.ts:1:35: 'v' is declared here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

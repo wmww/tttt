@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C22b.ts] ////
+
+=== a.ts ===
+function f() { export { zzz }; }
+>f : () => void
+>zzz : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

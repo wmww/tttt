@@ -1,0 +1,9 @@
+//// [test/cases/bun25-C22c.ts] ////
+
+=== a.ts ===
+let s: readonly unique symbol[];
+>s : Symbol(s, Decl(a.ts, 0, 3))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

@@ -1,0 +1,26 @@
+a.ts(12,41): error TS2767: The 'throw' property of an iterator must be a method.
+a.ts(14,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare const b1: { [Symbol.iterator](): { next(): IteratorResult<number>; return: number } };
+    const r1 = f1();
+    function f1() { let a: number | string; [a] = b1; return a; }
+    declare const b2: { [Symbol.iterator](): { next(): IteratorResult<number>; return: string } };
+    const r2 = f2();
+    function f2() { let a: number | string, b: number[] | string; [a, ...b] = b2; return b; }
+    declare const b3: { [Symbol.iterator](): { next(): IteratorResult<number>; return: boolean } };
+    const r3 = f3();
+    function f3() { let a: number | string; ({ p: [a] } = { p: b3 }); return a; }
+    // the function first, the call after: both tools report
+    declare const b4: { [Symbol.iterator](): { next(): IteratorResult<number>; throw: number } };
+    function f4() { let a: number | string; [a] = b4; return a; }
+                                            ~~~
+!!! error TS2767: The 'throw' property of an iterator must be a method.
+    const r4 = f4();
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,24 @@
+//// [test/cases/bun74-R15d.ts] ////
+
+=== a.ts ===
+export {};
+const q = <await>(x: await) => x;
+>q : await
+><await>(x : await
+>(x : any
+>x : any
+>await : any
+>=> x : () => any
+>x : any
+
+=== b.ts ===
+export {};
+const q = <T, await>(x: T) => x;
+>q : T
+><T : T
+> : any
+>await : any
+>x : T
+>=> x : () => T
+>x : T
+

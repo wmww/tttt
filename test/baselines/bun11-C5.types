@@ -1,0 +1,18 @@
+//// [test/cases/bun11-C5.ts] ////
+
+=== a.ts ===
+class K { async n() {} }
+>K : K
+>n : () => Promise<void>
+
+new K().n();
+>new K().n() : Promise<void>
+>new K().n : () => Promise<void>
+>new K() : K
+>K : typeof K
+>n : () => Promise<void>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

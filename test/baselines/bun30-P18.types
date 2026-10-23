@@ -1,0 +1,18 @@
+//// [test/cases/bun30-P18.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== f.js ===
+exports.a = void 0;
+>exports.a = void 0 : undefined
+>exports.a : any
+>exports : typeof import("./f")
+>a : any
+>void 0 : undefined
+>0 : 0
+
+/** @typedef {number} a */
+

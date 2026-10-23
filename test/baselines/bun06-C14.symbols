@@ -1,0 +1,16 @@
+//// [test/cases/bun06-C14.ts] ////
+
+=== a.ts ===
+declare function g(a: any): number;
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>a : Symbol(a, Decl(a.ts, 0, 19))
+
+function f1(x: number | undefined = g(x)) { }
+>f1 : Symbol(f1, Decl(a.ts, 0, 35))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>g : Symbol(g, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

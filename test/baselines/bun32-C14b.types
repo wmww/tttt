@@ -1,0 +1,25 @@
+//// [test/cases/bun32-C14b.ts] ////
+
+=== a.ts ===
+function f(x: string | number) { if (typeof x === "string") { () => x.length; enum E { A = (x = 1) } } }
+>f : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>() => x.length : () => number
+>x.length : number
+>x : string
+>length : number
+>E : E
+>A : E.A
+>(x = 1) : 1
+>x = 1 : 1
+>x : string | number
+>1 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

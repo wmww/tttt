@@ -1,0 +1,11 @@
+//// [test/cases/bun28-C16b.ts] ////
+
+=== a.ts ===
+type F = (out x: any) => void;
+>F : F
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

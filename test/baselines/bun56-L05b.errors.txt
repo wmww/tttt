@@ -1,0 +1,58 @@
+a.tsx(1,15): error TS1005: '(' expected.
+a.tsx(1,15): error TS2304: Cannot find name 'x'.
+a.tsx(1,17): error TS1005: ';' expected.
+a.tsx(1,20): error TS2304: Cannot find name 'x'.
+a.tsx(2,30): error TS1005: '(' expected.
+a.tsx(2,30): error TS2304: Cannot find name 'x'.
+a.tsx(2,33): error TS7005: Variable 'y' implicitly has an 'any' type.
+a.tsx(3,15): error TS1005: '(' expected.
+a.tsx(4,15): error TS1139: Type parameter declaration expected.
+a.tsx(4,18): error TS2304: Cannot find name 'x'.
+a.tsx(4,19): error TS1005: ')' expected.
+a.tsx(4,21): error TS1434: Unexpected keyword or identifier.
+a.tsx(4,21): error TS2304: Cannot find name 'T'.
+a.tsx(4,22): error TS1128: Declaration or statement expected.
+a.tsx(4,24): error TS1128: Declaration or statement expected.
+a.tsx(4,27): error TS2304: Cannot find name 'x'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (16 errors) ====
+    const g = <T,>x => x;
+                  ~
+!!! error TS1005: '(' expected.
+                  ~
+!!! error TS2304: Cannot find name 'x'.
+                    ~~
+!!! error TS1005: ';' expected.
+                       ~
+!!! error TS2304: Cannot find name 'x'.
+    const h = <T extends object> x, y;
+                                 ~
+!!! error TS1005: '(' expected.
+                                 ~
+!!! error TS2304: Cannot find name 'x'.
+                                    ~
+!!! error TS7005: Variable 'y' implicitly has an 'any' type.
+    const i = <T,>{ a: 1 };
+                  ~
+!!! error TS1005: '(' expected.
+    const j = <T, 2>(x: T) => x;
+                  ~
+!!! error TS1139: Type parameter declaration expected.
+                     ~
+!!! error TS2304: Cannot find name 'x'.
+                      ~
+!!! error TS1005: ')' expected.
+                        ~
+!!! error TS1434: Unexpected keyword or identifier.
+                        ~
+!!! error TS2304: Cannot find name 'T'.
+                         ~
+!!! error TS1128: Declaration or statement expected.
+                           ~~
+!!! error TS1128: Declaration or statement expected.
+                              ~
+!!! error TS2304: Cannot find name 'x'.
+    

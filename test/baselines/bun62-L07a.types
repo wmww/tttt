@@ -1,0 +1,45 @@
+//// [test/cases/bun62-L07a.ts] ////
+
+=== a.ts ===
+declare const k10: I10[typeof k10b];
+>k10 : "v"
+>k10b : "w"
+
+declare const k10b: "w";
+>k10b : "w"
+
+interface I10 { [k10]: 2; [k10b]: "v"; }
+>[k10] : 2
+>k10 : "v"
+>[k10b] : "v"
+>k10b : "w"
+
+declare const i: I10;
+>i : I10
+
+const p: boolean = i.w;
+>p : boolean
+>i.w : any
+>i : I10
+>w : any
+
+type T = I10["w"];
+>T : any
+
+type K = keyof I10;
+>K : "v"
+
+const kk: K = "w";
+>kk : "v"
+>"w" : "w"
+
+const lit: I10 = { w: "v" };
+>lit : I10
+>{ w: "v" } : { w: string; }
+>w : string
+>"v" : "v"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

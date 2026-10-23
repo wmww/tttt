@@ -1,0 +1,8 @@
+//// [test/cases/bun35-C2b.ts] ////
+
+=== a.ts ===
+import "tv/sub/";
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

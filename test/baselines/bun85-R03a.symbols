@@ -1,0 +1,66 @@
+//// [test/cases/bun85-R03a.ts] ////
+
+=== a1.js ===
+class C { p = [this.p, module]; }
+>C : Symbol(C, Decl(a1.js, 0, 0))
+>p : Symbol(C.p, Decl(a1.js, 0, 9))
+>this.p : Symbol(C.p, Decl(a1.js, 0, 9))
+>this : Symbol(C, Decl(a1.js, 0, 0))
+>p : Symbol(C.p, Decl(a1.js, 0, 9))
+>module : Symbol(module, Decl(a1.js, 0, 0))
+
+module.exports = C;
+>module.exports : Symbol(exports, Decl(a1.js, 0, 0))
+>module : Symbol(module, Decl(a1.js, 0, 0))
+>exports : Symbol(exports, Decl(a1.js, 0, 0))
+>C : Symbol(C, Decl(a1.js, 0, 0))
+
+=== a2.js ===
+class C { static p = [C.p, exports]; }
+>C : Symbol(C, Decl(a2.js, 0, 0))
+>p : Symbol(C.p, Decl(a2.js, 0, 9))
+>C.p : Symbol(C.p, Decl(a2.js, 0, 9))
+>C : Symbol(C, Decl(a2.js, 0, 0))
+>p : Symbol(C.p, Decl(a2.js, 0, 9))
+>exports : Symbol(exports, Decl(a2.js, 0, 0))
+
+exports.C = C;
+>exports.C : Symbol(C, Decl(a2.js, 0, 38))
+>exports : Symbol(exports, Decl(a2.js, 0, 0))
+>C : Symbol(C, Decl(a2.js, 0, 38))
+>C : Symbol(C, Decl(a2.js, 0, 0))
+
+=== a3.js ===
+function f() {}
+>f : Symbol(f, Decl(a3.js, 0, 0))
+
+f.p = [f.p, module];
+>f.p : Symbol(f.p, Decl(a3.js, 0, 15))
+>f : Symbol(f, Decl(a3.js, 0, 0))
+>p : Symbol(f.p, Decl(a3.js, 0, 15))
+>f.p : Symbol(f.p, Decl(a3.js, 0, 15))
+>f : Symbol(f, Decl(a3.js, 0, 0))
+>p : Symbol(f.p, Decl(a3.js, 0, 15))
+>module : Symbol(module, Decl(a3.js, 0, 0))
+
+module.exports = f;
+>module.exports : Symbol(exports, Decl(a3.js, 0, 0))
+>module : Symbol(module, Decl(a3.js, 0, 0))
+>exports : Symbol(exports, Decl(a3.js, 0, 0))
+>f : Symbol(f, Decl(a3.js, 0, 0))
+
+=== a4.js ===
+exports.a = [exports.a, module];
+>exports.a : Symbol(a, Decl(a4.js, 0, 0))
+>exports : Symbol(exports, Decl(a4.js, 0, 0))
+>a : Symbol(a, Decl(a4.js, 0, 0))
+>exports.a : Symbol(a, Decl(a4.js, 0, 0))
+>exports : Symbol(exports, Decl(a4.js, 0, 0))
+>a : Symbol(a, Decl(a4.js, 0, 0))
+>module : Symbol(module, Decl(a4.js, 0, 0))
+
+=== zz.ts ===
+export {};
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(zz.ts, 1, 5))
+

@@ -1,0 +1,19 @@
+//// [test/cases/bun13-C3.ts] ////
+
+=== a.ts ===
+declare function isObj(x: unknown): x is {};
+>isObj : Symbol(isObj, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 23))
+>x : Symbol(x, Decl(a.ts, 0, 23))
+
+function f1(x: unknown) { if (!isObj(x)) { const y: string = x; } }
+>f1 : Symbol(f1, Decl(a.ts, 0, 44))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>isObj : Symbol(isObj, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>y : Symbol(y, Decl(a.ts, 1, 48))
+>x : Symbol(x, Decl(a.ts, 1, 12))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

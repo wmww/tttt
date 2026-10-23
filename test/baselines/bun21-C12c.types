@@ -1,0 +1,18 @@
+//// [test/cases/bun21-C12c.ts] ////
+
+=== a.ts ===
+function g(r: { 0: string } & Iterable<number>) { let [a]: Iterable<string | number> & { 0: string | number } = r; a.length; }
+>g : (r: { 0: string; } & Iterable<number>) => void
+>r : { 0: string; } & Iterable<number>
+>0 : string
+>a : string | number
+>0 : string | number
+>r : { 0: string; } & Iterable<number>
+>a.length : number
+>a : string
+>length : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

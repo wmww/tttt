@@ -1,0 +1,33 @@
+//// [test/cases/bun20-C3c.ts] ////
+
+=== a.ts ===
+declare function cond(): boolean;
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+declare const m: { a: "b"; b: "c"; c: "d"; d: "a" };
+>m : Symbol(m, Decl(a.ts, 1, 13))
+>a : Symbol(a, Decl(a.ts, 1, 18))
+>b : Symbol(b, Decl(a.ts, 1, 26))
+>c : Symbol(c, Decl(a.ts, 1, 34))
+>d : Symbol(d, Decl(a.ts, 1, 42))
+
+function q() {
+>q : Symbol(q, Decl(a.ts, 1, 52))
+
+    let x: "a" | "b" | "c" | "d" = "a";
+>x : Symbol(x, Decl(a.ts, 3, 7))
+
+    while (cond()) {
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+
+        while (x !== "d") { x = m[x]; if (cond()) break; }
+>x : Symbol(x, Decl(a.ts, 3, 7))
+>x : Symbol(x, Decl(a.ts, 3, 7))
+>m : Symbol(m, Decl(a.ts, 1, 13))
+>x : Symbol(x, Decl(a.ts, 3, 7))
+>cond : Symbol(cond, Decl(a.ts, 0, 0))
+    }
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

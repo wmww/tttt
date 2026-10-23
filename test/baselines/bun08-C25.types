@@ -1,0 +1,31 @@
+//// [test/cases/bun08-C25.ts] ////
+
+=== a.ts ===
+namespace N { export const y = 1; }
+>N : typeof N
+>y : 1
+>1 : 1
+
+declare const k: "x";
+>k : "x"
+
+function f() {}
+>f : typeof f
+
+namespace f { export import x = N.y; }
+>f : typeof f
+>x : 1
+>N : typeof N
+>y : 1
+
+f[k] = 2;
+>f[k] = 2 : 2
+>f[k] : any
+>f : typeof f
+>k : "x"
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

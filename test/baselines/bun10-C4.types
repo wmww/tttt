@@ -1,0 +1,21 @@
+//// [test/cases/bun10-C4.ts] ////
+
+=== a.ts ===
+interface B1 { (x: number): void; p: number }
+>x : number
+>p : number
+
+interface A1 extends B1 {}
+interface A1 extends B1 {}
+declare const a1: A1;
+>a1 : A1
+
+a1("s");
+>a1("s") : void
+>a1 : A1
+>"s" : "s"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

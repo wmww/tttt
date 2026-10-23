@@ -1,0 +1,78 @@
+//// [test/cases/bun99-I1.ts] ////
+
+=== a.ts ===
+type Hydrated<T> = T extends { x: {} }
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>x : Symbol(x, Decl(a.ts, 0, 30))
+
+  ? T
+>T : Symbol(T, Decl(a.ts, 0, 14))
+
+  : T & {
+>T : Symbol(T, Decl(a.ts, 0, 14))
+
+      [P in keyof T]: T[P] extends Lazy<infer U> ? Lazy<U> : T[P];
+>P : Symbol(P, Decl(a.ts, 3, 7))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>P : Symbol(P, Decl(a.ts, 3, 7))
+>Lazy : Symbol(Lazy, Decl(a.ts, 4, 6))
+>U : Symbol(U, Decl(a.ts, 3, 45))
+>Lazy : Symbol(Lazy, Decl(a.ts, 4, 6))
+>U : Symbol(U, Decl(a.ts, 3, 45))
+>T : Symbol(T, Decl(a.ts, 0, 14))
+>P : Symbol(P, Decl(a.ts, 3, 7))
+
+    };
+
+declare class Lazy<T> {
+>Lazy : Symbol(Lazy, Decl(a.ts, 4, 6))
+>T : Symbol(T, Decl(a.ts, 6, 19))
+
+  brand: T;
+>brand : Symbol(Lazy.brand, Decl(a.ts, 6, 23))
+>T : Symbol(T, Decl(a.ts, 6, 19))
+}
+
+declare class Model {
+>Model : Symbol(Model, Decl(a.ts, 8, 1))
+
+  isHydrated(): this is {};
+>isHydrated : Symbol(Model.isHydrated, Decl(a.ts, 10, 21))
+
+  assertHydrated(): this is Hydrated<this>;
+>assertHydrated : Symbol(Model.assertHydrated, Decl(a.ts, 11, 27))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+}
+declare class Collection<T> {
+>Collection : Symbol(Collection, Decl(a.ts, 13, 1))
+>T : Symbol(T, Decl(a.ts, 14, 25))
+
+  hydrate(): Hydrated<T>;
+>hydrate : Symbol(Collection.hydrate, Decl(a.ts, 14, 29))
+>Hydrated : Symbol(Hydrated, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 14, 25))
+}
+class ChildCollection extends Collection<Model> {}
+>ChildCollection : Symbol(ChildCollection, Decl(a.ts, 16, 1))
+>Collection : Symbol(Collection, Decl(a.ts, 13, 1))
+>Model : Symbol(Model, Decl(a.ts, 8, 1))
+
+declare function relation<T extends Model>(ctor: new () => Collection<NoInfer<T>>): void;
+>relation : Symbol(relation, Decl(a.ts, 17, 50))
+>T : Symbol(T, Decl(a.ts, 19, 26))
+>Model : Symbol(Model, Decl(a.ts, 8, 1))
+>ctor : Symbol(ctor, Decl(a.ts, 19, 43))
+>Collection : Symbol(Collection, Decl(a.ts, 13, 1))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 19, 26))
+
+relation(ChildCollection);
+>relation : Symbol(relation, Decl(a.ts, 17, 50))
+>ChildCollection : Symbol(ChildCollection, Decl(a.ts, 16, 1))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 22, 5))
+

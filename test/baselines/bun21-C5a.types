@@ -1,0 +1,25 @@
+//// [test/cases/bun21-C5a.ts] ////
+
+=== a.ts ===
+function f(x: { a: number } | undefined, y: typeof x) { if ((x = y)?.a !== undefined) x.a; }
+>f : (x: { a: number; } | undefined, y: typeof x) => void
+>x : { a: number; } | undefined
+>a : number
+>y : { a: number; } | undefined
+>x : { a: number; } | undefined
+>(x = y)?.a !== undefined : boolean
+>(x = y)?.a : number | undefined
+>(x = y) : { a: number; } | undefined
+>x = y : { a: number; } | undefined
+>x : { a: number; } | undefined
+>y : { a: number; } | undefined
+>a : number | undefined
+>undefined : undefined
+>x.a : number
+>x : { a: number; } | undefined
+>a : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,18 @@
+a.ts(1,13): error TS2303: Circular definition of import alias 'self'.
+a.ts(2,10): error TS2303: Circular definition of import alias 'self'.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    import * as self from "./a";
+                ~~~~
+!!! error TS2303: Circular definition of import alias 'self'.
+    export { self };
+             ~~~~
+!!! error TS2303: Circular definition of import alias 'self'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

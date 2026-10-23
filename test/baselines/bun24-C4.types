@@ -1,0 +1,20 @@
+//// [test/cases/bun24-C4.ts] ////
+
+=== a.ts ===
+type Z = number;
+>Z : number
+
+type Y = [Iterable<Z, any, any>];
+>Y : Y
+
+declare let y: Y; const v: 1 = y[0];
+>y : Y
+>v : 1
+>y[0] : Iterable<number, any, any>
+>y : Y
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

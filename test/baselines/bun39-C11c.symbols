@@ -1,0 +1,16 @@
+//// [test/cases/bun39-C11c.ts] ////
+
+=== a.ts ===
+import { p } from 'x/index.ts';
+>p : Symbol(p, Decl(a.ts, 0, 8))
+
+p;
+>p : Symbol(p, Decl(a.ts, 0, 8))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+
+=== node_modules/x/index.ts ===
+export const p = 1;
+>p : Symbol(p, Decl(index.ts, 0, 12))
+

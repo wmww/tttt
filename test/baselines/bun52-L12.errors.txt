@@ -1,0 +1,20 @@
+a.ts(3,42): error TS2322: Type 'number' is not assignable to type 'string'.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    declare function g(x: number): number;
+    declare class K { constructor(x: number); }
+    function f1({ a = 1, b = g(a) }) { const s: string = a; }
+                                             ~
+!!! error TS2322: Type 'number' is not assignable to type 'string'.
+    function f2({ a = 1, b = new K(a) }) {}
+    function f3([a = 1, b = g(a)]) {}
+    const f4 = ({ a = 1, b = g(a) }) => {};
+    class C { m({ a = 1, b = g(a) }) {} }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

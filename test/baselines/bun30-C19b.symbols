@@ -1,0 +1,13 @@
+//// [test/cases/bun30-C19b.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 0, 5))
+
+=== f.js ===
+export class C { m() { return { [this.g = "k"]() {} } } }
+>C : Symbol(C, Decl(f.js, 0, 0))
+>m : Symbol(C.m, Decl(f.js, 0, 16))
+>[this.g = "k"] : Symbol([this.g = "k"], Decl(f.js, 0, 31))
+>this : Symbol(C, Decl(f.js, 0, 0))
+

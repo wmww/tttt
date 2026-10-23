@@ -1,0 +1,14 @@
+//// [test/cases/bun32-C25c.ts] ////
+
+=== a.ts ===
+declare const dec: any;
+>dec : any
+
+@dec public x;
+>dec : any
+>x : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

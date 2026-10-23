@@ -1,0 +1,49 @@
+//// [test/cases/bun92-R19c.ts] ////
+
+=== a.ts ===
+import * as m1 from "./m1";
+>m1 : Symbol(m1, Decl(a.ts, 0, 6))
+
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : Symbol(S, Decl(a.ts, 0, 27))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(a.ts, 1, 7))
+
+const t1: S<typeof m1> = ["?", -99];
+>t1 : Symbol(t1, Decl(a.ts, 2, 5))
+>S : Symbol(S, Decl(a.ts, 0, 27))
+>m1 : Symbol(m1, Decl(a.ts, 0, 6))
+
+type M = { [K in keyof typeof m1]: K }; const m: M = 0;
+>M : Symbol(M, Decl(a.ts, 2, 36))
+>K : Symbol(K, Decl(a.ts, 3, 12))
+>m1 : Symbol(m1, Decl(a.ts, 0, 6))
+>K : Symbol(K, Decl(a.ts, 3, 12))
+>m : Symbol(m, Decl(a.ts, 3, 45))
+>M : Symbol(M, Decl(a.ts, 2, 36))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+
+=== m1.ts ===
+const x = 1; export { x as "0", x as "1.5", x as "a b", x as y };
+>x : Symbol(x, Decl(m1.ts, 0, 5))
+>x : Symbol(x, Decl(m1.ts, 0, 5))
+>"0" : Symbol("0", Decl(m1.ts, 0, 21))
+>x : Symbol(x, Decl(m1.ts, 0, 5))
+>"1.5" : Symbol("1.5", Decl(m1.ts, 0, 31))
+>x : Symbol(x, Decl(m1.ts, 0, 5))
+>"a b" : Symbol("a b", Decl(m1.ts, 0, 43))
+>x : Symbol(x, Decl(m1.ts, 0, 5))
+>y : Symbol(y, Decl(m1.ts, 0, 55))
+
+export * as "2" from "./m2";
+>"2" : Symbol("2", Decl(m1.ts, 1, 6))
+
+=== m2.ts ===
+export const z = 1;
+>z : Symbol(z, Decl(m2.ts, 0, 12))
+

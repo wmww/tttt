@@ -1,0 +1,22 @@
+//// [test/cases/bun15-C12.ts] ////
+
+=== a.ts ===
+export {};
+declare global { interface PromiseLike<T> { then(cb: (v: "extra") => void): void } }
+>global : any
+>then : { <TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): PromiseLike<TResult1 | TResult2>; (cb: (v: "extra") => void): void; }
+>cb : (v: "extra") => void
+>v : "extra"
+
+async function f(p: PromiseLike<number>) { const r: never[] = [await p]; }
+>f : (p: PromiseLike<number>) => Promise<void>
+>p : PromiseLike<number>
+>r : never[]
+>[await p] : never[]
+>await p : never
+>p : PromiseLike<number>
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

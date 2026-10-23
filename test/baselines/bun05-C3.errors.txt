@@ -1,0 +1,18 @@
+a.ts(2,28): error TS2337: Super calls are not permitted outside constructors or in nested functions inside constructors.
+a.ts(2,34): error TS7006: Parameter 'x' implicitly has an 'any' type.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    class B { constructor(cb: (x: number) => void) {} }
+    class D1 extends B { m() { super(x => x); } }
+                               ~~~~~
+!!! error TS2337: Super calls are not permitted outside constructors or in nested functions inside constructors.
+                                     ~
+!!! error TS7006: Parameter 'x' implicitly has an 'any' type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

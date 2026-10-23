@@ -1,0 +1,14 @@
+//// [test/cases/bun25-C14.ts] ////
+
+=== a.ts ===
+class C { static Foo = 1; m() { class D implements Foo {} } }
+>C : C
+>Foo : number
+>1 : 1
+>m : () => void
+>D : D
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

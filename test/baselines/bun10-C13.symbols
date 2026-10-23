@@ -1,0 +1,15 @@
+//// [test/cases/bun10-C13.ts] ////
+
+=== a.ts ===
+const k = "nm";
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+class C2b { nm = 1; [k] = 1; }
+>C2b : Symbol(C2b, Decl(a.ts, 0, 15))
+>nm : Symbol(C2b.nm, Decl(a.ts, 1, 11), Decl(a.ts, 1, 19))
+>[k] : Symbol(C2b.nm, Decl(a.ts, 1, 11), Decl(a.ts, 1, 19))
+>k : Symbol(k, Decl(a.ts, 0, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

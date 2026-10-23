@@ -1,0 +1,20 @@
+//// [test/cases/bun17-C15.ts] ////
+
+=== a.ts ===
+declare function g<T>(u: T, v: typeof y): number;
+>g : <T>(u: T, v: typeof y) => number
+>u : T
+>v : any
+>y : any
+
+const y = g(1, 2);
+>y : any
+>g(1, 2) : number
+>g : <T>(u: T, v: typeof y) => number
+>1 : 1
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

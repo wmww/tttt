@@ -1,0 +1,35 @@
+a.ts(1,7): error TS7022: 'w1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(2,7): error TS7022: 'w3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(3,7): error TS7022: 'w7' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(4,7): error TS7022: 'e2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(6,7): error TS7022: 'w4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(7,7): error TS7022: 'w5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+a.ts(8,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (7 errors) ====
+    const w1 = function (this: typeof w1, x = this) {};
+          ~~
+!!! error TS7022: 'w1' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const w3 = function (this: typeof w3, x: number, y = this) {};
+          ~~
+!!! error TS7022: 'w3' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const w7 = { m(this: typeof w7, x = this) {} };
+          ~~
+!!! error TS7022: 'w7' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const e2 = function (this: ReturnType<typeof e2>, x = this) { return x; };
+          ~~
+!!! error TS7022: 'e2' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    // an ordinary first parameter, or a default that does not read `this` at once: the two agree
+    const w4 = function (a: typeof w4, x = a) {};
+          ~~
+!!! error TS7022: 'w4' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const w5 = function (this: typeof w5, x = () => this) {};
+          ~~
+!!! error TS7022: 'w5' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

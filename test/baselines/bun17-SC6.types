@@ -1,0 +1,23 @@
+//// [test/cases/bun17-SC6.ts] ////
+
+=== a.js ===
+/** @type {number[]} */
+const x1 = [/** @type {string} */ ("")];
+>x1 : number[]
+>[/** @type {string} */ ("")] : string[]
+>("") : string
+>"" : ""
+
+/** @type {number[]} */
+const y2 = [/** @type {string} */ (/** @type {any} */ (""))];
+>y2 : number[]
+>[/** @type {string} */ (/** @type {any} */ (""))] : string[]
+>(/** @type {any} */ ("")) : string
+>("") : any
+>"" : ""
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : number
+>"" : ""
+

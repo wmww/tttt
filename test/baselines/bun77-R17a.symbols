@@ -1,0 +1,55 @@
+//// [test/cases/bun77-R17a.ts] ////
+
+=== a.js ===
+/** @param {never} x */
+function nv(x) {}
+>nv : Symbol(nv, Decl(a.js, 0, 0))
+>x : Symbol(x, Decl(a.js, 1, 12))
+
+class A1 { constructor() { this.a = null; this.a = "s"; } a; }
+>A1 : Symbol(A1, Decl(a.js, 1, 17))
+>this.a : Symbol(A1.a, Decl(a.js, 2, 26), Decl(a.js, 2, 41), Decl(a.js, 2, 57))
+>this : Symbol(A1, Decl(a.js, 1, 17))
+>a : Symbol(A1.a, Decl(a.js, 2, 26), Decl(a.js, 2, 41), Decl(a.js, 2, 57))
+>this.a : Symbol(A1.a, Decl(a.js, 2, 26), Decl(a.js, 2, 41), Decl(a.js, 2, 57))
+>this : Symbol(A1, Decl(a.js, 1, 17))
+>a : Symbol(A1.a, Decl(a.js, 2, 26), Decl(a.js, 2, 41), Decl(a.js, 2, 57))
+>a : Symbol(A1.a, Decl(a.js, 2, 26), Decl(a.js, 2, 41), Decl(a.js, 2, 57))
+
+class A2 { a; constructor() { this.a = null; this.a = "s"; } }
+>A2 : Symbol(A2, Decl(a.js, 2, 62))
+>a : Symbol(A2.a, Decl(a.js, 3, 10))
+>this.a : Symbol(A2.a, Decl(a.js, 3, 10))
+>this : Symbol(A2, Decl(a.js, 2, 62))
+>a : Symbol(A2.a, Decl(a.js, 3, 10))
+>this.a : Symbol(A2.a, Decl(a.js, 3, 10))
+>this : Symbol(A2, Decl(a.js, 2, 62))
+>a : Symbol(A2.a, Decl(a.js, 3, 10))
+
+class A3 { constructor() { this.a = 1; nv(this.a); this.a = "s"; nv(this.a); } a; m() { nv(this.a); } }
+>A3 : Symbol(A3, Decl(a.js, 3, 62))
+>this.a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>this : Symbol(A3, Decl(a.js, 3, 62))
+>a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>nv : Symbol(nv, Decl(a.js, 0, 0))
+>this.a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>this : Symbol(A3, Decl(a.js, 3, 62))
+>a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>this.a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>this : Symbol(A3, Decl(a.js, 3, 62))
+>a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>nv : Symbol(nv, Decl(a.js, 0, 0))
+>this.a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>this : Symbol(A3, Decl(a.js, 3, 62))
+>a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>m : Symbol(A3.m, Decl(a.js, 4, 81))
+>nv : Symbol(nv, Decl(a.js, 0, 0))
+>this.a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+>this : Symbol(A3, Decl(a.js, 3, 62))
+>a : Symbol(A3.a, Decl(a.js, 4, 26), Decl(a.js, 4, 50), Decl(a.js, 4, 78))
+
+/** @type {number} */
+const sentinel = "";
+>sentinel : Symbol(sentinel, Decl(a.js, 6, 5))
+

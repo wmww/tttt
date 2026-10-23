@@ -1,0 +1,23 @@
+a.ts(1,58): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(2,58): error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+a.ts(2,58): error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "declaration": true, "isolatedDeclarations": true } }
+==== a.ts (4 errors) ====
+    export const o3 = { get y(): number { return 1; }, set y(this: any) {} };
+                                                             ~~~~~~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+    export const o2 = { get x(): number { return 1; }, set x(this: any, v: number) {} };
+                                                             ~~~~~~~~~
+!!! error TS2784: 'get' and 'set' accessors cannot declare 'this' parameters.
+                                                             ~~~~~~~~~
+!!! error TS9009: At least one accessor must have an explicit type annotation with --isolatedDeclarations.
+!!! related TS9033 a.ts:2:56: Add a type to parameter of the set accessor declaration.
+!!! related TS9032 a.ts:2:25: Add a return type to the get accessor declaration.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

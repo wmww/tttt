@@ -1,0 +1,15 @@
+a.ts(2,1): error TS1044: 'public' modifier cannot appear on a module or namespace element.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "target": "es2022"}}
+==== a.ts (2 errors) ====
+    interface A {}
+    public interface B extends A, {}
+    ~~~~~~
+!!! error TS1044: 'public' modifier cannot appear on a module or namespace element.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

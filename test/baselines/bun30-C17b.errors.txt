@@ -1,0 +1,16 @@
+a.ts(1,16): error TS2662: Cannot find name 'g'. Did you mean the static member 'C.g'?
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    class C { p = (g.x = 1) }
+                   ~
+!!! error TS2662: Cannot find name 'g'. Did you mean the static member 'C.g'?
+    namespace C { export function g() {} }
+    C.g.x;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

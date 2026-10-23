@@ -1,0 +1,455 @@
+//// [test/cases/bun99-M1.ts] ////
+
+=== a.ts ===
+enum K { ID = "id", N = "n" }
+>K : K
+>ID : K.ID
+>"id" : "id"
+>N : K.N
+>"n" : "n"
+
+enum Num { Zero, One }
+>Num : Num
+>Zero : Num.Zero
+>One : Num.One
+
+declare const sym: unique symbol;
+>sym : unique symbol
+
+type Item = { [K.ID]: string; [K.N]: number; plain: boolean };
+>Item : Item
+>[K.ID] : string
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>[K.N] : number
+>K.N : K.N
+>K : typeof K
+>N : K.N
+>plain : boolean
+
+type NumItem = { [Num.Zero]: string; [Num.One]: number };
+>NumItem : NumItem
+>[Num.Zero] : string
+>Num.Zero : Num.Zero
+>Num : typeof Num
+>Zero : Num.Zero
+>[Num.One] : number
+>Num.One : Num.One
+>Num : typeof Num
+>One : Num.One
+
+const k1: never = null! as keyof Item;
+>k1 : never
+>null! as keyof Item : "plain" | K
+>null! : never
+
+const k2: never = null! as keyof Required<Item>;
+>k2 : never
+>null! as keyof Required<Item> : "plain" | K
+>null! : never
+
+const k3: never = null! as keyof Partial<Item>;
+>k3 : never
+>null! as keyof Partial<Item> : "plain" | K
+>null! : never
+
+const k4: never = null! as keyof Pick<Item, K.ID>;
+>k4 : never
+>null! as keyof Pick<Item, K.ID> : K.ID
+>null! : never
+>K : any
+
+const k5: never = null! as keyof { [P in keyof Item]: Item[P] };
+>k5 : never
+>null! as keyof { [P in keyof Item]: Item[P] } : "plain" | K
+>null! : never
+
+const k6: never = null! as keyof { [P in K]: 1 };
+>k6 : never
+>null! as keyof { [P in K]: 1 } : K
+>null! : never
+
+const k7: never = null! as keyof Record<K, 1>;
+>k7 : never
+>null! as keyof Record<K, 1> : K
+>null! : never
+
+const k8: never = null! as keyof Required<NumItem>;
+>k8 : never
+>null! as keyof Required<NumItem> : Num
+>null! : never
+
+const k9: never = null! as keyof Readonly<Required<Item>>;
+>k9 : never
+>null! as keyof Readonly<Required<Item>> : "plain" | K
+>null! : never
+
+function r1({ [K.ID]: id, ...rest }: Item) { const x: never = rest; }
+>r1 : ({ [K.ID]: id, ...rest }: Item) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { [K.N]: number; plain: boolean; }
+>x : never
+>rest : { [K.N]: number; plain: boolean; }
+
+function r2({ [K.ID]: id, ...rest }: Required<Item>) { const x: never = rest; }
+>r2 : ({ [K.ID]: id, ...rest }: Required<Item>) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { [K.N]: number; plain: boolean; }
+>x : never
+>rest : { [K.N]: number; plain: boolean; }
+
+function r3({ [K.ID]: id, ...rest }: Partial<Item>) { const x: never = rest; }
+>r3 : ({ [K.ID]: id, ...rest }: Partial<Item>) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string | undefined
+>rest : { [K.N]?: number | undefined; plain?: boolean | undefined; }
+>x : never
+>rest : { [K.N]?: number | undefined; plain?: boolean | undefined; }
+
+function r4({ [K.ID]: id, ...rest }: Record<K, 1>) { const x: never = rest; }
+>r4 : ({ [K.ID]: id, ...rest }: Record<K, 1>) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : 1
+>rest : { [K.N]: 1; }
+>x : never
+>rest : { [K.N]: 1; }
+
+function r5({ [K.ID]: id, ...rest }: { [P in K]: P }) { const x: never = rest; }
+>r5 : ({ [K.ID]: id, ...rest }: { [P in K]: P; }) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : K.ID
+>rest : { [K.N]: K.N; }
+>x : never
+>rest : { [K.N]: K.N; }
+
+function r6({ [Num.Zero]: z, ...rest }: Required<NumItem>) { const x: never = rest; }
+>r6 : ({ [Num.Zero]: z, ...rest }: Required<NumItem>) => void
+>Num.Zero : Num.Zero
+>Num : typeof Num
+>Zero : Num.Zero
+>z : string
+>rest : { [Num.One]: number; }
+>x : never
+>rest : { [Num.One]: number; }
+
+function r7({ id, ...rest }: Required<Item>) { const x: never = rest; }
+>r7 : ({ id, ...rest }: Required<Item>) => void
+>id : string
+>rest : { [K.N]: number; plain: boolean; }
+>x : never
+>rest : { [K.N]: number; plain: boolean; }
+
+function r8({ ["id"]: id, ...rest }: Required<Item>) { const x: never = rest; }
+>r8 : ({ ["id"]: id, ...rest }: Required<Item>) => void
+>"id" : "id"
+>id : string
+>rest : { [K.N]: number; plain: boolean; }
+>x : never
+>rest : { [K.N]: number; plain: boolean; }
+
+function r9({ [K.ID]: id, ...rest }: Readonly<Required<Item>>) { const x: never = rest; }
+>r9 : ({ [K.ID]: id, ...rest }: Readonly<Required<Item>>) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { [K.N]: number; plain: boolean; }
+>x : never
+>rest : { [K.N]: number; plain: boolean; }
+
+function r10({ [K.ID]: id, ...rest }: Required<Item> & { extra: 1 }) { const x: never = rest; }
+>r10 : ({ [K.ID]: id, ...rest }: Required<Item> & { extra: 1; }) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { [K.N]: number; plain: boolean; extra: 1; }
+>extra : 1
+>x : never
+>rest : { [K.N]: number; plain: boolean; extra: 1; }
+
+function r11({ [K.ID]: id, ...rest }: Pick<Item, K.ID | "plain">) { const x: never = rest; }
+>r11 : ({ [K.ID]: id, ...rest }: Pick<Item, K.ID | "plain">) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { plain: boolean; }
+>K : any
+>x : never
+>rest : { plain: boolean; }
+
+function r12({ [K.ID]: id, ...rest }: Omit<Item, "plain">) { const x: never = rest; }
+>r12 : ({ [K.ID]: id, ...rest }: Omit<Item, "plain">) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { [K.N]: number; }
+>x : never
+>rest : { [K.N]: number; }
+
+export {};
+=== b.ts ===
+enum K { ID = "id", N = "n" }
+>K : K
+>ID : K.ID
+>"id" : "id"
+>N : K.N
+>"n" : "n"
+
+enum L { ID = "id" }
+>L : L
+>ID : L.ID
+>"id" : "id"
+
+type Item = { [K.ID]: string; [K.N]: number; plain: boolean };
+>Item : Item
+>[K.ID] : string
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>[K.N] : number
+>K.N : K.N
+>K : typeof K
+>N : K.N
+>plain : boolean
+
+type Same = { [P in keyof Item as P]: Item[P] };
+>Same : Same
+
+type Filtered = { [P in keyof Item as Exclude<P, K.N>]: Item[P] };
+>Filtered : Filtered
+>K : any
+
+type Prefixed = { [P in K as `x${P}`]: P };
+>Prefixed : Prefixed
+
+type ToOther = { [P in K as P extends K.ID ? L.ID : P]: P };
+>ToOther : ToOther
+>K : any
+>L : any
+
+type Merged = { [P in K | "id" as P extends K.ID ? "id" : P]: P };
+>Merged : Merged
+>K : any
+
+type ToString = { [P in K as `${P}`]: P };
+>ToString : ToString
+
+type Two = { [P in K.ID as P | "also"]: P };
+>Two : Two
+>K : any
+
+const k1: never = null! as keyof Same;
+>k1 : never
+>null! as keyof Same : "plain" | K
+>null! : never
+
+const k2: never = null! as keyof Filtered;
+>k2 : never
+>null! as keyof Filtered : "plain" | K.ID
+>null! : never
+
+const k3: never = null! as keyof Prefixed;
+>k3 : never
+>null! as keyof Prefixed : "xid" | "xn"
+>null! : never
+
+const k4: never = null! as keyof ToOther;
+>k4 : never
+>null! as keyof ToOther : K.N | L
+>null! : never
+
+const k5: never = null! as keyof Merged;
+>k5 : never
+>null! as keyof Merged : "id" | K.N
+>null! : never
+
+const k6: never = null! as keyof ToString;
+>k6 : never
+>null! as keyof ToString : "id" | "n"
+>null! : never
+
+const k7: never = null! as keyof Two;
+>k7 : never
+>null! as keyof Two : "also" | K.ID
+>null! : never
+
+function s1({ [K.ID]: id, ...rest }: Same) { const x: never = rest; }
+>s1 : ({ [K.ID]: id, ...rest }: Same) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { [K.N]: number; plain: boolean; }
+>x : never
+>rest : { [K.N]: number; plain: boolean; }
+
+function s2({ [K.ID]: id, ...rest }: Filtered) { const x: never = rest; }
+>s2 : ({ [K.ID]: id, ...rest }: Filtered) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : string
+>rest : { plain: boolean; }
+>x : never
+>rest : { plain: boolean; }
+
+function s3({ xid, ...rest }: Prefixed) { const x: never = rest; }
+>s3 : ({ xid, ...rest }: Prefixed) => void
+>xid : K.ID
+>rest : { xn: K.N; }
+>x : never
+>rest : { xn: K.N; }
+
+function s4({ [K.ID]: id, ...rest }: ToOther) { const x: never = rest; }
+>s4 : ({ [K.ID]: id, ...rest }: ToOther) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : K.ID
+>rest : { [L.ID]: K.ID; [K.N]: K.N; }
+>x : never
+>rest : { [L.ID]: K.ID; [K.N]: K.N; }
+
+function s5({ [L.ID]: id, ...rest }: ToOther) { const x: never = rest; }
+>s5 : ({ [L.ID]: id, ...rest }: ToOther) => void
+>L.ID : L
+>L : typeof L
+>ID : L
+>id : K.ID
+>rest : { [K.N]: K.N; }
+>x : never
+>rest : { [K.N]: K.N; }
+
+function s6({ [K.ID]: id, ...rest }: Merged) { const x: never = rest; }
+>s6 : ({ [K.ID]: id, ...rest }: Merged) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : "id" | K.ID
+>rest : { id: "id" | K.ID; [K.N]: K.N; }
+>x : never
+>rest : { id: "id" | K.ID; [K.N]: K.N; }
+
+function s7({ id, ...rest }: Merged) { const x: never = rest; }
+>s7 : ({ id, ...rest }: Merged) => void
+>id : "id" | K.ID
+>rest : { [K.N]: K.N; }
+>x : never
+>rest : { [K.N]: K.N; }
+
+function s8({ [K.ID]: id, ...rest }: ToString) { const x: never = rest; }
+>s8 : ({ [K.ID]: id, ...rest }: ToString) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : K.ID
+>rest : { id: K.ID; n: K.N; }
+>x : never
+>rest : { id: K.ID; n: K.N; }
+
+function s9({ id, ...rest }: ToString) { const x: never = rest; }
+>s9 : ({ id, ...rest }: ToString) => void
+>id : K.ID
+>rest : { n: K.N; }
+>x : never
+>rest : { n: K.N; }
+
+function s10({ [K.ID]: id, ...rest }: Two) { const x: never = rest; }
+>s10 : ({ [K.ID]: id, ...rest }: Two) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : K.ID
+>rest : { also: K.ID; }
+>x : never
+>rest : { also: K.ID; }
+
+function s11({ [L.ID]: id, ...rest }: Required<Item>) { const x: never = rest; }
+>s11 : ({ [L.ID]: id, ...rest }: Required<Item>) => void
+>L.ID : L
+>L : typeof L
+>ID : L
+>id : string
+>rest : { [K.ID]: string; [K.N]: number; plain: boolean; }
+>x : never
+>rest : { [K.ID]: string; [K.N]: number; plain: boolean; }
+
+function s12<T extends Item>({ [K.ID]: id, ...rest }: Required<T>) { const x: never = rest; }
+>s12 : <T extends Item>({ [K.ID]: id, ...rest }: Required<T>) => void
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : T[K.ID]
+>rest : Omit<Required<T>, K.ID>
+>x : never
+>rest : Omit<Required<T>, K.ID>
+
+function s13(o: Required<Item>) { let id, rest; ({ [K.ID]: id, ...rest } = o); const x: never = rest; }
+>s13 : (o: Required<Item>) => void
+>o : Required<Item>
+>id : any
+>rest : any
+>({ [K.ID]: id, ...rest } = o) : Required<Item>
+>{ [K.ID]: id, ...rest } = o : Required<Item>
+>{ [K.ID]: id, ...rest } : any
+>[K.ID] : any
+>K.ID : K.ID
+>K : typeof K
+>ID : K.ID
+>id : any
+>rest : any
+>o : Required<Item>
+>x : never
+>rest : any
+
+export {};
+=== index.ts ===
+enum K {
+>K : K
+
+  ID = "id",
+>ID : K.ID
+>"id" : "id"
+}
+
+type Item = { [K.ID]: string };
+>Item : Item
+>[K.ID] : string
+>K.ID : K
+>K : typeof K
+>ID : K
+
+export function f({ [K.ID]: id, ...rest }: Required<Item>): Item {
+>f : ({ [K.ID]: id, ...rest }: Required<Item>) => Item
+>K.ID : K
+>K : typeof K
+>ID : K
+>id : string
+>rest : {}
+
+  return { [K.ID]: id, ...rest };
+>{ [K.ID]: id, ...rest } : { [K.ID]: string; }
+>[K.ID] : string
+>K.ID : K
+>K : typeof K
+>ID : K
+>id : string
+>rest : {}
+}
+

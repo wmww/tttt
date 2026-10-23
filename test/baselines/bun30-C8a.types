@@ -1,0 +1,15 @@
+//// [test/cases/bun30-C8a.ts] ////
+
+=== a.ts ===
+export enum E { A }
+>E : import("./a").E
+>A : import("./a").E.A
+
+enum E { B }
+>E : import("./a").E.A
+>B : import("./a").E.A
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

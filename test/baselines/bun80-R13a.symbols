@@ -1,0 +1,28 @@
+//// [test/cases/bun80-R13a.ts] ////
+
+=== a.ts ===
+import "./0";
+import y from "./a";
+>y : Symbol(y, Decl(a.ts, 1, 6))
+
+export default Missing;
+=== b.ts ===
+import other from "./r";
+>other : Symbol(other, Decl(b.ts, 0, 6))
+
+export default Missing;
+=== s.ts ===
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(s.ts, 0, 5))
+
+=== 0.ts ===
+import d from "./a";
+>d : Symbol(d, Decl(0.ts, 0, 6))
+
+d;
+>d : Symbol(d, Decl(0.ts, 0, 6))
+
+=== r.ts ===
+export { default } from "./b";
+>default : Symbol(default, Decl(r.ts, 0, 8))
+

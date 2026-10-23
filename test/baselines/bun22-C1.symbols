@@ -1,0 +1,36 @@
+//// [test/cases/bun22-C1.ts] ////
+
+=== a.ts ===
+class K<T> { constructor(x: T) {} }
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+>x : Symbol(x, Decl(a.ts, 0, 25))
+>T : Symbol(T, Decl(a.ts, 0, 8))
+
+class D<T> extends K<T> {}
+>D : Symbol(D, Decl(a.ts, 0, 35))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+>K : Symbol(K, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 1, 8))
+
+declare function f<T>(a: typeof D<T>, b: T): T;
+>f : Symbol(f, Decl(a.ts, 1, 26))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>a : Symbol(a, Decl(a.ts, 2, 22))
+>D : Symbol(D, Decl(a.ts, 0, 35))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>b : Symbol(b, Decl(a.ts, 2, 37))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+>T : Symbol(T, Decl(a.ts, 2, 19))
+
+declare const s: new (x: string | number) => any;
+>s : Symbol(s, Decl(a.ts, 3, 13))
+>x : Symbol(x, Decl(a.ts, 3, 22))
+
+f(s, "").length;
+>f : Symbol(f, Decl(a.ts, 1, 26))
+>s : Symbol(s, Decl(a.ts, 3, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

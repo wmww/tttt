@@ -1,0 +1,25 @@
+//// [test/cases/bun86-R11c.ts] ////
+
+=== a.ts ===
+doc.a = "";
+>doc.a : Symbol(X.a, Decl(other.d.ts, 0, 20))
+>doc : Symbol(doc, Decl(index.d.ts, 1, 20))
+>a : Symbol(X.a, Decl(other.d.ts, 0, 20))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+
+=== node_modules/@typescript/lib-dom/index.d.ts ===
+import { X } from "./other";
+>X : Symbol(X, Decl(index.d.ts, 0, 8))
+
+declare global { var doc: X }
+>global : Symbol(global, Decl(index.d.ts, 0, 28))
+>doc : Symbol(doc, Decl(index.d.ts, 1, 20))
+>X : Symbol(X, Decl(index.d.ts, 0, 8))
+
+=== node_modules/@typescript/lib-dom/other.d.ts ===
+export interface X { a: number }
+>X : Symbol(X, Decl(other.d.ts, 0, 0))
+>a : Symbol(X.a, Decl(other.d.ts, 0, 20))
+

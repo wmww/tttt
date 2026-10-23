@@ -1,0 +1,21 @@
+//// [test/cases/bun07-C2b.ts] ////
+
+=== a.ts ===
+export {};
+declare let on: { n: number; m(): void };
+>on : { n: number; m(): void; }
+>n : number
+>m : () => void
+
+({ m(p) {} } = on);
+>({ m(p) {} } = on) : { n: number; m(): void; }
+>{ m(p) {} } = on : { n: number; m(): void; }
+>{ m(p) {} } : { m(p: any): void; }
+>m : (p: any) => void
+>p : any
+>on : { n: number; m(): void; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

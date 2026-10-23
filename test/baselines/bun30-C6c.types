@@ -1,0 +1,14 @@
+//// [test/cases/bun30-C6c.ts] ////
+
+=== a.ts ===
+@(eval = 1) function f() {}
+>(eval = 1) : 1
+>eval = 1 : 1
+>eval : any
+>1 : 1
+>f : () => void
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

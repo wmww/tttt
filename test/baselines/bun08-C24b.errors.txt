@@ -1,0 +1,23 @@
+a.ts(4,11): error TS2694: Namespace '"n".N' has no exported member 'Nope'.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (2 errors) ====
+    declare module "./r11" { namespace star { interface Added {} } }
+    declare module "./r8" { namespace N { interface Y {} } }
+    import { N } from "./n";
+    let z1: N.Nope;
+              ~~~~
+!!! error TS2694: Namespace '"n".N' has no exported member 'Nope'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== n.ts (0 errors) ====
+    export namespace N { export interface X {} }
+==== r11.ts (0 errors) ====
+    export * as star from "./n";
+==== r8.ts (0 errors) ====
+    export { N } from "./n";
+    

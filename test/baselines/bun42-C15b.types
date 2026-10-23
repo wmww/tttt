@@ -1,0 +1,17 @@
+//// [test/cases/bun42-C15b.ts] ////
+
+=== a.ts ===
+import d from "./d.json";
+>d : { x: any; }
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== d.json ===
+{ "x"
+>{ "x" : { x: any; }
+>"x" : any
+
+> : any
+

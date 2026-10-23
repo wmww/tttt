@@ -1,0 +1,17 @@
+a.tsx(2,82): error TS2322: Type '{ children: string[]; }' is not assignable to type 'P'.
+  'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: string[]; }'.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "preserve" } }
+==== a.tsx (2 errors) ====
+    declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    function W<P extends { children: number[] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{"b"}</C>; }
+                                                                                     ~
+!!! error TS2322: Type '{ children: string[]; }' is not assignable to type 'P'.
+!!! error TS2322:   'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: string[]; }'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

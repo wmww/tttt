@@ -1,0 +1,24 @@
+//// [test/cases/bun22-P2.ts] ////
+
+=== a.ts ===
+declare function f<T extends { b: number }>(x: T): T;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>b : Symbol(b, Decl(a.ts, 0, 30))
+>x : Symbol(x, Decl(a.ts, 0, 44))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+>T : Symbol(T, Decl(a.ts, 0, 19))
+
+declare const v: any;
+>v : Symbol(v, Decl(a.ts, 1, 13))
+
+namespace N { export const b = (f(v) satisfies typeof N, 1); }
+>N : Symbol(N, Decl(a.ts, 1, 21))
+>b : Symbol(b, Decl(a.ts, 2, 26))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>v : Symbol(v, Decl(a.ts, 1, 13))
+>N : Symbol(N, Decl(a.ts, 1, 21))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

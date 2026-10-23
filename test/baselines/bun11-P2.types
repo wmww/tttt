@@ -1,0 +1,22 @@
+//// [test/cases/bun11-P2.ts] ////
+
+=== a.ts ===
+declare function g(x: keyof typeof obj): number;
+>g : (x: keyof typeof obj) => number
+>x : any
+>obj : any
+
+const obj = { a: 1, b: g("a") };
+>obj : any
+>{ a: 1, b: g("a") } : { a: number; b: number; }
+>a : number
+>1 : 1
+>b : number
+>g("a") : number
+>g : (x: keyof typeof obj) => number
+>"a" : "a"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

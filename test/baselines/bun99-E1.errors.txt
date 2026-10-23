@@ -1,0 +1,2512 @@
+m0.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m0.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m0.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m0.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m0.ts(5,18): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m0.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m0.ts(7,17): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m0.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m10.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m10.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m10.ts(3,24): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m10.ts(4,18): error TS2300: Duplicate identifier 'N'.
+m10.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m10.ts(5,18): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m10.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m10.ts(7,17): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m10.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m100.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m100.ts(3,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m100.ts(4,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m100.ts(5,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m100.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m100.ts(8,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m105.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m105.ts(3,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m105.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m105.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m105.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m105.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m106.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m106.ts(3,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m106.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m106.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m106.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m106.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m108.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m108.ts(3,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m108.ts(4,18): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m108.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m108.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m108.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m11.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m11.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m11.ts(4,25): error TS2300: Duplicate identifier 'N'.
+m11.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m11.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m11.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m117.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m117.ts(3,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m117.ts(4,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m117.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m117.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m117.ts(6,27): error TS2749: 'N' refers to a value, but is being used as a type here. Did you mean 'typeof N'?
+m117.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m120.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m120.ts(3,18): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m120.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m120.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m120.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m120.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m132.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m132.ts(3,25): error TS2300: Duplicate identifier 'N'.
+m132.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m132.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m132.ts(6,27): error TS2709: Cannot use namespace 'N' as a type.
+m132.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m14.ts(2,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m14.ts(3,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m14.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m14.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m14.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m14.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m15.ts(2,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m15.ts(3,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m15.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m15.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m15.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m15.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m150.ts(2,18): error TS2300: Duplicate identifier 'N'.
+m150.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m150.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m150.ts(5,18): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m150.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m150.ts(7,17): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m150.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m162.ts(2,18): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m162.ts(3,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m162.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m162.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m162.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m162.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m165.ts(2,18): error TS2300: Duplicate identifier 'N'.
+m165.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m165.ts(4,25): error TS2300: Duplicate identifier 'N'.
+m165.ts(5,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m165.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m165.ts(8,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m178.ts(5,7): error TS2322: Type '() => string' is not assignable to type 'never'.
+m178.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m178.ts(8,7): error TS2322: Type '() => string' is not assignable to type 'never'.
+m183.ts(2,18): error TS2300: Duplicate identifier 'N'.
+m183.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m183.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m183.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m183.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m183.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m189.ts(2,18): error TS2300: Duplicate identifier 'N'.
+m189.ts(3,26): error TS2300: Duplicate identifier 'N'.
+m189.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m189.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m189.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m189.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m196.ts(2,25): error TS2300: Duplicate identifier 'N'.
+m196.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m196.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m196.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m196.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m196.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m197.ts(2,25): error TS2300: Duplicate identifier 'N'.
+m197.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m197.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m197.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m197.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m197.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m200.ts(5,7): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+m200.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m200.ts(8,7): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+m203.ts(2,25): error TS2300: Duplicate identifier 'N'.
+m203.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m203.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m203.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m203.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m203.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m204.ts(2,25): error TS2300: Duplicate identifier 'N'.
+m204.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m204.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m204.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m204.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m204.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m220.ts(5,7): error TS2322: Type '() => string' is not assignable to type 'never'.
+m220.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m220.ts(8,7): error TS2322: Type '() => string' is not assignable to type 'never'.
+m230.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m230.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m230.ts(6,27): error TS2709: Cannot use namespace 'N' as a type.
+m230.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m231.ts(2,25): error TS2300: Duplicate identifier 'N'.
+m231.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m231.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m231.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m231.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m231.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m245.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m245.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m245.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m245.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m245.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m245.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m246.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m246.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m246.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m246.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m246.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m246.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m249.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m249.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m249.ts(4,25): error TS2300: Duplicate identifier 'N'.
+m249.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m249.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m249.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m250.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m250.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m250.ts(4,22): error TS2300: Duplicate identifier 'N'.
+m250.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m250.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m250.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m252.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m252.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m252.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m252.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m252.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m252.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m253.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m253.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m253.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m253.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m253.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m253.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m267.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m267.ts(3,18): error TS2300: Duplicate identifier 'N'.
+m267.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m267.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m267.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m267.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m273.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m273.ts(3,25): error TS2300: Duplicate identifier 'N'.
+m273.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m273.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m273.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m273.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m276.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m276.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m276.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m28.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m28.ts(3,25): error TS2300: Duplicate identifier 'N'.
+m28.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m28.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m28.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m28.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m280.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m280.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m280.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m280.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m280.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m280.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m281.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m281.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m281.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m281.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m281.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m281.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m288.ts(2,22): error TS2300: Duplicate identifier 'N'.
+m288.ts(3,26): error TS2300: Duplicate identifier 'N'.
+m288.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m288.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m288.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m288.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m29.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m29.ts(3,25): error TS2300: Duplicate identifier 'N'.
+m29.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m29.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m29.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m29.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m291.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m291.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m291.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m294.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m294.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m294.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m294.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m294.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m294.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m295.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m295.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m295.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m295.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m295.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m295.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m297.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m297.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m297.ts(4,18): error TS2300: Duplicate identifier 'N'.
+m297.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m297.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m297.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m30.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m30.ts(3,25): error TS2300: Duplicate identifier 'N'.
+m30.ts(4,22): error TS2300: Duplicate identifier 'N'.
+m30.ts(5,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m30.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m30.ts(8,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m301.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m301.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m301.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m301.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m301.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m301.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m302.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m302.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m302.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m302.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m302.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m302.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m312.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m312.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m312.ts(4,25): error TS2300: Duplicate identifier 'N'.
+m312.ts(5,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m312.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m312.ts(6,27): error TS2709: Cannot use namespace 'N' as a type.
+m312.ts(8,7): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+m315.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m315.ts(3,18): error TS2300: Duplicate identifier 'N'.
+m315.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m315.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m315.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m315.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m330.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m330.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m330.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m330.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m330.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m330.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m334.ts(2,26): error TS2300: Duplicate identifier 'N'.
+m334.ts(3,22): error TS2300: Duplicate identifier 'N'.
+m334.ts(4,22): error TS2300: Duplicate identifier 'N'.
+m334.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m334.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+m334.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m4.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m4.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m4.ts(4,25): error TS2300: Duplicate identifier 'N'.
+m4.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m4.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m4.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m42.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m42.ts(3,26): error TS2300: Duplicate identifier 'N'.
+m42.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m42.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m42.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m42.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m43.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m43.ts(3,26): error TS2300: Duplicate identifier 'N'.
+m43.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m43.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m43.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m43.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m45.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m45.ts(3,26): error TS2300: Duplicate identifier 'N'.
+m45.ts(4,18): error TS2300: Duplicate identifier 'N'.
+m45.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m45.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m45.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m50.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m50.ts(2,24): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m50.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m50.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m50.ts(4,24): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m50.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m50.ts(5,18): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m50.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m50.ts(7,17): error TS2693: 'N' only refers to a type, but is being used as a value here.
+m50.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m53.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m53.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m53.ts(4,25): error TS2300: Duplicate identifier 'N'.
+m53.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m53.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m53.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m60.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m60.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m60.ts(4,25): error TS2300: Duplicate identifier 'N'.
+m60.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m60.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m60.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m61.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m61.ts(3,13): error TS2300: Duplicate identifier 'N'.
+m61.ts(4,22): error TS2300: Duplicate identifier 'N'.
+m61.ts(5,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m61.ts(6,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m61.ts(8,7): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+m63.ts(2,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m63.ts(3,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m63.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m63.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m63.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m63.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m64.ts(2,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m64.ts(3,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m64.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m64.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m64.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m64.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m66.ts(2,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m66.ts(3,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m66.ts(4,18): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m66.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m66.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m66.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m77.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m77.ts(3,25): error TS2300: Duplicate identifier 'N'.
+m77.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m77.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m77.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m77.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m78.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m78.ts(3,25): error TS2300: Duplicate identifier 'N'.
+m78.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m78.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m78.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m78.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m81.ts(5,7): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+m81.ts(6,7): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+m81.ts(8,7): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+m91.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m91.ts(3,26): error TS2300: Duplicate identifier 'N'.
+m91.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m91.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m91.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m91.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m92.ts(2,13): error TS2300: Duplicate identifier 'N'.
+m92.ts(3,26): error TS2300: Duplicate identifier 'N'.
+m92.ts(4,13): error TS2300: Duplicate identifier 'N'.
+m92.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m92.ts(6,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m92.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m98.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m98.ts(3,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m98.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m98.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m98.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m98.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m99.ts(2,22): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m99.ts(3,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m99.ts(4,13): error TS2451: Cannot redeclare block-scoped variable 'N'.
+m99.ts(5,7): error TS2322: Type 'any' is not assignable to type 'never'.
+m99.ts(6,7): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+m99.ts(8,7): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(70,9): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(70,20): error TS2693: 'N0' only refers to a type, but is being used as a value here.
+use.ts(70,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(71,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(71,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(72,9): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(72,20): error TS2693: 'N2' only refers to a type, but is being used as a value here.
+use.ts(72,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(73,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(73,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(74,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(74,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(75,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(75,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(76,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(76,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(77,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(77,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(78,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(78,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(79,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(79,30): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(80,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(80,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(81,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(81,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(82,9): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(82,20): error TS2693: 'N12' only refers to a type, but is being used as a value here.
+use.ts(82,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(83,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(83,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(84,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(84,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(85,9): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(85,20): error TS2693: 'N15' only refers to a type, but is being used as a value here.
+use.ts(85,31): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(86,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(86,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(87,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(87,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(88,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(88,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(89,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(89,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(90,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(90,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(91,9): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+use.ts(91,31): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+use.ts(92,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(92,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(93,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(93,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(94,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(94,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(95,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(95,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(96,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(96,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(97,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(97,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(98,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(98,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(99,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(99,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(100,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(100,31): error TS2322: Type 'N30' is not assignable to type 'never'.
+use.ts(100,51): error TS2749: 'N30' refers to a value, but is being used as a type here. Did you mean 'typeof N30'?
+use.ts(101,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(101,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(102,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(102,31): error TS2322: Type 'N32' is not assignable to type 'never'.
+use.ts(102,51): error TS2709: Cannot use namespace 'N32' as a type.
+use.ts(103,9): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(103,20): error TS2693: 'N33' only refers to a type, but is being used as a value here.
+use.ts(103,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(104,9): error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+use.ts(104,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(105,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(105,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(106,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(106,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(107,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(107,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(108,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(108,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(109,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(109,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(110,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(110,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(111,9): error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+use.ts(111,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(112,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(112,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(113,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(113,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(114,9): error TS2322: Type '() => string' is not assignable to type 'never'.
+use.ts(114,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(115,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(115,31): error TS2322: Type 'N45' is not assignable to type 'never'.
+use.ts(115,51): error TS2709: Cannot use namespace 'N45' as a type.
+use.ts(116,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(116,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(117,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(117,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(118,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(118,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(119,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(119,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(120,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(120,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(121,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(121,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(122,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(122,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(123,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(123,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(124,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(124,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(125,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(125,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(126,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(126,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(127,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(127,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(128,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(128,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(129,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(129,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(130,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(130,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(131,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(131,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(132,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(132,31): error TS2322: Type 'N' is not assignable to type 'never'.
+  Type '"get"' is not assignable to type 'never'.
+use.ts(133,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(133,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(134,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(134,31): error TS2322: Type 'any' is not assignable to type 'never'.
+use.ts(135,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(135,31): error TS2322: Type 'N65' is not assignable to type 'never'.
+use.ts(135,51): error TS2709: Cannot use namespace 'N65' as a type.
+use.ts(136,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(136,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(137,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(137,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(138,9): error TS2322: Type 'typeof N' is not assignable to type 'never'.
+use.ts(138,31): error TS2322: Type 'N' is not assignable to type 'never'.
+use.ts(139,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    {"compilerOptions": {"strict": true, "noEmit": true, "module": "ESNext", "moduleResolution": "bundler", "types": [], "lib": ["es2022"], "skipLibCheck": true}, "files": ["m0.ts", "m4.ts", "m10.ts", "m11.ts", "m14.ts", "m15.ts", "m28.ts", "m29.ts", "m30.ts", "m42.ts", "m43.ts", "m45.ts", "m50.ts", "m53.ts", "m60.ts", "m61.ts", "m63.ts", "m64.ts", "m66.ts", "m77.ts", "m78.ts", "m81.ts", "m91.ts", "m92.ts", "m98.ts", "m99.ts", "m100.ts", "m105.ts", "m106.ts", "m108.ts", "m117.ts", "m120.ts", "m132.ts", "m150.ts", "m162.ts", "m165.ts", "m178.ts", "m183.ts", "m189.ts", "m196.ts", "m197.ts", "m200.ts", "m203.ts", "m204.ts", "m220.ts", "m230.ts", "m231.ts", "m245.ts", "m246.ts", "m249.ts", "m250.ts", "m252.ts", "m253.ts", "m267.ts", "m273.ts", "m276.ts", "m280.ts", "m281.ts", "m288.ts", "m291.ts", "m294.ts", "m295.ts", "m297.ts", "m301.ts", "m302.ts", "m312.ts", "m315.ts", "m330.ts", "m334.ts", "use.ts"]}
+==== m0.ts (8 errors) ====
+    // alias alias alias
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+                    ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m10.ts (9 errors) ====
+    // alias typeof interface
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+                           ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+                    ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m100.ts (6 errors) ====
+    // const alias const
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+==== m105.ts (6 errors) ====
+    // const typeof alias
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m106.ts (6 errors) ====
+    // const typeof typeof
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m108.ts (6 errors) ====
+    // const typeof interface
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export interface N { i: number }
+                     ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m11.ts (6 errors) ====
+    // alias typeof function
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m117.ts (7 errors) ====
+    // const const class
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+                              ~
+!!! error TS2749: 'N' refers to a value, but is being used as a type here. Did you mean 'typeof N'?
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m120.ts (6 errors) ====
+    // const interface typeof
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export interface N { i: number }
+                     ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m132.ts (6 errors) ====
+    // const function namespace
+    export declare const N: { a: number };
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+                              ~
+!!! error TS2709: Cannot use namespace 'N' as a type.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m14.ts (6 errors) ====
+    // alias const alias
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m15.ts (6 errors) ====
+    // alias const typeof
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m150.ts (7 errors) ====
+    // interface alias interface
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export interface N { i: number }
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+                    ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m162.ts (6 errors) ====
+    // interface const typeof
+    export interface N { i: number }
+                     ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m165.ts (6 errors) ====
+    // interface const function
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+==== m178.ts (3 errors) ====
+    // interface function interface
+    export interface N { i: number }
+    export declare function N(): string;
+    export interface N { i: number }
+    const v: never = N;
+          ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+==== m183.ts (6 errors) ====
+    // interface class typeof
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m189.ts (6 errors) ====
+    // interface namespace alias
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m196.ts (6 errors) ====
+    // function alias alias
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m197.ts (6 errors) ====
+    // function alias typeof
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m200.ts (3 errors) ====
+    // function alias function
+    export declare function N(): string;
+    export type N = "get" | "post";
+    export declare function N(): string;
+    const v: never = N;
+          ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+==== m203.ts (6 errors) ====
+    // function typeof alias
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m204.ts (6 errors) ====
+    // function typeof typeof
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m220.ts (3 errors) ====
+    // function interface interface
+    export declare function N(): string;
+    export interface N { i: number }
+    export interface N { i: number }
+    const v: never = N;
+          ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+==== m230.ts (4 errors) ====
+    // function function namespace
+    export declare function N(): string;
+    export declare function N(): string;
+    export declare namespace N { const inner: boolean }
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+                              ~
+!!! error TS2709: Cannot use namespace 'N' as a type.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m231.ts (6 errors) ====
+    // function class alias
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m245.ts (6 errors) ====
+    // class alias alias
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m246.ts (6 errors) ====
+    // class alias typeof
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m249.ts (6 errors) ====
+    // class alias function
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m250.ts (6 errors) ====
+    // class alias class
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m252.ts (6 errors) ====
+    // class typeof alias
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m253.ts (6 errors) ====
+    // class typeof typeof
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m267.ts (6 errors) ====
+    // class interface typeof
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m273.ts (6 errors) ====
+    // class function alias
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m276.ts (3 errors) ====
+    // class function interface
+    export declare class N { c: number }
+    export declare function N(): string;
+    export interface N { i: number }
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m28.ts (6 errors) ====
+    // alias function alias
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m280.ts (6 errors) ====
+    // class class alias
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m281.ts (6 errors) ====
+    // class class typeof
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m288.ts (6 errors) ====
+    // class namespace typeof
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m29.ts (6 errors) ====
+    // alias function typeof
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m291.ts (3 errors) ====
+    // class namespace function
+    export declare class N { c: number }
+    export declare namespace N { const inner: boolean }
+    export declare function N(): string;
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m294.ts (6 errors) ====
+    // namespace alias alias
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m295.ts (6 errors) ====
+    // namespace alias typeof
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m297.ts (6 errors) ====
+    // namespace alias interface
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m30.ts (6 errors) ====
+    // alias function const
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+==== m301.ts (6 errors) ====
+    // namespace typeof alias
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m302.ts (6 errors) ====
+    // namespace typeof typeof
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m312.ts (7 errors) ====
+    // namespace const function
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+                              ~
+!!! error TS2709: Cannot use namespace 'N' as a type.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+==== m315.ts (6 errors) ====
+    // namespace interface alias
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m330.ts (6 errors) ====
+    // namespace class typeof
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m334.ts (6 errors) ====
+    // namespace class class
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m4.ts (6 errors) ====
+    // alias alias function
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m42.ts (6 errors) ====
+    // alias namespace alias
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m43.ts (6 errors) ====
+    // alias namespace typeof
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m45.ts (6 errors) ====
+    // alias namespace interface
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export interface N { i: number }
+                     ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m50.ts (10 errors) ====
+    // typeof alias typeof
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+                           ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+                           ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                     ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+                    ~
+!!! error TS2693: 'N' only refers to a type, but is being used as a value here.
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m53.ts (6 errors) ====
+    // typeof alias function
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m60.ts (6 errors) ====
+    // typeof typeof function
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m61.ts (6 errors) ====
+    // typeof typeof class
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare class N { c: number }
+                         ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+==== m63.ts (6 errors) ====
+    // typeof const alias
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m64.ts (6 errors) ====
+    // typeof const typeof
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m66.ts (6 errors) ====
+    // typeof const interface
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export interface N { i: number }
+                     ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m77.ts (6 errors) ====
+    // typeof function alias
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m78.ts (6 errors) ====
+    // typeof function typeof
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare function N(): string;
+                            ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m81.ts (3 errors) ====
+    // typeof function function
+    export type N = typeof N;
+    export declare function N(): string;
+    export declare function N(): string;
+    const v: never = N;
+          ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+==== m91.ts (6 errors) ====
+    // typeof namespace alias
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m92.ts (6 errors) ====
+    // typeof namespace typeof
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export declare namespace N { const inner: boolean }
+                             ~
+!!! error TS2300: Duplicate identifier 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2300: Duplicate identifier 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m98.ts (6 errors) ====
+    // const alias alias
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== m99.ts (6 errors) ====
+    // const alias typeof
+    export declare const N: { a: number };
+                         ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = "get" | "post";
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    export type N = typeof N;
+                ~
+!!! error TS2451: Cannot redeclare block-scoped variable 'N'.
+    const v: never = N;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    const t: never = null! as N;
+          ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    type Q = typeof N;
+    const q: never = null! as Q;
+          ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+==== use.ts (148 errors) ====
+    import { N as N0 } from "./m0";
+    import { N as N1 } from "./m4";
+    import { N as N2 } from "./m10";
+    import { N as N3 } from "./m11";
+    import { N as N4 } from "./m14";
+    import { N as N5 } from "./m15";
+    import { N as N6 } from "./m28";
+    import { N as N7 } from "./m29";
+    import { N as N8 } from "./m30";
+    import { N as N9 } from "./m42";
+    import { N as N10 } from "./m43";
+    import { N as N11 } from "./m45";
+    import { N as N12 } from "./m50";
+    import { N as N13 } from "./m53";
+    import { N as N14 } from "./m60";
+    import { N as N15 } from "./m61";
+    import { N as N16 } from "./m63";
+    import { N as N17 } from "./m64";
+    import { N as N18 } from "./m66";
+    import { N as N19 } from "./m77";
+    import { N as N20 } from "./m78";
+    import { N as N21 } from "./m81";
+    import { N as N22 } from "./m91";
+    import { N as N23 } from "./m92";
+    import { N as N24 } from "./m98";
+    import { N as N25 } from "./m99";
+    import { N as N26 } from "./m100";
+    import { N as N27 } from "./m105";
+    import { N as N28 } from "./m106";
+    import { N as N29 } from "./m108";
+    import { N as N30 } from "./m117";
+    import { N as N31 } from "./m120";
+    import { N as N32 } from "./m132";
+    import { N as N33 } from "./m150";
+    import { N as N34 } from "./m162";
+    import { N as N35 } from "./m165";
+    import { N as N36 } from "./m178";
+    import { N as N37 } from "./m183";
+    import { N as N38 } from "./m189";
+    import { N as N39 } from "./m196";
+    import { N as N40 } from "./m197";
+    import { N as N41 } from "./m200";
+    import { N as N42 } from "./m203";
+    import { N as N43 } from "./m204";
+    import { N as N44 } from "./m220";
+    import { N as N45 } from "./m230";
+    import { N as N46 } from "./m231";
+    import { N as N47 } from "./m245";
+    import { N as N48 } from "./m246";
+    import { N as N49 } from "./m249";
+    import { N as N50 } from "./m250";
+    import { N as N51 } from "./m252";
+    import { N as N52 } from "./m253";
+    import { N as N53 } from "./m267";
+    import { N as N54 } from "./m273";
+    import { N as N55 } from "./m276";
+    import { N as N56 } from "./m280";
+    import { N as N57 } from "./m281";
+    import { N as N58 } from "./m288";
+    import { N as N59 } from "./m291";
+    import { N as N60 } from "./m294";
+    import { N as N61 } from "./m295";
+    import { N as N62 } from "./m297";
+    import { N as N63 } from "./m301";
+    import { N as N64 } from "./m302";
+    import { N as N65 } from "./m312";
+    import { N as N66 } from "./m315";
+    import { N as N67 } from "./m330";
+    import { N as N68 } from "./m334";
+    { const v: never = N0; const t: never = null! as N0; }
+            ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                       ~~
+!!! error TS2693: 'N0' only refers to a type, but is being used as a value here.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N1; const t: never = null! as N1; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N2; const t: never = null! as N2; }
+            ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                       ~~
+!!! error TS2693: 'N2' only refers to a type, but is being used as a value here.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N3; const t: never = null! as N3; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N4; const t: never = null! as N4; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N5; const t: never = null! as N5; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N6; const t: never = null! as N6; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N7; const t: never = null! as N7; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N8; const t: never = null! as N8; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N9; const t: never = null! as N9; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                 ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N10; const t: never = null! as N10; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N11; const t: never = null! as N11; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N12; const t: never = null! as N12; }
+            ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                       ~~~
+!!! error TS2693: 'N12' only refers to a type, but is being used as a value here.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N13; const t: never = null! as N13; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N14; const t: never = null! as N14; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N15; const t: never = null! as N15; }
+            ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                       ~~~
+!!! error TS2693: 'N15' only refers to a type, but is being used as a value here.
+                                  ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+    { const v: never = N16; const t: never = null! as N16; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N17; const t: never = null! as N17; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N18; const t: never = null! as N18; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N19; const t: never = null! as N19; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N20; const t: never = null! as N20; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N21; const t: never = null! as N21; }
+            ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+    { const v: never = N22; const t: never = null! as N22; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N23; const t: never = null! as N23; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N24; const t: never = null! as N24; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N25; const t: never = null! as N25; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N26; const t: never = null! as N26; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N27; const t: never = null! as N27; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N28; const t: never = null! as N28; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N29; const t: never = null! as N29; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N30; const t: never = null! as N30; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N30' is not assignable to type 'never'.
+                                                      ~~~
+!!! error TS2749: 'N30' refers to a value, but is being used as a type here. Did you mean 'typeof N30'?
+    { const v: never = N31; const t: never = null! as N31; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N32; const t: never = null! as N32; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N32' is not assignable to type 'never'.
+                                                      ~~~
+!!! error TS2709: Cannot use namespace 'N32' as a type.
+    { const v: never = N33; const t: never = null! as N33; }
+            ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+                       ~~~
+!!! error TS2693: 'N33' only refers to a type, but is being used as a value here.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N34; const t: never = null! as N34; }
+            ~
+!!! error TS2322: Type '{ a: number; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N35; const t: never = null! as N35; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N36; const t: never = null! as N36; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N37; const t: never = null! as N37; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N38; const t: never = null! as N38; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N39; const t: never = null! as N39; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N40; const t: never = null! as N40; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N41; const t: never = null! as N41; }
+            ~
+!!! error TS2322: Type '{ (): string; (): string; }' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N42; const t: never = null! as N42; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N43; const t: never = null! as N43; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N44; const t: never = null! as N44; }
+            ~
+!!! error TS2322: Type '() => string' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N45; const t: never = null! as N45; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N45' is not assignable to type 'never'.
+                                                      ~~~
+!!! error TS2709: Cannot use namespace 'N45' as a type.
+    { const v: never = N46; const t: never = null! as N46; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N47; const t: never = null! as N47; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N48; const t: never = null! as N48; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N49; const t: never = null! as N49; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N50; const t: never = null! as N50; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N51; const t: never = null! as N51; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N52; const t: never = null! as N52; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N53; const t: never = null! as N53; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N54; const t: never = null! as N54; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N55; const t: never = null! as N55; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N56; const t: never = null! as N56; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N57; const t: never = null! as N57; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N58; const t: never = null! as N58; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N59; const t: never = null! as N59; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N60; const t: never = null! as N60; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N61; const t: never = null! as N61; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N62; const t: never = null! as N62; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+!!! error TS2322:   Type '"get"' is not assignable to type 'never'.
+    { const v: never = N63; const t: never = null! as N63; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N64; const t: never = null! as N64; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    { const v: never = N65; const t: never = null! as N65; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N65' is not assignable to type 'never'.
+                                                      ~~~
+!!! error TS2709: Cannot use namespace 'N65' as a type.
+    { const v: never = N66; const t: never = null! as N66; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N67; const t: never = null! as N67; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    { const v: never = N68; const t: never = null! as N68; }
+            ~
+!!! error TS2322: Type 'typeof N' is not assignable to type 'never'.
+                                  ~
+!!! error TS2322: Type 'N' is not assignable to type 'never'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

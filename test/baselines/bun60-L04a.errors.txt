@@ -1,0 +1,44 @@
+a.js(2,35): error TS4033: Property 'x' of exported interface has or is using private name 's'.
+a.js(3,45): error TS4033: Property '1' of exported interface has or is using private name 's'.
+a.js(4,42): error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+  Type '{ [s]: number; }' provides no match for the signature '(): void'.
+a.js(5,44): error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+  Type '{ [s]: number; }' provides no match for the signature '(): void'.
+a.js(6,45): error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+  Type '{ [s]: number; }' provides no match for the signature '(): void'.
+a.js(7,45): error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+  Type '{ [s]: number; }' provides no match for the signature '(): void'.
+a.js(9,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "declaration": true, "allowJs": true, "checkJs": true, "types": [], "lib": ["es2022"] } }
+==== a.js (7 errors) ====
+    function f() { const s = Symbol(); return { [s]: 1 }; }
+    export class C0 { constructor() { this.x = f(); } }
+                                      ~~~~~~~~~~~~
+!!! error TS4033: Property 'x' of exported interface has or is using private name 's'.
+    export class C1 { [+1]() {} constructor() { this[1] = f(); } }
+                                                ~~~~~~~~~~~~~
+!!! error TS4033: Property '1' of exported interface has or is using private name 's'.
+    export class C2 { 1() {} constructor() { this[1] = f(); } }
+                                             ~~~~~~~
+!!! error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+!!! error TS2322:   Type '{ [s]: number; }' provides no match for the signature '(): void'.
+    export class C3 { [1]() {} constructor() { this[1] = f(); } }
+                                               ~~~~~~~
+!!! error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+!!! error TS2322:   Type '{ [s]: number; }' provides no match for the signature '(): void'.
+    export class C4 { [-1]() {} constructor() { this["-1"] = f(); } }
+                                                ~~~~~~~~~~
+!!! error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+!!! error TS2322:   Type '{ [s]: number; }' provides no match for the signature '(): void'.
+    export class C5 { [+1]() {} constructor() { this["+1"] = f(); } }
+                                                ~~~~~~~~~~
+!!! error TS2322: Type '{ [s]: number; }' is not assignable to type '() => void'.
+!!! error TS2322:   Type '{ [s]: number; }' provides no match for the signature '(): void'.
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,23 @@
+//// [test/cases/bun05-C11a.ts] ////
+
+=== a.ts ===
+declare function q1(a: number, ...r: [number, ...((x: number) => void)[][]]): void;
+>q1 : Symbol(q1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 83))
+>a : Symbol(a, Decl(a.ts, 0, 20))
+>r : Symbol(r, Decl(a.ts, 0, 30))
+>x : Symbol(x, Decl(a.ts, 0, 51))
+
+declare function q1(a: string, ...r: [string]): void;
+>q1 : Symbol(q1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 83))
+>a : Symbol(a, Decl(a.ts, 1, 20))
+>r : Symbol(r, Decl(a.ts, 1, 30))
+
+q1(true, 1, x => { const z: 0 = x; });
+>q1 : Symbol(q1, Decl(a.ts, 0, 0), Decl(a.ts, 0, 83))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+>z : Symbol(z, Decl(a.ts, 2, 24))
+>x : Symbol(x, Decl(a.ts, 2, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

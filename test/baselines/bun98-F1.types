@@ -1,0 +1,49 @@
+//// [test/cases/bun98-F1.ts] ////
+
+=== a.ts ===
+declare const k: unique symbol;
+>k : unique symbol
+
+const c = "x";
+>c : "x"
+>"x" : "x"
+
+export class C {
+>C : C
+
+  ["\0\0\u007f\u007f\u007f\u007f"]: number;
+>["\0\0\u007f\u007f\u007f\u007f"] : number
+>"\0\0\u007f\u007f\u007f\u007f" : "\0\0"
+
+  ["\0\u0001\u007f\u007f\u007f\u007f"]: number;
+>["\0\u0001\u007f\u007f\u007f\u007f"] : number
+>"\0\u0001\u007f\u007f\u007f\u007f" : "\0\u0001"
+
+  [c]: number;
+>[c] : number
+>c : "x"
+
+  [k]: number;
+>[k] : number
+>k : unique symbol
+
+  constructor() {
+    for (;;) {
+      if (Math.random()) break;
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+    }
+    this[c] = 1;
+>this[c] = 1 : 1
+>this[c] : number
+>this : this
+>c : "x"
+>1 : 1
+  }
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,58 @@
+//// [test/cases/bun74-R15a.ts] ////
+
+=== a.ts ===
+export const e1: 0 = (a: unknown): a is string => true;
+>e1 : Symbol(e1, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+>a : Symbol(a, Decl(a.ts, 0, 22))
+
+export const e2: 0 = <T>(a: T): asserts a is T => {};
+>e2 : Symbol(e2, Decl(a.ts, 1, 12))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>a : Symbol(a, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+>a : Symbol(a, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 22))
+
+export const e3: 0 = { f(a: unknown): a is string { return true; } };
+>e3 : Symbol(e3, Decl(a.ts, 2, 12))
+>f : Symbol(f, Decl(a.ts, 2, 22))
+>a : Symbol(a, Decl(a.ts, 2, 25))
+>a : Symbol(a, Decl(a.ts, 2, 25))
+
+declare function take(n: 0): void; take(function (a: unknown, b: unknown): b is string { return true; });
+>take : Symbol(take, Decl(a.ts, 2, 69))
+>n : Symbol(n, Decl(a.ts, 3, 22))
+>take : Symbol(take, Decl(a.ts, 2, 69))
+>a : Symbol(a, Decl(a.ts, 3, 50))
+>b : Symbol(b, Decl(a.ts, 3, 61))
+>b : Symbol(b, Decl(a.ts, 3, 61))
+
+export const e5: (a: unknown) => a is number = (a: unknown): a is string => true;
+>e5 : Symbol(e5, Decl(a.ts, 4, 12))
+>a : Symbol(a, Decl(a.ts, 4, 18))
+>a : Symbol(a, Decl(a.ts, 4, 18))
+>a : Symbol(a, Decl(a.ts, 4, 48))
+>a : Symbol(a, Decl(a.ts, 4, 48))
+
+// controls: tsc reports these too
+export const c1 = (a: unknown): a is string => true;
+>c1 : Symbol(c1, Decl(a.ts, 6, 12))
+>a : Symbol(a, Decl(a.ts, 6, 19))
+>a : Symbol(a, Decl(a.ts, 6, 19))
+
+export const c2: 0 = [(a: unknown): a is string => true];
+>c2 : Symbol(c2, Decl(a.ts, 7, 12))
+>a : Symbol(a, Decl(a.ts, 7, 23))
+>a : Symbol(a, Decl(a.ts, 7, 23))
+
+export function c3(a: unknown): a is string { return true; } export const c4: 0 = c3;
+>c3 : Symbol(c3, Decl(a.ts, 7, 57))
+>a : Symbol(a, Decl(a.ts, 8, 19))
+>a : Symbol(a, Decl(a.ts, 8, 19))
+>c4 : Symbol(c4, Decl(a.ts, 8, 73))
+>c3 : Symbol(c3, Decl(a.ts, 7, 57))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 9, 5))
+

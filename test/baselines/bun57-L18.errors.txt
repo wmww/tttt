@@ -1,0 +1,84 @@
+a.ts(1,11): error TS2304: Cannot find name 'async'.
+a.ts(1,18): error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+a.ts(1,34): error TS1005: '?' expected.
+a.ts(1,36): error TS2304: Cannot find name 'x'.
+a.ts(1,37): error TS1005: ',' expected.
+b.ts(1,11): error TS2304: Cannot find name 'async'.
+b.ts(1,18): error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+b.ts(1,22): error TS2304: Cannot find name 'x'.
+b.ts(1,23): error TS1005: ',' expected.
+c.ts(1,1): error TS2304: Cannot find name 'async'.
+c.ts(1,8): error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+c.ts(1,18): error TS2304: Cannot find name 'U'.
+c.ts(1,19): error TS1005: '?' expected.
+c.ts(1,21): error TS2304: Cannot find name 'x'.
+d.ts(1,1): error TS2304: Cannot find name 'async'.
+d.ts(1,10): error TS1005: ';' expected.
+d.ts(1,12): error TS2304: Cannot find name 'U'.
+d.ts(1,15): error TS2304: Cannot find name 'x'.
+e.ts(1,1): error TS2304: Cannot find name 'async'.
+e.ts(1,8): error TS1109: Expression expected.
+e.ts(1,14): error TS7005: Variable 'T' implicitly has an 'any' type.
+e.ts(1,15): error TS1005: ',' expected.
+e.ts(1,17): error TS2304: Cannot find name 'x'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    const f = async <T extends object>(x: T)
+              ~~~~~
+!!! error TS2304: Cannot find name 'async'.
+                     ~
+!!! error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+                                     ~
+!!! error TS1005: '?' expected.
+                                       ~
+!!! error TS2304: Cannot find name 'x'.
+                                        ~
+!!! error TS1005: ',' expected.
+==== b.ts (4 errors) ====
+    const g = async <T,>(x: T)
+              ~~~~~
+!!! error TS2304: Cannot find name 'async'.
+                     ~
+!!! error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+                         ~
+!!! error TS2304: Cannot find name 'x'.
+                          ~
+!!! error TS1005: ',' expected.
+==== c.ts (5 errors) ====
+    async <T extends U>(x);
+    ~~~~~
+!!! error TS2304: Cannot find name 'async'.
+           ~
+!!! error TS2749: 'T' refers to a value, but is being used as a type here. Did you mean 'typeof T'?
+                     ~
+!!! error TS2304: Cannot find name 'U'.
+                      ~
+!!! error TS1005: '?' expected.
+                        ~
+!!! error TS2304: Cannot find name 'x'.
+==== d.ts (4 errors) ====
+    async <T = U>(x);
+    ~~~~~
+!!! error TS2304: Cannot find name 'async'.
+             ~
+!!! error TS1005: ';' expected.
+               ~
+!!! error TS2304: Cannot find name 'U'.
+                  ~
+!!! error TS2304: Cannot find name 'x'.
+==== e.ts (5 errors) ====
+    async <const T>(x);
+    ~~~~~
+!!! error TS2304: Cannot find name 'async'.
+           ~~~~~
+!!! error TS1109: Expression expected.
+                 ~
+!!! error TS7005: Variable 'T' implicitly has an 'any' type.
+                  ~
+!!! error TS1005: ',' expected.
+                    ~
+!!! error TS2304: Cannot find name 'x'.
+    

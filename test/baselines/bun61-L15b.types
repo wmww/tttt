@@ -1,0 +1,45 @@
+//// [test/cases/bun61-L15b.ts] ////
+
+=== a.ts ===
+export {};
+interface I { default class: 1 } declare const i: I; i.class; i.default;
+>class : 1
+>i : I
+>i.class : any
+>i : I
+>class : any
+>i.default : 1
+>i : I
+>default : 1
+
+type T = { default function: 1 }; declare const t: T; t.function; t.default;
+>T : T
+>function : 1
+>t : T
+>t.function : any
+>t : T
+>function : any
+>t.default : 1
+>t : T
+>default : 1
+
+class C { default class = 1 } declare const c: C; c.class; c.default;
+>C : C
+>class : number
+>1 : 1
+>c : C
+>c.class : any
+>c : C
+>class : any
+>c.default : number
+>c : C
+>default : number
+
+interface L { default class: 1; default: 2 }
+>class : 1
+>default : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

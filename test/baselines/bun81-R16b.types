@@ -1,0 +1,132 @@
+//// [test/cases/bun81-R16b.ts] ////
+
+=== a.ts ===
+declare function apply<T, U>(x: T, f: (v: T) => U): U;
+>apply : <T, U>(x: T, f: (v: T) => U) => U
+>x : T
+>f : (v: T) => U
+>v : T
+
+function sum(xs: number[]) {
+>sum : (xs: number[]) => number | null
+>xs : number[]
+
+    let acc: number | null = null;
+>acc : number | null
+
+    for (const n of xs) {
+>n : number
+>xs : number[]
+
+        acc = apply(acc, v => (v ?? 0) + n);
+>acc = apply(acc, v => (v ?? 0) + n) : number | null
+>acc : number | null
+>apply(acc, v => (v ?? 0) + n) : number | null
+>apply : <T, U>(x: T, f: (v: T) => U) => U
+>acc : number | null
+>v => (v ?? 0) + n : (v: null) => number
+>v : null
+>(v ?? 0) + n : number
+>(v ?? 0) : 0
+>v ?? 0 : 0
+>v : null
+>0 : 0
+>n : number
+    }
+    return acc;
+>acc : number | null
+}
+function text(more: () => boolean) {
+>text : (more: () => boolean) => void
+>more : () => boolean
+
+    let x: string | number = 0;
+>x : string | number
+>0 : 0
+
+    while (more()) {
+>more() : boolean
+>more : () => boolean
+
+        x = apply(x, v => String(v));
+>x = apply(x, v => String(v)) : string | number
+>x : string | number
+>apply(x, v => String(v)) : string | number
+>apply : <T, U>(x: T, f: (v: T) => U) => U
+>x : string | number
+>v => String(v) : (v: number) => string
+>v : number
+>String(v) : string
+>String : StringConstructor
+>v : number
+    }
+}
+// the two agree: a method of an array, an annotated parameter, explicit type arguments
+function a1(xs: number[]) { let acc: number | null = null; for (const n of xs) { acc = [acc].map(v => (v ?? 0) + n)[0]; } }
+>a1 : (xs: number[]) => void
+>xs : number[]
+>acc : number | null
+>n : number
+>xs : number[]
+>acc = [acc].map(v => (v ?? 0) + n)[0] : unknown
+>acc : number | null
+>[acc].map(v => (v ?? 0) + n)[0] : unknown
+>[acc].map(v => (v ?? 0) + n) : unknown[]
+>[acc].map : <U>(callbackfn: (value: number | null, index: number, array: (number | null)[]) => U, thisArg?: any) => U[]
+>[acc] : (number | null)[]
+>acc : number | null
+>map : <U>(callbackfn: (value: number | null, index: number, array: (number | null)[]) => U, thisArg?: any) => U[]
+>v => (v ?? 0) + n : (v: null) => number
+>v : null
+>(v ?? 0) + n : number
+>(v ?? 0) : 0
+>v ?? 0 : 0
+>v : null
+>0 : 0
+>n : number
+>0 : 0
+
+function a2(xs: number[]) { let acc: number | null = null; for (const n of xs) { acc = apply(acc, (v: number | null) => (v ?? 0) + n); } }
+>a2 : (xs: number[]) => void
+>xs : number[]
+>acc : number | null
+>n : number
+>xs : number[]
+>acc = apply(acc, (v: number | null) => (v ?? 0) + n) : number
+>acc : number | null
+>apply(acc, (v: number | null) => (v ?? 0) + n) : number
+>apply : <T, U>(x: T, f: (v: T) => U) => U
+>acc : number | null
+>(v: number | null) => (v ?? 0) + n : (v: number | null) => number
+>v : number | null
+>(v ?? 0) + n : number
+>(v ?? 0) : number
+>v ?? 0 : number
+>v : number | null
+>0 : 0
+>n : number
+
+function a3(xs: number[]) { let acc: number | null = null; for (const n of xs) { acc = apply<number | null, number>(acc, v => (v ?? 0) + n); } }
+>a3 : (xs: number[]) => void
+>xs : number[]
+>acc : number | null
+>n : number
+>xs : number[]
+>acc = apply<number | null, number>(acc, v => (v ?? 0) + n) : number
+>acc : number | null
+>apply<number | null, number>(acc, v => (v ?? 0) + n) : number
+>apply : <T, U>(x: T, f: (v: T) => U) => U
+>acc : number | null
+>v => (v ?? 0) + n : (v: number | null) => number
+>v : number | null
+>(v ?? 0) + n : number
+>(v ?? 0) : number
+>v ?? 0 : number
+>v : number | null
+>0 : 0
+>n : number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

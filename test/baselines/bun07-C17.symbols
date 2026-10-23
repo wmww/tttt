@@ -1,0 +1,16 @@
+//// [test/cases/bun07-C17.ts] ////
+
+=== a.ts ===
+export {};
+declare let n: number;
+>n : Symbol(n, Decl(a.ts, 1, 11))
+
+for (({ n }) in {}) {}
+>n : Symbol(n, Decl(a.ts, 2, 7))
+
+for (([n]) in {}) {}
+>n : Symbol(n, Decl(a.ts, 1, 11))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

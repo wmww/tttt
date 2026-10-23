@@ -1,0 +1,42 @@
+a.ts(4,7): error TS2339: Property 'b' does not exist on type 'U'.
+  Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+a.ts(6,7): error TS2339: Property 'a' does not exist on type 'U'.
+  Property 'a' does not exist on type '{ kind: 1; b: number; }'.
+a.ts(9,7): error TS2339: Property 'b' does not exist on type 'U'.
+  Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+a.ts(18,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (4 errors) ====
+    type U = { kind: 0; a: string } | { kind: 1; b: number };
+    function f1(x: U, v: 0 | 1) {
+      if ((x.kind) = v) {
+        x.b;
+          ~
+!!! error TS2339: Property 'b' does not exist on type 'U'.
+!!! error TS2339:   Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+      } else {
+        x.a;
+          ~
+!!! error TS2339: Property 'a' does not exist on type 'U'.
+!!! error TS2339:   Property 'a' does not exist on type '{ kind: 1; b: number; }'.
+      }
+      if ((x["kind"]) ||= v) {
+        x.b;
+          ~
+!!! error TS2339: Property 'b' does not exist on type 'U'.
+!!! error TS2339:   Property 'b' does not exist on type '{ kind: 0; a: string; }'.
+      }
+    }
+    // without the parentheses both narrow
+    function f2(x: U, v: 0 | 1) {
+      if (x.kind = v) {
+        x.b;
+      }
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

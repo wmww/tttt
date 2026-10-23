@@ -1,0 +1,24 @@
+//// [test/cases/bun18-C4d.ts] ////
+
+=== a.ts ===
+declare function f(...r: readonly [number, ...string[]]): void;
+>f : Symbol(f, Decl(a.ts, 0, 0))
+>r : Symbol(r, Decl(a.ts, 0, 19))
+
+declare function tail<A extends unknown[]>(f: (x: number, ...a: A) => void): (...a: A) => void;
+>tail : Symbol(tail, Decl(a.ts, 0, 63))
+>A : Symbol(A, Decl(a.ts, 1, 22))
+>f : Symbol(f, Decl(a.ts, 1, 43))
+>x : Symbol(x, Decl(a.ts, 1, 47))
+>a : Symbol(a, Decl(a.ts, 1, 57))
+>A : Symbol(A, Decl(a.ts, 1, 22))
+>a : Symbol(a, Decl(a.ts, 1, 78))
+>A : Symbol(A, Decl(a.ts, 1, 22))
+
+tail(f);
+>tail : Symbol(tail, Decl(a.ts, 0, 63))
+>f : Symbol(f, Decl(a.ts, 0, 0))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

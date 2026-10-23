@@ -1,0 +1,48 @@
+a.ts(3,15): error TS2310: Type 'Base' recursively references itself as a base type.
+a.ts(4,11): error TS2310: Type 'Base' recursively references itself as a base type.
+a.ts(5,1): error TS2310: Type 'default' recursively references itself as a base type.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(3,1): error TS2506: 'default' is referenced directly or indirectly in its own base expression.
+b.ts(3,1): error TS7022: 'default' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+c.ts(2,1): error TS2300: Duplicate identifier 'default'.
+d.ts(2,24): error TS2300: Duplicate identifier 'default'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" } }
+==== a.ts (4 errors) ====
+    import D from "./a";
+    declare const dec: any;
+    declare class Base { }
+                  ~~~~
+!!! error TS2310: Type 'Base' recursively references itself as a base type.
+    interface Base extends D {}
+              ~~~~
+!!! error TS2310: Type 'Base' recursively references itself as a base type.
+    @dec export default class extends Base {}
+    ~
+!!! error TS2310: Type 'default' recursively references itself as a base type.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (2 errors) ====
+    import D from "./b";
+    declare const dec: any;
+    @dec export default class extends D {}
+    ~
+!!! error TS2506: 'default' is referenced directly or indirectly in its own base expression.
+    ~
+!!! error TS7022: 'default' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+==== c.ts (1 errors) ====
+    declare const dec: any;
+    @dec export default class { a = 1 }
+    ~
+!!! error TS2300: Duplicate identifier 'default'.
+!!! related TS6203 d.ts:2:24: 'default' was also declared here.
+==== d.ts (1 errors) ====
+    import "./c";
+    declare module "./c" { export default class { b: number } }
+                           ~~~~~~
+!!! error TS2300: Duplicate identifier 'default'.
+!!! related TS6203 c.ts:2:1: 'default' was also declared here.
+    

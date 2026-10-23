@@ -1,0 +1,175 @@
+//// [test/cases/bun83-R11a.ts] ////
+
+=== a01.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a01.ts, 0, 24))
+>T : Symbol(T, Decl(a01.ts, 0, 32))
+
+const v = x ? (a): T => { var; } : 1;
+>v : Symbol(v, Decl(a01.ts, 1, 5))
+>x : Symbol(x, Decl(a01.ts, 0, 24))
+>a : Symbol(a, Decl(a01.ts, 1, 15))
+>T : Symbol(T, Decl(a01.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a01.ts, 2, 5))
+
+=== a02.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a02.ts, 0, 24))
+>T : Symbol(T, Decl(a02.ts, 0, 32))
+
+const v = x ? (a): T => { declare let; } : 1;
+>v : Symbol(v, Decl(a02.ts, 1, 5))
+>x : Symbol(x, Decl(a02.ts, 0, 24))
+>a : Symbol(a, Decl(a02.ts, 1, 15))
+>T : Symbol(T, Decl(a02.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a02.ts, 2, 5))
+
+=== a03.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a03.ts, 0, 24))
+>T : Symbol(T, Decl(a03.ts, 0, 32))
+
+const v = x ? (a): T => { const; } : 1;
+>v : Symbol(v, Decl(a03.ts, 1, 5))
+>x : Symbol(x, Decl(a03.ts, 0, 24))
+>a : Symbol(a, Decl(a03.ts, 1, 15))
+>T : Symbol(T, Decl(a03.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a03.ts, 2, 5))
+
+=== a05.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a05.ts, 0, 24))
+>T : Symbol(T, Decl(a05.ts, 0, 32))
+
+const v = x ? (a): T => { var b = 1,; } : 1;
+>v : Symbol(v, Decl(a05.ts, 1, 5))
+>x : Symbol(x, Decl(a05.ts, 0, 24))
+>a : Symbol(a, Decl(a05.ts, 1, 15))
+>T : Symbol(T, Decl(a05.ts, 0, 32))
+>b : Symbol(b, Decl(a05.ts, 1, 29))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a05.ts, 2, 5))
+
+=== a07.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a07.ts, 0, 24))
+>T : Symbol(T, Decl(a07.ts, 0, 32))
+
+const v = x ? (a): T => { export var; } : 1;
+>v : Symbol(v, Decl(a07.ts, 1, 5))
+>x : Symbol(x, Decl(a07.ts, 0, 24))
+>a : Symbol(a, Decl(a07.ts, 1, 15))
+>T : Symbol(T, Decl(a07.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a07.ts, 2, 5))
+
+=== a08.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a08.ts, 0, 24))
+>T : Symbol(T, Decl(a08.ts, 0, 32))
+
+const v = x ? (a): T => function () { var; } : 1;
+>v : Symbol(v, Decl(a08.ts, 1, 5))
+>x : Symbol(x, Decl(a08.ts, 0, 24))
+>a : Symbol(a, Decl(a08.ts, 1, 15))
+>T : Symbol(T, Decl(a08.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a08.ts, 2, 5))
+
+=== a09.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a09.ts, 0, 24))
+>T : Symbol(T, Decl(a09.ts, 0, 32))
+
+const v = x ? (a): T => class { m() { var; } } : 1;
+>v : Symbol(v, Decl(a09.ts, 1, 5))
+>x : Symbol(x, Decl(a09.ts, 0, 24))
+>a : Symbol(a, Decl(a09.ts, 1, 15))
+>T : Symbol(T, Decl(a09.ts, 0, 32))
+>m : Symbol((Anonymous class).m, Decl(a09.ts, 1, 31))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a09.ts, 2, 5))
+
+=== a10.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a10.ts, 0, 24))
+>T : Symbol(T, Decl(a10.ts, 0, 32))
+
+const v = x ? (a): T => { var; } : (b): T => { var; };
+>v : Symbol(v, Decl(a10.ts, 1, 5))
+>x : Symbol(x, Decl(a10.ts, 0, 24))
+>a : Symbol(a, Decl(a10.ts, 1, 15))
+>T : Symbol(T, Decl(a10.ts, 0, 32))
+>b : Symbol(b, Decl(a10.ts, 1, 36))
+>T : Symbol(T, Decl(a10.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a10.ts, 2, 5))
+
+=== a11.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a11.ts, 0, 24))
+>T : Symbol(T, Decl(a11.ts, 0, 32))
+
+const v = x ? async (a): T => { var; } : 1;
+>v : Symbol(v, Decl(a11.ts, 1, 5))
+>x : Symbol(x, Decl(a11.ts, 0, 24))
+>a : Symbol(a, Decl(a11.ts, 1, 21))
+>T : Symbol(T, Decl(a11.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a11.ts, 2, 5))
+
+=== a13.ts ===
+export {}; declare const x: any; type T = any;
+>x : Symbol(x, Decl(a13.ts, 0, 24))
+>T : Symbol(T, Decl(a13.ts, 0, 32))
+
+const v = x ? x ? (a): T => { var; } : 1 : 2;
+>v : Symbol(v, Decl(a13.ts, 1, 5))
+>x : Symbol(x, Decl(a13.ts, 0, 24))
+>x : Symbol(x, Decl(a13.ts, 0, 24))
+>a : Symbol(a, Decl(a13.ts, 1, 19))
+>T : Symbol(T, Decl(a13.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a13.ts, 2, 5))
+
+=== c01.ts ===
+export {}; declare const f: any, x: any;
+>f : Symbol(f, Decl(c01.ts, 0, 24))
+>x : Symbol(x, Decl(c01.ts, 0, 32))
+
+const v = (a): { [(() => { var; return "x" })()]: 1 } => x;
+>v : Symbol(v, Decl(c01.ts, 1, 5))
+>a : Symbol(a, Decl(c01.ts, 1, 11))
+>[(() => { var; return "x" })()] : Symbol([(() => { var; return "x" })()], Decl(c01.ts, 1, 16))
+>x : Symbol(x, Decl(c01.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(c01.ts, 2, 5))
+
+=== c02.ts ===
+export {}; declare const f: any, x: any;
+>f : Symbol(f, Decl(c02.ts, 0, 24))
+>x : Symbol(x, Decl(c02.ts, 0, 32))
+
+const v = f<{ [(() => { var; return "x" })()]: 1 }>(x);
+>v : Symbol(v, Decl(c02.ts, 1, 5))
+>f : Symbol(f, Decl(c02.ts, 0, 24))
+>[(() => { var; return "x" })()] : Symbol([(() => { var; return "x" })()], Decl(c02.ts, 1, 13))
+>x : Symbol(x, Decl(c02.ts, 0, 32))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(c02.ts, 2, 5))
+

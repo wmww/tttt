@@ -1,0 +1,20 @@
+//// [test/cases/bun20-C6.ts] ////
+
+=== a.ts ===
+function d9(x: [number, string] | string) { if (!(x instanceof Array)) { x.toUpperCase(); } }
+>d9 : (x: [number, string] | string) => void
+>x : string | [number, string]
+>!(x instanceof Array) : boolean
+>(x instanceof Array) : boolean
+>x instanceof Array : boolean
+>x : string | [number, string]
+>Array : ArrayConstructor
+>x.toUpperCase() : string
+>x.toUpperCase : () => string
+>x : string
+>toUpperCase : () => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

@@ -1,0 +1,22 @@
+a.js(3,12): error TS2552: Cannot find name 'await'. Did you mean 'Awaited'?
+a.js(7,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"],"allowJs":true,"checkJs":true } }
+==== a.js (2 errors) ====
+    async function f() {
+    /** @import await from "./b" */
+    /** @type {await} */
+               ~~~~~
+!!! error TS2552: Cannot find name 'await'. Did you mean 'Awaited'?
+    const x = 1;
+    }
+    /** @type {number} */
+    const sentinel = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (0 errors) ====
+    export default interface D { d: 1 }
+    export interface A { a: 1 }
+    

@@ -1,0 +1,20 @@
+//// [test/cases/bun10-C5b.ts] ////
+
+=== a.ts ===
+export namespace N10 { export import A = M10.B; export const z = A; }
+>N10 : Symbol(N10, Decl(a.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+>M10 : Symbol(M10, Decl(a.ts, 0, 69))
+>B : Symbol(M10.B, Decl(a.ts, 1, 22))
+>z : Symbol(z, Decl(a.ts, 0, 60))
+>A : Symbol(A, Decl(a.ts, 0, 22))
+
+export namespace M10 { export import B = N10.z; }
+>M10 : Symbol(M10, Decl(a.ts, 0, 69))
+>B : Symbol(B, Decl(a.ts, 1, 22))
+>N10 : Symbol(N10, Decl(a.ts, 0, 0))
+>z : Symbol(B, Decl(a.ts, 0, 60))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

@@ -1,0 +1,49 @@
+//// [test/cases/bun16-P1.ts] ////
+
+=== a.ts ===
+declare function n(x: never): void;
+>n : Symbol(n, Decl(a.ts, 0, 0))
+>x : Symbol(x, Decl(a.ts, 0, 19))
+
+declare function p7<T>(mk: () => ((x: T) => string)[], other: (y: T) => void, v: T): T;
+>p7 : Symbol(p7, Decl(a.ts, 0, 35))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>mk : Symbol(mk, Decl(a.ts, 1, 23))
+>x : Symbol(x, Decl(a.ts, 1, 35))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>other : Symbol(other, Decl(a.ts, 1, 54))
+>y : Symbol(y, Decl(a.ts, 1, 63))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>v : Symbol(v, Decl(a.ts, 1, 77))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+>T : Symbol(T, Decl(a.ts, 1, 20))
+
+const r1 = p7(() => [...[x => 1]], y => {}, 1); n(r1);
+>r1 : Symbol(r1, Decl(a.ts, 2, 5))
+>p7 : Symbol(p7, Decl(a.ts, 0, 35))
+>x : Symbol(x, Decl(a.ts, 2, 25))
+>y : Symbol(y, Decl(a.ts, 2, 34))
+>n : Symbol(n, Decl(a.ts, 0, 0))
+>r1 : Symbol(r1, Decl(a.ts, 2, 5))
+
+declare function p8<T>(mk: () => T, other: (y: T) => void): T;
+>p8 : Symbol(p8, Decl(a.ts, 2, 54))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+>mk : Symbol(mk, Decl(a.ts, 3, 23))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+>other : Symbol(other, Decl(a.ts, 3, 35))
+>y : Symbol(y, Decl(a.ts, 3, 44))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+>T : Symbol(T, Decl(a.ts, 3, 20))
+
+const r2 = p8(() => [...[x => 1]], y => {}); n(r2);
+>r2 : Symbol(r2, Decl(a.ts, 4, 5))
+>p8 : Symbol(p8, Decl(a.ts, 2, 54))
+>x : Symbol(x, Decl(a.ts, 4, 25))
+>y : Symbol(y, Decl(a.ts, 4, 34))
+>n : Symbol(n, Decl(a.ts, 0, 0))
+>r2 : Symbol(r2, Decl(a.ts, 4, 5))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 5, 5))
+

@@ -1,0 +1,33 @@
+//// [test/cases/bun08-C7a.ts] ////
+
+=== a.cts ===
+import * as cns from "./cjs.cjs";
+>cns : typeof cns
+
+async function dyn() {
+>dyn : () => Promise<void>
+
+  const c = await import("./cjs.cjs");
+>c : typeof import("./cjs.cjs")
+>await import("./cjs.cjs") : typeof import("./cjs.cjs")
+>import("./cjs.cjs") : Promise<typeof import("./cjs.cjs")>
+>"./cjs.cjs" : "./cjs.cjs"
+
+  c.default.a;
+>c.default.a : any
+>c.default : 5
+>c : typeof import("./cjs.cjs")
+>default : 5
+>a : any
+}
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== cjs.cts ===
+export const a = 1;
+>a : 1
+>1 : 1
+
+export default 5;
+

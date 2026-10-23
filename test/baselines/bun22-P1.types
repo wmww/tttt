@@ -1,0 +1,28 @@
+//// [test/cases/bun22-P1.ts] ////
+
+=== a.ts ===
+declare function f<A extends B, B>(y: B, cb: (b: B) => void): A | B;
+>f : <A extends B, B>(y: B, cb: (b: B) => void) => A | B
+>y : B
+>cb : (b: B) => void
+>b : B
+
+const k = "a";
+>k : "a"
+>"a" : "a"
+
+k || f("b", b => { const t: "b" = b; });
+>k || f("b", b => { const t: "b" = b; }) : "a"
+>k : "a"
+>f("b", b => { const t: "b" = b; }) : string
+>f : <A extends B, B>(y: B, cb: (b: B) => void) => A | B
+>"b" : "b"
+>b => { const t: "b" = b; } : (b: string) => void
+>b : string
+>t : "b"
+>b : string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

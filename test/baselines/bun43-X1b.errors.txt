@@ -1,0 +1,17 @@
+a.ts(1,15): error TS7008: Member 'const' implicitly has an 'any' type.
+a.ts(1,21): error TS1005: ';' expected.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    interface A { const n: 1 }
+                  ~~~~~
+!!! error TS7008: Member 'const' implicitly has an 'any' type.
+                        ~
+!!! error TS1005: ';' expected.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

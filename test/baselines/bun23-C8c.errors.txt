@@ -1,0 +1,16 @@
+a.ts(3,3): error TS2540: Cannot assign to 'cstr' because it is a read-only property.
+a.ts(4,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    const cs = "cstr";
+    declare let u: { readonly [cs]: 1 } | { readonly [cs]: 2 };
+    u[cs] = 1;
+      ~~
+!!! error TS2540: Cannot assign to 'cstr' because it is a read-only property.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

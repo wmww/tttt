@@ -1,0 +1,13 @@
+//// [test/cases/bun03-C12.ts] ////
+
+=== a.ts ===
+interface I {}
+class C implements (I) {}
+>C : C
+>(I) : any
+>I : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

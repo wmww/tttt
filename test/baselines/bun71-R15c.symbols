@@ -1,0 +1,68 @@
+//// [test/cases/bun71-R15c.ts] ////
+
+=== a.ts ===
+export {};
+type Ctor<T = {}> = new (...a: any[]) => T;
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+>a : Symbol(a, Decl(a.ts, 1, 25))
+>T : Symbol(T, Decl(a.ts, 1, 10))
+
+declare const key: string;
+>key : Symbol(key, Decl(a.ts, 2, 13))
+
+function i1<T extends Ctor & { [k: string]: number }>(B: T) { return class extends B { static s = "x"; }; }
+>i1 : Symbol(i1, Decl(a.ts, 2, 26))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>k : Symbol(k, Decl(a.ts, 3, 32))
+>B : Symbol(B, Decl(a.ts, 3, 54))
+>T : Symbol(T, Decl(a.ts, 3, 12))
+>B : Symbol(B, Decl(a.ts, 3, 54))
+>s : Symbol((Anonymous class).s, Decl(a.ts, 3, 86))
+
+function i2<T extends Ctor>(B: T) { return class extends B { static [k: string]: number; static s = "x"; }; }
+>i2 : Symbol(i2, Decl(a.ts, 3, 107))
+>T : Symbol(T, Decl(a.ts, 4, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>B : Symbol(B, Decl(a.ts, 4, 28))
+>T : Symbol(T, Decl(a.ts, 4, 12))
+>B : Symbol(B, Decl(a.ts, 4, 28))
+>k : Symbol(k, Decl(a.ts, 4, 69))
+>s : Symbol((Anonymous class).s, Decl(a.ts, 4, 88))
+
+function i3<T extends Ctor>(B: T) { return class extends B { static [k: string]: number; static [key] = "x"; }; }
+>i3 : Symbol(i3, Decl(a.ts, 4, 109))
+>T : Symbol(T, Decl(a.ts, 5, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>B : Symbol(B, Decl(a.ts, 5, 28))
+>T : Symbol(T, Decl(a.ts, 5, 12))
+>B : Symbol(B, Decl(a.ts, 5, 28))
+>k : Symbol(k, Decl(a.ts, 5, 69))
+>[key] : Symbol((Anonymous class)[key], Decl(a.ts, 5, 88))
+>key : Symbol(key, Decl(a.ts, 2, 13))
+
+function i4<T extends Ctor>(B: T) { return class extends B { static [k: string]: number; static [k: number]: string; }; }
+>i4 : Symbol(i4, Decl(a.ts, 5, 113))
+>T : Symbol(T, Decl(a.ts, 6, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>B : Symbol(B, Decl(a.ts, 6, 28))
+>T : Symbol(T, Decl(a.ts, 6, 12))
+>B : Symbol(B, Decl(a.ts, 6, 28))
+>k : Symbol(k, Decl(a.ts, 6, 69))
+>k : Symbol(k, Decl(a.ts, 6, 97))
+
+function i7<T extends Ctor & { [k: string]: number }>(B: T) { return class extends B { static s = 1; static m() {} }; }
+>i7 : Symbol(i7, Decl(a.ts, 6, 121))
+>T : Symbol(T, Decl(a.ts, 7, 12))
+>Ctor : Symbol(Ctor, Decl(a.ts, 0, 10))
+>k : Symbol(k, Decl(a.ts, 7, 32))
+>B : Symbol(B, Decl(a.ts, 7, 54))
+>T : Symbol(T, Decl(a.ts, 7, 12))
+>B : Symbol(B, Decl(a.ts, 7, 54))
+>s : Symbol((Anonymous class).s, Decl(a.ts, 7, 86))
+>m : Symbol((Anonymous class).m, Decl(a.ts, 7, 100))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 8, 5))
+

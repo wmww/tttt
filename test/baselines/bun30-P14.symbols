@@ -1,0 +1,23 @@
+//// [test/cases/bun30-P14.ts] ////
+
+=== a.ts ===
+interface J { a(): void }
+>J : Symbol(J, Decl(a.ts, 0, 0), Decl(a.ts, 0, 25))
+>a : Symbol(J.a, Decl(a.ts, 0, 13))
+
+interface J { a?: 1 }
+>J : Symbol(J, Decl(a.ts, 0, 0), Decl(a.ts, 0, 25))
+>a : Symbol(J.a, Decl(a.ts, 1, 13))
+
+declare const x: J;
+>x : Symbol(x, Decl(a.ts, 2, 13))
+>J : Symbol(J, Decl(a.ts, 0, 0), Decl(a.ts, 0, 25))
+
+x.a();
+>x.a : Symbol(J.a, Decl(a.ts, 0, 13))
+>x : Symbol(x, Decl(a.ts, 2, 13))
+>a : Symbol(J.a, Decl(a.ts, 0, 13))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 4, 5))
+

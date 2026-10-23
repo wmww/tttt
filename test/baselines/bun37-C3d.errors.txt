@@ -1,0 +1,14 @@
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,99): error TS5024: Compiler option 'strict' requires a value of type boolean.
+
+
+==== tsconfig.json (1 errors) ====
+    { "compilerOptions": { "strict": false, "noEmit": true, "types": [], "lib": ["es2022"], "strict": 1 } }
+                                                                                                      ~
+!!! error TS5024: Compiler option 'strict' requires a value of type boolean.
+==== a.ts (1 errors) ====
+    let n: number = null;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

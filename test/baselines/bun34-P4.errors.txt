@@ -1,0 +1,20 @@
+a.ts(4,54): error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+a.ts(5,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "isolatedModules": true, "experimentalDecorators": true, "emitDecoratorMetadata": true, "module": "esnext" } }
+==== a.ts (2 errors) ====
+    import { A } from "./m";
+    declare const dec: any;
+    const k = "x";
+    class C { @dec get [k]() { return null! } set [k](v: A) {} }
+                                                         ~
+!!! error TS1272: A type referenced in a decorated signature must be imported with 'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.
+!!! related TS1376 a.ts:1:10: 'A' was imported here.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== m.ts (0 errors) ====
+    export interface A {}
+    

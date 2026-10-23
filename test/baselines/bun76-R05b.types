@@ -1,0 +1,80 @@
+//// [test/cases/bun76-R05b.ts] ////
+
+=== a.ts ===
+interface A { a: number }
+>a : number
+
+interface B { b: number }
+>b : number
+
+interface X2 extends A, B { own: "late"; [k2]: number }
+>own : "late"
+>[k2] : number
+>k2 : "late"
+
+declare const k2: X2["own"];
+>k2 : "late"
+
+declare const x2: X2;
+>x2 : X2
+
+const y2: number = x2.late;
+>y2 : number
+>x2.late : any
+>x2 : X2
+>late : any
+
+const o2: X2 = { a: 1, b: 2, own: "late", late: 3 };
+>o2 : X2
+>{ a: 1, b: 2, own: "late", late: 3 } : { a: number; b: number; own: "late"; late: number; }
+>a : number
+>1 : 1
+>b : number
+>2 : 2
+>own : "late"
+>"late" : "late"
+>late : number
+>3 : 3
+
+// one base: the two agree, `late` is a member
+interface X3 extends A { own: "late"; [k3]: number }
+>own : "late"
+>[k3] : number
+>k3 : "late"
+
+declare const k3: X3["own"];
+>k3 : "late"
+
+declare const x3: X3;
+>x3 : X3
+
+const y3: number = x3.late;
+>y3 : number
+>x3.late : number
+>x3 : X3
+>late : number
+
+// a class merged with the interface
+class C4 { own!: "late"; [k4]!: number }
+>C4 : C4
+>own : "late"
+>[k4] : number
+>k4 : "late"
+
+interface C4 extends A, B {}
+declare const k4: C4["own"];
+>k4 : "late"
+
+declare const x4: C4;
+>x4 : C4
+
+const y4: number = x4.late;
+>y4 : number
+>x4.late : any
+>x4 : C4
+>late : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

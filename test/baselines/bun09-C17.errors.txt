@@ -1,0 +1,17 @@
+a.ts(1,38): error TS2304: Cannot find name 'Missing'.
+a.ts(1,71): error TS2545: A mixin class must have a constructor with a single rest parameter of type 'any[]'.
+a.ts(2,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (3 errors) ====
+    function m14<B extends new (...args: Missing[]) => {}>(b: B) { return class extends b { x = 1 }; }
+                                         ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+                                                                          ~~~~~
+!!! error TS2545: A mixin class must have a constructor with a single rest parameter of type 'any[]'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

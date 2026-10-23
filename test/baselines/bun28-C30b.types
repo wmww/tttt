@@ -1,0 +1,10 @@
+//// [test/cases/bun28-C30b.ts] ////
+
+=== a.ts ===
+type T = readonly unique symbol[];
+>T : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

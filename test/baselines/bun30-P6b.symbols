@@ -1,0 +1,18 @@
+//// [test/cases/bun30-P6b.ts] ////
+
+=== a.ts ===
+export const o = { a() {}, get a() { return 1 }, set a(v: number) {} };
+>o : Symbol(o, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 18))
+>a : Symbol(a, Decl(a.ts, 0, 26))
+>a : Symbol(a, Decl(a.ts, 0, 48))
+>v : Symbol(v, Decl(a.ts, 0, 55))
+
+o.a = 3;
+>o.a : Symbol(a, Decl(a.ts, 0, 48))
+>o : Symbol(o, Decl(a.ts, 0, 12))
+>a : Symbol(a, Decl(a.ts, 0, 48))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

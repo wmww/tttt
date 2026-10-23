@@ -1,0 +1,22 @@
+//// [test/cases/bun25-C20b.ts] ////
+
+=== a.js ===
+const [x] = require("./m");
+>x : any
+>require("./m") : number[]
+>require : any
+>"./m" : "./m"
+
+/** @type {number} */ const sentinel = "";
+>sentinel : number
+>"" : ""
+
+=== m.js ===
+module.exports = [1];
+>module.exports = [1] : number[]
+>module.exports : number[]
+>module : { exports: number[]; }
+>exports : number[]
+>[1] : number[]
+>1 : 1
+

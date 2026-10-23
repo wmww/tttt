@@ -1,0 +1,15 @@
+//// [test/cases/bun29-P3b.ts] ////
+
+=== a.ts ===
+let n: number = { a: -0 } as const;
+>n : number
+>{ a: -0 } as const : { readonly a: -0; }
+>{ a: -0 } : { readonly a: -0; }
+>a : 0
+>-0 : 0
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

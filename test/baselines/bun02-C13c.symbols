@@ -1,0 +1,12 @@
+//// [test/cases/bun02-C13c.ts] ////
+
+=== a.ts ===
+const o3 = { abstract get x() { return 1 }, set x(v) {} };
+>o3 : Symbol(o3, Decl(a.ts, 0, 5))
+>x : Symbol(x, Decl(a.ts, 0, 12), Decl(a.ts, 0, 43))
+>x : Symbol(x, Decl(a.ts, 0, 12), Decl(a.ts, 0, 43))
+>v : Symbol(v, Decl(a.ts, 0, 50))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

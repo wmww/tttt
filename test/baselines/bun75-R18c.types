@@ -1,0 +1,24 @@
+//// [test/cases/bun75-R18c.ts] ////
+
+=== a.ts ===
+declare function cb<T>(f: () => T): T;
+>cb : <T>(f: () => T) => T
+>f : () => T
+
+const [a, b = () => 1] = cb(() => [1, () => 2]);
+>a : number
+>b : () => any
+>() => 1 : () => any
+>1 : 1
+>cb(() => [1, () => 2]) : [number, () => any]
+>cb : <T>(f: () => T) => T
+>() => [1, () => 2] : () => [number, () => any]
+>[1, () => 2] : [number, () => any]
+>1 : 1
+>() => 2 : () => any
+>2 : 2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

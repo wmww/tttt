@@ -1,0 +1,31 @@
+//// [test/cases/bun29-C12b.ts] ////
+
+=== a.ts ===
+import * as ns from "./m";
+>ns : typeof ns
+
+let n: number = () => ns.mk();
+>n : number
+>() => ns.mk() : () => ns."a-b"
+>ns.mk() : ns."a-b"
+>ns.mk : () => ns."a-b"
+>ns : typeof ns
+>mk : () => ns."a-b"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+class C { c = 1 }
+>C : C
+>c : number
+>1 : 1
+
+export { C as "a-b" };
+>C : typeof C
+>"a-b" : typeof C
+
+export declare function mk(): C;
+>mk : () => C
+

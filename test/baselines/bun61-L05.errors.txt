@@ -1,0 +1,23 @@
+a.tsx(1,18): error TS1479: The current file is a CommonJS module whose imports will produce 'require' calls; however, the referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a dynamic 'import("pre/jsx-runtime")' call instead.
+  To convert this file to an ECMAScript module, add the field `"type": "module"` to 'package.json'.
+a.tsx(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "jsx": "react-jsx", "jsxImportSource": "pre", "module": "node16" } }
+==== a.tsx (2 errors) ====
+    export const a = <div />;
+                     ~~~~~~~
+!!! error TS1479: The current file is a CommonJS module whose imports will produce 'require' calls; however, the referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a dynamic 'import("pre/jsx-runtime")' call instead.
+!!! error TS1479:   To convert this file to an ECMAScript module, add the field `"type": "module"` to 'package.json'.
+    export const b = <div />;
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/pre/jsx-runtime.d.ts (0 errors) ====
+    export namespace JSX { interface IntrinsicElements { div: {} } interface Element {} } export function jsx(): void;
+==== node_modules/pre/package.json (0 errors) ====
+    { "name": "pre", "version": "1.0.0", "type": "module", "exports": { "./jsx-runtime": { "types": "./jsx-runtime.d.ts", "default": "./jsx-runtime.js" } } }
+==== package.json (0 errors) ====
+    { "name": "app" }
+    

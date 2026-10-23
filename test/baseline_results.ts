@@ -1,5 +1,11555 @@
 const tsCommit = "3e9236361fa97a9e6c685f4833ac457ae2d8c50a"
 const baselines = {
+    'bun01-C1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C10': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun01-C11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun01-C12a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C12b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C2b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C2c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun01-C4a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C4c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun01-C5a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun01-C5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C6b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun01-C6c': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun01-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-C8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun01-C9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun01-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun01-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun01-P3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun01-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun01-P5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C1': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun02-C10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun02-C11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C13a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C13b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun02-C13c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C14a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C14b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C17': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun02-C18a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C18b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C20a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C20b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C21a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun02-C21b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun02-C23a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C23b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C24': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun02-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C4d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C6b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-C9b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun02-P1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C11a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C11b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C12': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun03-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C14a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C14b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C15a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C15b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C15c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C15d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C17a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C17b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C18': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C19': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C1a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C1c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C21': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C22': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C23': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C2a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C2b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C2c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C2d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C4b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C8b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C8c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun03-SC4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun03-SC8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun03-SC9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C10a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C10b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C14': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C15': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun04-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C2a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C3b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun04-C4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C7a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun04-C7b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun04-C7c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-C9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-P3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun04-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun04-P5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun05-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C10b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C11a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun05-C11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun05-C13': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun05-C14a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C14b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C1b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C6': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun05-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C8a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C8b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun05-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun05-P4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-P5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-P6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun05-P7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun06-C10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun06-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C11b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun06-C12a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun06-C12b': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun06-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C14': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C16': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun06-C3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun06-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-C8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun06-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-P2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-P3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun06-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-P6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun06-P7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun06-P8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun07-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C14a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C14b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C1a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun07-C1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun07-C1c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C1d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun07-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun07-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C6b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun07-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun07-C8': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun07-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun07-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C11a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C11b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C11c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C11d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C11e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun08-C13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C13b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C13c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun08-C13d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun08-C14': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C2': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun08-C20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C21': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C23a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C23b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C24a': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun08-C24b': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun08-C25': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C3a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun08-C6a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C6b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C7a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C7b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-C8': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun08-C9a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun08-C9b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun08-P1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun08-P2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C10': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C11b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C12': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C15a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C15b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C16a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C16b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C18': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C19': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C21': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-C5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C5b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C5c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C7a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C7b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-C9b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-P1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-P2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun09-P3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-P4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun09-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun09-P6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun09-P7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C10b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C11b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C15': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C15b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C16': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C16b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C17': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun10-C17b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun10-C18': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C18b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C19': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C1c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C20': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C21': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C2b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C5c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C5d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C5e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C5f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C7b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C7c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C7d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C7e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C8b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-C8c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-P2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-P4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-SC1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun10-SC10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-SC11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-SC12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-SC3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun10-SC5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-SC7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun10-SC8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun10-SC9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-C10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun11-C11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C12': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun11-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C14': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-C15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C2c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C2d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C4b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C6a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C6b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C7': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-C8': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun11-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-C9b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-P1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-P3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun11-P4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-P6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-P6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun11-P6c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun11-P7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C11a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C14a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C14b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C14c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C14d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C14e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C16a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C16b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C16c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C1a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C1c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun12-C1d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun12-C2a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C2b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C7a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C7b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C7c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C8c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun12-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-P3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun12-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C10b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C1a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-C1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-C1c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C2b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C6a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C7a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-C7b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-C9b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-P2a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-P2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-P2c': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun13-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun13-P4a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun13-P4b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun14-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C11c': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C12': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C16': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C2b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C6': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C8c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C9b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-C9c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-C9d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-P5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-P6': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun14-P7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun14-P9': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C10a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C10b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C15': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C1a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C1c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C3b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C3c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C4a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C4b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C4c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C8a': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C8b': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-C9b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-C9c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-P3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun15-P4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun15-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-P6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun15-P6b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C10': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C13a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C13b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C13c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C13d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C15a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C15b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C1a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C1c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun16-C3a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C3b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C3c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C3d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C5a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C5b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun16-C6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun16-C7a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C7b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C9b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C9c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C9d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C9e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-C9f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun16-P2a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun16-P2b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C10b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C10c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C11': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun17-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C1a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun17-C1b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun17-C1c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun17-C1d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun17-C2a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C2b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C3a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C3b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C3c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun17-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C6c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C7a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C7b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C7c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C8a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C8b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-C9': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun17-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-P4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun17-SC3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-SC5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-SC6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun17-SS1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C10b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C1a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C1b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C1c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C1d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C3a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C3b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C3c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C4d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C6a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun18-C9b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C1b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C1c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C1d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C1e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C1f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C1g': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C3c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C4a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun19-C4b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun19-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C6a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun19-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-C8': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun19-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-P2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun19-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun19-P4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun19-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C13c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C13d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C14a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C14b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C15': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun20-C16a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C16b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C2c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C2d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C3b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C3c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C5a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun20-C5b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun20-C5c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun20-C6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun20-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun20-P10': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun20-P11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-P3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun20-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun20-P6': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun20-P7': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun20-P8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun20-P9': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C12a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C12b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C12c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C13c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C14a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C14b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C14c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C16a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C16b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C17a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C17b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C20a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-C20b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-C21a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C21b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C22': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C23': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C24': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C5b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-C6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C8': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-C9b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun21-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun21-P5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun21-P6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun22-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-C13': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C2b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C4b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C5b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C5c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C5d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C5e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-C8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun22-C9': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun22-P5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-P6a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun22-P6b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C13': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C14': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C2b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun23-C2c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C3a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C3c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C3d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C3e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C3f': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C5a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C5c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C5d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C6': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun23-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C8a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C8b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C8c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-C9c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-P3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun23-P4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun23-P9': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun24-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C14': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun24-C15': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun24-C16': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun24-C17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C18': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun24-C19': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C2': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun24-C20a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C20b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C20c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C21': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C3a': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun24-C3b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun24-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C6c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun24-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-SC1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun24-SC10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-SC11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-SC2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun24-SC3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-SC4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun24-SC6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun24-SC7': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun24-SC9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun25-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C12a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C12b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C13': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C17a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C17b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C17c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C18': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C19a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C19b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C19c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun25-C20a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C20b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C21': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C22a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C22b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C22c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C23': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C5b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C6': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C7a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C7b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C7c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-C9a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-C9b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-P1a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-P1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun25-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun25-P6': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun26-C10': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C1a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-C1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-C1c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C7a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-C7b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-C9': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-P1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun26-P2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun26-P3a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-P3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-P4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun26-P5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun26-P6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun26-P6b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun27-C10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C11b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun27-C12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C14': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun27-C14b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C15a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C15b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C16': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun27-C17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C18': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C20a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C20b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C20c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C21': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C21b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C22': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C23': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C3a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C3c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C4a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun27-C4b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun27-C5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun27-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C7': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun27-C8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P4a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P4b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P4c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun27-P6': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun27-P7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C10a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C10b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C11b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C16a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C16b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C16c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C16d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C16e': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun28-C16f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C16g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C16h': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C17a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C17b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C17c': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C18a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C18b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C18c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C19a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C19b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C19c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C19d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C1c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C1d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C1e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C20a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C20b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C20c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C21a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C21b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C21c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C21d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C22a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C22b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C22c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C23': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C24a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C24b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C24c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C24d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C24e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C25a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C25b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C26a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C26b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C26c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C26d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C26e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C26f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C27a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C27b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C28': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C29a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C29b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C29c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C29d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C29e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C30a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C30b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C31a': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C31b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C31c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C32': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33h': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C33i': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C6c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C7a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C7b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C7c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C7d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-C8b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C8c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P10b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P11': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-P12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P13a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P13c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P14a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P14b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P2a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P2b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun28-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P4b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun28-P4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P5c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P5d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P5e': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun28-P5f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P6a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P6b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P6c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P7a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P7b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P8a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P8b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun28-P9': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun29-C10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C11a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C11b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C12a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C12b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C13': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun29-C14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C1b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C1c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C2a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C2b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun29-C3a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun29-C3b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun29-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C7a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C7b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C8a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C8c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-C9c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun29-P1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-P1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun29-P3a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun29-P3b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun29-P4a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun29-P4b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun29-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C10b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C14a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C14b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C16a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun30-C16b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-C17a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-C17b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-C18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C19a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C19b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-C20': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C21': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C22': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C23': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C24': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C25': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun30-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C5a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6g': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C6h': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C7a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C7b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C7c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-C8a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-C8b': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun30-C9a': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun30-C9b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-P1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-P10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P13a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun30-P13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P13c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun30-P14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P16': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-P17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P19': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-P20': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P21': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-P22': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun30-P4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun30-P5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun30-P6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P7a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun30-P7b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun30-P8a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-P8b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun30-P9': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'bun31-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C13': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun31-C14': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-C3a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun31-C3b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun31-C6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-P1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-P3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-P6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-P7': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-P8': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-SC1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun31-SC10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-SC11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-SC12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-SC2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-SC3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-SC4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun31-SC5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-SC6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun31-SC7': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun31-SC8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C10a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C10b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C10c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C10d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C11': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C13': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C13b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C14a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C14b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C14c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C14d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C16': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C17': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C18b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C21a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C21b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C22': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C23': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C23b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C24a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C24b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C25': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C25b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C25c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun32-C4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C5a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C5b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C6a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C7': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C8': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun32-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun32-C9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun32-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C11a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun33-C11b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C11c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C12a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C12b': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C12c': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C14a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C14b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C14c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C15': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun33-C16a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C16b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun33-C17a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C17b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C18a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C18b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C19a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C19b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C19c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C19d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C19e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C1b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun33-C4a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C4b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C4c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C4d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun33-C5a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun33-C5b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C5c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C5d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C5e': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun33-C5f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C5g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C6b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C6c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C6d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C6e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-C7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C8c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-C9': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun33-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4g': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P4h': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-P6a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-P6b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun33-P7a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P7b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P7c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P9c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P9d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun33-P9e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C11': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun34-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C14a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C14b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C15a': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun34-C15b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C16': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C19': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C20': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C21': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C2b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C2c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C2d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C3c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C4b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C7a': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun34-C7b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun34-C7c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun34-C7d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-C7e': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun34-C8': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun34-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P1a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun34-P1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P1c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P1d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P1e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P2a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun34-P2b': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun34-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun34-P6a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun34-P6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P6c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun34-P6d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C13c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun35-C13d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun35-C1a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun35-C1b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun35-C1c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun35-C1e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun35-C1f': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun35-C1g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C2a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun35-C2b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun35-C3a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun35-C3b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun35-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C4c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C5a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun35-C5b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C5c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C8c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun35-C9c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun35-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-P3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-P3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-P6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun35-P6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C10b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C12': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C1c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun36-C1d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun36-C2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun36-C3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C3b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C3c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C4c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C4d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C5b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C8b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-C9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C9b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun36-C9d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun36-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-P2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun36-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C11a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C14': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun37-C16': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C18a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C18b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C19a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C19b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C1b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C1c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C1d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C20': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C21b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C22': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C3a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C3c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C3d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C3e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C4a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C4b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C4c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-C9a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-P3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun37-P4a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-P4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-P5a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-P5b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun37-P6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun37-P7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun37-P8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C10b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C10c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C12a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C12b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C3a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun38-C3b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C3c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun38-C4a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-C9': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun38-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-SC3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun38-SC5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C11c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C11d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C12a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C12b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C13': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C14': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C17a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C17b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C18a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun39-C18b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun39-C18c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun39-C19a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C19b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C22': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C5a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C5b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-C9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun39-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun39-P5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun39-P5b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun39-P6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun39-P7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C10a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C10b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun40-C11a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C11b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C11c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C12': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun40-C15a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C15b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C20a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C3c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C5': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun40-C7a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun40-C7b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C7c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun40-C8b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun40-P3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun40-P4a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun40-P4b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun40-P5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun40-P6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun41-C10a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun41-C10b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun41-C10c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun41-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun41-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun41-C3c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun41-C5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C11': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun42-C12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun42-C13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C14a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C14b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C15a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C15b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C2a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun42-C2b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun42-C2c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C4b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C5a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C5b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun42-C5c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C7a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C8': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-C9': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun42-P2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun42-P3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-P4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-P6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun42-P7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C11': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C12a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C12b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C13c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C13d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C13e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C13f': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C13g': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C13h': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C13i': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C14a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C14b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C14c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C15a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C15b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C15c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C15e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C16a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C16b': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C16c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C16d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C16e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C16f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C16g': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'bun43-C17a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C17b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C2a': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun43-C2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C2c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C2d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C2e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C2f': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C2g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C2h': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C2i': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C2j': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C3a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C3b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C4a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C4b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C4c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-C4d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C5a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C5b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C5c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C6': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C8a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C8b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C8c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C8d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-C8e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-C9': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P10a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-P10b': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun43-P10c': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun43-P2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P2b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P4a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P4b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P4c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P4d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P6b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P6c': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'bun43-P7a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-P7b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-P8a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-P8b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-P8c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-P8d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P8e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-P9a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-P9e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9f': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun43-P9g': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9h': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9i': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9j': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9k': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9l': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-P9m': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9n': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-P9o': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X1a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X1b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X2a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X2b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X5d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X5e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-X5f': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-X5g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun43-X5h': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun43-X6a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-X6b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-X6c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-X6d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-X6e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun43-X7': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C5a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C5b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C6a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun44-C6b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun44-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L01': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L02': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L05': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L06a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun51-L06b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun51-L08': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun51-L12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun51-L18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L19a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L19b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L19c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun51-L20': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun51-L20b': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun52-L01': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun52-L01b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L02': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L03': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L05': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun52-L12': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun52-L13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L13b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L15b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun52-L19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L01b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun53-L04': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L04b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun53-L06': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L06b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L06c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L09b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L14b': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun53-L15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L16b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun53-L17': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun53-L17b': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun53-L18': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun53-L20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L20b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun53-L20c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L01': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L02a': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun54-L02b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L02c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L02d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun54-L06': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L07a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L07b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L08': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L11': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun54-L11b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun54-L13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L20a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun54-L20b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun55-L01': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun55-L03': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun55-L04': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun55-L06b': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun55-L08': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun55-L12a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun55-L12b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun55-L12c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun55-L12d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun55-L13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun55-L16a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun55-L16b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun55-L18b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun55-L19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L01': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L02': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L05b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun56-L06': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun56-L07': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun56-L08': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L09': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun56-L10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun56-L11': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun56-L14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L14b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun56-L14c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun56-L19': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun56-L20': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun56-L20b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun57-L01': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L02a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L02b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun57-L02c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L02d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L02f': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun57-L03': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L04': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L04b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L05': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L13a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L13b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L13c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L13d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L15': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun57-L18': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun57-L18b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun58-L01': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun58-L03': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun58-L05': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun58-L07a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun58-L08b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun58-L09': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun58-L11a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun58-L11b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun58-L12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun58-L15a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun58-L15b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun58-L17': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun58-L20a': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun58-L20b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun58-L20c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun59-L02': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun59-L06': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun59-L07': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun59-L09': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun59-L10': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun59-L18': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun59-L19a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun59-L19b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun59-L20': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun60-L02': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun60-L04a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun60-L04b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun60-L05': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun60-L06': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun60-L16a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun60-L16b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun60-L17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun60-L19a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun60-L19b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun60-L20a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun60-L20b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun60-L20c': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun61-L03': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L04': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun61-L04b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L05': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L05b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L05c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L06': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun61-L08': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L09': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L12': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun61-L14': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun61-L15b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun61-L16': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun61-L17': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L17b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun61-L20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L01': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L02a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L02b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L03a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L04a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun62-L06a': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun62-L06b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun62-L07a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun62-L12': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L13a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun62-L13b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun62-L19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun63-L03b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun63-L04': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun63-L05b': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun63-L08': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun63-L09': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun63-L10': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun63-L14b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun63-L16': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun63-L18b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R04a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R04b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R04c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R04d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R04e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R07': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R07b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R07c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R09a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R12a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R12b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R15a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R15b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun71-R15c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R01': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R04a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R04b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun72-R04c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R04d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R10b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R10c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R10d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun72-R14': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun72-R15a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun72-R15b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun72-R19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R01a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R01b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R01c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R01d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R01e': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun73-R01f': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun73-R03a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun73-R03b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun73-R03c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R04': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun73-R06': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun73-R09': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun73-R09b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun73-R12': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun73-R13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R13b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun73-R16a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun73-R19': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun74-R09a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun74-R09b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun74-R09c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun74-R13a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun74-R13b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun74-R15a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun74-R15b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun74-R15c': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'bun74-R15d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun74-R15e': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun74-R16a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun74-R16b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun74-R16c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun74-R19': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun75-R01': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun75-R01b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun75-R02': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun75-R06': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun75-R07': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun75-R07b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun75-R18': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun75-R18c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun76-R05a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun76-R05b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun76-R05c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun76-R11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun76-R20': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R01a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R01b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R02a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R03a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R12a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R12b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R12c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R12d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R13a': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun77-R13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun77-R17a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun77-R17b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun77-R19a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun78-R01': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun78-R03': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun78-R07': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun78-R20b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun78-R20d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun79-R03a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun79-R03b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun79-R03c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun79-R05': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun79-R11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun80-R01a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun80-R01b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun80-R01c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R04': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R07': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R08': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun80-R09a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R09b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R09c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R12a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R13a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R13b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R17a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R17b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R17c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R18a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R18b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun80-R20b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun81-R01': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun81-R01b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun81-R02': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun81-R03': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun81-R04': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun81-R09': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun81-R09b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun81-R16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun81-R16b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun82-R02': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun82-R03': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun82-R09': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun82-R13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun82-R17': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun82-R17b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun82-R17c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun82-R17d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun82-R17e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun82-R19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun82-R19b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun82-R20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun83-R01b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun83-R01c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun83-R02a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun83-R03a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun83-R03b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun83-R03c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun83-R10a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun83-R11a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun83-R11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun83-R13a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun83-R20a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun84-R01': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun84-R02': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun84-R02b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun84-R02c': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun84-R03': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun84-R04': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun84-R06': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun84-R06b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun84-R08c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun84-R08d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun85-R03a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun85-R03b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun85-R03c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun85-R03f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun85-R03g': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun85-R16a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun85-R16b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun85-R16c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun85-R18a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R02a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R03a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R03b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R04a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R08': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun86-R10a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R11a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R11b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R11c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun86-R13b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun86-R16': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
+    'bun86-R20a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R01k': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R03': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun87-R04a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R04b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun87-R05a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R05b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R05c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R05d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R08': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R17b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun87-R17c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R18a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R18b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun87-R20a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R02a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R02b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R04a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R04b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R05a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R05b': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'bun88-R08a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R19a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R19b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun88-R19c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun89-R12e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun89-R13': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun89-R14': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun89-R15': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun89-R18b': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun89-R19': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun89-R20': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun90-R06': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun90-R09': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun90-R10a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun90-R10b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun90-R16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun90-R17a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun90-R17b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun90-R17c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun91-R01': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun91-R02': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun91-R05a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun91-R09': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun91-R12a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun91-R12b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun91-R12c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun91-R12d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R02a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R02b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun92-R02c': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun92-R02d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R02e': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R02f': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun92-R02g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R02h': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R03a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R03b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R03c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R03d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R03f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R07a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R07b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R07c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R07d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R07e': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R07f': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R09a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R09b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R09c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R09d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R09e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R09f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R09g': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11f': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11g': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11h': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R11i': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R14a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R16b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R17a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R17b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R17c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R19a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R19b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun92-R19c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun92-R19d': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-P01a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P01b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-P01c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P01d': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P01e': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P01f': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P02a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P02b': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun93-P02c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P03a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P03b': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P04a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun93-P04b': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun93-P04c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-P04d': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun93-P04e': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun93-P05': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun93-P06a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P06b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P06c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P07a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P07b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P07c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-P08a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-P08b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R01a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R01b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R01c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R01d': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R03a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R03b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R04a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R04b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R04c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R05a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-R05b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-R05c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-R06b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R06c': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R11a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-R11b': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-R11c': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-R17a': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R18a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun93-R18b': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun93-R19a': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun94-R01a': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun94-R01c': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun94-R04a': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun94-R07': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun95-E1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun95-J2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun95-J3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun95-P1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun95-Z1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun95-Z2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun95-Z3': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun95-Z4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-ARKTYPE2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun96-ARKTYPE3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-ARKTYPE5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun96-ARKTYPE6': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun96-EXCALIDRAW1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-H1': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun96-H2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun96-H3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-H4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-H5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-KY1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun96-KYSELY1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun96-KYSELY2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun96-OPENAI1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-REACTHOOKFORM1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-REACTHOOKFORM2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-REDUX1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-REDUX2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-REMEDA1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-REMEDA2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun96-SOLID1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun96-SOLID2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun96-TSPATTERN1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun97-J1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun97-M1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun97-M2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun98-D2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun98-F1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun98-J1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-A1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-B1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-B2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun99-B3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-B4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-B5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun99-C1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-C2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-D3': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun99-D4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-E1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-E2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun99-G1': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'bun99-I1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-I2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-I3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-I4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-I5': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-J1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-K1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-L1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-L2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-L3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-M1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun99-M2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-M3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-N1': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun99-N2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-N3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-N4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P01': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P02': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P03': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P04': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P05': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P06': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P07': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'bun99-P08': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P09': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P10': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'bun99-P11': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P12': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P13': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P14': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P15': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P16': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P17': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P18': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P19': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P20': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P21': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P22': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-P23': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-Q1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-Q2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-R1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-R2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-R3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-S1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-T1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-U1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-U2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-V1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-V2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-V3': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-V4': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-V5': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bun99-V6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bun99-V7': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W10': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W2': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W4': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W5': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W6': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W7': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'bun99-W8': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-W9': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bun99-WB': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-WC': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-WD': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-WE': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bun99-X1': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bunassignment-in-value-assigned-on-loop-back-edge': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bunchecks-of-a-value-assigned-on-a-loop-back-edge': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bungeneric-signature-of-an-instantiated-alias-inferred-as-itself': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'bunimport-type-options-in-options': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'buninference-to-types-that-share-their-parts': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'buninferred-type-is-a-module-in-a-nested-node-modules': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bunloop-back-edge-error-in-a-function-that-other-files-call': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bunloop-back-edge-errors-of-two-variables-in-functions-that-other-files-call': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'buntypes-of-parameters-that-get-no-argument': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bunvalue-named-like-a-type-parameter-and-a-member-of-the-class': {
+        errors: false,
+        symbols: false,
+        types: true,
+    },
     'ttttAccessorJoinsPropertySymbol': {
         errors: true,
         symbols: true,
@@ -212,6 +11762,11 @@ const baselines = {
         types: true,
     },
     'ttttClassExtendingAnyNormalizesToAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttClassMappedKeyIndexSignature': {
         errors: true,
         symbols: true,
         types: true,
@@ -2198,6 +13753,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNoLibNonNullableArity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNoLibTupleSpread': {
         errors: true,
         symbols: true,
@@ -2380,6 +13940,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttReturnAnnotationInfersFromItself': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'ttttReturnMapperAnyContextualArgument': {
         errors: true,
@@ -2658,6 +14223,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTupleOptionalRestElement': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTupleSpreadNotArrayLike': {
         errors: true,
         symbols: true,
@@ -2739,6 +14309,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeofThisObjectLiteralContainer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypesVersionsEntryIsDirectory': {
         errors: true,
         symbols: true,
         types: true,

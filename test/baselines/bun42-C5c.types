@@ -1,0 +1,9 @@
+//// [test/cases/bun42-C5c.ts] ////
+
+=== a.ts ===
+/// <reference path="./j.JS" />
+/// <reference path="./nope.TS" />
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

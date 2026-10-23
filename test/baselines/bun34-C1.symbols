@@ -1,0 +1,14 @@
+//// [test/cases/bun34-C1.ts] ////
+
+=== a.ts ===
+class E {}
+>E : Symbol(E, Decl(a.ts, 0, 0))
+
+/** @throws {@link E} */
+export function f() {}
+>f : Symbol(f, Decl(a.ts, 0, 10))
+
+const sentinel: number = ""; sentinel;
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+>sentinel : Symbol(sentinel, Decl(a.ts, 3, 5))
+

@@ -1,0 +1,30 @@
+//// [test/cases/bun40-C10b.ts] ////
+
+=== a.ts ===
+interface Order { f(x: "a"): 3 }
+>f : { (x: "dom"): 1; (x: "a"): 3; (x: "extra"): 2; }
+>x : "a"
+
+declare const o: Order; o.f(0);
+>o : Order
+>o.f(0) : never
+>o.f : { (x: "dom"): 1; (x: "a"): 3; (x: "extra"): 2; }
+>o : Order
+>f : { (x: "dom"): 1; (x: "a"): 3; (x: "extra"): 2; }
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== node_modules/@typescript/lib-dom/extra.d.ts ===
+interface Order { f(x: "extra"): 2 }
+>f : { (x: "dom"): 1; (x: "a"): 3; (x: "extra"): 2; }
+>x : "extra"
+
+=== node_modules/@typescript/lib-dom/index.d.ts ===
+/// <reference path="./extra.d.ts" />
+interface Order { f(x: "dom"): 1 }
+>f : { (x: "dom"): 1; (x: "a"): 3; (x: "extra"): 2; }
+>x : "dom"
+

@@ -1,0 +1,39 @@
+a.ts(6,2): error TS7053: Element implicitly has an 'any' type because expression of type '"z"' can't be used to index type '{ b: 1; }'.
+  Property 'z' does not exist on type '{ b: 1; }'.
+a.ts(7,8): error TS2322: Type '{ b: 1; }' is not assignable to type 'number'.
+a.ts(9,7): error TS2322: Type '{ [x: string]: 1 | { b: 1; }; b: 1; }' is not assignable to type 'number'.
+a.ts(13,7): error TS2322: Type '{ [k: string]: 1 | (any & { b: 1; }); } & { b: 1; }' is not assignable to type 'number'.
+a.ts(16,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (5 errors) ====
+    type show<t> = { [k in keyof t]: t[k] } & unknown
+    type R<d> = d extends object ? show<{ [k: string]: R<d> | 1 } & { b: 1 }> : never
+    declare const s: R<{ a: 1 }>
+    const x = s["k"]
+    if (x !== 1) {
+    	x["z"]
+    	~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"z"' can't be used to index type '{ b: 1; }'.
+!!! error TS7053:   Property 'z' does not exist on type '{ b: 1; }'.
+    	const y: number = x
+    	      ~
+!!! error TS2322: Type '{ b: 1; }' is not assignable to type 'number'.
+    }
+    const t: number = s
+          ~
+!!! error TS2322: Type '{ [x: string]: 1 | { b: 1; }; b: 1; }' is not assignable to type 'number'.
+    // without the mapped type: the intersection itself
+    type I<d> = d extends object ? { [k: string]: I<d> | 1 } & { b: 1 } : never
+    declare const i: I<{ a: 1 }>
+    const ti: number = i
+          ~~
+!!! error TS2322: Type '{ [k: string]: 1 | (any & { b: 1; }); } & { b: 1; }' is not assignable to type 'number'.
+    const xi = i["k"]
+    if (xi !== 1) { xi["z"] }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

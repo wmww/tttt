@@ -1,0 +1,30 @@
+a.ts(4,27): error TS2322: Type 'string' is not assignable to type '0'.
+a.ts(4,32): error TS2322: Type 'number' is not assignable to type '"-1" | "1" | "1.5" | "a"'.
+a.ts(4,58): error TS2322: Type 'string' is not assignable to type '0'.
+a.ts(4,63): error TS2322: Type 'number' is not assignable to type '"1"'.
+a.ts(5,47): error TS2322: Type 'number' is not assignable to type 'M'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (6 errors) ====
+    type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+    function f1() {} f1[0] = 1; f1["1"] = 2; f1["1.5"] = 3; f1["-1"] = 4; f1["a"] = 5;
+    const f3 = () => {}; f3[0] = 1; f3["1"] = 2;
+    const t1: S<typeof f1> = ["?", -99], t3: S<typeof f3> = ["?", -99];
+                              ~~~
+!!! error TS2322: Type 'string' is not assignable to type '0'.
+                                   ~~~
+!!! error TS2322: Type 'number' is not assignable to type '"-1" | "1" | "1.5" | "a"'.
+                                                             ~~~
+!!! error TS2322: Type 'string' is not assignable to type '0'.
+                                                                  ~~~
+!!! error TS2322: Type 'number' is not assignable to type '"1"'.
+    type M = { [K in keyof typeof f1]: K }; const m: M = 0;
+                                                  ~
+!!! error TS2322: Type 'number' is not assignable to type 'M'.
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

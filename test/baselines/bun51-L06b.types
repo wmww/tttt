@@ -1,0 +1,40 @@
+//// [test/cases/bun51-L06b.ts] ////
+
+=== a.ts ===
+import "./m";
+export const o = { m() { export * as ns from "./m"; export * as ns from "./m"; } };
+>o : { m: { (): void; ns: typeof import("./m"); }; }
+>{ m() { export * as ns from "./m"; export * as ns from "./m"; } } : { m: { (): void; ns: typeof import("./m"); }; }
+>m : { (): void; ns: typeof import("./m"); }
+>ns : typeof import("./m")
+>ns : typeof import("./m")
+
+export const o3 = { m() { export * as ns from "./m"; } };
+>o3 : { m: { (): void; ns: typeof import("./m"); }; }
+>{ m() { export * as ns from "./m"; } } : { m: { (): void; ns: typeof import("./m"); }; }
+>m : { (): void; ns: typeof import("./m"); }
+>ns : typeof import("./m")
+
+o3.m.ns.v;
+>o3.m.ns.v : 1
+>o3.m.ns : typeof import("./m")
+>o3.m : { (): void; ns: typeof import("./m"); }
+>o3 : { m: { (): void; ns: typeof import("./m"); }; }
+>m : { (): void; ns: typeof import("./m"); }
+>ns : typeof import("./m")
+>v : 1
+
+export const o4 = { m() { export default 1; export default 2; } };
+>o4 : { m: { (): void; default: 1; }; }
+>{ m() { export default 1; export default 2; } } : { m: { (): void; default: 1; }; }
+>m : { (): void; default: 1; }
+
+export const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== m.ts ===
+export const v = 1;
+>v : 1
+>1 : 1
+

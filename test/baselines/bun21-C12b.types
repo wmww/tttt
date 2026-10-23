@@ -1,0 +1,20 @@
+//// [test/cases/bun21-C12b.ts] ////
+
+=== a.ts ===
+function g(v: [string, ...number[]]) { let b: number | undefined; [, b] = v; b.toFixed(); }
+>g : (v: [string, ...number[]]) => void
+>v : [string, ...number[]]
+>b : number | undefined
+>[, b] = v : [string, ...number[]]
+>[, b] : [undefined, number | undefined]
+>b : number | undefined
+>v : [string, ...number[]]
+>b.toFixed() : string
+>b.toFixed : (fractionDigits?: number) => string
+>b : number | undefined
+>toFixed : (fractionDigits?: number) => string
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

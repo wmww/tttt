@@ -1,0 +1,7 @@
+//// [test/cases/bun33-C1a.ts] ////
+
+=== a.mts ===
+await 1;
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.mts, 1, 5))
+

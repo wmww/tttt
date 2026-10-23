@@ -1,0 +1,23 @@
+//// [test/cases/bun13-C7a.ts] ////
+
+=== a.ts ===
+type U<T> = ({ k: T | "a"; x: 1 } & { k: "b"; y: 2 }) | { k: "c"; z: 3 };
+>U : U<T>
+>k : "a" | T
+>x : 1
+>k : "b"
+>y : 2
+>k : "c"
+>z : 3
+
+type K<T> = keyof U<T>;
+>K : keyof U<T>
+
+const r1: K<"z"> = "z";
+>r1 : "k" | "z"
+>"z" : "z"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

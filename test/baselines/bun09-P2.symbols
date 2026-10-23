@@ -1,0 +1,15 @@
+//// [test/cases/bun09-P2.ts] ////
+
+=== a.ts ===
+declare var v1: <T extends T>() => void;
+>v1 : Symbol(v1, Decl(a.ts, 0, 11), Decl(a.ts, 1, 11))
+>T : Symbol(T, Decl(a.ts, 0, 17))
+>T : Symbol(T, Decl(a.ts, 0, 17))
+
+declare var v1: <U>() => void;
+>v1 : Symbol(v1, Decl(a.ts, 0, 11), Decl(a.ts, 1, 11))
+>U : Symbol(U, Decl(a.ts, 1, 17))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 2, 5))
+

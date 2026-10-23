@@ -1,0 +1,80 @@
+//// [test/cases/bun92-R19b.ts] ////
+
+=== a.ts ===
+type S<X> = [Extract<keyof X, number>, Extract<keyof X, string>];
+>S : S<X>
+
+declare const g3: { readonly 7: 1; readonly "8": 1; 9: 1; 10: 1 };
+>g3 : { readonly 7: 1; readonly "8": 1; 9: 1; 10: 1; }
+>7 : 1
+>"8" : 1
+>9 : 1
+>10 : 1
+
+const { 9: _c, ...r3 } = g3;
+>_c : 1
+>r3 : { 7: 1; "8": 1; 10: 1; }
+>g3 : { readonly 7: 1; readonly "8": 1; 9: 1; 10: 1; }
+
+const g1 = { get 7() { return 1 }, set 8(v: number) {}, 9: 1, 10: 1 };
+>g1 : { readonly 7: number; 8: number; 9: number; 10: number; }
+>{ get 7() { return 1 }, set 8(v: number) {}, 9: 1, 10: 1 } : { readonly 7: number; 8: number; 9: number; 10: number; }
+>7 : number
+>1 : 1
+>8 : number
+>v : number
+>9 : number
+>1 : 1
+>10 : number
+>1 : 1
+
+const { 9: _a, ...r1 } = g1;
+>_a : number
+>r1 : { 7: number; 8: undefined; 10: number; }
+>g1 : { readonly 7: number; 8: number; 9: number; 10: number; }
+
+class G2 { readonly 7 = 1; 9 = 1; 10 = 1 }
+>G2 : G2
+>7 : 1
+>1 : 1
+>9 : number
+>1 : 1
+>10 : number
+>1 : 1
+
+const { 9: _b, ...r2 } = new G2();
+>_b : number
+>r2 : { 7: 1; 10: number; }
+>new G2() : G2
+>G2 : typeof G2
+
+const t1: S<typeof r1> = ["?", -99], t2: S<typeof r2> = ["?", -99], t3: S<typeof r3> = ["?", -99];
+>t1 : S<{ 7: number; 8: undefined; 10: number; }>
+>r1 : { 7: number; 8: undefined; 10: number; }
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+>t2 : S<{ 7: 1; 10: number; }>
+>r2 : { 7: 1; 10: number; }
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+>t3 : S<{ 7: 1; "8": 1; 10: 1; }>
+>r3 : { 7: 1; "8": 1; 10: 1; }
+>["?", -99] : [string, number]
+>"?" : "?"
+>-99 : -99
+>99 : 99
+
+type M = { [K in keyof typeof r3]: K }; const m: M = 0;
+>M : M
+>r3 : { 7: 1; "8": 1; 10: 1; }
+>m : M
+>0 : 0
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

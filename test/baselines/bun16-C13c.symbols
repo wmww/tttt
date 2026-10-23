@@ -1,0 +1,24 @@
+//// [test/cases/bun16-C13c.ts] ////
+
+=== a.ts ===
+type S = string | Promise<S>;
+>S : Symbol(S, Decl(a.ts, 0, 0))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+
+declare const s: S;
+>s : Symbol(s, Decl(a.ts, 1, 13))
+>S : Symbol(S, Decl(a.ts, 0, 0))
+
+async function f() {
+>f : Symbol(f, Decl(a.ts, 1, 19))
+
+  await s;
+>s : Symbol(s, Decl(a.ts, 1, 13))
+
+  await s;
+>s : Symbol(s, Decl(a.ts, 1, 13))
+}
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 6, 5))
+

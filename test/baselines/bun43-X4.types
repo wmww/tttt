@@ -1,0 +1,13 @@
+//// [test/cases/bun43-X4.ts] ////
+
+=== a.ts ===
+const k: number = null! as keyof { 1e400: 1 };
+>k : number
+>null! as keyof { 1e400: 1 } : Infinity
+>null! : never
+>1e400 : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

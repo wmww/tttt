@@ -1,0 +1,19 @@
+//// [test/cases/bun14-C10.ts] ////
+
+=== a.ts ===
+type M1 = { [K in never as "a"]: 1 };
+>M1 : M1
+
+declare let m1: M1;
+>m1 : M1
+
+const m1b: string = m1.a;
+>m1b : string
+>m1.a : 1
+>m1 : M1
+>a : 1
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

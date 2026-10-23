@@ -1,0 +1,18 @@
+//// [test/cases/bun36-C10b.ts] ////
+
+=== a.ts ===
+import { which } from "./inner\\";
+>which : "inner/index"
+
+const x: 0 = which;
+>x : 0
+>which : "inner/index"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
+=== inner/index.d.ts ===
+export declare const which: "inner/index";
+>which : "inner/index"
+

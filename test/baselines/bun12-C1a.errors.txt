@@ -1,0 +1,24 @@
+a.ts(3,9): error TS2322: Type '{ [K in keyof T]: T; }' is not assignable to type '{ [K in keyof U]: T; }'.
+  Type 'keyof U' is not assignable to type 'keyof T'.
+    Type 'string | number | symbol' is not assignable to type 'keyof T'.
+      Type 'string' is not assignable to type 'keyof T'.
+a.ts(6,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"] } }
+==== a.ts (2 errors) ====
+    function pick<T, U>(t: T, u: U): { [K in keyof T]: U } {
+      const r = pick(u, t);
+      const ok: { [K in keyof U]: T } = r;
+            ~~
+!!! error TS2322: Type '{ [K in keyof T]: T; }' is not assignable to type '{ [K in keyof U]: T; }'.
+!!! error TS2322:   Type 'keyof U' is not assignable to type 'keyof T'.
+!!! error TS2322:     Type 'string | number | symbol' is not assignable to type 'keyof T'.
+!!! error TS2322:       Type 'string' is not assignable to type 'keyof T'.
+      return null!;
+    }
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

@@ -1,0 +1,113 @@
+//// [test/cases/bun99-W9.ts] ////
+
+=== a.ts ===
+import { flow, hoc, enh } from './lib';
+>flow : Symbol(flow, Decl(a.ts, 0, 8))
+>hoc : Symbol(hoc, Decl(a.ts, 0, 14))
+>enh : Symbol(enh, Decl(a.ts, 0, 19))
+
+export const R1 = flow(hoc, enh);
+>R1 : Symbol(R1, Decl(a.ts, 1, 12))
+>flow : Symbol(flow, Decl(a.ts, 0, 8))
+>hoc : Symbol(hoc, Decl(a.ts, 0, 14))
+>enh : Symbol(enh, Decl(a.ts, 0, 19))
+
+export const R2 = flow(hoc, enh);
+>R2 : Symbol(R2, Decl(a.ts, 2, 12))
+>flow : Symbol(flow, Decl(a.ts, 0, 8))
+>hoc : Symbol(hoc, Decl(a.ts, 0, 14))
+>enh : Symbol(enh, Decl(a.ts, 0, 19))
+
+export const R3 = flow(enh, enh);
+>R3 : Symbol(R3, Decl(a.ts, 3, 12))
+>flow : Symbol(flow, Decl(a.ts, 0, 8))
+>enh : Symbol(enh, Decl(a.ts, 0, 19))
+>enh : Symbol(enh, Decl(a.ts, 0, 19))
+
+=== b.ts ===
+import { flow, hoc, enh } from './lib';
+>flow : Symbol(flow, Decl(b.ts, 0, 8))
+>hoc : Symbol(hoc, Decl(b.ts, 0, 14))
+>enh : Symbol(enh, Decl(b.ts, 0, 19))
+
+export const R4 = flow(hoc, enh);
+>R4 : Symbol(R4, Decl(b.ts, 1, 12))
+>flow : Symbol(flow, Decl(b.ts, 0, 8))
+>hoc : Symbol(hoc, Decl(b.ts, 0, 14))
+>enh : Symbol(enh, Decl(b.ts, 0, 19))
+
+// @ts-expect-error
+export const R5 = flow(hoc, enh);
+>R5 : Symbol(R5, Decl(b.ts, 3, 12))
+>flow : Symbol(flow, Decl(b.ts, 0, 8))
+>hoc : Symbol(hoc, Decl(b.ts, 0, 14))
+>enh : Symbol(enh, Decl(b.ts, 0, 19))
+
+=== lib.ts ===
+type Comp<P> = (p: P) => void;
+>Comp : Symbol(Comp, Decl(lib.ts, 0, 0))
+>P : Symbol(P, Decl(lib.ts, 0, 10))
+>p : Symbol(p, Decl(lib.ts, 0, 16))
+>P : Symbol(P, Decl(lib.ts, 0, 10))
+
+type M<T> = { [k in keyof T]: T };
+>M : Symbol(M, Decl(lib.ts, 0, 30))
+>T : Symbol(T, Decl(lib.ts, 1, 7))
+>k : Symbol(k, Decl(lib.ts, 1, 15))
+>T : Symbol(T, Decl(lib.ts, 1, 7))
+>T : Symbol(T, Decl(lib.ts, 1, 7))
+
+type GetProps<C> = C extends Comp<infer P> ? (C extends new () => 0 ? P : never) : never;
+>GetProps : Symbol(GetProps, Decl(lib.ts, 1, 34))
+>C : Symbol(C, Decl(lib.ts, 2, 14))
+>C : Symbol(C, Decl(lib.ts, 2, 14))
+>Comp : Symbol(Comp, Decl(lib.ts, 0, 0))
+>P : Symbol(P, Decl(lib.ts, 2, 39))
+>C : Symbol(C, Decl(lib.ts, 2, 14))
+>P : Symbol(P, Decl(lib.ts, 2, 39))
+
+export type Enh<I, N> = <C extends Comp<GetProps<C>>>(c: C) => Comp<M<GetProps<C> & N>>;
+>Enh : Symbol(Enh, Decl(lib.ts, 2, 89))
+>I : Symbol(I, Decl(lib.ts, 3, 16))
+>N : Symbol(N, Decl(lib.ts, 3, 18))
+>C : Symbol(C, Decl(lib.ts, 3, 25))
+>Comp : Symbol(Comp, Decl(lib.ts, 0, 0))
+>GetProps : Symbol(GetProps, Decl(lib.ts, 1, 34))
+>C : Symbol(C, Decl(lib.ts, 3, 25))
+>c : Symbol(c, Decl(lib.ts, 3, 54))
+>C : Symbol(C, Decl(lib.ts, 3, 25))
+>Comp : Symbol(Comp, Decl(lib.ts, 0, 0))
+>M : Symbol(M, Decl(lib.ts, 0, 30))
+>GetProps : Symbol(GetProps, Decl(lib.ts, 1, 34))
+>C : Symbol(C, Decl(lib.ts, 3, 25))
+>N : Symbol(N, Decl(lib.ts, 3, 18))
+
+export declare function flow<A, B, C>(f: (a: A) => B, g: (b: B) => C): (a: A) => C;
+>flow : Symbol(flow, Decl(lib.ts, 3, 88))
+>A : Symbol(A, Decl(lib.ts, 4, 29))
+>B : Symbol(B, Decl(lib.ts, 4, 31))
+>C : Symbol(C, Decl(lib.ts, 4, 34))
+>f : Symbol(f, Decl(lib.ts, 4, 38))
+>a : Symbol(a, Decl(lib.ts, 4, 42))
+>A : Symbol(A, Decl(lib.ts, 4, 29))
+>B : Symbol(B, Decl(lib.ts, 4, 31))
+>g : Symbol(g, Decl(lib.ts, 4, 53))
+>b : Symbol(b, Decl(lib.ts, 4, 58))
+>B : Symbol(B, Decl(lib.ts, 4, 31))
+>C : Symbol(C, Decl(lib.ts, 4, 34))
+>a : Symbol(a, Decl(lib.ts, 4, 72))
+>A : Symbol(A, Decl(lib.ts, 4, 29))
+>C : Symbol(C, Decl(lib.ts, 4, 34))
+
+export declare const hoc: <C extends Comp<any>>(c: C) => C;
+>hoc : Symbol(hoc, Decl(lib.ts, 5, 20))
+>C : Symbol(C, Decl(lib.ts, 5, 27))
+>Comp : Symbol(Comp, Decl(lib.ts, 0, 0))
+>c : Symbol(c, Decl(lib.ts, 5, 48))
+>C : Symbol(C, Decl(lib.ts, 5, 27))
+>C : Symbol(C, Decl(lib.ts, 5, 27))
+
+export declare const enh: Enh<{}, {}>;
+>enh : Symbol(enh, Decl(lib.ts, 6, 20))
+>Enh : Symbol(Enh, Decl(lib.ts, 2, 89))
+
