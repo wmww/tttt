@@ -24,7 +24,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   signature is the best match, its [0] is unknown and nothing is elaborated (ttttBestMatchNumericIndexKeys). Fixed:
   index_key_includes_name in relate.c. The repro's errors component passes; its types component still differs on
   an import() specifier inside zod (`../core/core.cjs` where tsgo prints `../core/core.d.cts`), a separate [text]
-  bug. [fixed PENDING]
+  bug. [fixed 1096fcc71]
 - Seed 20261023, alex-korneyko/ngx-summernote-mod: the TS2769 elaboration of `combineLatest(requests).subscribe(
   (remotePaths: string[]) => ...)` (rxjs 6.5.3, `const requests = []` an evolving array pushed
   `Observable<string | false>` in a for-of) prints `(value: unknown[]) => void` where tsgo prints
