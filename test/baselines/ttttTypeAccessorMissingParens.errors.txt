@@ -1,0 +1,25 @@
+ttttTypeAccessorMissingParens.ts(5,10): error TS1005: '(' expected.
+ttttTypeAccessorMissingParens.ts(6,7): error TS7032: Property 'bar' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+ttttTypeAccessorMissingParens.ts(6,10): error TS1005: '(' expected.
+ttttTypeAccessorMissingParens.ts(8,19): error TS1005: '(' expected.
+
+
+==== ttttTypeAccessorMissingParens.ts (4 errors) ====
+    // An accessor in a type is committed after `get`/`set` and its name: without a parameter list it is TS1005 '('
+    // expected, and the annotation is the return type (tsc's parseAccessorDeclaration). Babel's
+    // interface/invalid-get-properties and invalid-set-properties fixtures
+    interface Foo {
+      get foo: string;
+             ~
+!!! error TS1005: '(' expected.
+      set bar: string;
+          ~~~
+!!! error TS7032: Property 'bar' implicitly has type 'any', because its set accessor lacks a parameter type annotation.
+             ~
+!!! error TS1005: '(' expected.
+    }
+    type T = { get baz: number };
+                      ~
+!!! error TS1005: '(' expected.
+    interface Ok { get: string; set?: number; get x(): string }
+    

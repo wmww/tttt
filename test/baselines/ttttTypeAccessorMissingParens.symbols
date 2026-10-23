@@ -1,0 +1,25 @@
+//// [test/cases/ttttTypeAccessorMissingParens.ts] ////
+
+=== ttttTypeAccessorMissingParens.ts ===
+// An accessor in a type is committed after `get`/`set` and its name: without a parameter list it is TS1005 '('
+// expected, and the annotation is the return type (tsc's parseAccessorDeclaration). Babel's
+// interface/invalid-get-properties and invalid-set-properties fixtures
+interface Foo {
+>Foo : Symbol(Foo, Decl(ttttTypeAccessorMissingParens.ts, 0, 0))
+
+  get foo: string;
+>foo : Symbol(Foo.foo, Decl(ttttTypeAccessorMissingParens.ts, 3, 15))
+
+  set bar: string;
+>bar : Symbol(Foo.bar, Decl(ttttTypeAccessorMissingParens.ts, 4, 18))
+}
+type T = { get baz: number };
+>T : Symbol(T, Decl(ttttTypeAccessorMissingParens.ts, 6, 1))
+>baz : Symbol(baz, Decl(ttttTypeAccessorMissingParens.ts, 7, 10))
+
+interface Ok { get: string; set?: number; get x(): string }
+>Ok : Symbol(Ok, Decl(ttttTypeAccessorMissingParens.ts, 7, 29))
+>get : Symbol(Ok.get, Decl(ttttTypeAccessorMissingParens.ts, 8, 14))
+>set : Symbol(Ok.set, Decl(ttttTypeAccessorMissingParens.ts, 8, 27))
+>x : Symbol(Ok.x, Decl(ttttTypeAccessorMissingParens.ts, 8, 41))
+

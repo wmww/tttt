@@ -7322,7 +7322,22 @@ static bool parse_type_accessor(Parser* parent, FunctionFlags flags, FunctionImp
     FunctionCtx saved = function_ctx_enter(parent, flags);
     Parser p = parser(parent);
     Anchor a = anchor(&p);
-    if (!parse_function_args(&p, false, false, true, true, ret)) {
+    if (flags.committed && *p.pos != '(' && *p.pos != '<') {
+        // `get foo: string;` in a type: the parameter list is missing (tsc's parseAccessorDeclaration, its
+        // parseParameters' parseExpected), the annotation is the return type (like parse_non_arrow_function_inner())
+        expected_token_error(&p, "(");
+        *ret = (FunctionImpl){0};
+        function_impl_set_args_span(ret, span_from_pos(&p));
+        if (*p.pos == ':') {
+            p.pos++;
+            hop_whitespace(&p);
+            Anchor ret_a = anchor(&p);
+            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
+                function_impl_set_ret_span(ret, span_from(ret_a));
+                ret->ret_explicit = true;
+            }
+        }
+    } else if (!parse_function_args(&p, false, false, true, true, ret)) {
         function_ctx_leave(parent, saved);
         return parse_fail(&p);
     }
@@ -8801,7 +8816,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     }
     hop_whitespace(&p);
     // (tsc's parseAccessorDeclaration: after `get`/`set` and a name the parameter list is committed)
-    if ((is_getter || is_setter) && !is_type) function_flags.committed = true;
+    if (is_getter || is_setter) function_flags.committed = true;
 
     // (An accessor in a type may have a body: tsc's parseAccessorDeclaration, TS1183 from checkGrammarAccessor)
     bool (*parse_function_fn)(Parser* parent, FunctionFlags flags, FunctionImpl* ret) =
