@@ -549,3 +549,15 @@ ensure-sources.sh). At --threads 1: 74 / 79 projects, 4 / 6 repos; checkouts in 
   not assignable to type 'string | number | bigint | boolean | null | undefined'" (the template literal's placeholder)
   and "Type 'T[P]' does not satisfy the constraint 'AsyncIterator<any, any, any>'": a homomorphic mapped type over a
   tuple, whose P tsc keeps to the numeric-string keys (and T[P] to the element types). Not reduced. [open]
+
+## hono tsconfig.build.json: spurious TS2769 at src/request.ts:214 (2026-10-24, corB)
+`parseBody(this, options)` in HonoRequest's `parseBody` method: tttt reports TS2769 (`HonoRequest<P, I>` not
+assignable to `HonoRequest<"/", {}>`, I bivariant [4 3] in both checkers, `I` vs `{}` fails both ways). tsgo doesn't
+(projdiff.py confirms against tsgo 7.1; tsgotrace shows no TS2769 made there). The variance check can only pass in tsc
+while HonoRequest's variances are in flight (getVariances' emptyArray: relateVariances skips to structural), so tsgo
+most likely resolves this call during HonoRequest's measurement (the `parseBody` member's return type is inferred from
+the body) and keeps that signature. tttt errors even with request.ts as the only root (a /tmp tsconfig extending the
+build config, `files: [src/request.ts]`), and hand-made mimics (a class whose method returns `f(this)`, its variance
+measured first through a wrapper type) agree with tsgo in both orders, so the order that matters wasn't found. A
+`scripts/reduce.py --tsgo-clean` run (`--project thirdparty/sources/hono --config tsconfig.build.json --keep TS2769
+--tttt-has --tsgo-clean`) was stopped for the npm priority. [open]
