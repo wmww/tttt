@@ -12,7 +12,7 @@
 
 typedef struct BaselineTestSuite {
     csview tests_dir;
-    // tttt's own regression tests (empty: none): OWN_DIR/cases/*.ts(x), named tttt* (bun*, npm_*), with tsgo's baselines checked in
+    // tttt's own regression tests (empty: none): OWN_DIR/cases/*.ts(x), named tttt* (bun*, npm_*, rw_*), with tsgo's baselines checked in
     // at OWN_DIR/baselines/NAME.{errors.txt,symbols,types} (scripts/owntests.sh regenerates them)
     csview own_dir;
     csview dump_dir; // If not empty, every test's rendered output is written here

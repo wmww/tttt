@@ -1,0 +1,23 @@
+c.ts(1,10): error TS6133: 'Record' is declared but its value is never read.
+e.ts(1,10): error TS6133: 'Record' is declared but its value is never read.
+
+
+==== rec.ts (0 errors) ====
+    export const map = 1;
+==== lib.ts (0 errors) ====
+    export * as Record from "./rec";
+==== a.ts (0 errors) ====
+    import { Record } from "./lib";
+    export const t1: Readonly<Record<string, number>> = {};
+==== c.ts (1 errors) ====
+    import { Record } from "./lib";
+             ~~~~~~
+!!! error TS6133: 'Record' is declared but its value is never read.
+    export const t3 = 1;
+==== e.ts (1 errors) ====
+    import { Record } from "./lib";
+             ~~~~~~
+!!! error TS6133: 'Record' is declared but its value is never read.
+    type X = Record<string, number>;
+    export const t5: X = {};
+    

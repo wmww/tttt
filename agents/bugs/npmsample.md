@@ -102,3 +102,12 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   optional-chain read it matches. Guess: the closure's narrowing past the last assignment (tsc 5.4's
   isPastLastAssignment) goes through the optional chain's flow condition and narrows to never. Repro
   test/cases/npm__tamagui_codemod-flat-values_TS2339.ts (13 lines). [flip] [open]
+
+## Real-world flips from other sources
+- **rw_foldkit_TS6133** (source sweep, foldkit packages/foldkit/tsconfig.build.json and tsconfig.docs.json; tsgo 0,
+  tttt 1): `import { Record } from 'effect'` (a namespace, `export * as Record`) used only as `Readonly<Record<K, V>>`
+  in types. tsgo's getTypeFromTypeAliasReference, for a generic alias reference that isn't another alias's body, also
+  resolves the name with SymbolFlags.Alias (the import alias it would print the instantiation by), which marks the
+  import referenced; tttt's name resolution found only the global Record and reported TS6133. Fixed: the reference
+  remembers such an import alias (IdentifierTypeRare.args_alias) and lowering marks it under tsc's condition
+  (src/ty/lower.c). (claimed: cor10) [flip] [fixed 2026-10-23]

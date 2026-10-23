@@ -47,6 +47,12 @@ typedef struct IdentifierTypeRare {
     Symbol const* first_value;
     u32 value_member_at;
     bool value_missing;
+    // A generic type alias reference with type arguments (`Record<K, V>`) whose name is also an import alias that isn't
+    // a type (`import { Record } from "effect"`, a namespace): tsc's getTypeFromTypeAliasReference looks the name up
+    // as an alias too (resolveTypeReferenceName with SymbolFlags.Alias, for the alias it would print by), which marks
+    // that import referenced. Marked when the reference is lowered and isn't another alias's body (lower.c)
+    struct Symbol* args_alias;
+    struct Scope const* args_alias_scope;
 } IdentifierTypeRare;
 
 typedef struct IdentifierType {

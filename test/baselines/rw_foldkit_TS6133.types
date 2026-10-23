@@ -1,0 +1,38 @@
+//// [test/cases/rw_foldkit_TS6133.ts] ////
+
+=== rec.ts ===
+export const map = 1;
+>map : 1
+>1 : 1
+
+=== lib.ts ===
+export * as Record from "./rec";
+>Record : typeof import("./rec")
+
+=== a.ts ===
+import { Record } from "./lib";
+>Record : typeof Record
+
+export const t1: Readonly<Record<string, number>> = {};
+>t1 : Readonly<Record<string, number>>
+>{} : {}
+
+=== c.ts ===
+import { Record } from "./lib";
+>Record : typeof Record
+
+export const t3 = 1;
+>t3 : 1
+>1 : 1
+
+=== e.ts ===
+import { Record } from "./lib";
+>Record : typeof Record
+
+type X = Record<string, number>;
+>X : X
+
+export const t5: X = {};
+>t5 : X
+>{} : {}
+

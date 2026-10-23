@@ -19,7 +19,7 @@ NAMES=()
 for f in "$@"; do
     test -e "$f" || continue
     name=$(basename "$f"); name=${name%.*}
-    case "$name" in tttt*|bun*|npm_*) ;; *) echo "$f: own tests must be named tttt* (or bun*: bun's differential cases, npm_*: the npm sample's repros)" >&2; exit 1;; esac
+    case "$name" in tttt*|bun*|npm_*|rw_*) ;; *) echo "$f: own tests must be named tttt* (or bun*: bun's differential cases, npm_*: the npm sample's repros, rw_*: other real-world flips)" >&2; exit 1;; esac
     cp "$f" "$TEST_DIR/tests/cases/conformance/"
     NAMES+=("$name")
 done

@@ -121,9 +121,10 @@ static_failable load_own_tests(BaselineTestSuite* me) {
     cstr_drop(&cases);
     for (intptr_t i = first; i < vec_baseline_test_result_size(&my results); i++) {
         csview name = cstr_sv(&vec_baseline_test_result_at(&my results, i)->name);
-        if (!csview_starts_with(name, "tttt") && !csview_starts_with(name, "bun") && !csview_starts_with(name, "npm_")) {
+        if (!csview_starts_with(name, "tttt") && !csview_starts_with(name, "bun") && !csview_starts_with(name, "npm_") &&
+            !csview_starts_with(name, "rw_")) {
             return err_d(vec_baseline_test_result_at(&my results, i)->source_path,
-                ": own tests must be named tttt*, bun* or npm_* (not to collide with tsgo's)");
+                ": own tests must be named tttt*, bun*, npm_* or rw_* (not to collide with tsgo's)");
         }
     }
     return ok;

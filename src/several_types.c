@@ -440,6 +440,13 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         // (A value found instead, TS2749 below, isn't a use: tsc's resolveName for the type failed, the lookup for the
         // message doesn't mark it referenced)
         if (my target) unused_mark_referenced(names, (Symbol*)my symbol, SYMBOL_TYPE);
+        if (my target && (my target->flags & SYMBOL_TYPE_ALIAS) && vec_spanned_type_size(&my generic_params) && unused_enabled()) {
+            Symbol* alias = scope_resolve(names, span_sv(my name), SYMBOL_ALIAS);
+            if (alias && alias != my symbol && (alias->flags & SYMBOL_ALIAS)) {
+                identifier_type_rare(me)->args_alias = alias;
+                my rare->args_alias_scope = names;
+            }
+        }
         if (!my target) {
             my target = scope_get_value(names, span_sv(my name), &my symbol); // TS2749 below
             // (Unless it's a property of what `export =` names that is a type: the checker decides and marks it,

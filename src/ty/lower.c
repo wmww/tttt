@@ -850,8 +850,13 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         // the resolved alias of an import/export, aliasTypeArguments from the node, defaults not filled in): it prints
         // as `A` or `A<X>`, not with the defaults
         // (Unless it's the body of another alias, which names it instead: the caller renames it)
+        bool own_alias = !(body_of && !(alias_is_local(body_of) && !alias_is_local(decl)));
         bool through_import = identifier->symbol && identifier->symbol != identifier->target && (identifier->symbol->flags & SYMBOL_ALIAS) &&
-            !(body_of && !(alias_is_local(body_of) && !alias_is_local(decl)));
+            own_alias;
+        // (tsc's lookup of the name as an alias, which marks an import of that name used: see IdentifierTypeRare)
+        if (own_alias && identifier->rare && identifier->rare->args_alias) {
+            unused_mark_referenced(identifier->rare->args_alias_scope, identifier->rare->args_alias, SYMBOL_ALIAS);
+        }
         TyList written = { .data = args.data, .len = (u32)vec_spanned_type_size(&identifier->generic_params) };
         if (written.len > args.len) written.len = args.len;
         if (through_import && unchanged_composite_body(declared, ret, decl)) {
