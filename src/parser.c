@@ -9103,7 +9103,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     .func = func,
                 }
             };
-        } else if (parse_function_fn(&p, function_flags, &func)) {
+        } else if (!span_valid(definite) && parse_function_fn(&p, function_flags, &func)) {
+            // (Not after a `!`: tsc's parsePropertyOrMethodDeclaration takes a method only right after the name (or its
+            // `?`), `a!()` is a property whose `(` is TS1441)
             modified.kind = is_getter ? MODIFIED_GET_ACCESSOR :
                 is_setter ? MODIFIED_SET_ACCESSOR :
                 is_type ? MODIFIED_METHOD_SIGNATURE :
