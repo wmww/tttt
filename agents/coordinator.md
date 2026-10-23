@@ -82,6 +82,9 @@ clean `git archive` builds of commit vs parent to attribute a PGO delta over ~0.
 after every ~30 picks of checker code (it finds what the batch can't: a memory cap scaled for a smaller box,
 K-dependences, a history dependence; once it caught the one regression the batch missed); stop after a long idle
 spell. Have it rewrite its pick/check scripts (ten minutes) rather than hunting for old ones.
+Per landed batch, after its oracles, `scripts/bugcount.py --save` (seconds: the caches only) appends the known
+correctness bugs headline and its symptom counts to measurements.md "Known correctness bugs"; briefs say that a
+fix's commit flips its bugs entry to `[fixed COMMIT]` and a new write-up gets a tag (agents/bugs/README.md).
 
 Lessons for the merger: the per-batch gate must not include vscode's 25-minute callgrind (once per round, at the
 end); it reports per landed batch (what landed, its gate numbers), not per cycle; anything touching malloc tuning

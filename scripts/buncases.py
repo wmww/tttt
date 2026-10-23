@@ -230,6 +230,11 @@ def write_tests(cases, names, oracle):
     return unfit
 
 
+def root_cause(case, diag, spurious):
+    """The key a mismatching diagnostic is ranked under: its sign, code and message shape (quoted parts elided)"""
+    return f'{"+" if spurious else "-"}TS{diag[2]} {shape(diag[3])}'
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('-f', '--filter', help='regex the case id must match (re.search)')
@@ -346,7 +351,7 @@ def main():
         verdicts['both' if spurious and missing else 'spurious' if spurious else 'missing'].append(n)
         keys = set()
         for d, sp in [(d, True) for d in spurious] + [(d, False) for d in missing]:
-            k = f'{"+" if sp else "-"}TS{d[2]} {shape(d[3])}'
+            k = root_cause(n, d, sp)
             keys.add(k)
             c = causes[k]
             c['cases'].add(n)
