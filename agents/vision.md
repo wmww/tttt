@@ -81,12 +81,15 @@ measured wins first; land fast and gate in batches.
   fixers ahead of the remaining bun cases. Checked projects are NOT kept: a fix leaves a `test/cases` repro (or shows
   an existing test covers it), after which the project adds nothing; a matching project is deleted at once.
   What stays in git is the seed, the list of what was checked and the per-project counts.
-- **No deterministic file-to-checker deal for now** (2026-10-23): bun 92-R16b showed that with work stealing an
-  order-dependent diagnostic (a circularity on mutually recursive mapped types; also TS5115/TS2589, sequelize's
-  TS7022) is a run-to-run flake when the two files split across checkers (16-19 of 60 runs at K4). tsgo's static
-  association is stable per K but itself K-dependent (sequelize); at K1 tttt is stable and matches. A fixed deal is a
-  scheduling and load-balance change needing a perf study; the real fix is order-independence (reentrancy.md stages
-  C-E). Written up in bugs/tsgo_divergences.md.
+- **Run-to-run and thread-count stability outrank the deal's load balance** (2026-10-23, the human: "if you discover
+  any more race conditions or thread count-dependence I'd def work on that, as that will cause us a lot more trouble
+  until its fixed (workers getting confused and such)"). bun 92-R16b showed that with work stealing an order-dependent
+  diagnostic (a circularity on mutually recursive mapped types; also TS5115/TS2589, sequelize's TS7022) is a
+  run-to-run flake when its two files split across checkers (16-19 of 60 runs at K4), while tsgo's static
+  association is stable per K (though itself K-dependent: sequelize). Worker corH prototypes a deterministic deal (a
+  file's checker a pure function of program and K) with a perf study at the defaults before it lands; the
+  order-independence of the diagnostics themselves (reentrancy.md stages C-E) remains the real fix. Written up in
+  bugs/tsgo_divergences.md.
 - **Land fast, gate in batches** (2026-10-23, the human): a fix lands on `scripts/quickgate.sh` (the suite against
   the main it started from, three corpora, instructions against its base: `--vs-main`) through `scripts/land.sh`;
   the full oracles (`scripts/oracles.py`, the full source sweep, kdiff) run per batch of landings in the merger's
