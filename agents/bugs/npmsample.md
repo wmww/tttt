@@ -35,4 +35,4 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   StrictFunction = (...) => Exclude<Strict, StrictFunction>` with StrictFunction a member of Strict. The distributed
   Exclude compares StrictFunction with itself, and tttt's callable_definitely_related shortcut asked for its return type
   (the Exclude being resolved): TS2577. tsc's isTypeAssignableTo answers identity first. Fixed by taking the true
-  branch for identical check and extends types (ty_conditional_resolve). [flip] [fixed ea09cdaed]
+  branch for identical check and extends types (ty_conditional_resolve). [flip] [fixed 389887243]
