@@ -1,0 +1,108 @@
+//// [test/cases/ttttNakedTypeParamFallThrough.tsx] ////
+
+=== ttttNakedTypeParamFallThrough.tsx ===
+// A union target whose one naked type parameter's sibling members matched every source: the whole source is still
+// inferred to the naked one, less directly (tsc's inferToMultipleTypes falls through to its last loop). framer-motion's
+// `motion.create(Button)`: TagName is then its constraint (string), not its default ("div"), and the component keeps
+// Button's props (abacusai-bot/apps/web: 24 spurious TS2322/TS2551 on the props of motion components)
+declare namespace React { type ComponentType<P> = (props: P) => any }
+>ComponentType : ComponentType<P>
+>props : P
+
+interface DOMMotionComponents { div: (props: { d: 1 }) => any; span: (props: { s: 1 }) => any }
+>div : (props: { d: 1; }) => any
+>props : { d: 1; }
+>d : 1
+>span : (props: { s: 1; }) => any
+>props : { s: 1; }
+>s : 1
+
+type MotionComponent<T, P> = T extends keyof DOMMotionComponents ? DOMMotionComponents[T] : React.ComponentType<P & { m?: 1 }>;
+>MotionComponent : MotionComponent<T, P>
+>React : any
+>m : 1 | undefined
+
+declare function create<Props, TagName extends keyof DOMMotionComponents | string = "div">(Component: TagName | string | React.ComponentType<Props>): MotionComponent<TagName, Props>;
+>create : <Props, TagName extends keyof DOMMotionComponents | string = "div">(Component: TagName | string | React.ComponentType<Props>) => MotionComponent<TagName, Props>
+>Component : string | TagName | React.ComponentType<Props>
+>React : any
+
+declare function Button(props: { variant?: "a" | "b"; size?: string }): any;
+>Button : { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }
+>props : { variant?: "a" | "b"; size?: string; }
+>variant : "a" | "b" | undefined
+>size : string | undefined
+
+const MB = create(Button);
+>MB : React.ComponentType<{ variant?: "a"; } & { m?: 1; }>
+>create(Button) : React.ComponentType<{ variant?: "a"; } & { m?: 1; }>
+>create : <Props, TagName extends keyof DOMMotionComponents | string = "div">(Component: TagName | string | React.ComponentType<Props>) => MotionComponent<TagName, Props>
+>Button : { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }
+
+declare const t: [typeof MB];
+>t : [React.ComponentType<{ variant?: "a"; } & { m?: 1; }>]
+>MB : React.ComponentType<{ variant?: "a"; } & { m?: 1; }>
+
+declare function Button(props: { variant?: "a" }): any;
+>Button : { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }
+>props : { variant?: "a"; }
+>variant : "a" | undefined
+
+declare const ButtonC: (props: { variant?: "a" }) => any;
+>ButtonC : (props: { variant?: "a"; }) => any
+>props : { variant?: "a"; }
+>variant : "a" | undefined
+
+declare function c1<P, T extends string = "div">(c: T | ((props: P) => any)): [T, P];
+>c1 : <P, T extends string = "div">(c: T | ((props: P) => any)) => [T, P]
+>c : T | ((props: P) => any)
+>props : P
+
+const x1: 1 = c1(Button);
+>x1 : 1
+>c1(Button) : [string, { variant?: "a"; }]
+>c1 : <P, T extends string = "div">(c: T | ((props: P) => any)) => [T, P]
+>Button : { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }
+
+const x2: 1 = c1(ButtonC);
+>x2 : 1
+>c1(ButtonC) : [string, { variant?: "a"; }]
+>c1 : <P, T extends string = "div">(c: T | ((props: P) => any)) => [T, P]
+>ButtonC : (props: { variant?: "a"; }) => any
+
+declare function c2<P, T = "div">(c: T | ((props: P) => any)): [T, P];
+>c2 : <P, T = "div">(c: T | ((props: P) => any)) => [T, P]
+>c : T | ((props: P) => any)
+>props : P
+
+const x3: 1 = c2(Button);
+>x3 : 1
+>c2(Button) : [{ (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }, { variant?: "a"; }]
+>c2 : <P, T = "div">(c: T | ((props: P) => any)) => [T, P]
+>Button : { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }
+
+declare function c3<P, T = "div">(c: T | { f: (props: P) => any }): [T, P];
+>c3 : <P, T = "div">(c: T | { f: (props: P) => any; }) => [T, P]
+>c : T | { f: (props: P) => any; }
+>f : (props: P) => any
+>props : P
+
+const x4: 1 = c3({ f: Button });
+>x4 : 1
+>c3({ f: Button }) : [{ f: { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }; }, { variant?: "a"; }]
+>c3 : <P, T = "div">(c: T | { f: (props: P) => any; }) => [T, P]
+>{ f: Button } : { f: { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }; }
+>f : { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }
+>Button : { (props: { variant?: "a" | "b"; size?: string; }): any; (props: { variant?: "a"; }): any; }
+
+declare function c4<P, T = "div">(c: T | (() => P)): [T, P];
+>c4 : <P, T = "div">(c: T | (() => P)) => [T, P]
+>c : T | (() => P)
+
+const x5: 1 = c4(() => 1);
+>x5 : 1
+>c4(() => 1) : [() => number, number]
+>c4 : <P, T = "div">(c: T | (() => P)) => [T, P]
+>() => 1 : () => number
+>1 : 1
+

@@ -1,0 +1,144 @@
+//// [test/cases/ttttNakedTypeParamFallThrough.tsx] ////
+
+=== ttttNakedTypeParamFallThrough.tsx ===
+// A union target whose one naked type parameter's sibling members matched every source: the whole source is still
+// inferred to the naked one, less directly (tsc's inferToMultipleTypes falls through to its last loop). framer-motion's
+// `motion.create(Button)`: TagName is then its constraint (string), not its default ("div"), and the component keeps
+// Button's props (abacusai-bot/apps/web: 24 spurious TS2322/TS2551 on the props of motion components)
+declare namespace React { type ComponentType<P> = (props: P) => any }
+>React : Symbol(React, Decl(ttttNakedTypeParamFallThrough.tsx, 0, 0))
+>ComponentType : Symbol(ComponentType, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 25))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 45))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 51))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 45))
+
+interface DOMMotionComponents { div: (props: { d: 1 }) => any; span: (props: { s: 1 }) => any }
+>DOMMotionComponents : Symbol(DOMMotionComponents, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 69))
+>div : Symbol(DOMMotionComponents.div, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 31))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 38))
+>d : Symbol(d, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 46))
+>span : Symbol(DOMMotionComponents.span, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 62))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 70))
+>s : Symbol(s, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 78))
+
+type MotionComponent<T, P> = T extends keyof DOMMotionComponents ? DOMMotionComponents[T] : React.ComponentType<P & { m?: 1 }>;
+>MotionComponent : Symbol(MotionComponent, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 95))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 21))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 23))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 21))
+>DOMMotionComponents : Symbol(DOMMotionComponents, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 69))
+>DOMMotionComponents : Symbol(DOMMotionComponents, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 69))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 21))
+>React : Symbol(React, Decl(ttttNakedTypeParamFallThrough.tsx, 0, 0))
+>ComponentType : Symbol(React.ComponentType, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 25))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 23))
+>m : Symbol(m, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 117))
+
+declare function create<Props, TagName extends keyof DOMMotionComponents | string = "div">(Component: TagName | string | React.ComponentType<Props>): MotionComponent<TagName, Props>;
+>create : Symbol(create, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 127))
+>Props : Symbol(Props, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 24))
+>TagName : Symbol(TagName, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 30))
+>DOMMotionComponents : Symbol(DOMMotionComponents, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 69))
+>Component : Symbol(Component, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 91))
+>TagName : Symbol(TagName, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 30))
+>React : Symbol(React, Decl(ttttNakedTypeParamFallThrough.tsx, 0, 0))
+>ComponentType : Symbol(React.ComponentType, Decl(ttttNakedTypeParamFallThrough.tsx, 4, 25))
+>Props : Symbol(Props, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 24))
+>MotionComponent : Symbol(MotionComponent, Decl(ttttNakedTypeParamFallThrough.tsx, 5, 95))
+>TagName : Symbol(TagName, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 30))
+>Props : Symbol(Props, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 24))
+
+declare function Button(props: { variant?: "a" | "b"; size?: string }): any;
+>Button : Symbol(Button, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 182), Decl(ttttNakedTypeParamFallThrough.tsx, 10, 29))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 8, 24))
+>variant : Symbol(variant, Decl(ttttNakedTypeParamFallThrough.tsx, 8, 32))
+>size : Symbol(size, Decl(ttttNakedTypeParamFallThrough.tsx, 8, 53))
+
+const MB = create(Button);
+>MB : Symbol(MB, Decl(ttttNakedTypeParamFallThrough.tsx, 9, 5))
+>create : Symbol(create, Decl(ttttNakedTypeParamFallThrough.tsx, 6, 127))
+>Button : Symbol(Button, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 182), Decl(ttttNakedTypeParamFallThrough.tsx, 10, 29))
+
+declare const t: [typeof MB];
+>t : Symbol(t, Decl(ttttNakedTypeParamFallThrough.tsx, 10, 13))
+>MB : Symbol(MB, Decl(ttttNakedTypeParamFallThrough.tsx, 9, 5))
+
+declare function Button(props: { variant?: "a" }): any;
+>Button : Symbol(Button, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 182), Decl(ttttNakedTypeParamFallThrough.tsx, 10, 29))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 12, 24))
+>variant : Symbol(variant, Decl(ttttNakedTypeParamFallThrough.tsx, 12, 32))
+
+declare const ButtonC: (props: { variant?: "a" }) => any;
+>ButtonC : Symbol(ButtonC, Decl(ttttNakedTypeParamFallThrough.tsx, 13, 13))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 13, 24))
+>variant : Symbol(variant, Decl(ttttNakedTypeParamFallThrough.tsx, 13, 32))
+
+declare function c1<P, T extends string = "div">(c: T | ((props: P) => any)): [T, P];
+>c1 : Symbol(c1, Decl(ttttNakedTypeParamFallThrough.tsx, 13, 57))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 22))
+>c : Symbol(c, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 49))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 22))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 58))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 22))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 14, 20))
+
+const x1: 1 = c1(Button);
+>x1 : Symbol(x1, Decl(ttttNakedTypeParamFallThrough.tsx, 15, 5))
+>c1 : Symbol(c1, Decl(ttttNakedTypeParamFallThrough.tsx, 13, 57))
+>Button : Symbol(Button, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 182), Decl(ttttNakedTypeParamFallThrough.tsx, 10, 29))
+
+const x2: 1 = c1(ButtonC);
+>x2 : Symbol(x2, Decl(ttttNakedTypeParamFallThrough.tsx, 16, 5))
+>c1 : Symbol(c1, Decl(ttttNakedTypeParamFallThrough.tsx, 13, 57))
+>ButtonC : Symbol(ButtonC, Decl(ttttNakedTypeParamFallThrough.tsx, 13, 13))
+
+declare function c2<P, T = "div">(c: T | ((props: P) => any)): [T, P];
+>c2 : Symbol(c2, Decl(ttttNakedTypeParamFallThrough.tsx, 16, 26))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 22))
+>c : Symbol(c, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 34))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 22))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 43))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 22))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 17, 20))
+
+const x3: 1 = c2(Button);
+>x3 : Symbol(x3, Decl(ttttNakedTypeParamFallThrough.tsx, 18, 5))
+>c2 : Symbol(c2, Decl(ttttNakedTypeParamFallThrough.tsx, 16, 26))
+>Button : Symbol(Button, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 182), Decl(ttttNakedTypeParamFallThrough.tsx, 10, 29))
+
+declare function c3<P, T = "div">(c: T | { f: (props: P) => any }): [T, P];
+>c3 : Symbol(c3, Decl(ttttNakedTypeParamFallThrough.tsx, 18, 25))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 22))
+>c : Symbol(c, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 34))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 22))
+>f : Symbol(f, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 42))
+>props : Symbol(props, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 47))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 22))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 19, 20))
+
+const x4: 1 = c3({ f: Button });
+>x4 : Symbol(x4, Decl(ttttNakedTypeParamFallThrough.tsx, 20, 5))
+>c3 : Symbol(c3, Decl(ttttNakedTypeParamFallThrough.tsx, 18, 25))
+>f : Symbol(f, Decl(ttttNakedTypeParamFallThrough.tsx, 20, 18))
+>Button : Symbol(Button, Decl(ttttNakedTypeParamFallThrough.tsx, 7, 182), Decl(ttttNakedTypeParamFallThrough.tsx, 10, 29))
+
+declare function c4<P, T = "div">(c: T | (() => P)): [T, P];
+>c4 : Symbol(c4, Decl(ttttNakedTypeParamFallThrough.tsx, 20, 32))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 21, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 21, 22))
+>c : Symbol(c, Decl(ttttNakedTypeParamFallThrough.tsx, 21, 34))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 21, 22))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 21, 20))
+>T : Symbol(T, Decl(ttttNakedTypeParamFallThrough.tsx, 21, 22))
+>P : Symbol(P, Decl(ttttNakedTypeParamFallThrough.tsx, 21, 20))
+
+const x5: 1 = c4(() => 1);
+>x5 : Symbol(x5, Decl(ttttNakedTypeParamFallThrough.tsx, 22, 5))
+>c4 : Symbol(c4, Decl(ttttNakedTypeParamFallThrough.tsx, 20, 32))
+

@@ -1601,9 +1601,13 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         for (u32 s = 0; s < sources.len; s++) {
             if (!source_done[s] && !used_up[s]) unmatched[unmatched_len++] = sources.data[s];
         }
-        if (naked_count == 1 && !circularity) {
-            if (unmatched_len) infer_from(me, inf, ty_union(me, unmatched, unmatched_len, nullptr, (TyList){0}), naked);
+        if (naked_count == 1 && !circularity && unmatched_len) {
+            infer_from(me, inf, ty_union(me, unmatched, unmatched_len, nullptr, (TyList){0}), naked);
         } else {
+            // (Everything matched a member that isn't a naked type parameter: the whole source to the naked one anyway,
+            // less directly, tsc's inferToMultipleTypes falling through to its last loop: `() => number` to `T | (()
+            // => P)` infers number for P and the function for T, framer-motion's `motion.create(Button)`, whose
+            // TagName is then its constraint, not its default)
             // (A walk above was cut short, so which sources were used up isn't known: the whole source, less directly.
             // Less what matched a member above: tsc's inferFromTypes reduces the source before inferToMultipleTypes,
             // `Promise<A> | A` to `T | U | Promise<T | U>` infers A to T and U)
