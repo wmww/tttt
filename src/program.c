@@ -6046,11 +6046,20 @@ u64 program_checked_source_bytes(Program const* me) {
 // program_set_checkers(0): one checker per thread, but not more than one per CHECKER_BYTES of checked source (the
 // default library's files aside): each checker builds the global and library types it uses again, which a small
 // project's few files don't win back. Past the cap (the physical cores), one per SMT_CHECKER_BYTES. Never more than
-// checked bytes / the largest checked file's bytes, rounded up (below)
+// checked bytes / the largest checked implementation file's bytes, rounded up (below). A declaration file doesn't count
+// as the largest: checking one walks its declarations, whose members resolve lazily, so its bytes say nothing of its
+// time (the bun breadth sweep, 2026-10-23: lucide-react's 2.2 MB .d.ts checks in 2 ms, @octokit/openapi-types' 4.8 MB
+// in 0-67 ms, against termdom's 1.2 MB dom.ts in 615 ms), and capping by one left cores idle: formatjs/docs at K4,
+// cheerio and octokit at K2)
 static u64 largest_checked_source_bytes(Program const* me) {
     u64 largest = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        if (source_file_is_checked(*i) && !(*i)->is_stdlib && (u64)cstr_size(&(*i)->contents) > largest) largest = (u64)cstr_size(&(*i)->contents);
+        SourceFile const* source = *i;
+        if (source_file_is_checked(source) && !source->is_stdlib && !source->is_declaration &&
+            (u64)cstr_size(&source->contents) > largest
+        ) {
+            largest = (u64)cstr_size(&source->contents);
+        }
     }
     return largest;
 }
