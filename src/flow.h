@@ -230,9 +230,6 @@ typedef struct FlowBuilder {
     uint8_t assignment_target;
     bool compound_like_target; // ...by `x = x + 1` (see IdentifierExpr.compound_like_target)
     bool read_target; // ...and read as well (`x ??= e`, `x! = e`, `[...x] = e`: tsc's accessKind isn't Write)
-    // ...through a `!` or a spread (`x! = e`, `[...x] = e`): a property there is read with its read type, not written
-    // with its write type (tsc's isWriteOnlyAccess, and checkAssignmentOperator only takes a compound target's setter)
-    bool nested_read_target;
     bool next_function_is_iife;
     bool ambient;
     // The `yield` expressions of the container (a generator), in source order. malloc'd, the function takes them
