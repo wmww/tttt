@@ -794,6 +794,9 @@ typedef struct CallExpr {
     bool is_extends;
     bool optional_chain; // `f?.()`
     bool continues_chain; // Like PropertyExpr.continues_chain
+    // The whole expression of an expression statement (tsc's isExpressionStatement(node.parent)): its effects are read
+    // through the callee's declared type, getEffectsSignature's getTypeOfDottedName, also from a condition node
+    bool is_statement;
     CallRare* rare; // Owned, null when all of it is
     Expr callable;
     // PERF: types of each argument should be cached

@@ -1336,6 +1336,7 @@ void expr_mark_result_unused(Expr* me) {
 
 void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs) {
     expr_mark_result_unused(me);
+    if (my tag == EXPR_CALL) my call->is_statement = true;
     // (The context root of the function expressions in it: the walk checks it without a contextual type)
     uintptr_t outer_root = scope_flow(names)->context_root;
     scope_flow(names)->context_root = context_root_make(me, CONTEXT_ROOT_EXPR);

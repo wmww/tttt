@@ -1,0 +1,71 @@
+//// [test/cases/ttttOptionalCallStatementEffects.ts] ////
+
+=== ttttOptionalCallStatementEffects.ts ===
+// `cache?.delete(path);` is a statement: narrowing `path` by its optional-chain condition reads the call's effects
+// through the callee's declared type (tsc's getEffectsSignature: getTypeOfDottedName when the parent is an expression
+// statement), not its flow type, which here would narrow `cache` by `cache?.get(path) !== prior` and so need the type
+// of `prior` while it is being inferred (openclaw's agent-tools.read.ts, a spurious TS7022)
+export function f(cache: Map<string, number> | undefined, path: string | undefined, content?: Set<string>) {
+>f : (cache: Map<string, number> | undefined, path: string | undefined, content?: Set<string>) => void
+>cache : Map<string, number> | undefined
+>path : string | undefined
+>content : Set<string> | undefined
+
+  if (!path || !content?.has(path)) return;
+>!path || !content?.has(path) : boolean
+>!path : boolean
+>path : string | undefined
+>!content?.has(path) : boolean
+>content?.has(path) : boolean | undefined
+>content?.has : ((value: string) => boolean) | undefined
+>content : Set<string> | undefined
+>has : ((value: string) => boolean) | undefined
+>path : string
+
+  for (;;) {
+    const prior = cache?.get(path);
+>prior : number | undefined
+>cache?.get(path) : number | undefined
+>cache?.get : ((key: string) => number | undefined) | undefined
+>cache : Map<string, number> | undefined
+>get : ((key: string) => number | undefined) | undefined
+>path : string
+
+    if (cache?.get(path) !== prior) {
+>cache?.get(path) !== prior : boolean
+>cache?.get(path) : number | undefined
+>cache?.get : ((key: string) => number | undefined) | undefined
+>cache : Map<string, number> | undefined
+>get : ((key: string) => number | undefined) | undefined
+>path : string
+>prior : number | undefined
+    }
+    cache?.delete(path);
+>cache?.delete(path) : boolean | undefined
+>cache?.delete : ((key: string) => boolean) | undefined
+>cache : Map<string, number> | undefined
+>delete : ((key: string) => boolean) | undefined
+>path : string
+  }
+}
+// An assertion called as an optional statement still narrows
+declare const checker: { assertString(x: unknown): asserts x is string } | undefined;
+>checker : { assertString(x: unknown): asserts x is string; } | undefined
+>assertString : (x: unknown) => asserts x is string
+>x : unknown
+
+export function g(x: unknown) {
+>g : (x: unknown) => unknown
+>x : unknown
+
+  checker?.assertString(x);
+>checker?.assertString(x) : void | undefined
+>checker?.assertString : ((x: unknown) => asserts x is string) | undefined
+>checker : { assertString(x: unknown): asserts x is string; } | undefined
+>assertString : ((x: unknown) => asserts x is string) | undefined
+>x : unknown
+
+  return x;
+>x : unknown
+}
+

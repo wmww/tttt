@@ -1550,7 +1550,9 @@ static Span dotted_name_declaration(Checker* me, Expr const* expr) {
 // tsc's checkCallExpression on an assertion call statement: its callee must be a dotted name (TS2776) whose names all
 // have explicit types (TS2775), or it asserts nothing
 void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* errs) {
-    if (expr->tag != EXPR_CALL || expr->call->optional_chain || expr->call->uses_new) return;
+    // (Nor in an optional chain, `checker?.assert(x)`: the call's type is `void | undefined` there, tsc's returnType
+    // is no void)
+    if (expr->tag != EXPR_CALL || expr_is_optional_chain(expr) || expr->call->uses_new) return;
     Signature const* sig = ty_call_resolved_signature(me, expr->call);
     if (!sig || !signature_predicate(me, sig) || !(signature_return_type(me, sig)->flags & TYF_VOID)) return;
     Expr const* callee = &expr->call->callable;
@@ -2909,7 +2911,9 @@ static Ty const* narrow_by_call(FlowQuery* q, Ty const* type, Expr const* expr, 
     if (call->uses_new || !has_matching_argument(q, call)) return type;
     // (An optional call that didn't happen says nothing)
     if (!assume_true && expr_is_optional_chain(expr)) return type;
-    CallEffects effects = call_effects(q->me, expr, false);
+    // (A statement's, `x?.m(y);` met as the optional chain's condition, goes by declared types like its call node:
+    // the flow type of the callee can be what is in flight, openclaw's agent-tools.read.ts TS7022)
+    CallEffects effects = call_effects(q->me, expr, expr->call->is_statement);
     if (!effects.has_predicate || effects.predicate.asserts) return type;
     return narrow_by_predicate(q, type, &effects.predicate, call, assume_true);
 }

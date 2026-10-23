@@ -1,0 +1,65 @@
+//// [test/cases/ttttOptionalCallStatementEffects.ts] ////
+
+=== ttttOptionalCallStatementEffects.ts ===
+// `cache?.delete(path);` is a statement: narrowing `path` by its optional-chain condition reads the call's effects
+// through the callee's declared type (tsc's getEffectsSignature: getTypeOfDottedName when the parent is an expression
+// statement), not its flow type, which here would narrow `cache` by `cache?.get(path) !== prior` and so need the type
+// of `prior` while it is being inferred (openclaw's agent-tools.read.ts, a spurious TS7022)
+export function f(cache: Map<string, number> | undefined, path: string | undefined, content?: Set<string>) {
+>f : Symbol(f, Decl(ttttOptionalCallStatementEffects.ts, 0, 0))
+>cache : Symbol(cache, Decl(ttttOptionalCallStatementEffects.ts, 4, 18))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>path : Symbol(path, Decl(ttttOptionalCallStatementEffects.ts, 4, 57))
+>content : Symbol(content, Decl(ttttOptionalCallStatementEffects.ts, 4, 83))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+
+  if (!path || !content?.has(path)) return;
+>path : Symbol(path, Decl(ttttOptionalCallStatementEffects.ts, 4, 57))
+>content?.has : Symbol(Set.has, Decl(lib.es2015.collection.d.ts, --, --))
+>content : Symbol(content, Decl(ttttOptionalCallStatementEffects.ts, 4, 83))
+>has : Symbol(Set.has, Decl(lib.es2015.collection.d.ts, --, --))
+>path : Symbol(path, Decl(ttttOptionalCallStatementEffects.ts, 4, 57))
+
+  for (;;) {
+    const prior = cache?.get(path);
+>prior : Symbol(prior, Decl(ttttOptionalCallStatementEffects.ts, 7, 9))
+>cache?.get : Symbol(Map.get, Decl(lib.es2015.collection.d.ts, --, --))
+>cache : Symbol(cache, Decl(ttttOptionalCallStatementEffects.ts, 4, 18))
+>get : Symbol(Map.get, Decl(lib.es2015.collection.d.ts, --, --))
+>path : Symbol(path, Decl(ttttOptionalCallStatementEffects.ts, 4, 57))
+
+    if (cache?.get(path) !== prior) {
+>cache?.get : Symbol(Map.get, Decl(lib.es2015.collection.d.ts, --, --))
+>cache : Symbol(cache, Decl(ttttOptionalCallStatementEffects.ts, 4, 18))
+>get : Symbol(Map.get, Decl(lib.es2015.collection.d.ts, --, --))
+>path : Symbol(path, Decl(ttttOptionalCallStatementEffects.ts, 4, 57))
+>prior : Symbol(prior, Decl(ttttOptionalCallStatementEffects.ts, 7, 9))
+    }
+    cache?.delete(path);
+>cache?.delete : Symbol(Map.delete, Decl(lib.es2015.collection.d.ts, --, --))
+>cache : Symbol(cache, Decl(ttttOptionalCallStatementEffects.ts, 4, 18))
+>delete : Symbol(Map.delete, Decl(lib.es2015.collection.d.ts, --, --))
+>path : Symbol(path, Decl(ttttOptionalCallStatementEffects.ts, 4, 57))
+  }
+}
+// An assertion called as an optional statement still narrows
+declare const checker: { assertString(x: unknown): asserts x is string } | undefined;
+>checker : Symbol(checker, Decl(ttttOptionalCallStatementEffects.ts, 14, 13))
+>assertString : Symbol(assertString, Decl(ttttOptionalCallStatementEffects.ts, 14, 24))
+>x : Symbol(x, Decl(ttttOptionalCallStatementEffects.ts, 14, 38))
+>x : Symbol(x, Decl(ttttOptionalCallStatementEffects.ts, 14, 38))
+
+export function g(x: unknown) {
+>g : Symbol(g, Decl(ttttOptionalCallStatementEffects.ts, 14, 85))
+>x : Symbol(x, Decl(ttttOptionalCallStatementEffects.ts, 15, 18))
+
+  checker?.assertString(x);
+>checker?.assertString : Symbol(assertString, Decl(ttttOptionalCallStatementEffects.ts, 14, 24))
+>checker : Symbol(checker, Decl(ttttOptionalCallStatementEffects.ts, 14, 13))
+>assertString : Symbol(assertString, Decl(ttttOptionalCallStatementEffects.ts, 14, 24))
+>x : Symbol(x, Decl(ttttOptionalCallStatementEffects.ts, 15, 18))
+
+  return x;
+>x : Symbol(x, Decl(ttttOptionalCallStatementEffects.ts, 15, 18))
+}
+
