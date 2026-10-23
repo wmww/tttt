@@ -3984,6 +3984,11 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         return lazy_type_get(binding->source);
     }
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
+    // An ambient parameter's pattern takes no null or undefined: it's just documentation (tsc's
+    // getBindingElementTypeFromParentType)
+    if (compiler_options()->strict_null_checks && parent->ambient && binding_is_parameter(parent)) {
+        object = ty_non_nullable(me, object);
+    }
     // Under a written type, an initializer that can't be undefined takes undefined out of what's destructured (tsc's
     // getBindingElementTypeFromParentType, which looks at the initializer for that: `[a = a]: T = a` is circular)
     if (!parent->parent && parent->has_explicit_type && compiler_options()->strict_null_checks && parent->source &&

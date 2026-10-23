@@ -1,0 +1,38 @@
+//// [test/cases/ttttAmbientPatternParameterNullable.ts] ////
+
+=== ttttAmbientPatternParameterNullable.ts ===
+// An ambient parameter's pattern destructures its type without null and undefined: it's just documentation (tsc's
+// getBindingElementTypeFromParentType). Not an interface's or a function type's
+declare function f({ a }: { a: number } | undefined, [b]: [string] | null): void;
+>f : ({ a }: { a: number; } | undefined, [b]: [string] | null) => void
+>a : number
+>a : number
+>b : string
+
+declare class C {
+>C : C
+
+  m({ c }: { c: number } | undefined, [d]: [number] | undefined): void;
+>m : ({ c }: { c: number; } | undefined, [d]: [number] | undefined) => void
+>c : number
+>c : number
+>d : number
+}
+declare namespace N {
+>N : typeof N
+
+  function inner([h]: [number] | null): void;
+>inner : ([h]: [number] | null) => void
+>h : number
+}
+type F = ({ e }: { e: number } | undefined) => void;
+>F : F
+>e : any
+>e : number
+
+interface I {
+  n([g]: [number] | undefined): void;
+>n : ([g]: [number] | undefined) => void
+>g : any
+}
+

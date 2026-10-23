@@ -629,6 +629,11 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
             ) {
                 type = ty_without_undefined(current_checker, type);
             }
+            // (Nor null and undefined in an ambient parameter, which is just documentation: tsc's
+            // getBindingElementTypeFromParentType. `declare function f([b]: [string] | null)` is fine)
+            if (compiler_options()->strict_null_checks && my ambient && binding_is_parameter(me)) {
+                type = ty_non_nullable(current_checker, type);
+            }
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, empty_pattern ? at : my content_span, errs);
             Ty const* parent = binding_element_parent_type(me, nullptr);
             for_each (i, vec_binding, &my array) {

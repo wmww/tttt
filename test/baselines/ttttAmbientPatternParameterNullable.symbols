@@ -1,0 +1,40 @@
+//// [test/cases/ttttAmbientPatternParameterNullable.ts] ////
+
+=== ttttAmbientPatternParameterNullable.ts ===
+// An ambient parameter's pattern destructures its type without null and undefined: it's just documentation (tsc's
+// getBindingElementTypeFromParentType). Not an interface's or a function type's
+declare function f({ a }: { a: number } | undefined, [b]: [string] | null): void;
+>f : Symbol(f, Decl(ttttAmbientPatternParameterNullable.ts, 0, 0))
+>a : Symbol(a, Decl(ttttAmbientPatternParameterNullable.ts, 2, 20))
+>a : Symbol(a, Decl(ttttAmbientPatternParameterNullable.ts, 2, 27))
+>b : Symbol(b, Decl(ttttAmbientPatternParameterNullable.ts, 2, 54))
+
+declare class C {
+>C : Symbol(C, Decl(ttttAmbientPatternParameterNullable.ts, 2, 81))
+
+  m({ c }: { c: number } | undefined, [d]: [number] | undefined): void;
+>m : Symbol(C.m, Decl(ttttAmbientPatternParameterNullable.ts, 3, 17))
+>c : Symbol(c, Decl(ttttAmbientPatternParameterNullable.ts, 4, 5))
+>c : Symbol(c, Decl(ttttAmbientPatternParameterNullable.ts, 4, 12))
+>d : Symbol(d, Decl(ttttAmbientPatternParameterNullable.ts, 4, 39))
+}
+declare namespace N {
+>N : Symbol(N, Decl(ttttAmbientPatternParameterNullable.ts, 5, 1))
+
+  function inner([h]: [number] | null): void;
+>inner : Symbol(inner, Decl(ttttAmbientPatternParameterNullable.ts, 6, 21))
+>h : Symbol(h, Decl(ttttAmbientPatternParameterNullable.ts, 7, 18))
+}
+type F = ({ e }: { e: number } | undefined) => void;
+>F : Symbol(F, Decl(ttttAmbientPatternParameterNullable.ts, 8, 1))
+>e : Symbol(e, Decl(ttttAmbientPatternParameterNullable.ts, 9, 11))
+>e : Symbol(e, Decl(ttttAmbientPatternParameterNullable.ts, 9, 18))
+
+interface I {
+>I : Symbol(I, Decl(ttttAmbientPatternParameterNullable.ts, 9, 52))
+
+  n([g]: [number] | undefined): void;
+>n : Symbol(I.n, Decl(ttttAmbientPatternParameterNullable.ts, 10, 13))
+>g : Symbol(g, Decl(ttttAmbientPatternParameterNullable.ts, 11, 5))
+}
+
