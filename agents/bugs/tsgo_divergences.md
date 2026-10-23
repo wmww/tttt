@@ -123,7 +123,10 @@ argued here instead. Nothing a user sees differs in any of them.
   **At the defaults it is run-to-run variance in tttt, not in tsgo** (det, 2026-10-23: 2 of 15 runs differ on the
   16-core box): tsgo deals files to checkers statically per K, tttt's work stealing makes the deal schedule dependent,
   so any K dependence, tsgo-shared or not, shows as a flake at the defaults. The cycle itself is tsgo's entry-order
-  artifact; the flake is ours. [open]
+  artifact; the flake is ours. Since the history rerun's trigger includes TS7022 (1ee362e69): sequelize and
+  packages/core byte-identical to --checkers 1 at the defaults (x3), --checkers 4 and 16 (x2) and --checker-memory 0;
+  K16 and -m 0 rerun, the defaults and K4 report no circularity and match anyway (det3). Left: a history where the
+  parallel pass finds no circularity that one checker would find isn't rerun. [fixed 1ee362e69]
   bun 92-R16b is the smallest instance (corH, 2026-10-23): `type A = { [K in "a"]: B[K & keyof B] }` in a.ts and B
   likewise over A in b.ts, each read once. The TS2615 pair goes to whichever file its checker checks first, so it's at
   a.ts when one checker gets both files and at both files when two do. At `--checkers 4`, 16-19 of 60 runs gave two
