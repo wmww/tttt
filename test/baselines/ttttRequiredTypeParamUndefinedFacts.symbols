@@ -1,0 +1,50 @@
+//// [test/cases/ttttRequiredTypeParamUndefinedFacts.ts] ////
+
+=== ttttRequiredTypeParamUndefinedFacts.ts ===
+// `-?` takes undefined out with getTypeWithFacts(NEUndefined) (tsc's removeMissingOrUndefinedType): a T constrained
+// to undefined goes too, and void
+interface O<T> { a?: T }
+>O : Symbol(O, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 12))
+>a : Symbol(O.a, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 16))
+>T : Symbol(T, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 12))
+
+function f1<T extends undefined>(r: Required<O<T>>) { const n: never = r.a; }
+>f1 : Symbol(f1, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 24))
+>T : Symbol(T, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 3, 12))
+>r : Symbol(r, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 3, 33))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>O : Symbol(O, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 3, 12))
+>n : Symbol(n, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 3, 59))
+>r.a : Symbol(a, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 16))
+>r : Symbol(r, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 3, 33))
+>a : Symbol(a, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 16))
+
+function f2<T extends string | undefined>(r: Required<O<T>>) { return r.a; }
+>f2 : Symbol(f2, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 3, 77))
+>T : Symbol(T, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 4, 12))
+>r : Symbol(r, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 4, 42))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>O : Symbol(O, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 4, 12))
+>r.a : Symbol(a, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 16))
+>r : Symbol(r, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 4, 42))
+>a : Symbol(a, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 16))
+
+function f3(r: Required<O<void | number>>) { return r.a; }
+>f3 : Symbol(f3, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 4, 76))
+>r : Symbol(r, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 5, 12))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>O : Symbol(O, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 0, 0))
+>r.a : Symbol(a, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 16))
+>r : Symbol(r, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 5, 12))
+>a : Symbol(a, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 2, 16))
+
+type R = Required<[(string | undefined)?]>;
+>R : Symbol(R, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 5, 58))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttRequiredTypeParamUndefinedFacts.ts, 7, 5))
+

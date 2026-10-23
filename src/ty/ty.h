@@ -2798,6 +2798,8 @@ Ty const* ty_truthy_part(Checker* me, Ty const* ty); // What is left of x where 
 Ty const* ty_non_nullish_part(Checker* me, Ty const* ty);
 Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty);
 Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty); // Without the members that are always falsy
+// tsc's getTypeWithFacts(ty, NEUndefined): without undefined and void, and the type parameters constrained to them
+Ty const* ty_with_ne_undefined_facts(Checker* me, Ty const* ty);
 Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty); // `"a"` -> string, `true` -> boolean
 Ty const* ty_substitute_constraints(Checker* me, Ty const* type); // expr.c, see narrowable_type()
 // Whether a reference (a name, a property access once computed) asks for its contextual type: its type has a type

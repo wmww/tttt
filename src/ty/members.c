@@ -5549,9 +5549,10 @@ static Ty const* instantiated_prop_type(Checker* me, Prop const* prop) {
         return ty_optional_prop_type(me, type);
     }
     // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
-    // removeMissingOrUndefinedType, `Required<{ a?: number | undefined }>` is `{ a: number | undefined }`)
+    // removeMissingOrUndefinedType, `Required<{ a?: number | undefined }>` is `{ a: number | undefined }`; else its
+    // getTypeWithFacts(NEUndefined) also takes out a T constrained to undefined)
     if (prop->flags & PROP_STRIP_UNDEFINED) {
-        type = compiler_options()->exact_optional_property_types ? ty_remove_missing(me, type, true) : ty_without_undefined(me, type);
+        type = compiler_options()->exact_optional_property_types ? ty_remove_missing(me, type, true) : ty_with_ne_undefined_facts(me, type);
     }
     return type;
 }

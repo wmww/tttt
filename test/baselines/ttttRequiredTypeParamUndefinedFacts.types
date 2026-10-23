@@ -1,0 +1,37 @@
+//// [test/cases/ttttRequiredTypeParamUndefinedFacts.ts] ////
+
+=== ttttRequiredTypeParamUndefinedFacts.ts ===
+// `-?` takes undefined out with getTypeWithFacts(NEUndefined) (tsc's removeMissingOrUndefinedType): a T constrained
+// to undefined goes too, and void
+interface O<T> { a?: T }
+>a : T | undefined
+
+function f1<T extends undefined>(r: Required<O<T>>) { const n: never = r.a; }
+>f1 : <T extends undefined>(r: Required<O<T>>) => void
+>r : Required<O<T>>
+>n : never
+>r.a : never
+>r : Required<O<T>>
+>a : never
+
+function f2<T extends string | undefined>(r: Required<O<T>>) { return r.a; }
+>f2 : <T extends string | undefined>(r: Required<O<T>>) => T
+>r : Required<O<T>>
+>r.a : T
+>r : Required<O<T>>
+>a : T
+
+function f3(r: Required<O<void | number>>) { return r.a; }
+>f3 : (r: Required<O<void | number>>) => number
+>r : Required<O<void | number>>
+>r.a : number
+>r : Required<O<void | number>>
+>a : number
+
+type R = Required<[(string | undefined)?]>;
+>R : [string]
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

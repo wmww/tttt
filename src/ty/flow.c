@@ -580,6 +580,7 @@ Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty) {
     return has_type_facts(me, ty, TF_IS_UNDEFINED_OR_NULL) ? ty_non_nullable(me, ty) : ty;
 }
 Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty) { return type_with_facts(me, ty, TF_TRUTHY); }
+Ty const* ty_with_ne_undefined_facts(Checker* me, Ty const* ty) { return type_with_facts(me, ty, TF_NE_UNDEFINED); }
 bool ty_can_be_truthy(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_TRUTHY); }
 bool ty_can_be_falsy(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_FALSY); }
 bool ty_can_be_nullish(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_EQ_UNDEFINED_OR_NULL); }

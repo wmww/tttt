@@ -315,7 +315,7 @@ static bool may_map_specially(Checker* me, Ty const* ty, TyMapper const* mapper,
 // stays (`Required<[(string | undefined)?]>` takes undefined)
 static Ty const* remove_missing_or_undefined(Checker* me, Ty const* ty) {
     if (compiler_options()->exact_optional_property_types) return ty_remove_missing(me, ty, true);
-    return ty_without_undefined(me, ty);
+    return ty_with_ne_undefined_facts(me, ty);
 }
 
 // A `?` mapped type adds undefined to what an array or rest element maps to under strictNullChecks (tsc's
