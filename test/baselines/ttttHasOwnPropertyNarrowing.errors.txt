@@ -1,0 +1,24 @@
+ttttHasOwnPropertyNarrowing.ts(4,63): error TS18048: 'x.a' is possibly 'undefined'.
+ttttHasOwnPropertyNarrowing.ts(5,65): error TS18048: 'x.a' is possibly 'undefined'.
+ttttHasOwnPropertyNarrowing.ts(6,65): error TS18048: 'x.a' is possibly 'undefined'.
+ttttHasOwnPropertyNarrowing.ts(8,50): error TS18048: 'x.a' is possibly 'undefined'.
+
+
+==== ttttHasOwnPropertyNarrowing.ts (4 errors) ====
+    // `x.hasOwnProperty("a")` removes `x.a`'s missing only for a property access called with a string literal, neither
+    // parenthesized, and only when no type predicate of the call decides first (tsc's narrowTypeByCallExpression; bun's
+    // 20-C5c, 20-P1, 20-P6, 32-C7)
+    function c0(x: { a?: number }) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+                                                                  ~~~
+!!! error TS18048: 'x.a' is possibly 'undefined'.
+    function c1(x: { a?: number }) { if ((x.hasOwnProperty)("a")) { x.a.toFixed(); } }
+                                                                    ~~~
+!!! error TS18048: 'x.a' is possibly 'undefined'.
+    function c2(x: { a?: number }) { if (x.hasOwnProperty(("a"))) { x.a.toFixed(); } }
+                                                                    ~~~
+!!! error TS18048: 'x.a' is possibly 'undefined'.
+    interface H { a?: number; hasOwnProperty(k: string): this is H; }
+    function c3(x: H) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+                                                     ~~~
+!!! error TS18048: 'x.a' is possibly 'undefined'.
+    

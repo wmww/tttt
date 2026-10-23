@@ -2920,27 +2920,33 @@ static bool has_matching_argument(FlowQuery* q, CallExpr const* call) {
 
 static Ty const* narrow_by_call(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
     CallExpr const* call = expr->call;
-    if (!call->uses_new && ty_contains_missing(q->me, type) && call->callable.tag == EXPR_PROPERTY &&
+    if (call->uses_new) return type;
+    // A type predicate about the reference first (tsc's narrowTypeByCallExpression): `this is H` of an own
+    // `hasOwnProperty` decides, the property's presence isn't looked at then
+    // (An optional call that didn't happen says nothing. A statement's, `x?.m(y);` met as the optional chain's
+    // condition, goes by declared types like its call node: the flow type of the callee can be what is in flight,
+    // openclaw's agent-tools.read.ts TS7022)
+    if (has_matching_argument(q, call) && (assume_true || !expr_is_optional_chain(expr))) {
+        CallEffects effects = call_effects(q->me, expr, expr->call->is_statement);
+        if (effects.has_predicate && !effects.predicate.asserts) return narrow_by_predicate(q, type, &effects.predicate, call, assume_true);
+    }
+    // `x.hasOwnProperty("a")` says whether `x.a`'s missing is there: a property access called with a string literal,
+    // neither parenthesized (tsc's IsPropertyAccessExpression, IsStringLiteralLike; the binder makes no condition of
+    // `(x.hasOwnProperty)("a")`)
+    if (ty_contains_missing(q->me, type) && call->callable.tag == EXPR_PROPERTY && !expr_is_perenthisized(&call->callable) &&
         call->callable.property->form == PROPERTY_EXPR_DOT && vec_expr_size(&call->args) == 1 &&
-        vec_expr_at(&call->args, 0)->tag == EXPR_LITERAL && vec_expr_at(&call->args, 0)->literal.tag == VALUE_STRING
+        vec_expr_at(&call->args, 0)->tag == EXPR_LITERAL && vec_expr_at(&call->args, 0)->literal.tag == VALUE_STRING &&
+        !expr_is_perenthisized(vec_expr_at(&call->args, 0))
     ) {
         Atom const* method = access_name(q->me, call->callable.property);
         if (method && csview_equals(atom_sv(method), "hasOwnProperty")) {
             Ty const* key = ty_flow_expr_type(q->me, vec_expr_at(&call->args, 0));
             bool number = false;
             Atom const* name = ty_property_name_of_key(q->me, key, &number);
-            Ty const* narrowed = narrow_missing_by_presence(q, type, reference_candidate(&call->callable.property->expr), name, assume_true);
-            if (narrowed != type) return narrowed;
+            return narrow_missing_by_presence(q, type, reference_candidate(&call->callable.property->expr), name, assume_true);
         }
     }
-    if (call->uses_new || !has_matching_argument(q, call)) return type;
-    // (An optional call that didn't happen says nothing)
-    if (!assume_true && expr_is_optional_chain(expr)) return type;
-    // (A statement's, `x?.m(y);` met as the optional chain's condition, goes by declared types like its call node:
-    // the flow type of the callee can be what is in flight, openclaw's agent-tools.read.ts TS7022)
-    CallEffects effects = call_effects(q->me, expr, expr->call->is_statement);
-    if (!effects.has_predicate || effects.predicate.asserts) return type;
-    return narrow_by_predicate(q, type, &effects.predicate, call, assume_true);
+    return type;
 }
 
 // What is known after `assert(expr)` returned

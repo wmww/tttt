@@ -1,0 +1,76 @@
+//// [test/cases/ttttHasOwnPropertyNarrowing.ts] ////
+
+=== ttttHasOwnPropertyNarrowing.ts ===
+// `x.hasOwnProperty("a")` removes `x.a`'s missing only for a property access called with a string literal, neither
+// parenthesized, and only when no type predicate of the call decides first (tsc's narrowTypeByCallExpression; bun's
+// 20-C5c, 20-P1, 20-P6, 32-C7)
+function c0(x: { a?: number }) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+>c0 : (x: { a?: number; }) => void
+>x : { a?: number; }
+>a : number | undefined
+>x.hasOwnProperty("a") : boolean
+>x.hasOwnProperty : (v: PropertyKey) => boolean
+>x : { a?: number; }
+>hasOwnProperty : (v: PropertyKey) => boolean
+>"a" : "a"
+>x.a.toFixed() : string
+>x.a.toFixed : (fractionDigits?: number) => string
+>x.a : number | undefined
+>x : { a?: number; }
+>a : number | undefined
+>toFixed : (fractionDigits?: number) => string
+
+function c1(x: { a?: number }) { if ((x.hasOwnProperty)("a")) { x.a.toFixed(); } }
+>c1 : (x: { a?: number; }) => void
+>x : { a?: number; }
+>a : number | undefined
+>(x.hasOwnProperty)("a") : boolean
+>(x.hasOwnProperty) : (v: PropertyKey) => boolean
+>x.hasOwnProperty : (v: PropertyKey) => boolean
+>x : { a?: number; }
+>hasOwnProperty : (v: PropertyKey) => boolean
+>"a" : "a"
+>x.a.toFixed() : string
+>x.a.toFixed : (fractionDigits?: number) => string
+>x.a : number | undefined
+>x : { a?: number; }
+>a : number | undefined
+>toFixed : (fractionDigits?: number) => string
+
+function c2(x: { a?: number }) { if (x.hasOwnProperty(("a"))) { x.a.toFixed(); } }
+>c2 : (x: { a?: number; }) => void
+>x : { a?: number; }
+>a : number | undefined
+>x.hasOwnProperty(("a")) : boolean
+>x.hasOwnProperty : (v: PropertyKey) => boolean
+>x : { a?: number; }
+>hasOwnProperty : (v: PropertyKey) => boolean
+>("a") : "a"
+>"a" : "a"
+>x.a.toFixed() : string
+>x.a.toFixed : (fractionDigits?: number) => string
+>x.a : number | undefined
+>x : { a?: number; }
+>a : number | undefined
+>toFixed : (fractionDigits?: number) => string
+
+interface H { a?: number; hasOwnProperty(k: string): this is H; }
+>a : number | undefined
+>hasOwnProperty : (k: string) => this is H
+>k : string
+
+function c3(x: H) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+>c3 : (x: H) => void
+>x : H
+>x.hasOwnProperty("a") : boolean
+>x.hasOwnProperty : (k: string) => this is H
+>x : H
+>hasOwnProperty : (k: string) => this is H
+>"a" : "a"
+>x.a.toFixed() : string
+>x.a.toFixed : (fractionDigits?: number) => string
+>x.a : number | undefined
+>x : H
+>a : number | undefined
+>toFixed : (fractionDigits?: number) => string
+

@@ -1,0 +1,65 @@
+//// [test/cases/ttttHasOwnPropertyNarrowing.ts] ////
+
+=== ttttHasOwnPropertyNarrowing.ts ===
+// `x.hasOwnProperty("a")` removes `x.a`'s missing only for a property access called with a string literal, neither
+// parenthesized, and only when no type predicate of the call decides first (tsc's narrowTypeByCallExpression; bun's
+// 20-C5c, 20-P1, 20-P6, 32-C7)
+function c0(x: { a?: number }) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+>c0 : Symbol(c0, Decl(ttttHasOwnPropertyNarrowing.ts, 0, 0))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 3, 12))
+>a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 3, 16))
+>x.hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 3, 12))
+>hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x.a.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x.a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 3, 16))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 3, 12))
+>a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 3, 16))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+function c1(x: { a?: number }) { if ((x.hasOwnProperty)("a")) { x.a.toFixed(); } }
+>c1 : Symbol(c1, Decl(ttttHasOwnPropertyNarrowing.ts, 3, 80))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 4, 12))
+>a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 4, 16))
+>x.hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 4, 12))
+>hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x.a.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x.a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 4, 16))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 4, 12))
+>a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 4, 16))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+function c2(x: { a?: number }) { if (x.hasOwnProperty(("a"))) { x.a.toFixed(); } }
+>c2 : Symbol(c2, Decl(ttttHasOwnPropertyNarrowing.ts, 4, 82))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 12))
+>a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 16))
+>x.hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 12))
+>hasOwnProperty : Symbol(Object.hasOwnProperty, Decl(lib.es5.d.ts, --, --))
+>x.a.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x.a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 16))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 12))
+>a : Symbol(a, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 16))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+interface H { a?: number; hasOwnProperty(k: string): this is H; }
+>H : Symbol(H, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 82))
+>a : Symbol(H.a, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 13))
+>hasOwnProperty : Symbol(H.hasOwnProperty, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 25))
+>k : Symbol(k, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 41))
+>H : Symbol(H, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 82))
+
+function c3(x: H) { if (x.hasOwnProperty("a")) { x.a.toFixed(); } }
+>c3 : Symbol(c3, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 65))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 7, 12))
+>H : Symbol(H, Decl(ttttHasOwnPropertyNarrowing.ts, 5, 82))
+>x.hasOwnProperty : Symbol(H.hasOwnProperty, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 25))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 7, 12))
+>hasOwnProperty : Symbol(H.hasOwnProperty, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 25))
+>x.a.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x.a : Symbol(H.a, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 13))
+>x : Symbol(x, Decl(ttttHasOwnPropertyNarrowing.ts, 7, 12))
+>a : Symbol(H.a, Decl(ttttHasOwnPropertyNarrowing.ts, 6, 13))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
