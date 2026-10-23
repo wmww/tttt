@@ -340,14 +340,10 @@ rest element; a spread instantiated to `undefined`). Left:
   test/cases/ttttGlobalAugmentationReExport.ts (known failing).
 
 ## Fresh repositories, fourth rule: bun lockfiles (2026-10-22, cor6)
-- **kebo/apps/mobile (+TS7022 TransactionModel, +TS7024, +TS2502 `value`)**: models/transaction/transaction.ts builds a
-  mobx-state-tree model, `export const TransactionModel = types.model(...).props(...).views(...).actions((self) => {
-  function updateField<K extends keyof TransactionSnapshotIn>(field: K, value: TransactionSnapshotIn[K]) {...}; return
-  { updateField, ... } })`, with `TransactionSnapshotIn = SnapshotIn<typeof TransactionModel>`. tsc resolves the
-  returned function's signature lazily, after the model's type; tttt resolves its parameter types while the initializer
-  is in flight (signature_resolve_slow's eager parameters, the same root as triage.md's missed TS2502 through
-  `ReturnType<typeof h>`). Reproduces checking the file alone (TTTT_CHECK_ONLY); a 10-line imitation with a plain
-  `model(p, actions)` doesn't, so the cut needs MST's real types (Instance/SnapshotIn over IModelType). No repro yet.
+- **Eager parameter types (was kebo/apps/mobile's +TS7022/TS7024/TS2502, fixed 2026-10-23 corF)**: kebo's cycle was
+  generic_function_argument() resolving a generic function argument's signature (typing its parameters) before
+  looking for a contextual signature; tsc reads only the declared type parameters there
+  (test/cases/ttttGenericArgumentParamsUntypedWithoutContext.ts). The eager-parameters design below stays relevant.
   **Same root as openclaw's TS2554 'Expected 2-0 arguments' (det, 2026-10-23)**: a re-entry of a function's signature
   while its parameters were being typed read the half-built record (min_args set, param_count still 0), which is no
   signature tsc ever has, and what it left behind depended on which entry point a checker reached first (openclaw core

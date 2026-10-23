@@ -1,0 +1,62 @@
+//// [test/cases/ttttGenericArgumentParamsUntypedWithoutContext.ts] ////
+
+=== model.d.ts ===
+export interface ModelActions {
+    [key: string]: FunctionWithFlag;
+>key : string
+}
+export type Instance<T> = T extends { Type: infer I } ? I : T;
+>Instance : Instance<T>
+>Type : I
+
+export interface IModelType<PROPS, OTHERS> {
+    Type: PROPS & OTHERS;
+>Type : PROPS & OTHERS
+
+    actions<A extends ModelActions>(fn: (self: Instance<this>) => A): IModelType<PROPS, OTHERS & A>;
+>actions : <A extends ModelActions>(fn: (self: Instance<this>) => A) => IModelType<PROPS, OTHERS & A>
+>fn : (self: Instance<this>) => A
+>self : Instance<this>
+}
+export declare function model(name: string): IModelType<{}, {}>;
+>model : (name: string) => IModelType<{}, {}>
+>name : string
+
+export declare const types: { model: typeof model };
+>types : { model: typeof model; }
+>model : (name: string) => IModelType<{}, {}>
+>model : (name: string) => IModelType<{}, {}>
+
+=== transaction.ts ===
+import { types } from "./model";
+>types : { model: typeof import("./model").model; }
+
+export const TransactionModel = types
+>TransactionModel : import("./model").IModelType<{}, { updateField: <K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) => void; }>
+>types  .model("Transaction")  .actions((self) => {    function updateField<K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) {}    return { updateField };  }) : import("./model").IModelType<{}, { updateField: <K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) => void; }>
+>types  .model("Transaction")  .actions : <A extends import("./model").ModelActions>(fn: (self: {}) => A) => import("./model").IModelType<{}, {} & A>
+>types  .model("Transaction") : import("./model").IModelType<{}, {}>
+>types  .model : (name: string) => import("./model").IModelType<{}, {}>
+>types : { model: typeof import("./model").model; }
+
+  .model("Transaction")
+>model : (name: string) => import("./model").IModelType<{}, {}>
+>"Transaction" : "Transaction"
+
+  .actions((self) => {
+>actions : <A extends import("./model").ModelActions>(fn: (self: {}) => A) => import("./model").IModelType<{}, {} & A>
+>(self) => {    function updateField<K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) {}    return { updateField };  } : (self: {}) => { updateField: <K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) => void; }
+>self : {}
+
+    function updateField<K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) {}
+>updateField : <K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) => void
+>value : TransactionSnapshotIn[K]
+
+    return { updateField };
+>{ updateField } : { updateField: <K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) => void; }
+>updateField : <K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) => void
+
+  });
+export interface TransactionSnapshotIn extends SnapshotIn<typeof TransactionModel> {}
+>TransactionModel : import("./model").IModelType<{}, { updateField: <K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) => void; }>
+

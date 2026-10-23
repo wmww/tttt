@@ -1,0 +1,29 @@
+model.d.ts(2,20): error TS2304: Cannot find name 'FunctionWithFlag'.
+transaction.ts(8,48): error TS2304: Cannot find name 'SnapshotIn'.
+
+
+==== model.d.ts (1 errors) ====
+    export interface ModelActions {
+        [key: string]: FunctionWithFlag;
+                       ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'FunctionWithFlag'.
+    }
+    export type Instance<T> = T extends { Type: infer I } ? I : T;
+    export interface IModelType<PROPS, OTHERS> {
+        Type: PROPS & OTHERS;
+        actions<A extends ModelActions>(fn: (self: Instance<this>) => A): IModelType<PROPS, OTHERS & A>;
+    }
+    export declare function model(name: string): IModelType<{}, {}>;
+    export declare const types: { model: typeof model };
+==== transaction.ts (1 errors) ====
+    import { types } from "./model";
+    export const TransactionModel = types
+      .model("Transaction")
+      .actions((self) => {
+        function updateField<K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) {}
+        return { updateField };
+      });
+    export interface TransactionSnapshotIn extends SnapshotIn<typeof TransactionModel> {}
+                                                   ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SnapshotIn'.
+    

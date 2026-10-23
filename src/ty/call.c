@@ -979,10 +979,14 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
     for (u32 construct = 0; construct < 2; construct++) {
         Signature const* sig = ty_single_signature(me, arg_type, construct, true);
         if (!sig) continue;
-        SigResolved const* sig_rs = signature_resolve(me, sig);
-        if (!sig_rs->type_params.len) return nullptr;
+        // (The contextual signature first: without one the argument's signature isn't resolved, its parameters aren't
+        // typed. tsc reads only the declared type parameters of the argument's (signature.typeParameters); typing a
+        // parameter here can enter a cycle tsc never sees: kebo's mobx-state-tree action returning `{ updateField }`
+        // whose `value: Snapshot[K]` reaches the model's own type through Snapshot's base)
         Signature const* wanted = ty_single_signature_non_nullable(me, param_type, construct, false);
         if (!wanted) return nullptr;
+        SigResolved const* sig_rs = signature_resolve(me, sig);
+        if (!sig_rs->type_params.len) return nullptr;
         SigResolved const* wanted_res = signature_resolve(me, wanted);
         if (wanted_res->type_params.len) return nullptr;
         *contextual = wanted;

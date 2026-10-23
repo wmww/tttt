@@ -1,0 +1,85 @@
+//// [test/cases/ttttGenericArgumentParamsUntypedWithoutContext.ts] ////
+
+=== model.d.ts ===
+export interface ModelActions {
+>ModelActions : Symbol(ModelActions, Decl(model.d.ts, 0, 0))
+
+    [key: string]: FunctionWithFlag;
+>key : Symbol(key, Decl(model.d.ts, 1, 5))
+>FunctionWithFlag : Symbol(FunctionWithFlag)
+}
+export type Instance<T> = T extends { Type: infer I } ? I : T;
+>Instance : Symbol(Instance, Decl(model.d.ts, 2, 1))
+>T : Symbol(T, Decl(model.d.ts, 3, 21))
+>T : Symbol(T, Decl(model.d.ts, 3, 21))
+>Type : Symbol(Type, Decl(model.d.ts, 3, 37))
+>I : Symbol(I, Decl(model.d.ts, 3, 49))
+>I : Symbol(I, Decl(model.d.ts, 3, 49))
+>T : Symbol(T, Decl(model.d.ts, 3, 21))
+
+export interface IModelType<PROPS, OTHERS> {
+>IModelType : Symbol(IModelType, Decl(model.d.ts, 3, 62))
+>PROPS : Symbol(PROPS, Decl(model.d.ts, 4, 28))
+>OTHERS : Symbol(OTHERS, Decl(model.d.ts, 4, 34))
+
+    Type: PROPS & OTHERS;
+>Type : Symbol(IModelType.Type, Decl(model.d.ts, 4, 44))
+>PROPS : Symbol(PROPS, Decl(model.d.ts, 4, 28))
+>OTHERS : Symbol(OTHERS, Decl(model.d.ts, 4, 34))
+
+    actions<A extends ModelActions>(fn: (self: Instance<this>) => A): IModelType<PROPS, OTHERS & A>;
+>actions : Symbol(IModelType.actions, Decl(model.d.ts, 5, 25))
+>A : Symbol(A, Decl(model.d.ts, 6, 12))
+>ModelActions : Symbol(ModelActions, Decl(model.d.ts, 0, 0))
+>fn : Symbol(fn, Decl(model.d.ts, 6, 36))
+>self : Symbol(self, Decl(model.d.ts, 6, 41))
+>Instance : Symbol(Instance, Decl(model.d.ts, 2, 1))
+>A : Symbol(A, Decl(model.d.ts, 6, 12))
+>IModelType : Symbol(IModelType, Decl(model.d.ts, 3, 62))
+>PROPS : Symbol(PROPS, Decl(model.d.ts, 4, 28))
+>OTHERS : Symbol(OTHERS, Decl(model.d.ts, 4, 34))
+>A : Symbol(A, Decl(model.d.ts, 6, 12))
+}
+export declare function model(name: string): IModelType<{}, {}>;
+>model : Symbol(model, Decl(model.d.ts, 7, 1))
+>name : Symbol(name, Decl(model.d.ts, 8, 30))
+>IModelType : Symbol(IModelType, Decl(model.d.ts, 3, 62))
+
+export declare const types: { model: typeof model };
+>types : Symbol(types, Decl(model.d.ts, 9, 20))
+>model : Symbol(model, Decl(model.d.ts, 9, 29))
+>model : Symbol(model, Decl(model.d.ts, 7, 1))
+
+=== transaction.ts ===
+import { types } from "./model";
+>types : Symbol(types, Decl(transaction.ts, 0, 8))
+
+export const TransactionModel = types
+>TransactionModel : Symbol(TransactionModel, Decl(transaction.ts, 1, 12))
+>types  .model("Transaction")  .actions : Symbol(IModelType.actions, Decl(model.d.ts, 5, 25))
+>types  .model : Symbol(model, Decl(model.d.ts, 9, 29))
+>types : Symbol(types, Decl(transaction.ts, 0, 8))
+
+  .model("Transaction")
+>model : Symbol(model, Decl(model.d.ts, 9, 29))
+
+  .actions((self) => {
+>actions : Symbol(IModelType.actions, Decl(model.d.ts, 5, 25))
+>self : Symbol(self, Decl(transaction.ts, 3, 12))
+
+    function updateField<K extends keyof TransactionSnapshotIn>(value: TransactionSnapshotIn[K]) {}
+>updateField : Symbol(updateField, Decl(transaction.ts, 3, 22))
+>K : Symbol(K, Decl(transaction.ts, 4, 25))
+>TransactionSnapshotIn : Symbol(TransactionSnapshotIn, Decl(transaction.ts, 6, 5))
+>value : Symbol(value, Decl(transaction.ts, 4, 64))
+>TransactionSnapshotIn : Symbol(TransactionSnapshotIn, Decl(transaction.ts, 6, 5))
+>K : Symbol(K, Decl(transaction.ts, 4, 25))
+
+    return { updateField };
+>updateField : Symbol(updateField, Decl(transaction.ts, 5, 12))
+
+  });
+export interface TransactionSnapshotIn extends SnapshotIn<typeof TransactionModel> {}
+>TransactionSnapshotIn : Symbol(TransactionSnapshotIn, Decl(transaction.ts, 6, 5))
+>TransactionModel : Symbol(TransactionModel, Decl(transaction.ts, 1, 12))
+
