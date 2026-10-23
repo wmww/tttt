@@ -1,0 +1,49 @@
+//// [test/cases/ttttSpreadIntersectionAfterGeneric.ts] ////
+
+=== ttttSpreadIntersectionAfterGeneric.ts ===
+// A non-generic intersection spread after a generic object is intersected as it is (tsc's getSpreadType:
+// getIntersectionType([left, right]) once left is generic; an intersection is no object type the left's last member
+// merges with): unovis's `{ ...preservedProps, ...useAttrs() }` is `T & Data & AllowedAttrs`
+type Data = Record<string, unknown>;
+>Data : Data
+
+interface Allowed { class?: string }
+>class : string | undefined
+
+type Attrs = Data & Allowed;
+>Attrs : Attrs
+
+declare const attrs: Attrs;
+>attrs : Attrs
+
+export function f<T extends Record<string, any>>(props: T) {
+>f : <T extends Record<string, any>>(props: T) => T & Data & Allowed
+>props : T
+
+    return { ...props, ...attrs };
+>{ ...props, ...attrs } : T & Data & Allowed
+>props : T
+>attrs : Attrs
+}
+export function g<T extends Record<string, any>>(props: T) {
+>g : <T extends Record<string, any>>(props: T) => T & Data & { class?: string; x: number; }
+>props : T
+
+    return { ...props, ...attrs, x: 1 };
+>{ ...props, ...attrs, x: 1 } : T & Data & { class?: string; x: number; }
+>props : T
+>attrs : Attrs
+>x : number
+>1 : 1
+}
+export function h<T extends Record<string, any>>(props: T) {
+>h : <T extends Record<string, any>>(props: T) => T & Data & Allowed
+>props : T
+
+    return { ...props, ...attrs, ...attrs };
+>{ ...props, ...attrs, ...attrs } : T & Data & Allowed
+>props : T
+>attrs : Attrs
+>attrs : Attrs
+}
+

@@ -3940,6 +3940,14 @@ static bool spread_alt_type(Checker* me, SpreadAlt* alt, Ty const* member, bool 
     if (!partial && spreads_into_nothing(me, member) && !(member->flags & TYF_OBJECT)) return true;
     // An object type spread right after a generic one is intersected as it is, `T & Record<string, any>` (tsc's
     // getSpreadType: getIntersectionType([left, right]) once left is generic); what is spread after it merges with it
+    // (An intersection too, `T & Data & AllowedAttrs`, getIntersectionType flattening it, after anything generic: it is
+    // no object type a last non-generic member of the left side could merge with, isNonGenericObjectType)
+    bool left_generic = false;
+    for (u32 i = 0; i < alt->part_count && !left_generic; i++) left_generic = alt->parts[i].generic != nullptr;
+    if (!partial && left_generic && member->kind == TY_INTERSECTION) {
+        spread_alt_push(alt, (SpreadPart){ .generic = member });
+        return true;
+    }
     if (!partial && alt->part_count && alt->parts[alt->part_count - 1].generic && (member->flags & TYF_OBJECT) &&
         alt->parts[alt->part_count - 1].generic->kind != TY_INTERSECTION &&
         ty_is_generic_object(me, alt->parts[alt->part_count - 1].generic)

@@ -1,0 +1,59 @@
+//// [test/cases/ttttSpreadIntersectionAfterGeneric.ts] ////
+
+=== ttttSpreadIntersectionAfterGeneric.ts ===
+// A non-generic intersection spread after a generic object is intersected as it is (tsc's getSpreadType:
+// getIntersectionType([left, right]) once left is generic; an intersection is no object type the left's last member
+// merges with): unovis's `{ ...preservedProps, ...useAttrs() }` is `T & Data & AllowedAttrs`
+type Data = Record<string, unknown>;
+>Data : Symbol(Data, Decl(ttttSpreadIntersectionAfterGeneric.ts, 0, 0))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+interface Allowed { class?: string }
+>Allowed : Symbol(Allowed, Decl(ttttSpreadIntersectionAfterGeneric.ts, 3, 36))
+>class : Symbol(Allowed.class, Decl(ttttSpreadIntersectionAfterGeneric.ts, 4, 19))
+
+type Attrs = Data & Allowed;
+>Attrs : Symbol(Attrs, Decl(ttttSpreadIntersectionAfterGeneric.ts, 4, 36))
+>Data : Symbol(Data, Decl(ttttSpreadIntersectionAfterGeneric.ts, 0, 0))
+>Allowed : Symbol(Allowed, Decl(ttttSpreadIntersectionAfterGeneric.ts, 3, 36))
+
+declare const attrs: Attrs;
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionAfterGeneric.ts, 6, 13))
+>Attrs : Symbol(Attrs, Decl(ttttSpreadIntersectionAfterGeneric.ts, 4, 36))
+
+export function f<T extends Record<string, any>>(props: T) {
+>f : Symbol(f, Decl(ttttSpreadIntersectionAfterGeneric.ts, 6, 27))
+>T : Symbol(T, Decl(ttttSpreadIntersectionAfterGeneric.ts, 7, 18))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>props : Symbol(props, Decl(ttttSpreadIntersectionAfterGeneric.ts, 7, 49))
+>T : Symbol(T, Decl(ttttSpreadIntersectionAfterGeneric.ts, 7, 18))
+
+    return { ...props, ...attrs };
+>props : Symbol(props, Decl(ttttSpreadIntersectionAfterGeneric.ts, 7, 49))
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionAfterGeneric.ts, 6, 13))
+}
+export function g<T extends Record<string, any>>(props: T) {
+>g : Symbol(g, Decl(ttttSpreadIntersectionAfterGeneric.ts, 9, 1))
+>T : Symbol(T, Decl(ttttSpreadIntersectionAfterGeneric.ts, 10, 18))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>props : Symbol(props, Decl(ttttSpreadIntersectionAfterGeneric.ts, 10, 49))
+>T : Symbol(T, Decl(ttttSpreadIntersectionAfterGeneric.ts, 10, 18))
+
+    return { ...props, ...attrs, x: 1 };
+>props : Symbol(props, Decl(ttttSpreadIntersectionAfterGeneric.ts, 10, 49))
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionAfterGeneric.ts, 6, 13))
+>x : Symbol(x, Decl(ttttSpreadIntersectionAfterGeneric.ts, 11, 32))
+}
+export function h<T extends Record<string, any>>(props: T) {
+>h : Symbol(h, Decl(ttttSpreadIntersectionAfterGeneric.ts, 12, 1))
+>T : Symbol(T, Decl(ttttSpreadIntersectionAfterGeneric.ts, 13, 18))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>props : Symbol(props, Decl(ttttSpreadIntersectionAfterGeneric.ts, 13, 49))
+>T : Symbol(T, Decl(ttttSpreadIntersectionAfterGeneric.ts, 13, 18))
+
+    return { ...props, ...attrs, ...attrs };
+>props : Symbol(props, Decl(ttttSpreadIntersectionAfterGeneric.ts, 13, 49))
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionAfterGeneric.ts, 6, 13))
+>attrs : Symbol(attrs, Decl(ttttSpreadIntersectionAfterGeneric.ts, 6, 13))
+}
+

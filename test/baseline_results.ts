@@ -2295,6 +2295,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadIntersectionAfterGeneric': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttSpreadIntersectionIndexSignatures': {
         errors: true,
         symbols: true,
