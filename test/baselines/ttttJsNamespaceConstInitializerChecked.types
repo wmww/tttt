@@ -1,0 +1,40 @@
+//// [test/cases/ttttJsNamespaceConstInitializerChecked.ts] ////
+
+=== a.js ===
+// tsgo 7.1's checkVariableLikeDeclaration checks every initializer against the declared type, an empty object
+// literal of a variable with exports (a JSDoc namespace member, expandos) included: tsc 5's isJSObjectLiteralInitializer
+// exemption is gone
+const t2 = /** @type {never} */ (1);
+>t2 : never
+>(1) : never
+>1 : 1
+
+const t3 = {};
+>t3 : {}
+>{} : {}
+
+/** @typedef {boolean} t3.input */
+/** @type {t3.input} */
+const z = 1;
+>z : boolean
+>1 : 1
+
+/** @type {{ a: number }} */
+const x = {};
+>x : { a: number; }
+>{} : {}
+
+x.a = 1;
+>x.a = 1 : 1
+>x.a : number
+>x : { a: number; }
+>a : number
+>1 : 1
+
+/** @type {{ b: number }} */
+const y = {};
+>y : { b: number; }
+>{} : {}
+
+/** @typedef {string} y.inner */
+

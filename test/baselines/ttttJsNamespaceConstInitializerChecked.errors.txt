@@ -1,0 +1,31 @@
+a.js(8,7): error TS2322: Type 'number' is not assignable to type 'boolean'.
+a.js(11,7): error TS2741: Property 'a' is missing in type '{}' but required in type '{ a: number; }'.
+a.js(15,7): error TS2741: Property 'b' is missing in type '{}' but required in type '{ b: number; }'.
+
+
+==== a.js (3 errors) ====
+    // tsgo 7.1's checkVariableLikeDeclaration checks every initializer against the declared type, an empty object
+    // literal of a variable with exports (a JSDoc namespace member, expandos) included: tsc 5's isJSObjectLiteralInitializer
+    // exemption is gone
+    const t2 = /** @type {never} */ (1);
+    const t3 = {};
+    /** @typedef {boolean} t3.input */
+    /** @type {t3.input} */
+    const z = 1;
+          ~
+!!! error TS2322: Type 'number' is not assignable to type 'boolean'.
+    
+    /** @type {{ a: number }} */
+    const x = {};
+          ~
+!!! error TS2741: Property 'a' is missing in type '{}' but required in type '{ a: number; }'.
+!!! related TS2728 a.js:10:14: 'a' is declared here.
+    x.a = 1;
+    
+    /** @type {{ b: number }} */
+    const y = {};
+          ~
+!!! error TS2741: Property 'b' is missing in type '{}' but required in type '{ b: number; }'.
+!!! related TS2728 a.js:14:14: 'b' is declared here.
+    /** @typedef {string} y.inner */
+    

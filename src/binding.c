@@ -486,14 +486,6 @@ void binding_typecheck_bodiless(Binding* me, ErrorCtx* errs) {
     binding_typecheck_at(me, nullptr, span_null, true, false, true, errs);
 }
 
-// A JavaScript `/** @type {T} */ const x = {}` whose members are expandos (`x.a = 1`) isn't checked against T (tsc's
-// checkVariableLikeDeclaration: isJSObjectLiteralInitializer)
-static bool is_js_expando_object_initializer(Binding const* me, Expr const* initializer) {
-    if (!initializer || initializer->tag != EXPR_OBJECT || vec_object_expr_item_size(&initializer->object)) return false;
-    if (my tag != BINDING_IDENTIFIER || !my symbol || !my symbol->exports || !my symbol->exports->count) return false;
-    return span_source(my content_span) && span_source(my content_span)->is_js;
-}
-
 // `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode).
 // `assigned`: whether the root is assigned anything (not a variable or parameter without initializer)
 // `type_checked`: the annotation was walked already
@@ -526,9 +518,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
     }
     // (A catch variable's annotation isn't assigned anything: TS1196 is its only check. Nor is a variable's or
     // parameter's without initializer: its any isn't assignable to `never`)
-    if (my has_explicit_type && (my parent || (my source && assigned)) && !(strict_empty && initializer) &&
-        !is_js_expando_object_initializer(me, initializer)
-    ) {
+    if (my has_explicit_type && (my parent || (my source && assigned)) && !(strict_empty && initializer)) {
         // (A parameter pattern's initializer as it is, not padded with the pattern's defaults: tsc's
         // checkVariableLikeDeclaration checks checkExpressionCached(initializer))
         bool padded = !my parent && initializer && my tag != BINDING_IDENTIFIER && binding_is_parameter(me);
