@@ -5171,7 +5171,7 @@ static bool is_single_generic_tuple(Checker* me, Ty const* ty) {
 // `{ kind: A | B, x: X }` to `{ kind: A, x: X } | { kind: B, x: X }`. The source may be an intersection (`{ x: X } &
 // { kind: A | B }`, as `Omit<T, K> & N` is)
 static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
-    enum { MAX_COMBINATIONS = 25, MAX_DISCRIMINANTS = 8 };
+    enum { MAX_COMBINATIONS = 25 };
     Ty const* apparent = apparent_type(me, source);
     if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return TERNARY_FALSE;
     // The object members of the target
@@ -5186,8 +5186,16 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
 
     // The source's properties: an intersection's are those of its members, each name once (tsc's getPropertiesOfType)
     TyList parts = apparent->kind == TY_INTERSECTION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
-    Atom const* discriminants[MAX_DISCRIMINANTS];
-    TyList values[MAX_DISCRIMINANTS];
+    // (Every source property the target discriminates by, however many: tsc's findDiscriminantProperties has no cap,
+    // only the combinations do. openclaw's placement records have a dozen unit-typed properties next to their `state`)
+    u32 capacity = 0;
+    for (u32 p = 0; p < parts.len; p++) {
+        Ty const* part = apparent->kind == TY_INTERSECTION ? apparent_type(me, parts.data[p]) : apparent;
+        if (part->flags & TYF_OBJECT) capacity += ty_members(me, part)->prop_count;
+    }
+    if (!capacity) return TERNARY_FALSE;
+    Atom const** discriminants = arena_new_n(&my arena, Atom const*, capacity);
+    TyList* values = arena_new_n(&my arena, TyList, capacity);
     u32 count = 0;
     u32 combinations = 1;
     for (u32 p = 0; p < parts.len; p++) {
@@ -5199,7 +5207,6 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             bool seen = false;
             for (u32 d = 0; d < count && !seen; d++) seen = discriminants[d] == prop->name;
             if (seen || !ty_is_discriminant_property(me, object_target, prop->name)) continue;
-            if (count == MAX_DISCRIMINANTS) return TERNARY_FALSE;
             FoundProp found = apparent->kind == TY_INTERSECTION ? find_prop(me, apparent, prop->name, 0) : (FoundProp){0};
             Ty const* type = apparent->kind == TY_INTERSECTION ? found.type : prop_type(me, prop);
             // (Optional ones with their undefined: tsc's getNonMissingTypeOfSymbol)

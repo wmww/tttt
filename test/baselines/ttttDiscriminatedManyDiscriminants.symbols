@@ -1,0 +1,82 @@
+//// [test/cases/ttttDiscriminatedManyDiscriminants.ts] ////
+
+=== ttttDiscriminatedManyDiscriminants.ts ===
+// An object whose discriminant is a union relates to a discriminated union by combinations (tsc's
+// typeRelatedToDiscriminatedType), however many of its properties the target discriminates by: here ten null in one
+// member besides `state` (tsc's findDiscriminantProperties has no cap; only the combinations, 25, have one). openclaw's
+// placement-projector.test.ts `project({ ...placement, state })` with `state: "draining" | "reconciling" | "reclaimed"`
+type Unset = { a: null; b: null; c: null; d: null; e: null; f: null; g: null; h: null; i: null; j: null };
+>Unset : Symbol(Unset, Decl(ttttDiscriminatedManyDiscriminants.ts, 0, 0))
+>a : Symbol(a, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 14))
+>b : Symbol(b, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 23))
+>c : Symbol(c, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 32))
+>d : Symbol(d, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 41))
+>e : Symbol(e, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 50))
+>f : Symbol(f, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 59))
+>g : Symbol(g, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 68))
+>h : Symbol(h, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 77))
+>i : Symbol(i, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 86))
+>j : Symbol(j, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 95))
+
+type Filled = { a: string; b: number; c: string; d: string; e: string; f: number; g: string; h: number; i: string; j: number | null };
+>Filled : Symbol(Filled, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 106))
+>a : Symbol(a, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 15))
+>b : Symbol(b, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 26))
+>c : Symbol(c, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 37))
+>d : Symbol(d, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 48))
+>e : Symbol(e, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 59))
+>f : Symbol(f, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 70))
+>g : Symbol(g, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 81))
+>h : Symbol(h, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 92))
+>i : Symbol(i, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 103))
+>j : Symbol(j, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 114))
+
+type Rec =
+>Rec : Symbol(Rec, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 134))
+
+    | (Unset & { state: "local" })
+>Unset : Symbol(Unset, Decl(ttttDiscriminatedManyDiscriminants.ts, 0, 0))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 7, 16))
+
+    | (Filled & { state: "active" })
+>Filled : Symbol(Filled, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 106))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 8, 17))
+
+    | (Filled & { state: "draining" })
+>Filled : Symbol(Filled, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 106))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 9, 17))
+
+    | (Filled & { state: "reconciling" });
+>Filled : Symbol(Filled, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 106))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 10, 17))
+
+declare function use(r: Rec): void;
+>use : Symbol(use, Decl(ttttDiscriminatedManyDiscriminants.ts, 10, 42))
+>r : Symbol(r, Decl(ttttDiscriminatedManyDiscriminants.ts, 11, 21))
+>Rec : Symbol(Rec, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 134))
+
+declare const set: Filled;
+>set : Symbol(set, Decl(ttttDiscriminatedManyDiscriminants.ts, 12, 13))
+>Filled : Symbol(Filled, Decl(ttttDiscriminatedManyDiscriminants.ts, 4, 106))
+
+declare const state: "draining" | "reconciling";
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 13, 13))
+
+use({ ...set, state });
+>use : Symbol(use, Decl(ttttDiscriminatedManyDiscriminants.ts, 10, 42))
+>set : Symbol(set, Decl(ttttDiscriminatedManyDiscriminants.ts, 12, 13))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 14, 13))
+
+const ok: Rec = { ...set, state };
+>ok : Symbol(ok, Decl(ttttDiscriminatedManyDiscriminants.ts, 15, 5))
+>Rec : Symbol(Rec, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 134))
+>set : Symbol(set, Decl(ttttDiscriminatedManyDiscriminants.ts, 12, 13))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 15, 25))
+
+const bad: Rec = { ...set, state: state as "draining" | "local" };
+>bad : Symbol(bad, Decl(ttttDiscriminatedManyDiscriminants.ts, 16, 5))
+>Rec : Symbol(Rec, Decl(ttttDiscriminatedManyDiscriminants.ts, 5, 134))
+>set : Symbol(set, Decl(ttttDiscriminatedManyDiscriminants.ts, 12, 13))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 16, 26))
+>state : Symbol(state, Decl(ttttDiscriminatedManyDiscriminants.ts, 13, 13))
+
