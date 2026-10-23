@@ -505,3 +505,62 @@ opentabs https://github.com/opentabs-dev/opentabs.git de9200b1231cae419d1a437e41
 #coop https://github.com/roostorg/coop.git e464f8d7d42e5b6e5cbb782a38caabfb8fd3f750
 # perf: no harness-mcp (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
 #harness-mcp https://github.com/harness/mcp-server.git 69394839f0d671d17d5a580874c941a84fe7ff1d
+# Refresh 7 (2026-10-23, cor9), the sixth rule: application monorepos on heavy generic libraries (the shape of the
+# human's private projects). `scripts/reposearch.py genericapp` on the topics monorepo, turborepo, effect, zod,
+# drizzle-orm, drizzle, kysely, hono, trpc, tanstack, tanstack-start, tanstack-router, t3-stack, saas, fullstack, bun,
+# solidjs, better-auth, self-hosted, starter-kit, nextjs, react, ai, open-source (3 per topic), then a second pass
+# preferring large trees (REPOSEARCH_MIN_TS): stars 50..5000, pushed since 2026-06-01, any root lockfile, the root and
+# workspace package.json files depending on at least two of effect, zod, drizzle-orm, kysely, hono, @trpc, @tanstack,
+# arktype, valibot, ts-pattern, @mikro-orm, typebox, an application (libraries, frameworks, component kits and
+# scaffolders dropped by hand), a strict tsconfig somewhere. Largest TypeScript trees first. Checked out at their
+# default branch's HEAD that day.
+# (2026-10-23: the installs were stopped for the security review, agents/notes/install_security.md; the rest
+# wait, commented out, for the sandboxed installer)
+openbot https://github.com/nightly-labs/openbot.git 5971236bebc14b7f65680c8d4eea9a366f74b9b1
+comp https://github.com/trycompai/comp.git f93f72f731c75e3f8b99fbfed718133987dba594
+thunderbolt https://github.com/thunderbird/thunderbolt.git 8c14648492a54b7dfa64c9335f283004655d34d9
+afilmory https://github.com/Afilmory/afilmory.git c392e065b03977fbe5fe256eb902121f0e4cdb30
+parabol https://github.com/ParabolInc/parabol.git 6176dd05c19e0d7268d55d2547874b607f532acc
+meridian https://github.com/rynfar/meridian.git 9d94a3542f2e31edace685118d56e6e293feb4bd
+# skyroc: install failed: its engines.pnpm wants >= 11, the lockfile's pnpm 10 was picked
+#skyroc https://github.com/Ohh-889/skyroc.git 10ddd27a650f5625ef09409deee112416d4ec2d6
+# andesine: install interrupted by the stop (node_modules present, no .tttt-installed marker)
+#andesine https://github.com/vriteio/andesine.git 042a2d83b6f056f4dcc665c61a0bc1a69474f015
+# job-ops: install interrupted by the stop (node_modules present, no .tttt-installed marker)
+#job-ops https://github.com/DaKheera47/job-ops.git aae59af365deab9a2a37347c385ab7adc79fced2
+# codflow: install interrupted by the stop (node_modules present, no .tttt-installed marker)
+#codflow https://github.com/bighadj22/codflow.git ed79aa9d9b12b3aa4c8128c7777fde9da12ed920
+# tianji: install interrupted by the stop (node_modules present, no .tttt-installed marker)
+#tianji https://github.com/msgbyte/tianji.git 532bcf1e451f576e86cd022ef167f71905118e89
+#dittofeed https://github.com/dittofeed/dittofeed.git 91277939a9afcee797ab2562025f6b02d823b00c  # pending (not fetched)
+#saas-boilerplate https://github.com/apptension/saas-boilerplate.git caa46d26e01f9cd2c29f0e67bb72ff073c755053  # pending (not fetched)
+#sharkord https://github.com/Sharkord/sharkord.git 773b629c8c3faac86e07f57ab15377eae7d1a71e  # pending (not fetched)
+#effectpatterns https://github.com/PaulJPhilp/EffectPatterns.git f3a0da2299717cf31d31313c5661cebd2446d5a3  # pending (not fetched)
+#deepcrawl https://github.com/lumpinif/deepcrawl.git 964de4b1fac95e28094c5e865047abf1ba00b876  # pending (not fetched)
+#inkstone https://github.com/shuaiplus/inkstone.git f59087f66e8c524c465eb7a7ec9ab7883057af02  # pending (not fetched)
+#blinkdisk https://github.com/blinkdisk/blinkdisk.git ddaafab429a31dfa936d29f948193156ac01a57e  # pending (not fetched)
+#telegram-search https://github.com/groupultra/telegram-search.git 93ade381d9020e8177660432482427bb18705161  # pending (not fetched)
+#ytmdesktop2 https://github.com/Venipa/ytmdesktop2.git ec7f52d9a69b5e6a65bef578898345fcd92d29eb  # pending (not fetched)
+#pagescms https://github.com/hunvreus/pagescms.git 6f4e860a35d934406580287e7042e5e111e207a1  # pending (not fetched)
+#rin https://github.com/openRin/Rin.git 308a542df6165bbf757fad111d7f8ab6296db771  # pending (not fetched)
+#eboto https://github.com/bricesuazo/eboto.git 305623698399f347d1d7db3724ab94a44d85ae43  # pending (not fetched)
+#split-pro https://github.com/oss-apps/split-pro.git 3583568319807e193fbe57085ea9560a2e872b93  # pending (not fetched)
+#drizzle-lab https://github.com/rphlmr/drizzle-lab.git 958b7bc5ad357acf8c827625b68a19113f54c9f9  # pending (not fetched)
+#kroma https://github.com/kromatv/kroma.git af53254804265e6c8ad5db3098e7dad655a18963  # pending (not fetched)
+#stump https://github.com/stumpapp/stump.git d0f51c8e6da74d584a2a4cda8d9db02337de73ca  # pending (not fetched)
+#deft https://github.com/Maneek21/Deft.git cdcc06d3844dda91cad9e16eca22c36ec0cc1447  # pending (not fetched)
+#daoyou https://github.com/ChurchTao/Daoyou.git 83a10d0b7108f0afa1ba9f1424ced331be10be0c  # pending (not fetched)
+#keeper-sh https://github.com/ridafkih/keeper.sh.git 8bef31fe4eed73f13186832ad807bf29a5973de0  # pending (not fetched)
+#decocms-studio https://github.com/decocms/studio.git 8ac55bf59bd291b207af844bd19a910f1120c946  # pending (not fetched)
+#ballerine https://github.com/ballerine-io/ballerine.git 8659a4be371b9137c6bb5369e21538b9a8d9de8c  # pending (not fetched)
+#ever-teams https://github.com/ever-co/ever-teams.git da2a25d502799eef566740a6b18ad579bf7e795e  # pending (not fetched)
+#lody https://github.com/LodyAI/Lody.git c92f71fe5c4bcc0c93beb20cff4d4004a32dff41  # pending (not fetched)
+#tabtin https://github.com/tabtin-ai/TabTin.git b84fb2b9810cd71df8350a0e52486c5327c2c929  # pending (not fetched)
+#epicenter https://github.com/EpicenterHQ/epicenter.git 7cc869b4a1295e2566b61e1a4d5967a89f413b9b  # pending (not fetched)
+#amical https://github.com/amicalhq/amical.git b98f79fb5e7f684b836d407d62878281ffc783eb  # pending (not fetched)
+#spool https://github.com/paperboytm/spool.git 4c94d68d9ba00b01053250393fd0eb2e1342f50d  # pending (not fetched)
+#x-minecraft-launcher https://github.com/Voxelum/x-minecraft-launcher.git b64e90f69bda9c4c049af27c63c488489784c72c  # pending (not fetched)
+#kody https://github.com/kody-hq/kody.git 90a310f1330f7c38d4528c4dee001abb176146b0  # pending (not fetched)
+#rat-stack https://github.com/joelhooks/rat-stack.git 87dea7125b103f0962ca7922cccf71e81e044bec  # pending (not fetched)
+#data-peek https://github.com/Rohithgilla12/data-peek.git a97a31be772294e9f7768aef8b9d9657a6759e5c  # pending (not fetched)
+#mprove https://github.com/mprove-io/mprove.git 82c51bdf9e20c1fed396aae2b6e373e36eec32c2  # pending (not fetched)
