@@ -1100,6 +1100,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExcessPropsNoInferIntersection': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExpandoAssignmentsUnion': {
         errors: true,
         symbols: true,
