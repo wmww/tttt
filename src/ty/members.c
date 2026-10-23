@@ -3762,6 +3762,14 @@ static Members const* resolve_instantiated_members(Checker* me, Ty const* target
     return instantiate_members(me, ty_members(me, target), mapper, applies_type_args, false);
 }
 
+bool ty_bases_in_flight(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    for (BasesFrame const* frame = my bases_frames; frame; frame = frame->outer) {
+        if (frame->ty == ty) return true;
+    }
+    return false;
+}
+
 // Members of a class or interface asked for while they are resolved: if it's while its bases are, they are circular
 static void members_reentered(Checker* me, Ty const* ty) {
     if (ty->kind == TY_REFERENCE) ty = ty->reference.target;

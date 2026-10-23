@@ -417,7 +417,13 @@ static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
         u32 nullish = strict ? 0 : TF_MAYBE_NULLISH;
         // (What every object type has or lacks, empty or a function or not, without resolving its members to tell)
         u32 const settled = TF_NOT_NULLISH | TF_TRUTHY | TF_IS_UNDEFINED_OR_NULL | TF_EQ_UNDEFINED | TF_EQ_NULL | TF_EQ_UNDEFINED_OR_NULL;
-        if (strict && !(mask & ~settled)) return (TF_NOT_NULLISH | TF_TRUTHY) & mask;
+        if (strict && !(mask & ~settled)) {
+            // (Except for a class or interface whose bases are being lowered: tsc's isFunctionObjectType resolves its
+            // members, which finds them circular, TS2310 for `interface Id extends Pick<typeof x, "a">` with
+            // `x = yd && 1`, yd an Id)
+            if (my bases_frames && ty_bases_in_flight(me, ty)) (void)ty_members(me, ty);
+            return (TF_NOT_NULLISH | TF_TRUTHY) & mask;
+        }
         if (is_empty_anonymous_object(me, ty)) {
             return strict ? TF_ALL & ~(TF_EQ_UNDEFINED | TF_EQ_NULL | TF_EQ_UNDEFINED_OR_NULL | TF_IS_UNDEFINED_OR_NULL) :
                 TF_ALL & ~TF_IS_UNDEFINED_OR_NULL;

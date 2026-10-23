@@ -2320,6 +2320,8 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name);
 // relate.c
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation);
 bool ty_relation_overflowed(Checker* me, Ty const* source, Ty const* target, TyRelation relation);
+// (members.c) Whether the bases of `ty` (a class or interface, or a reference to one) are being lowered now
+bool ty_bases_in_flight(Checker* me, Ty const* ty);
 // Why source isn't related to target, outermost line first. The first line is the natural head of the error: TS2322
 // "Type 'S' is not assignable to type 'T'." unless something more specific replaces it (TS2741 and friends)
 // The explaining (reporting) pass of a relation, which can find it holds after all: tsc's checkTypeRelatedTo then
