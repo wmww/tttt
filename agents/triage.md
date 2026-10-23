@@ -123,3 +123,9 @@ intersection's property symbol to bugs/type_core.md.
 - mcp-linker (source sweep refresh 5) makes 1.73x tsgo's types (139k against 81k; perfsweep at a5252a764, the new worst
   types ratio, lit tsserver-plugin's 1.40 next): unexamined (a missing cache or a runaway; `scripts/perfsweep.py -f
   mcp-linker`, then `TTTT_FILE_TIMES=1` for the file).
+- dtsdiff at the 7.1.0-beta cache (2026-10-23) lists b4run/packages/postgres-storage as "CRASH (no output)" in its
+  emit-mode sandbox run, while `tttt -p ... --noEmit` on it exits 2 with five TS2307 (`@b4run/sdk`,
+  `@b4run/permissions`: workspace packages without built declarations; the beta's `-b` sweep write-up in
+  bugs/sourcesweep_build.md mentions b4run too) and `dtsdiff.py --show` prints nothing for it. Find out what the
+  sandboxed emit run does there (exit code, stderr) and whether tttt should still write the project's declarations as
+  tsgo does (1503 projects emit; tsgo wrote this one).
