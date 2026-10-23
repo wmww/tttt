@@ -410,13 +410,29 @@ After the Event/TS5088/re-entry/explicit-type fixes, what is left in opencode di
 (`opencode`, about 60k lines of tsc output: React's and solid's JSX together) and in core/tsconfig.tests.json, whose
 references aren't built (TS6305 everywhere, so the core imports are any). Each has a cut-down here:
 - **The return type of a failed generic call** (-TS2322 at core/test/effect/layer-node/node-build.test.ts:49,
-  tsconfig.tests.json). `Node.makeGlobalNode({ service, layer: Layer.effect(Result, Effect.as(<any>, ...)), deps:
-  [<any>] })` fails its `layer: Implementation & CheckLayer<NoInfer<Implementation>>` check with Implementation =
-  Layer.Any in both checkers. tsgo then returns `Provider<never, ...>` (LayerOutput<Any>); tttt's overload-failure
-  re-inference (call.c, make_candidate with skip flags) gets `Provider<Result, ...>`, so the next node's deps check
-  doesn't fail. It reproduces with /tmp probes extending the tests config (an inline `Layer.effect(...)` argument and
-  an `any` dep are both needed). The self-contained mimic (n3-style const type params, an intersection with
-  NoInfer checks) doesn't reproduce yet. [open]
+  tsconfig.tests.json). Both checkers fail the argument check of `layer: Implementation &
+  CheckLayer<NoInfer<Implementation>>` with Implementation = Layer.Any, but they return different types afterwards.
+  tsgo returns `Provider<never, unknown, Tag<"global">>` (LayerOutput<Any>). tttt returns `Provider<Result, any, ...>`,
+  through the overload-failure re-inference in call.c (make_candidate with the skip flags), so the next node's
+  `deps: [a]` check doesn't fail. Probe (2026-10-23):
+  - A /tmp tsconfig extends packages/core/tsconfig.tests.json, with `rootDir: "/"`, `references` to core's
+    tsconfig.json, a node_modules symlink to core's, and a copy of packages/util/src/effect/layer-node.ts as ln.ts.
+  - zz.ts:
+    ```
+    const makeGlobalNode = tags({ location: ["global"], global: [] }).make("global")
+    class Result extends Context.Service<Result, { readonly value: string }>()("t") {}
+    declare const eff: Effect.Effect<{ readonly value: string }, any, any>
+    declare const dep: any
+    const r = makeGlobalNode({ service: Result, layer: Layer.effect(Result, eff), deps: [dep] })
+    ```
+    tsgo types r as Provider<never, unknown, ...>, tttt as Provider<Result, any, ...>.
+  - Each ingredient matters. With `deps: []` the deps check fails instead and both return Provider<Result>. With the
+    layer as a variable of type `Layer<Result, any, any>`, inference succeeds in both.
+  - A line-by-line reduction of ln.ts with the real effect types stalled at 245 lines. Self-contained mimics, even with
+    effect's overloaded `Layer.effect`, `Exclude<R, Scope>`, Identity/TagInput/DistributiveOmit/CheckDependencies and
+    const type parameters, infer the Layer and don't fail at all.
+  - So the inference that yields Layer.Any depends on something in effect's Layer or Context.Service types that hasn't
+    been isolated (Pipeable/Unify members, Context.Key variance), and the return difference comes after it. [open]
 - **JSX children elaboration under a generic target** (typewriter.tsx:52, root project). tsgo reports TS2746
   (several children for `(IntrinsicAttributes & DynamicProps<"p" | T, ...>)["children"]`); tttt took the elementwise
   path (is_iterable_like of the deferred indexed access) and reported TS2322. In the root project, JSX is React's while
