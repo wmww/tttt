@@ -1060,8 +1060,18 @@ static bool hop_private_name(Parser* parent) {
     return true;
 }
 
+static bool hop_private_name(Parser* parent);
+
 static inline bool expect_identifier(Parser* parent, Span* ret) {
     if (parse_identifier(parent, ret)) {
+        return true;
+    } else if (parent->pos[0] == '#' && parent->pos[1] != '!' && identifier_char_size(parent->pos + 1, true)) {
+        // A private name where an identifier must be: tsc's createIdentifierWithDiagnostic reports TS18016 and takes it
+        // as the identifier (`import x = #a.b`)
+        Anchor a = anchor(parent);
+        hop_private_name(parent);
+        *ret = span_from(a);
+        parse_error(parent, *ret, 18016, "Private identifiers are not allowed outside class bodies.");
         return true;
     } else {
         parse_error(parent, span_from_token_or_eof(parent), 1003, "Identifier expected.");
@@ -3448,8 +3458,19 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     while (hop_char(&p, '.')) {
         hop_whitespace(&p);
         Span name;
-        if (!parse_identifier_or_keyword(&p, &name)) {
-            expect_identifier(&p, &name);
+        Anchor name_a = anchor(&p);
+        if (hop_private_name(&p)) {
+            // (A private name is an identifier name: tsc's parseIdentifierName, then TS2694 for it)
+            name = span_from(name_a);
+        } else if (!parse_identifier_or_keyword(&p, &name)) {
+            if (span_valid(identifier.name)) {
+                expect_identifier(&p, &name);
+            } else {
+                // The qualifier's first name is a type reference's (tsc's parseEntityNameOfTypeReference): missing, it
+                // is TS1110, the later ones parseRightSideOfDot's TS1003
+                parse_error(&p, span_from_token_or_eof(&p), 1110, "Type expected.");
+                name = span_from_pos(&p);
+            }
         }
         if (span_valid(identifier.name)) ast_spans_push(&rare.namespaces, identifier.name);
         identifier.name = name;
@@ -3747,7 +3768,15 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             expr.inner_span = span_from(expr_a);
             expr_clear_outer_span(&expr);
             while (parse_expr_right_side(&p, expr_ctx, &expr)) {}
-        } else if (!tok_is_word(t) || *t.start == '#' || !parse_expr(&p, expr_ctx, &expr)) {
+        } else if (tok_is_word(t) && *t.start == '#' && t.start[1] != '!') {
+            // A private name is an identifier name to tsc's scanner (tokenIsIdentifierOrKeyword): parseEntityName takes
+            // it, and the checker can't find it (`typeof #a`, TS2304)
+            hop_private_name(&p);
+            expr = expr_identifier(span_from(expr_a), (IdentifierExpr){0});
+            expr.inner_span = span_from(expr_a);
+            expr_clear_outer_span(&expr);
+            while (parse_expr_right_side(&p, expr_ctx, &expr)) {}
+        } else if (!tok_is_word(t) || !parse_expr(&p, expr_ctx, &expr)) {
             parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
             expr = expr_implicit_any(span_from_pos(&p));
         }
@@ -12430,7 +12459,13 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
             // (tsc's parseEntityName: the first name isn't a reserved word, the others are identifier names)
             bool first = vec_span_is_empty(&statement->main.alias_->path);
             bool reserved = false;
-            if (first ? (!parse_identifier(&p, &part) || ((reserved = is_reserved_word(span_sv(part))) && (p.pos = span_start_ptr(part), true)))
+            Anchor part_a = anchor(&p);
+            if (p.pos[0] == '#' && p.pos[1] != '!' && identifier_char_size(p.pos + 1, true)) {
+                // A private name: an identifier name to tsc's scanner, the first one's parseIdentifier says TS18016
+                hop_private_name(&p);
+                part = span_from(part_a);
+                if (first) parse_error(&p, part, 18016, "Private identifiers are not allowed outside class bodies.");
+            } else if (first ? (!parse_identifier(&p, &part) || ((reserved = is_reserved_word(span_sv(part))) && (p.pos = span_start_ptr(part), true)))
                 : !parse_identifier_or_keyword(&p, &part)
             ) {
                 if (reserved) {
@@ -12679,7 +12714,11 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
                 // `export * as default from`, `export * as "x" from`
-                if (!parse_module_export_name(&p, &statement.main.decl_name)) {
+                // (`export * as #a from`: a private name is an identifier name, tsc's parseModuleExportName takes it)
+                Anchor name_a = anchor(&p);
+                if (hop_private_name(&p)) {
+                    statement.main.decl_name = span_from(name_a);
+                } else if (!parse_module_export_name(&p, &statement.main.decl_name)) {
                     expect_identifier(&p, &statement.main.decl_name);
                 }
             } else {
