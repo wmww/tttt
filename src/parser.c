@@ -12467,17 +12467,17 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
         statement->main.alias_ = ast_new(PortItemAlias, {0});
         while (true) {
             Span part;
-            // (tsc's parseEntityName: the first name isn't a reserved word, the others are identifier names)
-            bool first = vec_span_is_empty(&statement->main.alias_->path);
+            // (tsc's parseModuleReference: parseEntityName without reserved words, after a dot too: `Y.if`, `this.A`)
             bool reserved = false;
+            bool first = vec_span_is_empty(&statement->main.alias_->path);
             Anchor part_a = anchor(&p);
             if (p.pos[0] == '#' && p.pos[1] != '!' && identifier_char_size(p.pos + 1, true)) {
                 // A private name: an identifier name to tsc's scanner, the first one's parseIdentifier says TS18016
                 hop_private_name(&p);
                 part = span_from(part_a);
                 if (first) parse_error(&p, part, 18016, "Private identifiers are not allowed outside class bodies.");
-            } else if (first ? (!parse_identifier(&p, &part) || ((reserved = is_reserved_word(span_sv(part))) && (p.pos = span_start_ptr(part), true)))
-                : !parse_identifier_or_keyword(&p, &part)
+            } else if (!parse_identifier_or_keyword(&p, &part) ||
+                ((reserved = is_reserved_word(span_sv(part))) && (p.pos = span_start_ptr(part), true))
             ) {
                 if (reserved) {
                     // A missing name, the word is left for what follows

@@ -1,0 +1,22 @@
+ttttImportEqualsReservedName.ts(5,14): error TS1359: Identifier expected. 'if' is a reserved word that cannot be used here.
+ttttImportEqualsReservedName.ts(5,16): error TS1005: '(' expected.
+ttttImportEqualsReservedName.ts(5,16): error TS1313: The body of an 'if' statement cannot be the empty statement.
+ttttImportEqualsReservedName.ts(6,12): error TS1359: Identifier expected. 'this' is a reserved word that cannot be used here.
+
+
+==== ttttImportEqualsReservedName.ts (4 errors) ====
+    // An import-equals module reference is an entity name without reserved words, after a dot too (tsc's
+    // parseModuleReference: parseEntityName(allowReservedWords false), parseRightSideOfDot then parseIdentifier): the word
+    // is TS1359 and left for what follows. Babel's regression/keyword-qualified-type-disallowed fixture
+    declare namespace Y { const a: number }
+    import X = Y.if;
+                 ~~
+!!! error TS1359: Identifier expected. 'if' is a reserved word that cannot be used here.
+                   ~
+!!! error TS1005: '(' expected.
+                   ~
+!!! error TS1313: The body of an 'if' statement cannot be the empty statement.
+    import A = this.A;
+               ~~~~
+!!! error TS1359: Identifier expected. 'this' is a reserved word that cannot be used here.
+    

@@ -1,0 +1,20 @@
+//// [test/cases/ttttImportEqualsReservedName.ts] ////
+
+=== ttttImportEqualsReservedName.ts ===
+// An import-equals module reference is an entity name without reserved words, after a dot too (tsc's
+// parseModuleReference: parseEntityName(allowReservedWords false), parseRightSideOfDot then parseIdentifier): the word
+// is TS1359 and left for what follows. Babel's regression/keyword-qualified-type-disallowed fixture
+declare namespace Y { const a: number }
+>Y : Symbol(Y, Decl(ttttImportEqualsReservedName.ts, 0, 0))
+>a : Symbol(a, Decl(ttttImportEqualsReservedName.ts, 3, 27))
+
+import X = Y.if;
+>X : Symbol(X, Decl(ttttImportEqualsReservedName.ts, 3, 39))
+>Y : Symbol(Y, Decl(ttttImportEqualsReservedName.ts, 0, 0))
+
+import A = this.A;
+>A : Symbol(A, Decl(ttttImportEqualsReservedName.ts, 4, 16))
+>this.A : Symbol(A, Decl(ttttImportEqualsReservedName.ts, 4, 16))
+>this : Symbol(globalThis)
+>A : Symbol(A, Decl(ttttImportEqualsReservedName.ts, 4, 16))
+
