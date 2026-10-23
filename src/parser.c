@@ -561,6 +561,7 @@ static bool parse_function_args(
 );
 static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
+static Span span_from_token_or_eof(Parser* parent);
 static const char* token_full_start(Parser* me);
 static bool parse_template(Parser* parent, VecExpr* ret, AstCStrs* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
@@ -1063,7 +1064,7 @@ static inline bool expect_identifier(Parser* parent, Span* ret) {
     if (parse_identifier(parent, ret)) {
         return true;
     } else {
-        parse_error(parent, span_from_token(parent), 1003, "Identifier expected.");
+        parse_error(parent, span_from_token_or_eof(parent), 1003, "Identifier expected.");
         *ret = span_from_pos(parent);
         return false;
     }
@@ -3747,7 +3748,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             expr_clear_outer_span(&expr);
             while (parse_expr_right_side(&p, expr_ctx, &expr)) {}
         } else if (!tok_is_word(t) || *t.start == '#' || !parse_expr(&p, expr_ctx, &expr)) {
-            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
             expr = expr_implicit_any(span_from_pos(&p));
         }
         *ret = type_typeof(ast_new(TypeofType, {
@@ -6902,7 +6903,7 @@ static bool parse_function_args_inner(
                     continue;
                 } else {
                     // `(...)`, `(@dec)`: tsc's parseParameter with a missing name
-                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                    parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
                     initializer.binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from_pos(&p) };
                 }
                 hop_whitespace(&p);
@@ -7253,7 +7254,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     if (function_impl_arrow_span(ret).size == 0 && *p.pos != '{') {
         // No `=>`: the body is a missing identifier (tsc's parseParenthesizedArrowFunctionExpression), what follows
         // continues the arrow function (`(x: any).props`)
-        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
         Expr expr = expr_implicit_any(span_from_pos(&p));
         p.pos = span_end_ptr(function_impl_arrow_span(ret));
         ret->body_ = (Block){0};
@@ -8043,7 +8044,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             bool dot = *p.pos == '.' && p.pos[1] != '.';
             if (!flags.is_generator && !dot) return parse_fail(&p);
             // `{ *() {} }`: committed to a generator method by the `*`, the name is missing
-            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
             item.name_span = span_from_pos(&p);
             item.name_string = cstr_init();
         }
@@ -8472,7 +8473,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
                 if (list_abort_or_skip(&p, PARSING_PARAMETERS)) break;
                 continue;
             }
-            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
             name = span_from_pos(&p);
         }
         hop_whitespace(&p);
@@ -8821,7 +8822,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         name_is_value = false;
         if (function_flags.committed || ((is_getter || is_setter) && !is_type)) {
             // `*` then no name: tsc's parsePropertyName has a missing identifier (TS1003) and it's a method
-            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
             // (tsc's missing node sits at the token's full start, before the trivia)
             name_span = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
             name_string = cstr_init();
@@ -11092,7 +11093,7 @@ static bool parse_jsx_namespace_rest(Parser* parent) {
     hop_whitespace(&p);
     Span local;
     if (!parse_jsx_identifier(&p, &local)) {
-        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
     }
     return parse_success(&p);
 }
@@ -11149,7 +11150,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
                 *ret = expr_property(span_from(a), property_dot_new(&(PropertyExpr){ .expr = *ret, .name_ = missing }));
                 break;
             } else {
-                parse_error(&dot, span_from_token(&dot), 1003, "Identifier expected.");
+                parse_error(&dot, span_from_token_or_eof(&dot), 1003, "Identifier expected.");
                 // (a property access all the same, of a missing name: `<a.>` is no intrinsic element, tsc's
                 // parseJsxElementName)
                 Span missing = span_from_pos(&dot);
@@ -12425,7 +12426,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                     // A missing name, the word is left for what follows
                     parse_error(&p, part, 1359, "Identifier expected. '", part, "' is a reserved word that cannot be used here.");
                 } else {
-                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                    parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
                 }
                 vec_span_push(&statement->main.alias_->path, span_from_pos(&p)); // (a missing name)
                 break;
@@ -12957,7 +12958,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 q.pos += 3;
                 hop_whitespace(&q);
                 Span missing = span_make(q.shared->source, q.pos, q.pos);
-                parse_error(&q, span_from_token(&q), 1003, "Identifier expected.");
+                parse_error(&q, span_from_token_or_eof(&q), 1003, "Identifier expected.");
                 Binding target = {0};
                 if (parse_binding_element(&q, &target)) {
                     parse_success(&q);
@@ -13045,7 +13046,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                         const char* missing = token_full_start(&p);
                         binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_make(p.shared->source, missing, missing) };
                     } else {
-                        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                        parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
                         binding = (Binding){ .tag = BINDING_NOOP, .content_span = span_from_pos(&p) };
                     }
                 }
@@ -13864,7 +13865,7 @@ static void parse_jump_target(Parser* parent, Span* ret) {
     hop_whitespace_full(&p, true, false);
     Span label;
     if (yield_await_is_keyword_here(&p)) {
-        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
         *ret = span_from_pos(&p); // (tsc's missing identifier)
         parse_success(&p);
     } else if (parse_identifier(&p, &label)) {
@@ -14296,7 +14297,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                 const char* binding_start = p.pos;
                 if (!parse_binding_content_or_private_name(&p, &try_catch.catch_var, 18029,
                         "Private identifiers are not allowed in variable declarations.")) {
-                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                    parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
                     // (A missing name, which tsc still declares)
                     try_catch.catch_var = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from_pos(&p) };
                     binding_set_element_span(&try_catch.catch_var, try_catch.catch_var.content_span);
@@ -14441,7 +14442,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             }
             hop_whitespace(&dot);
             if (!parse_identifier(&dot, &name)) {
-                parse_error(&dot, span_from_token(&dot), 1003, "Identifier expected.");
+                parse_error(&dot, span_from_token_or_eof(&dot), 1003, "Identifier expected.");
                 parse_success(&dot);
                 break;
             }
