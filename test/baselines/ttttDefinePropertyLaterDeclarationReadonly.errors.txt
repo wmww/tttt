@@ -1,0 +1,43 @@
+a.js(2,3): error TS2540: Cannot assign to 'NS' because it is a read-only property.
+a.js(5,3): error TS2540: Cannot assign to 'x' because it is a read-only property.
+a.js(7,3): error TS2540: Cannot assign to 'x' because it is a read-only property.
+a.js(10,3): error TS2540: Cannot assign to 'y' because it is a read-only property.
+a.js(16,3): error TS2540: Cannot assign to 'z' because it is a read-only property.
+a.js(21,3): error TS2540: Cannot assign to 'w' because it is a read-only property.
+
+
+==== a.js (6 errors) ====
+    const B = {}
+    B.NS = 1;
+      ~~
+!!! error TS2540: Cannot assign to 'NS' because it is a read-only property.
+    Object.defineProperty(B, "NS", { writable: true });
+    const C = {}
+    C.x = 1;
+      ~
+!!! error TS2540: Cannot assign to 'x' because it is a read-only property.
+    Object.defineProperty(C, "x", { value: 2, writable: false });
+    C.x = 3;
+      ~
+!!! error TS2540: Cannot assign to 'x' because it is a read-only property.
+    const D = {}
+    Object.defineProperty(D, "y", { value: 2, writable: false });
+    D.y = 3;
+      ~
+!!! error TS2540: Cannot assign to 'y' because it is a read-only property.
+    // A descriptor without properties (never, any) has neither `value` nor `set`: read-only too
+    /** @type {never} */
+    const nd = /** @type {never} */ (null);
+    const E = {}
+    Object.defineProperty(E, "z", nd);
+    E.z = 1;
+      ~
+!!! error TS2540: Cannot assign to 'z' because it is a read-only property.
+    /** @type {any} */
+    const ad = {};
+    const F = {}
+    Object.defineProperty(F, "w", ad);
+    F.w = 1;
+      ~
+!!! error TS2540: Cannot assign to 'w' because it is a read-only property.
+    

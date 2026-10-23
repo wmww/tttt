@@ -1,0 +1,99 @@
+//// [test/cases/ttttDefinePropertyLaterDeclarationReadonly.ts] ////
+
+=== a.js ===
+const B = {}
+>B : Symbol(B, Decl(a.js, 0, 5))
+
+B.NS = 1;
+>B.NS : Symbol(NS, Decl(a.js, 0, 12), Decl(a.js, 1, 9))
+>B : Symbol(B, Decl(a.js, 0, 5))
+>NS : Symbol(NS, Decl(a.js, 0, 12), Decl(a.js, 1, 9))
+
+Object.defineProperty(B, "NS", { writable: true });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>B : Symbol(B, Decl(a.js, 0, 5))
+>"NS" : Symbol(NS, Decl(a.js, 0, 12), Decl(a.js, 1, 9))
+>writable : Symbol(writable, Decl(a.js, 2, 32))
+
+const C = {}
+>C : Symbol(C, Decl(a.js, 3, 5))
+
+C.x = 1;
+>C.x : Symbol(x, Decl(a.js, 3, 12), Decl(a.js, 4, 8), Decl(a.js, 5, 61))
+>C : Symbol(C, Decl(a.js, 3, 5))
+>x : Symbol(x, Decl(a.js, 3, 12), Decl(a.js, 4, 8), Decl(a.js, 5, 61))
+
+Object.defineProperty(C, "x", { value: 2, writable: false });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(a.js, 3, 5))
+>"x" : Symbol(x, Decl(a.js, 3, 12), Decl(a.js, 4, 8), Decl(a.js, 5, 61))
+>value : Symbol(value, Decl(a.js, 5, 31))
+>writable : Symbol(writable, Decl(a.js, 5, 41))
+
+C.x = 3;
+>C.x : Symbol(x, Decl(a.js, 3, 12), Decl(a.js, 4, 8), Decl(a.js, 5, 61))
+>C : Symbol(C, Decl(a.js, 3, 5))
+>x : Symbol(x, Decl(a.js, 3, 12), Decl(a.js, 4, 8), Decl(a.js, 5, 61))
+
+const D = {}
+>D : Symbol(D, Decl(a.js, 7, 5))
+
+Object.defineProperty(D, "y", { value: 2, writable: false });
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(a.js, 7, 5))
+>"y" : Symbol("y", Decl(a.js, 7, 12), Decl(a.js, 8, 61))
+>value : Symbol(value, Decl(a.js, 8, 31))
+>writable : Symbol(writable, Decl(a.js, 8, 41))
+
+D.y = 3;
+>D.y : Symbol("y", Decl(a.js, 7, 12), Decl(a.js, 8, 61))
+>D : Symbol(D, Decl(a.js, 7, 5))
+>y : Symbol("y", Decl(a.js, 7, 12), Decl(a.js, 8, 61))
+
+// A descriptor without properties (never, any) has neither `value` nor `set`: read-only too
+/** @type {never} */
+const nd = /** @type {never} */ (null);
+>nd : Symbol(nd, Decl(a.js, 12, 5))
+
+const E = {}
+>E : Symbol(E, Decl(a.js, 13, 5))
+
+Object.defineProperty(E, "z", nd);
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>E : Symbol(E, Decl(a.js, 13, 5))
+>"z" : Symbol("z", Decl(a.js, 13, 12), Decl(a.js, 14, 34))
+>nd : Symbol(nd, Decl(a.js, 12, 5))
+
+E.z = 1;
+>E.z : Symbol("z", Decl(a.js, 13, 12), Decl(a.js, 14, 34))
+>E : Symbol(E, Decl(a.js, 13, 5))
+>z : Symbol("z", Decl(a.js, 13, 12), Decl(a.js, 14, 34))
+
+/** @type {any} */
+const ad = {};
+>ad : Symbol(ad, Decl(a.js, 17, 5))
+
+const F = {}
+>F : Symbol(F, Decl(a.js, 18, 5))
+
+Object.defineProperty(F, "w", ad);
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>F : Symbol(F, Decl(a.js, 18, 5))
+>"w" : Symbol("w", Decl(a.js, 18, 12), Decl(a.js, 19, 34))
+>ad : Symbol(ad, Decl(a.js, 17, 5))
+
+F.w = 1;
+>F.w : Symbol("w", Decl(a.js, 18, 12), Decl(a.js, 19, 34))
+>F : Symbol(F, Decl(a.js, 18, 5))
+>w : Symbol("w", Decl(a.js, 18, 12), Decl(a.js, 19, 34))
+

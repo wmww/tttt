@@ -15,7 +15,10 @@ static bool define_property_readonly(Checker* me, Expr const* call) {
     Expr const* descriptor = vec_expr_at(&call->call->args, 2);
     if (descriptor->tag == EXPR_OBJECT) return expr_define_property_readonly(call);
     Ty const* type = ty_apparent_type(me, ty_expr_type(me, descriptor));
-    if (!(type->flags & TYF_OBJECT)) return false;
+    // (A type without properties, `never` or `any`, has neither `value` nor `set`: read-only. A union's would be its
+    // union properties: not done)
+    if (type->kind == TY_UNION) return false;
+    if (!(type->flags & (TYF_OBJECT | TYF_INTERSECTION))) return true;
     if (!ty_get_prop(me, type, my atoms.value)) return !ty_get_prop(me, type, checker_atom(me, c_sv("set")));
     Prop const* writable = ty_get_prop(me, type, checker_atom(me, c_sv("writable")));
     if (!writable) return true;
@@ -29,6 +32,20 @@ static bool define_property_readonly(Checker* me, Expr const* call) {
     return (initial->flags & TYF_BOOLEAN_LITERAL) && !initial->literal.value.boolean;
 }
 
+
+// Any of the member's declarations is a read-only `Object.defineProperty` (tsc's isReadonlySymbol: core.Some of its
+// declarations), not only the first: `B.NS = x; Object.defineProperty(B, "NS", { writable: true })` is read-only
+static bool any_define_property_readonly(Checker* me, Symbol const* member) {
+    for (u32 i = 0; i < member->decl_count; i++) {
+        SymbolDecl const* decl = &member->decls[i];
+        if (decl->kind == SYMBOL_DECL_ASSIGNMENT && decl->assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY &&
+            define_property_readonly(me, decl->node)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
 
 // Members of object types are resolved on first use, never at construction. That's what makes recursive types legal:
 // `interface List<T> { tail: List<T> }` only needs the *identity* of `List<T>` to describe its members.
@@ -1888,11 +1905,7 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
                     prop->flags |= PROP_FIELD;
                 }
             }
-            if (member->decl_count && member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY &&
-                define_property_readonly(me, member->decls[0].node)
-            ) {
-                prop->flags |= PROP_READONLY;
-            }
+            if (any_define_property_readonly(me, member)) prop->flags |= PROP_READONLY;
             builder_push(builder, props, prop);
         } else if ((existing->flags & PROP_FIELD) && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR)) &&
             existing->decl->decl_span_count && vec_span_size(&spans) &&
@@ -2552,11 +2565,7 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     if (member->is_const && member == symbol) prop->flags |= PROP_READONLY;
     if (member != symbol && (symbol->flags & SYMBOL_ALIAS)) prop->flags |= PROP_NO_VALUE_DECLARATION;
     // (`Object.defineProperty(o, "x", { value: 1 })`: isReadonlyAssignmentDeclaration)
-    if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-        member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY && define_property_readonly(me, member->decls[0].node)
-    ) {
-        prop->flags |= PROP_READONLY;
-    }
+    if (any_define_property_readonly(me, member)) prop->flags |= PROP_READONLY;
     prop->decl->ctx = (LowerCtx){ .generic = true };
     prop->decl->name_span = symbol->name_span;
     // Where it is declared is its valueDeclaration: the first declaration with a value, not a type-only one before it (an

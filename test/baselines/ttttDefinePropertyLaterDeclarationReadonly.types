@@ -1,0 +1,131 @@
+//// [test/cases/ttttDefinePropertyLaterDeclarationReadonly.ts] ////
+
+=== a.js ===
+const B = {}
+>B : { readonly NS: any; }
+>{} : { readonly NS: any; }
+
+B.NS = 1;
+>B.NS = 1 : 1
+>B.NS : any
+>B : { readonly NS: any; }
+>NS : any
+>1 : 1
+
+Object.defineProperty(B, "NS", { writable: true });
+>Object.defineProperty(B, "NS", { writable: true }) : { readonly NS: any; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>B : { readonly NS: any; }
+>"NS" : "NS"
+>{ writable: true } : { writable: true; }
+>writable : true
+>true : true
+
+const C = {}
+>C : { readonly x: number; }
+>{} : { readonly x: number; }
+
+C.x = 1;
+>C.x = 1 : 1
+>C.x : any
+>C : { readonly x: number; }
+>x : any
+>1 : 1
+
+Object.defineProperty(C, "x", { value: 2, writable: false });
+>Object.defineProperty(C, "x", { value: 2, writable: false }) : { readonly x: number; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>C : { readonly x: number; }
+>"x" : "x"
+>{ value: 2, writable: false } : { value: number; writable: false; }
+>value : number
+>2 : 2
+>writable : false
+>false : false
+
+C.x = 3;
+>C.x = 3 : 3
+>C.x : any
+>C : { readonly x: number; }
+>x : any
+>3 : 3
+
+const D = {}
+>D : { readonly y: number; }
+>{} : { readonly y: number; }
+
+Object.defineProperty(D, "y", { value: 2, writable: false });
+>Object.defineProperty(D, "y", { value: 2, writable: false }) : { readonly y: number; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>D : { readonly y: number; }
+>"y" : "y"
+>{ value: 2, writable: false } : { value: number; writable: false; }
+>value : number
+>2 : 2
+>writable : false
+>false : false
+
+D.y = 3;
+>D.y = 3 : 3
+>D.y : any
+>D : { readonly y: number; }
+>y : any
+>3 : 3
+
+// A descriptor without properties (never, any) has neither `value` nor `set`: read-only too
+/** @type {never} */
+const nd = /** @type {never} */ (null);
+>nd : never
+>(null) : never
+
+const E = {}
+>E : { readonly z: any; }
+>{} : { readonly z: any; }
+
+Object.defineProperty(E, "z", nd);
+>Object.defineProperty(E, "z", nd) : { readonly z: any; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>E : { readonly z: any; }
+>"z" : "z"
+>nd : never
+
+E.z = 1;
+>E.z = 1 : 1
+>E.z : any
+>E : { readonly z: any; }
+>z : any
+>1 : 1
+
+/** @type {any} */
+const ad = {};
+>ad : any
+>{} : {}
+
+const F = {}
+>F : { readonly w: any; }
+>{} : { readonly w: any; }
+
+Object.defineProperty(F, "w", ad);
+>Object.defineProperty(F, "w", ad) : { readonly w: any; }
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>F : { readonly w: any; }
+>"w" : "w"
+>ad : any
+
+F.w = 1;
+>F.w = 1 : 1
+>F.w : any
+>F : { readonly w: any; }
+>w : any
+>1 : 1
+
