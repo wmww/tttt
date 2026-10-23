@@ -519,4 +519,13 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
 - **papra/apps/papra-client: +TS7006** at src/modules/tags/components/tag.component.tsx:28 (`Parameter 'e' implicitly
   has an 'any' type`): a contextual type tsgo finds for a Solid JSX event handler. [open]
 - **genkit/js/testapps/dev-ui-gallery: -TS7022/-TS7024** at src/genkit.ts:78, src/main/middleware.ts:91 and :108: tsgo
-  finds a circularity tttt resolves. [open]
+  finds a circularity tttt resolves. corF's reduce.py run (2026-10-24) keeps all three in 3 files, with every
+  package cut away (genkit, generateMiddleware, annotateSchema and z are all undeclared then):
+  `export const ai = genkit({ plugins: [failTool.plugin()] })` in genkit.ts, and in middleware.ts
+  `export const failTool = generateMiddleware({ toolName: annotateSchema(z.describe(), { enum: lazyToolNames(() => ai) }) })`,
+  where `lazyToolNames(getAi: () => { registry?: unknown }): string[]` is not generic. tsgo types the arguments of a
+  call whose callee is unresolved (resolveErrorCall checks them), so typing `failTool` reaches `() => ai`'s return
+  type while `ai` is being resolved, and the cycle closes. tttt never types those arguments while resolving the
+  declaration's type (likely its error-callee path, or a quick non-generic return type for `lazyToolNames(...)`), so
+  it has no cycle. Next step: those 3 files as a test/cases repro (an undeclared callee alone may reproduce it). Not continued: the npm workflow comes
+  first. [open]
