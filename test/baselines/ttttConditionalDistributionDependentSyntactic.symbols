@@ -1,0 +1,69 @@
+//// [test/cases/ttttConditionalDistributionDependentSyntactic.ts] ////
+
+=== ttttConditionalDistributionDependentSyntactic.ts ===
+// A distributive conditional type is distribution dependent when its check type parameter is possibly referenced by
+// tsc's syntactic isTypeParameterPossiblyReferenced: its own extends type, a `typeof` of a local in its scope, a
+// merged interface's parameters. Then the relation doesn't go through both branches (bun's 19-C1b..g)
+type C1<T> = T extends T[] ? number : number;
+>C1 : Symbol(C1, Decl(ttttConditionalDistributionDependentSyntactic.ts, 0, 0))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 3, 8))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 3, 8))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 3, 8))
+
+function g1<T>(x: number, y: C1<T> = x) {}
+>g1 : Symbol(g1, Decl(ttttConditionalDistributionDependentSyntactic.ts, 3, 45))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 4, 12))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 4, 15))
+>y : Symbol(y, Decl(ttttConditionalDistributionDependentSyntactic.ts, 4, 25))
+>C1 : Symbol(C1, Decl(ttttConditionalDistributionDependentSyntactic.ts, 0, 0))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 4, 12))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 4, 15))
+
+function g2<T>(a: number, x: number, y: T extends string ? typeof a : number = x) {}
+>g2 : Symbol(g2, Decl(ttttConditionalDistributionDependentSyntactic.ts, 4, 42))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 12))
+>a : Symbol(a, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 15))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 25))
+>y : Symbol(y, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 36))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 12))
+>a : Symbol(a, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 15))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 25))
+
+interface I<T> { a: T extends string ? number : number }
+>I : Symbol(I, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 84), Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 56))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 12), Decl(ttttConditionalDistributionDependentSyntactic.ts, 9, 12))
+>a : Symbol(I.a, Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 16))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 12), Decl(ttttConditionalDistributionDependentSyntactic.ts, 9, 12))
+
+interface I<T> { b: number }
+>I : Symbol(I, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 84), Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 56))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 12), Decl(ttttConditionalDistributionDependentSyntactic.ts, 9, 12))
+>b : Symbol(I.b, Decl(ttttConditionalDistributionDependentSyntactic.ts, 9, 16))
+
+function g3<T>(o: I<T>, x: number) { o.a = x; }
+>g3 : Symbol(g3, Decl(ttttConditionalDistributionDependentSyntactic.ts, 9, 28))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 12))
+>o : Symbol(o, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 15))
+>I : Symbol(I, Decl(ttttConditionalDistributionDependentSyntactic.ts, 6, 84), Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 56))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 12))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 23))
+>o.a : Symbol(I.a, Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 16))
+>o : Symbol(o, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 15))
+>a : Symbol(I.a, Decl(ttttConditionalDistributionDependentSyntactic.ts, 8, 16))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 23))
+
+// Not referenced: related through both branches
+type C2<T> = T extends string ? number : number;
+>C2 : Symbol(C2, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 47))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 13, 8))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 13, 8))
+
+function g4<T>(x: number, y: C2<T> = x) {}
+>g4 : Symbol(g4, Decl(ttttConditionalDistributionDependentSyntactic.ts, 13, 48))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 14, 12))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 14, 15))
+>y : Symbol(y, Decl(ttttConditionalDistributionDependentSyntactic.ts, 14, 25))
+>C2 : Symbol(C2, Decl(ttttConditionalDistributionDependentSyntactic.ts, 10, 47))
+>T : Symbol(T, Decl(ttttConditionalDistributionDependentSyntactic.ts, 14, 12))
+>x : Symbol(x, Decl(ttttConditionalDistributionDependentSyntactic.ts, 14, 15))
+

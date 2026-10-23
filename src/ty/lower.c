@@ -1422,6 +1422,20 @@ TyConditionalOuter const* ty_root_outer_of_node(Checker* me, Ty const* root, TyR
         csview text = cstr_sv(&span_source(decl)->contents);
         outer->check_outside_block = block >= text.buf && block < text.buf + text.size && decl.buf < block;
     }
+    if (root->conditional.distributive && check->kind == TY_TYPE_PARAM) {
+        // (tsc walks up from each branch to the type parameter's declaration: the conditional's own extends type is on
+        // the way, `T extends T[] ? number : number`; the flows of the branches add the enclosing ones')
+        FreeParams found = {0};
+        found.in_extends++;
+        collect_free_params(me, &node->ternary->maybe_super, &found);
+        found.in_extends--;
+        collect_free_params(me, &node->ternary->if_true, &found);
+        collect_free_params(me, &node->ternary->if_false, &found);
+        free_params_add_block(me, &found);
+        bool mentioned = found.unknown;
+        for (u32 i = 0; i < found.len && !mentioned; i++) mentioned = found.params[i] == check;
+        outer->branches_reference_check = mentioned;
+    }
     outer->node = node->ternary->span;
     return outer;
 }

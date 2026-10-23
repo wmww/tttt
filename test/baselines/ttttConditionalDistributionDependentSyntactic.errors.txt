@@ -1,0 +1,28 @@
+ttttConditionalDistributionDependentSyntactic.ts(5,27): error TS2322: Type 'number' is not assignable to type 'C1<T>'.
+ttttConditionalDistributionDependentSyntactic.ts(7,38): error TS2322: Type 'number' is not assignable to type 'T extends string ? number : number'.
+ttttConditionalDistributionDependentSyntactic.ts(11,38): error TS2322: Type 'number' is not assignable to type 'T extends string ? number : number'.
+
+
+==== ttttConditionalDistributionDependentSyntactic.ts (3 errors) ====
+    // A distributive conditional type is distribution dependent when its check type parameter is possibly referenced by
+    // tsc's syntactic isTypeParameterPossiblyReferenced: its own extends type, a `typeof` of a local in its scope, a
+    // merged interface's parameters. Then the relation doesn't go through both branches (bun's 19-C1b..g)
+    type C1<T> = T extends T[] ? number : number;
+    function g1<T>(x: number, y: C1<T> = x) {}
+                              ~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'C1<T>'.
+    
+    function g2<T>(a: number, x: number, y: T extends string ? typeof a : number = x) {}
+                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'T extends string ? number : number'.
+    
+    interface I<T> { a: T extends string ? number : number }
+    interface I<T> { b: number }
+    function g3<T>(o: I<T>, x: number) { o.a = x; }
+                                         ~~~
+!!! error TS2322: Type 'number' is not assignable to type 'T extends string ? number : number'.
+    
+    // Not referenced: related through both branches
+    type C2<T> = T extends string ? number : number;
+    function g4<T>(x: number, y: C2<T> = x) {}
+    

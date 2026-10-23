@@ -182,6 +182,10 @@ typedef struct TyConditionalOuter {
     // A Block lies between the node and its check type parameter's declaration (the parameter is declared before the
     // innermost Block it's written in): tsc's isTypeParameterPossiblyReferenced says the branches may mention it
     bool check_outside_block;
+    // The branches (or its own extends type, or an enclosing conditional's) may mention its check type parameter by
+    // tsc's syntactic isTypeParameterPossiblyReferenced (a `typeof` of a local, `this`, a merged owner's parameters
+    // included): its isDistributionDependent, whatever the types turn out to mention
+    bool branches_reference_check;
     Span node; // The conditional type node (compareTypes orders roots by its position, see order.c)
 } TyConditionalOuter;
 TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root); // lower.c, null if never lowered

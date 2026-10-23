@@ -1,0 +1,49 @@
+//// [test/cases/ttttConditionalDistributionDependentSyntactic.ts] ////
+
+=== ttttConditionalDistributionDependentSyntactic.ts ===
+// A distributive conditional type is distribution dependent when its check type parameter is possibly referenced by
+// tsc's syntactic isTypeParameterPossiblyReferenced: its own extends type, a `typeof` of a local in its scope, a
+// merged interface's parameters. Then the relation doesn't go through both branches (bun's 19-C1b..g)
+type C1<T> = T extends T[] ? number : number;
+>C1 : C1<T>
+
+function g1<T>(x: number, y: C1<T> = x) {}
+>g1 : <T>(x: number, y?: C1<T>) => void
+>x : number
+>y : C1<T>
+>x : number
+
+function g2<T>(a: number, x: number, y: T extends string ? typeof a : number = x) {}
+>g2 : <T>(a: number, x: number, y?: T extends string ? typeof a : number) => void
+>a : number
+>x : number
+>y : T extends string ? number : number
+>a : number
+>x : number
+
+interface I<T> { a: T extends string ? number : number }
+>a : T extends string ? number : number
+
+interface I<T> { b: number }
+>b : number
+
+function g3<T>(o: I<T>, x: number) { o.a = x; }
+>g3 : <T>(o: I<T>, x: number) => void
+>o : I<T>
+>x : number
+>o.a = x : number
+>o.a : T extends string ? number : number
+>o : I<T>
+>a : T extends string ? number : number
+>x : number
+
+// Not referenced: related through both branches
+type C2<T> = T extends string ? number : number;
+>C2 : C2<T>
+
+function g4<T>(x: number, y: C2<T> = x) {}
+>g4 : <T>(x: number, y?: C2<T>) => void
+>x : number
+>y : C2<T>
+>x : number
+

@@ -326,7 +326,7 @@ bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
     if (!root->conditional.distributive || root->conditional.check->kind != TY_TYPE_PARAM) return false;
     // (Written in a Block its check type parameter is declared outside of: possibly referenced, syntactically)
     TyConditionalOuter const* outer = ty_conditional_outer(me, root);
-    if (outer && outer->check_outside_block) return true;
+    if (outer && (outer->check_outside_block || outer->branches_reference_check)) return true;
     // (Cached on the root like tsc's ConditionalRoot.isDistributionDependent: the relation asks for every instance)
     u64 key[2] = { KEY_DISTRIBUTION_DEPENDENT, root->id };
     void const* known = intern_get(&my links, key, 2);
