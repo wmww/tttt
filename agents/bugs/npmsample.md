@@ -67,7 +67,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   `ingestObject`, the common supertype F); tttt inferred F's index value at full priority. Repro
   ttttMappedIndexInferencePriority. The npm test's errors pass; its types still differ on two other lines (`this.schema`
   of a generic T printed as T where tsgo prints its constraint `Record<string, any> | {}`, and `keyof []` printed
-  expanded by tsgo). (claimed: corB) [fixed PENDING]
+  expanded by tsgo). (claimed: corB) [fixed 8c8643128]
 - **npm__markw65_prettier-plugin-monkeyc_TS7034** (seed 20261031, @markw65/prettier-plugin-monkeyc@1.0.69,
   markw65/prettier-plugin-monkeyc; tsgo 13, tttt 15). src/printer.ts:74 `let rest, ...; ({ print: x, ..., ...rest } =
   estree)`: an auto-typed `let` (no initializer, no annotation) whose only assignment is an object rest element of a
