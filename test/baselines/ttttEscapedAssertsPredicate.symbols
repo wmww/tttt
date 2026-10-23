@@ -1,0 +1,15 @@
+//// [test/cases/ttttEscapedAssertsPredicate.ts] ////
+
+=== ttttEscapedAssertsPredicate.ts ===
+// `asserts` spelled with an escape is the keyword all the same (tsc's scanner makes it AssertsKeyword): an asserts
+// predicate, with TS1260 for the escape. Babel's assert-predicate/invalid-escaped-asserts-keyword fixture
+declare function assertIsString(value: unknown): \u{61}sserts value;
+>assertIsString : Symbol(assertIsString, Decl(ttttEscapedAssertsPredicate.ts, 0, 0))
+>value : Symbol(value, Decl(ttttEscapedAssertsPredicate.ts, 2, 32))
+>value : Symbol(value, Decl(ttttEscapedAssertsPredicate.ts, 2, 32))
+
+declare function assertIsNumber(value: unknown): \u0061sserts value is number;
+>assertIsNumber : Symbol(assertIsNumber, Decl(ttttEscapedAssertsPredicate.ts, 2, 68))
+>value : Symbol(value, Decl(ttttEscapedAssertsPredicate.ts, 3, 32))
+>value : Symbol(value, Decl(ttttEscapedAssertsPredicate.ts, 3, 32))
+

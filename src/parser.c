@@ -6680,10 +6680,21 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     }
     hop_whitespace_full(&p, true, false);
     bool asserts = false;
-    if (span_equals(name, "asserts") && !starts_with_followed_by_word_break(&p, "is")) {
+    // (Spelled with an escape it is the keyword all the same, TS1260: tsc's scanner makes it AssertsKeyword, which
+    // parseAssertsTypePredicate consumes)
+    bool asserts_word = span_equals(name, "asserts");
+    bool escaped_asserts = false;
+    if (!asserts_word && memchr(name.buf, '\\', (size_t)name.size)) {
+        cstr cooked = identifier_name_value(span_sv(name));
+        escaped_asserts = asserts_word = strcmp(cstr_str(&cooked), "asserts") == 0;
+        cstr_drop(&cooked);
+    }
+    if (asserts_word && !starts_with_followed_by_word_break(&p, "is")) {
+        Span keyword = name;
         if (!parse_identifier_or_keyword(&p, &name)) {
             return parse_fail(&p);
         }
+        if (escaped_asserts) parse_error(&p, keyword, 1260, "Keywords cannot contain escape characters.");
         asserts = true;
         // (An `is` may follow on the next line, tsc's parseOptional, but the line break stays a member separator when
         // none does: `(v: unknown): asserts v` then a property on the next line)
