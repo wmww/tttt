@@ -679,6 +679,11 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
         Binding const* root = binding;
         while (root && root->parent) root = root->parent;
         if (root && root->source && root->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR) return nullptr;
+        // Nor a binding element (`const { k } = o`): it has no annotation, and tsc's tryGetNameFromEntityNameExpression
+        // leaves out its initializer, whose type needn't be its own and may be in flight (`const { name } = tag.value`
+        // in a loop that assigns `depth[name] = ...` and `tag = tags.next()`: matching `tags.next` against `depth[name]`
+        // would ask for name's type, through tag's, TS7022)
+        if (binding && binding != root) return nullptr;
         // (tsc's tryGetNameFromEntityNameExpression only reads the initializer of a declaration before the use: the
         // type of one after it may depend on this very reference, `bar[id]++; const id = foo.bar`)
         Span declared = symbol->name_span;

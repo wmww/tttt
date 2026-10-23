@@ -1,0 +1,40 @@
+ttttBindingElementKeyNoName.ts(32,3): error TS18048: 'o.a' is possibly 'undefined'.
+
+
+==== ttttBindingElementKeyNoName.ts (1 errors) ====
+    // A destructured const used as an element access key names no property for reference matching (tsc's
+    // tryGetNameFromEntityNameExpression leaves binding elements out): matching `tags.next` against `depth[name]` in the
+    // loop doesn't ask for name's type, which goes through `nextTag`, in flight (no TS7022)
+    type Tok = { name: string; closing: boolean; start: number };
+    declare function tokenize(html: string): Generator<Tok>;
+    function f(html: string): string {
+      const tags = tokenize(html);
+      const depth = { code: 0, pre: 0 };
+      let nextTag: ReturnType<typeof tags.next> | undefined;
+      return html.replace(/x/g, (tableHtml, offset: number) => {
+        nextTag ??= tags.next();
+        while (!nextTag.done && nextTag.value.start < offset) {
+          const { name, closing } = nextTag.value;
+          if (name === "code" || name === "pre") {
+            depth[name] = closing ? Math.max(0, depth[name] - 1) : depth[name] + 1;
+          }
+          nextTag = tags.next();
+        }
+        return tableHtml;
+      });
+    }
+    
+    // Narrowing through such a key still goes by the key's identity
+    declare const o: { a?: string; b?: string };
+    const { k } = { k: "a" as const };
+    if (o[k]) {
+      o[k].length;
+    }
+    const { j }: { j: "a" | "b" } = { j: "b" };
+    if (o[j] !== undefined) {
+      o[j].length;
+      o.a.length;
+      ~~~
+!!! error TS18048: 'o.a' is possibly 'undefined'.
+    }
+    

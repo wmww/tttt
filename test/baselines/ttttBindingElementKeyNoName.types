@@ -1,0 +1,179 @@
+//// [test/cases/ttttBindingElementKeyNoName.ts] ////
+
+=== ttttBindingElementKeyNoName.ts ===
+// A destructured const used as an element access key names no property for reference matching (tsc's
+// tryGetNameFromEntityNameExpression leaves binding elements out): matching `tags.next` against `depth[name]` in the
+// loop doesn't ask for name's type, which goes through `nextTag`, in flight (no TS7022)
+type Tok = { name: string; closing: boolean; start: number };
+>Tok : Tok
+>name : string
+>closing : boolean
+>start : number
+
+declare function tokenize(html: string): Generator<Tok>;
+>tokenize : (html: string) => Generator<Tok>
+>html : string
+
+function f(html: string): string {
+>f : (html: string) => string
+>html : string
+
+  const tags = tokenize(html);
+>tags : Generator<Tok, any, any>
+>tokenize(html) : Generator<Tok, any, any>
+>tokenize : (html: string) => Generator<Tok>
+>html : string
+
+  const depth = { code: 0, pre: 0 };
+>depth : { code: number; pre: number; }
+>{ code: 0, pre: 0 } : { code: number; pre: number; }
+>code : number
+>0 : 0
+>pre : number
+>0 : 0
+
+  let nextTag: ReturnType<typeof tags.next> | undefined;
+>nextTag : IteratorResult<Tok, any> | undefined
+>tags.next : (...[value]: [] | [any]) => IteratorResult<Tok, any>
+>tags : Generator<Tok, any, any>
+>next : (...[value]: [] | [any]) => IteratorResult<Tok, any>
+
+  return html.replace(/x/g, (tableHtml, offset: number) => {
+>html.replace(/x/g, (tableHtml, offset: number) => {    nextTag ??= tags.next();    while (!nextTag.done && nextTag.value.start < offset) {      const { name, closing } = nextTag.value;      if (name === "code" || name === "pre") {        depth[name] = closing ? Math.max(0, depth[name] - 1) : depth[name] + 1;      }      nextTag = tags.next();    }    return tableHtml;  }) : string
+>html.replace : { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }
+>html : string
+>replace : { (searchValue: string | RegExp, replaceValue: string): string; (searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string; (searchValue: { [Symbol.replace](string: string, replaceValue: string): string; }, replaceValue: string): string; (searchValue: { [Symbol.replace](string: string, replacer: (substring: string, ...args: any[]) => string): string; }, replacer: (substring: string, ...args: any[]) => string): string; }
+>/x/g : RegExp
+>(tableHtml, offset: number) => {    nextTag ??= tags.next();    while (!nextTag.done && nextTag.value.start < offset) {      const { name, closing } = nextTag.value;      if (name === "code" || name === "pre") {        depth[name] = closing ? Math.max(0, depth[name] - 1) : depth[name] + 1;      }      nextTag = tags.next();    }    return tableHtml;  } : (tableHtml: string, offset: number) => string
+>tableHtml : string
+>offset : number
+
+    nextTag ??= tags.next();
+>nextTag ??= tags.next() : IteratorResult<Tok, any>
+>nextTag : IteratorResult<Tok, any> | undefined
+>tags.next() : IteratorResult<Tok, any>
+>tags.next : (...[value]: [] | [any]) => IteratorResult<Tok, any>
+>tags : Generator<Tok, any, any>
+>next : (...[value]: [] | [any]) => IteratorResult<Tok, any>
+
+    while (!nextTag.done && nextTag.value.start < offset) {
+>!nextTag.done && nextTag.value.start < offset : boolean
+>!nextTag.done : boolean
+>nextTag.done : boolean | undefined
+>nextTag : IteratorResult<Tok, any>
+>done : boolean | undefined
+>nextTag.value.start < offset : boolean
+>nextTag.value.start : number
+>nextTag.value : Tok
+>nextTag : IteratorYieldResult<Tok>
+>value : Tok
+>start : number
+>offset : number
+
+      const { name, closing } = nextTag.value;
+>name : string
+>closing : boolean
+>nextTag.value : Tok
+>nextTag : IteratorYieldResult<Tok>
+>value : Tok
+
+      if (name === "code" || name === "pre") {
+>name === "code" || name === "pre" : boolean
+>name === "code" : boolean
+>name : string
+>"code" : "code"
+>name === "pre" : boolean
+>name : string
+>"pre" : "pre"
+
+        depth[name] = closing ? Math.max(0, depth[name] - 1) : depth[name] + 1;
+>depth[name] = closing ? Math.max(0, depth[name] - 1) : depth[name] + 1 : number
+>depth[name] : number
+>depth : { code: number; pre: number; }
+>name : "code" | "pre"
+>closing ? Math.max(0, depth[name] - 1) : depth[name] + 1 : number
+>closing : boolean
+>Math.max(0, depth[name] - 1) : number
+>Math.max : (...values: number[]) => number
+>Math : Math
+>max : (...values: number[]) => number
+>0 : 0
+>depth[name] - 1 : number
+>depth[name] : number
+>depth : { code: number; pre: number; }
+>name : "code" | "pre"
+>1 : 1
+>depth[name] + 1 : number
+>depth[name] : number
+>depth : { code: number; pre: number; }
+>name : "code" | "pre"
+>1 : 1
+      }
+      nextTag = tags.next();
+>nextTag = tags.next() : IteratorResult<Tok, any>
+>nextTag : IteratorResult<Tok, any> | undefined
+>tags.next() : IteratorResult<Tok, any>
+>tags.next : (...[value]: [] | [any]) => IteratorResult<Tok, any>
+>tags : Generator<Tok, any, any>
+>next : (...[value]: [] | [any]) => IteratorResult<Tok, any>
+    }
+    return tableHtml;
+>tableHtml : string
+
+  });
+}
+
+// Narrowing through such a key still goes by the key's identity
+declare const o: { a?: string; b?: string };
+>o : { a?: string; b?: string; }
+>a : string | undefined
+>b : string | undefined
+
+const { k } = { k: "a" as const };
+>k : "a"
+>{ k: "a" as const } : { k: "a"; }
+>k : "a"
+>"a" as const : "a"
+>"a" : "a"
+
+if (o[k]) {
+>o[k] : string | undefined
+>o : { a?: string; b?: string; }
+>k : "a"
+
+  o[k].length;
+>o[k].length : number
+>o[k] : string
+>o : { a?: string; b?: string; }
+>k : "a"
+>length : number
+}
+const { j }: { j: "a" | "b" } = { j: "b" };
+>j : "a" | "b"
+>j : "a" | "b"
+>{ j: "b" } : { j: "b"; }
+>j : "b"
+>"b" : "b"
+
+if (o[j] !== undefined) {
+>o[j] !== undefined : boolean
+>o[j] : string | undefined
+>o : { a?: string; b?: string; }
+>j : "b"
+>undefined : undefined
+
+  o[j].length;
+>o[j].length : number
+>o[j] : string
+>o : { a?: string; b?: string; }
+>j : "b"
+>length : number
+
+  o.a.length;
+>o.a.length : number
+>o.a : string | undefined
+>o : { a?: string; b?: string; }
+>a : string | undefined
+>length : number
+}
+

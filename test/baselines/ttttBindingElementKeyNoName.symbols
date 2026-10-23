@@ -1,0 +1,143 @@
+//// [test/cases/ttttBindingElementKeyNoName.ts] ////
+
+=== ttttBindingElementKeyNoName.ts ===
+// A destructured const used as an element access key names no property for reference matching (tsc's
+// tryGetNameFromEntityNameExpression leaves binding elements out): matching `tags.next` against `depth[name]` in the
+// loop doesn't ask for name's type, which goes through `nextTag`, in flight (no TS7022)
+type Tok = { name: string; closing: boolean; start: number };
+>Tok : Symbol(Tok, Decl(ttttBindingElementKeyNoName.ts, 0, 0))
+>name : Symbol(name, Decl(ttttBindingElementKeyNoName.ts, 3, 12))
+>closing : Symbol(closing, Decl(ttttBindingElementKeyNoName.ts, 3, 26))
+>start : Symbol(start, Decl(ttttBindingElementKeyNoName.ts, 3, 44))
+
+declare function tokenize(html: string): Generator<Tok>;
+>tokenize : Symbol(tokenize, Decl(ttttBindingElementKeyNoName.ts, 3, 61))
+>html : Symbol(html, Decl(ttttBindingElementKeyNoName.ts, 4, 26))
+>Generator : Symbol(Generator, Decl(lib.es2015.generator.d.ts, --, --))
+>Tok : Symbol(Tok, Decl(ttttBindingElementKeyNoName.ts, 0, 0))
+
+function f(html: string): string {
+>f : Symbol(f, Decl(ttttBindingElementKeyNoName.ts, 4, 56))
+>html : Symbol(html, Decl(ttttBindingElementKeyNoName.ts, 5, 11))
+
+  const tags = tokenize(html);
+>tags : Symbol(tags, Decl(ttttBindingElementKeyNoName.ts, 6, 7))
+>tokenize : Symbol(tokenize, Decl(ttttBindingElementKeyNoName.ts, 3, 61))
+>html : Symbol(html, Decl(ttttBindingElementKeyNoName.ts, 5, 11))
+
+  const depth = { code: 0, pre: 0 };
+>depth : Symbol(depth, Decl(ttttBindingElementKeyNoName.ts, 7, 7))
+>code : Symbol(code, Decl(ttttBindingElementKeyNoName.ts, 7, 17))
+>pre : Symbol(pre, Decl(ttttBindingElementKeyNoName.ts, 7, 26))
+
+  let nextTag: ReturnType<typeof tags.next> | undefined;
+>nextTag : Symbol(nextTag, Decl(ttttBindingElementKeyNoName.ts, 8, 5))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>tags.next : Symbol(Generator.next, Decl(lib.es2015.generator.d.ts, --, --))
+>tags : Symbol(tags, Decl(ttttBindingElementKeyNoName.ts, 6, 7))
+>next : Symbol(Generator.next, Decl(lib.es2015.generator.d.ts, --, --))
+
+  return html.replace(/x/g, (tableHtml, offset: number) => {
+>html.replace : Symbol(String.replace, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>html : Symbol(html, Decl(ttttBindingElementKeyNoName.ts, 5, 11))
+>replace : Symbol(String.replace, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>tableHtml : Symbol(tableHtml, Decl(ttttBindingElementKeyNoName.ts, 9, 29))
+>offset : Symbol(offset, Decl(ttttBindingElementKeyNoName.ts, 9, 39))
+
+    nextTag ??= tags.next();
+>nextTag : Symbol(nextTag, Decl(ttttBindingElementKeyNoName.ts, 8, 5))
+>tags.next : Symbol(Generator.next, Decl(lib.es2015.generator.d.ts, --, --))
+>tags : Symbol(tags, Decl(ttttBindingElementKeyNoName.ts, 6, 7))
+>next : Symbol(Generator.next, Decl(lib.es2015.generator.d.ts, --, --))
+
+    while (!nextTag.done && nextTag.value.start < offset) {
+>nextTag.done : Symbol(done, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>nextTag : Symbol(nextTag, Decl(ttttBindingElementKeyNoName.ts, 8, 5))
+>done : Symbol(done, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --))
+>nextTag.value.start : Symbol(start, Decl(ttttBindingElementKeyNoName.ts, 3, 44))
+>nextTag.value : Symbol(IteratorYieldResult.value, Decl(lib.es2015.iterable.d.ts, --, --))
+>nextTag : Symbol(nextTag, Decl(ttttBindingElementKeyNoName.ts, 8, 5))
+>value : Symbol(IteratorYieldResult.value, Decl(lib.es2015.iterable.d.ts, --, --))
+>start : Symbol(start, Decl(ttttBindingElementKeyNoName.ts, 3, 44))
+>offset : Symbol(offset, Decl(ttttBindingElementKeyNoName.ts, 9, 39))
+
+      const { name, closing } = nextTag.value;
+>name : Symbol(name, Decl(ttttBindingElementKeyNoName.ts, 12, 13))
+>closing : Symbol(closing, Decl(ttttBindingElementKeyNoName.ts, 12, 19))
+>nextTag.value : Symbol(IteratorYieldResult.value, Decl(lib.es2015.iterable.d.ts, --, --))
+>nextTag : Symbol(nextTag, Decl(ttttBindingElementKeyNoName.ts, 8, 5))
+>value : Symbol(IteratorYieldResult.value, Decl(lib.es2015.iterable.d.ts, --, --))
+
+      if (name === "code" || name === "pre") {
+>name : Symbol(name, Decl(ttttBindingElementKeyNoName.ts, 12, 13))
+>name : Symbol(name, Decl(ttttBindingElementKeyNoName.ts, 12, 13))
+
+        depth[name] = closing ? Math.max(0, depth[name] - 1) : depth[name] + 1;
+>depth : Symbol(depth, Decl(ttttBindingElementKeyNoName.ts, 7, 7))
+>name : Symbol(name, Decl(ttttBindingElementKeyNoName.ts, 12, 13))
+>closing : Symbol(closing, Decl(ttttBindingElementKeyNoName.ts, 12, 19))
+>Math.max : Symbol(Math.max, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>max : Symbol(Math.max, Decl(lib.es5.d.ts, --, --))
+>depth : Symbol(depth, Decl(ttttBindingElementKeyNoName.ts, 7, 7))
+>name : Symbol(name, Decl(ttttBindingElementKeyNoName.ts, 12, 13))
+>depth : Symbol(depth, Decl(ttttBindingElementKeyNoName.ts, 7, 7))
+>name : Symbol(name, Decl(ttttBindingElementKeyNoName.ts, 12, 13))
+      }
+      nextTag = tags.next();
+>nextTag : Symbol(nextTag, Decl(ttttBindingElementKeyNoName.ts, 8, 5))
+>tags.next : Symbol(Generator.next, Decl(lib.es2015.generator.d.ts, --, --))
+>tags : Symbol(tags, Decl(ttttBindingElementKeyNoName.ts, 6, 7))
+>next : Symbol(Generator.next, Decl(lib.es2015.generator.d.ts, --, --))
+    }
+    return tableHtml;
+>tableHtml : Symbol(tableHtml, Decl(ttttBindingElementKeyNoName.ts, 9, 29))
+
+  });
+}
+
+// Narrowing through such a key still goes by the key's identity
+declare const o: { a?: string; b?: string };
+>o : Symbol(o, Decl(ttttBindingElementKeyNoName.ts, 23, 13))
+>a : Symbol(a, Decl(ttttBindingElementKeyNoName.ts, 23, 18))
+>b : Symbol(b, Decl(ttttBindingElementKeyNoName.ts, 23, 30))
+
+const { k } = { k: "a" as const };
+>k : Symbol(k, Decl(ttttBindingElementKeyNoName.ts, 24, 7))
+>k : Symbol(k, Decl(ttttBindingElementKeyNoName.ts, 24, 15))
+>const : Symbol(const)
+
+if (o[k]) {
+>o : Symbol(o, Decl(ttttBindingElementKeyNoName.ts, 23, 13))
+>k : Symbol(k, Decl(ttttBindingElementKeyNoName.ts, 24, 7))
+
+  o[k].length;
+>o[k].length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(ttttBindingElementKeyNoName.ts, 23, 13))
+>k : Symbol(k, Decl(ttttBindingElementKeyNoName.ts, 24, 7))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+}
+const { j }: { j: "a" | "b" } = { j: "b" };
+>j : Symbol(j, Decl(ttttBindingElementKeyNoName.ts, 28, 7))
+>j : Symbol(j, Decl(ttttBindingElementKeyNoName.ts, 28, 14))
+>j : Symbol(j, Decl(ttttBindingElementKeyNoName.ts, 28, 33))
+
+if (o[j] !== undefined) {
+>o : Symbol(o, Decl(ttttBindingElementKeyNoName.ts, 23, 13))
+>j : Symbol(j, Decl(ttttBindingElementKeyNoName.ts, 28, 7))
+>undefined : Symbol(undefined)
+
+  o[j].length;
+>o[j].length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(ttttBindingElementKeyNoName.ts, 23, 13))
+>j : Symbol(j, Decl(ttttBindingElementKeyNoName.ts, 28, 7))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+  o.a.length;
+>o.a.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>o.a : Symbol(a, Decl(ttttBindingElementKeyNoName.ts, 23, 18))
+>o : Symbol(o, Decl(ttttBindingElementKeyNoName.ts, 23, 13))
+>a : Symbol(a, Decl(ttttBindingElementKeyNoName.ts, 23, 18))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+}
+
