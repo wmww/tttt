@@ -495,16 +495,16 @@ crowd-dev https://github.com/linuxfoundation/crowd.dev.git 3f19d05815fc9975c924a
 opentabs https://github.com/opentabs-dev/opentabs.git de9200b1231cae419d1a437e410114a9e2fe8eca
 # vercel-sdk: dropped, its pnpm install fails (pnpm 8: the pnpm-workspace.yaml has no `packages` field)
 #vercel-sdk https://github.com/vercel/sdk.git 49e2e4f3139f3874743d87d3daf5e1c77ca4dbfb
-# perf: no agentic-qe (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
-#agentic-qe https://github.com/proffesor-for-testing/agentic-qe.git 13469743237b2183577eeaab0a8ab22020bce121
-# perf: no emperor-agent (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
-#emperor-agent https://github.com/TheSyart/emperor-agent.git fffbefe7b3a8791cab1f13b56990a32e5475c490
-# perf: no foldkit (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
-#foldkit https://github.com/foldkit/foldkit.git b702a5efbb74bebc056b798b414ddb923a82fbd5
-# perf: no coop (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
-#coop https://github.com/roostorg/coop.git e464f8d7d42e5b6e5cbb782a38caabfb8fd3f750
-# perf: no harness-mcp (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
-#harness-mcp https://github.com/harness/mcp-server.git 69394839f0d671d17d5a580874c941a84fe7ff1d
+# perf: no agentic-qe
+agentic-qe https://github.com/proffesor-for-testing/agentic-qe.git 13469743237b2183577eeaab0a8ab22020bce121
+# perf: no emperor-agent
+emperor-agent https://github.com/TheSyart/emperor-agent.git fffbefe7b3a8791cab1f13b56990a32e5475c490
+# perf: no foldkit
+foldkit https://github.com/foldkit/foldkit.git b702a5efbb74bebc056b798b414ddb923a82fbd5
+# perf: no coop
+coop https://github.com/roostorg/coop.git e464f8d7d42e5b6e5cbb782a38caabfb8fd3f750
+# perf: no harness-mcp
+harness-mcp https://github.com/harness/mcp-server.git 69394839f0d671d17d5a580874c941a84fe7ff1d
 # Refresh 7 (2026-10-23, cor9), the sixth rule: application monorepos on heavy generic libraries (the shape of the
 # human's private projects). `scripts/reposearch.py genericapp` on the topics monorepo, turborepo, effect, zod,
 # drizzle-orm, drizzle, kysely, hono, trpc, tanstack, tanstack-start, tanstack-router, t3-stack, saas, fullstack, bun,
