@@ -1,0 +1,40 @@
+//// [test/cases/npm__vobs_theme_TS1003.ts] ////
+
+=== npm__vobs_theme_TS1003.ts ===
+// origin: npm @vobs/theme@1.8.18 https://github.com/vobsjs/vobs tsconfig.bench.json seed 20261029
+// flip: no
+// `?.` followed by whitespace before the call's `(` or the element access's `[`: one token, then the call (TS1003 Identifier expected in tttt, and the program's other errors went missing)
+declare const f: ((a: number) => number) | undefined;
+>f : Symbol(f, Decl(npm__vobs_theme_TS1003.ts, 3, 13))
+>a : Symbol(a, Decl(npm__vobs_theme_TS1003.ts, 3, 19))
+
+declare const o: { m?: (a: number) => number; a?: number[] };
+>o : Symbol(o, Decl(npm__vobs_theme_TS1003.ts, 4, 13))
+>m : Symbol(m, Decl(npm__vobs_theme_TS1003.ts, 4, 18))
+>a : Symbol(a, Decl(npm__vobs_theme_TS1003.ts, 4, 24))
+>a : Symbol(a, Decl(npm__vobs_theme_TS1003.ts, 4, 45))
+
+f?. (1);
+>f : Symbol(f, Decl(npm__vobs_theme_TS1003.ts, 3, 13))
+
+f ?.(1);
+>f : Symbol(f, Decl(npm__vobs_theme_TS1003.ts, 3, 13))
+
+o.m?.  (2);
+>o.m : Symbol(m, Decl(npm__vobs_theme_TS1003.ts, 4, 18))
+>o : Symbol(o, Decl(npm__vobs_theme_TS1003.ts, 4, 13))
+>m : Symbol(m, Decl(npm__vobs_theme_TS1003.ts, 4, 18))
+
+o.a?. [0];
+>o.a : Symbol(a, Decl(npm__vobs_theme_TS1003.ts, 4, 45))
+>o : Symbol(o, Decl(npm__vobs_theme_TS1003.ts, 4, 13))
+>a : Symbol(a, Decl(npm__vobs_theme_TS1003.ts, 4, 45))
+
+f?. /* c */ (3);
+>f : Symbol(f, Decl(npm__vobs_theme_TS1003.ts, 3, 13))
+
+f?.
+>f : Symbol(f, Decl(npm__vobs_theme_TS1003.ts, 3, 13))
+
+  (4);
+

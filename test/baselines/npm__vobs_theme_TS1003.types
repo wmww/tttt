@@ -1,0 +1,52 @@
+//// [test/cases/npm__vobs_theme_TS1003.ts] ////
+
+=== npm__vobs_theme_TS1003.ts ===
+// origin: npm @vobs/theme@1.8.18 https://github.com/vobsjs/vobs tsconfig.bench.json seed 20261029
+// flip: no
+// `?.` followed by whitespace before the call's `(` or the element access's `[`: one token, then the call (TS1003 Identifier expected in tttt, and the program's other errors went missing)
+declare const f: ((a: number) => number) | undefined;
+>f : ((a: number) => number) | undefined
+>a : number
+
+declare const o: { m?: (a: number) => number; a?: number[] };
+>o : { m?: (a: number) => number; a?: number[]; }
+>m : ((a: number) => number) | undefined
+>a : number
+>a : number[] | undefined
+
+f?. (1);
+>f?. (1) : number | undefined
+>f : ((a: number) => number) | undefined
+>1 : 1
+
+f ?.(1);
+>f ?.(1) : number | undefined
+>f : ((a: number) => number) | undefined
+>1 : 1
+
+o.m?.  (2);
+>o.m?.  (2) : number | undefined
+>o.m : ((a: number) => number) | undefined
+>o : { m?: (a: number) => number; a?: number[]; }
+>m : ((a: number) => number) | undefined
+>2 : 2
+
+o.a?. [0];
+>o.a?. [0] : number | undefined
+>o.a : number[] | undefined
+>o : { m?: (a: number) => number; a?: number[]; }
+>a : number[] | undefined
+>0 : 0
+
+f?. /* c */ (3);
+>f?. /* c */ (3) : number | undefined
+>f : ((a: number) => number) | undefined
+>3 : 3
+
+f?.
+>f?.  (4) : number | undefined
+>f : ((a: number) => number) | undefined
+
+  (4);
+>4 : 4
+

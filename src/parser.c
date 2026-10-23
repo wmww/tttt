@@ -10653,9 +10653,20 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
         goto operators;
     }
     bool missing_call_args = false;
-    if (p.pos[0] == '?' && p.pos[1] == '.' && (p.pos[2] == '(' || p.pos[2] == '[')) {
+    // `a?.(x)`, `a?.[i]`, also with whitespace or comments after the `?.` (`f?. (x)`: tsc's scanner makes `?.` one
+    // token, and the call or element access follows it like any other token)
+    char after_question_dot = 0;
+    if (p.pos[0] == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')) {
+        Parser q = parser(&p);
+        q.pos += 2;
+        hop_whitespace(&q);
+        after_question_dot = *q.pos;
+        parse_fail(&q);
+    }
+    if (after_question_dot == '(' || after_question_dot == '[') {
         optional_chain = true;
         p.pos += 2;
+        hop_whitespace(&p);
     } else if (p.pos[0] == '?' && p.pos[1] == '.' && p.pos[2] == '<' && !p.shared->source->is_js &&
         !ctx.entity_name && new_keyword_precedence > ctx.min_precedence
     ) {
