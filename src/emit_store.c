@@ -168,11 +168,26 @@ static FailableResult view_change_cwd(Fs const* fs, csview path) {
     return fs_change_cwd(((EmitView const*)fs)->inner, path);
 }
 
+// TTTT_DEBUG_EMIT_STORE=reads (main.c's store_declarations() prints the writes with any value): which owner's text
+// served a read, to see which emitted declarations a -b program saw
+static void debug_read(EmitView const* me, csview path, cstr const* text) {
+    char const* debug = getenv("TTTT_DEBUG_EMIT_STORE");
+    if (!debug || !strstr(debug, "reads")) return;
+    for (u32 i = 0; i < my visible_count; i++) {
+        EmitOwner const* o = &my store->owners[my visible[i]];
+        if (o->count && text >= o->texts && text < o->texts + o->count) {
+            eprintln("read ", path, " from ", my visible[i]);
+            return;
+        }
+    }
+}
+
 static FailableResult view_read_file(Fs const* fs, csview path, returns cstr) {
     EmitView const* me = (EmitView const*)fs;
     EmitEntry entry;
     cstr const* text = nullptr;
     if (view_lookup(me, path, &entry, &text) && text) {
+        debug_read(me, path, text);
         *_OUTPUT_PARAM = cstr_clone(*text);
         return (FailableResult){0};
     }
