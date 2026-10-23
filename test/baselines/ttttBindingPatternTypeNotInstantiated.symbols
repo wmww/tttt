@@ -1,0 +1,37 @@
+//// [test/cases/ttttBindingPatternTypeNotInstantiated.ts] ////
+
+=== ttttBindingPatternTypeNotInstantiated.ts ===
+// A binding pattern's implied type has no symbol, so instantiation leaves it as it is (tsc's
+// couldContainTypeVariables of an anonymous type asks its symbol): `{ a?: T }` stays that in `f<string>`
+function f<T>({ a = null! as T }) {}
+>f : Symbol(f, Decl(ttttBindingPatternTypeNotInstantiated.ts, 0, 0))
+>T : Symbol(T, Decl(ttttBindingPatternTypeNotInstantiated.ts, 2, 11))
+>a : Symbol(a, Decl(ttttBindingPatternTypeNotInstantiated.ts, 2, 15))
+>T : Symbol(T, Decl(ttttBindingPatternTypeNotInstantiated.ts, 2, 11))
+
+f<string>({ a: "x" });
+>f : Symbol(f, Decl(ttttBindingPatternTypeNotInstantiated.ts, 0, 0))
+>a : Symbol(a, Decl(ttttBindingPatternTypeNotInstantiated.ts, 3, 11))
+
+function g<T>(x: T) { return ({ a = x }) => a; }
+>g : Symbol(g, Decl(ttttBindingPatternTypeNotInstantiated.ts, 3, 22))
+>T : Symbol(T, Decl(ttttBindingPatternTypeNotInstantiated.ts, 4, 11))
+>x : Symbol(x, Decl(ttttBindingPatternTypeNotInstantiated.ts, 4, 14))
+>T : Symbol(T, Decl(ttttBindingPatternTypeNotInstantiated.ts, 4, 11))
+>a : Symbol(a, Decl(ttttBindingPatternTypeNotInstantiated.ts, 4, 31))
+>x : Symbol(x, Decl(ttttBindingPatternTypeNotInstantiated.ts, 4, 14))
+>a : Symbol(a, Decl(ttttBindingPatternTypeNotInstantiated.ts, 4, 31))
+
+g(1)({ a: 1 });
+>g : Symbol(g, Decl(ttttBindingPatternTypeNotInstantiated.ts, 3, 22))
+>a : Symbol(a, Decl(ttttBindingPatternTypeNotInstantiated.ts, 5, 6))
+
+function h<T>([a = null! as T]) {}
+>h : Symbol(h, Decl(ttttBindingPatternTypeNotInstantiated.ts, 5, 15))
+>T : Symbol(T, Decl(ttttBindingPatternTypeNotInstantiated.ts, 6, 11))
+>a : Symbol(a, Decl(ttttBindingPatternTypeNotInstantiated.ts, 6, 15))
+>T : Symbol(T, Decl(ttttBindingPatternTypeNotInstantiated.ts, 6, 11))
+
+h<string>(["x"]);
+>h : Symbol(h, Decl(ttttBindingPatternTypeNotInstantiated.ts, 5, 15))
+

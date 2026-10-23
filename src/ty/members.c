@@ -6535,6 +6535,9 @@ Ty const* ty_object_literal_alternative(
         if (literal_node && ty_literal_has_outer_type_params(literal_node)) {
             flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
         }
+        // (A type without a symbol is never instantiated nor inferred to: tsc's couldContainTypeVariables of an
+        // anonymous type asks its symbol's declarations. A binding pattern's `{ a?: T }` stays that in an instance)
+        if (no_symbol) flags &= ~(u32)TYF_COULD_CONTAIN_TYPE_VARIABLES;
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
         if (kind != OBJECT_SYNTHETIC && !compiler_options()->strict_null_checks) {
             // (A spread property's ContainsWideningType doesn't propagate: tsc's checkObjectLiteral only collects its own

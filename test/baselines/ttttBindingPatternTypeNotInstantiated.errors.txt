@@ -1,0 +1,22 @@
+ttttBindingPatternTypeNotInstantiated.ts(4,13): error TS2322: Type 'string' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+ttttBindingPatternTypeNotInstantiated.ts(6,8): error TS2322: Type 'number' is not assignable to type 'T'.
+  'T' could be instantiated with an arbitrary type which could be unrelated to 'number'.
+
+
+==== ttttBindingPatternTypeNotInstantiated.ts (2 errors) ====
+    // A binding pattern's implied type has no symbol, so instantiation leaves it as it is (tsc's
+    // couldContainTypeVariables of an anonymous type asks its symbol): `{ a?: T }` stays that in `f<string>`
+    function f<T>({ a = null! as T }) {}
+    f<string>({ a: "x" });
+                ~
+!!! error TS2322: Type 'string' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to 'string'.
+    function g<T>(x: T) { return ({ a = x }) => a; }
+    g(1)({ a: 1 });
+           ~
+!!! error TS2322: Type 'number' is not assignable to type 'T'.
+!!! error TS2322:   'T' could be instantiated with an arbitrary type which could be unrelated to 'number'.
+    function h<T>([a = null! as T]) {}
+    h<string>(["x"]);
+    

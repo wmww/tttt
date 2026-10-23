@@ -1,0 +1,47 @@
+//// [test/cases/ttttBindingPatternTypeNotInstantiated.ts] ////
+
+=== ttttBindingPatternTypeNotInstantiated.ts ===
+// A binding pattern's implied type has no symbol, so instantiation leaves it as it is (tsc's
+// couldContainTypeVariables of an anonymous type asks its symbol): `{ a?: T }` stays that in `f<string>`
+function f<T>({ a = null! as T }) {}
+>f : <T>({ a }: { a?: T | undefined; }) => void
+>a : T
+>null! as T : T
+>null! : never
+
+f<string>({ a: "x" });
+>f<string>({ a: "x" }) : void
+>f : <T>({ a }: { a?: T | undefined; }) => void
+>{ a: "x" } : { a: string; }
+>a : string
+>"x" : "x"
+
+function g<T>(x: T) { return ({ a = x }) => a; }
+>g : <T>(x: T) => ({ a }: { a?: T | undefined; }) => T
+>x : T
+>({ a = x }) => a : ({ a }: { a?: T | undefined; }) => T
+>a : T
+>x : T
+>a : T
+
+g(1)({ a: 1 });
+>g(1)({ a: 1 }) : number
+>g(1) : ({ a }: { a?: T | undefined; }) => number
+>g : <T>(x: T) => ({ a }: { a?: T | undefined; }) => T
+>1 : 1
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+function h<T>([a = null! as T]) {}
+>h : <T>([a]: [(T | undefined)?]) => void
+>a : T
+>null! as T : T
+>null! : never
+
+h<string>(["x"]);
+>h<string>(["x"]) : void
+>h : <T>([a]: [(T | undefined)?]) => void
+>["x"] : [string]
+>"x" : "x"
+
