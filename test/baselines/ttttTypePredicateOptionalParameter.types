@@ -1,0 +1,38 @@
+//// [test/cases/ttttTypePredicateOptionalParameter.ts] ////
+
+=== ttttTypePredicateOptionalParameter.ts ===
+// A type predicate's type is checked against the parameter symbol's type (tsc's checkTypePredicate, getTypeOfSymbol):
+// an optional parameter's has undefined, so `asserts size is Size | undefined` fits `size?: string` (tanstack-ai's
+// ai-grok validateVideoSize). Without strictNullChecks nothing changes; a default value adds nothing
+type AR = '1:1' | '16:9'
+>AR : AR
+
+type Size = AR | `${AR}_${'480p' | '720p'}`
+>Size : Size
+
+export function validate(model: string, size?: string): asserts size is Size | undefined {
+>validate : (model: string, size?: string) => asserts size is Size | undefined
+>model : string
+>size : string | undefined
+
+    if (size === undefined) return
+>size === undefined : boolean
+>size : string | undefined
+>undefined : undefined
+}
+export function isSize(size?: string): size is Size | undefined {
+>isSize : (size?: string) => size is Size | undefined
+>size : string | undefined
+
+    return true
+>true : true
+}
+export function withDefault(size: string = '1:1'): size is Size | undefined {
+>withDefault : (size?: string) => size is Size | undefined
+>size : string
+>'1:1' : "1:1"
+
+    return true
+>true : true
+}
+

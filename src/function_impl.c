@@ -1090,9 +1090,12 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             } else if (predicate->has_type && span_valid(predicate->type_span)) {
                 Checker* checker = current_checker;
                 Ty const* predicate_type = ty_from_node(checker, &predicate->type, (LowerCtx){ .generic = true });
-                ty_check_type_predicate(checker, predicate_type,
-                    ty_binding_type(checker, &arg->initializer.binding, (LowerCtx){ .generic = true }), predicate->type_span,
-                    errs);
+                // (Against the parameter symbol's type, getTypeOfSymbol: an optional one's has undefined, addOptionality)
+                Ty const* param_type = ty_binding_type(checker, &arg->initializer.binding, (LowerCtx){ .generic = true });
+                if (arg->initializer.binding.optional_parameter && !(param_type->flags & TYF_ANY)) {
+                    param_type = ty_optional_param_type(checker, param_type);
+                }
+                ty_check_type_predicate(checker, predicate_type, param_type, predicate->type_span, errs);
             }
         } else {
             bool in_pattern = false;

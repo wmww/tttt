@@ -1,0 +1,42 @@
+//// [test/cases/ttttTypePredicateOptionalParameter.ts] ////
+
+=== ttttTypePredicateOptionalParameter.ts ===
+// A type predicate's type is checked against the parameter symbol's type (tsc's checkTypePredicate, getTypeOfSymbol):
+// an optional parameter's has undefined, so `asserts size is Size | undefined` fits `size?: string` (tanstack-ai's
+// ai-grok validateVideoSize). Without strictNullChecks nothing changes; a default value adds nothing
+type AR = '1:1' | '16:9'
+>AR : Symbol(AR, Decl(ttttTypePredicateOptionalParameter.ts, 0, 0))
+
+type Size = AR | `${AR}_${'480p' | '720p'}`
+>Size : Symbol(Size, Decl(ttttTypePredicateOptionalParameter.ts, 3, 24))
+>AR : Symbol(AR, Decl(ttttTypePredicateOptionalParameter.ts, 0, 0))
+>AR : Symbol(AR, Decl(ttttTypePredicateOptionalParameter.ts, 0, 0))
+
+export function validate(model: string, size?: string): asserts size is Size | undefined {
+>validate : Symbol(validate, Decl(ttttTypePredicateOptionalParameter.ts, 4, 43))
+>model : Symbol(model, Decl(ttttTypePredicateOptionalParameter.ts, 5, 25))
+>size : Symbol(size, Decl(ttttTypePredicateOptionalParameter.ts, 5, 39))
+>size : Symbol(size, Decl(ttttTypePredicateOptionalParameter.ts, 5, 39))
+>Size : Symbol(Size, Decl(ttttTypePredicateOptionalParameter.ts, 3, 24))
+
+    if (size === undefined) return
+>size : Symbol(size, Decl(ttttTypePredicateOptionalParameter.ts, 5, 39))
+>undefined : Symbol(undefined)
+}
+export function isSize(size?: string): size is Size | undefined {
+>isSize : Symbol(isSize, Decl(ttttTypePredicateOptionalParameter.ts, 7, 1))
+>size : Symbol(size, Decl(ttttTypePredicateOptionalParameter.ts, 8, 23))
+>size : Symbol(size, Decl(ttttTypePredicateOptionalParameter.ts, 8, 23))
+>Size : Symbol(Size, Decl(ttttTypePredicateOptionalParameter.ts, 3, 24))
+
+    return true
+}
+export function withDefault(size: string = '1:1'): size is Size | undefined {
+>withDefault : Symbol(withDefault, Decl(ttttTypePredicateOptionalParameter.ts, 10, 1))
+>size : Symbol(size, Decl(ttttTypePredicateOptionalParameter.ts, 11, 28))
+>size : Symbol(size, Decl(ttttTypePredicateOptionalParameter.ts, 11, 28))
+>Size : Symbol(Size, Decl(ttttTypePredicateOptionalParameter.ts, 3, 24))
+
+    return true
+}
+
