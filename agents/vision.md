@@ -225,6 +225,13 @@ measured wins first; land fast and gate in batches.
 - **The oracle is tsc as it ships** (tsgo 7.1): no dual-version modes, delete what the oracle deleted, re-pin when a
   release lands. The oracle tools are tsgo built from source with a Go overlay (`test/oracle`), so instrumenting tsgo
   stays one `go build` away.
+- **The sweep is a training set; the measure is fresh large repositories, per repo** (2026-10-23, the human: "over half
+  of the random reasonably large projects I test, clean under tsgo 7.1, have incorrect errors under tttt, even
+  single-threaded"). Every repository in the source sweep has had its divergences fixed, so its 99.5% says nothing
+  about the next project. The honest number is the day-one match rate of fresh LARGE repositories counted per repo
+  (a repo is clean only if every config matches; refresh 6 was 24 / 29 repos on day one), measured at one checker
+  AND at the defaults. Refreshes 7 (generic-library app monorepos) and 8 (random large repos, no rule) started on
+  2026-10-23; keep adding fresh large repos until the per-repo day-one rate stays above ~95%.
 - **Real projects are the second oracle, and oracles must look both ways.** A rising pass count with flat corpus
   counts is test-chasing; a clean corpus only finds spurious diagnostics, flag flips and mutations find missing ones.
   Rank by root cause across projects, not by code (one mapped type with an `as` clause was 810 TS7006); prefer fixes
