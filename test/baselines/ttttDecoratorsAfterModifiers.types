@@ -1,0 +1,60 @@
+//// [test/cases/ttttDecoratorsAfterModifiers.ts] ////
+
+=== ttttDecoratorsAfterModifiers.ts ===
+// Decorators after the modifiers (tsc's parseModifiers: leading decorators, modifiers, trailing decorators, modifiers)
+// on what can't be decorated are TS1206, not a parse error; a declare class's decorators aren't ambient (no TS1183)
+declare const dec: any;
+>dec : any
+
+@dec function f1() {}
+>dec : any
+>f1 : () => void
+
+@dec const x = 1;
+>dec : any
+>x : 1
+>1 : 1
+
+@dec export function f2() {}
+>dec : any
+>f2 : () => void
+
+export @dec function f3() {}
+>dec : any
+>f3 : () => void
+
+export @dec const x3 = 1;
+>dec : any
+>x3 : 1
+>1 : 1
+
+@dec export @dec function f4() {}
+>dec : any
+>dec : any
+>f4 : () => void
+
+@dec export const x4 = 1;
+>dec : any
+>x4 : 1
+>1 : 1
+
+@dec export declare class C1 {}
+>dec : any
+>C1 : C1
+
+export @dec declare class C2 {}
+>dec : any
+>C2 : C2
+
+@dec(() => {}) declare class C3 {}
+>dec(() => {}) : any
+>dec : any
+>() => {} : () => void
+>C3 : C3
+
+export @dec(function () {}) declare class C4 {}
+>dec(function () {}) : any
+>dec : any
+>function () {} : () => void
+>C4 : C4
+

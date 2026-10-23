@@ -14731,13 +14731,14 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             Parser c = parser(&q);
             bool is_default = hop_start_if_ends_on_word_break(&c, "default");
             hop_whitespace(&c);
-            is_default = is_default && (starts_with_followed_by_word_break(&c, "class") || starts_with_followed_by_word_break(&c, "abstract"));
+            bool default_class = is_default && (starts_with_followed_by_word_break(&c, "class") || starts_with_followed_by_word_break(&c, "abstract"));
             if (is_default) {
                 parse_success(&c);
                 parse_success(&q);
                 Span first = span_make(p.shared->source, at, span_end_ptr(expr_outer_span(vec_expr_at(&between, 0))));
-                if (p.shared->source->is_js) js_syntax_error(&p, first, 1206, "Decorators are not valid here.");
-                else grammar_error(&p, first, 1206, "Decorators are not valid here.");
+                // (Another default export, `export @dec default function f() {}`, is TS1206 below, at the same `@`)
+                if (default_class && p.shared->source->is_js) js_syntax_error(&p, first, 1206, "Decorators are not valid here.");
+                else if (default_class) grammar_error(&p, first, 1206, "Decorators are not valid here.");
                 if (vec_expr_is_empty(&decorators)) decorators_span = first;
                 for_each (i, vec_expr, &between) vec_expr_push(&decorators, *i);
                 between.size = 0;
@@ -14750,6 +14751,35 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             parse_fail(&q);
         }
         vec_expr_drop(&between);
+    }
+    if (vec_spanned_modifier_size(&modifiers.spanned) && *p.pos == '@') {
+        // Decorators after the modifiers, then maybe more modifiers (tsc's parseModifiers with allowDecorators: leading
+        // decorators, modifiers, trailing decorators, modifiers), before any declaration: `export @dec function f() {}`
+        // is TS1206 like a leading one. A class's own are parse_class_decl()'s (TS8038 for both)
+        Parser q = parser(&p);
+        char const* at = q.pos;
+        VecExpr trailing = {0};
+        ModifierList more = {0};
+        bool taken = false;
+        if (parse_decorators(&q, &trailing)) {
+            hop_whitespace(&q);
+            if (parse_modifier_list(&q, false, &more)) hop_whitespace(&q);
+            taken = vec_spanned_modifier_size(&more.spanned) || !starts_with_followed_by_word_break(&q, "class");
+        }
+        if (taken) {
+            parse_success(&q);
+            if (vec_expr_is_empty(&decorators)) decorators_span = span_make(p.shared->source, at, at + 1);
+            for_each (i, vec_expr, &trailing) vec_expr_push(&decorators, *i);
+            trailing.size = 0;
+            for_each (i, vec_spanned_modifier, &more.spanned) {
+                vec_spanned_modifier_push(&modifiers.spanned, *i);
+                modifiers.includes[i->tag] = true;
+            }
+        } else {
+            parse_fail(&q);
+        }
+        vec_expr_drop(&trailing);
+        modifier_list_drop(&more);
     }
     const char* keyword = p.pos;
     DeclStatementProps decl_props = {

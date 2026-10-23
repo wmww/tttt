@@ -672,6 +672,9 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
         ScopePendingMark pending_mark = scope_pending_mark(names->binder);
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope_rare_mut(scope)->decorator_of = me;
+        // (Not ambient for the class's own `declare`: tsc's parseDeclaration parses the decorators with the modifiers,
+        // before it enters the ambient context, `@dec(() => {}) declare class C {}` has no TS1183)
+        if (names->self == my symbol && names->parent) scope->ambient = names->parent->ambient;
         // (A class expression can't have legacy decorators: TS1206, and tsc's checkDecorators never looks at them)
         bool invalid = compiler_options()->experimental_decorators && my is_expression;
         for_each (i, vec_expr, &my decorators) {

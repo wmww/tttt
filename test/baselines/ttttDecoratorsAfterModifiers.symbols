@@ -1,0 +1,53 @@
+//// [test/cases/ttttDecoratorsAfterModifiers.ts] ////
+
+=== ttttDecoratorsAfterModifiers.ts ===
+// Decorators after the modifiers (tsc's parseModifiers: leading decorators, modifiers, trailing decorators, modifiers)
+// on what can't be decorated are TS1206, not a parse error; a declare class's decorators aren't ambient (no TS1183)
+declare const dec: any;
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+
+@dec function f1() {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>f1 : Symbol(f1, Decl(ttttDecoratorsAfterModifiers.ts, 2, 23))
+
+@dec const x = 1;
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>x : Symbol(x, Decl(ttttDecoratorsAfterModifiers.ts, 4, 10))
+
+@dec export function f2() {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>f2 : Symbol(f2, Decl(ttttDecoratorsAfterModifiers.ts, 4, 17))
+
+export @dec function f3() {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>f3 : Symbol(f3, Decl(ttttDecoratorsAfterModifiers.ts, 5, 28))
+
+export @dec const x3 = 1;
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>x3 : Symbol(x3, Decl(ttttDecoratorsAfterModifiers.ts, 7, 17))
+
+@dec export @dec function f4() {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>f4 : Symbol(f4, Decl(ttttDecoratorsAfterModifiers.ts, 7, 25))
+
+@dec export const x4 = 1;
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>x4 : Symbol(x4, Decl(ttttDecoratorsAfterModifiers.ts, 9, 17))
+
+@dec export declare class C1 {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>C1 : Symbol(C1, Decl(ttttDecoratorsAfterModifiers.ts, 9, 25))
+
+export @dec declare class C2 {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>C2 : Symbol(C2, Decl(ttttDecoratorsAfterModifiers.ts, 10, 31))
+
+@dec(() => {}) declare class C3 {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>C3 : Symbol(C3, Decl(ttttDecoratorsAfterModifiers.ts, 11, 31))
+
+export @dec(function () {}) declare class C4 {}
+>dec : Symbol(dec, Decl(ttttDecoratorsAfterModifiers.ts, 2, 13))
+>C4 : Symbol(C4, Decl(ttttDecoratorsAfterModifiers.ts, 12, 34))
+
