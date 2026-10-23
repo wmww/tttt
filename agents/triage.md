@@ -131,7 +131,13 @@ intersection's property symbol to bugs/type_core.md.
   printing `BC depth type`) stops at depth 11 where the same conditional root is on the stack; tttt reaches those roots
   at depth 7-9 (its Ns already "translation": a different instantiation path, unexplained) and goes on. Repro: a project
   extending mcp-linker's tsconfig with `files: [src/types/i18n.d.ts, a.tsx]`, a.tsx `const { t } = useTranslation();
-  export const n: { a: 1 } = t("delete");`; compare `--time`'s types with tsgo's `--extendedDiagnostics`.
+  export const n: { a: 1 } = t("delete");`; compare `--time`'s types with tsgo's `--extendedDiagnostics`. Both
+  chains start alike (`Ret` -> `KeyWithContext<AppendKeyPrefix<Key, KPrefix>, TOpt> extends ...`, KPrefix and Ns
+  generic); tsgo's stays generic in Ns all the way (`NsByTOptions<Ns, TOpt>`), tttt's meets `NsByTOptions<"translation",
+  TOpt>` about 600 steps in, so the keys become concrete and distribute: look for where a conditional's own mapper
+  (TFunctionReturn's alias arguments) is applied in tttt's distributive constraint and not in tsgo's
+  getConstraintOfDistributiveConditionalType (instrumented getResolvedBaseConstraint printing `BC depth type` on both
+  sides; /tmp builds, see notes/instrumenting_tsgo.md).
 - dtsdiff at the 7.1.0-beta cache (2026-10-23) lists b4run/packages/postgres-storage as "CRASH (no output)" in its
   emit-mode sandbox run, while `tttt -p ... --noEmit` on it exits 2 with five TS2307 (`@b4run/sdk`,
   `@b4run/permissions`: workspace packages without built declarations; the beta's `-b` sweep write-up in

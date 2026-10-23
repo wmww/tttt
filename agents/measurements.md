@@ -252,6 +252,19 @@ dropdown.tsx at 5.6). tsgo prints no per-file time, so a differential on both si
   and three quarters of its types, as it is ~40% of tttt's time and 72% of its types. tttt does it 5x faster. tsgo's
   form-alone times are noisy (GC); the type counts are exact.
 
+## Fresh repositories, fifth rule: TypeScript 7 adopters (2026-10-23)
+Refresh 6 (cor8, repos.txt "Refresh 6"): repositories whose root package.json depends on `@typescript/native-preview`
+or `typescript` 7 (the people who'd use tttt), `scripts/reposearch.py ts7` over 30 topics (stars 20..5000, pushed
+since 2026-07-01, any root lockfile, bun's included): 51 hits, the 32 with the most stars under 100 MB, 3 dropped
+(stale frozen lockfiles), 29 repos, 429 projects with a verdict. tsgo 7.1.0-beta's cache took ~1 h at `-j 2` (its
+largest runs 11 GB). **Day one (693d1440c plus the day's openclaw fixes): 409 / 429 projects (95.3%), 24 / 29 repos**
+on (file, line, code), 0 crashes; **byte-identical text (clidiff): 291 / 307** (14 of the misses are diagnostics
+verdicts, 2 text-only: tanstack-ai/packages/ai-react's header wording, pothos/packages/plugin-dataloader's header).
+Root causes by repo: openscience (Solid and React JSX in one tree; cor8: a quick type for `f?.(x)`, union mapped
+modifiers through index signatures, tsc's JSX children indexing past empty expressions: 14 / 14 after), pothos (corF),
+tanstack-ai, node-pg-migrate and portabase (corG). After: pending the shared store's repair (corF's corruption of
+graphql/@types/node store files, 10:51-10:57, voids every sweep after it).
+
 ## Fresh repositories, fourth rule: bun lockfiles (2026-10-22)
 Refresh 5 (cor6, repos.txt "Refresh 5"): the application-code rule of refresh 4 for repos whose only lockfile is bun's,
 installed with a pinned bun 1.4.3 (ensure-sources.sh): refresh 4's 16 skipped hits (12 pass its tsconfig criteria) plus
