@@ -64,7 +64,6 @@ typedef struct TsconfigReference {
                // resolveConfigFileProjectName)
     cstr written; // The written path made absolute, as messages show it ('/home/project/core')
     bool circular;
-    bool prepend; // Removed in 5.5 (TS5102)
     u32 start, end; // Byte offsets of the entry (the `{ "path": ... }` object) in the config's text
 } TsconfigReference;
 

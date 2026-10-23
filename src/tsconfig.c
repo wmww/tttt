@@ -1582,11 +1582,9 @@ failable tsconfig_load_references(Fs const* fs, csview path, TsconfigReference**
         csview written = json_get_string(entry, "path");
         if (entry->tag != JSON_OBJECT || !written.size) continue;
         JsonValue const* circular = json_get_tagged(entry, "circular", JSON_BOOL);
-        JsonValue const* prepend = json_get_tagged(entry, "prepend", JSON_BOOL);
         TsconfigReference reference = {
             .written = path_join(dir, written),
             .circular = circular && circular->boolean,
-            .prepend = prepend && prepend->boolean,
             .start = entry->start,
             .end = entry->end,
         };

@@ -578,11 +578,7 @@ static void verify_references_from(Program* program, ProjectSet* projects, u32 r
         *seen = realloc(*seen, sizeof(u32) * (*seen_count + 1));
         (*seen)[(*seen_count)++] = index;
         Project const* referenced = project_set_at(projects, index);
-        // (tsc's verifyDeprecatedProjectReference, of the program's own config)
-        if (reference->prepend && parent == root) {
-            reference_error(program, projects, root, parent, reference, 5102,
-                cstr_from("Option 'prepend' has been removed. Please remove it from your configuration."));
-        }
+        // (A reference's `prepend`, removed in 5.5, is ignored: tsgo has no verifyDeprecatedProjectReference)
         if (!referenced->readable) {
             reference_error(program, projects, root, parent, reference, 6053, cstr_d("File '", reference->written, "' not found."));
             continue;
