@@ -3209,6 +3209,38 @@ static bool is_literal_this_declaration(BinaryOpExpr const* binary) {
         (span_valid(function_impl_member_name(function)) || function->accessor);
 }
 
+// Whether checking an assignment pattern reads a reference, which runs control flow analysis: a property access target
+// (`{ a: o.p }`, `this.p`: its object is read), or a default or key that isn't a literal. tsc's getTypeOfExpression
+// caches the left side's type then (flowInvocationCount moved), so getContextualType gives the same type twice and a
+// call on the right infers from it; a pattern of plain identifiers (definite assignment targets, read without flow)
+// gets a fresh object literal type each time, which isFromBindingPattern takes for a binding pattern's
+static bool pattern_reads_references(Expr const* target) {
+    if (target->tag == EXPR_BINARY_OP && target->binary_op->op == BINARY_OP_EQUAL) {
+        Expr const* value = &target->binary_op->right;
+        if (value->tag != EXPR_LITERAL) return true;
+        target = &target->binary_op->left;
+    }
+    switch (target->tag) {
+        case EXPR_IDENTIFIER:
+            return target->identifier.keyword != 0; // (`this`)
+        case EXPR_OBJECT:
+            for_each (i, vec_object_expr_item, &target->object) {
+                if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key) return true;
+                if (object_item_rare(i)->shorthand_default && object_item_rare(i)->shorthand_default->tag != EXPR_LITERAL) return true;
+                if (i->tag != OBJECT_ITEM_SHORTHAND && pattern_reads_references(&i->value)) return true;
+            }
+            return false;
+        case EXPR_ARRAY:
+            for_each (i, vec_expr, &target->array) {
+                if (i->tag == EXPR_IMPLICIT_ANY) continue; // (An omitted element)
+                if (pattern_reads_references(i->tag == EXPR_SPREAD ? i->spread : i)) return true;
+            }
+            return false;
+        default:
+            return true;
+    }
+}
+
 static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binary, Ty const* left) {
     // A JSDoc `@type` of the assignment (tsgo's reparsed binary.Type, getContextualTypeForBinaryOperand)
     if (binary->jsdoc_type && !binary->jsdoc_type_borrowed) return ty_of_node(binary->jsdoc_type);
@@ -3242,12 +3274,14 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     // it the binary expression's type, getContextualTypeForAssignmentDeclaration)
     if (binary->op == BINARY_OP_EQUAL && binary->jsdoc_type) assigned_context = ty_of_node(binary->jsdoc_type);
     if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
-        (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS && binary->right.tag != EXPR_CALL
+        (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS &&
+        (binary->right.tag != EXPR_CALL || !pattern_reads_references(&binary->left))
     ) {
         // An object pattern's type is a pattern (tsc's checkObjectLiteral: `result.pattern = node`), unless a
-        // spread or computed name leaves its properties open. HACK: not for a call, whose return type infers from
-        // it like from any contextual type (TYF_BINDING_PATTERN also means tsc's isFromBindingPattern, which an
-        // assignment pattern isn't): `({ promise: this.p } = withResolvers())`
+        // spread or computed name leaves its properties open. For a call, only when no reference is read in it (see
+        // pattern_reads_references()): TYF_BINDING_PATTERN also means tsc's isFromBindingPattern, which goes by the
+        // identity of two getContextualType answers: `({ a: n } = t0())` infers nothing, `({ promise: this.p } =
+        // withResolvers())` infers from it like from any contextual type
         bool open = false;
         for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || i->computed_key;
         if (!open) {

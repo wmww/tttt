@@ -1,0 +1,108 @@
+//// [test/cases/ttttAssignmentPatternCallInference.ts] ////
+
+=== ttttAssignmentPatternCallInference.ts ===
+// A destructuring assignment's object literal pattern as a call's contextual type: tsc's isFromBindingPattern compares
+// two getContextualType answers, the left side's type, which getTypeOfExpression caches only when checking it ran
+// control flow analysis (a reference read: `o.p`, `this.p`, a default `d!`). A pattern of identifiers is a fresh type
+// each time, so nothing is inferred from it; an array literal is a tuple, one identity; a default for every type
+// parameter skips the test (bun's 73-R12)
+declare function t0<T>(): T;
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 5, 20))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 5, 20))
+
+declare function box<T>(): { v: T };
+>box : Symbol(box, Decl(ttttAssignmentPatternCallInference.ts, 5, 28))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 6, 21))
+>v : Symbol(v, Decl(ttttAssignmentPatternCallInference.ts, 6, 28))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 6, 21))
+
+declare function prom<T>(): Promise<T>;
+>prom : Symbol(prom, Decl(ttttAssignmentPatternCallInference.ts, 6, 36))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 7, 22))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 7, 22))
+
+declare function dflt<T = { a: number }>(): T;
+>dflt : Symbol(dflt, Decl(ttttAssignmentPatternCallInference.ts, 7, 39))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 8, 22))
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 8, 27))
+>T : Symbol(T, Decl(ttttAssignmentPatternCallInference.ts, 8, 22))
+
+let n: number, u: unknown;
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>u : Symbol(u, Decl(ttttAssignmentPatternCallInference.ts, 9, 14))
+
+declare let d: number | undefined;
+>d : Symbol(d, Decl(ttttAssignmentPatternCallInference.ts, 10, 11))
+
+declare const o: { p: number };
+>o : Symbol(o, Decl(ttttAssignmentPatternCallInference.ts, 11, 13))
+>p : Symbol(p, Decl(ttttAssignmentPatternCallInference.ts, 11, 18))
+
+({ a: n } = t0());
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 12, 2))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+
+({ n } = t0());
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 13, 2))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+
+({ a: u } = t0());
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 14, 2))
+>u : Symbol(u, Decl(ttttAssignmentPatternCallInference.ts, 9, 14))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+
+({ a: n = 1 } = t0());
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 15, 2))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+
+({ a: { b: n } } = t0());
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 16, 2))
+>b : Symbol(b, Decl(ttttAssignmentPatternCallInference.ts, 16, 7))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+
+({ v: n } = box());
+>v : Symbol(v, Decl(ttttAssignmentPatternCallInference.ts, 17, 2))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>box : Symbol(box, Decl(ttttAssignmentPatternCallInference.ts, 5, 28))
+
+({ v: { w: n } } = box());
+>v : Symbol(v, Decl(ttttAssignmentPatternCallInference.ts, 18, 2))
+>w : Symbol(w, Decl(ttttAssignmentPatternCallInference.ts, 18, 7))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>box : Symbol(box, Decl(ttttAssignmentPatternCallInference.ts, 5, 28))
+
+async function f() { ({ a: n } = await prom()); }
+>f : Symbol(f, Decl(ttttAssignmentPatternCallInference.ts, 18, 26))
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 19, 23))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>prom : Symbol(prom, Decl(ttttAssignmentPatternCallInference.ts, 6, 36))
+
+// no error in either: an array literal is a tuple (one identity), a default for every type parameter skips the test,
+// and a left side that needs flow analysis is cached by getTypeOfExpression
+[n] = t0();
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+
+({ a: n } = dflt());
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 23, 2))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>dflt : Symbol(dflt, Decl(ttttAssignmentPatternCallInference.ts, 7, 39))
+
+({ a: o.p } = t0());
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 24, 2))
+>o.p : Symbol(p, Decl(ttttAssignmentPatternCallInference.ts, 11, 18))
+>o : Symbol(o, Decl(ttttAssignmentPatternCallInference.ts, 11, 13))
+>p : Symbol(p, Decl(ttttAssignmentPatternCallInference.ts, 11, 18))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+
+({ a: n = d! } = t0());
+>a : Symbol(a, Decl(ttttAssignmentPatternCallInference.ts, 25, 2))
+>n : Symbol(n, Decl(ttttAssignmentPatternCallInference.ts, 9, 3))
+>d : Symbol(d, Decl(ttttAssignmentPatternCallInference.ts, 10, 11))
+>t0 : Symbol(t0, Decl(ttttAssignmentPatternCallInference.ts, 0, 0))
+

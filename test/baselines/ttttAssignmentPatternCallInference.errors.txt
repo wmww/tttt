@@ -1,0 +1,54 @@
+ttttAssignmentPatternCallInference.ts(13,4): error TS2339: Property 'a' does not exist on type 'unknown'.
+ttttAssignmentPatternCallInference.ts(14,4): error TS2339: Property 'n' does not exist on type 'unknown'.
+ttttAssignmentPatternCallInference.ts(15,4): error TS2339: Property 'a' does not exist on type 'unknown'.
+ttttAssignmentPatternCallInference.ts(16,4): error TS2339: Property 'a' does not exist on type 'unknown'.
+ttttAssignmentPatternCallInference.ts(17,4): error TS2339: Property 'a' does not exist on type 'unknown'.
+ttttAssignmentPatternCallInference.ts(18,7): error TS2322: Type 'unknown' is not assignable to type 'number'.
+ttttAssignmentPatternCallInference.ts(19,9): error TS2339: Property 'w' does not exist on type 'unknown'.
+ttttAssignmentPatternCallInference.ts(20,25): error TS2339: Property 'a' does not exist on type 'unknown'.
+
+
+==== ttttAssignmentPatternCallInference.ts (8 errors) ====
+    // A destructuring assignment's object literal pattern as a call's contextual type: tsc's isFromBindingPattern compares
+    // two getContextualType answers, the left side's type, which getTypeOfExpression caches only when checking it ran
+    // control flow analysis (a reference read: `o.p`, `this.p`, a default `d!`). A pattern of identifiers is a fresh type
+    // each time, so nothing is inferred from it; an array literal is a tuple, one identity; a default for every type
+    // parameter skips the test (bun's 73-R12)
+    declare function t0<T>(): T;
+    declare function box<T>(): { v: T };
+    declare function prom<T>(): Promise<T>;
+    declare function dflt<T = { a: number }>(): T;
+    let n: number, u: unknown;
+    declare let d: number | undefined;
+    declare const o: { p: number };
+    ({ a: n } = t0());
+       ~
+!!! error TS2339: Property 'a' does not exist on type 'unknown'.
+    ({ n } = t0());
+       ~
+!!! error TS2339: Property 'n' does not exist on type 'unknown'.
+    ({ a: u } = t0());
+       ~
+!!! error TS2339: Property 'a' does not exist on type 'unknown'.
+    ({ a: n = 1 } = t0());
+       ~
+!!! error TS2339: Property 'a' does not exist on type 'unknown'.
+    ({ a: { b: n } } = t0());
+       ~
+!!! error TS2339: Property 'a' does not exist on type 'unknown'.
+    ({ v: n } = box());
+          ~
+!!! error TS2322: Type 'unknown' is not assignable to type 'number'.
+    ({ v: { w: n } } = box());
+            ~
+!!! error TS2339: Property 'w' does not exist on type 'unknown'.
+    async function f() { ({ a: n } = await prom()); }
+                            ~
+!!! error TS2339: Property 'a' does not exist on type 'unknown'.
+    // no error in either: an array literal is a tuple (one identity), a default for every type parameter skips the test,
+    // and a left side that needs flow analysis is cached by getTypeOfExpression
+    [n] = t0();
+    ({ a: n } = dflt());
+    ({ a: o.p } = t0());
+    ({ a: n = d! } = t0());
+    
