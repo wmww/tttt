@@ -77,6 +77,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnyPatternElementDefaultNotPadded': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttArrayUnionMethodGenericMember': {
         errors: true,
         symbols: true,
@@ -1104,6 +1109,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDefinePropertyLaterDeclarationReadonly': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDefinePropertyWritableInitializer': {
         errors: true,
         symbols: true,
@@ -1279,7 +1289,17 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExportDefaultInterfaceNoName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExportDefaultJsDocParenthesized': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttExportEqualsTypeOnlyImportSameFile': {
         errors: true,
         symbols: true,
         types: true,
@@ -1435,6 +1455,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttImportAttributeErrorUnchecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttImportExportEqualsPropertyUmdNamespace': {
         errors: true,
         symbols: true,
@@ -1577,6 +1602,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInstantiationOptionalPropertyAccess': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInstantiationStackTailCall': {
         errors: true,
         symbols: true,
@@ -1670,6 +1700,11 @@ const baselines = {
         types: true,
     },
     'ttttIntersectionTupleThis': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIntrinsicAliasKeywordAlone': {
         errors: true,
         symbols: true,
         types: true,
@@ -1832,6 +1867,11 @@ const baselines = {
         types: true,
     },
     'ttttJsdocTypedModuleExportsChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocUnmatchedParamTypeUnresolved': {
         errors: true,
         symbols: true,
         types: true,
@@ -2219,6 +2259,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttPackageTypeInvalidEmitFormat': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttParenthisizedIdentifierFollowedByExpr': {
         errors: true,
         symbols: true,
@@ -2368,6 +2413,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSetterParameterCircularNoReport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSideEffectImportTsExtension': {
         errors: true,
         symbols: true,
@@ -2414,6 +2464,11 @@ const baselines = {
         types: true,
     },
     'ttttSourceIntersectionNormalized': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttSourcePhaseImportAttributes': {
         errors: true,
         symbols: true,
         types: true,
@@ -2613,12 +2668,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeAccessorMissingParens': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeMemberGetterBody': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttTypeOnlyImportModeMismatchDetails': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeOnlyImportUnresolvedValueUse': {
         errors: true,
         symbols: true,
         types: true,
@@ -2634,6 +2699,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeParamMappedConstraintAccess': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeParameterListComma': {
         errors: true,
         symbols: true,
         types: true,
@@ -2679,6 +2749,11 @@ const baselines = {
         types: true,
     },
     'ttttTypesVersionsPrerelease': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUmdAliasCycleSpan': {
         errors: true,
         symbols: true,
         types: true,
