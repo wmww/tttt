@@ -1,0 +1,64 @@
+//// [test/cases/ttttMemberPropertyAndAccessorOneSymbol.ts] ////
+
+=== ttttMemberPropertyAndAccessorOneSymbol.ts ===
+// A property and accessors of one name in a class, interface or type literal (TS2300) are one symbol in tsgo, a
+// property written as it is read (getWriteTypeOfSymbol of a SymbolFlags.Property)
+class C2 { get a(): number { return 1 } set a(v: string | number) {} a = 2; }
+>C2 : Symbol(C2, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 0, 0))
+>a : Symbol(C2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 39), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 68))
+>a : Symbol(C2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 39), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 68))
+>v : Symbol(v, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 46))
+>a : Symbol(C2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 39), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 68))
+
+new C2().a = "s";
+>new C2().a : Symbol(C2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 39), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 68))
+>C2 : Symbol(C2, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 0, 0))
+>a : Symbol(C2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 39), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 2, 68))
+
+declare const t1: { get a(): number; set a(v: string | number); a: number };
+>t1 : Symbol(t1, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 13))
+>a : Symbol(a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 19), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 36), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 63))
+>a : Symbol(a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 19), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 36), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 63))
+>v : Symbol(v, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 43))
+>a : Symbol(a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 19), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 36), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 63))
+
+t1.a = "s";
+>t1.a : Symbol(a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 19), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 36), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 63))
+>t1 : Symbol(t1, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 13))
+>a : Symbol(a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 19), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 36), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 63))
+
+const p1: boolean = t1;
+>p1 : Symbol(p1, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 6, 5))
+>t1 : Symbol(t1, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 4, 13))
+
+interface I2 { get a(): number; set a(v: string | number); a: number }
+>I2 : Symbol(I2, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 6, 23))
+>a : Symbol(I2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 14), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 31), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 58))
+>a : Symbol(I2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 14), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 31), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 58))
+>v : Symbol(v, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 38))
+>a : Symbol(I2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 14), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 31), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 58))
+
+declare const i2: I2;
+>i2 : Symbol(i2, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 8, 13))
+>I2 : Symbol(I2, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 6, 23))
+
+i2.a = "s";
+>i2.a : Symbol(I2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 14), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 31), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 58))
+>i2 : Symbol(i2, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 8, 13))
+>a : Symbol(I2.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 14), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 31), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 7, 58))
+
+class C1 { a = 2; get a(): number { return 1 } set a(v: string | number) {} }
+>C1 : Symbol(C1, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 9, 11))
+>a : Symbol(C1.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 17), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 46))
+>a : Symbol(C1.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 17), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 46))
+>a : Symbol(C1.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 17), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 46))
+>v : Symbol(v, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 53))
+
+new C1().a = "s";
+>new C1().a : Symbol(C1.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 17), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 46))
+>C1 : Symbol(C1, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 9, 11))
+>a : Symbol(C1.a, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 10), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 17), Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 10, 46))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttMemberPropertyAndAccessorOneSymbol.ts, 12, 5))
+

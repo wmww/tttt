@@ -1,0 +1,77 @@
+//// [test/cases/ttttMemberPropertyAndAccessorOneSymbol.ts] ////
+
+=== ttttMemberPropertyAndAccessorOneSymbol.ts ===
+// A property and accessors of one name in a class, interface or type literal (TS2300) are one symbol in tsgo, a
+// property written as it is read (getWriteTypeOfSymbol of a SymbolFlags.Property)
+class C2 { get a(): number { return 1 } set a(v: string | number) {} a = 2; }
+>C2 : C2
+>a : number
+>1 : 1
+>a : number
+>v : string | number
+>a : number
+>2 : 2
+
+new C2().a = "s";
+>new C2().a = "s" : "s"
+>new C2().a : number
+>new C2() : C2
+>C2 : typeof C2
+>a : number
+>"s" : "s"
+
+declare const t1: { get a(): number; set a(v: string | number); a: number };
+>t1 : { a: number; }
+>a : number
+>a : number
+>v : string | number
+>a : number
+
+t1.a = "s";
+>t1.a = "s" : "s"
+>t1.a : number
+>t1 : { a: number; }
+>a : number
+>"s" : "s"
+
+const p1: boolean = t1;
+>p1 : boolean
+>t1 : { a: number; }
+
+interface I2 { get a(): number; set a(v: string | number); a: number }
+>a : number
+>a : number
+>v : string | number
+>a : number
+
+declare const i2: I2;
+>i2 : I2
+
+i2.a = "s";
+>i2.a = "s" : "s"
+>i2.a : number
+>i2 : I2
+>a : number
+>"s" : "s"
+
+class C1 { a = 2; get a(): number { return 1 } set a(v: string | number) {} }
+>C1 : C1
+>a : number
+>2 : 2
+>a : number
+>1 : 1
+>a : number
+>v : string | number
+
+new C1().a = "s";
+>new C1().a = "s" : "s"
+>new C1().a : number
+>new C1() : C1
+>C1 : typeof C1
+>a : number
+>"s" : "s"
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

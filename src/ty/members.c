@@ -2103,7 +2103,15 @@ static void builder_add_class_items(
                         if (other->method.accessor == CLASS_ACCESSOR_GET && !rare->class_getter) rare->class_getter = &other->method.func;
                         if (other->method.accessor == CLASS_ACCESSOR_SET && !rare->class_setter) rare->class_setter = &other->method.func;
                     }
-                    if (has_getter) prop_decl_rare_mut(me, prop->decl)->write_node = setter_type; // Writes go by the setter's parameter type
+                    // (With a property of the name, one symbol in tsgo (TS2300) and a SymbolFlags.Property: written as it
+                    // is read, getWriteTypeOfSymbol)
+                    bool has_field = false;
+                    for (ClassNamesakes it = class_namesakes(class_decl, i, computed); class_namesakes_next(&it) && !has_field;) {
+                        has_field = it.item->tag == CLASS_ITEM_FIELD && it.item->field.is_static == i->method.is_static &&
+                            !it.item->field.computed_key && !i->method.computed_key && !it.item->field.is_auto_accessor &&
+                            cstr_eq(&it.item->field.name_string, &i->method.name_string);
+                    }
+                    if (has_getter && !has_field) prop_decl_rare_mut(me, prop->decl)->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }
                 u32 visible = 0;
@@ -5726,7 +5734,11 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     void const* known;
     if (intern_has(&my links, key, 2, &known)) return known;
     Ty const* type = nullptr;
-    if (prop_decl_rare(prop->decl)->write_node) {
+    // (A property declared with accessors of its name, one symbol in tsgo (TS2300), is a SymbolFlags.Property:
+    // getWriteTypeOfSymbol gives its read type)
+    if ((prop->decl->member_kinds & 1u) && (prop->decl->member_kinds & 12u)) {
+        type = nullptr;
+    } else if (prop_decl_rare(prop->decl)->write_node) {
         type = ty_from_node(me, prop_decl_rare(prop->decl)->write_node, prop->decl->ctx);
     } else if (prop_decl_rare(prop->decl)->setter && setter_is_annotated(prop_decl_rare(prop->decl)->setter)) {
         type = ty_object_literal_accessor_type(me, prop_decl_rare(prop->decl)->setter, false);
