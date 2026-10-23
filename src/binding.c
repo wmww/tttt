@@ -486,6 +486,14 @@ void binding_typecheck_bodiless(Binding* me, ErrorCtx* errs) {
     binding_typecheck_at(me, nullptr, span_null, true, false, true, errs);
 }
 
+// An unannotated setter parameter typed by its getter: its type is the accessor's (tsc's getTypeOfParameter through
+// getTypeOfAccessors), whose circularity the accessor reports (TS7023 on the getter), not the parameter (no TS7022)
+static bool setter_parameter_of_getter(Binding const* me) {
+    if (my parent || !my source || my source->tag != LAZY_TYPE_INITIALIZED_BINDING) return false;
+    InitializedBinding const* initialized = c_container_of(my source, InitializedBinding, lazy_type);
+    return initialized_binding_getter(initialized) != nullptr;
+}
+
 // `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode).
 // `assigned`: whether the root is assigned anything (not a variable or parameter without initializer)
 // `type_checked`: the annotation was walked already
@@ -583,7 +591,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     error_ctx_error_d(errs, at, 2502,
                         "'", my content_span, "' is referenced directly or indirectly in its own type annotation.");
                 } else if (type == ty_intrinsic(current_checker, TY_CIRCULAR) &&
-                    compiler_options()->no_implicit_any && !my has_explicit_type
+                    compiler_options()->no_implicit_any && !my has_explicit_type && !setter_parameter_of_getter(me)
                 ) {
                     // (At tsc's symbol.valueDeclaration: a parameter's whole declaration, default included)
                     Span at = my content_span;
