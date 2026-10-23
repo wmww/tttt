@@ -1,0 +1,25 @@
+ttttJsxNestedExcessProperty.tsx(6,12): error TS2322: Type '{ "data-o": { alpha: number; b: number; }; }' is not assignable to type '{ "data-o"?: { alpha: number; } | undefined; }'.
+  Types of property '"data-o"' are incompatible.
+    Type '{ alpha: number; b: number; }' is not assignable to type '{ alpha: number; }'.
+      Property 'b' does not exist on type '{ alpha: number; }'.
+ttttJsxNestedExcessProperty.tsx(8,23): error TS2353: Object literal may only specify known properties, and 'class' does not exist in type '{ className?: string | undefined; }'.
+
+
+==== ttttJsxNestedExcessProperty.tsx (2 errors) ====
+    // An excess property nested in a JSX attribute's value is reported like tsc's hasExcessProperties with the JSX
+    // attributes as the error node: "Property 'b' does not exist on type", in the chain at the element, not TS2353 at the
+    // property (bun's 27-C21, 27-C21b, 34-C17)
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+    declare function F(p: { "data-o"?: { alpha: number } }): JSX.Element;
+    const a = <F data-o={{ alpha: 1, b: 2 }} />;
+               ~
+!!! error TS2322: Type '{ "data-o": { alpha: number; b: number; }; }' is not assignable to type '{ "data-o"?: { alpha: number; } | undefined; }'.
+!!! error TS2322:   Types of property '"data-o"' are incompatible.
+!!! error TS2322:     Type '{ alpha: number; b: number; }' is not assignable to type '{ alpha: number; }'.
+!!! error TS2322:       Property 'b' does not exist on type '{ alpha: number; }'.
+    declare function G(p: { style?: { className?: string } }): JSX.Element;
+    const b = <G style={{ class: "x" }} />;
+                          ~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'class' does not exist in type '{ className?: string | undefined; }'.
+!!! related TS6500 ttttJsxNestedExcessProperty.tsx:7:25: The expected type comes from property 'style' which is declared here on type '{ style?: { className?: string | undefined; } | undefined; }'
+    

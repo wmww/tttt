@@ -7795,9 +7795,13 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
         // A hyphenated JSX attribute (`data-x`) is never excess (tsc's isIgnoredJsxProperty)
         if (is_jsx && csview_contains(atom_sv(prop->name), "-")) continue;
         if (!is_known_property(me, reduced, prop->name)) {
-            if (report && is_jsx) {
+            // (tsc's hasExcessProperties branches on the error node, which stays the JSX attributes for what is nested
+            // in an attribute's value, `data-o={{ alpha: 1, b: 2 }}`: the same message, at the attributes)
+            bool jsx_error_node = is_jsx || (st->source_depth > 0 && st->source_stack[0]->kind == TY_ANONYMOUS &&
+                st->source_stack[0]->anonymous.jsx_attributes);
+            if (report && jsx_error_node) {
                 // Not an object literal to the user: the error moves to the attribute, under the usual head (an
-                // attribute's name is shown as written)
+                // attribute's name is shown as written; one nested in an attribute's value isn't an attribute: it stays)
                 cstr name = cstr_from_sv(atom_sv(prop->name));
                 Ty const* error_target = filter_excess_check_targets(me, reduced);
                 cstr target_str = display_for_report(me, error_target);
@@ -7810,8 +7814,8 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                 vec_ty_report_line_push(&st->lines, (TyReportLine){
                     .ts_code = suggestion.size ? 2551 : 2339,
                     .message = message,
-                    .span = prop->decl->name_span,
-                    .relocates = span_valid(prop->decl->name_span), // (not the children, which aren't an attribute)
+                    .span = is_jsx ? prop->decl->name_span : span_null,
+                    .relocates = is_jsx && span_valid(prop->decl->name_span), // (not the children, which aren't an attribute)
                 });
                 c_drop(cstr, &name, &target_str);
             } else if (report) {

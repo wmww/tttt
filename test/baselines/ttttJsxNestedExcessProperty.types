@@ -1,0 +1,43 @@
+//// [test/cases/ttttJsxNestedExcessProperty.tsx] ////
+
+=== ttttJsxNestedExcessProperty.tsx ===
+// An excess property nested in a JSX attribute's value is reported like tsc's hasExcessProperties with the JSX
+// attributes as the error node: "Property 'b' does not exist on type", in the chain at the element, not TS2353 at the
+// property (bun's 27-C21, 27-C21b, 34-C17)
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements {} }
+>e : 1
+
+declare function F(p: { "data-o"?: { alpha: number } }): JSX.Element;
+>F : (p: { "data-o"?: { alpha: number; }; }) => JSX.Element
+>p : { "data-o"?: { alpha: number; }; }
+>"data-o" : { alpha: number; } | undefined
+>alpha : number
+>JSX : any
+
+const a = <F data-o={{ alpha: 1, b: 2 }} />;
+>a : JSX.Element
+><F data-o={{ alpha: 1, b: 2 }} /> : JSX.Element
+>F : (p: { "data-o"?: { alpha: number; }; }) => JSX.Element
+>data-o : { alpha: number; b: number; }
+>{ alpha: 1, b: 2 } : { alpha: number; b: number; }
+>alpha : number
+>1 : 1
+>b : number
+>2 : 2
+
+declare function G(p: { style?: { className?: string } }): JSX.Element;
+>G : (p: { style?: { className?: string; }; }) => JSX.Element
+>p : { style?: { className?: string; }; }
+>style : { className?: string; } | undefined
+>className : string | undefined
+>JSX : any
+
+const b = <G style={{ class: "x" }} />;
+>b : JSX.Element
+><G style={{ class: "x" }} /> : JSX.Element
+>G : (p: { style?: { className?: string; }; }) => JSX.Element
+>style : { class: string; }
+>{ class: "x" } : { class: string; }
+>class : string
+>"x" : "x"
+
