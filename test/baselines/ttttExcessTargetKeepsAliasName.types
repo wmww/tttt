@@ -1,0 +1,38 @@
+//// [test/cases/ttttExcessTargetKeepsAliasName.ts] ////
+
+=== ttttExcessTargetKeepsAliasName.ts ===
+// The excess property target of an optional property is its union without undefined, filtered through the union's
+// origin like tsc's filterType: `In | undefined` with In a named union is reported as 'In', not 'F[] | F'
+// (better-drizzle's `orderBy?: OrderByInput<...>`)
+type F = { a?: 1 } & { b?: 2 };
+>F : F
+>a : 1 | undefined
+>b : 2 | undefined
+
+type In = F | F[];
+>In : In
+
+type Q = { orderBy?: In };
+>Q : Q
+>orderBy : In | undefined
+
+export const q: Q = { orderBy: { writer: 1 } };
+>q : Q
+>{ orderBy: { writer: 1 } } : { orderBy: { writer: number; }; }
+>orderBy : { writer: number; }
+>{ writer: 1 } : { writer: number; }
+>writer : number
+>1 : 1
+
+type Q2 = { orderBy: In | null };
+>Q2 : Q2
+>orderBy : In | null
+
+export const q2: Q2 = { orderBy: { writer: 1 } };
+>q2 : Q2
+>{ orderBy: { writer: 1 } } : { orderBy: { writer: number; }; }
+>orderBy : { writer: number; }
+>{ writer: 1 } : { writer: number; }
+>writer : number
+>1 : 1
+

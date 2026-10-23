@@ -1,0 +1,38 @@
+//// [test/cases/ttttExcessTargetKeepsAliasName.ts] ////
+
+=== ttttExcessTargetKeepsAliasName.ts ===
+// The excess property target of an optional property is its union without undefined, filtered through the union's
+// origin like tsc's filterType: `In | undefined` with In a named union is reported as 'In', not 'F[] | F'
+// (better-drizzle's `orderBy?: OrderByInput<...>`)
+type F = { a?: 1 } & { b?: 2 };
+>F : Symbol(F, Decl(ttttExcessTargetKeepsAliasName.ts, 0, 0))
+>a : Symbol(a, Decl(ttttExcessTargetKeepsAliasName.ts, 3, 10))
+>b : Symbol(b, Decl(ttttExcessTargetKeepsAliasName.ts, 3, 22))
+
+type In = F | F[];
+>In : Symbol(In, Decl(ttttExcessTargetKeepsAliasName.ts, 3, 31))
+>F : Symbol(F, Decl(ttttExcessTargetKeepsAliasName.ts, 0, 0))
+>F : Symbol(F, Decl(ttttExcessTargetKeepsAliasName.ts, 0, 0))
+
+type Q = { orderBy?: In };
+>Q : Symbol(Q, Decl(ttttExcessTargetKeepsAliasName.ts, 4, 18))
+>orderBy : Symbol(orderBy, Decl(ttttExcessTargetKeepsAliasName.ts, 5, 10))
+>In : Symbol(In, Decl(ttttExcessTargetKeepsAliasName.ts, 3, 31))
+
+export const q: Q = { orderBy: { writer: 1 } };
+>q : Symbol(q, Decl(ttttExcessTargetKeepsAliasName.ts, 6, 12))
+>Q : Symbol(Q, Decl(ttttExcessTargetKeepsAliasName.ts, 4, 18))
+>orderBy : Symbol(orderBy, Decl(ttttExcessTargetKeepsAliasName.ts, 6, 21))
+>writer : Symbol(writer, Decl(ttttExcessTargetKeepsAliasName.ts, 6, 32))
+
+type Q2 = { orderBy: In | null };
+>Q2 : Symbol(Q2, Decl(ttttExcessTargetKeepsAliasName.ts, 6, 47))
+>orderBy : Symbol(orderBy, Decl(ttttExcessTargetKeepsAliasName.ts, 7, 11))
+>In : Symbol(In, Decl(ttttExcessTargetKeepsAliasName.ts, 3, 31))
+
+export const q2: Q2 = { orderBy: { writer: 1 } };
+>q2 : Symbol(q2, Decl(ttttExcessTargetKeepsAliasName.ts, 8, 12))
+>Q2 : Symbol(Q2, Decl(ttttExcessTargetKeepsAliasName.ts, 6, 47))
+>orderBy : Symbol(orderBy, Decl(ttttExcessTargetKeepsAliasName.ts, 8, 23))
+>writer : Symbol(writer, Decl(ttttExcessTargetKeepsAliasName.ts, 8, 34))
+

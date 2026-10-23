@@ -7507,7 +7507,8 @@ static Ty const* discriminated_union_target(
         else discriminated = true;
     }
     Ty const* ret = target;
-    if (discriminated && kept.len) ret = ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+    // (Through its origin, tsc's discriminateTypeByDiscriminableItems filterType: `In | undefined` is In)
+    if (discriminated && kept.len) ret = ty_union_filtered(me, target, kept.data, kept.len);
     ty_buf_drop(&kept);
     if (include != include_buf) free(include);
     return ret;
@@ -7704,7 +7705,8 @@ static Ty const* filter_excess_check_targets(Checker* me, Ty const* ty) {
     for (u32 i = 0; i < ty->composite.types.len; i++) {
         if (keep_excess_check_target(ty->composite.types.data[i])) ty_buf_push(&kept, ty->composite.types.data[i]);
     }
-    Ty const* ret = kept.len == ty->composite.types.len ? ty : ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+    // (Through its origin, tsc's filterType: `In | undefined` with In a named union is In)
+    Ty const* ret = kept.len == ty->composite.types.len ? ty : ty_union_filtered(me, ty, kept.data, kept.len);
     ty_buf_drop(&kept);
     return ret;
 }

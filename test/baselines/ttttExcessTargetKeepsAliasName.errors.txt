@@ -1,0 +1,21 @@
+ttttExcessTargetKeepsAliasName.ts(7,34): error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'In'.
+ttttExcessTargetKeepsAliasName.ts(9,36): error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'In'.
+
+
+==== ttttExcessTargetKeepsAliasName.ts (2 errors) ====
+    // The excess property target of an optional property is its union without undefined, filtered through the union's
+    // origin like tsc's filterType: `In | undefined` with In a named union is reported as 'In', not 'F[] | F'
+    // (better-drizzle's `orderBy?: OrderByInput<...>`)
+    type F = { a?: 1 } & { b?: 2 };
+    type In = F | F[];
+    type Q = { orderBy?: In };
+    export const q: Q = { orderBy: { writer: 1 } };
+                                     ~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'In'.
+!!! related TS6500 ttttExcessTargetKeepsAliasName.ts:6:12: The expected type comes from property 'orderBy' which is declared here on type 'Q'
+    type Q2 = { orderBy: In | null };
+    export const q2: Q2 = { orderBy: { writer: 1 } };
+                                       ~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'In'.
+!!! related TS6500 ttttExcessTargetKeepsAliasName.ts:8:13: The expected type comes from property 'orderBy' which is declared here on type 'Q2'
+    
