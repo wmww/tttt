@@ -1,0 +1,28 @@
+ttttTupleOptionalRestElement.ts(3,18): error TS5085: A tuple member cannot be both optional and rest.
+ttttTupleOptionalRestElement.ts(4,7): error TS2322: Type 'string[]' is not assignable to type 'never'.
+ttttTupleOptionalRestElement.ts(5,29): error TS5085: A tuple member cannot be both optional and rest.
+ttttTupleOptionalRestElement.ts(6,7): error TS2322: Type '[x: number, a?: string | undefined]' is not assignable to type 'never'.
+ttttTupleOptionalRestElement.ts(7,7): error TS2322: Type 'string | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+
+==== ttttTupleOptionalRestElement.ts (5 errors) ====
+    // `...a?: T[]` (TS5085) is an optional element of T, and alone in its tuple the array T[] (bun's 13-C11 crashed:
+    // the optional element's undefined was added to the rest array forever)
+    declare let t1: [...a?: string[]];
+                     ~~~~~~~~~~~~~~~
+!!! error TS5085: A tuple member cannot be both optional and rest.
+    const n1: never = t1;
+          ~~
+!!! error TS2322: Type 'string[]' is not assignable to type 'never'.
+    declare let t2: [x: number, ...a?: string[]];
+                                ~~~~~~~~~~~~~~~
+!!! error TS5085: A tuple member cannot be both optional and rest.
+    const n2: never = t2;
+          ~~
+!!! error TS2322: Type '[x: number, a?: string | undefined]' is not assignable to type 'never'.
+    const n3: never = t2[1];
+          ~~
+!!! error TS2322: Type 'string | undefined' is not assignable to type 'never'.
+!!! error TS2322:   Type 'undefined' is not assignable to type 'never'.
+    

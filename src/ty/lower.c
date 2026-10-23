@@ -2593,7 +2593,8 @@ static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
     void const** labels = calloc(arity, sizeof(void const*));
     bool any_named = false;
     for_each (i, vec_tuple_element, &node->tuple.elements) {
-        flags[i_index] = (i->optional ? TUPLE_ELEMENT_OPTIONAL : 0) | (i->rest ? TUPLE_ELEMENT_REST : 0);
+        // (`...a?: T[]`, TS5085: the question mark wins, tsc's getTupleElementFlags)
+        flags[i_index] = i->optional ? TUPLE_ELEMENT_OPTIONAL : i->rest ? TUPLE_ELEMENT_REST : 0;
         if (span_valid(i->maybe_name)) {
             names[i_index] = checker_atom(me, span_sv(i->maybe_name));
             labels[i_index] = i;
@@ -2614,9 +2615,18 @@ static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
     return ret;
 }
 
+static TypeNode const* array_element_type_node(TypeNode const* node);
+
 // `[b?: number]` has an element of type `number | undefined` (tsc's addOptionality)
+
 static Ty const* tuple_element_type(Checker* me, TupleElement const* element, LowerCtx ctx) {
     Ty const* type = ty_from_node(me, &element->type, ctx);
+    // `...a?: T[]` (TS5085) is an optional element of T: the question mark decides the flag, the dots still take the
+    // array's element (tsc's getTupleElementFlags, getTypeFromRestTypeNode)
+    if (element->rest && element->optional) {
+        TypeNode const* inner = array_element_type_node(&element->type);
+        return ty_optional_prop_type(me, inner ? ty_from_node(me, inner, ctx) : type);
+    }
     // `...args: Args` of an array type is a rest element of its elements (tsc's createNormalizedTypeReference), a
     // plain array whatever alias it went by
     if (element->rest && type->kind == TY_REFERENCE && ty_is_array(me, type) && type->alias) {
@@ -2635,8 +2645,14 @@ static Ty const* tuple_element_type(Checker* me, TupleElement const* element, Lo
 }
 
 static Ty const* lower_tuple(Checker* me, TypeNode const* node, LowerCtx ctx) {
-    Ty const* target = tuple_target_of_node(me, node);
     u32 arity = (u32)vec_tuple_element_size(&node->tuple.elements);
+    // `[...a?: T[]]` is `T[]` like `[...a: T[]]` (tsc's getArrayOrTupleTargetType by the node: its flag is optional)
+    if (arity == 1 && vec_tuple_element_at(&node->tuple.elements, 0)->rest &&
+        vec_tuple_element_at(&node->tuple.elements, 0)->optional) {
+        TypeNode const* inner = array_element_type_node(node);
+        if (inner) return ty_array(me, ty_from_node(me, inner, ctx), node->tuple.readonly);
+    }
+    Ty const* target = tuple_target_of_node(me, node);
     if (!arity) return target;
     Ty const** args = malloc(sizeof(Ty const*) * arity);
     for_each (i, vec_tuple_element, &node->tuple.elements) {
