@@ -166,6 +166,10 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     if (my attributes && my module_ref && !my jsdoc && !my in_namespace && !my is_import_require) {
         bool invalid = false;
         for_each (i, vec_import_attribute, &my attributes->elements) invalid |= !import_attribute_value_is_string_literal(&i->value);
+        // (An import's bindings are taken as used, which resolves and reports them in tsc: see attribute_value_error())
+        bool bindings = my main.tag == PORT_IMPORT_DEFAULT || my main.tag == PORT_IMPORT_GATHER;
+        for_each (i, vec_port_item, &my items) bindings |= i->tag == PORT_IMPORT_SPECIFIC || i->tag == PORT_IMPORT_DEFAULT;
+        if (bindings) invalid = false;
         my main.clause_unchecked = invalid;
         for_each (i, vec_port_item, &my items) i->clause_unchecked = invalid;
     }
@@ -180,9 +184,14 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 // What tsc's checkGrammarImportClause says about a phase modifier (`import defer`, `import source`), 0 if nothing
 // An attribute value that isn't a string literal (TS2858): tsc's checkExternalImportOrExportDeclaration returns false on
-// checkGrammarImportAttributeValues, so the declaration's bindings aren't checked (resolved when something uses them)
+// checkGrammarImportAttributeValues, so the declaration's module isn't checked, only resolved (and reported) when
+// something uses one of its bindings. Approximated by whether it has bindings to use: an import's are taken as used, a
+// re-export or a side-effect import has none (hacks.md: tttt has no use tracking outside noUnusedLocals)
 static bool attribute_value_error(PortStatement const* me) {
     if (!my attributes || my jsdoc || my in_namespace || my is_import_require) return false;
+    bool bindings = my main.tag == PORT_IMPORT_DEFAULT || my main.tag == PORT_IMPORT_GATHER;
+    for_each (i, vec_port_item, &my items) bindings |= i->tag == PORT_IMPORT_SPECIFIC || i->tag == PORT_IMPORT_DEFAULT;
+    if (bindings) return false;
     for_each (i, vec_import_attribute, &my attributes->elements) {
         if (!import_attribute_value_is_string_literal(&i->value)) return true;
     }

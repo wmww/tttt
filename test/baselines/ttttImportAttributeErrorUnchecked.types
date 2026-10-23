@@ -44,3 +44,6 @@ import type { Style as E } from "e.style" with { type: 42 };
 >E : any
 >type : any
 
+export type UsesE = E;
+>UsesE : E
+

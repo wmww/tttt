@@ -34,3 +34,7 @@ export type { Style as D } from "d.style" with { type: 42 };
 import type { Style as E } from "e.style" with { type: 42 };
 >E : Symbol(E, Decl(index.ts, 4, 13))
 
+export type UsesE = E;
+>UsesE : Symbol(UsesE, Decl(index.ts, 4, 60))
+>E : Symbol(E, Decl(index.ts, 4, 13))
+
