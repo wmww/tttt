@@ -38,20 +38,25 @@ size on real code, each with an example:
   first, as in tsgo; tttt's checkers don't split files like tsgo's.
 - **Member order** (2026-10-16 fixed arktype's filtering `as` clauses, JS classes' `this.x` members, the
   isDeclarationContainedBy offset quirk of mixins): tsgo sorts every resolved object type's properties by
-  compareSymbols (getNamedMembers), tttt sorts at Members build (builder_sort_stable). What's left:
-  - `?: undefined` members of normalized object literal unions (postiz-app `*.provider.d.ts`, slate
-    `test/interfaces/Text/decorations/*`, excalidraw `actionElementLink.d.ts`, ui `registry/config.d.ts:241`, vitest
-    ui `explorer/{state,search}.d.ts`, vscode's terminal recordings, feathers generators, hoppscotch): the 2026-10
-    nightly's getUndefinedProperty cached one symbol per name per checker (history: tsgo's own checker split showed).
-    **tsgo 7.1.0-beta keys it by the widening context's property** (the last sibling of the name, getPropertiesOfContext),
-    so the member is declared there whatever the history; tttt does the same since the re-pin (2026-10-23, members.c's
-    widen_object_literal(); the program-wide choice, its per-file print records and the end-of-check recheck were
-    deleted). These projects need a fresh look once dtsdiff's cache is regenerated (`dtsdiff.py --tsc`, main tree).
-  - qwik mcp `page.d.ts`: union order, checker-side. `inc ? { ...signal, value } : signal` with `signal` a parameter's
-    rest binding (`({ value, ...signal }: T)`) is `{ name; hookType } | { name; hookType; value }` in tsgo (the rest
-    type made first) and the other way in tttt (filetest repro; a declared `signal` matches). tttt's rest type
-    (object_rest_type, rest_literal) gets a later id than the spread's object.
-  - trpc next-prisma `context.d.ts`, ui `registry-health/directory.d.ts`: uninvestigated.
+  compareSymbols (getNamedMembers), tttt sorts at Members build (builder_sort_stable). Closed 2026-10-23: the `?:
+  undefined` members of normalized object literal unions (postiz, slate tests, excalidraw's actionElementLink, ui,
+  vitest ui, vscode's terminal recordings, hoppscotch), qwik mcp `page.d.ts`, trpc next-prisma and ui
+  registry-health all matched in a full dtsdiff run at 68adca3bc.
+- **Left at 68adca3bc** (full run from a worktree, 1487 / 1503; fixed since by corC: ethereumjs x2, kitajs x2,
+  golevelup hasura, telegraf, unovis vue), all checker-side or tsgo quirks:
+  - vest/packages/n4s `lazy.d.ts` (and vest): tsgo writes `arrayRules.isEmpty<Parameters<...>>` where tttt writes
+    `DropFirst<Parameters<TRules[K]>>`: vest-utils' `DropFirst` is probably unresolved and tsgo names the unknown
+    symbol through another alias that resolves to it (the unknown-symbol quirk, like feathers' NextFunction below);
+    tttt's symbol_alias_of_unknown() handles a reused node's name, not a printed type's. Unverified.
+  - feathers/packages/generators `app/index.d.ts`: `language: 'js' | 'ts'` (tttt reuses the single-quoted annotation,
+    tsgo prints the type), a duplicated `& { '@feathersjs/cli': any; }`, and comments on members tsgo drops: one
+    pinion `prompt()` inference, uninvestigated.
+  - kebo `models/root-store.d.ts`: mobx-state-tree's `IOptionalIType<IModelType<{...}>>` is `IOptionalIType<any,
+    [undefined]>` in tttt (a type tttt infers as any: checker).
+  - vueuse `.test/mount.d.ts`: `useInjectedSetup`'s DefineComponent with `components: Comp` prints shorter in tttt
+    (vue's component inference: checker).
+  - sequelize/packages/core `models`, babel-parser's predicate: tsgo's checker split (one matches tsgo
+    --singleThreaded), mcp-sdk/examples' hono specifier: as below.
 - **Checker types, uninvestigated** (2026-10-15 leftovers; effect's query-repro fixed 2026-10-18 by the permissive wildcard
   fixes): excalidraw `tests/helpers/api.d.ts` (tsgo keeps `declare
   const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
