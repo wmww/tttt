@@ -1,0 +1,25 @@
+mod.js(3,5): error TS2322: Type '"doneX"' is not assignable to type '"done"'.
+untyped.js(1,1): error TS2309: An export assignment cannot be used in a module with other exported elements.
+untyped.js(2,16): error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+
+
+==== mod.js (1 errors) ====
+    /** @type {{ status: 'done', m(n: number): void }} */
+    module.exports = {
+        status: "doneX",
+        ~~~~~~
+!!! error TS2322: Type '"doneX"' is not assignable to type '"done"'.
+!!! related TS6500 mod.js:1:14: The expected type comes from property 'status' which is declared here on type '{ status: "done"; m(n: number): void; }'
+        m(n) { }
+    }
+==== ok.js (0 errors) ====
+    /** @type {{ status: 'done' }} */
+    module.exports = { status: "done" };
+==== untyped.js (2 errors) ====
+    module.exports = { a: 1 };
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2309: An export assignment cannot be used in a module with other exported elements.
+    module.exports.b = 2;
+                   ~
+!!! error TS2339: Property 'b' does not exist on type '{ a: number; }'.
+    

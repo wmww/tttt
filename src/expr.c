@@ -3732,6 +3732,9 @@ static void nan_equality_typecheck(Expr const* me, ErrorCtx* errs) {
     error_add_related_d(error, expr_outer_span(other), 1369, "Did you mean '", eq ? "" : "!", "Number.isNaN(", name, ")'?");
 }
 
+// (Below, with the other CommonJS checks)
+static bool module_exports_declared_type(Expr const* me);
+
 static bool binary_op_typecheck(
     Ty const* left,
     BinaryOp op,
@@ -3899,9 +3902,12 @@ static bool binary_op_typecheck(
                     if (exported && exported->decl_count > 1) break;
                 }
             }
-            // Nor is `module.exports = v` of an object type, which the module's other exports add to
+            // Nor is `module.exports = v` of an object type, which the module's other exports add to. Unless a JSDoc
+            // `@type` declares it: then that's the type of `module.exports` (tsc's getWidenedTypeForAssignmentDeclaration
+            // takes the first typed declaration), which every `module.exports = v` is checked against
             if (right && (right->flags & TYF_OBJECT) &&
-                binary_commonjs_declaration(expr->binary_op, nullptr) == COMMONJS_TARGET_MODULE_EXPORTS
+                binary_commonjs_declaration(expr->binary_op, nullptr) == COMMONJS_TARGET_MODULE_EXPORTS &&
+                !module_exports_declared_type(expr)
             ) {
                 break;
             }
@@ -4168,6 +4174,17 @@ static void binary_expr_typecheck_rest(Expr const* me, bool root, ErrorCtx* errs
 // `module.exports = v` in JavaScript where v is nothing but null, undefined or never: the module's type is any, which
 // tsc's getTypeOfFuncClassEnumModule reports at the assignment (getWidenedTypeForAssignmentDeclaration of `export=`
 // through reportImplicitAny of a BinaryExpression, whose name is missing)
+// Whether a `module.exports = v` of the file has a JSDoc `@type` (the module's export= has a typed declaration)
+static bool module_exports_declared_type(Expr const* me) {
+    SourceFile const* file = span_source(my inner_span);
+    Symbol const* module = file && file->scope ? file->scope->container : nullptr;
+    Symbol const* export_equals = module && module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
+    for (u32 i = 0; export_equals && i < export_equals->decl_count; i++) {
+        if (export_equals->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol_decl_jsdoc_type(&export_equals->decls[i])) return true;
+    }
+    return false;
+}
+
 static void js_module_exports_implicit_any_check(Expr const* me, ErrorCtx* errs) {
     SourceFile const* file = span_source(my inner_span);
     if (!file || !file->is_js || !compiler_options()->no_implicit_any) return;

@@ -1,0 +1,49 @@
+//// [test/cases/ttttJsdocTypedModuleExportsChecked.ts] ////
+
+=== mod.js ===
+/** @type {{ status: 'done', m(n: number): void }} */
+module.exports = {
+>module.exports = {    status: "doneX",    m(n) { }} : { status: "doneX"; m(n: number): void; }
+>module.exports : { status: 'done'; m(n: number): void; }
+>module : { exports: { status: 'done'; m(n: number): void; }; }
+>exports : { status: 'done'; m(n: number): void; }
+>{    status: "doneX",    m(n) { }} : { status: "doneX"; m(n: number): void; }
+
+    status: "doneX",
+>status : "doneX"
+>"doneX" : "doneX"
+
+    m(n) { }
+>m : (n: number) => void
+>n : number
+}
+=== ok.js ===
+/** @type {{ status: 'done' }} */
+module.exports = { status: "done" };
+>module.exports = { status: "done" } : { status: "done"; }
+>module.exports : { status: 'done'; }
+>module : { exports: { status: 'done'; }; }
+>exports : { status: 'done'; }
+>{ status: "done" } : { status: "done"; }
+>status : "done"
+>"done" : "done"
+
+=== untyped.js ===
+module.exports = { a: 1 };
+>module.exports = { a: 1 } : { a: number; }
+>module.exports : { a: number; }
+>module : { exports: { a: number; }; }
+>exports : { a: number; }
+>{ a: 1 } : { a: number; }
+>a : number
+>1 : 1
+
+module.exports.b = 2;
+>module.exports.b = 2 : 2
+>module.exports.b : any
+>module.exports : { a: number; }
+>module : { exports: { a: number; }; }
+>exports : { a: number; }
+>b : any
+>2 : 2
+

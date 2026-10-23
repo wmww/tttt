@@ -1,0 +1,36 @@
+//// [test/cases/ttttJsdocTypedModuleExportsChecked.ts] ////
+
+=== mod.js ===
+/** @type {{ status: 'done', m(n: number): void }} */
+module.exports = {
+>module.exports : Symbol(exports, Decl(mod.js, 0, 0))
+>module : Symbol(module, Decl(mod.js, 0, 0))
+>exports : Symbol(exports, Decl(mod.js, 0, 0))
+
+    status: "doneX",
+>status : Symbol(status, Decl(mod.js, 1, 18))
+
+    m(n) { }
+>m : Symbol(m, Decl(mod.js, 2, 20))
+>n : Symbol(n, Decl(mod.js, 3, 6))
+}
+=== ok.js ===
+/** @type {{ status: 'done' }} */
+module.exports = { status: "done" };
+>module.exports : Symbol(exports, Decl(ok.js, 0, 0))
+>module : Symbol(module, Decl(ok.js, 0, 0))
+>exports : Symbol(exports, Decl(ok.js, 0, 0))
+>status : Symbol(status, Decl(ok.js, 1, 18))
+
+=== untyped.js ===
+module.exports = { a: 1 };
+>module.exports : Symbol(exports, Decl(untyped.js, 0, 0))
+>module : Symbol(module, Decl(untyped.js, 0, 0))
+>exports : Symbol(exports, Decl(untyped.js, 0, 0))
+>a : Symbol(a, Decl(untyped.js, 0, 18))
+
+module.exports.b = 2;
+>module.exports : Symbol(exports, Decl(untyped.js, 0, 0))
+>module : Symbol(module, Decl(untyped.js, 0, 0))
+>exports : Symbol(exports, Decl(untyped.js, 0, 0))
+
