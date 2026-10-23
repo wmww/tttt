@@ -46,7 +46,7 @@ command (measurements.md "How to measure": sys with `TTTT_SYNC_EXIT=1`):
 - **(d) The recycle-budget sweep**: `--checker-memory` 4096 / 3072 / 2048 against the default on vscode and drizzle,
   wall against peak RSS. Decides section 3's first lever.
 - **(e) The bench on main after the reaper** (`scripts/bench.sh --runs 3 --checkers 12 --bun ...`), the arena
-  alignment patch too once it lands (section 1).
+  alignment (97839044a) included.
 - **Keep or revert the relation HACK's removal** (f38a8b493, one commit): react 0.09 -> 0.11 s at the defaults and
   type-fest single 0.61 -> 0.68 on the laptop (bbe37c5f), react +36% / type-fest +7% instructions; it is tsc's own
   relation work (tsgo 84.6k relations on react, tttt 93.4k, and form.tsx is half of tsgo's react check too) and fixed
@@ -54,16 +54,11 @@ command (measurements.md "How to measure": sys with `TTTT_SYNC_EXIT=1`):
 - MADV_POPULATE_WRITE counts as minor faults on this box's kernel but not in the laptop's `perf stat page-faults`
   (6.7k there against ~72k here on drizzle): compare faults like with like.
 
-## 1. Land the arena alignment patch (first thing)
-`handoff/arena-huge-align.patch` (wt-ktime2's hand-off, `handoff/README.md`; src/ty/checker.c arena_alloc_chunk()):
-a huge-page arena chunk is mapped as whole 2 MB pages, 2 MB aligned (8 MB with its header, the untouched ends cut off
-as big_table() does). Today's 8 MB + 4 KB chunk gets THP only on its 3 aligned blocks, and its ends (~2 MB a chunk)
-are mapped 4 KB at a time. Measured on this box (A/B interleaved, `TTTT_SYNC_EXIT=1`, medians): drizzle faults 73k ->
-44k, sys 0.13 -> 0.11 s, RSS +0.8%; vscode 302k -> 187k, sys 0.71 -> 0.64; nest RSS 172 -> 177 MB (+3%). **Ungated**:
-the suite, threadcheck, checkerdiff, instrcount (should be flat) and the laptop's (e). Then delete `handoff/`'s
-throwaway tools (fault-instrumentation.patch, faults.sh, smaps.py, tail.py, ab2.sh) or move the useful ones to
-scripts/. Not started from ktime2's brief: does the pre-check malloc_trim still pay (RSS and madvise count with
-`TTTT_NO_TRIM=1`), and pre-faulting checkers' first chunks off the critical path (resolve names keeps ~4.5 of 16
+## 1. Page-fault leftovers (small)
+The arena alignment landed (97839044a: huge arena chunks are whole aligned 2 MB pages; faults drizzle 72k -> 44k,
+vscode 301k -> 185k, sys -12..-20%, RSS +0..2%; measurements.md "2 MB-aligned huge arena chunks"); the laptop's (e)
+should include it. Not started from ktime2's brief: does the pre-check malloc_trim still pay (RSS and madvise count
+with `TTTT_NO_TRIM=1`), and pre-faulting checkers' first chunks off the critical path (resolve names keeps ~4.5 of 16
 cores busy: a helper could populate them then).
 
 ## 2. The bun breadth sweep and its critical-path fixes

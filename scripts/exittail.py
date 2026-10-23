@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-# Times a run: start -> last output byte -> exit. Usage: tail.py N cmd...
+# The exit tail of a command: start -> last output byte -> exit, per run, with its sys, user, minor faults and peak
+# RSS (wait4's rusage). The tail is the time between tttt's last diagnostic and its exit status, which is what the
+# detached reaper (main.c exit_detached()) hides: compare a default run against TTTT_SYNC_EXIT=1.
+#
+#   scripts/exittail.py N cmd...     e.g. scripts/exittail.py 5 fast/tttt --noEmit -p thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json
+#   (a project with no output has no last byte: its "tail" is the whole run)
 import os, sys, time, select, subprocess, resource
 n = int(sys.argv[1]); cmd = sys.argv[2:]
 rows = []

@@ -46,8 +46,8 @@ under tsc are the second.
   `exit_detached()` (main.c) hands the address space to a detached CLONE_VM reaper so the caller sees the exit
   before the kernel frees 1-5 GB of pages: the 7-66 ms tail (3-6% of wall) goes to ~0 (drizzle 0.290 -> 0.278,
   vscode 1.93 -> 1.81 on this box). Its sys time is then nobody's: `TTTT_SYNC_EXIT=1` for honest sys (hacks.md).
-  Its follow-up, 2 MB-aligned huge arena chunks (`handoff/arena-huge-align.patch`: drizzle faults 73k -> 44k,
-  vscode 302k -> 187k, sys -10..-20%, RSS +1%), is ungated: todo.md first.
+  Its follow-up, 2 MB-aligned huge arena chunks (97839044a): faults drizzle 72k -> 44k, vscode 301k -> 185k, sys
+  -12..-20%, RSS +0..2% (measurements.md "2 MB-aligned huge arena chunks").
 - **The shipped build is `scripts/fastbuild.sh` -> `fast/tttt`**: GCC LTO + PGO, `-fno-plt`, `-z now`, then an
   llvm-bolt layout (llvm-bolt is a dependency), the hot text on a huge page at startup (`huge_text()`, verified via
   smaps_rollup, with an `MADV_COLLAPSE` retry; `TTTT_HUGE_TEXT=0/2`). The measuring scripts take their binary from
@@ -66,7 +66,7 @@ memory, but memory is now worth cutting where it is cheap; easy, measured wins f
 0. **For the human**: the laptop asks (remaining kernel cycles, the exit tail under THP `always`, thread placement on
    the hybrid CPU, the recycle-budget sweep, the bench on main after the reaper); keep or revert the relation HACK's
    removal.
-1. **Land the arena alignment patch** (gated), then the **breadth bun sweep**: tttt against bun canary on the ~500
+1. The **breadth bun sweep**: tttt against bun canary on the ~500
    heaviest source-sweep projects, the worst dissected by `scripts/perfshape.sh`. That is where the human's remaining
    losses live, and the expected remedies are policy and scheduling (more checkers when the critical path is long,
    splitting what one dominating file holds, checking earlier).
