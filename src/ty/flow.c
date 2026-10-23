@@ -2923,7 +2923,9 @@ static Ty const* narrow_by_predicate(FlowQuery* q, Ty const* type, TyPredicate c
     ) {
         type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
     }
-    DiscriminantAccess access = discriminant_access(q, argument, type);
+    // (A parenthesized argument is no access expression to tsc's getDiscriminantPropertyAccess: `assertA((x.kind))`)
+    DiscriminantAccess access = predicate->is_this || !expr_is_perenthisized(argument) ?
+        discriminant_access(q, argument, type) : (DiscriminantAccess){0};
     if (access.name) {
         PredicatePropArg arg = { candidate, assume_true };
         return narrow_by_discriminant(q, type, access, narrow_prop_by_predicate, &arg);

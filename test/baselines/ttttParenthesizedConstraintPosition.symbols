@@ -1,0 +1,74 @@
+//// [test/cases/ttttParenthesizedConstraintPosition.ts] ////
+
+=== ttttParenthesizedConstraintPosition.ts ===
+// tsc's isConstraintPosition goes by the parent node: `(x).a` and `(x).f()` don't read a generic x through its
+// narrowed constraint, and a parenthesized predicate argument is no discriminant access (bun's 16-C2, 20-P8)
+type AB = { kind: "a", a: 1, f(): void } | { kind: "b", b: 2 };
+>AB : Symbol(AB, Decl(ttttParenthesizedConstraintPosition.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 2, 11))
+>a : Symbol(a, Decl(ttttParenthesizedConstraintPosition.ts, 2, 22))
+>f : Symbol(f, Decl(ttttParenthesizedConstraintPosition.ts, 2, 28))
+>kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 2, 44))
+>b : Symbol(b, Decl(ttttParenthesizedConstraintPosition.ts, 2, 55))
+
+function f1<T extends AB>(x: T) {
+>f1 : Symbol(f1, Decl(ttttParenthesizedConstraintPosition.ts, 2, 63))
+>T : Symbol(T, Decl(ttttParenthesizedConstraintPosition.ts, 3, 12))
+>AB : Symbol(AB, Decl(ttttParenthesizedConstraintPosition.ts, 0, 0))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 3, 26))
+>T : Symbol(T, Decl(ttttParenthesizedConstraintPosition.ts, 3, 12))
+
+  if (x.kind === "a") {
+>x.kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 2, 11), Decl(ttttParenthesizedConstraintPosition.ts, 2, 44))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 3, 26))
+>kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 2, 11), Decl(ttttParenthesizedConstraintPosition.ts, 2, 44))
+
+    x.a;
+>x.a : Symbol(a, Decl(ttttParenthesizedConstraintPosition.ts, 2, 22))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 3, 26))
+>a : Symbol(a, Decl(ttttParenthesizedConstraintPosition.ts, 2, 22))
+
+    (x).a;
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 3, 26))
+
+    (x)["a"];
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 3, 26))
+
+    (x).f();
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 3, 26))
+  }
+}
+type U = { kind: "a"; a: number } | { kind: "b"; b: string };
+>U : Symbol(U, Decl(ttttParenthesizedConstraintPosition.ts, 10, 1))
+>kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 11, 10))
+>a : Symbol(a, Decl(ttttParenthesizedConstraintPosition.ts, 11, 21))
+>kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 11, 37))
+>b : Symbol(b, Decl(ttttParenthesizedConstraintPosition.ts, 11, 48))
+
+declare function assertA(k: string): asserts k is "a";
+>assertA : Symbol(assertA, Decl(ttttParenthesizedConstraintPosition.ts, 11, 61))
+>k : Symbol(k, Decl(ttttParenthesizedConstraintPosition.ts, 12, 25))
+>k : Symbol(k, Decl(ttttParenthesizedConstraintPosition.ts, 12, 25))
+
+function f2(x: U) { assertA((x.kind)); x.a; }
+>f2 : Symbol(f2, Decl(ttttParenthesizedConstraintPosition.ts, 12, 54))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 13, 12))
+>U : Symbol(U, Decl(ttttParenthesizedConstraintPosition.ts, 10, 1))
+>assertA : Symbol(assertA, Decl(ttttParenthesizedConstraintPosition.ts, 11, 61))
+>x.kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 11, 10), Decl(ttttParenthesizedConstraintPosition.ts, 11, 37))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 13, 12))
+>kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 11, 10), Decl(ttttParenthesizedConstraintPosition.ts, 11, 37))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 13, 12))
+
+function f3(x: U) { assertA(x.kind); x.a; }
+>f3 : Symbol(f3, Decl(ttttParenthesizedConstraintPosition.ts, 13, 45))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 14, 12))
+>U : Symbol(U, Decl(ttttParenthesizedConstraintPosition.ts, 10, 1))
+>assertA : Symbol(assertA, Decl(ttttParenthesizedConstraintPosition.ts, 11, 61))
+>x.kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 11, 10), Decl(ttttParenthesizedConstraintPosition.ts, 11, 37))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 14, 12))
+>kind : Symbol(kind, Decl(ttttParenthesizedConstraintPosition.ts, 11, 10), Decl(ttttParenthesizedConstraintPosition.ts, 11, 37))
+>x.a : Symbol(a, Decl(ttttParenthesizedConstraintPosition.ts, 11, 21))
+>x : Symbol(x, Decl(ttttParenthesizedConstraintPosition.ts, 14, 12))
+>a : Symbol(a, Decl(ttttParenthesizedConstraintPosition.ts, 11, 21))
+

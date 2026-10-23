@@ -2101,7 +2101,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (my property->expr.tag == EXPR_IDENTIFIER) {
                 my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
             }
-            if (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) {
+            // (tsc's isConstraintPosition goes by the parent node: `(x).a`'s x is a parenthesized expression's)
+            if (expr_is_perenthisized(&my property->expr)) {
+            } else if (my property->form == PROPERTY_EXPR_DOT || my property->index.tag == EXPR_LITERAL) {
                 if (my property->expr.tag == EXPR_IDENTIFIER) my property->expr.identifier.constraint_position = true;
                 if (my property->expr.tag == EXPR_PROPERTY) my property->expr.property->constraint_position = true;
             } else if (my property->expr.tag == EXPR_IDENTIFIER && !my property->expr.identifier.keyword &&
@@ -2206,14 +2208,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Expr* callee = &my call->callable;
             while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
             // (tsc's isConstraintPosition: the callee of any call, an optional one too)
-            if (callee->tag == EXPR_IDENTIFIER) callee->identifier.constraint_position = true;
+            if (callee->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(callee)) callee->identifier.constraint_position = true;
             if (!my call->uses_new) {
                 if (callee->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(callee)) callee->identifier.call_child = true;
                 for_each (i, vec_expr, &my call->args) {
                     if (i->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(i)) i->identifier.call_child = true;
                 }
             }
-            if (callee->tag == EXPR_PROPERTY) callee->property->constraint_position = true;
+            if (callee->tag == EXPR_PROPERTY && !expr_is_perenthisized(callee)) callee->property->constraint_position = true;
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                 flow_array_mutation(flow, me); // `x?.push(v)`

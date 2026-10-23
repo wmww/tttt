@@ -1,0 +1,85 @@
+//// [test/cases/ttttParenthesizedConstraintPosition.ts] ////
+
+=== ttttParenthesizedConstraintPosition.ts ===
+// tsc's isConstraintPosition goes by the parent node: `(x).a` and `(x).f()` don't read a generic x through its
+// narrowed constraint, and a parenthesized predicate argument is no discriminant access (bun's 16-C2, 20-P8)
+type AB = { kind: "a", a: 1, f(): void } | { kind: "b", b: 2 };
+>AB : AB
+>kind : "a"
+>a : 1
+>f : () => void
+>kind : "b"
+>b : 2
+
+function f1<T extends AB>(x: T) {
+>f1 : <T extends AB>(x: T) => void
+>x : T
+
+  if (x.kind === "a") {
+>x.kind === "a" : boolean
+>x.kind : "a" | "b"
+>x : AB
+>kind : "a" | "b"
+>"a" : "a"
+
+    x.a;
+>x.a : 1
+>x : { kind: "a"; a: 1; f(): void; }
+>a : 1
+
+    (x).a;
+>(x).a : any
+>(x) : T
+>x : T
+>a : any
+
+    (x)["a"];
+>(x)["a"] : any
+>(x) : T
+>x : T
+>"a" : "a"
+
+    (x).f();
+>(x).f() : any
+>(x).f : any
+>(x) : T
+>x : T
+>f : any
+  }
+}
+type U = { kind: "a"; a: number } | { kind: "b"; b: string };
+>U : U
+>kind : "a"
+>a : number
+>kind : "b"
+>b : string
+
+declare function assertA(k: string): asserts k is "a";
+>assertA : (k: string) => asserts k is "a"
+>k : string
+
+function f2(x: U) { assertA((x.kind)); x.a; }
+>f2 : (x: U) => void
+>x : U
+>assertA((x.kind)) : void
+>assertA : (k: string) => asserts k is "a"
+>(x.kind) : "a" | "b"
+>x.kind : "a" | "b"
+>x : U
+>kind : "a" | "b"
+>x.a : any
+>x : U
+>a : any
+
+function f3(x: U) { assertA(x.kind); x.a; }
+>f3 : (x: U) => void
+>x : U
+>assertA(x.kind) : void
+>assertA : (k: string) => asserts k is "a"
+>x.kind : "a" | "b"
+>x : U
+>kind : "a" | "b"
+>x.a : number
+>x : { kind: "a"; a: number; }
+>a : number
+

@@ -1,0 +1,35 @@
+ttttParenthesizedConstraintPosition.ts(7,9): error TS2339: Property 'a' does not exist on type 'T'.
+ttttParenthesizedConstraintPosition.ts(8,5): error TS7053: Element implicitly has an 'any' type because expression of type '"a"' can't be used to index type 'AB'.
+  Property 'a' does not exist on type 'AB'.
+ttttParenthesizedConstraintPosition.ts(9,9): error TS2339: Property 'f' does not exist on type 'T'.
+ttttParenthesizedConstraintPosition.ts(14,42): error TS2339: Property 'a' does not exist on type 'U'.
+  Property 'a' does not exist on type '{ kind: "b"; b: string; }'.
+
+
+==== ttttParenthesizedConstraintPosition.ts (4 errors) ====
+    // tsc's isConstraintPosition goes by the parent node: `(x).a` and `(x).f()` don't read a generic x through its
+    // narrowed constraint, and a parenthesized predicate argument is no discriminant access (bun's 16-C2, 20-P8)
+    type AB = { kind: "a", a: 1, f(): void } | { kind: "b", b: 2 };
+    function f1<T extends AB>(x: T) {
+      if (x.kind === "a") {
+        x.a;
+        (x).a;
+            ~
+!!! error TS2339: Property 'a' does not exist on type 'T'.
+        (x)["a"];
+        ~~~~~~~~
+!!! error TS7053: Element implicitly has an 'any' type because expression of type '"a"' can't be used to index type 'AB'.
+!!! error TS7053:   Property 'a' does not exist on type 'AB'.
+        (x).f();
+            ~
+!!! error TS2339: Property 'f' does not exist on type 'T'.
+      }
+    }
+    type U = { kind: "a"; a: number } | { kind: "b"; b: string };
+    declare function assertA(k: string): asserts k is "a";
+    function f2(x: U) { assertA((x.kind)); x.a; }
+                                             ~
+!!! error TS2339: Property 'a' does not exist on type 'U'.
+!!! error TS2339:   Property 'a' does not exist on type '{ kind: "b"; b: string; }'.
+    function f3(x: U) { assertA(x.kind); x.a; }
+    
