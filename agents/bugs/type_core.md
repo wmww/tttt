@@ -513,3 +513,11 @@ output (checked with the old CLI), so these are tttt bugs the re-pin exposed, no
   `Iterator.zip(..., { mode: "shortest", padding: [1] })` prints the literal `{ ...; padding: [number] }` where tsgo
   has `number[]` (the overload whose argument types are printed after resolution fails), and f2's
   `IteratorZipKeyedResult` instantiation prints differently (types and dts). [open]
+
+- **A rest parameter's element at a position is `R[index]`, not R's element type** (bun 77-R19a: `interface Array<T> {
+  0: string }` then `f(...a: number[])`): tsgo's getTypeAtPosition/tryGetTypeAtPosition takes
+  `getIndexedAccessType(restType, numberLiteral(pos - paramCount))` for an array rest, so an augmented numeric
+  property wins at its position: `f("s")` is fine, `f(1)` is TS2345 (number to string), and `(...a: number[]) => void`
+  isn't assignable to `(a: number) => void`. tttt's ParamShape has one `rest_element` for every position (call.c), and
+  relate.c's type_at_position() likewise. Only reachable by augmenting Array (or a rest type with numeric-named
+  properties); a fix would expand such properties into positional entries of the shape. [open]
