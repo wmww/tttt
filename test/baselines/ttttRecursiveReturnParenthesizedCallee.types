@@ -1,0 +1,30 @@
+//// [test/cases/ttttRecursiveReturnParenthesizedCallee.ts] ////
+
+=== ttttRecursiveReturnParenthesizedCallee.ts ===
+// A return of a call to the function itself doesn't count towards its return type only with the bare identifier as
+// the callee (tsc's checkAndAggregateReturnExpressionTypes: isIdentifier(expr.expression)): `return (f)();` is circular
+// (bun's 32-C6a)
+function f() { return (f)(); }
+>f : () => any
+>(f)() : any
+>(f) : () => any
+>f : () => any
+
+function g() { return g(); }
+>g : () => never
+>g() : never
+>g : () => never
+
+function h() { return (h()); }
+>h : () => never
+>(h()) : never
+>h() : never
+>h : () => never
+
+function k() { return 1 + k(); }
+>k : () => any
+>1 + k() : any
+>1 : 1
+>k() : any
+>k : () => any
+

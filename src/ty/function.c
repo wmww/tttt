@@ -261,7 +261,10 @@ bool ty_is_recursive_return(Checker* me, Expr const* returned) {
     Expr const* callee = &expr->call->callable;
     // (With type arguments too: tsc's call keeps them apart from its identifier callee, `return reduce<T>(t)`)
     if (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
-    if (callee->tag != EXPR_IDENTIFIER || callee->identifier.keyword || !callee->identifier.target) return false;
+    // (An identifier, not a parenthesized one: `return (f)();` is TS7023, tsc's isIdentifier(expr.expression))
+    if (callee->tag != EXPR_IDENTIFIER || expr_is_perenthisized(callee) || callee->identifier.keyword || !callee->identifier.target) {
+        return false;
+    }
     Symbol const* symbol = callee->identifier.target;
     // (tsc's isConstantReference: a const, or a local `let` never assigned again. Parameters count too, left out)
     // (Or the name of a function expression, valueDeclaration a FunctionExpression: `function f() { return f(); }`)
