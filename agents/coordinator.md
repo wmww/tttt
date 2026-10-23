@@ -59,6 +59,13 @@ brief, you don't understand the task yet. The common rules, each learned from an
   and never `pgrep -f`/`pkill -f` a generic pattern (`tttt`, `callgrind`): it matches other workers' jobs and once
   killed one. Kill by a PID you started. Never `rm` a path built from a shell variable (literal paths, or
   `"${S:?}"/...`).
+- Never create a symlink into `thirdparty/` from scratch, nor copy a project by following its links: a write
+  through one lands in the shared, hardlinked checkouts (a reducer once stubbed 690 dependency files across every
+  repo). Reduce with `scripts/reduce.py` (symlink-free copy, bwrap sandbox); `scripts/sourcescheck.sh` tells.
+- One heavy run at a time per worker (a sweep, a callgrind batch, a full suite under valgrind), and never
+  `--tsc` regenerations from a worktree; a run that dies of memory under load is `killed` (tttt_run.py), not a bug.
+- Don't commit `test/baseline_results.ts` (parallel branches conflict on it; land.sh refuses such a branch): the
+  coordinator saves it per batch.
 - Commit early with real messages; never amend or rebase an already-made commit (the merger picks by hash); rebase
   onto `main` before a new commit once other tracks touch the same files.
 - Validate: the suite (`scripts/fasttest.sh --summary`), the corpora, byte-identical output across checker and
@@ -85,6 +92,12 @@ spell. Have it rewrite its pick/check scripts (ten minutes) rather than hunting 
 Per landed batch, after its oracles, `scripts/bugcount.py --save` (seconds: the caches only) appends the known
 correctness bugs headline and its symptom counts to measurements.md "Known correctness bugs"; briefs say that a
 fix's commit flips its bugs entry to `[fixed COMMIT]` and a new write-up gets a tag (agents/bugs/README.md).
+
+**Land fast, gate in batches** (the human, 2026-10-23): a fix lands as soon as `scripts/quickgate.sh --vs-main [-p
+PROJECTS] [-k]` passes in its worktree, by `scripts/land.sh BRANCH` from the main tree (rebase on a detached HEAD,
+the quick gate, fast-forward, push); the full oracles run per batch of landings in the merger's tree (`wt-gate`,
+reset to main), and a regression they show is bisected (`scripts/abbuild.sh REV --revert C`) and reverted, not
+waited for. Each batch's report carries the headline (`scripts/bugcount.py --save`) and saves the suite results.
 
 Lessons for the merger: the per-batch gate must not include vscode's 25-minute callgrind (once per round, at the
 end); it reports per landed batch (what landed, its gate numbers), not per cycle; anything touching malloc tuning

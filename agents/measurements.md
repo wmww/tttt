@@ -6,7 +6,8 @@ condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show
 ## Machine and caveats
 AMD EPYC-Turin, 16 vCPUs = 8 cores x 2 SMT threads (KVM, shared with other agents: load often 10-40), 60 GB
 (4 vCPUs and 31 GB until about 2026-10-20: older sections say which); Ubuntu 26.04, GCC 15.2, node 22.22. The oracle (tsc)
-is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
+is TypeScript 7.1.0-beta (`v7.1-beta` = 3e923636, `thirdparty/typescript`; every cache since 2026-10-23; the
+2026-10-08 nightly fed0bf24 before). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one sitting. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across days. Neither side is clean on webpack, drizzle, vue, effect and
 vscode (exit 2): the same (file, line, code) on both (realworld.py), so equal work (and the same
@@ -39,6 +40,40 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Oracle totals (2026-10-23 evening)
+The merger's full `scripts/oracles.py` in wt-gate at **37d832827** (main after the day's first correctness batch,
+11:39; before the `bun*` suite tests and the afternoon's fixes), finished 13:07 on the loaded box (clidiff alone 997 s);
+the next batch's run (at 03bf32424) was not complete when this was written. Then `python3 scripts/bugcount.py` and
+`scripts/passcount.py` at 81bc6b5d4 (main, 14:16), which read the newest caches (wt-gate's, ~1 h old).
+- Suite 14198 passing (tsc and tttt's own tests), 0 lost, 0 gained against HEAD; `--no-defer-bodies` 0 newly
+  failing; `--checker-memory 0` 0 of 17921 outputs differ. At 81bc6b5d4 with the bun tests (`passcount.py`): **15177 /
+  16590** (errors 15266, symbols 16312, types 15891; dts 1908 / 1937); failing by origin (bugcount): tsc 53 / 13706,
+  own 8 / 552 (each a known-failing repro), bun 1352 / 2332.
+- Corpora: every one 0/0 but vue 0/2 (tsgo's TS5115 runaway artifact). DT sweep 8595 / 8595. `$ExpectType` 68640 /
+  68640. flagflip missing 16 / spurious 2 / other code 2 (all vue pluginScoped.ts).
+- bun cases (`scripts/buncases.py`): match 1278 / 2411 (53.0%), byte-identical 1072; spurious 312, missing 489, both
+  325, crash 7, K-dependent 1.
+- Source sweep `--sample 4`: **1458 / 1464** projects (345 clean under tsc), 218 / 222 repos; spurious 1, missing 2,
+  both 2, timeout 1. (bugcount's later quarter-sample cache, wt-gate-sample4's: 16 / 1464 mismatching, 4 keys, all
+  written up; openclaw 36 / 49 configs match with 13 timed out.) The full sweep's last run (main + wt-cor8, midday):
+  6053 / 6085 projects, 334 / 346 repos ("Fresh repositories, fifth rule").
+- `-b` sweep 418 / 426 projects, 77 / 84 repos (e342649f8 since: 419 + 2 known, atproto and b4run, tsgo's build cache
+  bug: bugs/sourcesweep_build.md).
+- dtsdiff **1497 / 1503** projects, 129347 / 129362 files (+1 project, 6 files as tsgo `--singleThreaded`).
+- clidiff 4450 projects: **match 4417**, text 14, order 0, exit code 0, diagnostics 19, crash 0; corpora 16 / 17 (vue).
+- kdiff (K1 against K16): suite 0 files; sources **7 / 4436** (openclaw/packages, openclaw/packages/plugin-sdk,
+  openclaw/src/agents/sessions, openclaw/src/config: new with openclaw; rxjs/packages/rxjs, sequelize,
+  sequelize/packages/core: tsgo-shared). Recycle 3 / 4436 (rxjs, sequelize x2), 21 timed out.
+- perfsweep 2215 projects: median check ratio 0.24, worst types ratio 1.73 (mcp-linker).
+- **Known correctness bugs** (bugcount at 81bc6b5d4): 162 root causes open (11 designs), 72 text-only, 36 argued tsgo
+  artifacts excluded; 429 tagged entries (62 fixed, 32 dup, 40 notes, 25 harness; 11 of the open in triage.md); 530 of
+  bun's 532 keys unexplained (largest: -TS2322 252, -TS2509 184, -TS2339 177, +TS5114 146, +TS2322 127, +TS2339 127,
+  +TS2842 126, +TS7022 112). The day: 156 at 2f0cc14a3 (13:20, the first headline) -> 162 (new write-ups outpacing
+  the flips).
+- Instructions: not re-saved today; `test/instrcount.txt` is a6af311ed's (9894ae8e5). The per-fix quick gates
+  measured drizzle +0.42..+0.58%, zod +0.18..+0.23% against it during the day (~+0.8% on drizzle by the end, pending
+  attribution); the escaped-keyword commit's +1.05% on nest was taken back by 9a5647e3b (+0.08%).
+
 ## Known correctness bugs
 `scripts/bugcount.py --save`, one line per run (per batch): the open root causes from the tags of agents/bugs/*.md and
 triage.md (agents/bugs/README.md), then the symptom counts it read (suite_*: failing tests by origin; bun: bun cases
@@ -46,6 +81,7 @@ mismatching; dt, source: projects mismatching; expect: $ExpectType assertions; d
 diagnostics; clidiff_text: projects; unexplained_*: the root-cause keys of each oracle no entry mentions). The oracle
 numbers are those of whichever tree last ran each oracle (bugcount.py prints which).
 - 2026-10-23 00ba060b2: 156 open (11 designs), 72 text-only, 36 tsgo excluded; symptoms: suite_tsc 53, suite_own 8, suite_bun 1352, bun 1091, dt 0, source 6, expect 0, dts 6, flagflip 20, clidiff_text 14, unexplained_sweep 0, unexplained_sourcesweep 8, unexplained_buncases 533
+- 2026-10-23 81bc6b5d4: 162 open (11 designs), 72 text-only, 36 tsgo excluded; symptoms: suite_tsc 53, suite_own 8, suite_bun 1352, bun 1072, dt 0, source 16, expect 0, dts 6, flagflip 20, clidiff_text 14, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 530
 
 ## 2 MB-aligned huge arena chunks: A/B on this box (2026-10-23, on 9894ae8e5)
 arena_alloc_chunk() (src/ty/checker.c) mapping a huge-page chunk as whole, aligned 2 MB pages (agents/notes/
@@ -1319,20 +1355,9 @@ cache regenerated with it (wt-repin) but dtsdiff's and flagflip's (main tree onl
   vscode 66.463 G +0.19%: flat (the deleted undefinedProperties recheck never ran on these; the new esnext.iterator lib
   loads only with esnext).
 
-## Oracle totals (2026-10-23, d7bc837b0)
-The merger's `scripts/oracles.py` at d7bc837b0 (3a77c8275's message: the kernel round wt-ktime and wt-pb's
-perfshape.sh in), the last full run of the fourth coordinator's session; the previous totals were a5252a764 +
-acb8dfe7f's (`git log -S'Oracle totals (2026-10-23, a5252a764' -- agents/measurements.md`), and nothing moved. Suite
-**13999 / 14035** (dts 1888 / 1910), 0 lost; the two failing own tests fail by design (ttttThisInstantiatedMethodErased,
-ttttDeferredBodyBeforeContextualParameters). The same with `--no-defer-bodies`; `--checker-memory 0`: 0 of 17672
-differ. Every corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640,
-flagflip 16 / 2 / 2 (all vue pluginScoped.ts, won't fix), source sweep `--sample 4` 1322 / 1324 (316 repositories,
-5464 projects since refresh 5's 28 bun-lockfile repos), the full sweep 5454 / 5464 before cor7 (better-drizzle's
-:742 TS2502 fixed since), `-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects, clidiff 3974 / 3986 (text 3,
-diagnostics 9), kdiff 3 / 3969 and recycle 3 / 3969 (rxjs, sequelize x2: tsgo-shared; +1 timeout, dokploy's recycle
-run under load: triage.md). perfsweep 2000 projects, median check ratio 0.28 (the box loaded: 0.17 the round
-before), worst types ratio **1.73** (mcp-linker, refresh 5: 139k types against tsgo's 81k, unexamined: triage.md;
-lit tsserver-plugin's 1.40 next).
+## Instructions and the front end at d7bc837b0 (2026-10-23, the fourth coordinator's end)
+That run's oracle totals (suite 13999 / 14035 at the nightly, the rest as in the re-pin's "before") are in git
+(`git log -S'Oracle totals (2026-10-23, d7bc837b0)' -- agents/measurements.md`); the evening's section supersedes them.
 
 **Instructions at d7bc837b0** (`scripts/instrcount.sh`, callgrind K1, fast/tttt, against 0a1f67836's save): flat
 through the kernel round (vscode 66.374 G, -0.02%; the rest within +-0.25%, react +0.23%, type-fest -0.21%): its win

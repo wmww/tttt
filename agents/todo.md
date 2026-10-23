@@ -3,8 +3,9 @@ The live list of directions and ideas, roughly in order (vision.md "Direction" s
 is known, where the numbers are. Delete an entry when it lands, leaving its numbers in measurements.md; add new ones
 where they fit the order. Uninvestigated items go to triage.md, known bugs to `bugs/*.md`.
 
-Starting point: measurements.md "Oracle totals (2026-10-23, d7bc837b0)" and the laptop's latest section (at
-3a77c827: the kernel round; the counters at 2989c0f0). `test/instrcount.txt` is fast/tttt (BOLT) at a recycle-free K1, so a
+Starting point: measurements.md "Oracle totals (2026-10-23 evening)" (37d832827), `python3 scripts/bugcount.py` (the
+known correctness bugs and every oracle's last cache in seconds) and the laptop's latest section (at 3a77c827: the
+kernel round; the counters at 2989c0f0). `test/instrcount.txt` is fast/tttt (BOLT) at a recycle-free K1, so a
 jump against it needs attribution (policy, build or code) before it is celebrated.
 
 ## Always first: the re-pin to TypeScript 7.1.0 stable
@@ -33,10 +34,40 @@ Done when `grep -rn OLDCOMMIT scripts src test thirdparty/*.sh` is empty, no ora
 suite's lost list is fixed or written up. tsgo's `.tsbuildinfo` `version` string would matter only if a buildinfo is
 ever written (it isn't).
 
-The re-pin above is direction 6 (vision.md "Direction"). The human's priorities for the rest: distinctly faster than
-bun canary on real projects, judged on their private set (perf work needs a mechanism argument or a breadth check,
-not the bench: vision.md "Decisions"); speed over memory, but memory is worth cutting where it is cheap; easy,
-measured wins first; correctness never traded.
+The re-pin above is direction 6 (vision.md "Direction"). The human's priorities for the rest: tttt reports exactly
+where tsgo reports (presence is absolute; text exactness may be compromised and written up), then distinctly faster
+than bun canary on real projects, judged on their private set (perf work needs a mechanism argument or a breadth
+check, not the bench, and no machine-specific tuning: vision.md "Decisions"); memory where cheap; easy, measured
+wins first; land fast and gate in batches.
+
+## Now: the human's projects and the day's open threads
+- **openclaw** (correctness only, out of every perf measurement): 36 / 49 configs match in the last sweep, **13 time
+  out** (its sub-configs under load: are they slow in tttt or only in the sweep's limits? `scripts/projdiff.py` on one,
+  `TTTT_FILE_TIMES=1`), and 4 are K-dependent in kdiff (openclaw/packages, packages/plugin-sdk, src/agents/sessions,
+  src/config): history-dependent results, gate each fix with kdiff K1/K16. The det track's layers A/B (c97742da3,
+  1a6cf92cc) fixed the signature re-entry flake; the TS2554 'Expected 2-0 arguments' and the constraint check under
+  an outer relation (bugs/type_core.md) are the written-up rest.
+- **opencode** (correctness only; repos.txt `# perf: no opencode`): 8-27 varying errors at the defaults, 10 at K1
+  before e01e80779 fixed identity after normalization. Left: **its history-dependent alias re-entry below call
+  barriers** (tsc re-enters an alias in flight below a call's barrier, tttt reads what the first entry point left:
+  notes/reentrancy.md experiment 1, which once gained mikro-orm TS2456/TS7022). tsgo's verdicts aren't cached yet
+  (composite packages: tsgo -p writes `.tsbuildinfo` into the checkout, so cache it through tttt-oracle or projdiff's
+  sandbox). Its gate: kdiff K1/K16 on opencode, mikro-orm, drizzle, effect, zod.
+- **osis** (the human's sphi/osis ts/, repos.txt at 99d3b589c, a8dc6e431): not installed nor cached; its tsconfig
+  lists the generated build/test.ts (run ts/test.sh's extra/collectTests.js step at install, or both sides report
+  TS6053). `ensure-sources.sh` then `sourcesweep.py --tsc-new` from the main tree.
+- **Refresh 6's leftovers** (423 / 429, measurements.md "fifth rule"): pothos (plugin-with-input TS7031,
+  plugin-add-graphql TS2345, plugin-smart-subscriptions -TS7023: a variance measurement re-entering an own return
+  type, known-failing ttttVarianceReentersOwnReturnType), node-pg-migrate/docs (TS7's `typeof ts` typings), portabase
+  (auth.ts:690 `never`, form.tsx:227 -TS2322), tanstack-ai/packages/ai-harness (-TS2615).
+- **Instruction counts**: today's fixes drift ~+0.8% on drizzle against `test/instrcount.txt` (a6af311ed). Attribute
+  it (`scripts/instrcount.sh --vs REV` per batch boundary, abbuild.sh) before `--save`; the escaped-keyword cost was
+  already taken back (9a5647e3b).
+- **The shared sources' integrity**: at 10:51-10:57 a worker's reducer wrote through a symlink into
+  `thirdparty/sources` (it stubbed 690 hardlinked dependency files, so every repo sharing them changed; restored in place before the full
+  sweep). Since then `scripts/sourcescheck.sh` runs first in sourcesweep.py and dtsdiff.py, `scripts/reduce.py` copies
+  without symlinks into a bwrap sandbox, and the worker rules (coordinator.md) forbid symlinks into `thirdparty/` and
+  `rm` of computed paths. Run `sourcescheck.sh --save` after every install or re-pin.
 
 ## For the human
 The prompts were given in conversation at the fourth coordinator's end; redo them from here, each with the exact
@@ -49,8 +80,9 @@ command (measurements.md "How to measure": sys with `TTTT_SYNC_EXIT=1`):
   hill-climbing whichever machine runs the bench. Scheduling policy only on arguments that hold on any box (core and
   thread counts, bytes, file sizes); the OS places threads. `physical_cores()` (main.c) stays: a per-core cap is such
   an argument.
-- **(d) The recycle-budget sweep**: `--checker-memory` 4096 / 3072 / 2048 against the default on vscode and drizzle,
-  wall against peak RSS. Decides section 3's first lever.
+- **(d) The recycle-budget sweep**: superseded by the available-memory pool (1e71cfc86, the human's requirement). Still
+  useful: vscode and drizzle with `TTTT_MEM_AVAILABLE_MB` 4096 / 3072 / 2048, wall against peak RSS, to see what the
+  pool costs on a smaller machine.
 - **(e) The bench on main after the reaper** (`scripts/bench.sh --runs 3 --checkers 12 --bun ...`), the arena
   alignment (97839044a) included.
 - **Keep or revert the relation HACK's removal** (f38a8b493, one commit): react 0.09 -> 0.11 s at the defaults and
@@ -67,29 +99,28 @@ should include it. Not started from ktime2's brief: does the pre-check malloc_tr
 with `TTTT_NO_TRIM=1`), and pre-faulting checkers' first chunks off the critical path (resolve names keeps ~4.5 of 16
 cores busy: a helper could populate them then).
 
-## 2. The bun breadth sweep and its critical-path fixes
-Where the human's remaining losses to bun live. Not started: notes/bun_breadth.md has the tool (`scripts/perfshape.sh
--p P --bun PATH`, f903d2e0e), how to get bun canary 1.4.4-canary.20261022.1, the sample (the ~500 largest of
-perfsweep's 767 projects with tsgo `check_s >= 0.3`) and the loss classes. The human's one fact about their losing
-projects: tttt uses less total CPU on every one, so the losses are critical path (idle cores), not duplication. One
-sample: trpc/packages/tests keeps 4 of 16 cores busy with 8 checkers, its costliest file 41% of the checkers' span.
-Expected remedies: policy and scheduling (more checkers when the critical path is long, splitting what one dominating
-file holds, starting checking earlier). Warm bun once per project (its first run was seconds slower).
+## 2. The bun breadth sweep's remaining classes
+Done 2026-10-23 (notes/bun_breadth.md: 487 projects, bun wins on wall on 116, median ratio 0.82; fixed on the way:
+React's 187-member props intersection 9d63a2dd8, the largest-file cap ignoring `.d.ts` c082b54c5). Left:
+- **(b) the front end, 86 of the 116 losers** (3000-6700 files, mostly node_modules declarations; tttt's front end
+  slower than bun's load on 431 of 487, median 1.55x, at ~2 cores busy). Needs a timeline (`bench/timeline/`) on a
+  quiet box or the laptop on one of nitro, slidev, faker: the load pool's workers report busy far beyond their CPU.
+  Engineering, not policy.
+- **(c) a library warm-up every checker pays** in its first file (kebo 133 -> 633 ms at K8): only sharing removes it,
+  and sharing is closed (vision.md "Decisions"); a note for the human, not work.
+- **(f) slow shapes** beyond the fixed one: rerun perfshape on the worst 15 after 9d63a2dd8 to see what is left.
+Rerun the sweep after a front-end change (~45 min, the recipe in the note); warm bun once per project.
 
 ## 3. Memory: three levers, cheapest first
 vscode 5.5 GB at the defaults against bun's 2.2 (K1 4.3); the kernel round added +4..15% (vision.md "Decisions").
-- **The recycle-budget default** from the laptop's sweep (For the human, d): a fixed cap rather than a quarter of RAM
-  if 2-3 GB costs little wall.
-- **Per-file release**: drop what a checker made for one file at that file's end, as bun frees its per-task results
-  (most of its 2.2 GB on vscode). wt-memc's census (a6af311ed: `scripts/filecensus.sh`, a `-DTTTT_SURVIVORS` build,
-  `TTTT_FILE_CENSUS=1`; method, partial table and design sketch in agents/notes/memory.md):
-  **zod at K1, 82% of a checker's 275 MB arena is droppable at file end** (11% dead, 71% still referenced by later
-  files' results but not needed), mostly instantiated type structure (instantiate_members ~73 MB, builder_finish ~18,
-  mapped expansion ~13), not expression memos (4.5 MB); dropping it re-derives ~4% of types. The catch: a memo- and
-  scratch-only region is safe but reaches only 5-35 MB on zod; the full 80% needs "everything per file, survivors
-  copied out at file end", which is the copying recycle declined on 2026-10-17 (measurements.md "A copying checker
-  recycle"): reprice it against this census before deciding. Next: drizzle, effect, vscode at K1 and the defaults.
-  Gates: kdiff and the recycle oracle (a dropped result must never be read again), instructions.
+- **The budget default landed** as a process-wide pool, 80% of the memory available at startup (1e71cfc86): no
+  change on a free box, bounded on a busy one or in a cgroup. Its doubts (the recycle pick by arena size, not
+  materialized bodies; overshoot by one file per checker) are in the commit.
+- **Per-file release and chunk reuse: priced and declined** (9f238a1c0, notes/memory.md): vscode 76% of the arena
+  droppable at file end (zod 82%) but it is instantiated type structure; the memo/scratch region reaches 13.5% (under
+  the 15% bar); reusing recycled chunks is at most 0.6% CPU. The note lists what would cut the peak next: a kept
+  region for what non-checked declarations derive, checker counts by measured scaling, dropping materialized bodies
+  no other file reaches.
 - **Phase-boundary trims**: a trim burst when no checker runs. Small.
 
 ## 4. Kernel round three
@@ -102,10 +133,17 @@ New real-code sightings first; every unfixed divergence gets a known-failing tes
 repository's name before investigating it. **No semantics commit lands without a repro or the full source sweep, and
 a relation change runs kdiff on the affected project at K1 and K8/16** (better-drizzle's 742 was K>1 only). Hacks
 are suspects (vision.md "Decisions"). Open:
-- **kebo's mobx-state-tree cycle** (bugs/sourcesweep_checker.md "fourth rule"): tsc resolves a returned function's
-  parameter types lazily, tttt eagerly in signature_resolve_slow(); the same root as triage.md's missed TS2502 through
-  `ReturnType<typeof h>`. Needs lazy parameter types in signature resolution: a design first, then a repro from MST's
-  real types. (det 2026-10-23: re-entry now reads a whole record, the design that is left is in the kebo entry)
+- **Lazy parameter typing in signature resolution: the structural item.** tsc resolves a returned function's
+  parameter types lazily, tttt eagerly in signature_resolve_slow(): kebo's mobx-state-tree cycle (bugs/
+  sourcesweep_checker.md "fourth rule"; reduce.py cut it to 18 lines plus 4 MST `.d.ts`, ccc313017's message),
+  openclaw's TS2554 'Expected 2-0 arguments' (same entry), triage.md's missed TS2502 through `ReturnType<typeof h>`.
+  The det track made re-entry read a whole record (1a6cf92cc); the design that is left is in the kebo entry. Design
+  first, gated by kdiff.
+- **bun's cases** (`scripts/buncases.py`, 1278 / 2411 match; as suite tests `bun*`, 980 / 2332 pass): 530 of 532
+  keys no bugs entry names. Largest: -TS2322 252, -TS2509 184, -TS2339 177, +TS5114 146, +TS2322 127, +TS2339 127,
+  +TS2842 126, +TS7022 112 (`python3 scripts/bugcount.py -v`); the 7 crashes first, then the missing TS7022 family
+  (notes/reentrancy.md's test list for stages C/D), parser recovery. Write up per root cause so the unexplained count
+  means something.
 - **mcp-linker's 1.73x types** (triage.md): typed i18next's `t()` under an object contextual type, a base constraint
   chain tsgo cuts at the recursion-identity limit and tttt doesn't (localized, not fixed).
 - **The indexed-access recursion identity** (triage.md): tsc's rule, reverted for youtube-enhancer's runaway (1.16M
@@ -163,8 +201,6 @@ duplication (each checker's arena is its repeated work, 3-6 MB on nest, 12-33 MB
 - **Source sweep flag flips**: flagflip's cells (`--strict` where the tsconfig isn't, noUncheckedIndexedAccess,
   exactOptionalPropertyTypes) on the source sweep's matching projects, cached per flag like `sweep.py --flags`; the
   missing direction there is unmeasured.
-- **Re-entrancy experiment 1 again** (aliases below the call barrier: tsc's rule), now that the "once" flags are
-  gone (notes/reentrancy.md).
 
 ## Parked (the human decides)
 - **CLI modes** (parked 2026-10-16): `--init`, `--showConfig`, `--explainFiles` are each a day or less and
