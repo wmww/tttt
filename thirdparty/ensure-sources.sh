@@ -17,7 +17,7 @@
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 exec python3 -I - "$@" <<'EOF'
-import base64, concurrent.futures, hashlib, json, os, shutil, sqlite3, subprocess, sys, threading, time, urllib.request
+import base64, concurrent.futures, errno, hashlib, json, os, shutil, sqlite3, subprocess, sys, threading, time, urllib.request
 
 NODE_VERSION = 'v24.21.0'
 NODE_SHA256 = 'fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6'
@@ -182,11 +182,18 @@ def dedupe(d):
                 except FileNotFoundError:
                     other = None
                 if other and other.st_size == st.st_size:
-                    if (other.st_dev, other.st_ino) != (st.st_dev, st.st_ino):
+                    if (other.st_dev, other.st_ino) == (st.st_dev, st.st_ino):
+                        continue
+                    try:
                         os.link(row[0], p + '.tttt-link')
                         os.replace(p + '.tttt-link', p)
-                    continue
-            db.execute('INSERT OR REPLACE INTO f VALUES (?, ?, ?)', (st.st_size, h, p))
+                        continue
+                    except OSError as e:
+                        # (The filesystem's link limit, 65000 on ext4: this copy is the one later repos link to)
+                        if e.errno != errno.EMLINK:
+                            raise
+            # (By its real path: a worktree reaches sources/ through a symlink that goes away with it)
+            db.execute('INSERT OR REPLACE INTO f VALUES (?, ?, ?)', (st.st_size, h, os.path.realpath(p)))
     db.commit()
     db.close()
 
