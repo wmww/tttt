@@ -539,18 +539,20 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             type_typecheck(&my inferred->extends, errs);
             ty_check_infer_constraints(current_checker, my inferred, errs);
             break;
-        case TYPE_IDENTIFIER:
-            identifier_type_typecheck(my identifier, errs);
+        case TYPE_IDENTIFIER: {
             // tsc's checkTypeReferenceNode resolves the reference (getTypeFromTypeReference): a generic alias's
-            // instantiation runs into its limits here, at the reference (TS2589)
+            // instantiation runs into its limits here, at the reference (TS2589, TS2799), and when that made it the
+            // error type its type arguments' constraints aren't checked (checkTypeReferenceOrImport)
+            bool resolved_error = false;
             if (my identifier->target && (my identifier->target->flags & SYMBOL_TYPE_ALIAS) &&
                 vec_spanned_type_size(&my identifier->generic_params)
             ) {
                 CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my identifier));
-                ty_of_node(me);
+                resolved_error = (ty_of_node(me)->flags & TYF_ERROR) != 0;
                 ty_leave_node(current_checker, saved);
             }
-            break;
+            identifier_type_typecheck(my identifier, resolved_error, errs);
+        }   break;
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
         case TYPE_INTERFACE:
             // A type literal (an interface's body is checked by interface_decl_typecheck())

@@ -1,0 +1,33 @@
+//// [test/cases/ttttAliasErrorTypeNoConstraintCheck.ts] ////
+
+=== ttttAliasErrorTypeNoConstraintCheck.ts ===
+// A reference to a generic alias whose instantiation is the error type (a tuple too large to represent, TS2799)
+// has its type arguments' constraints left unchecked (tsc's checkTypeReferenceOrImport: no TS2344 for "3")
+type BuildTuple<L extends number, T extends any[] = [any]> =
+>BuildTuple : Symbol(BuildTuple, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 0, 0))
+>L : Symbol(L, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 16))
+>T : Symbol(T, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 33))
+
+    T['length'] extends L ? T : BuildTuple<L, [...T, ...T]>;
+>T : Symbol(T, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 33))
+>L : Symbol(L, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 16))
+>T : Symbol(T, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 33))
+>BuildTuple : Symbol(BuildTuple, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 0, 0))
+>L : Symbol(L, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 16))
+>T : Symbol(T, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 33))
+>T : Symbol(T, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 2, 33))
+
+type A = BuildTuple<"3">;
+>A : Symbol(A, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 3, 60))
+>BuildTuple : Symbol(BuildTuple, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 0, 0))
+
+// Constraints are still checked where the instantiation is fine
+type Id<N extends number> = [N];
+>Id : Symbol(Id, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 5, 25))
+>N : Symbol(N, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 8, 8))
+>N : Symbol(N, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 8, 8))
+
+type B = Id<"3">;
+>B : Symbol(B, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 8, 32))
+>Id : Symbol(Id, Decl(ttttAliasErrorTypeNoConstraintCheck.ts, 5, 25))
+

@@ -609,7 +609,7 @@ bool identifier_type_is_jsdoc_function(IdentifierType const* me) {
 
 // tsc's getTypeFromClassOrInterfaceReference/getTypeFromTypeAliasReference/checkNoTypeArguments: the number of type
 // arguments has to fit the type parameters (TS2314, TS2707), and a type without any takes none (TS2315)
-static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs) {
+static void identifier_type_check_arity(IdentifierType const* me, bool resolved_error, ErrorCtx* errs) {
     Symbol const* symbol = my target;
     // JSDoc's own names take no type arguments (tsc's checkNoTypeArguments in getIntendedTypeFromJSDocTypeReference)
     bool jsdoc_named = my jsdoc_intrinsic && my jsdoc_intrinsic != JSDOC_INTRINSIC_INDEX_SIGNATURE &&
@@ -646,7 +646,7 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
         return;
     }
-    if (!several_types_check_arity(symbol, arg_count, span, false, errs) && arg_count && !my jsdoc_unchecked) {
+    if (!several_types_check_arity(symbol, arg_count, span, false, errs) && arg_count && !my jsdoc_unchecked && !resolved_error) {
         ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
     }
 }
@@ -722,12 +722,12 @@ bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, b
     return true;
 }
 
-static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs);
+static void identifier_type_typecheck_inner(IdentifierType const* me, bool resolved_error, ErrorCtx* errs);
 
-void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
+void identifier_type_typecheck(IdentifierType const* me, bool resolved_error, ErrorCtx* errs) {
     // tsc's checkSourceElement of a TypeReference: where its instantiation errors go
     CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(me));
-    identifier_type_typecheck_inner(me, errs);
+    identifier_type_typecheck_inner(me, resolved_error, errs);
     ty_leave_node(current_checker, saved);
     // (tsgo's checkImportType ends with checkImportAttributes: the attributes against the global ImportAttributes,
     // and nothing more for an import type)
@@ -737,7 +737,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     }
 }
 
-static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs) {
+static void identifier_type_typecheck_inner(IdentifierType const* me, bool resolved_error, ErrorCtx* errs) {
     IdentifierTypeRare const* rare = my rare;
     if (rare && rare->import_attributes) { // tsc's checkImportType
         // (tsgo's checkGrammarImportAttributeValues: only a string literal, not a template)
@@ -756,7 +756,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE) {
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
-    identifier_type_check_arity(me, errs);
+    identifier_type_check_arity(me, resolved_error, errs);
     if (rare && rare->type_as_namespace && ast_spans_size(&rare->namespaces)) {
         Checker* checker = current_checker;
         Span left = rare->namespaces.data[0];
