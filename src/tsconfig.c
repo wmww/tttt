@@ -136,6 +136,11 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
         // A name that isn't one of tsc's options (in exact case: tsc ignores `"Target"`): TS5023 at it, and nothing set
         cstr message = cstr_null;
         unsigned unknown = compiler_option_unknown_diagnostic(csview_from(name), false, csview_from(name), &message);
+        // (tsgo's onPropertySet: a null value is no setting, so an unknown name set to null isn't reported)
+        if (unknown && value->tag == JSON_NULL) {
+            cstr_drop(&message);
+            continue;
+        }
         if (unknown) {
             config_diagnostic(me, unknown, message, config, compiler_options->members[i].key_start,
                 compiler_options->members[i].key_end);

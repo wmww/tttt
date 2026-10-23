@@ -1,0 +1,13 @@
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+tsconfig.json(1,113): error TS5023: Unknown compiler option 'keyofStringsOnly'.
+
+
+==== tsconfig.json (1 errors) ====
+    { "compilerOptions": { "noEmit": true, "types": [], "noImplicitUseStrict": null, "noStrictGenericChecks": null, "keyofStringsOnly": true } }
+                                                                                                                    ~~~~~~~~~~~~~~~~~~
+!!! error TS5023: Unknown compiler option 'keyofStringsOnly'.
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
