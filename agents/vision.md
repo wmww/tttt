@@ -10,7 +10,7 @@ under tsc are the second.
 
 ## State (2026-10-23, the fourth coordinator's end: oracles at d7bc837b0, main past 8d4518ecc; the laptop at 3a77c827)
 - **Target: TypeScript 7.1** (the 7.1.0-beta, tag `v7.1-beta` = 3e923636, `thirdparty/typescript`, since 2026-10-23;
-  re-pin to 7.1.0 stable when it is on npm: todo.md). Suite with own tests and the dts component **13999 / 14035** (dts 1888 / 1910), the
+  re-pin to 7.1.0 stable when it is on npm: todo.md). Suite with own tests and the dts component **14138 / 14193** (dts 1897 / 1926; 13999 / 14035 before the beta), the
   same with `--no-defer-bodies`, `--checker-memory 0` 0 of 17672 differ; two of tttt's own tests fail by design
   (known-failing tests for unfixed divergences: ttttThisInstantiatedMethodErased, hono's this-instantiated members;
   ttttDeferredBodyBeforeContextualParameters, tsc's deferred-body check order); the native suite's last 12

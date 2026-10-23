@@ -1252,6 +1252,26 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
+## Oracle totals (2026-10-23, the 7.1.0-beta re-pin)
+The oracle moved from the 2026-10-08 nightly (fed0bf24) to **TypeScript 7.1.0-beta** (`v7.1-beta` = 3e923636), every
+cache regenerated with it (wt-repin) but dtsdiff's and flagflip's (main tree only). Before = d7bc837b0's totals below.
+- Suite **14137 / 14192** (dts 1897 / 1926; 14138 / 14193 rebased onto main's NoInfer repro), was 13999 / 14035 (dts
+  1888 / 1910): the beta added 157 tests; 4 lost
+  (objectLiteralNormalization, jsdocAccessibilityTagsDeclarations, jsdocReadonlyDeclarations, mappedTypeConstraints2)
+  all fixed; 19 new configurations fail, written up (12 content mapper `outputExtensions`, the beta's new feature; 7
+  others in bugs/type_core.md, harness.md, js.md, binder_modules.md). `--no-defer-bodies` the same, `--checker-memory
+  0` 0 of 17845 differ.
+- tsgo's own outputs barely moved: every corpus's diagnostics and text identical (only the pin), DT 1 package changed
+  (types/sphere-engine-browser, in plain, nuia and eopt), `$ExpectType` 1 package (json-merge-patch), source sweep 11
+  of 5464 verdicts, `-b` sweep babel's crash gone.
+- tttt against them: every corpus 0/0 but vue 0/2 (as before), DT 8595 / 8595, `$ExpectType` 68640 / 68640, source
+  sweep `--sample 4` 1322 / 1324 (as before), `-b` sweep 418 / 426 (was 411 / 416; bugs/sourcesweep_build.md),
+  scenarios 221 / 221 (13 skipped), clidiff corpora 16 / 17 (vue), oracles.py --quick nothing STALE. checkerdiff K1
+  against `-m 0` and K8, threadcheck: identical on drizzle, zod, effect, excalidraw.
+- Instructions (`scripts/instrcount.sh`, callgrind K1, fast/tttt): drizzle 4.453 G -0.14%, zod 3.587 G +0.08%,
+  vscode 66.463 G +0.19%: flat (the deleted undefinedProperties recheck never ran on these; the new esnext.iterator lib
+  loads only with esnext).
+
 ## Oracle totals (2026-10-23, d7bc837b0)
 The merger's `scripts/oracles.py` at d7bc837b0 (3a77c8275's message: the kernel round wt-ktime and wt-pb's
 perfshape.sh in), the last full run of the fourth coordinator's session; the previous totals were a5252a764 +

@@ -12,6 +12,12 @@ script: `tsc -b --force` once, then `tsc -p X --noEmit` and `tttt -p X --noEmit`
 runs). Then a project's leftovers are plain `-p` bugs: probe with a scratch config in UP next to the failing one,
 `skipLibCheck: false` shows errors *in* the emitted `.d.ts` (apollo's TS2456 was only visible that way).
 
+**At the 7.1.0-beta re-pin (2026-10-23): 418 / 426** (the cache now has 9 more solutions and babel's verdict, where
+the nightly's tsgo crashed). Besides the leftovers below: astro (+TS2307 base.ts:9 `@astrojs/markdown-satteri`) and
+b4run (+TS2307 x8) are TS2307s the beta's `-b` no longer reports (the builder-window race below, not rechecked),
+sunmao-ui's TS2590s moved between files (tsgo's runaway artifact), babel's parser fixtures (-TS1005/TS1128/TS1003,
++TS1354: unexamined, new to the comparison).
+
 Left (2026-10-20, by project; + spurious, - missing):
 - atproto: +TS2307 1 (oauth-client's `@atproto-labs/identity-resolver`: the builder-window race, below).
 - better-auth: -TS2345 2 (lynx-store.ts:65, react-store.ts:67, a `-p` bug too): `listenKeys(store as any, keys,
