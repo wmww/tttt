@@ -2532,6 +2532,16 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
         } else if (span_equals(mod.span, "export")) {
             // tsc's canFollowExportModifier: `export {`, `export *`, `export as namespace` are export declarations
             if (!is_member && (*p.pos == '{' || *p.pos == '*' || starts_with_followed_by_word_break(&p, "as"))) break;
+            // A member's `export default` is a modifier only before what can follow `default` (tsc's
+            // nextTokenCanFollowModifier): `interface X { export default: 1 }` is a property `export`
+            if (is_member && starts_with_followed_by_word_break(&p, "default")) {
+                Parser q = parser(&p);
+                hop_start_if_ends_on_word_break(&q, "default");
+                hop_whitespace(&q);
+                bool follows = can_follow_default_keyword(&q);
+                parse_fail(&q);
+                if (!follows) break;
+            }
             mod.tag = MODIFIER_EXPORT;
         } else if (span_equals(mod.span, "default") && (prev_was_export || (!is_member && can_follow_default_keyword(&p)))) {
             mod.tag = MODIFIER_EXPORT_DEFAULT;
@@ -9247,6 +9257,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                         ) {
                             // (Of a name that isn't an identifier, tsc's parseErrorForMissingSemicolonAfter only says
                             // ';' expected)
+                            parse_error(&p, span_from_token(&p), 1005, "';' expected.");
+                        } else if (is_type) {
+                            // (A type member's is tsc's parseTypeMemberSemicolon, a plain parseSemicolon: no
+                            // parseErrorForMissingSemicolonAfter, `interface X { default p: number }`)
                             parse_error(&p, span_from_token(&p), 1005, "';' expected.");
                         } else {
                             parse_error(&p, name_span, 1434, "Unexpected keyword or identifier.");
