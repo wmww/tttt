@@ -1,0 +1,60 @@
+//// [test/cases/ttttConstRestLiteralsRegular.ts] ////
+
+=== ttttConstRestLiteralsRegular.ts ===
+// The arguments of a rest parameter typed by a const type parameter are inferred as regular literals: tsc's
+// getSpreadArgumentType takes getRegularTypeOfLiteralType of each under inConstContext, so an unconstrained inference
+// from `f(...).o` keeps "a" | "b" rather than widening fresh ones to string (sphi/osis's enumAdapter tests)
+declare function f<const X extends string[]>(...cases: X): { o: { [I in keyof X]: X[I] }[number] };
+>f : Symbol(f, Decl(ttttConstRestLiteralsRegular.ts, 0, 0))
+>X : Symbol(X, Decl(ttttConstRestLiteralsRegular.ts, 3, 19))
+>cases : Symbol(cases, Decl(ttttConstRestLiteralsRegular.ts, 3, 45))
+>X : Symbol(X, Decl(ttttConstRestLiteralsRegular.ts, 3, 19))
+>o : Symbol(o, Decl(ttttConstRestLiteralsRegular.ts, 3, 60))
+>I : Symbol(I, Decl(ttttConstRestLiteralsRegular.ts, 3, 67))
+>X : Symbol(X, Decl(ttttConstRestLiteralsRegular.ts, 3, 19))
+>X : Symbol(X, Decl(ttttConstRestLiteralsRegular.ts, 3, 19))
+>I : Symbol(I, Decl(ttttConstRestLiteralsRegular.ts, 3, 67))
+
+declare function id<T>(x: T): { v: T };
+>id : Symbol(id, Decl(ttttConstRestLiteralsRegular.ts, 3, 99))
+>T : Symbol(T, Decl(ttttConstRestLiteralsRegular.ts, 4, 20))
+>x : Symbol(x, Decl(ttttConstRestLiteralsRegular.ts, 4, 23))
+>T : Symbol(T, Decl(ttttConstRestLiteralsRegular.ts, 4, 20))
+>v : Symbol(v, Decl(ttttConstRestLiteralsRegular.ts, 4, 31))
+>T : Symbol(T, Decl(ttttConstRestLiteralsRegular.ts, 4, 20))
+
+const r1 = f('a', 'b').o;
+>r1 : Symbol(r1, Decl(ttttConstRestLiteralsRegular.ts, 5, 5))
+>f('a', 'b').o : Symbol(o, Decl(ttttConstRestLiteralsRegular.ts, 3, 60))
+>f : Symbol(f, Decl(ttttConstRestLiteralsRegular.ts, 0, 0))
+>o : Symbol(o, Decl(ttttConstRestLiteralsRegular.ts, 3, 60))
+
+const m1 = id(r1);
+>m1 : Symbol(m1, Decl(ttttConstRestLiteralsRegular.ts, 6, 5))
+>id : Symbol(id, Decl(ttttConstRestLiteralsRegular.ts, 3, 99))
+>r1 : Symbol(r1, Decl(ttttConstRestLiteralsRegular.ts, 5, 5))
+
+const z1: number = m1;
+>z1 : Symbol(z1, Decl(ttttConstRestLiteralsRegular.ts, 7, 5))
+>m1 : Symbol(m1, Decl(ttttConstRestLiteralsRegular.ts, 6, 5))
+
+declare function g<const X extends string[]>(...cases: X): { o: X[number] };
+>g : Symbol(g, Decl(ttttConstRestLiteralsRegular.ts, 7, 22))
+>X : Symbol(X, Decl(ttttConstRestLiteralsRegular.ts, 8, 19))
+>cases : Symbol(cases, Decl(ttttConstRestLiteralsRegular.ts, 8, 45))
+>X : Symbol(X, Decl(ttttConstRestLiteralsRegular.ts, 8, 19))
+>o : Symbol(o, Decl(ttttConstRestLiteralsRegular.ts, 8, 60))
+>X : Symbol(X, Decl(ttttConstRestLiteralsRegular.ts, 8, 19))
+
+const z2: number = id(g('a', 'b').o);
+>z2 : Symbol(z2, Decl(ttttConstRestLiteralsRegular.ts, 9, 5))
+>id : Symbol(id, Decl(ttttConstRestLiteralsRegular.ts, 3, 99))
+>g('a', 'b').o : Symbol(o, Decl(ttttConstRestLiteralsRegular.ts, 8, 60))
+>g : Symbol(g, Decl(ttttConstRestLiteralsRegular.ts, 7, 22))
+>o : Symbol(o, Decl(ttttConstRestLiteralsRegular.ts, 8, 60))
+
+const z3: number = id(g('a', 'b'));
+>z3 : Symbol(z3, Decl(ttttConstRestLiteralsRegular.ts, 10, 5))
+>id : Symbol(id, Decl(ttttConstRestLiteralsRegular.ts, 3, 99))
+>g : Symbol(g, Decl(ttttConstRestLiteralsRegular.ts, 7, 22))
+

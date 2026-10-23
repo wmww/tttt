@@ -1201,8 +1201,11 @@ static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32
         ty_argument_return_type(me, arg->expr->function);
     }
     my outer_inference = saved;
-    if (!is_const && contextual && (arg->type->flags & TYF_FRESH_LITERAL) &&
-        (ty_is_literal_of_contextual_type(me, arg->type, contextual) || maybe_primitive_context(contextual))
+    // (Under a const type parameter always: tsc's hasPrimitiveContextualType is inConstContext || ..., so
+    // `f('a', 'b')` with `const X extends string[]` infers X from the regular "a" and "b", which an unconstrained
+    // inference from `f(...)[number]` later keeps rather than widening)
+    if ((arg->type->flags & TYF_FRESH_LITERAL) && (is_const || (contextual &&
+        (ty_is_literal_of_contextual_type(me, arg->type, contextual) || maybe_primitive_context(contextual))))
     ) {
         arg->type = ty_regular(me, arg->type);
     }

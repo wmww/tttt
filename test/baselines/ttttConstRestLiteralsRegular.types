@@ -1,0 +1,60 @@
+//// [test/cases/ttttConstRestLiteralsRegular.ts] ////
+
+=== ttttConstRestLiteralsRegular.ts ===
+// The arguments of a rest parameter typed by a const type parameter are inferred as regular literals: tsc's
+// getSpreadArgumentType takes getRegularTypeOfLiteralType of each under inConstContext, so an unconstrained inference
+// from `f(...).o` keeps "a" | "b" rather than widening fresh ones to string (sphi/osis's enumAdapter tests)
+declare function f<const X extends string[]>(...cases: X): { o: { [I in keyof X]: X[I] }[number] };
+>f : <const X extends string[]>(...cases: X) => { o: { [I in keyof X]: X[I]; }[number]; }
+>cases : X
+>o : { [I in keyof X]: X[I]; }[number]
+
+declare function id<T>(x: T): { v: T };
+>id : <T>(x: T) => { v: T; }
+>x : T
+>v : T
+
+const r1 = f('a', 'b').o;
+>r1 : "a" | "b"
+>f('a', 'b').o : "a" | "b"
+>f('a', 'b') : { o: "a" | "b"; }
+>f : <const X extends string[]>(...cases: X) => { o: { [I in keyof X]: X[I]; }[number]; }
+>'a' : "a"
+>'b' : "b"
+>o : "a" | "b"
+
+const m1 = id(r1);
+>m1 : { v: "a" | "b"; }
+>id(r1) : { v: "a" | "b"; }
+>id : <T>(x: T) => { v: T; }
+>r1 : "a" | "b"
+
+const z1: number = m1;
+>z1 : number
+>m1 : { v: "a" | "b"; }
+
+declare function g<const X extends string[]>(...cases: X): { o: X[number] };
+>g : <const X extends string[]>(...cases: X) => { o: X[number]; }
+>cases : X
+>o : X[number]
+
+const z2: number = id(g('a', 'b').o);
+>z2 : number
+>id(g('a', 'b').o) : { v: "a" | "b"; }
+>id : <T>(x: T) => { v: T; }
+>g('a', 'b').o : "a" | "b"
+>g('a', 'b') : { o: "a" | "b"; }
+>g : <const X extends string[]>(...cases: X) => { o: X[number]; }
+>'a' : "a"
+>'b' : "b"
+>o : "a" | "b"
+
+const z3: number = id(g('a', 'b'));
+>z3 : number
+>id(g('a', 'b')) : { v: { o: "a" | "b"; }; }
+>id : <T>(x: T) => { v: T; }
+>g('a', 'b') : { o: "a" | "b"; }
+>g : <const X extends string[]>(...cases: X) => { o: X[number]; }
+>'a' : "a"
+>'b' : "b"
+

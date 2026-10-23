@@ -291,6 +291,16 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttConstRestLiteralsRegular': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConstRestNestedTupleMutable': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'ttttConstructorNarrowsThisType': {
         errors: true,
         symbols: true,
