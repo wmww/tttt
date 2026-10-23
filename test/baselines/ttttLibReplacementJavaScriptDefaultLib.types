@@ -1,0 +1,7 @@
+//// [test/cases/ttttLibReplacementJavaScriptDefaultLib.ts] ////
+
+=== a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

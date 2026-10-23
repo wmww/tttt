@@ -1332,6 +1332,7 @@ static BaselineTestCase run_baseline_test_case_with(
         }
     }
 
+    program_take_lib_replacement_errors(program);
     // tsc reports type errors next to parse errors (getPreEmitDiagnostics() is all of them)
     program_resolve_names(program);
     // (tsgo's harness emits unless noEmit: the `.js` baseline's declaration files, the dts component)

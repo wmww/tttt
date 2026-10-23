@@ -1,0 +1,40 @@
+error TS6504: File 'node_modules/@typescript/lib-es2022/full.js' is a JavaScript file. Did you mean to enable the 'allowJs' option?
+  The file is in the program because:
+    Default library for target 'ES2022'
+error TS2318: Cannot find global type 'Array'.
+error TS2318: Cannot find global type 'Boolean'.
+error TS2318: Cannot find global type 'CallableFunction'.
+error TS2318: Cannot find global type 'Function'.
+error TS2318: Cannot find global type 'IArguments'.
+error TS2318: Cannot find global type 'NewableFunction'.
+error TS2318: Cannot find global type 'Number'.
+error TS2318: Cannot find global type 'Object'.
+error TS2318: Cannot find global type 'RegExp'.
+error TS2318: Cannot find global type 'String'.
+a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS6504: File 'node_modules/@typescript/lib-es2022/full.js' is a JavaScript file. Did you mean to enable the 'allowJs' option?
+!!! error TS6504:   The file is in the program because:
+!!! error TS6504:     Default library for target 'ES2022'
+!!! error TS2318: Cannot find global type 'Array'.
+!!! error TS2318: Cannot find global type 'Boolean'.
+!!! error TS2318: Cannot find global type 'CallableFunction'.
+!!! error TS2318: Cannot find global type 'Function'.
+!!! error TS2318: Cannot find global type 'IArguments'.
+!!! error TS2318: Cannot find global type 'NewableFunction'.
+!!! error TS2318: Cannot find global type 'Number'.
+!!! error TS2318: Cannot find global type 'Object'.
+!!! error TS2318: Cannot find global type 'RegExp'.
+!!! error TS2318: Cannot find global type 'String'.
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "target": "es2022", "libReplacement": true }, "files": ["a.ts"] }
+==== a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== node_modules/@typescript/lib-es2022/full.js (0 errors) ====
+    module.exports = {}
+==== node_modules/@typescript/lib-es2022/package.json (0 errors) ====
+    {"name":"@typescript/lib-es2022","version":"1.0.0"}
+    

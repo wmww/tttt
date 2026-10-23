@@ -22,6 +22,26 @@ static const EnumValue target_values[] = {
     {"es2024", SCRIPT_TARGET_ES2024}, {"es2025", SCRIPT_TARGET_ES2025}, {"es2026", SCRIPT_TARGET_ES2026}, {"esnext", SCRIPT_TARGET_ESNEXT}, {},
 };
 
+char const* compiler_options_target_display_name(ScriptTarget target) {
+    switch (target) {
+        case SCRIPT_TARGET_ES5: return "ES5";
+        case SCRIPT_TARGET_ES2015: return "ES2015";
+        case SCRIPT_TARGET_ES2016: return "ES2016";
+        case SCRIPT_TARGET_ES2017: return "ES2017";
+        case SCRIPT_TARGET_ES2018: return "ES2018";
+        case SCRIPT_TARGET_ES2019: return "ES2019";
+        case SCRIPT_TARGET_ES2020: return "ES2020";
+        case SCRIPT_TARGET_ES2021: return "ES2021";
+        case SCRIPT_TARGET_ES2022: return "ES2022";
+        case SCRIPT_TARGET_ES2023: return "ES2023";
+        case SCRIPT_TARGET_ES2024: return "ES2024";
+        case SCRIPT_TARGET_ES2025: return "ES2025";
+        case SCRIPT_TARGET_ES2026: return "ES2026";
+        case SCRIPT_TARGET_ESNEXT: return "ESNext";
+    }
+    return "";
+}
+
 static const EnumValue module_values[] = {
     {"commonjs", MODULE_KIND_COMMONJS}, {"amd", MODULE_KIND_AMD},
     {"system", MODULE_KIND_SYSTEM}, {"umd", MODULE_KIND_UMD}, {"es6", MODULE_KIND_ES2015},

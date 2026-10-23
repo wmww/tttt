@@ -1012,6 +1012,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     str_list_drop(&root_files);
     program_finish_deferred_libs(program, "after the roots", c_sv(""));
     program_load_automatic_types(program);
+    program_take_lib_replacement_errors(program);
     phase_done(opts, out, "load+parse files", &last_time);
     // (The syntax errors of deferred bodies are only found when they're parsed: an output that has to have them all
     // without checking parses the bodies for them, and runs again without deferral if one has some)

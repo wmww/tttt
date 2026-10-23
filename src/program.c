@@ -209,6 +209,8 @@ typedef struct Program {
     bool defer_bodies; // program_set_defer_bodies()
     _Atomic bool defer_failed; // program_defer_failed()
     atomic_uint ahead_next; // Materialize-ahead (plan 78, program_typecheck()): the next file of check_files a helper takes
+    csview explaining_lib, explaining_lib_path; // program_load_stdlib()'s lib while it loads its libReplacement (program_explain_root())
+    VecError lib_replacement_errors; // What loading libReplacement files reported, program_take_lib_replacement_errors()
     bool build_mode; // Built by `-b`: a build info file is written whether or not the options are incremental
     // Outputs other than the build info file blocked by TS5055/TS5056: tsgo's emit is skipped then (exit status 1);
     // a blocked build info file alone skips nothing
@@ -373,6 +375,7 @@ static void program_drop(Program* me) {
     for (u32 i = 0; i < my deferred_lib_count; i++) cstr_drop(&my deferred_libs[i].path);
     free(my deferred_libs);
     hmap_source_file_ptr_drop(&my emit_blocked);
+    vec_error_drop(&my lib_replacement_errors);
     hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
@@ -2361,7 +2364,17 @@ static void program_explain_root(Program* me, Error* error, csview path) {
     cstr absolute = absolute_path_of(program_cwd(me), path);
     cstr config_name = program_config_name_for_message(me);
     csview config = cstr_sv(&config_name);
-    cstr reason = tsconfig_root_file_reason(&my options, cstr_sv(&absolute), config);
+    cstr reason = cstr_null;
+    bool lib = my explaining_lib.size && csview_equals_sv(path, my explaining_lib_path);
+    if (lib && my options.lib_set) {
+        // (tsgo's fileIncludeKindLibFile: the lib's file name, options.lib normalized)
+        reason = cstr_d("Library 'lib.", my explaining_lib, ".d.ts' specified in compilerOptions");
+    } else if (lib) {
+        // (tsgo's ScriptTarget String(): ES5 ... ES2026, ESNext)
+        reason = cstr_d("Default library for target '", compiler_options_target_display_name(my options.target), "'");
+    } else {
+        reason = tsconfig_root_file_reason(&my options, cstr_sv(&absolute), config);
+    }
     cstr_drop(&config_name);
     error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
     error_sub_error_d(vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, reason);
@@ -2425,6 +2438,19 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
         // Not part of the program. tsc still wants the file to exist, so does the caller
         if (!fs_is_reg_file(my fs, path)) return err_d("File '", path, "' not found.");
         cstr shown = program_path_for_message(me, path);
+        // (One per file, explained by its first inclusion: tsgo loads the roots before the libs, so a libReplacement's
+        // file that is also a root is the root's, program_load_stdlib())
+        if (!my explaining_lib.size) {
+            cstr message = cstr_d("File '", shown, "' is a JavaScript file. Did you mean to enable the 'allowJs' option?");
+            for (isize i = 0; i < vec_error_size(&my lib_replacement_errors); i++) {
+                Error* lib_error = vec_error_at_mut(&my lib_replacement_errors, i);
+                if (lib_error->ts_code == 6504 && cstr_equals_sv(&lib_error->message, cstr_sv(&message))) {
+                    vec_error_erase_n(&my lib_replacement_errors, i, 1);
+                    break;
+                }
+            }
+            cstr_drop(&message);
+        }
         Error* error = error_ctx_global_error_d(
             my errs, 6504, "File '", shown, "' is a JavaScript file. Did you mean to enable the 'allowJs' option?"
         );
@@ -2478,10 +2504,22 @@ SourceFile* program_find_source(Program const* me, csview path) {
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     cstr replacement = program_lib_replacement(me, name);
     if (cstr_size(&replacement)) {
-        // (libReplacement: the package's file, not a lib file)
+        // (libReplacement: the package's file, not a lib file. What loading it reports is the program's (TS6504 for a
+        // package's JavaScript without allowJs), kept apart from what the libraries say, program_take_lib_replacement_errors(),
+        // and explained as a lib file, program_explain_root())
+        VecError outer = my errs->errors;
+        my errs->errors = my lib_replacement_errors;
+        my explaining_lib = name;
+        my explaining_lib_path = cstr_sv(&replacement);
         try (SourceFile* source, program_load(me, cstr_sv(&replacement), &source)) cleanup {
+            my explaining_lib = c_sv("");
+            my lib_replacement_errors = my errs->errors;
+            my errs->errors = outer;
             cstr_drop(&replacement);
         }
+        my explaining_lib = c_sv("");
+        my lib_replacement_errors = my errs->errors;
+        my errs->errors = outer;
         cstr_drop(&replacement);
         return ok(source);
     }
@@ -4767,6 +4805,11 @@ TyGraph* program_graph(Program const* me) {
 
 
 void program_set_build_mode(Program* me, bool build) { my build_mode = build; }
+
+void program_take_lib_replacement_errors(Program* me) {
+    for_each (i, vec_error, &my lib_replacement_errors) vec_error_push(&my errs->errors, *i);
+    my lib_replacement_errors.size = 0; // (Moved)
+}
 
 void program_set_checkers(Program* me, u32 count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
