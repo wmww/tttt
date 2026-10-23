@@ -453,11 +453,13 @@ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
 }
 
 // tsc's getMutableArrayOrTupleType of a union of arrays and tuples: each member mutable. Null if it isn't one
-static Ty const* mutable_array_or_tuple_union(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_UNION) return nullptr;
+// `single`: a lone member is one too
+static Ty const* mutable_array_or_tuple_union(Checker* me, Ty const* ty, bool single) {
+    if (ty->kind != TY_UNION && !single) return nullptr;
+    TyList members = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
     TyBuf parts = {0};
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        Ty const* member = ty->composite.types.data[i];
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
         if (ty_is_tuple(member) && member->kind == TY_REFERENCE) {
             TupleShape shape = *member->reference.target->declared.tuple;
             shape.readonly = false;
@@ -487,10 +489,33 @@ static bool maybe_primitive_context(Ty const* ty);
 
 // `context_shape`: an element is widened unless its contextual type in the rest parameter may be primitive (tsc's
 // getSpreadArgumentType, as the applicability check sees the arguments)
+// `rest_context`: the rest type a lone spread argument's operand is checked against (tsc's getSpreadArgumentType checks
+// the last argument's spread expression with the rest type as its contextual type: `g(...(c ? [1] : []))` under
+// `...args: [number] | []` spreads `[number] | []`, not `number[]`), with `self` the inference it's typed in
+typedef struct OuterInference OuterInference;
 static Ty const* rest_args_tuple_ctx(
-    Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive, ParamShape const* context_shape
+    Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive, ParamShape const* context_shape,
+    Ty const* rest_context, OuterInference* self
 ) {
     u32 arity = args->len > from ? args->len - from : 0;
+    if (arity == 1 && rest_context && args->data[from].spread && !args->data[from].variadic &&
+        args->data[from].expr->tag == EXPR_SPREAD
+    ) {
+        // (Not remembered: tsc's checkExpressionWithContextualType, the expression stays what getEffectiveCallArguments'
+        // checkExpressionCached made it, `number[]` above)
+        OuterInference* saved = my outer_inference;
+        if (self) my outer_inference = self;
+        TAINT_FLOW();
+        my flow_uncached++;
+        Ty const* operand = ty_check_expr(me, args->data[from].expr->spread, rest_context);
+        TAINT_FLOW();
+        my flow_uncached--;
+        my outer_inference = saved;
+        if (operand->flags & TYF_ANY) return operand;
+        // (A tuple alone too: one a contextual type made, `...(c ? [1] : [2])` spreads `[number]`)
+        Ty const* mutable = mutable_array_or_tuple_union(me, operand, ty_is_tuple(operand) || is_empty_tuple(operand));
+        if (mutable) return mutable;
+    }
     // Just a spread of something of type any: any, not `any[]` (tsc's getSpreadArgumentType for a last spread argument
     // takes an array-like type as it is), so `f(...x as any)` fits a rest parameter `L extends [A, ...A[]]`
     // (That very any: an unresolved `Iterable<number>` is an error type that prints by its name)
@@ -501,7 +526,7 @@ static Ty const* rest_args_tuple_ctx(
     }
     // Just a spread of a union of tuples (or arrays): that union, its members mutable (tsc's getSpreadArgumentType)
     if (arity == 1 && args->data[from].spread && !args->data[from].variadic && args->data[from].expr->tag == EXPR_SPREAD) {
-        Ty const* mutable = mutable_array_or_tuple_union(me, ty_expr_type(me, args->data[from].expr->spread));
+        Ty const* mutable = mutable_array_or_tuple_union(me, ty_expr_type(me, args->data[from].expr->spread), false);
         if (mutable) return mutable;
     }
     // A lone spread of a generic array-like whose constraint is a mutable array or tuple: that type itself (tsc's
@@ -554,7 +579,7 @@ static Ty const* rest_args_tuple_ctx(
 }
 
 static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive) {
-    return rest_args_tuple_ctx(me, args, from, widen, readonly, skip_sensitive, nullptr);
+    return rest_args_tuple_ctx(me, args, from, widen, readonly, skip_sensitive, nullptr, nullptr, nullptr);
 }
 
 static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool widen, bool readonly) {
@@ -1308,7 +1333,8 @@ static void infer_rest_variadic(
                 check_rest_arg(me, shape, args, i, from, is_const, self);
             }
         }
-        infer_types(me, inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic)),
+        infer_types(me, inf, rest_args_tuple_ctx(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic),
+            false, nullptr, shape->rest_variadic, self),
             shape->rest_variadic, INFER_PRIORITY_NORMAL);
         for (u32 i = from; i < args->len; i++) {
             Arg* arg = &args->data[i];
@@ -1337,7 +1363,8 @@ static void infer_rest_variadic(
         if (!args->data[i].type) check_rest_arg(me, shape, args, i, from, is_const, self);
     }
     if (args->len > shape->count || args->spread_index < 0) {
-        infer_types(me, inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic)), shape->rest_variadic, INFER_PRIORITY_NORMAL);
+        infer_types(me, inf, rest_args_tuple_ctx(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic),
+            false, nullptr, shape->rest_variadic, self), shape->rest_variadic, INFER_PRIORITY_NORMAL);
     }
     if (sensitive && skip_calls) unskip_generic_calls(me, args, from);
 }
@@ -1691,7 +1718,7 @@ static i32 first_unfit_argument_skipping(
         } else if (shape->rest_element) {
             target = shape->rest_element;
         } else if (shape->rest_variadic) {
-            source = rest_args_tuple_ctx(me, args, i, false, false, skip_sensitive, shape);
+            source = rest_args_tuple_ctx(me, args, i, false, false, skip_sensitive, shape, shape->rest_variadic, nullptr);
             target = shape->rest_variadic;
         } else {
             break;
@@ -1760,7 +1787,7 @@ static i32 check_args_until_unfit(
             source = arg->type ? arg->type : ty_expr_type(me, arg->expr);
             target = i < shape->count ? shape->types[i] : shape->rest_element;
         } else {
-            source = rest_args_tuple_ctx(me, args, i, false, false, skip_sensitive, shape);
+            source = rest_args_tuple_ctx(me, args, i, false, false, skip_sensitive, shape, shape->rest_variadic, nullptr);
             target = shape->rest_variadic;
         }
         if (!ty_is_related(me, source, target, relation)) {
