@@ -22,7 +22,14 @@ void emit_store_release(EmitStore* me, u32 owner);
 // (node_modules) find them by the link's target
 typedef struct EmitView EmitView;
 
-EmitView* emit_view_new(EmitStore const* store, Fs const* inner, bool const* visible);
+// tsgo -b's file system caches (cachedvfs) last the whole build and never learn about a write: a declaration file one
+// program probed before its project wrote it stays missing for every program after, references included. The store
+// keeps the simulated times (build()) of each owner's finish and of each declaration path's first probe that missed:
+// an owner's file is seen only where nobody probed it before it was written
+void emit_store_set_finish(EmitStore* me, u32 owner, double finish);
+// referenced[owner]: the program references owner's project (transitively), whose outputs at their paths aren't
+// subject to the caches. start: the program's simulated start, what its missed probes are recorded at
+EmitView* emit_view_new(EmitStore* store, Fs const* inner, bool const* visible, bool const* referenced, double start);
 void emit_view_destroy(EmitView* me);
 Fs const* emit_view_fs(EmitView const* me);
 // realpath() that knows the view's files (program_set_realpath()'s callback, ctx the view)

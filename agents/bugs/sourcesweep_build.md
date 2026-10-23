@@ -12,14 +12,18 @@ script: `tsc -b --force` once, then `tsc -p X --noEmit` and `tttt -p X --noEmit`
 runs). Then a project's leftovers are plain `-p` bugs: probe with a scratch config in UP next to the failing one,
 `skipLibCheck: false` shows errors *in* the emitted `.d.ts` (apollo's TS2456 was only visible that way).
 
-**At the 7.1.0-beta re-pin (2026-10-23): 418 / 426** (the cache now has 9 more solutions and babel's verdict, where
-the nightly's tsgo crashed). Besides the leftovers below: astro (+TS2307 base.ts:9 `@astrojs/markdown-satteri`) and
-b4run (+TS2307 x8) are TS2307s the beta's `-b` no longer reports (the builder-window race below, not rechecked),
-sunmao-ui's TS2590s moved between files (tsgo's runaway artifact), babel's parser fixtures (-TS1005/TS1128/TS1003,
-+TS1354: unexamined, new to the comparison).
+**2026-10-23: 420 / 426.** At the 7.1.0-beta re-pin it was 418: astro (+TS2307 `@astrojs/markdown-satteri`) and b4run
+(+TS2307 x8) came from the beta's orchestrator scheduling projects by dependency depth (computeScheduleOrder) and
+from tsgo's build-wide cachedvfs remembering a probe that missed (a project's `dist` probed by an earlier program, an
+unreferenced config project's `import './dist/bin.js'`, stays missing for every later program, references included
+when reached through a node_modules link): both are modelled now (hacks.md "simulated builders",
+test/scenarios/build-cache-remembers-missing-outputs.js). Left of that family: atproto's oauth-provider-ui misses 8
+TS2307 of `@atproto/oauth-types` (its config project probes it ~100 ms before oauth-types is written under tsgo's
+timing, after it in the simulation's). sunmao-ui's TS2590s moved between files (tsgo's runaway artifact); babel's parser
+fixtures (a project with syntax errors, so only parse diagnostics print) are parser differences, most fixed
+2026-10-23, the rest listed in the commit messages of that batch.
 
 Left (2026-10-20, by project; + spurious, - missing):
-- atproto: +TS2307 1 (oauth-client's `@atproto-labs/identity-resolver`: the builder-window race, below).
 - better-auth: -TS2345 2 (lynx-store.ts:65, react-store.ts:67, a `-p` bug too): `listenKeys(store as any, keys,
   emitChange)` in an arrow passed to `useCallback<T extends Function>`. tsgo computes the arrow's return type before
   its deferred body check; that resolves the call, whose contextual return type is the arrow's own (T inferred as the
@@ -61,10 +65,11 @@ Left (2026-10-20, by project; + spurious, - missing):
   HTMLChakraProps<"button"> {} declare const B: ComponentWithAs<'button', P>; <B />` (the alias `type P =
   HTMLChakraProps<"button">` doesn't).
 
-**The builder window is a race in tsgo** (atproto +TS2307 1): tsgo's 4 builders take projects in build order and wait
-only on references, so whether an unreferenced project's `dist` exists is timing (atproto's oauth-client alone at
-default builders reports TS2307s the whole-solution build doesn't; `--builders 1` none). tttt's window (4 places
-earlier, hacks.md) gets all of atproto but this one; not worth chasing.
+**The builders are a race in tsgo**: its builders take projects in schedule order and wait only on references, so
+whether an unreferenced project's `dist` exists, and whether some program probed it before it did (cachedvfs), is
+timing. tttt simulates the builders (hacks.md); tsgo's real per-project times for a solution can be read back from the
+`.tsbuildinfo` mtimes of a `tsc -b --force` in a kept bwrap overlay (finish times; atproto fits ~80 ms + 3 ms per root
+file at 4 builders).
 
 Perf: jest's `__tests__` builds (every package gated by TS5108) are declaration-walked only
 (`program_set_declarations_only()`). Sharing parsed declaration files across a build's programs (todo.md) is
