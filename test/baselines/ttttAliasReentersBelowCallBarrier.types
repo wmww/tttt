@@ -1,0 +1,65 @@
+//// [test/cases/ttttAliasReentersBelowCallBarrier.ts] ////
+
+=== ttttAliasReentersBelowCallBarrier.ts ===
+// The alias is asked for first (user's annotation): its typeof query evaluates Part, whose call infers from the
+// arrow, whose parameter types reach the alias again below the call's resolution barrier. tsc resolves it again
+// there (findResolutionCycleStartIndex looks only above resolutionStart) instead of making it any for good
+// (opencode's schemas: `type ToolCallPart = Schema.Type<typeof ToolCallPart>`, which file came first deciding it)
+interface Struct<F> { readonly Type: F; readonly fields: F }
+>Type : F
+>fields : F
+
+declare function Struct<F>(f: F): Struct<F>
+>Struct : <F>(f: F) => Struct<F>
+>f : F
+
+declare function withStatics<S extends object, M extends Record<string, unknown>>(schema: S, methods: M | ((s: S) => M)): S & M
+>withStatics : <S extends object, M extends Record<string, unknown>>(schema: S, methods: M | ((s: S) => M)) => S & M
+>schema : S
+>methods : M | ((s: S) => M)
+>s : S
+
+type TypeOf<S> = S extends { readonly Type: infer T } ? T : never
+>TypeOf : TypeOf<S>
+>Type : T
+
+export const user: Part = Part.make({ n: 2 })
+>user : { id: string; n: number; }
+>Part.make({ n: 2 }) : { id: string; n: number; }
+>Part.make : (input: Omit<Part, "id">) => Part
+>Part : Struct<{ id: string; n: number; }> & { make: (input: Omit<Part, "id">) => Part; }
+>make : (input: Omit<Part, "id">) => Part
+>{ n: 2 } : { n: number; }
+>n : number
+>2 : 2
+
+export const Part = withStatics(Struct({ id: "" as string, n: 1 as number }), {
+>Part : Struct<{ id: string; n: number; }> & { make: (input: Omit<Part, "id">) => Part; }
+>withStatics(Struct({ id: "" as string, n: 1 as number }), {  make: (input: Omit<Part, "id">): Part => ({ id: "x", ...input }),}) : Struct<{ id: string; n: number; }> & { make: (input: Omit<Part, "id">) => Part; }
+>withStatics : <S extends object, M extends Record<string, unknown>>(schema: S, methods: M | ((s: S) => M)) => S & M
+>Struct({ id: "" as string, n: 1 as number }) : Struct<{ id: string; n: number; }>
+>Struct : <F>(f: F) => Struct<F>
+>{ id: "" as string, n: 1 as number } : { id: string; n: number; }
+>id : string
+>"" as string : string
+>"" : ""
+>n : number
+>1 as number : number
+>1 : 1
+>{  make: (input: Omit<Part, "id">): Part => ({ id: "x", ...input }),} : { make: (input: Omit<Part, "id">) => Part; }
+
+  make: (input: Omit<Part, "id">): Part => ({ id: "x", ...input }),
+>make : (input: Omit<Part, "id">) => Part
+>(input: Omit<Part, "id">): Part => ({ id: "x", ...input }) : (input: Omit<Part, "id">) => Part
+>input : Omit<{ id: string; n: number; }, "id">
+>({ id: "x", ...input }) : { n: number; id: string; }
+>{ id: "x", ...input } : { n: number; id: string; }
+>id : string
+>"x" : "x"
+>input : Omit<{ id: string; n: number; }, "id">
+
+})
+export type Part = TypeOf<typeof Part>
+>Part : { id: string; n: number; }
+>Part : Struct<{ id: string; n: number; }> & { make: (input: Omit<Part, "id">) => Part; }
+

@@ -25,8 +25,9 @@ down eagerly. Read this before touching any in-flight check. Tool: `scripts/reen
   measurement); `ty_resolving_reenters()` holds each site's rule.
 - Declarations and inferred return types re-enter below the call barrier every time, like tsc (barrier termination;
   the old "once" flags were removed 2026-10-21 with every oracle byte-identical; the suite never fired ONCE).
-- Aliases re-enter only below the outermost variance measurement (alias_reenters(), the apollo fix 7238e629e).
-- Symbol properties re-enter below the call barrier up to depth 4 (`prop_reentry_depth`; without a bound only the
+- Aliases re-enter below the innermost barrier, a call's or a variance measurement's (alias_reenters(); variance
+  only until 2026-10-23, the apollo fix 7238e629e).
+- Symbol properties re-enter below the call barrier up to depth 16 (`prop_reentry_depth`, 4 until 2026-10-23; without a bound only the
   barrier would stop it), instantiated properties up to 200.
 - Base types look for their cycle across barriers (ty_resolving_cycle_across_calls(): a shortcut to tsc's outcome).
 - A call in flight is resolved again, but the nested result is dropped (the outer one is kept).
@@ -53,7 +54,19 @@ with a different nested result; a 20-line `ba.ts` repro in bugs/sourcesweep_buil
 
 ## Experiments (reverted)
 1. Aliases re-entering below the call barrier too (tsc's rule): suite unchanged, mikro-orm/tests gained TS2456/TS7022/
-   TS7023 at defineEntity.test.ts:205-215 because of the then-present "once" flag. Redo it now that the flag is gone.
+   TS7023 at defineEntity.test.ts:205-215 because of the then-present "once" flag. **Redone and kept 2026-10-23**
+   (opencode): `type P = Schema.Type<typeof P>` beside `const P = withStatics(s, { make: (input: Omit<P, "id">): P
+   => ... })`. Reached from the alias first, P's call infers from the arrow, whose parameters meet the alias in flight
+   below the call's barrier: tsgo re-enters (REENTER 2 call, instrumented), while tttt made the alias the error type for
+   good, silently (ty_resolving_cycle() found nothing above the barrier). Which file was checked first decided it (R =
+   any/unknown in effect's Effects, TS2719 on branded ids, 8-27 errors varying run to run;
+   test/cases/ttttAliasReentersBelowCallBarrier.ts). With aliases re-entering, opencode's `Instance.Services` /
+   `LayerNode.Output<typeof graph>` chain (graph -> nodes -> the supervisor's layer -> PluginInternal.list -> pre ->
+   ShellTool.Plugin -> ... -> graph, every step a call argument) nests property re-entries deeper: the depth-4
+   backstop in prop_type_slow() returned circular for `PluginInternal.list` (so the call `PluginInternal.list()` was
+   any and the supervisor got TS7006/TS2322) only when location-service-map.ts came first. Raised to 16 (64 gave byte-identical output on opencode, mikro-orm and crawlee); tsgo has no
+   bound. TTTT_CHECK_ONLY=src/location-service-map.ts,src/plugin/supervisor.ts at --checkers 1 in packages/core was
+   the recipe.
 2. The outermost variance measurement moving `resolving_start` for declarations and returns too: loses
    classVarianceResolveCircularity2's TS7022 (the nested call and variance paths differ).
 Lesson: the pieces only work together; generalizing one site's rule while the others keep their approximations moves

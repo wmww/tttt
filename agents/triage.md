@@ -178,3 +178,10 @@ intersection's property symbol to bugs/type_core.md.
 - `export const g = (h = g) => 1` (declaration emit on): tsgo reports TS7022 on g (the parameter's default reads g
   while g is in flight); tttt reports nothing (before 2026-10-23 it reported TS5088 instead). A circularity through a
   parameter initializer of the variable's own function expression. [open]
+- Text only (opencode, 2026-10-23): an optional property declared `never` (`{ readonly name: string; readonly
+  service?: never }` in a union) prints as `service?: undefined` in tttt's elaborations and as `service?: never` in
+  tsc's (the second line of test/cases-style probes relating `Omit<Identity & ...>`); tsc prints the declared type. [text]
+- scripts/reentrytrace.py's tsgo side passes `--incremental false`, which a composite config rejects (TS6379), so it
+  reports "tsgo: none" on composite projects (opencode's packages/core). Running the instrumented tsc by hand with
+  `--noEmit` checks, but it writes the config's tsBuildInfoFile (node_modules/.ts-dist/*.tsbuildinfo) into the
+  checkout even with `--tsBuildInfoFile` elsewhere: delete it after. [tooling]

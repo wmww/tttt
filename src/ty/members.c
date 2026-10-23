@@ -5613,8 +5613,11 @@ static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* pro
                 return again;
             }
             // A symbol's property in flight only below a call's barrier is its symbol's type again (tsc's property is
-            // the symbol, whose getTypeOfSymbol pushes it again past resolutionStart): what that reaches finds the cycle
-            if (!prop->target && prop->decl->symbol && prop_reentry_depth < 4 && ty_resolving_reenters(me, RESOLVING_PROP, prop)) {
+            // the symbol, whose getTypeOfSymbol pushes it again past resolutionStart): what that reaches finds the cycle.
+            // Barriers terminate it; the depth is a stack backstop only (hacks.md): at 4 it cut opencode's chains of
+            // calls re-entered through aliases (supervisor.ts's `PluginInternal.list` circular after
+            // location-service-map.ts, not alone)
+            if (!prop->target && prop->decl->symbol && prop_reentry_depth < 16 && ty_resolving_reenters(me, RESOLVING_PROP, prop)) {
                 if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 0 call", span_null);
                 prop_reentry_depth++;
                 Ty const* again = ty_type_of_symbol(me, prop->decl->symbol);

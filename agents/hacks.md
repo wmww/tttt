@@ -513,8 +513,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Re-entry below resolution barriers (notes/reentrancy.md): tsc re-enters anything in flight below `resolutionStart` (a call's
   first resolution, the outermost variance measurement) and stops only when a request is above a barrier; tttt
   approximates per site: declarations and inferred return types re-enter below the call barrier every time, as tsc
-  does (barrier termination, notes/reentrancy.md, 2026-10-21), aliases only below the variance barrier
-  (alias_reenters()), symbol properties to depth 4 (prop_type_slow()'s `prop_reentry_depth`), base types find their
+  does (barrier termination, notes/reentrancy.md, 2026-10-21), aliases below the innermost call or variance barrier
+  like tsc (alias_reenters(), since 2026-10-23), symbol properties to depth 16 (prop_type_slow()'s
+  `prop_reentry_depth`, a stack backstop: at 4 it cut opencode's chains, history-dependently), base types find their
   cycle across barriers (ty_resolving_cycle_across_calls()), a call re-resolved while in flight drops the nested result
   (call_return_type()), and members never re-enter (members_reentered_unguarded() synthesizes the TS5115). The
   barriers are one stack now (`Checker.barriers`) and every per-kind rule is in ty_resolving_reenters(). Correct:

@@ -263,9 +263,11 @@ static Symbol const* exported_alias_twin(Symbol const* symbol, SymbolDecl const*
     return nullptr;
 }
 
-// A type alias asked for while in flight that isn't being resolved above a variance measurement's resolution barrier
-// (ty_resolving_reenters()): tsc's pushTypeResolution finds no cycle and resolves it again. (Bounded: the nested
-// resolution is above the barrier)
+// A type alias asked for while in flight that isn't being resolved above the innermost resolution barrier, a call's
+// first resolution or a variance measurement's (ty_resolving_reenters()): tsc's pushTypeResolution finds no cycle and
+// resolves it again. (Bounded: the nested resolution is above the barrier.) opencode's `type P = Schema.Type<typeof
+// P>` beside `const P = withStatics(..., { make: (input: Omit<P, "id">): P => ... })`, reached from the alias first:
+// the call's inference meets the alias again below its barrier
 static bool alias_reenters(Checker* me, Symbol const* symbol) {
     SymbolFlags other = SYMBOL_INTERFACE | SYMBOL_CLASS | SYMBOL_ENUM | SYMBOL_ENUM_MEMBER | SYMBOL_TYPE_PARAMETER;
     if (!(symbol->flags & SYMBOL_TYPE_ALIAS) || (symbol->flags & other)) return false;
@@ -287,7 +289,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
             // An alias in flight below the resolution barrier (a variance measurement's, a call's) is resolved again,
             // nested, and the first to finish is its type (tsc's findResolutionCycleStartIndex looks no further down)
             if (alias_reenters(me, symbol)) {
-                if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 2 variance", span_null);
+                if (debug_env.debug_reentry) ty_debug_reentry(me, "REENTER 2 alias", symbol->decls[0].name);
                 break;
             }
             // tsc's pushTypeResolution: every alias from this one on is part of the cycle, and fails when it finishes

@@ -1,0 +1,76 @@
+//// [test/cases/ttttAliasReentersBelowCallBarrier.ts] ////
+
+=== ttttAliasReentersBelowCallBarrier.ts ===
+// The alias is asked for first (user's annotation): its typeof query evaluates Part, whose call infers from the
+// arrow, whose parameter types reach the alias again below the call's resolution barrier. tsc resolves it again
+// there (findResolutionCycleStartIndex looks only above resolutionStart) instead of making it any for good
+// (opencode's schemas: `type ToolCallPart = Schema.Type<typeof ToolCallPart>`, which file came first deciding it)
+interface Struct<F> { readonly Type: F; readonly fields: F }
+>Struct : Symbol(Struct, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 60), Decl(ttttAliasReentersBelowCallBarrier.ts, 0, 0))
+>F : Symbol(F, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 17))
+>Type : Symbol(Struct.Type, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 21))
+>F : Symbol(F, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 17))
+>fields : Symbol(Struct.fields, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 39))
+>F : Symbol(F, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 17))
+
+declare function Struct<F>(f: F): Struct<F>
+>Struct : Symbol(Struct, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 60), Decl(ttttAliasReentersBelowCallBarrier.ts, 0, 0))
+>F : Symbol(F, Decl(ttttAliasReentersBelowCallBarrier.ts, 5, 24))
+>f : Symbol(f, Decl(ttttAliasReentersBelowCallBarrier.ts, 5, 27))
+>F : Symbol(F, Decl(ttttAliasReentersBelowCallBarrier.ts, 5, 24))
+>Struct : Symbol(Struct, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 60), Decl(ttttAliasReentersBelowCallBarrier.ts, 0, 0))
+>F : Symbol(F, Decl(ttttAliasReentersBelowCallBarrier.ts, 5, 24))
+
+declare function withStatics<S extends object, M extends Record<string, unknown>>(schema: S, methods: M | ((s: S) => M)): S & M
+>withStatics : Symbol(withStatics, Decl(ttttAliasReentersBelowCallBarrier.ts, 5, 43))
+>S : Symbol(S, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 29))
+>M : Symbol(M, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 46))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>schema : Symbol(schema, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 82))
+>S : Symbol(S, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 29))
+>methods : Symbol(methods, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 92))
+>M : Symbol(M, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 46))
+>s : Symbol(s, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 108))
+>S : Symbol(S, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 29))
+>M : Symbol(M, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 46))
+>S : Symbol(S, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 29))
+>M : Symbol(M, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 46))
+
+type TypeOf<S> = S extends { readonly Type: infer T } ? T : never
+>TypeOf : Symbol(TypeOf, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 127))
+>S : Symbol(S, Decl(ttttAliasReentersBelowCallBarrier.ts, 7, 12))
+>S : Symbol(S, Decl(ttttAliasReentersBelowCallBarrier.ts, 7, 12))
+>Type : Symbol(Type, Decl(ttttAliasReentersBelowCallBarrier.ts, 7, 28))
+>T : Symbol(T, Decl(ttttAliasReentersBelowCallBarrier.ts, 7, 49))
+>T : Symbol(T, Decl(ttttAliasReentersBelowCallBarrier.ts, 7, 49))
+
+export const user: Part = Part.make({ n: 2 })
+>user : Symbol(user, Decl(ttttAliasReentersBelowCallBarrier.ts, 9, 12))
+>Part : Symbol(Part, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 12), Decl(ttttAliasReentersBelowCallBarrier.ts, 12, 2))
+>Part.make : Symbol(make, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 79))
+>Part : Symbol(Part, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 12), Decl(ttttAliasReentersBelowCallBarrier.ts, 12, 2))
+>make : Symbol(make, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 79))
+>n : Symbol(n, Decl(ttttAliasReentersBelowCallBarrier.ts, 9, 37))
+
+export const Part = withStatics(Struct({ id: "" as string, n: 1 as number }), {
+>Part : Symbol(Part, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 12), Decl(ttttAliasReentersBelowCallBarrier.ts, 12, 2))
+>withStatics : Symbol(withStatics, Decl(ttttAliasReentersBelowCallBarrier.ts, 5, 43))
+>Struct : Symbol(Struct, Decl(ttttAliasReentersBelowCallBarrier.ts, 4, 60), Decl(ttttAliasReentersBelowCallBarrier.ts, 0, 0))
+>id : Symbol(id, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 40))
+>n : Symbol(n, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 58))
+
+  make: (input: Omit<Part, "id">): Part => ({ id: "x", ...input }),
+>make : Symbol(make, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 79))
+>input : Symbol(input, Decl(ttttAliasReentersBelowCallBarrier.ts, 11, 9))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Part : Symbol(Part, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 12), Decl(ttttAliasReentersBelowCallBarrier.ts, 12, 2))
+>Part : Symbol(Part, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 12), Decl(ttttAliasReentersBelowCallBarrier.ts, 12, 2))
+>id : Symbol(id, Decl(ttttAliasReentersBelowCallBarrier.ts, 11, 45))
+>input : Symbol(input, Decl(ttttAliasReentersBelowCallBarrier.ts, 11, 9))
+
+})
+export type Part = TypeOf<typeof Part>
+>Part : Symbol(Part, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 12), Decl(ttttAliasReentersBelowCallBarrier.ts, 12, 2))
+>TypeOf : Symbol(TypeOf, Decl(ttttAliasReentersBelowCallBarrier.ts, 6, 127))
+>Part : Symbol(Part, Decl(ttttAliasReentersBelowCallBarrier.ts, 10, 12), Decl(ttttAliasReentersBelowCallBarrier.ts, 12, 2))
+

@@ -4711,9 +4711,10 @@ bool ty_resolving_reenters(Checker* me, ResolvingKind kind, void const* key) {
     if (kind == RESOLVING_ALIAS || kind == RESOLVING_BASE_CONSTRAINT) {
         u32 i = my barriers_len;
         while (i-- > 0 && my barriers[i].kind != BARRIER_VARIANCE) {}
-        if (i == UINT32_MAX) return kind == RESOLVING_BASE_CONSTRAINT && !ty_resolving_find(me, kind, key);
-        // (A base constraint sees the call barriers too: the innermost of the two)
-        if (kind == RESOLVING_ALIAS || my barriers[i].resolving_len > start) start = my barriers[i].resolving_len;
+        if (i == UINT32_MAX && kind == RESOLVING_BASE_CONSTRAINT) return !ty_resolving_find(me, kind, key);
+        // (An alias and a base constraint see the call barriers too: the innermost of the two, tsc's one
+        // resolutionStart)
+        if (i != UINT32_MAX && my barriers[i].resolving_len > start) start = my barriers[i].resolving_len;
     }
     for (u32 i = my resolving_len; i-- > start;) {
         if (my resolving[i].key == key && my resolving[i].kind == kind) return false;

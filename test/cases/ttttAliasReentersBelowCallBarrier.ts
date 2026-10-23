@@ -1,0 +1,15 @@
+// @strict: true
+// The alias is asked for first (user's annotation): its typeof query evaluates Part, whose call infers from the
+// arrow, whose parameter types reach the alias again below the call's resolution barrier. tsc resolves it again
+// there (findResolutionCycleStartIndex looks only above resolutionStart) instead of making it any for good
+// (opencode's schemas: `type ToolCallPart = Schema.Type<typeof ToolCallPart>`, which file came first deciding it)
+interface Struct<F> { readonly Type: F; readonly fields: F }
+declare function Struct<F>(f: F): Struct<F>
+declare function withStatics<S extends object, M extends Record<string, unknown>>(schema: S, methods: M | ((s: S) => M)): S & M
+type TypeOf<S> = S extends { readonly Type: infer T } ? T : never
+
+export const user: Part = Part.make({ n: 2 })
+export const Part = withStatics(Struct({ id: "" as string, n: 1 as number }), {
+  make: (input: Omit<Part, "id">): Part => ({ id: "x", ...input }),
+})
+export type Part = TypeOf<typeof Part>
