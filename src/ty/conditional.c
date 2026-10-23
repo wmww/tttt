@@ -802,6 +802,10 @@ Ty const* ty_conditional_resolve(
     // (For a constraint, false still has the true branch too: what the constraint stands for may match, tsc's
     // forConstraint)
     bool mentions = false;
+    // (The same type on both sides: tsc's isTypeAssignableTo answers identity before looking inside, with either
+    // instantiation, so nothing in it is resolved: `type F = () => Exclude<S, F>` with F in S isn't circular, KaTeX's
+    // StrictFunction)
+    if (check_type == inferred_extends) return branch_type_with(me, if_true, mapper);
     if (callable_definitely_related(me, check_type, inferred_extends)) return branch_type_with(me, if_true, mapper);
     bool is_false = definitely_unrelated(me, check_type, inferred_extends);
     if (!is_false && definitely_related(me, check_type, inferred_extends, &mentions)) {

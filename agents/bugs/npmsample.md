@@ -31,3 +31,8 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   intersection, node_modules/@axiona/validator/validatable/callback.d.ts(42)): tsgo names the base type expanded
   ('Readonly<Message<MessageType> & Value<Type | ValueType> & ...> & Validation<...> & Argument<...>', truncated),
   tttt by the alias ('CallbackType<ValueType, Type, MessageType, Arguments, Boolean>'). The clone is deleted. [text]
+- **npm__uzm_katex-woff2_TS2577** (seed 20261024, @uzm/katex-woff2@0.1.0, KaTeX/KaTeX src/strict.ts:10): `type
+  StrictFunction = (...) => Exclude<Strict, StrictFunction>` with StrictFunction a member of Strict. The distributed
+  Exclude compares StrictFunction with itself, and tttt's callable_definitely_related shortcut asked for its return type
+  (the Exclude being resolved): TS2577. tsc's isTypeAssignableTo answers identity first. Fixed by taking the true
+  branch for identical check and extends types (ty_conditional_resolve). [flip] [fixed ea09cdaed]

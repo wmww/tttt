@@ -1,2 +1,3 @@
 npm_firelab_TS2538	yes	firelab@0.1.0	https://github.com/AkilSaji/firelab	0	1	+TS2538
 npm__overture-stack_sqon_TS2345	no	@overture-stack/sqon@1.0.0-rc.1	https://github.com/overture-stack/arranger	40	41	-TS2345 +TS2322
+npm__uzm_katex-woff2_TS2577	yes	@uzm/katex-woff2@0.1.0	https://github.com/KaTeX/KaTeX	0	1	+TS2577
