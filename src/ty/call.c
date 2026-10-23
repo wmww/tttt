@@ -3418,6 +3418,19 @@ fail:
     return none;
 }
 
+// A signature that surely has no effects, known from its declaration alone: a TypeScript function written with a
+// return type that is neither a type predicate nor `never` (tsc's hasTypePredicateOrNeverReturnType reads the
+// declaration's annotations, getSignatureFromDeclaration leaves the parameter types for later). Resolving it would
+// type its parameters, which can be what is being inferred: `type R = ReturnType<typeof f>` with f's body calling
+// `check(x: R): string` (openclaw's update-command-terminal-record.ts, a spurious TS2456)
+static bool surely_no_effects(Checker* me, Signature const* sig) {
+    while (sig->target) sig = sig->target;
+    FunctionImpl const* function = sig->function;
+    if (!function || function->is_type || !function->ret_explicit || function->predicate) return false;
+    SourceFile const* file = span_source(function->full_span);
+    return file && !file->is_js && !signature_declared_never(me, sig);
+}
+
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call) {
     CallEffects none = {0};
     if (!callee || call->uses_new || call->is_extends) return none;
@@ -3456,6 +3469,9 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
     if ((apparent->flags & TYF_ANY) || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return none;
     Members const* members = ty_members(me, apparent);
     if (!members->call_count) return none;
+    bool all_none = true;
+    for (u32 i = 0; i < members->call_count && all_none; i++) all_none = surely_no_effects(me, members->call[i]);
+    if (all_none) return none;
     Candidate chosen = {0};
     signature_resolve(me, members->call[0]);
     if (members->call_count == 1 && !sig_res(me, members->call[0])->type_params.len) {

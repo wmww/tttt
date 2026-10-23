@@ -6296,7 +6296,12 @@ static __attribute__((noinline)) TyPredicate const* signature_predicate_slow(Che
 // Declared to return `never` (an inferred never doesn't count for control flow)
 bool signature_declared_never(Checker* me, Signature const* sig) {
     while (sig_target(me, sig)) sig = sig_target(me, sig);
-    return sig->function && sig->function->ret_explicit && !sig->function->predicate && sig->function->ret.tag == TYPE_NEVER;
+    FunctionImpl const* function = sig->function;
+    if (!function || !function->ret_explicit || function->predicate) return false;
+    if (function->ret.tag == TYPE_NEVER) return true;
+    // (tsc's getReturnTypeFromAnnotation: what the annotation names, `type Never = never` too. A function type node's
+    // annotation is lowered with its signature, not here)
+    return !function->is_type && (ty_function_return_type(me, function)->flags & TYF_NEVER);
 }
 
 typedef struct WordBuf {

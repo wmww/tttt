@@ -1,0 +1,84 @@
+//// [test/cases/ttttAliasOfReturnTypeEffectsCall.ts] ////
+
+=== ttttAliasOfReturnTypeEffectsCall.ts ===
+// A call statement's effects (tsc's getEffectsSignature) are read from the callee's declaration: a function with an
+// annotated return type that is neither a type predicate nor never has none, and its parameter types aren't needed.
+// Typing them here would reach the alias whose function's return type is being inferred (openclaw's
+// update-command-terminal-record.ts: a spurious TS2456, TS7023 and TS2502)
+export type Rec = NonNullable<Awaited<ReturnType<typeof capture>>>;
+>Rec : { run: number; path: string; }
+>capture : (flag: boolean) => Promise<{ run: number; path: string; } | undefined>
+
+export async function capture(flag: boolean) {
+>capture : (flag: boolean) => Promise<{ run: number; path: string; } | undefined>
+>flag : boolean
+
+  if (!flag) return undefined;
+>!flag : boolean
+>flag : boolean
+>undefined : undefined
+
+  const captured = { run: 1, path: "p" };
+>captured : { run: number; path: string; }
+>{ run: 1, path: "p" } : { run: number; path: string; }
+>run : number
+>1 : 1
+>path : string
+>"p" : "p"
+
+  check(captured);
+>check(captured) : string
+>check : (captured: Rec) => string
+>captured : { run: number; path: string; }
+
+  return captured;
+>captured : { run: number; path: string; }
+}
+export function check(captured: Rec): string {
+>check : (captured: Rec) => string
+>captured : { run: number; path: string; }
+
+  return captured.path;
+>captured.path : string
+>captured : { run: number; path: string; }
+>path : string
+}
+// A `never` alias still ends the flow, an assertion still narrows
+type Never = never;
+>Never : never
+
+declare function fail(message: string): Never;
+>fail : (message: string) => Never
+>message : string
+
+declare function assertString(x: unknown): asserts x is string;
+>assertString : (x: unknown) => asserts x is string
+>x : unknown
+
+export function f(x: unknown, y: number | undefined) {
+>f : (x: unknown, y: number | undefined) => readonly [string, number]
+>x : unknown
+>y : number | undefined
+
+  if (y === undefined) {
+>y === undefined : boolean
+>y : number | undefined
+>undefined : undefined
+
+    fail("no");
+>fail("no") : never
+>fail : (message: string) => Never
+>"no" : "no"
+  }
+  assertString(x);
+>assertString(x) : void
+>assertString : (x: unknown) => asserts x is string
+>x : unknown
+
+  return [x, y] as const;
+>[x, y] as const : readonly [string, number]
+>[x, y] : readonly [string, number]
+>x : string
+>y : number
+}
+

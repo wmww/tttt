@@ -1,0 +1,80 @@
+//// [test/cases/ttttAliasOfReturnTypeEffectsCall.ts] ////
+
+=== ttttAliasOfReturnTypeEffectsCall.ts ===
+// A call statement's effects (tsc's getEffectsSignature) are read from the callee's declaration: a function with an
+// annotated return type that is neither a type predicate nor never has none, and its parameter types aren't needed.
+// Typing them here would reach the alias whose function's return type is being inferred (openclaw's
+// update-command-terminal-record.ts: a spurious TS2456, TS7023 and TS2502)
+export type Rec = NonNullable<Awaited<ReturnType<typeof capture>>>;
+>Rec : Symbol(Rec, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 0, 0))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>Awaited : Symbol(Awaited, Decl(lib.es5.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>capture : Symbol(capture, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 4, 67))
+
+export async function capture(flag: boolean) {
+>capture : Symbol(capture, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 4, 67))
+>flag : Symbol(flag, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 5, 30))
+
+  if (!flag) return undefined;
+>flag : Symbol(flag, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 5, 30))
+>undefined : Symbol(undefined)
+
+  const captured = { run: 1, path: "p" };
+>captured : Symbol(captured, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 7, 7))
+>run : Symbol(run, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 7, 20))
+>path : Symbol(path, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 7, 28))
+
+  check(captured);
+>check : Symbol(check, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 10, 1))
+>captured : Symbol(captured, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 7, 7))
+
+  return captured;
+>captured : Symbol(captured, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 7, 7))
+}
+export function check(captured: Rec): string {
+>check : Symbol(check, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 10, 1))
+>captured : Symbol(captured, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 11, 22))
+>Rec : Symbol(Rec, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 0, 0))
+
+  return captured.path;
+>captured.path : Symbol(path, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 7, 28))
+>captured : Symbol(captured, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 11, 22))
+>path : Symbol(path, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 7, 28))
+}
+// A `never` alias still ends the flow, an assertion still narrows
+type Never = never;
+>Never : Symbol(Never, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 13, 1))
+
+declare function fail(message: string): Never;
+>fail : Symbol(fail, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 15, 19))
+>message : Symbol(message, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 16, 22))
+>Never : Symbol(Never, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 13, 1))
+
+declare function assertString(x: unknown): asserts x is string;
+>assertString : Symbol(assertString, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 16, 46))
+>x : Symbol(x, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 17, 30))
+>x : Symbol(x, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 17, 30))
+
+export function f(x: unknown, y: number | undefined) {
+>f : Symbol(f, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 17, 63))
+>x : Symbol(x, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 18, 18))
+>y : Symbol(y, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 18, 29))
+
+  if (y === undefined) {
+>y : Symbol(y, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 18, 29))
+>undefined : Symbol(undefined)
+
+    fail("no");
+>fail : Symbol(fail, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 15, 19))
+  }
+  assertString(x);
+>assertString : Symbol(assertString, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 16, 46))
+>x : Symbol(x, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 18, 18))
+
+  return [x, y] as const;
+>x : Symbol(x, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 18, 18))
+>y : Symbol(y, Decl(ttttAliasOfReturnTypeEffectsCall.ts, 18, 29))
+>const : Symbol(const)
+}
+
