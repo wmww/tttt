@@ -1,0 +1,13 @@
+//// [test/cases/ttttHexLiteralRounding.ts] ////
+
+=== ttttHexLiteralRounding.ts ===
+// A hex, octal or binary literal past 2^53 is its exact value rounded once to the nearest double (bun's 43-C1)
+const b: 0x1000000000000081 = 0x1000000000000000;
+>b : Symbol(b, Decl(ttttHexLiteralRounding.ts, 1, 5))
+
+const c: 0x1000000000000081 = 0x1000000000000100;
+>c : Symbol(c, Decl(ttttHexLiteralRounding.ts, 2, 5))
+
+const d: 0b1000000000000000000000000000000000000000000000000000000001 = 0b1000000000000000000000000000000000000000000000000000000000;
+>d : Symbol(d, Decl(ttttHexLiteralRounding.ts, 3, 5))
+

@@ -10037,7 +10037,29 @@ static const char* scan_digit_fragment(Parser* p, const char* c, int base, cstr*
     return c;
 }
 
+__extension__ typedef unsigned __int128 DigitsBits;
+
 static double digits_value(csview digits, int base) {
+    // A power-of-two base: the digits' bits exactly (128 of them, and a sticky bit for any beyond), rounded once to
+    // the nearest double, as tsgo's parsing of a hex/octal/binary literal does: `0x1000000000000081` is
+    // 1152921504606847232, not the 1152921504606846976 rounding at every digit gives
+    if (base == 16 || base == 8 || base == 2) {
+        int bits = base == 16 ? 4 : base == 8 ? 3 : 1;
+        DigitsBits acc = 0;
+        int extra = 0; // bits beyond what acc holds
+        bool sticky = false;
+        for (intptr_t i = 0; i < digits.size; i++) {
+            unsigned d = (unsigned)hex_digit_value(digits.buf[i]);
+            if (extra || (acc >> (128 - bits)) != 0) {
+                extra += bits;
+                sticky |= d != 0;
+            } else {
+                acc = (acc << bits) | d;
+            }
+        }
+        if (sticky) acc |= 1; // (Far below the double's 53 bits: only breaks a tie the dropped bits break)
+        return ldexp((double)acc, extra);
+    }
     double value = 0;
     for (intptr_t i = 0; i < digits.size; i++) value = value * base + hex_digit_value(digits.buf[i]);
     return value;
