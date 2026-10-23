@@ -92,6 +92,13 @@ argued here instead. Nothing a user sees differs in any of them.
   16-core box): tsgo deals files to checkers statically per K, tttt's work stealing makes the deal schedule dependent,
   so any K dependence, tsgo-shared or not, shows as a flake at the defaults. The cycle itself is tsgo's entry-order
   artifact; the flake is ours. [open]
+  bun 92-R16b is the smallest instance (corH, 2026-10-23): `type A = { [K in "a"]: B[K & keyof B] }` in a.ts and B
+  likewise over A in b.ts, each read once. The TS2615 pair goes to whichever file its checker checks first, so it's at
+  a.ts when one checker gets both files and at both files when two do. At `--checkers 4`, 16-19 of 60 runs gave two
+  checkers (TTTT_FILE_TIMES=1 shows the deal), and 12 of 200 runs had b.ts's pair too. tsgo deals both files to one
+  checker by its weights at every K (createCheckers' associations), so its output is stable. Not a publish race: no
+  type is shared across checkers without --shared-graph. A fix is a deterministic deal (tsgo's static association, or a
+  deal fixed per K before stealing), not something in the checker.
 - rxjs/packages/rxjs's TS2322 elaborations (2026-10-18, since b3c2fbfa normalized deferred references in the
   relation): tsgo `--singleThreaded` (the cached oracle) says "types returned by '[bufferTime](...)[bufferTime](...)
   [groupBy]'" with `number[][]` below, tsgo `--checkers 16` "'[bufferTime](...)[groupBy]'" with `number[]`: which

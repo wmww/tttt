@@ -163,6 +163,20 @@ are suspects (vision.md "Decisions"). Open:
   bugs/missing_checks.md.
 - Mutation seeds yield less each time; parser-recovery mutants (58-77 per seed, `scripts/mutate.py`,
   `failstats.py --syntax`) are untouched.
+- **A shape-matrix probe for ordinary code** (corH, 2026-10-23; for when the fresh-repo tables run dry): the
+  human's spurious TS2322/TS2345/TS2353/TS2344/TS2339/TS2719/TS2488 come from everyday shapes that the oracles have
+  run out of (bun, DT, source sweep and mutate.py -n 8000 showed none left in those codes). Generate strict files from
+  matrices of everyday blocks, one statement per line so a difference is one (line, code) that names what was
+  combined: ~90 declared types (primitives and literal unions, interfaces and their Partial/Pick/Omit/Readonly,
+  discriminated unions with optional members, index signatures and Record, arrays, readonly and named/optional/rest
+  tuples, function types and overload sets, classes with private members, enums, branded strings, template literals,
+  Promise/Map/Set/Iterable/Generator, mapped and conditional utilities) against each other (`const t: T = s;`) and
+  against ~40 fresh literals (object literals with excess, discriminant and spread members, conditional and `??`
+  literals, getters, `as const`, `satisfies`); generic, overloaded, const-type-parameter and rest/tuple functions
+  against argument lists; for-of, spread and destructuring over every type; property/element/optional reads under
+  `in`, `typeof`, discriminant and truthiness narrowing. Oracle: scripts/tsgoprobe.sh baselines, reusing
+  mutate.py's run_tsc/run_tttt/parse_errors and its errors.txt comparison, cached by content hash. Bucket by
+  (missing|spurious, code), print the statement. A first draft fitted in ~250 lines of Python.
 
 ## 6. Small projects
 react is bound by one file: `src/components/ui/form/form.tsx` (react-hook-form's Path/PathImpl with zodResolver) is
