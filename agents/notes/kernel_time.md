@@ -46,7 +46,18 @@ Shootdown-causing calls per run, by site and phase:
    (THP within huge_pages_take()'s budget), populated in one call, and a free keeps them by power-of-two class for the
    next table (prelude.c big_table()). Faults drizzle -27%, zod -18%, effect -20%, vue/react -3/-4%; RSS within noise.
 
-After all four, the shootdown-causing calls left per run are malloc_trim's 32-160 madvises before the checkers
+5. **Aligned huge arena chunks** (2026-10-23, wt-ktime2's attribution, landed by worker clean): a huge-page arena
+   chunk (src/ty/checker.c arena_alloc_chunk()) is mapped as whole 2 MB pages, 2 MB aligned, its header included
+   (mapped +2 MB and the untouched ends unmapped, as big_table() does). The old 8 MB + 4 KB chunk landed wherever mmap
+   put it: THP covered only the 3 aligned 2 MB blocks inside it, and its unaligned ends (~2 MB a chunk) were zeroed
+   and mapped 4 KB at a time through MADV_POPULATE_WRITE (minor faults on this kernel). Attribution before it
+   (drizzle, a throwaway per-thread rusage patch): checkers 47k faults, 40k of them those chunk ends; load workers
+   17k; main 8k. After: faults drizzle 72k -> 44k, zod 62k -> 40k, vscode 301k -> 185k, sys -12..-20%, peak RSS
+   +0..2% (nest +3 MB: 8 checkers' first chunks now whole huge pages). Numbers: measurements.md "2 MB-aligned huge
+   arena chunks". Unmeasured: the laptop (THP `always`), where the ends could only be huge if the kernel aligned the
+   mapping, which it does not for a length that isn't a 2 MB multiple.
+
+After all four (before item 5), the shootdown-causing calls left per run are malloc_trim's 32-160 madvises before the checkers
 start (main thread, workers parked or gone) and vscode's 7-11 frees of tables past 32 MB. Instructions flat
 (callgrind K1 within +0.2%; kernel work isn't in callgrind).
 

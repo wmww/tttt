@@ -39,6 +39,20 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## 2 MB-aligned huge arena chunks: A/B on this box (2026-10-23, on 9894ae8e5)
+arena_alloc_chunk() (src/ty/checker.c) mapping a huge-page chunk as whole, aligned 2 MB pages (agents/notes/
+kernel_time.md item 5). fast/tttt before and after, `scripts/abbench.sh` (interleaved, `TTTT_SYNC_EXIT=1`, medians,
+the defaults; drizzle/zod/nest 15 runs, vscode 7) on a box loaded 24-37 by another project's builds: walls are noise
+(none regressed; vscode's -32% is load), faults and sys are the signal. Instructions flat (callgrind K1 drizzle
+-0.02%, zod +0.07%, nest +0.03%).
+
+| corpus | wall s | sys s | minor faults | peak RSS MB |
+|---|---|---|---|---|
+| drizzle | 0.871 -> 0.852 | 0.132 -> 0.106 (-20%) | 72.5k -> 44.0k (-39%) | 884 -> 890 (+0.7%) |
+| zod | 0.610 -> 0.591 | 0.103 -> 0.083 (-20%) | 62.5k -> 39.8k (-36%) | 657 -> 656 |
+| nest | 0.233 -> 0.210 | 0.065 -> 0.062 | 31.9k -> 31.5k | 172 -> 175 (+1.7%) |
+| vscode | 4.12 -> 2.80 | 0.713 -> 0.628 (-12%) | 301k -> 185k (-39%) | 5185 -> 5185 |
+
 ## The 12-core box at 3a77c827: kernel time (before f903d2e0e vs after) (2026-10-22)
 Run by an agent on the human's laptop (Ryzen AI 9 HX 370, 24 threads; kernel 7.2.11-zen1, perf 7.2.11, THP `always`):
 AC, `balanced`, 98% idle before, but Firefox, a qemu VM, a Java process and `odm` open (load ~1 settled; ~9 right
