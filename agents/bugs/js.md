@@ -48,3 +48,10 @@ inference fallback; the full JS declaration emit is the JavaScript declaration e
 - Assigning a function to a class's static method (`class L { static m() {} }` then `L.m = function (q) {}`; a class
   expression's too, `var K = class {...}`, `ns.sub = class {...}`) misses tsgo's TS2322 "Type '(q: any) => void' is
   not assignable to type '() => void'" (found next to ttttExpandoClassExpressionStatics, triage 2026-10-14).
+
+## `@extends` on a mixin over `any` (extendsTag10, the 7.1.0-beta, 2026-10-23)
+`/** @extends {A<string>} */ class B extends mixin(A) {}` with `mixin(Base: any)` returning `class extends Base`: the
+beta gives the clause `<string>` (any non-entity clause takes the tag's type arguments) and is silent, with a B that
+has neither `value` nor `extra` (TS2339 on both); tttt reports TS2315 "Type '(Anonymous class)' is not generic" and
+`new B()` "not constructable" (TS2351). What tsgo's resolveBaseTypesOfClass does with type arguments on a
+non-generic constructor type isn't emulated.

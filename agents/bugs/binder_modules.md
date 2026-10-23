@@ -74,3 +74,19 @@ module known. Mirroring it: for interfaces of those global names declared in a g
 identifier of each dotted `extends` name; if it's an import alias of a bare specifier that only a script's ambient
 module declares (not a module file, not a pattern), resolve it as a file (TS2306/TS2307 at the import) and make the
 alias unknown program-wide. Not done (one DT package).
+
+## TS 7.1.0-beta re-pin leftovers (2026-10-23)
+- **Content mapper `outputExtensions`** (new in the beta: tsoptions/contentmappers.go, outputpaths.go, the checker's
+  rewrite checks around checker.go's resolveExternalModule, declaration emit's specifier rewrite): a mapper package's
+  manifest (and the user's config) maps a mapped file's extension to an output one (`.astro` -> `.js`); declaration
+  file names (`Card.d.ts`, `Widget.d.mts`), `import("./Card.js")` specifiers in `.d.ts` output, TS5056 output
+  collisions, TS2876/TS2877 unsafe rewrites of mapped extensions, TS2807 `__rewriteRelativeImportExtension` with 4
+  parameters under importHelpers, manifest validation diagnostics. tttt's content_mapper.c has none of it: the 12
+  `contentMapperOutputExtensions*` configurations fail (errors, types or dts). A feature of its own (todo.md).
+- **TS5116 network paths**: tttt reports it for `/// <reference path>` and `paths` substitutions
+  (path_is_network()); tsgo also checks rooted path options (tsconfigparsing.go:423), `extends` (:495), `files`
+  (:1255), references (:1449), include specs (:1534) and the command line (commandlineparser.go:308). No test or corpus
+  has one.
+- ambientModuleImportingItselfNotResolved's symbols: tsgo names the module specifier `"foo"` inside `declare module
+  "foo" { import _foo from "foo"; }` as `Symbol(_foo, ...)` (the module's symbol printed through the default import's
+  alias of itself), tttt `Symbol("foo", ...)`. Errors and types pass (#64491 is implemented).

@@ -144,3 +144,11 @@
 - npm 12 defaults to `allow-remote=none`: a corpus lock entry resolved outside registry.npmjs.org breaks
   `thirdparty/ensure-corpora.sh`. bulletproof-react's (inherited from upstream's yarn.lock, npmmirror) was rewritten
   2026-10-11; `--relock` may bring it back (rewrite resolved URLs to registry.npmjs.org after relocking).
+- defaultRootDirInheritedInclude (new in the beta, `@currentDirectory` with the config in a subdirectory extending
+  one above): tsgo's harness prints the include reason's config absolute (`'/project/example/tsconfig.json'`), tttt
+  relative (`'example/tsconfig.json'`), and the baseline's file order puts the root before the extended config.
+  Harness path display only.
+- skippedCircularMatcherBases (new in the beta, a circular interface base through `ReturnType<typeof
+  expect.containing>` in a skipLibCheck'd .d.ts): errors pass and the CLI agrees with tsgo, but the types baseline
+  prints `expect.containing : error` where tsgo has the method type: the harness's types walk meets the circular
+  resolution in a different order.

@@ -472,3 +472,14 @@ export const mockCreateIntegration = (requests: unknown[], response?: () => Resp
   })
 }
 ```
+
+## New suite tests of the 7.1.0-beta (2026-10-23) that tttt fails: pre-existing divergences
+The beta's #64850 added tests reduced from top-1000 repo failures; the nightly tsgo already gave their expected
+output (checked with the old CLI), so these are tttt bugs the re-pin exposed, not beta changes:
+- contextualReturnSpreadPickInference: `return { title: "", ...pick(page, ["intro"]) }` against `Promise<{ title;
+  intro }>` with `pick<T extends object, Key extends keyof T>(object: T, ...props: Many<Key>[]): Pick<T, Key>` and
+  `page: any`: tsgo infers Key `"intro"` (the spread's contextual type), tttt `string` -> spurious TS2741.
+- iteratorZip (both exactOptionalPropertyTypes configs; the new esnext.iterator lib): the erroring
+  `Iterator.zip(..., { mode: "shortest", padding: [1] })` prints the literal `{ ...; padding: [number] }` where tsgo
+  has `number[]` (the overload whose argument types are printed after resolution fails), and f2's
+  `IteratorZipKeyedResult` instantiation prints differently (types and dts).

@@ -8,10 +8,12 @@ Starting point: measurements.md "Oracle totals (2026-10-23, d7bc837b0)" and the 
 jump against it needs attribution (policy, build or code) before it is celebrated.
 
 ## Always first: the re-pin to TypeScript 7.1.0 stable
-When `npm view typescript dist-tags` shows `latest` 7.1.x (on 2026-10-22: latest 7.0.2, next 7.1.0-dev, beta
-7.1.0-beta; 7.1.0 stable expected after 2026-11-24; a beta is not a re-pin target), do this ahead of everything. The
-oracle is `main` at fed0bf24 = `typescript@7.1.0-dev.20261008.1`; the dev-to-stable drift was estimated at ~2% of
-the suite.
+When `npm view typescript dist-tags` shows `latest` 7.1.x (7.1.0 stable expected after 2026-11-24), do this ahead of
+everything. The oracle is the 7.1.0-beta (tag `v7.1-beta` = 3e923636, re-pinned from the 2026-10-08 nightly on
+2026-10-23 by this recipe: the beta added 157 suite tests, 4 were lost and fixed, 19 new ones fail and are written up;
+measurements.md "Oracle totals (2026-10-23, the 7.1.0-beta re-pin)"). The beta's one new feature tttt lacks is the
+content mapper `outputExtensions` (12 suite configurations, bugs/binder_modules.md): worth doing when content
+mappers matter.
 1. `thirdparty/ensure-typescript.sh`: `TS_COMMIT` = the release's `gitHead` (`npm view typescript@7.1.0 gitHead`),
    `TS_VERSION` its version, the Go version from the new `tsc/go.mod` (`GO_VERSION` + sha256). `rm -rf
    thirdparty/typescript` and rerun (~90 s cold; `test/oracle` may need small API fixes if tsgo's internals moved).
@@ -23,9 +25,11 @@ the suite.
 4. Every cache regenerated with tsgo (each script's `--tsc`): `realworld.py --tsc --corpus X` for every corpus,
    `sweep.py --tsc` (and `--tsc --flags nuia`, `--flags eopt`), `expecttypes.py --tsc`, `sourcesweep.py --tsc`,
    `flagflip.py --tsc --force`, mutate's /tmp cache deleted. Commit between them (sweep ~10 min, source sweep ~12).
+   In a worktree the `-b` corpora (tsc-src, typescript-eslint) go through a bwrap overlay of the shared corpora (tsgo
+   -b writes into the checkout), and dtsdiff/flagflip `--tsc` only from the main tree (the beta re-pin's report).
 5. `scripts/oracles.py`, `scripts/scenarios.py`, `scripts/clidiff.py --sample 4`: before/after numbers into
    measurements.md; the version in CLAUDE.md's and documentation.md's oracle sentence and vision.md's state.
-Done when `grep -rn fed0bf24 scripts src test thirdparty/*.sh` is empty, no oracle in `oracles.py` is STALE, and the
+Done when `grep -rn OLDCOMMIT scripts src test thirdparty/*.sh` is empty, no oracle in `oracles.py` is STALE, and the
 suite's lost list is fixed or written up. tsgo's `.tsbuildinfo` `version` string would matter only if a buildinfo is
 ever written (it isn't).
 
