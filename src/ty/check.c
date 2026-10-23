@@ -384,7 +384,7 @@ static bool elaborate_object_literal(Checker* me, Expr const* expr, Ty const* so
 
 // tsc's isTupleLikeType
 static bool is_tuple_like(Checker* me, Ty const* ty) {
-    return ty_is_tuple(ty) || target_prop_of(me, ty, my atoms.zero);
+    return ty_is_tuple(ty) || target_prop_of(me, ty, my atoms.zero) || ty_array_like_with_literal_length(me, ty);
 }
 
 // target as written decides which elements are elaborated (tsc's generateLimitedTupleElements: not one a tuple target

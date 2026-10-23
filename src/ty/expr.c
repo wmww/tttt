@@ -982,7 +982,7 @@ Ty const* ty_contextual_element_type_of(Checker* me, Ty const* contextual, u32 i
 
 // tsc's isTupleLikeType past its "0" check: an array-like type (assignable to `readonly any[]`) whose length is number
 // literals
-static bool array_like_with_literal_length(Checker* me, Ty const* ty) {
+bool ty_array_like_with_literal_length(Checker* me, Ty const* ty) {
     Ty const* length = ty_prop_type_of(me, ty, my atoms.length);
     if (!length) return false;
     TyList parts = length->kind == TY_UNION ? length->composite.types : (TyList){ .data = &length, .len = 1 };
@@ -1039,7 +1039,7 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
     // Anything with a "0" property (tsc's isTupleLikeType: `Pick<[T, ...T[]], ...> & { length: 3 }`), or array-like
     // with a literal length (`number[] & { length: 2 }`, an interface extending `[]`)
     if ((contextual->kind == TY_INTERSECTION || contextual->kind == TY_DECLARED || contextual->kind == TY_REFERENCE) &&
-        array_like_with_literal_length(me, contextual)
+        ty_array_like_with_literal_length(me, contextual)
     ) {
         return true;
     }

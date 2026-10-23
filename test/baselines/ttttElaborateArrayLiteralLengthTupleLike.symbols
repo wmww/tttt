@@ -1,0 +1,21 @@
+//// [test/cases/ttttElaborateArrayLiteralLengthTupleLike.ts] ////
+
+=== ttttElaborateArrayLiteralLengthTupleLike.ts ===
+// An array type with a literal length is tuple-like (tsc's isTupleLikeType): an array literal assigned to one isn't
+// elaborated into the elements the target has no property for, the error stays on the declaration
+type test1 = [...number[]]
+>test1 : Symbol(test1, Decl(ttttElaborateArrayLiteralLengthTupleLike.ts, 0, 0))
+
+type fixed1 = test1 & { length: 2 }
+>fixed1 : Symbol(fixed1, Decl(ttttElaborateArrayLiteralLengthTupleLike.ts, 2, 26))
+>test1 : Symbol(test1, Decl(ttttElaborateArrayLiteralLengthTupleLike.ts, 0, 0))
+>length : Symbol(length, Decl(ttttElaborateArrayLiteralLengthTupleLike.ts, 3, 23))
+
+let var1: fixed1 = ["0", 0]
+>var1 : Symbol(var1, Decl(ttttElaborateArrayLiteralLengthTupleLike.ts, 4, 3))
+>fixed1 : Symbol(fixed1, Decl(ttttElaborateArrayLiteralLengthTupleLike.ts, 2, 26))
+
+// A real tuple still elaborates into the element
+let var2: [number, number] = ["0", 0]
+>var2 : Symbol(var2, Decl(ttttElaborateArrayLiteralLengthTupleLike.ts, 7, 3))
+

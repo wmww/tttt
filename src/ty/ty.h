@@ -2794,7 +2794,9 @@ bool ty_reference_uses_context(Checker* me, Expr const* expr); // expr.c
 bool ty_can_be_truthy(Checker* me, Ty const* ty);
 bool ty_can_be_falsy(Checker* me, Ty const* ty);
 bool ty_can_be_nullish(Checker* me, Ty const* ty);
-bool ty_can_be_undefined(Checker* me, Ty const* ty); // tsc's hasTypeFacts(ty, TypeFacts.IsUndefined)
+bool ty_can_be_undefined(Checker* me, Ty const* ty);
+// tsc's isTupleLikeType past its "0" check: array-like (assignable to `readonly any[]`) with a length of number literals
+bool ty_array_like_with_literal_length(Checker* me, Ty const* ty); // tsc's hasTypeFacts(ty, TypeFacts.IsUndefined)
 bool ty_can_equal_undefined(Checker* me, Ty const* ty); // tsc's TypeFacts.EQUndefined (any, unknown, void too)
 bool ty_can_be_null(Checker* me, Ty const* ty); // tsc's hasTypeFacts(ty, TypeFacts.IsNull)
 unsigned ty_undefined_or_null_facts(Checker* me, Ty const* ty); // tsc's getTypeFacts(ty, TypeFacts.IsUndefinedOrNull)
