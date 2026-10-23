@@ -1,0 +1,38 @@
+//// [test/cases/ttttHackJsdocLinkShadowed.ts] ////
+
+=== x.ts ===
+export const X = 1;
+>X : Symbol(X, Decl(x.ts, 0, 12))
+
+export const Y = 2;
+>Y : Symbol(Y, Decl(x.ts, 1, 12))
+
+=== a.ts ===
+import { X, Y } from "./x";
+>X : Symbol(X, Decl(a.ts, 0, 8))
+>Y : Symbol(Y, Decl(a.ts, 0, 11))
+
+/** {@link X} */
+function f() {}
+>f : Symbol(f, Decl(a.ts, 0, 27))
+
+function g() {
+>g : Symbol(g, Decl(a.ts, 2, 15))
+
+    const Y = 1;
+>Y : Symbol(Y, Decl(a.ts, 4, 9))
+
+    /** {@link Y} */
+    function h() {}
+>h : Symbol(h, Decl(a.ts, 4, 16))
+
+    h();
+>h : Symbol(h, Decl(a.ts, 4, 16))
+
+    return Y;
+>Y : Symbol(Y, Decl(a.ts, 4, 9))
+}
+f; g;
+>f : Symbol(f, Decl(a.ts, 0, 27))
+>g : Symbol(g, Decl(a.ts, 2, 15))
+

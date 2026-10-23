@@ -5,10 +5,12 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 
 ## Global state, memory, parallelism
 - **The shared graph's words (notes/shared_graph.md) keep a state byte each for the default path** (`FunctionReturn.state`,
-  `SymbolLinks.declared_state`, `TyObjectState.base_state`...): without --shared-graph in flight is that byte, as S0
+  `SymbolLinks.declared_state`, `TyObjectState.base_state`, Prop.type_flight, Signature.res_flight, ret_flight, predicate_flight,
+  TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three...): without --shared-graph in flight is that byte, as S0
   designed (overlay.h); with it the byte is never touched. Correct: the Overlay for both (the claims are a stack with a
   filter since the flag's K1 overhead cuts (measurements.md "Shared graph K1 overhead"), a push and a load, cheaper than the map probe that was the measured reason). And function_return_type() counts an argument's return inferred under an outer inference
-  as tainted wholesale (keep_outer), where only the reads of the outer inference need to be (the design log's "P2 progress", which notes/shared_graph.md points to).
+  as tainted wholesale (keep_outer), where only the reads of the outer inference need to be (the design log's "P2 progress", which notes/shared_graph.md points to). Measured at D: the bytes sit in padding holes; two byte stores per computation, under
+  0.1% of instructions.
 - **A graph with one checker publishes nothing until a second one adopts** (InternTable.others null while alone;
   graph.c graph_adopt()'s publish_identities() catches up): correct only because a lone checker's second one comes when
   the first isn't running (start, its own file boundary, the recheck after the join). A path adopting a checker while
@@ -107,7 +109,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (both TS1109, like tsc), timed under `TTTT_DEFER_STATS=1` (the restarts count).
 - `unique symbol` placement (TS1335): checked while parsing through `ParserShared.unique_allowed_at`
   (`parse_type_inner`, `expect_annotation_type`), not on the tree (checkGrammarTypeOperatorNode), and never in JSDoc,
-  where tsc asks the tag's host. Oracle: JS suite tests / mutate.py.
+  where tsc asks the tag's host. Oracle: JS suite tests / mutate.py. Tested by ttttHackJsdocUniqueSymbolLet (known failing: a JSDoc `@type {unique symbol}` on a `let` misses TS1332).
 - Strings are UTF-8: a lone surrogate escape is kept as WTF-8 bytes (`append_code_point()`), which strict decoders
   (`cutf8_encode`) drop; `regex_check_literal()` ports tsc's UTF-16 scanner on a UTF-16 copy of the literal. A NUL byte is a
   character for tokens and lists (`at_eof()`) but some lookaheads still stop at it.
@@ -117,15 +119,15 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `hop_escaped_keyword()` reports TS1260 even speculatively. Correct: cook once at scan time into the node.
 - Two notions of "reserved": `parse_identifier()` refuses only `is_reserved_identifier()` (it also parses identifier
   names and keyword types), `parse_binding_identifier()` and enum names all of `is_reserved_word()`. Correct: per caller,
-  tsc's parseIdentifier / parseIdentifierName / parseBindingIdentifier. Oracle: syntaxstats.py.
+  tsc's parseIdentifier / parseIdentifierName / parseBindingIdentifier. Oracle: syntaxstats.py. Probed 2026-10-23, matches tsgo (`let x: yield;` in a module).
 - Conflict markers (TS1185): `Decl()` positions don't skip back over one; none recognised after U+2028/U+2029.
 - No missing-identifier node: `written_name()` prints `(Missing)` for empty zero-width names, bindings use `BINDING_NOOP`
   where tsc declares `(Missing)`; `parse_throw()`'s missing expression is a zero-width implicit any (TS1142 finds the
-  keyword by `strlen("throw")`); `return;` is an `undefined` literal (`statement_is_bare_return()`, wants a `has_value`).
+  keyword by `strlen("throw")`); `return;` is an `undefined` literal (`statement_is_bare_return()`, wants a `has_value`). Probed 2026-10-23, matches tsgo (`throw` with its `;` on the next line).
 - Missing nodes and trivia (`token_full_start()`, `unhop_trivia()`): `ParserShared.last_trivia_start/end` remember only
   the last whitespace hop; `expect_expr()` moves back so the parent ends at the previous token and continues a missing
   operand with binary/assignment operators and `.` only (not `[`/`(`, nor `<` outside JSX); the symbols baseline skips ASCII whitespace forward for
-  `Symbol(unknown)` (a comment breaks it).
+  `Symbol(unknown)` (a comment breaks it). Probed 2026-10-23, matches tsgo (`a + /*c*/ [` at the end of the file).
 - Spans rebuilt by scanning text: full starts by skipping spaces backwards (TS1433, TS1385-TS1388, comments not
   skipped), `question_dot_after()`, an object literal missing `}` (`parse_object`), a bodyless accessor's TS1005,
   `json_check_value()`'s TS1328 (tsc: after a comment). A `span_from` on a parent's anchor inside a child parser before
@@ -134,24 +136,24 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   element of the list itself; the fail cache ignores `parsing_context`; `parse_binding_content()` stops at the first bad
   element; a committed arrow whose parameters fail falls back to a parenthesized expression; `tok_scan_end()` is a second
   token notion next to `hop_token()`; `parse_jsx_attributes` approximates isInSomeParsingContext. Oracle:
-  syntaxstats.py.
+  syntaxstats.py. Probed 2026-10-23, matches tsgo (`function f(a, , b) {}`).
 - Statements: `statement_takes_semicolon()` lists by tag who calls parseSemicolon(); statement spans include the `;`,
   port items' and class members' don't (`span_with_semicolon()`). `IfStatement` flattens `else if` (no Statement for
   the nested if: `if_else_resolve_names()` reports its TS7027 itself, its span found by skipping `else` past the
   previous branch; tested by ttttHackElseIfUnreachable); `statement_start_needs_check()` gates isStartOfStatement by first
   word (a new rejecting case must be added).
 - Private names outside classes have no flag: `object_item_is_private_name`, `interface_member_is_private_name`,
-  `enum_decl_typecheck` check the first character (such an enum member is declared, prints `__missing`).
+  `enum_decl_typecheck` check the first character (such an enum member is declared, prints `__missing`). Probed 2026-10-23, matches tsgo (`enum E { #a }`).
 - Class accessors pair by name+staticness in `class_decl_lookup_names_in_owner()` (`class_namesakes()`; raw
   `accessor_first`/`accessor_getter` pointers into the items vec); readonly means "no setter". `{ a = 1 }` keeps `ObjectExprItem.shorthand_default`.
-- Parsed and dropped (lost diagnostics in bugs/missing_checks.md): computed non-literal enum keys
+- Parsed and dropped (no bug entry covers them): computed non-literal enum keys
   (`EnumCase.computed_name`, member prints `(typeof E)["[e]"]`, tsc `E`); non-string import specifiers; a `ModuleRef`
   from an abandoned attempt stays listed (`add_module_ref`); `global x` is `NamespaceDecl.is_shorthand` typed any;
-  `ModifiedNode.name` stands in for getErrorSpanForNode (TS1248).
+  `ModifiedNode.name` stands in for getErrorSpanForNode (TS1248). Probed 2026-10-23, matches tsgo (`enum E { [e] = 1 }` with `e: string`: errors and types).
 - Heritage clauses (`parse_heritage_clauses()`, `parse_heritage_element()`): elements parsed as expressions, then again
   as types if entity names; TS1172-TS1176/TS1097 from the parser; unchecked parts in `unchecked_*`/`invalid_*` fields
   resolved silently for baselines; `BaselineTestCase.hidden_type_spans` hides what isPartOfTypeNode drops. Correct: one
-  ExpressionWithTypeArguments node.
+  ExpressionWithTypeArguments node. Probed 2026-10-23, matches tsgo (`class C extends A, B {}`).
 - `jsdoc_type_outside_jsdoc()`: `?T`/`T?`/`!T`/`T!` are a `TYPE_JSDOC` wrapper; `*` reports TS8020 without a node.
 - Top-level await (`parse_file()`): the whole file is reparsed with the statements that saw an `await` identifier as
   await contexts (`ParserShared.await_statements`); module-ness guessed by `parsed_file_is_module()`, a copy of
@@ -164,23 +166,23 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `binder_redirect` / `Binder.overlays`: a program adding to a shared-lib symbol gets a clone (`clone_parent_symbol`),
   the checker maps through `canonical()` (ty/lower.c): anything new keyed by `Symbol*` must too. Fallout: an augmented
   `Console` shows both `log` signatures (wants getIntersectedSignatures); `maps_merged_type_param()` (ty_display.c)
-  misses an interface merged with a lib one (promisePermutations x3).
+  misses an interface merged with a lib one (promisePermutations x3). Probed 2026-10-23, matches tsgo (an augmented global `Console.log` overload: `console.log`'s type and a TS2322 header, in a module and a script).
 - `make_gather_target`: namespace imports, `import x = require()` and `export as namespace` alias a namespace symbol of
   their own (`Symbol.gather_module`) so the type prints `typeof ns`. Node16 `import * as ns` of CommonJS copies the
   module's exports at link time (right only because nothing merges into module exports after `binder_link()`), plus
   `Symbol.synthetic_default`, whose `prop->decl->symbol` is the alias (symbols baseline prints `d.default`).
   `namespace_import_is_clone()` (symbol_chain.c): `ns`'s type is the module's, not tsc's esModuleInterop clone, so
-  symbol chains guess when tsc's clone wouldn't name the module.
+  symbol chains guess when tsc's clone wouldn't name the module. Probed 2026-10-23, matches tsgo (`import * as ns` of an `export =` .d.ts under esModuleInterop, returned from exported functions: types and .d.ts).
 - `resolve_uncached()` (module_resolution.c) HACK: a package name with export maps resolves TypeScript extensions in a
   first pass, reproducing tsc's selfNameModuleAugmentation behaviour (microsoft/TypeScript#50762) by other means.
 - `merge_symbol()` returns early for alias sources and other binders' targets: module augmentations
   (`merge_augmentations`, `retarget_decl`) never merge into shared-lib symbols, an alias in an augmentation meeting an
   existing name isn't merged, `add_pattern_declarations` copies only flags and declarations of an export both declare
   (not a nested namespace's exports); names added through an `export *` module reach only that module. Correct: a
-  `merge_symbol` that can clone its target.
+  `merge_symbol` that can clone its target. Tested by ttttHackAugmentationAliasConflict (known failing: `export { x as y }` in an augmentation misses TS2323/TS2484).
 - `export =`: named imports see only the namespace side; `namespace_import_type` asks `ty_type_of_symbol()` about the
   alias (identifiers only), so `import("./a")` of an `export =` module prints `typeof ns` where tsc spells out
-  `{ ...; default: ... }`, and the synthetic `default` prints as `default` in symbols (tsc: the module name).
+  `{ ...; default: ... }`, and the synthetic `default` prints as `default` in symbols (tsc: the module name). Probed 2026-10-23, matches tsgo (`import("./a")` and `typeof import("./a")` of an `export = namespace` module: types, TS2322 headers).
 - `export = a.b` / `export default a.b` is an alias (`resolve_entity_alias()`): a class static merged with a namespace
   interface is an alias whose `value_target` is the static, and `module_export_equals()` may return the alias itself.
   tsc makes one symbol with both declarations (exportEqualsProperty2 symbols).
@@ -227,27 +229,27 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   a perf memo from the single-threaded memory-system work. Oracle: `scripts/oracles.py` byte-identical; drop the memo if a divergence traces
   back to it.
 - Evolving arrays: switch clauses narrow the final array, not the `TY_EVOLVING_ARRAY`. Oracle: suite evolving-array
-  tests, flagflip noImplicitAny cells.
+  tests, flagflip noImplicitAny cells. Probed 2026-10-23, matches tsgo (`let a = []` pushed to in switch clauses, with a fallthrough, noImplicitAny).
 - `expr_is_narrowable_reference()`: `a = b` counts whatever its left side; tsc wants a LeftHandSideExpression (differs
   only after parser recovery).
 - A rest pattern's initializer is checked once
   more for the root pattern only (`ty_rest_binding_initializer_type`, tsc's CheckMode.RestBindingElement does every
-  level); call.c's return mapper ignores a pattern with a rest element. Oracle: suite destructuring tests' types.
+  level); call.c's return mapper ignores a pattern with a rest element. Oracle: suite destructuring tests' types. Probed 2026-10-23, matches tsgo (rest patterns nested in array and object patterns, from literals and from a generic call).
 
 ## Declarations and bindings (AST-side walk)
 - `ty_binding_assigned_type` (not memoised): tsc unions the undefined-stripped element with the default (subtype
   reduction), then widens; tttt decides with the fresh default, but when that drops the default it reduces again
-  against the widened default (`ty_union_subtype_reduced(me, types, 2)`). Oracle: suite `.types` of pattern defaults.
+  against the widened default (`ty_union_subtype_reduced(me, types, 2)`). Oracle: suite `.types` of pattern defaults. Probed 2026-10-23, matches tsgo (object and array pattern defaults against literal-union declared types).
 - Array pattern rest (`binding_element_of`): the parent type is widened, so "any parent is any" peeks at the root
   initializer for a nullable. Correct: keep the unwidened parent (tsc's getTypeForBindingElementParent).
-- `class_decl_lookup_names_in_owner()` drops a constructor's return annotation after TS1093; tsc keeps and ignores it.
+- `class_decl_lookup_names_in_owner()` drops a constructor's return annotation after TS1093; tsc keeps and ignores it. Probed 2026-10-23, matches tsgo (`constructor(): number {}`).
 - `field_type_from_assignments()`: the first real `this.x =` stands in for tsc's synthetic flow reference of the
-  property (getFlowTypeInConstructor). Oracle: JS suite tests.
+  property (getFlowTypeInConstructor). Oracle: JS suite tests. Probed 2026-10-23, matches tsgo (JS constructor `this.x = null; if (c) this.x = 1`, undefined then a string, a number then a string).
 - `ty_merged_value_type`: a second `Ty` beside the unmerged one (`ty_static_type_of`, what static `this` sees). Correct:
   one type per merged symbol (tsc's getTypeOfFuncClassEnumModule).
 - `ty_sig_param_declared_type()` / `ty_sig_param_symbol_type()` recover a parameter's declared type by taking undefined
   back out of `SigParam.type` when `undefined_added` (tsc keeps the symbol's type and adds at getTypeOfParameter): for
-  an instantiation whose declared type became undefined (`p: T = x` with T = undefined) that prints `never`.
+  an instantiation whose declared type became undefined (`p: T = x` with T = undefined) that prints `never`. Probed 2026-10-23, matches tsgo (`p: undefined = undefined`, `p: T = undefined as T` with `T extends undefined`).
 - `ty_report_pattern_iterable()`: TS2318 'Iterable' gated on an array/object literal initializer because tttt computes
   the pattern's contextual type eagerly (tsc's createIterableType only when asked).
 
@@ -264,21 +266,21 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Skip-sensitive rounds (`resolve_with_signatures`): tsc's SkipContextSensitive round checks every argument, sensitive
   functions as anyFunctionType; tttt leaves them out of `check_args_until_unfit` (`skipped_function_unfit()`) and
   relates literal ones afterwards (`first_unfit_skipped_literal()`), so a literal is related after the arguments behind
-  it (observable in which argument TS2345 lands on). Generators: `return_only_type()`, `first_unfit_argument`.
+  it (observable in which argument TS2345 lands on). Generators: `return_only_type()`, `first_unfit_argument`. Probed 2026-10-23, matches tsgo (`f(1, x => {}, "s")` with the callback first, middle or last, and a non-sensitive `() => true`).
 - Higher-order (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`,
   `ty_generic_function_in_context`): a failed call is re-inferred without them, then arguments are re-checked against
   the failed candidate only to restore memos (`add_implementation_success` likewise). tsc resolves once.
 - Return mapper (`infer_type_arguments`, `outer_return_mapper()`): tsgo's returnMapper, except a call whose return
   source is the main inference's reuses the main inference. A pattern's return mapper drops inferred `any` (tsc's
   nonInferrableAnyType), rest patterns give none; `ty_pattern_unclone` copies the pattern type per call; nested literals
-  instantiate context only in `check_for_mutable_location()`.
+  instantiate context only in `check_for_mutable_location()`. Probed 2026-10-23, matches tsgo (`box(id("a"))` against `Box<"a">`, inside arrays, with object and tuple literals).
 - TS7056 from a display depth limit (`ty_display`, 8 * 16 levels with a tracker) where tsc only has the 1M-character
   limit (recursive reverse mapped types); a finite type nested deeper gets a spurious one. Oracle: dtsdiff.
 - Reverse mapped arrays/tuples are eager but cut at depth 4 (`Checker.reverse_mapped_depth`; tsc's
   reverseMappedSourceStack/isDeeplyNestedType). Generic reverse mapped types instantiate via `{target, mapper}`, not
   instantiateReverseMappedType. Inference priorities lack SpeculativeTuple (AlwaysStrict is `Inference.always_strict`,
   which also stands in for NoConstraints).
-- `context_is_tuple_like()` misses call spreads (tsc's intra-expression sites through spreads).
+- `context_is_tuple_like()` misses call spreads (tsc's intra-expression sites through spreads). Probed 2026-10-23, matches tsgo (`f(...[1, "a"] as const)` against a tuple rest, a spread tuple holding a callback, an array spread).
 - `const` type parameters: nested array literals found syntactically (`add_nested_array_literals`) plus
   `Inference.array_literals`, because interned tuples can't carry ObjectFlags.ArrayLiteral.
 - `ty_union_signatures` (relate.c) isn't cached. `resolve_call` falls back per member for `super`, `new` of a callable
@@ -294,7 +296,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   print `any`, so no oracle sees it; the any-base and generic mapped gates are gone (2026-10-17).
 - Contextual `this` (`ty_contextual_this_type`): through the anchor once the call is resolved, else the literal's last
   context (`KEY_LITERAL_CONTEXT`, last wins; tsc's pushed contextual type, a push/pop stack is the contextual-check state work);
-  `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`.
+  `ThisType<T>` found by name, instantiated with `ty_instantiate_fixing()`. Probed 2026-10-23, matches tsgo (two overloads with different `ThisType<>`s on one object literal method).
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
 - **ty_settle_function_context() checks a function expression's context root, not the path to it** (ty/expr.c, the
@@ -308,7 +310,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   statements) aren't settled; a stack overflow (256) counts as in flight. A RETURN root finds its return expression by
   span containment (return_contains_target()). The settle enters a node at the root (an expression statement's
   expression span, not the statement's: a TS2589 there would be at another start than the walk's). Oracle: the
-  suite's ttttContextRootSettled, the shared-graph seeds and fingerprint.
+  suite's ttttContextRootSettled, the shared-graph seeds and fingerprint. Probed 2026-10-23, matches tsgo (callbacks in field and static field initializers read from an earlier method, a for-of iterable, an enum initializer, a decorator, a computed key, a JS `export default` with @type).
 - Member symbols: a class's are `ty_class_member_symbols()` (check.c: TS2300, the builder's joins, overload
   groups, computed accessor pairs via `ty_class_accessor_first/getter/setter()`), the binder's for written names
   (bind_member_symbols, symbol_first/accessor_first: syntactic like tsc's). Left on top: the builder's rules for a member
@@ -321,28 +323,30 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a mentioned type parameter is unmapped or mapped
   to something generic (tsc: any reference with a node). Needed by conditional.c's "infer constraint stays generic"
   (react-relay); drizzle -24% types.
-- Instantiation expressions (`apply_type_arguments_part`): signatures violating their constraints are dropped unless
-  every signature passes arity and none fits; tsc keeps them uninstantiated. Needs a kept-signature list on the instantiation
-  (`ty_apply_type_arguments_mapper`, `instantiate_members`); identity-mapping them breaks effect's `collectValues<A>`.
+- Instantiation expressions (`apply_type_arguments_part`): a signature whose constraints the type arguments violate is
+  kept uninstantiated (tsc's getInstantiatedSignatures) by mapping its first type parameter to TY_UNREACHABLE_NEVER, a
+  mark no type argument or mapper makes (`ty_instantiation_keeps_signature()`, `instantiate_members()` pushes it as
+  is); an instantiation of the result by an outer mapper leaves it as is too, where tsc's would instantiate its outer
+  type parameters. Correct: a kept-signature list on the instantiation. Tested by ttttHackInstantiationKeepsViolating.
 - Context re-derivation (`initial_or_assigned_type()`) covers `x = e`, logical assignments and annotated declarations,
   not destructuring defaults. Anchors (`ty_record_call_anchors()`) don't go through calls (first call wins),
   skip non-generic one-signature calls (`CallResolution.exact`) and generators' returns; tsc's getContextualType walks
-  every parent up to links.resolvedSignature.
+  every parent up to links.resolvedSignature. Probed 2026-10-23, matches tsgo (callback defaults in object and array patterns and parameters, nested generic calls in an annotated array).
 - `KEY_CONTEXT_CHECKED`/`assign_contextual_signature_as`: the first non-skipping check fixes a function's contextual
   signature; generic contextual signatures aren't instantiated; a function without one still takes `this` from the
   last contextual signature (tsc asks lazily).
 - Apparent contextual types: `intersection_prop_context` intersects per-member answers, distributing over a type
   variable member's union/intersection constraint within fixed bounds (tsc: the intersection's apparent type once); `context_map` drops `unknown` parts when others contribute
-  (tsc: noReductions).
+  (tsc: noReductions). Probed 2026-10-23, matches tsgo (`{ f: (x: number) => void } & { f: unknown }` (and `& { f: {} }`) on a method and an arrow).
 - Excess properties (`has_excess_properties`): `discriminated_union_target` and `ty_best_matching_type` have no
-  key-property map.
+  key-property map. Probed 2026-10-23, matches tsgo (a 12-member discriminated union: another member's property, extra properties, no discriminant, a `3 | 4` discriminant).
 - Destructuring assignments (`assignment_target_typecheck`): for-of destructuring relates the widened element type
-  (tsc: per property, so no excess property checks).
+  (tsc: per property, so no excess property checks). Probed 2026-10-23, matches tsgo (`for ({ a } of [{ a: 1, b: 2 }]);`).
 - Expandos on functions are checked against existing members; `is_container_declaration()` approximates
-  isAssignmentDeclaration for `ns.a = {}`.
+  isAssignmentDeclaration for `ns.a = {}`. Probed 2026-10-23, matches tsgo (TS function and arrow expandos `f.a = {}; f.a.b = 1`, with declaration emit).
 - `member_refs()` (check.c) duplicates `access()`'s walk to get `Prop`s without creating types (two walks to sync).
 - JSX: the head rule (`ty_jsx_skips_head` via `Checker.jsx_element`) applies only inside `ty_check_jsx_element`;
-  attribute types skip the regular object literal state.
+  attribute types skip the regular object literal state. Probed 2026-10-23, matches tsgo (a JSX spread before and after an attribute whose object has an excess property, an unknown attribute).
 - `assignment_value_context`: `TYF_BINDING_PATTERN` is both tsc's object literal `pattern` and isFromBindingPattern, so
   an object assignment pattern only marks its context when the value isn't a call. Correct: a separate flag.
 - `x satisfies T`: on failure prints T and discards the text, for the printing's side effects (tsc builds TS1360 there:
@@ -353,7 +357,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   return type needs what's being resolved (mikro-orm's `toJSON(strict = true): Omit<EntityDTO<this>, I>`).
 - `ty_literal_rechecked()` (elaborate_element's tsc checkExpressionForMutableLocationWithContextualType): re-reads a
   literal's cached element/property types against the new context (literals kept, arrays tuples where the context is
-  one) instead of re-checking the expression in CheckModeContextual; calls and functions keep what they inferred.
+  one) instead of re-checking the expression in CheckModeContextual; calls and functions keep what they inferred. Probed 2026-10-23, matches tsgo (`[{ a: g() }]`, `[{ a: h("y") }]`, a method in an annotated literal, a tuple from a generic call).
 
 ## Relations (`ty/relate.c`)
 - Reporting runs: tsc's error-node checkTypeAssignableTo callers run once, explaining (check.c relate_explaining(),
@@ -363,7 +367,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   tsc's single run does inside typeRelatedToEachType).
 - `is_reducible_intersection()` (checker.c) looks for a literal property against a type parameter one in the shape
   tsc's never-filled instantiation would reduce; an optional literal's undefined is stripped first (as before the optional-properties-carrying-undefined change),
-  where tsc's getReducedType would reduce through `"a" | undefined` too. Correct: getUniqueLiteralFilledInstantiation.
+  where tsc's getReducedType would reduce through `"a" | undefined` too. Correct: getUniqueLiteralFilledInstantiation. Probed 2026-10-23, matches tsgo (`T & { k?: "a" }` against `{ k: "b" }`: assignment, inference, a constrained T).
 - `conditional_source_related()` relates the distributive constraint without tsc's hasNonCircularBaseConstraint(source)
   gate: computing it inside an alias's resolution gives spurious TS2456 (type-fest's `_ConditionalPickDeep`, crawlee).
   Correct: lazier alias references, or the gate after the alias resolves.
@@ -374,10 +378,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (`Uppercase<string> | number`).
 - Error reporting: `TyReportLine` has no message arguments, so `report_property_incompatible()` parses paths out of
   messages (`incompatible_line_path()`) and `relation_line_said()` compares texts (tsgo's chainArgsMatch compares
-  arguments); headMessage is `RelationState.at_top` + `head_code`. Correct: lines with arguments.
+  arguments); headMessage is `RelationState.at_top` + `head_code`. Correct: lines with arguments. Probed 2026-10-23, matches tsgo (property mismatch paths with one name at three depths).
 - Elaboration (`elaborate_error`) reads memos (`ty_mutable_location_type`, `ty_array_literal_as_tuple`) instead of
   re-checking; `type_decl_span` covers declared types, function type nodes, type literals and functions only (renaming `as`
-  properties lose declarations).
+  properties lose declarations). Probed 2026-10-23, matches tsgo (a mismatch in a key-remapped mapped type (`as `x${K}``) and in a plain one).
 - `structured_related_members`, an intersection source against a union target: its members are related alone (unless
   all are object types; never a type parameter member, which loops back to the effective constraint), standing in for tsc's
   getEffectiveConstraintOfIntersection, which `effective_intersection_constraint()` doesn't always match
@@ -398,14 +402,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `is_rest_array` takes anything but a type parameter or a generic mapped type as a rest array. Correct: normalize `[...X]` when the tuple is made
   (tsc's createNormalizedTupleType).
 - Identity (`identity_structured`): differently shaped tuples never identical (tsc compares their properties), no
-  `infer` in the two-conditional rule. TS2403 (`check_subsequent_declaration`) exposes every gap.
+  `infer` in the two-conditional rule. TS2403 (`check_subsequent_declaration`) exposes every gap. Probed 2026-10-23, matches tsgo (`var x: [a: number]; var x: [number];`).
 - The depth-100 backstop (`MAX_RELATION_DEPTH`, assumed related) counts every `recursive_related()` level (`st->depth`);
   tsc counts sourceStack and targetStack separately (a side-only push doesn't count): tttt gives up earlier.
 - Alias variance (`in out`): the reporting pass falls back to the interface's own variances on an invariant failure
   only for references to the same target. The null-base TS2417 check takes the first `extends` of the first merged
   interface (`class_decl_merged_interface_base`), not getBaseTypes.
 - `TY_INDEXED`'s include_undefined (noUncheckedIndexedAccess) is dropped where an indexed access is rebuilt from parts
-  (`simplified_parts`, `ty_actual_type_variable`). Oracle: flagflip noUncheckedIndexedAccess.
+  (`simplified_parts`, `ty_actual_type_variable`). Oracle: flagflip noUncheckedIndexedAccess. Probed 2026-10-23, matches tsgo (noUncheckedIndexedAccess with `T extends Record<string, number>`: `t[k]`, `T[string]`, `keyof T`, destructuring, arrays).
 - `has_inferable_index`: every anonymous object type has an inferable index except `OBJECT_NO_INFERABLE_INDEX` and the
   global empty objects (a blacklist of tsgo's symbolless or non-literal-symbol `newAnonymousType` sites: binding
   patterns, string-literal inference, decorator contexts, CommonJS `module`), where tsc's isObjectTypeWithInferableIndex
@@ -439,7 +443,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   for the in-flight one reports the circularity (TS2502/TS7022). Design: bugs/sourcesweep_checker.md's kebo entry.
 - **Two circularity diagnostics come from printing a type for its side effects** (the string is dropped):
   lower_node()'s TYPE_INDEXED case prints an anonymous object whose indexed access failed (`ty_to_cstr(object)`), so
-  that resolving its member types makes `type A = { a: A }["x"]` circular like `{ a: A }["a"]`; the satisfies case of
+  that resolving its member types makes `type A = { a: A }["x"]` circular like `{ a: A }["a"]` (TS2456; the TS2339 itself
+  is still type_typecheck()'s); the satisfies case of
   ty/expr.c's expression computation prints the target of a failed `satisfies`, so that the return type in flight of
   `const f = () => 1 satisfies typeof f` is circular (TS7023, `() => any`). tsc gets both from its own resolution order:
   getIndexedAccessType with its accessNode and checkSatisfiesExpression build their messages (typeToString) right
@@ -448,18 +453,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   no observable effect. That is what would make lazy or skipped message formatting safe (notes/checker_speed.md: the
   display of errors a `@ts-expect-error` suppresses is 2.6% of drizzle). Oracle: the suite's circularity tests
   (TS2502/TS7022/TS7023) with display stubbed out at those sites.
-- The shared graph's converted words (notes/shared_graph.md) keep a default-path state byte next to each (Prop.type_flight, Signature.res_flight,
-  ret_flight, predicate_flight, TyObjectState.members_flight, MappedInfo.template_flight, TyParamState's three): without --shared-graph in flight is that byte, with it the worker's Overlay. They
-  go with the plain path, once the flag is the default. Measured at D: all sit in padding holes (only FunctionReturn
-  shrinks, 16 -> 8 B, and MappedInfo, TyCondBranch, SymbolLinks by 8 B with repacking); two byte stores per
-  computation, under 0.1% of instructions.
 - The per-read shadow test (`!my graph_shadowed` on every word's fast path: sw_get(), ty_members(), sig_res() & co):
   0.2-0.6% of K1 instructions (zod -0.6% without it) for 0-1 shadowed words a K12 run. The alternative, a shadowed
   worker giving its file up at once to a fresh worker, needs a mid-file abort (the redo's longjmp, its leaks, a
   per-file error context), deleted with the shared graph (notes/shared_graph.md); kept as a future lever. sw_look_fast() & co (ty.h) inline the default path of overlay.c's functions.
 - TyParamState.circular (members.c ty_param_constraint_is_circular()) is a word with no in-flight state: a re-entry
   computes it again and the first answer stays. Without a graph that is a first-wins CAS, as before.
-- signature_copied() (members.c): a copy of a signature whose resolution is in flight here gets a snapshot record
+- signature_copy() (members.c): a copy of a signature whose resolution is in flight here gets a snapshot record
   published as resolved; before the words the copy's state stayed in flight forever with the snapshot, so a done-ness
   peek of the copy now says resolved. No oracle shows it.
 - `--shared-graph` (ty/graph.c, notes/shared_graph.md) is deterministic by construction except for the open items in notes/shared_graph.md's
@@ -468,11 +468,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   notes/shared_graph.md), nor a flag be set later on a hash-consed type (OBJECT_MODULE_CLONE). A side table entry that describes a shared object (a
   property's write type, its synthetic parts) must be an identity kind, published before the
   object is reachable: graph_kind_class() lists the ones found so far (KEY_PROP_WRITE_TYPE, KEY_SYNTHETIC_PROP_PARTS,
-  KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is history: published
-  at creation it changed excalidraw at K12 threads; a memo kind until the shared graph work made it scratch, each checker's
-  own marker instances, once poisoned variance groups are measured by every worker).
-  (Prop.write_type_known and SymbolLinks.base_cycle are gone, the shared graph work: a KEY_PROP_WRITE_TYPE entry's presence,
-  MembersRare.base_cycle with SymbolLinks.base_constructor_cycle.) ty_interface_in_base_cycle()'s own walk is a word
+  KEY_PROP_MAPPED_TYPE), more may hide behind a flag on a shared struct (KEY_ALIAS_MARKER is scratch, each checker's own
+  marker instances: published at creation it changed excalidraw at K12 threads). ty_interface_in_base_cycle()'s own walk is a word
   (SymbolLinks.interface_cycle). TSan with the flag is far from clean: `scripts/sharedgraph/tsan.sh` found ~55 distinct report groups
   over the 14 `-p` corpora at T4/T12 (2026-10-21; the list is the design log's "Stage 4f gates", which notes/shared_graph.md points to), most of them
   lazy fields on shared types read plainly beside another worker's write. graph_kind_class() puts KEY_FLOW_NARROWED /
@@ -508,11 +505,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   Only a twin whose arguments tsc's couldContainTypeVariables can't rule out turns back (`tsc_may_contain_type_variables()`,
   tsc's getObjectTypeInstantiation carries its arguments' answer to the instance): `type Slots = Readonly<InternalSlots>`
   over a non-generic alias, an interface or an instantiated alias stays Slots (vue's `$slots`). An approximation of
-  tsc's flag kept beside tttt's exact one.
-- **An indexed access type node's missing key prints its object to a dropped string** (`lower()` TYPE_INDEXED,
-  lower.c): tsc reports the key inside getIndexedAccessType, and the typeToString of its message resolves an
-  anonymous object's member types while the alias resolves (`type A = { a: A }["x"]` is TS2456). tttt reproduces
-  the side effect by printing; the TS2339 itself is still type_typecheck()'s. Artifact model like the eager bases.
+  tsc's flag kept beside tttt's exact one. Probed 2026-10-23, matches tsgo (`type N = Readonly<{ a: 1 }>` in an interface member's type literal `{ a: N }`).
 - Eager-base runaway model (`probe_eager_bases()`, documentation.md "Eager base runaways"; a deliberate artifact
   model: webpack and zod need it).
   Approximations: probes run only when the reference's arguments mention a type whose members are in flight or whose
@@ -523,7 +516,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   two TS7006, missing_checks.md). Right rule: none (tsgo artifact); the corpora (zod, vue, valibot) show drift.
 - `structured_related_impl()` TY_TYPE_PARAM: a type parameter source against a union takes its hoisted constraint
   (`constraint & T`) only on a definite True, because tttt relates a generic intersection member by member (meeting the
-  outer T relation as Maybe). Right rule: tsc's whole-intersection comparison; flagflip/sweep would show misses.
+  outer T relation as Maybe). Right rule: tsc's whole-intersection comparison; flagflip/sweep would show misses. Probed 2026-10-23, matches tsgo (a T constrained to literals against unions with a generic U, U[], a template literal, an intersection).
 - Instantiation keys of object literals and JavaScript function expressions by mentions, not by outer type parameters
   (tsc's getObjectTypeInstantiation): `object_literal_type_mentions()` / `ty_function_type_mentions()` (contextual
   parameters could carry a call's type parameters; the contextual-check state work); unknown mentions fall back to the whole mapper (perf:
@@ -604,7 +597,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (TS2510 by `ty_class_base_constructors_differ()`); a base constructing `any` is no base (its sides get tsc's
   anyBaseTypeIndexInfo, `class_base_is_any()`); type-parameter bases take the constraint's
   members at declaration; `ty_non_augmenting_base()` is syntactic. A bare `C`/`this` inside generic `C` isn't its
-  own instantiation (lower.c TODO).
+  own instantiation (lower.c TODO). Probed 2026-10-23, matches tsgo (overloaded mixin constructors with differing or compatible instances, type-parameter bases in a class declaration and expression).
 - `never_reduced_prop` (permanent, perf: zod +4.1%, drizzle +0.9%): `ty_reduced()` skips members flagged
   `TYF_COULD_CONTAIN_TYPE_VARIABLES` unless `is_known_object_for_reduction`; tsc looks at every member.
 - `primitive_constraint_of` HACKs (permanent, perf): a deferred type in a declared constraint is no primitive (valibot
@@ -612,7 +605,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Generic tuples: `base_constraint` replaces only variadics with array constraints; `lower_tuple` keeps the written
   `T[]` for rests (tsc: `T`). `apply_mapping` steps code points (JS: UTF-16 units); `${symbol}` is silently `string`.
 - `builder_add_interface_member`: index signature types lowered eagerly; computed keys neither literal nor
-  string/number/symbol typed are dropped (declaration emit has its own `late_index_members()`).
+  string/number/symbol typed are dropped (declaration emit has its own `late_index_members()`). Probed 2026-10-23, matches tsgo (`[k]: number` with `k: any`).
 - Unique symbols: escaped names (`__@sym@12`) mapped back by `ty_unique_symbol_of_name`, so a string property `__@x@3`
   passes as a symbol; `instanceof_target_ok` matches `__@hasInstance@<id>` by text; one unique symbol per declaration
   (tsc: per merged property), so `check_subsequent_property` skips TS2717 between two.
@@ -645,7 +638,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - `never_index_read` (checker.c): an anonymous object indexed by never is never, except a mapped type, whose keys its
   declaration tells (`Record<string, T>[never]` is T, the instantiated declaration's keys); tsc reads index signatures everywhere, but resolving xstate's
   keyless mapped types tipped TS5115 (flagflip nosnc/sloppy +7). Correct: instantiation accounting that doesn't
-  depend on member resolution, or a lazy template for keyless mapped types.
+  depend on member resolution, or a lazy template for keyless mapped types. Probed 2026-10-23, matches tsgo (`r[undefined as never]` of a `Record<string, number>`).
 - `rest_literal()` (ty/lower.c) / `object_symbol()` (ty/order.c): a destructuring rest's binding symbol, which orders
   it in unions (tsc's getRestType symbol), lives in the anonymous type's `literal_expr` union slot (`rest_binding`,
   flagged `rest_of_binding`), free for synthetic objects; it is also kept in KEY_REST_SYMBOL links. Readers of
@@ -678,13 +671,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (`class_instance_member()`, not symbol flags; TS2612 skips isPropertyInitializedInConstructor);
   `check_property_modifiers` (TS2687) skips class methods (accessors are compared with, as a first declaration).
 - `ty_check_class_duplicate_members()` HACK: a late-bound name (`[k]`, `[Symbol.x]`) conflicts with the member table
-  (static `prototype`) without joining it; tsc also reports an early `a` against a later `get [k]` (k = "a") at both.
+  (static `prototype`) without joining it; tsc also reports an early `a` against a later `get [k]` (k = "a") at both. Probed 2026-10-23, matches tsgo (`a = 1; get [k]()` with `k = "a"`).
 - Emit helpers (`ty_check_emit_helpers`): spans by hand (`decorator_span()`, `function_error_span()`); "ambient" per
   site (`ClassDecl.is_ambient`, `Binding.ambient`, `BlockTypecheckCtx.ambient`; want NodeFlags.Ambient).
   `EMIT_HELPER_EXTENDS/ASSIGN/GENERATOR/VALUES/READ/SPREAD_ARRAY/MAKE_TEMPLATE_OBJECT` are dead (ES5/downlevelIteration
   only) but stay in the enum: `helpers.c`'s table is indexed by bit.
 - `unused_mark_jsdoc_links()` HACK: `{@link X}` is a use by text scan, looked up from the file's scope (fix: resolve
-  parsed tags). Member reads are keyed by declaration span start (`ty_mark_member_referenced`).
+  parsed tags). Member reads are keyed by declaration span start (`ty_mark_member_referenced`). Tested by ttttHackJsdocLinkShadowed (known failing: a link to a shadowed name keeps the import used). The fix needs the link's scope: the walk would resolve it, but deferred bodies aren't walked when the file's links are marked.
 - `program_apply_comment_directives`: suppression by tttt's error phase, not tsc's diagnostic kind; `\n` and ASCII
   `\s` only; relies on every comment going through `hop_comment`.
 - `SourceFile.unchecked` + `error_ctx_remove_unchecked`: skipLibCheck/noCheck/JS filtering happens after checking, so
@@ -706,7 +699,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `extends A<number>` is TS8023 too). Shown by: a probe / mutate.py.
 - `jsdoc_bind_comments()`: claims made by failed parse attempts stay; `@import` only at a list's top level; dotted
   `@typedef` names skipped; typedefs sharing a comment share its `@template`s. Correct: tsgo's per-tag reparse.
-  Shown by: jsstats.py, the sweep's JS packages.
+  Shown by: jsstats.py, the sweep's JS packages. Probed 2026-10-23, matches tsgo (two typedefs in one comment with one @template, a dotted @typedef, an @import mid-comment).
 - Fragile JSDoc threading (correct: JSDoc kept on the node, like tsgo's reparser): `SymbolDecl.jsdoc_type` is passed
   through every assignment-declaration site in scope.c (new sites must pass it; chains: outermost only);
   `jsdoc_apply_type_signature()` *moves* a written function type's TypeNodes; `Statement.expr_jsdoc_type` shares a
@@ -731,7 +724,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   qualified from there). tttt types don't know their expression: a function expression prints from its first
   parameter's scope (else the file), an object literal from the namespace/function body/block around a property written
   in it, a spread-only literal from nowhere; context sensitivity is guessed from member types. Correct: the literal's
-  type knows its node (or the resolve walk stores a scope on the Expr). Shown by: errtextdiff.py header buckets.
+  type knows its node (or the resolve walk stores a scope on the Expr). Shown by: errtextdiff.py header buckets. Probed 2026-10-23, matches tsgo (object literals, function expressions and a spread-only literal declared in a namespace, mismatching inside and outside it).
 
 ### Symbols baseline reconstruction (harness: tttt has no tsc-shaped member symbols)
 - `collect_prop_symbol()`: a non-object union member lacks the property only for binding patterns, because a property
@@ -765,8 +758,7 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   function.c, conditional.c, instantiate.c, flow.c, expr.c, ty.h; the taint prototype, notes/shared_graph.md): compiled out unless
   `-DTTTT_TAINT`, but the explicit kinds' early returns are wrapped in `TAINT_IF()`, which makes them harder to read.
   Kept so cleandiff can be rerun after each stage 4a-4c refactor. Delete them once the overlay protocol (4d) records
-  the same events for real. `instantiate.c`'s `TTTT_TAINT_EXP_TWIN` block is an experiment (G0's M1) and goes with M1's
-  fix. The intern hooks find a value's computation by matching a missed lookup's hash to the put that follows (a
+  the same events for real. The intern hooks find a value's computation by matching a missed lookup's hash to the put that follows (a
   1024-entry ring); a put with no matching miss gets an empty window, so it counts as clean (`unmatched` in the raw
   output: mostly structural kinds whose value is its key). The one-word `node_links` table has no hooks: only its
   explicit kinds are covered (FUNCTION_RETURN, BASE_CONSTRAINT, FUNCTION_FREE_PARAMS)
@@ -778,9 +770,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   atproto's whole solution gets it right but for one import, oauth-client alone at its default builders doesn't). The
   `EmitView` doesn't list in-memory files in directory listings (an `include` glob into a reference's `dist` misses
   them).
-- The CLI checks a config that would emit JavaScript as `noEmit` (`Options.implicit_no_emit`): its emit-only option
-  diagnostics (TS5055/5056 of .js outputs) are missing and noEmitOnError's exit code is 2 where tsc's is 1;
-  `scenarios.py` drops `EMIT_ONLY_CODES` (TS5011/5055/5056) from emitting commands. Lifts with JS emit.
+- The CLI checks a config that would emit JavaScript as `noEmit` (`Options.implicit_no_emit`), marked
+  `CompilerOptions.no_emit_implied`: the option checks of an emitting program (TS5011, TS5055/5056, TS5096) and the
+  exit status (noEmitOnError or a blocked output: 1) go by `compiler_options_no_emit_given()`, the config's own noEmit;
+  anything else that reads `no_emit` sees the forced one. Lifts with JS emit. Shown by: scenarios.py (no longer drops
+  TS5011/5055/5056 from emitting commands).
 - JavaScript declaration diagnostics (`declaration_diagnostics_check()`): `check_commonjs_exports()` repeats the
   CommonJS exports' serialization (for painting) into a scratch context, `check_js_commonjs_exports()` having reported
   them. `export_specifier_local()` (check_entity_name()): a module export merging `export { x }` with a dotted

@@ -1,0 +1,42 @@
+//// [test/cases/ttttHackJsdocLinkShadowed.ts] ////
+
+=== x.ts ===
+export const X = 1;
+>X : 1
+>1 : 1
+
+export const Y = 2;
+>Y : 2
+>2 : 2
+
+=== a.ts ===
+import { X, Y } from "./x";
+>X : 1
+>Y : 2
+
+/** {@link X} */
+function f() {}
+>f : () => void
+
+function g() {
+>g : () => number
+
+    const Y = 1;
+>Y : 1
+>1 : 1
+
+    /** {@link Y} */
+    function h() {}
+>h : () => void
+
+    h();
+>h() : void
+>h : () => void
+
+    return Y;
+>Y : 1
+}
+f; g;
+>f : () => void
+>g : () => number
+

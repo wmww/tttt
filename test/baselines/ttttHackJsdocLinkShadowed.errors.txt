@@ -1,0 +1,21 @@
+a.ts(1,13): error TS6133: 'Y' is declared but its value is never read.
+
+
+==== x.ts (0 errors) ====
+    export const X = 1;
+    export const Y = 2;
+==== a.ts (1 errors) ====
+    import { X, Y } from "./x";
+                ~
+!!! error TS6133: 'Y' is declared but its value is never read.
+    /** {@link X} */
+    function f() {}
+    function g() {
+        const Y = 1;
+        /** {@link Y} */
+        function h() {}
+        h();
+        return Y;
+    }
+    f; g;
+    

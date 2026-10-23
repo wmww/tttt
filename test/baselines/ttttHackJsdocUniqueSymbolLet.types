@@ -1,0 +1,15 @@
+//// [test/cases/ttttHackJsdocUniqueSymbolLet.ts] ////
+
+=== a.js ===
+/** @type {unique symbol} */
+let s = Symbol();
+>s : symbol
+>Symbol() : symbol
+>Symbol : SymbolConstructor
+
+/** @type {unique symbol} */
+const t = Symbol();
+>t : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+

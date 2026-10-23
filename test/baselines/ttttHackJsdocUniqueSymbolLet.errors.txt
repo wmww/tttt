@@ -1,0 +1,11 @@
+a.js(2,5): error TS1332: A variable whose type is a 'unique symbol' type must be 'const'.
+
+
+==== a.js (1 errors) ====
+    /** @type {unique symbol} */
+    let s = Symbol();
+        ~
+!!! error TS1332: A variable whose type is a 'unique symbol' type must be 'const'.
+    /** @type {unique symbol} */
+    const t = Symbol();
+    

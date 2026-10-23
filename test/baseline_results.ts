@@ -1123,11 +1123,6 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'ttttDestructuredReducedNeverSilent': {
-        errors: true,
-        symbols: true,
-        types: true,
-    },
     'ttttDisplayDepthTruncation': {
         errors: true,
         symbols: true,
@@ -1214,11 +1209,6 @@ const baselines = {
         types: true,
     },
     'ttttEscapedTypeInSpecifier': {
-        errors: true,
-        symbols: true,
-        types: true,
-    },
-    'ttttEsmNamespaceOfCjsDefaultBundler': {
         errors: true,
         symbols: true,
         types: true,
@@ -1369,8 +1359,28 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttHackAugmentationAliasConflict': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'ttttHackElseIfUnreachable': {
         errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttHackInstantiationKeepsViolating': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttHackJsdocLinkShadowed': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'ttttHackJsdocUniqueSymbolLet': {
+        errors: false,
         symbols: true,
         types: true,
     },
