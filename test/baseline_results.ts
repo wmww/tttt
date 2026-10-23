@@ -32,6 +32,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasErrorTypeNoConstraintCheck': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasOfReturnTypeEffectsCall': {
         errors: true,
         symbols: true,
@@ -1132,6 +1137,11 @@ const baselines = {
         types: true,
     },
     'ttttElaborateAfterSpreadElement': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttElaborateArrayLiteralLengthTupleLike': {
         errors: true,
         symbols: true,
         types: true,
@@ -2529,6 +2539,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionMemberNormalizedTargetName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionNonPublicNoSuggestion': {
         errors: true,
         symbols: true,
         types: true,

@@ -182,12 +182,22 @@ def run_tsc(work, names, retry=True):
         p.wait()
     ref = f'{work}/t/baselines/reference/conformance'
     os.makedirs(ref, exist_ok=True)
+    # (An empty file is a baseline the dying probe didn't finish writing, never a real one: 2026-10-23, an empty
+    # .errors.txt read as "tsc reports nothing" and made a mutant of 30 expected errors look spurious. Rerun as missing)
+    truncated = set()
     for j in range(jobs):
         local = f'{work}/tsc{j}/baselines/local/conformance'
         for f in os.listdir(local) if os.path.isdir(local) else []:
             if f.endswith(('.errors.txt', '.types', '.symbols')):
+                if os.path.getsize(f'{local}/{f}') == 0:
+                    truncated.add(f.split('.')[0])
+                    continue
                 shutil.move(f'{local}/{f}', f'{ref}/{f}')
         shutil.rmtree(f'{work}/tsc{j}')
+    for name in truncated:
+        for ext in ('.errors.txt', '.types', '.symbols'):
+            if os.path.exists(f'{ref}/{name}{ext}'):
+                os.remove(f'{ref}/{name}{ext}')
     have = {f.split('.')[0] for f in os.listdir(ref)}
     missing = [n for n in names if n not in have]
     if missing:

@@ -391,3 +391,26 @@ Fixed: misplaced imports/exports' alias errors (TS2305/TS2307) reported when a s
 (SymbolRare.unreported_errs); lone surrogates and line-breaking characters escaped in template literal type text. Left,
 all known: arrayFrom return-void, recursiveClassBaseType return-void (TS2310), unicodeLineSeparatorInMultilineComment
 never-const (harness writes no errors baseline).
+
+## Mutation seed 2310 leftovers (2026-10-23, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2310`: 10 -> 5 / 4008)
+- **missing TS2339 through deferred-check order** (arrayFrom delete-stmt and return-void: `getEither` returns void, so
+  `Array.from(inputARand, ({ a }): B => ...)` fails on the first argument). tsgo's only report is the deferred one: the
+  arrow is queued by checkNodeDeferred during the skip-context-sensitive inference pass, ahead of the failed call (queued
+  by getCandidateForOverloadFailure). Its body check asks for `a` before resolveUntypedCall context-checks the arrow,
+  so getTypeForBindingElement reads the parent from getContextuallyTypedParameterType, the failure candidate's
+  `unknown`, and reports `Property 'a' does not exist on type 'unknown'`. Once context-checked, assignParameterType's
+  unknown fallback gives `{ a: any }`, which is what both print. The non-generic `n(v, ({ d }) => d)` has no error in
+  tsgo (no inference pass, so the call is queued first). Cut down: `declare const v: void; declare function k<T>(x:
+  ArrayLike<T>, g: (t: T) => void): void; k(v, ({ d }) => d);`. Matching it means modelling tsgo's deferred order.
+  It's an extra error on an already-failing call.
+- **missing TS2536 from declaration emit** (arrayFakeFlatNoCrashInferenceDeclarations str-to-num, `@declaration`):
+  tsgo reports two TS2536 at the alias's type literals (positions inside `BadFlatArray`) while serializing `foo`'s
+  inferred type, in place of the original TS5088.
+- **position TS5115** (recursiveConditionalCrash3 extends-object): the "infinitely circular" error is one line off
+  (where the runaway is first met).
+- **position TS2322 from a sticky errorNode** (complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound add-optional):
+  tsc reports the whole-object message at the `type` shorthand property. An excess-property check on a member of the
+  target intersection (`type` is excess for `Partial<Omit<..., "id" | "type">>`) moved the relater's errorNode there;
+  that message was later replaced by the outer chain but the node wasn't restored. tttt models the moved node only when
+  the excess-property message itself is reported.
+- **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs.
