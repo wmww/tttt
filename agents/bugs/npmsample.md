@@ -60,4 +60,6 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   destructuring assignment. tsgo's control flow takes the assigned type from the rest element (getAssignedType of a
   rest property), tttt reports TS7034 at the declaration and TS7005 at the use. The array rest form `[first,
   ...others] = [1, 2, 3]` works. Guess: tttt's flow assignment for object-pattern targets skips the spread/rest
-  element. (claimed: cor10) [open]
+  element. tsc's getAssignedType has no case for a spread assignment: the rest gets the error type, so the auto-typed
+  `let` is any from there on; tttt's pattern_path_type returned nothing for an object rest, which left the auto type
+  (unassigned: TS7034). Fixed in pattern_path_type (src/ty/flow.c). [fixed 2026-10-23]

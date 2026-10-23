@@ -1179,8 +1179,9 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
         }
         case FLOW_PATH_REST: {
             // `[...a] = e`: an array of what e iterates to (tsc's getTypeOfDestructuredSpreadExpression); `{ ...a } = e`
-            // is tsc's errorType, which leaves the declared type
-            if (path->pattern->tag != EXPR_ARRAY) return nullptr;
+            // is tsc's errorType (getAssignedType has no case for a spread assignment): it leaves a declared type as it
+            // is, and an auto-typed `let a` is any from there on, not implicitly any where unassigned (TS7034)
+            if (path->pattern->tag != EXPR_ARRAY) return ty_intrinsic(me, TY_ERROR);
             Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
             return ty_array(me, element ? element : ty_intrinsic(me, TY_ERROR), false);
         }
