@@ -3649,6 +3649,25 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         for (Prop const* i = prop; i && !synthetic; i = i->target) synthetic = i->synthetic;
         if (synthetic) flags &= (u32)~PROP_METHOD;
         if (partial || setonly || readonly != !!(prop->flags & PROP_READONLY)) flags |= PROP_NO_VALUE_DECLARATION;
+        // (tsc's getSpreadSymbol keeps the symbol: one without a valueDeclaration stays so, a mapped or reverse mapped
+        // type's property, and an intersection's of several declarations (createUnionOrIntersectionProperty's
+        // hasNonUniformValueDeclaration), whose annotation isn't reused and whose comments aren't copied)
+        bool no_value = false;
+        for (Prop const* i = prop; i && !no_value; i = i->target) {
+            no_value = i->mapped || (i->flags & PROP_NO_VALUE_DECLARATION) || prop_decl_rare(i->decl)->reverse_of;
+        }
+        if (synthetic && !no_value) {
+            Prop const* const* parts = nullptr;
+            u32 part_count = ty_synthetic_prop_parts(me, prop, &parts);
+            PropDecl const* first = nullptr;
+            for (u32 k = 0; k < part_count && !no_value; k++) {
+                Prop const* root = parts[k];
+                while (root->target) root = root->target;
+                if (!first) first = root->decl;
+                else if (root->decl != first) no_value = true;
+            }
+        }
+        if (no_value) flags |= PROP_NO_VALUE_DECLARATION;
         if (partial) {
             // (A property, even of a method: tsc's tryMergeUnionOfObjectTypeAndEmptyObject. With addOptionality,
             // missing under exactOptionalPropertyTypes: `{ ...(c ? {} : { d: o.d }) }` is `{ d?: string }`)
@@ -3657,7 +3676,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         }
         // The annotation of the property it comes from still says what it is, unless instantiated (or made optional:
         // an optional one of a partial spread, `{ ...(o as Opts | undefined) }`, still is what it says)
-        TypeNode const* annotation = origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
+        TypeNode const* annotation = !(no_value && synthetic) && origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
             !prop_decl_rare(origin->decl)->overload_count && !origin->decl->symbol && declared_type == prop_type(me, origin) ? origin->decl->node : nullptr;
         // (A property spread in from an object literal reuses what that one reused: `{ ...{ ...b1, z } }`)
         if (!annotation && prop_decl_asserted(origin->decl) && declared_type == prop_type(me, origin)) annotation = prop_decl_asserted(origin->decl);

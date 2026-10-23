@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationSpreadMappedNoComments.ts] ////
+
+=== ttttDeclarationSpreadMappedNoComments.ts ===
+// A spread copy of a mapped type's property (Partial<Data>'s) has no valueDeclaration in tsc (getSpreadSymbol keeps the
+// mapped symbol): the declaration file doesn't copy the original member's comments (feathers' generators)
+interface Data {
+    /** The name */
+    name: string;
+>name : string
+
+    /** A description */
+    description: string;
+>description : string
+}
+interface Base {
+    /** The cwd */
+    cwd: string;
+>cwd : string
+}
+declare const args: Base & Partial<Data>;
+>args : Base & Partial<Data>
+
+export const spread = { ...args, extra: 1 };
+>spread : { name?: string | undefined; description?: string | undefined; cwd: string; extra: number; }
+>{ ...args, extra: 1 } : { name?: string | undefined; description?: string | undefined; cwd: string; extra: number; }
+>args : Base & Partial<Data>
+>extra : number
+>1 : 1
+
+declare const p: Partial<Data>;
+>p : Partial<Data>
+
+export const spreadMapped = { ...p };
+>spreadMapped : { name?: string | undefined; description?: string | undefined; }
+>{ ...p } : { name?: string | undefined; description?: string | undefined; }
+>p : Partial<Data>
+

@@ -1,0 +1,43 @@
+//// [test/cases/ttttDeclarationSpreadMappedNoComments.ts] ////
+
+=== ttttDeclarationSpreadMappedNoComments.ts ===
+// A spread copy of a mapped type's property (Partial<Data>'s) has no valueDeclaration in tsc (getSpreadSymbol keeps the
+// mapped symbol): the declaration file doesn't copy the original member's comments (feathers' generators)
+interface Data {
+>Data : Symbol(Data, Decl(ttttDeclarationSpreadMappedNoComments.ts, 0, 0))
+
+    /** The name */
+    name: string;
+>name : Symbol(Data.name, Decl(ttttDeclarationSpreadMappedNoComments.ts, 2, 16))
+
+    /** A description */
+    description: string;
+>description : Symbol(Data.description, Decl(ttttDeclarationSpreadMappedNoComments.ts, 4, 17))
+}
+interface Base {
+>Base : Symbol(Base, Decl(ttttDeclarationSpreadMappedNoComments.ts, 7, 1))
+
+    /** The cwd */
+    cwd: string;
+>cwd : Symbol(Base.cwd, Decl(ttttDeclarationSpreadMappedNoComments.ts, 8, 16))
+}
+declare const args: Base & Partial<Data>;
+>args : Symbol(args, Decl(ttttDeclarationSpreadMappedNoComments.ts, 12, 13))
+>Base : Symbol(Base, Decl(ttttDeclarationSpreadMappedNoComments.ts, 7, 1))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Data : Symbol(Data, Decl(ttttDeclarationSpreadMappedNoComments.ts, 0, 0))
+
+export const spread = { ...args, extra: 1 };
+>spread : Symbol(spread, Decl(ttttDeclarationSpreadMappedNoComments.ts, 13, 12))
+>args : Symbol(args, Decl(ttttDeclarationSpreadMappedNoComments.ts, 12, 13))
+>extra : Symbol(extra, Decl(ttttDeclarationSpreadMappedNoComments.ts, 13, 32))
+
+declare const p: Partial<Data>;
+>p : Symbol(p, Decl(ttttDeclarationSpreadMappedNoComments.ts, 14, 13))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Data : Symbol(Data, Decl(ttttDeclarationSpreadMappedNoComments.ts, 0, 0))
+
+export const spreadMapped = { ...p };
+>spreadMapped : Symbol(spreadMapped, Decl(ttttDeclarationSpreadMappedNoComments.ts, 15, 12))
+>p : Symbol(p, Decl(ttttDeclarationSpreadMappedNoComments.ts, 14, 13))
+

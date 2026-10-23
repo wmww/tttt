@@ -943,6 +943,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationSpreadMappedNoComments': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationSynthesizedLiterals': {
         errors: true,
         symbols: true,
