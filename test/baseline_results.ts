@@ -13811,6 +13811,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLibDomWebworkerConflicts': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLibInterfaceMergeIndexConstraint': {
         errors: true,
         symbols: true,
@@ -14695,6 +14700,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeAccessorMissingParens': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeArgumentConstraintFailureDefaults': {
         errors: true,
         symbols: true,
         types: true,
