@@ -5313,11 +5313,12 @@ static void program_finish_deferred_bodies(Program* me) {
 }
 
 // TTTT_FILE_TIMES
-static void print_file_time(char const* what, struct timespec start, SourceFile const* source) {
+// (One fprintf per line: the checker threads' lines interleave, scripts/perfshape.sh reads them)
+static void print_file_time(char const* what, struct timespec start, SourceFile const* source, u32 c, char const* more) {
     struct timespec end;
     timespec_get(&end, TIME_UTC);
     double ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
-    fprintf(stderr, "file time: %10.1f ms %s %s\n", ms, what, cstr_str(&source->canonical_path));
+    fprintf(stderr, "file time: %10.1f ms %s (checker %u%s) %s\n", ms, what, c, more, cstr_str(&source->canonical_path));
 }
 
 // Whether a diagnostic a checker reported is sure to be reported: nothing program_typecheck() filters afterwards can
@@ -5351,7 +5352,7 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const*
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
         }
         checker->observing_file = nullptr;
-        if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
+        if (debug_env.file_times) print_file_time("unused and declaration", file_start, source, c, "");
     }
 }
 
@@ -5737,7 +5738,11 @@ static void check_share(Program* me, u32 c, u32 count) {
         }
         segment[segment_count++] = at;
         struct timespec file_start;
-        if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
+        struct timespec file_cpu_start;
+        if (debug_env.file_times) {
+            timespec_get(&file_start, TIME_UTC);
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &file_cpu_start);
+        }
         if (debug_env.dup_census) dup_census_file(c, at, share_cost(source));
         struct timespec rb_cpu;
         u32 rb_limits = checker->instantiation_limit_hits, rb_types = checker_type_count(checker);
@@ -5779,9 +5784,14 @@ static void check_share(Program* me, u32 c, u32 count) {
             double file_ms = (double)(file_end.tv_sec - file_start.tv_sec) * 1e3 + (double)(file_end.tv_nsec - file_start.tv_nsec) / 1e6;
             segment_ms += file_ms;
             if (file_ms > segment_max_ms) segment_max_ms = file_ms;
-            print_file_time(my file_shares[at] == c ? "check" : "check (taken)", file_start, source);
             double end_ms = (double)(file_end.tv_sec - my check_start.tv_sec) * 1e3 + (double)(file_end.tv_nsec - my check_start.tv_nsec) / 1e6;
-            fprintf(stderr, "file time: checker %u holds %.1f MB, done at %.1f ms\n", c, (double)checker_memory(checker) / (1 << 20), end_ms);
+            // (Its thread's CPU time too: on a loaded machine the wall includes waiting for a core)
+            struct timespec file_cpu_end;
+            clock_gettime(CLOCK_THREAD_CPUTIME_ID, &file_cpu_end);
+            double cpu_ms = (double)(file_cpu_end.tv_sec - file_cpu_start.tv_sec) * 1e3 + (double)(file_cpu_end.tv_nsec - file_cpu_start.tv_nsec) / 1e6;
+            char more[96];
+            snprintf(more, sizeof more, ", cpu %.1f ms, holds %.1f MB, done at %.1f ms", cpu_ms, (double)checker_memory(checker) / (1 << 20), end_ms);
+            print_file_time(my file_shares[at] == c ? "check" : "check taken", file_start, source, c, more);
         }
         for (; moot_watch && scanned < vec_error_size(&checker->errs->errors); scanned++) {
             if (!error_surely_reported(&checker->errs->errors.data[scanned])) continue;
@@ -5819,6 +5829,13 @@ static void check_share(Program* me, u32 c, u32 count) {
     atomic_store_explicit(&my share_states[c], 2, memory_order_release);
     check_segment_after(me, checker, c, segment, segment_count);
     free(segment);
+    if (debug_env.file_times) {
+        // (Its idle tail: the last checker's finish minus this one's, scripts/perfshape.sh)
+        struct timespec end;
+        timespec_get(&end, TIME_UTC);
+        fprintf(stderr, "file time: checker %u finished at %.1f ms\n", c,
+            (double)(end.tv_sec - my check_start.tv_sec) * 1e3 + (double)(end.tv_nsec - my check_start.tv_nsec) / 1e6);
+    }
     u64 held = checker_memory(checker);
     if (held > checker->peak_memory) checker->peak_memory = held;
     // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
@@ -6255,6 +6272,8 @@ static void recheck_stale_undefined_props(Program* me, ErrorCtx* checker_errs, u
 
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
+    struct timespec typecheck_start;
+    timespec_get(&typecheck_start, TIME_UTC);
     my errs->phase = ERROR_PHASE_TYPECHECK;
     set_compiler_options(&my options);
     program_make_current(me);
@@ -6323,6 +6342,10 @@ void program_typecheck(Program* me) {
     my share_first = c_new_n(u32, count);
     deal_files(me);
     timespec_get(&my check_start, TIME_UTC);
+    if (debug_env.file_times) {
+        fprintf(stderr, "file time: checkers started %.1f ms into program_typecheck\n",
+            (double)(my check_start.tv_sec - typecheck_start.tv_sec) * 1e3 + (double)(my check_start.tv_nsec - typecheck_start.tv_nsec) / 1e6);
+    }
     CheckShares shares = { .program = me, .count = count };
     u32 threads = my threads ? my threads : 1;
     u32 helpers = threads > count && program_has_deferred_bodies(me) ? threads - count : 0;

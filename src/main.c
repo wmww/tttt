@@ -172,13 +172,17 @@ static void phase_done(Options const* opts, Output* out, const char* name, doubl
         struct rusage usage;
         getrusage(RUSAGE_SELF, &usage);
         static long faults_last;
-        static double sys_last;
+        static double sys_last, user_last;
         double sys = (double)usage.ru_stime.tv_sec * 1e3 + (double)usage.ru_stime.tv_usec / 1e3;
+        double user = (double)usage.ru_utime.tv_sec * 1e3 + (double)usage.ru_utime.tv_usec / 1e3;
+        // (The process' CPU over the phase, every thread: over the wall, how many cores the phase kept busy)
         out_eprintln(out, "time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB, main thread on a CPU ",
-            main_cpu - main_cpu_last, " ms, ", usage.ru_minflt - faults_last, " faults, sys ", sys - sys_last, " ms)");
+            main_cpu - main_cpu_last, " ms, ", usage.ru_minflt - faults_last, " faults, sys ", sys - sys_last,
+            " ms, process CPU ", user + sys - user_last - sys_last, " ms)");
         main_cpu_last = main_cpu;
         faults_last = usage.ru_minflt;
         sys_last = sys;
+        user_last = user;
     }
     *last = now;
 }
@@ -1108,7 +1112,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         phase_done(opts, out, "typecheck", &last_time);
         if (opts->time) {
             out_eprintln(out, "time: checkers: ", program_checker_count(program), " (", (i64)(program_checked_source_bytes(program) >> 10),
-                " KB of checked source)");
+                " KB of checked source, ", opts->threads, " threads)");
             for (u32 i = 0; i < program_checker_count(program); i++) {
                 Checker const* checker = program_checker_at(program, i);
                 out_eprintln(out, "time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
