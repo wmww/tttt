@@ -1,0 +1,14 @@
+//// [test/cases/ttttExportEqualsImportAliasCycle.ts] ////
+
+=== a.ts ===
+import d from "./a"; const v = { n: 1, m: d }; export = v;
+>d : Symbol(d, Decl(a.ts, 0, 6))
+>v : Symbol(v, Decl(a.ts, 0, 26))
+>n : Symbol(n, Decl(a.ts, 0, 32))
+>m : Symbol(m, Decl(a.ts, 0, 38))
+>d : Symbol(d, Decl(a.ts, 0, 6))
+>v : Symbol(v, Decl(a.ts, 0, 26))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(a.ts, 1, 5))
+

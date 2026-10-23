@@ -2431,7 +2431,60 @@ static Ty const* guarded_assignment_symbol_type(Checker* me, Symbol const* symbo
     return type;
 }
 
+// An import of a module with `export =` (a name of it, its default, the namespace): tsc resolves it through the type of
+// what `export =` assigns (getExternalModuleMember's getPropertyOfType, getTargetOfModuleDefault, resolveESModuleSymbol),
+// so a cycle through that type is the alias's own (resolveAlias re-entered: TS2303). Null for any other symbol
+static PortItem const* export_equals_import(Symbol const* symbol, Symbol** export_equals) {
+    PortItem const* item = symbol->alias ? symbol->alias->item : nullptr;
+    if (!item || item->jsdoc || !item->module_ref ||
+        (item->tag != PORT_IMPORT_DEFAULT && item->tag != PORT_IMPORT_GATHER && item->tag != PORT_IMPORT_SPECIFIC) ||
+        (item->tag == PORT_IMPORT_GATHER && item->is_require)
+    ) {
+        return nullptr;
+    }
+    Symbol* module = binder_module_of_ref(symbol->binder, item->module_ref);
+    Symbol* found = module ? symbol_get_export(module, c_sv("export=")) : nullptr;
+    if (!found) return nullptr;
+    *export_equals = found;
+    return item;
+}
+
+static Ty const* alias_type_of_symbol(Checker* me, Symbol const* symbol);
+
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
+    Symbol* export_equals = nullptr;
+    PortItem const* item = symbol && (symbol->flags & SYMBOL_ALIAS) ? export_equals_import(symbol, &export_equals) : nullptr;
+    if (!item) return alias_type_of_symbol(me, symbol);
+    // (Once circular its type is the error type for good: tsc's getTypeOfAlias keeps the resolvedType it failed with)
+    if (intern_get(&my links, (u64[]){ KEY_ALIAS_TYPE_CIRCULAR, (u64)(uintptr_t)symbol }, 2)) {
+        TY_WORKER_STATE(me);
+        return ty_intrinsic(me, TY_ERROR);
+    }
+    ty_resolving_push(me, RESOLVING_DECLARATION, symbol);
+    Ty const* ret = alias_type_of_symbol(me, symbol);
+    if (ty_resolving_pop(me)) {
+        TY_WORKER_STATE(me);
+        *intern_slot(me, &my links, (u64[]){ KEY_ALIAS_TYPE_CIRCULAR, (u64)(uintptr_t)symbol }, 2) = symbol;
+        ty_error_at(me, item->decl_name, 2303, cstr_d("Circular definition of import alias '", item->decl_name, "'."));
+        // (A default import of the file's own module goes through its `export =` alias's own type, getTypeOfAlias,
+        // which is on the cycle too: TS7022 at it, named by what it assigns)
+        SourceFile const* importer = span_source(item->decl_name);
+        bool self = importer && importer->scope && importer->scope->container &&
+            binder_module_of_ref(symbol->binder, item->module_ref) == importer->scope->container;
+        if (self && item->tag == PORT_IMPORT_DEFAULT && compiler_options()->no_implicit_any && export_equals->decl_count &&
+            span_valid(export_equals->decls[0].full) && (export_equals->flags & SYMBOL_ALIAS) && export_equals->alias &&
+            span_valid(export_equals->alias->name)
+        ) {
+            ty_error_at(me, span_with_semicolon(export_equals->decls[0].full), 7022, cstr_d("'", export_equals->alias->name,
+                "' implicitly has type 'any' because it does not have a type annotation and is referenced directly or "
+                "indirectly in its own initializer."));
+        }
+        ret = ty_intrinsic(me, TY_ERROR);
+    }
+    return ret;
+}
+
+static Ty const* alias_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (symbol && (symbol->flags & SYMBOL_ALIAS)) {
         Ty const* namespace_import = namespace_import_type(me, symbol);
         if (namespace_import) return namespace_import;

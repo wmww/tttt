@@ -1,0 +1,17 @@
+//// [test/cases/ttttExportEqualsImportAliasCycle.ts] ////
+
+=== a.ts ===
+import d from "./a"; const v = { n: 1, m: d }; export = v;
+>d : any
+>v : any
+>{ n: 1, m: d } : { n: number; m: any; }
+>n : number
+>1 : 1
+>m : any
+>d : any
+>v : any
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
