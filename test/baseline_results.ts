@@ -32,6 +32,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasOfReturnTypeEffectsCall': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasReentersBelowVarianceBarrier': {
         errors: true,
         symbols: true,
@@ -1933,6 +1938,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttOptionalCallStatementEffects': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttOverloadExactOptionalElaboration': {
         errors: true,
         symbols: true,
@@ -2353,6 +2363,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeParameterMissingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeofImportPropertyChain': {
         errors: true,
         symbols: true,
         types: true,
