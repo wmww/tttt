@@ -29,6 +29,11 @@ while test $# -gt 0; do
 done
 REF=test/instrcount.txt
 VSDIR=
+# (Every temporary file and directory, removed however the script ends: a killed quickgate left them in /tmp)
+WORK=$(mktemp -d /tmp/instrcount.XXXXXX)
+TEMPS=("$WORK")
+trap 'rm -rf "${TEMPS[@]}"' EXIT
+trap 'exit 130' INT TERM HUP
 if test -n "$VS"; then
     test -z "$SAVE" || { echo "instrcount.sh: --save takes no --vs" >&2; exit 2; }
     if test -n "$FAST"; then
@@ -45,7 +50,7 @@ if test -n "$VS"; then
     VSDIR=$(dirname "$(dirname "$VSBIN")")
     VSKIND=$(basename "$(dirname "$VSBIN")")
     REF=$(mktemp /tmp/instrcount-ref.XXXXXX)
-    trap 'rm -f "$REF"' EXIT
+    TEMPS+=("$REF")
     echo "(against $VS: $VSBIN)"
 fi
 test -n "$BIN" || BIN=$(scripts/fastbuild.sh --measured)
@@ -103,7 +108,7 @@ measure() {
         done
         echo perf
     else
-        dir=$(mktemp -d /tmp/instrcount.XXXXXX)
+        dir=$(mktemp -d "$WORK/callgrind.XXXXXX")
         for n in "$@"; do
             valgrind --tool=callgrind --main-stacksize=67108864 --callgrind-out-file="$dir/$n.out" "$bin" "${ARGS[@]}" \
                 "$(realpath "${C[$n]}")" > /dev/null 2> "$dir/$n.log" &
@@ -122,6 +127,7 @@ measure() {
 # binary is measured in parallel with ours (counts, not time: load doesn't skew them); its counts are cached by tool,
 # corpus and build kind in its abbuild directory (same tree, same binary, same count)
 OURS=$(mktemp /tmp/instrcount-ours.XXXXXX)
+TEMPS+=("$OURS" "$OURS.n")
 if test -n "$VS"; then
     MISSING=()
     for n in "${NAMES[@]}"; do
@@ -129,6 +135,7 @@ if test -n "$VS"; then
     done
     if test ${#MISSING[@]} -gt 0; then
         THEIRS=$(mktemp /tmp/instrcount-theirs.XXXXXX)
+        TEMPS+=("$THEIRS")
         measure "$VSBIN" "${MISSING[@]}" > "$THEIRS" &
         measure "$BIN" "${NAMES[@]}" > "$OURS"
         wait
