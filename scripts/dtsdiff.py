@@ -81,10 +81,14 @@ def repo_commits():
 
 
 def project_spec(name):
-    """(cwd, -p argument) of a project"""
+    """(cwd, -p argument) of a project. The cwd is a real path: in a worktree thirdparty/corpora and thirdparty/sources
+    are symlinks to the main tree's, which neither compiler resolves for a project's own files, so the written
+    `.d.ts.map` `sources` (relative to the out dir) would name the worktree's path where the cached tsgo side names the
+    main tree's"""
     if name.startswith(CORPUS_PREFIX):
-        return ROOT, realworld.CORPORA[name[len(CORPUS_PREFIX):]]
-    return sourcesweep.SOURCES, name
+        p = os.path.join(ROOT, realworld.CORPORA[name[len(CORPUS_PREFIX):]])
+        return os.path.realpath(os.path.dirname(p)), os.path.basename(p)
+    return os.path.realpath(sourcesweep.SOURCES), name
 
 
 def project_dir(name):

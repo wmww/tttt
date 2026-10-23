@@ -138,12 +138,6 @@ intersection's property symbol to bugs/type_core.md.
   bugs/sourcesweep_build.md mentions b4run too) and `dtsdiff.py --show` prints nothing for it. Find out what the
   sandboxed emit run does there (exit code, stderr) and whether tttt should still write the project's declarations as
   tsgo does (1503 projects emit; tsgo wrote this one).
-- `scripts/dtsdiff.py` run from a worktree (`scripts/worktree.sh`, corpora symlinked) reports the corpora's `.d.ts.map`
-  files as mismatching on `map: sources` (effect 950 / 1900 files, tsc 78 / 156) and a few `missing file`s (react,
-  excalidraw); the same commit from the main tree matches 4 / 4. A path artifact of the symlinked `thirdparty/corpora`
-  (the maps' `sources` are relative to a realpath'd or non-realpath'd root), not a tttt difference. Either make the
-  script realpath the project root consistently, or document "run dtsdiff from the main tree" in its header; until
-  then a gate worktree's oracles.py dts line is not comparable to the main tree's (2026-10-23).
 - **Types baseline: a nested package's module named by the bare specifier** (2026-10-23, corC): with
   `r/node_modules/foo/node_modules/nested` reached only through `foo`, tsgo's types baseline prints
   `Promise<typeof import("foo/node_modules/nested")>` for `foo`'s `load()`, tttt `typeof import("nested")` (the
