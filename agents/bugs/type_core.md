@@ -204,7 +204,7 @@ passing tests).
   referenced when x.ts reports unused members; a checker that never checked y.ts reports TS6133. `tsgo --checkers 1`
   and the suite baseline report nothing, tsgo's default (4 checkers) reports TS6133; tttt at `--checker-memory 0` and
   `TTTT_CHECK_ONLY=x.ts` report it too. Same rule as tsc, so scripts/oracles.py's recycle comparison skips it with
-  92-R16b (HISTORY_DEPENDENT). Removing it would mean a program-wide reference pass tsgo doesn't have. [tsgo-shared]
+  92-R16b (HISTORY_DEPENDENT). Removing it would mean a program-wide reference pass tsgo doesn't have. [tsgo-shared] [tsgo]
 - First-checker-wins circularity diagnostics make `--checkers 4` output vary run to run (bun's 92-R16b, 2026-10-23):
   a.ts `type A = { [K in "a"]: B[K & keyof B] }; declare const a: A; a.a;`, b.ts the same with A and B swapped.
   TS2615 is reported where the cycle is first met, so it depends on history, in tsc too: with `"files": ["b.ts",

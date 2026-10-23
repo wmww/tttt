@@ -148,7 +148,7 @@ intersection's property symbol to bugs/type_core.md.
 - **`import("pkg/dist/x.js")` against tsgo's `import("pkg/dist/x")` in a printed type** (corF 2026-10-23): the tools
   worker's kebo case (scratchpad briefs/kebo-ts7022-case.ts, mobx-state-tree under node_modules with `typings`,
   module preserve / bundler) prints `types.model`'s return type with the `.js` extension where tsgo drops it. Uninvestigated. [text]
-- [open] bun's 54-L02a (2026-10-23): a misplaced `export { x as y }` in a function or block (TS1233) declares an alias
+- bun's 54-L02a (2026-10-23): a misplaced `export { x as y }` in a function or block (TS1233) declares an alias
   in the block's locals that nobody resolves while binding (port_statement_lookup_names returns early for
   wrong_context). A use of `y` inside a deferred body then resolves it from a checker: symbol_resolve_alias on the
   frozen binder, scope.c's "Alias resolved while typechecking" log_error, a shared-state write during checking (a
@@ -158,7 +158,7 @@ intersection's property symbol to bugs/type_core.md.
   the deferred body's resolve shard from the log) removes the log and makes both modes agree, but on the poorer
   output: the TS2304s come from resolve_alias_target's unreported_errs path, which needs understanding. tsc reports
   the specifier's TS2304 only when the alias is used (www -> xxx, a type use sss -> ttt), and module exports'
-  aliases through checkExternalModuleExports presumably (bbb). tsgo's output for the case is in test/buncases.
+  aliases through checkExternalModuleExports presumably (bbb). tsgo's output for the case is in test/buncases. [open]
 - `thirdparty/ensure-typescript.sh`'s Go build cache cap (clean when over 4 GB) ran while another process was linking
   from the same GOCACHE (tsgotrace/overlaycheck builds share it): the link failed with "cannot open file .../cache/..:
   no such file" and the rerun succeeded. Take the script's flock around the clean, or clean only when no `go` process
