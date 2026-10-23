@@ -46,6 +46,11 @@ typedef struct Error {
     // (the index of the file being checked), which is the one a single checker reports
     u64 once_key;
     u32 once_order;
+    // A private member nothing read (TS6133/TS6138, unused.c): reported unless a file checked no later than this one
+    // (unread_order, its index among the checked files) read it in any checker (program_member_referenced()), which is
+    // what one checker in program order sees when it reports the file's unused members (tsc's checkSourceFile)
+    char const* unread_member;
+    u32 unread_order;
     // A content mapper's own diagnostic (tsgo's external diagnostic, plan 56): its diagnostic source, printed in
     // place of `TS` (`box1000`); owned by the file's ContentMapped. Null for tttt's own
     char const* source;
@@ -93,6 +98,22 @@ static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
 // @ts-expect-error/@ts-ignore would miss the errors merged back
 static inline ErrorCtx error_ctx_scratch(ErrorCtx const* like) { return (ErrorCtx){ .phase = like->phase }; }
 void error_ctx_drop(ErrorCtx* me);
+// While a checker checks its share (program.c's check_share()): its program's flag, set when a diagnostic whose site depends on what
+// the checker saw before is reported into any context (error_is_history_dependent(): program_typecheck()'s rerun in one
+// checker)
+extern thread_local _Atomic bool* error_history_flag;
+// The diagnostics a checker reports where it first runs into something it then caches: the instantiation and relation
+// limits (TS2589, TS5114, TS5115, TS2590, TS2321, TS2859) and the circularities (TS2615, TS7022, TS7023, TS7024, TS2456,
+// TS2502). Which file reaches it first decides where, and what the cached error type silences afterwards
+static inline bool error_is_history_dependent(unsigned ts_code) {
+    switch (ts_code) {
+        case 2589: case 5114: case 5115: case 2590: case 2321: case 2859:
+        case 2615: case 7022: case 7023: case 7024: case 2456: case 2502:
+            return true;
+        default:
+            return false;
+    }
+}
 // tsc's formatDiagnosticsWithColorAndContext (`--pretty`) of one diagnostic, lines ending in nl, file_name naming the
 // files of the diagnostic and its related information
 typedef char const* (*ErrorFileNamer)(SourceFile const* source);

@@ -216,13 +216,13 @@ void program_offer_listing(void* program, csview dir, csview const* names, signe
 // After program_typecheck(): a deferred body's materialization could be told from the eager parse and walk (a syntax
 // error in a body, a signature that would have seen the body's names): the output is wrong, run again without deferral
 bool program_defer_failed(Program const* me);
-// A checker reported an instantiation or relation limit (TS2589, TS5114, TS5115, TS2590, TS2321, TS2859; any thread).
-// Where a limit trips, and what the error type it caches silences afterwards, depends on what the checker saw before
-// (tsc's too), so after program_typecheck() with several checkers or recycled ones the output is only a single
-// checker's in program order when it is rerun so (program_typecheck(): program_limit_history_dependent())
-void program_note_limit(Program* me);
-// After program_typecheck(): a limit was reported by a run whose history isn't one checker's in program order (more
-// than one checker, or a checker recycled)
+// A checker read a private member (its declaration's text) while checking the order-th checked file: the program keeps
+// the earliest such file over every checker (any thread), which decides the unused member reports (Error.unread_member)
+void program_member_referenced(Program* me, char const* member, u32 order);
+// While program_typecheck() runs: a checker reported an instantiation limit or a circularity (error_is_history_dependent(),
+// any thread) in a run whose history isn't one checker's in program order (more than one checker, or a checker
+// recycled). Where it is reported, and what the error type it caches silences afterwards, depends on what the checker
+// saw before (tsc's too): program_typecheck() then checks again in one checker
 bool program_limit_history_dependent(Program const* me);
 // After program_typecheck(): whether any of its checkers was recycled
 bool program_recycled(Program const* me);

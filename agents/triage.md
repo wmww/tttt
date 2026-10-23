@@ -197,10 +197,17 @@ intersection's property symbol to bugs/type_core.md.
   lib.ts(1,13) plus TS2315 at lib.ts(1,37), a.ts(2,17) and b.ts(2,17). tttt reports the same, plus a TS2615 "Type of
   property 'a' circularly references itself" at lib.ts(1,37) at K1, and at a.ts(2,17) and lib.ts(1,37) at K2. Two
   bugs: the TS2615 shouldn't be there once the alias is circular (tsgo resolves it as the error type first), and its
-  site depends on the checker. [open]
+  site depends on the checker. The site is K-independent since the history rerun (det3, 2026-10-23). The spurious one:
+  tsgo's resolveMappedTypeMembers resolves the declared template eagerly (getTemplateTypeFromMappedType), so the alias
+  cycle is found there, before any getTypeOfMappedSymbol pushes. tttt's members.c lowers the template lazily, under
+  the property's RESOLVING_PROP (a comment there says so). Lowering it eagerly at the members (tried: the root
+  MappedInfo's ty_mapped_template() before `Prop* template`) fixes this case, but breaks bun92-R16b (its TS2615 pair
+  goes) and bun93-R01d. tttt's `keyof` of a mapped type resolves the members, which tsgo's getIndexType doesn't, so
+  the eager template meets the other mapped type's members in flight. Needs keyof's laziness first. [open]
 - **Circularity codes in the one-checker recheck trigger** (corH, 2026-10-23, counting stopped by the npm priority):
   tsgo's caches report TS2615/TS7022/TS7023/TS7024/TS2456/TS2502 in 111 of 6773 source-sweep configs (77 of them
   nest's TS7023, 18 repos), 0 of 8595 DT packages, 138 of 2411 bun cases. TTTT_DEBUG_CYCLE=1 (it now prints each
   step's file) at K1 printed a LazyType cycle in 11 of the 111, all within one file; the other 100 are return-type
   cycles the trace doesn't show (TS7023). kdiff -k 16 on those 18 repos' 1274 configs, twice: 0 differ. So no flake in
-  the sweep from these codes yet; the known ones are bun 92-R16b and sequelize. [note]
+  the sweep from these codes yet; the known ones are bun 92-R16b and sequelize. Since det3's commit after
+  ca2787123 the rerun triggers on these codes outright (documentation.md). [note]

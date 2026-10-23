@@ -108,6 +108,18 @@ Conclusion: on the sweep's projects the defaults, recycling and the invocation a
 the human's "over half of large tsgo-clean projects" (private projects, single-threaded too, per the coordinator) is
 a training-set gap, not a checker-count one: the measure is fresh large repositories (vision.md).
 
+## The one-checker rerun on history-dependent diagnostics (2026-10-23, det3, release builds, this box, load 7-40)
+Trigger: a limit (TS2589/5114/5115/2590/2321/2859) or a circularity (TS2615/7022/7023/7024/2456/2502) reported by a
+run with several checkers or a recycled one; program_typecheck() checks again in one checker (documentation.md).
+- How often: tsgo's caches report a limit in 17 of the source sweep's 6852 configs, a circularity in 111 (77 nest
+  samples, mostly TS7023), 0 of DT's 8595, 138 of bun's 2411 cases; tttt reruns 15 + 108 of those sweep configs.
+- Cost at the defaults, best of 5 (load ~7 for the first two, ~37 for the rest), before -> with the rerun:
+  vue corpus 0.13 -> 0.67 s (peak 424 -> 436 MB), better-auth/packages/better-auth 0.14 -> 0.48 s (528 -> 529 MB),
+  inbox-zero 0.99 -> 2.03 s (756 -> 781 MB), hop-protocol 0.81 -> 2.30 s (1192 -> 1207 MB), soybean-admin 0.59 ->
+  1.60 s. The 111 circularity configs one run each: 50.5 -> 60.6 s in total.
+- Reusing the parsed program (0724c2984) against the CLI restart (7ca8d73ea): vue 0.73 -> 0.67 s, better-auth 0.56 ->
+  0.48 s: the one-checker check is most of the cost.
+
 ## Random npm projects (scripts/npmsample.py; agents/notes/npm_sampling.md)
 `scripts/npmsample.py --seed S` (50 projects per seed, the first accepted in sample order; tsgo 7.1 via tttt-oracle,
 tttt at its defaults, both sandboxed; records in test/npmsample/S.*; divergences in agents/bugs/npmsample.md).

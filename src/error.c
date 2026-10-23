@@ -786,11 +786,22 @@ static Error* global_insert(ErrorCtx* me, Error error) {
     return vec_error_insert_n(&my errors, index, &error, 1).ref;
 }
 
+thread_local _Atomic bool* error_history_flag;
+
+static inline void note_history_dependent(unsigned ts_code) {
+    if (__builtin_expect(error_history_flag != nullptr, 0) && error_is_history_dependent(ts_code) &&
+        !atomic_load_explicit(error_history_flag, memory_order_relaxed)
+    ) {
+        atomic_store(error_history_flag, true);
+    }
+}
+
 Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message) {
     if (!me) {
         cstr_drop(&message);
         return nullptr;
     }
+    note_history_dependent(ts_code);
     if (my frozen) log_error("Reported into a frozen ErrorCtx (a checker's diagnostic that bypasses its own): TS", ts_code, ": ", message);
     return global_insert(me, (Error){ .message = message, .ts_code = ts_code, .phase = my phase });
 }
@@ -858,6 +869,7 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
         cstr_drop(&message);
         return nullptr;
     }
+    note_history_dependent(ts_code);
     // An unchecked lib file (skipDefaultLibCheck, skipLibCheck: the suite's harness sets the former) reports nothing,
     // though names in it still resolve lazily (with a partial `@lib` some of them don't exist). A checked one reports
     // like any file, also what checking another file finds in it (the lib side of a conflict with a user declaration)

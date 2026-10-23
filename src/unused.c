@@ -77,6 +77,7 @@ void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning) {
 
 typedef struct Reporter {
     ErrorCtx* errs;
+    u32 order; // The file's index among the checked files (unused_report())
     bool locals; // noUnusedLocals
     bool parameters; // noUnusedParameters
 } Reporter;
@@ -89,18 +90,26 @@ static bool is_unused(Symbol const* symbol) {
     return symbol && symbol->is_local && !symbol->referenced;
 }
 
-static void report(Reporter const* r, bool parameter, Span at, unsigned code, cstr message) {
+static Error* report(Reporter const* r, bool parameter, Span at, unsigned code, cstr message) {
     // (Not about a declaration whose parsing reported an error: tsc's checkSourceFileWorker skips a containing node
     // that containsParseError. The diagnostic's own node stands in for the containing one)
     if (!(parameter ? r->parameters : r->locals) || source_file_parse_error_within(at)) {
         cstr_drop(&message);
-        return;
+        return nullptr;
     }
-    error_ctx_error_s(r->errs, at, code, message);
+    return error_ctx_error_s(r->errs, at, code, message);
 }
 
-static void report_never_read(Reporter const* r, bool parameter, Span at, Span name) {
-    report(r, parameter, at, 6133, cstr_d("'", name, "' is declared but its value is never read."));
+static Error* report_never_read(Reporter const* r, bool parameter, Span at, Span name) {
+    return report(r, parameter, at, 6133, cstr_d("'", name, "' is declared but its value is never read."));
+}
+
+// A private member this checker saw no read of in a file checked no later than this one: reported, unless another
+// checker saw one (program_typecheck() drops it then: Error.unread_member)
+static void unread_member(Reporter const* r, Error* error, Span member) {
+    if (!error) return;
+    error->unread_member = member.buf;
+    error->unread_order = r->order;
 }
 
 // tsc's isUnreferencedVariableDeclaration: a pattern whose elements all are, a name never read (`excused`: one whose
@@ -425,15 +434,15 @@ static void report_class_members(Reporter const* r, ClassDecl const* me) {
                 if (i->tag == CLASS_ITEM_METHOD ? i->method.is_declare : i->field.is_declare) break;
                 // An accessor pair is reported on the getter
                 if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && ty_class_accessor_getter(checker, i)) break;
-                if (ty_member_is_referenced(checker, i->span)) break;
-                report_never_read(r, false, name, name);
+                if (ty_member_referenced_order(checker, i->span) <= r->order) break;
+                unread_member(r, report_never_read(r, false, name, name), i->span);
             }   break;
             case CLASS_ITEM_CONSTRUCTOR:
                 for_each (arg, vec_function_arg, &i->constructor.func.args) {
                     if (!arg->is_parameter_property || arg->access != ACCESS_MODIFIER_PRIVATE) continue;
-                    if (ty_member_is_referenced(checker, arg->span)) continue;
+                    if (ty_member_referenced_order(checker, arg->span) <= r->order) continue;
                     Span name = arg->initializer.binding.content_span;
-                    report(r, false, name, 6138, cstr_d("Property '", name, "' is declared but its value is never read."));
+                    unread_member(r, report(r, false, name, 6138, cstr_d("Property '", name, "' is declared but its value is never read.")), arg->span);
                 }
                 break;
             default:
@@ -442,9 +451,9 @@ static void report_class_members(Reporter const* r, ClassDecl const* me) {
     }
 }
 
-void unused_report(SourceFile const* file, ErrorCtx* errs) {
+void unused_report(SourceFile const* file, ErrorCtx* errs, u32 order) {
     CompilerOptions const* options = compiler_options();
-    Reporter r = { .errs = errs, .locals = options->no_unused_locals, .parameters = options->no_unused_parameters };
+    Reporter r = { .errs = errs, .order = order, .locals = options->no_unused_locals, .parameters = options->no_unused_parameters };
     for (u32 i = 0; i < file->unused_count; i++) {
         UnusedCandidate const* candidate = &file->unused[i];
         switch (candidate->kind) {

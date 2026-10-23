@@ -1,0 +1,41 @@
+//// [test/cases/ttttUnusedPrivateReadLaterFile.ts] ////
+
+=== x.ts ===
+// A private member read only by a later file is unused when x.ts is checked: tsc reports a file's unused members when
+// it has checked it (checkSourceFile), so only the reads of the files checked before count. In tttt the marks carry the
+// earliest file that read the member, over every checker (program_member_referenced()), so the report doesn't depend on
+// the checker count or on which checker read it
+export class C { private x = 1; private y = 2 }
+>C : C
+>x : number
+>1 : 1
+>y : number
+>2 : 2
+
+=== y.ts ===
+import { C } from "./x";
+>C : typeof C
+
+new C()["x"];
+>new C()["x"] : number
+>new C() : C
+>C : typeof C
+>"x" : "x"
+
+=== z.ts ===
+import "./w";
+export class D { private z = 1 }
+>D : D
+>z : number
+>1 : 1
+
+=== w.ts ===
+import { D } from "./z";
+>D : typeof D
+
+new D()["z"];
+>new D()["z"] : number
+>new D() : D
+>D : typeof D
+>"z" : "z"
+

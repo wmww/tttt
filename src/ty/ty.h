@@ -1214,6 +1214,9 @@ struct Checker {
     u32 recycles;
     u64 peak_memory;
     u32 file_order; // The index (among the checked files) of the file it checks, for Error.once_order
+    // The same while its statements are checked, UINT32_MAX after (the unused and declaration pass): the file a read of
+    // a private member is counted for (ty_mark_member_referenced())
+    u32 member_ref_order;
     // What the walk of the file being checked meets and tsc checks after the file's statements, in that order (tsc's
     // checkNodeDeferred and checkDeferredNodes): function expression bodies (arrows, object literal methods and
     // accessors), class expression members, JSX elements and `void` operands. What they ask is then asked after
@@ -1567,7 +1570,8 @@ extern thread_local Checker* current_checker;
 void checker_make_current(Checker* me); // null for none
 // A class member, by (the start of) its declaration span, was read from outside of itself (tsc's isReferenced of a
 // member symbol, see ty_check_member_modifiers()). Only tracked under noUnusedLocals/noUnusedParameters
-bool ty_member_is_referenced(Checker* me, Span declaration);
+// The earliest checked file (its index) whose check read a private member in this checker, UINT32_MAX if none did
+u32 ty_member_referenced_order(Checker* me, Span declaration);
 void ty_mark_member_referenced(Checker* me, Span declaration);
 // True the first time this checker asks about the node: for checks that must run once per node (a class reached by
 // the statement walk and by the expression walk)

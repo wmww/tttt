@@ -208,7 +208,12 @@ typedef struct Program {
     bool declarations_only; // program_set_declarations_only()
     bool defer_bodies; // program_set_defer_bodies()
     _Atomic bool defer_failed; // program_defer_failed()
-    _Atomic bool limit_reported; // program_note_limit()
+    _Atomic bool history_reported; // A history-dependent diagnostic was reported (error_history_flag)
+    // program_member_referenced(): open addressing, keys the members' declaration texts, values the earliest order
+    pthread_mutex_t member_refs_lock;
+    char const** member_refs_keys;
+    u32* member_refs_orders;
+    u32 member_refs_cap, member_refs_len;
     atomic_uint ahead_next; // Materialize-ahead (plan 78, program_typecheck()): the next file of check_files a helper takes
     csview explaining_lib, explaining_lib_path; // program_load_stdlib()'s lib while it loads its libReplacement (program_explain_root())
     VecError lib_replacement_errors; // What loading libReplacement files reported, program_take_lib_replacement_errors()
@@ -297,6 +302,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     static atomic_uint serials;
     ret->serial = atomic_fetch_add(&serials, 1) + 1;
     pthread_mutex_init(&ret->dependency_links_lock, nullptr);
+    pthread_mutex_init(&ret->member_refs_lock, nullptr);
     program_add_builtins(ret);
     return ret;
 }
@@ -352,6 +358,8 @@ void program_join_releases(Program* me) {
     my release_started = false;
 }
 
+static void member_refs_clear(Program* me);
+
 static void program_drop(Program* me) {
     program_join_releases(me);
     load_pool_destroy(my pool);
@@ -382,6 +390,8 @@ static void program_drop(Program* me) {
     module_resolver_destroy(my resolver);
     symlink_cache_destroy(my symlinks);
     pthread_mutex_destroy(&my dependency_links_lock);
+    pthread_mutex_destroy(&my member_refs_lock);
+    member_refs_clear(me);
     for (u32 i = 0; i < my reference_count; i++) module_resolver_destroy(my reference_resolvers[i]);
     free(my reference_resolvers);
     cstr_drop(&my lib_dir);
@@ -4922,8 +4932,67 @@ bool program_defer_failed(Program const* me) {
     return atomic_load(&my defer_failed);
 }
 
-void program_note_limit(Program* me) {
-    if (!atomic_load_explicit(&my limit_reported, memory_order_relaxed)) atomic_store(&my limit_reported, true);
+
+static u32 member_refs_slot(char const* const* keys, u32 cap, char const* member) {
+    u32 h = (u32)(((uintptr_t)member >> 3) * 0x9E3779B1u) & (cap - 1);
+    while (keys[h] && keys[h] != member) h = (h + 1) & (cap - 1);
+    return h;
+}
+
+void program_member_referenced(Program* me, char const* member, u32 order) {
+    pthread_mutex_lock(&my member_refs_lock);
+    if (2 * (my member_refs_len + 1) > my member_refs_cap) {
+        u32 cap = my member_refs_cap ? 2 * my member_refs_cap : 64;
+        char const** keys = calloc(cap, sizeof(char const*));
+        u32* orders = calloc(cap, sizeof(u32));
+        for (u32 i = 0; i < my member_refs_cap; i++) {
+            if (!my member_refs_keys[i]) continue;
+            u32 at = member_refs_slot(keys, cap, my member_refs_keys[i]);
+            keys[at] = my member_refs_keys[i];
+            orders[at] = my member_refs_orders[i];
+        }
+        free(my member_refs_keys);
+        free(my member_refs_orders);
+        my member_refs_keys = keys;
+        my member_refs_orders = orders;
+        my member_refs_cap = cap;
+    }
+    u32 at = member_refs_slot(my member_refs_keys, my member_refs_cap, member);
+    if (!my member_refs_keys[at]) {
+        my member_refs_keys[at] = member;
+        my member_refs_orders[at] = order;
+        my member_refs_len++;
+    } else if (order < my member_refs_orders[at]) {
+        my member_refs_orders[at] = order;
+    }
+    pthread_mutex_unlock(&my member_refs_lock);
+}
+
+// After the checkers: a private member some checker read in a file checked no later than the one reporting it unused
+static bool member_read_by(Program const* me, char const* member, u32 order) {
+    if (!my member_refs_cap) return false;
+    u32 at = member_refs_slot(my member_refs_keys, my member_refs_cap, member);
+    return my member_refs_keys[at] && my member_refs_orders[at] <= order;
+}
+
+static void member_refs_clear(Program* me) {
+    free(my member_refs_keys);
+    free(my member_refs_orders);
+    my member_refs_keys = nullptr;
+    my member_refs_orders = nullptr;
+    my member_refs_cap = my member_refs_len = 0;
+}
+
+// Drops the unused member reports another checker's read (or this one's in an earlier file) contradicts
+static void drop_read_members(Program* me, ErrorCtx* ctx) {
+    VecError* errors = &ctx->errors;
+    isize kept = 0;
+    for (isize i = 0; i < vec_error_size(errors); i++) {
+        Error* e = &errors->data[i];
+        if (e->unread_member && member_read_by(me, e->unread_member, e->unread_order)) error_drop(e);
+        else errors->data[kept++] = *e;
+    }
+    errors->size = kept;
 }
 
 bool program_recycled(Program const* me) {
@@ -4934,7 +5003,7 @@ bool program_recycled(Program const* me) {
 }
 
 bool program_limit_history_dependent(Program const* me) {
-    return atomic_load(&my limit_reported) && (my checker_count > 1 || program_recycled(me));
+    return atomic_load(&my history_reported) && (my checker_count > 1 || program_recycled(me));
 }
 
 Binder const* program_get_binder(Program const* me) {
@@ -5540,7 +5609,7 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const*
 #ifdef TTTT_SURVIVORS
         survivors_owner = survivors_owner_of(checker, segment[i]);
 #endif
-        if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
+        if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs, segment[i]);
         if (my declaration_errs && !source->is_stdlib && !declaration_walk_moot(me)) {
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
         }
@@ -5638,6 +5707,7 @@ static bool pool_recycle_due(Program* me, Checker* checker, u32 c, u32 count) {
 // A file's check by `checker`
 static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at) {
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
+    checker->member_ref_order = at;
 #ifdef TTTT_SURVIVORS
     survivors_owner = survivors_file_start(checker, at);
 #endif
@@ -5656,6 +5726,7 @@ static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at
     checker->deferred_count = 0;
     checker->defer_checks = false;
     checker->checking_file = nullptr;
+    checker->member_ref_order = UINT32_MAX;
 #ifdef TTTT_SURVIVORS
     survivors_owner = 0;
 #endif
@@ -5905,6 +5976,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     graph_epoch_join(me);
     Checker* checker = my checkers[c];
     checker_make_current(checker);
+    error_history_flag = &my history_reported;
     ty_init_global_types(checker);
     u32 total = (u32)vec_source_file_ptr_size(&my check_files);
     // The files of the current segment, in the order it checked them
@@ -6096,6 +6168,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     if (checker->graph && getenv("TTTT_DEBUG_UNSHARED")) graph_check_unshared(checker->graph, checker);
     if (checker->graph) graph_memo_flush(checker);
     checker_make_current(nullptr);
+    error_history_flag = nullptr;
     graph_epoch_leave(me, count);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
@@ -6382,7 +6455,7 @@ static void graph_recheck(Program* me, ErrorCtx const* checker_errs, u32 count) 
     }
     for (u32 at = 0; at < files; at++) {
         SourceFile* source = vec_source_file_ptr_at(&my check_files, at)[0];
-        if (!source->is_declaration && !source->unchecked) unused_report(source, fresh->errs);
+        if (!source->is_declaration && !source->unchecked) unused_report(source, fresh->errs, at);
     }
     checker_make_current(nullptr);
     VecError first = vec_error_init(), again = vec_error_init();
@@ -6543,6 +6616,8 @@ again:
     }
     my share_first = c_new_n(u32, count);
     deal_files(me);
+    // (What was reported before the checkers start isn't their history's)
+    atomic_store(&my history_reported, false);
     timespec_get(&my check_start, TIME_UTC);
     if (debug_env.file_times) {
         fprintf(stderr, "file time: checkers started %.1f ms into program_typecheck\n",
@@ -6597,15 +6672,17 @@ again:
             atomic_fetch_sub(&ahead_bytes, list->source_bytes);
         }
     }
-    // An instantiation or relation limit reported by several checkers or a recycled one: where it trips, and what the
-    // error type it caches silences, is that history's (program_note_limit()). Checked again in one fresh checker, in
-    // program order, never recycled but by the memory pool: tsgo --singleThreaded's output, at any checker count
+    // An instantiation limit or a circularity reported by several checkers or a recycled one: where it is reported, and
+    // what the error type it caches silences, is that history's (error_is_history_dependent()). Checked again in one
+    // fresh checker, in program order, never recycled but by the memory pool: tsgo --singleThreaded's output, at any
+    // checker count
     if (!limit_rerun && !my graph && program_limit_history_dependent(me)) {
         if (getenv("TTTT_DEBUG_LIMIT_RERUN")) eprintln("tttt: limit rerun in one checker");
         typecheck_pass_drop(me, checker_errs, count);
+        member_refs_clear(me);
         my checker = checker_new(me);
         checker_make_current(my checker);
-        atomic_store(&my limit_reported, false);
+        atomic_store(&my history_reported, false);
         my checker_memory = my checker_memory_cap = UINT64_MAX;
         count = 1;
         limit_rerun = true;
@@ -6642,6 +6719,8 @@ again:
         for (u32 c = 0; c < count; c++) decisions += my checkers[c]->stamp_decisions, disagreements += my checkers[c]->stamp_disagreements;
         eprintln("stamps: ", decisions, " deep nesting decisions, ", disagreements, " the type ids would have made otherwise");
     }
+    for (u32 c = 0; c < count; c++) drop_read_members(me, &checker_errs[c]);
+    member_refs_clear(me);
     error_ctx_keep_first_once(checker_errs, count);
     if (my graph && getenv("TTTT_GRAPH_RECHECK")) graph_recheck(me, checker_errs, count);
     for (u32 c = 0; c < count; c++) {

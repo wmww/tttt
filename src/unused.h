@@ -47,4 +47,4 @@ void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning);
 void unused_mark_jsdoc_links(SourceFile const* file);
 void unused_mark_leading_jsdoc_links(struct Scope const* names, char const* statement_start, char const* file_start);
 // Everything registered in the file that nothing referenced
-void unused_report(SourceFile const* file, ErrorCtx* errs);
+void unused_report(SourceFile const* file, ErrorCtx* errs, u32 order); // order: its index among the checked files

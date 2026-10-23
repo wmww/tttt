@@ -1,0 +1,24 @@
+x.ts(5,26): error TS6133: 'x' is declared but its value is never read.
+x.ts(5,41): error TS6133: 'y' is declared but its value is never read.
+
+
+==== x.ts (2 errors) ====
+    // A private member read only by a later file is unused when x.ts is checked: tsc reports a file's unused members when
+    // it has checked it (checkSourceFile), so only the reads of the files checked before count. In tttt the marks carry the
+    // earliest file that read the member, over every checker (program_member_referenced()), so the report doesn't depend on
+    // the checker count or on which checker read it
+    export class C { private x = 1; private y = 2 }
+                             ~
+!!! error TS6133: 'x' is declared but its value is never read.
+                                            ~
+!!! error TS6133: 'y' is declared but its value is never read.
+==== y.ts (0 errors) ====
+    import { C } from "./x";
+    new C()["x"];
+==== z.ts (0 errors) ====
+    import "./w";
+    export class D { private z = 1 }
+==== w.ts (0 errors) ====
+    import { D } from "./z";
+    new D()["z"];
+    

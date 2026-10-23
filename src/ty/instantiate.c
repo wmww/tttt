@@ -28,10 +28,6 @@ void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {
         cstr_drop(&message);
         return;
     }
-    switch (ts_code) {
-    case 2589: case 5114: case 5115: case 2590: case 2321: case 2859: if (my program) program_note_limit(my program); break;
-    default: break;
-    }
     if (span_valid(span)) {
         error_ctx_error_s(errs, span, ts_code, message);
     } else {

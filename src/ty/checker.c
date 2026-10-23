@@ -803,6 +803,7 @@ static Checker* checker_make(Program* program, bool join_graph) {
 #endif
     { static atomic_uint census_ids; my census_id = atomic_fetch_add(&census_ids, 1); }
     my program = program;
+    my member_ref_order = UINT32_MAX;
     my binder = program_get_binder(program);
     my errs = program_errors(program);
     my atom_table = program_atoms(program);
@@ -3767,16 +3768,23 @@ Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
     return *slot;
 }
 
-bool ty_member_is_referenced(Checker* me, Span declaration) {
+u32 ty_member_referenced_order(Checker* me, Span declaration) {
     u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.buf };
-    return intern_get(&my links, key, 2) != nullptr;
+    uintptr_t seen = (uintptr_t)intern_get(&my links, key, 2);
+    return seen ? (u32)(seen - 1) : UINT32_MAX;
 }
 
 void ty_mark_member_referenced(Checker* me, Span declaration) {
-    if (!span_valid(declaration)) return;
+    if (!span_valid(declaration) || my member_ref_order == UINT32_MAX) return;
     TY_WORKER_STATE(me); // (Read by this worker's unused.c report_class_members() only)
     u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.buf };
-    *intern_slot(me, &my links, key, 2) = me;
+    void const** slot = intern_slot(me, &my links, key, 2);
+    // (The earliest file's: tsc reports a file's unused members when it has checked it, so only reads of the files
+    // checked by then count. Also the program's, for the reports of the other checkers' files)
+    uintptr_t seen = (uintptr_t)*slot;
+    if (seen && seen - 1 <= my member_ref_order) return;
+    *slot = (void const*)(uintptr_t)(my member_ref_order + 1);
+    if (my program) program_member_referenced(my program, declaration.buf, my member_ref_order);
 }
 
 bool ty_first_check(Checker* me, void const* node) {
