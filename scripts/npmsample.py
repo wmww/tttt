@@ -579,7 +579,11 @@ def setup_one(seed, c):
     if count_ts(pkg) < 3:
         return {**rec, 'status': 'skip', 'reason': 'fewer than 3 .ts files'}
     if not os.path.exists(marker):
-        r = sb.install(repo, pkg, seed_cache(seed), corepack_home=COREPACK)
+        # (A cache per install, deleted after it: a batch's shared caches reached 7-9 GB, more than its clones; pnpm's
+        # store files stay in node_modules as hardlinks)
+        cache = os.path.join(seed_cache(seed), repo_dirname(c))
+        r = sb.install(repo, pkg, cache, corepack_home=COREPACK)
+        shutil.rmtree(cache, ignore_errors=True)
         rec['install'] = {k: r[k] for k in ('pm', 'dir', 'notes', 'changes', 'commands')}
         if r['refused']:
             return {**rec, 'status': 'skip', 'pm': r['pm'], 'reason': 'install refused: ' + r['refused']}
