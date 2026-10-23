@@ -6,6 +6,7 @@ vgcore.*
 thirdparty/corpora
 __pycache__
 thirdparty/sources
+thirdparty/npmsample
 thirdparty/node
 thirdparty/typescript
 thirdparty/typescript-gopath

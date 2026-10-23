@@ -3,7 +3,7 @@
 Copied from the human's /tmp/NPM-SAMPLING.md. Their run: 50 projects, a private seed, tttt built from main that day:
 44 perfect (byte-identical modulo formatting), 49 agree with tsgo 7.1 on "has errors". The source sweep and the
 corpora are a training set (vision.md); this is the fresh measure, repeated with a new seed each time.
-`scripts/npmsample.py` implements it (worker npm, 2026-10-23).
+`scripts/npmsample.py` implements it (worker npm, 2026-10-23); what running it taught is at the end.
 
 # Building a random npm project set to test tttt against tsgo
 
@@ -57,3 +57,19 @@ You'll need tsgo 7.1-beta (`npm i typescript@7.1.0-beta`), the tttt binary, Type
   - a `repository.directory` that no longer exists on the default branch. Don't fall back to the repo root, because that checks a different project.
 - **Safety:** never run a repo's scripts or builds.
 - **Disk:** about 8–10 GB per 50 clones. Once the set is final, ask the user before deleting clones that weren't accepted.
+
+## Running it (scripts/npmsample.py, 2026-10-23)
+
+- **Registry pacing.** Six threads retrying on their own each got 429 for minutes (885 lookups in 20 minutes): the
+  limit is a sliding window that retries extend. A shared pacer (request starts 0.2 s apart, a 429 pauses every
+  thread, Retry-After honoured) does 2000 lookups in ~5 minutes.
+- **Never a full checkout.** One random candidate (fontsource's font-files) was a 12 GB checkout, and 120 candidates
+  took 30 GB and the disk to 19 GB free. Clones are blobless (`--filter=blob:none`) with a sparse checkout that leaves
+  out fonts, images, media, archives and binaries (`SPARSE_EXCLUDE`): only checked-out blobs are fetched. A
+  candidate that isn't accepted is deleted at once, and the package managers' caches after each setup run.
+- **Paths.** tsgo prints real paths: the clone root must be the realpath (the worktree reaches thirdparty/npmsample
+  through a symlink), or `--listFilesOnly` counts 0 own files and everything is rejected.
+- **Option errors** are TS5xxx/TS6xxx diagnostics without a file or in a tsconfig: TS5097 (`.ts` import extension)
+  and TS5114 are checker errors in source files and don't stop tsgo.
+- First 122 candidates of seed 20261023: ~20% clone failures (private/deleted repos), ~25% no tsconfig, a few gone
+  `repository.directory`s and dead git dependencies; most of the rest pass the trial.
