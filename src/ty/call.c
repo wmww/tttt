@@ -1137,7 +1137,18 @@ static void infer_from_annotated_params(Checker* me, Inference* inf, FunctionImp
     infer_from_annotated_params_of(me, inf, function, contextual);
 }
 
+static void infer_from_annotated_params_of_inner(Checker* me, Inference* inf, FunctionImpl const* function, Signature const* contextual);
 static void infer_from_annotated_params_of(Checker* me, Inference* inf, FunctionImpl const* function, Signature const* contextual) {
+    FunctionImpl const* outer_function = my annotated_context_function;
+    Signature const* outer_signature = my annotated_context_signature;
+    my annotated_context_function = function;
+    my annotated_context_signature = contextual;
+    infer_from_annotated_params_of_inner(me, inf, function, contextual);
+    my annotated_context_function = outer_function;
+    my annotated_context_signature = outer_signature;
+}
+
+static void infer_from_annotated_params_of_inner(Checker* me, Inference* inf, FunctionImpl const* function, Signature const* contextual) {
     signature_resolve(me, contextual);
     for_each (i, vec_function_arg, &function->args) {
         if (i->rest) break;

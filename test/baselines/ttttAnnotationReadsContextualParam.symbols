@@ -1,0 +1,36 @@
+//// [test/cases/ttttAnnotationReadsContextualParam.ts] ////
+
+=== ttttAnnotationReadsContextualParam.ts ===
+// A context-sensitive function's annotations read while a generic call infers from them (tsc's
+// inferFromAnnotatedParametersAndReturn: `(x): typeof x => x`) type an unannotated parameter they mention by the
+// contextual signature they are lowered against (getContextuallyTypedParameterType finds the argument's contextual
+// type): no TS7006. openclaw's post-core-dependency-health.integration.test.ts
+// `payloads.map((payload): [typeof payload, number | null | undefined] => [payload, undefined])`
+declare function g<U>(cb: (v: string) => U): U;
+>g : Symbol(g, Decl(ttttAnnotationReadsContextualParam.ts, 0, 0))
+>U : Symbol(U, Decl(ttttAnnotationReadsContextualParam.ts, 5, 19))
+>cb : Symbol(cb, Decl(ttttAnnotationReadsContextualParam.ts, 5, 22))
+>v : Symbol(v, Decl(ttttAnnotationReadsContextualParam.ts, 5, 27))
+>U : Symbol(U, Decl(ttttAnnotationReadsContextualParam.ts, 5, 19))
+>U : Symbol(U, Decl(ttttAnnotationReadsContextualParam.ts, 5, 19))
+
+const a = g((x): typeof x => x);
+>a : Symbol(a, Decl(ttttAnnotationReadsContextualParam.ts, 6, 5))
+>g : Symbol(g, Decl(ttttAnnotationReadsContextualParam.ts, 0, 0))
+>x : Symbol(x, Decl(ttttAnnotationReadsContextualParam.ts, 6, 13))
+>x : Symbol(x, Decl(ttttAnnotationReadsContextualParam.ts, 6, 13))
+>x : Symbol(x, Decl(ttttAnnotationReadsContextualParam.ts, 6, 13))
+
+const payloads = ["missing", "hoisted"] as const;
+>payloads : Symbol(payloads, Decl(ttttAnnotationReadsContextualParam.ts, 7, 5))
+>const : Symbol(const)
+
+const r = payloads.map((payload): [typeof payload, number] => [payload, 1]);
+>r : Symbol(r, Decl(ttttAnnotationReadsContextualParam.ts, 8, 5))
+>payloads.map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>payloads : Symbol(payloads, Decl(ttttAnnotationReadsContextualParam.ts, 7, 5))
+>map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>payload : Symbol(payload, Decl(ttttAnnotationReadsContextualParam.ts, 8, 24))
+>payload : Symbol(payload, Decl(ttttAnnotationReadsContextualParam.ts, 8, 24))
+>payload : Symbol(payload, Decl(ttttAnnotationReadsContextualParam.ts, 8, 24))
+

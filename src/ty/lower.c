@@ -3920,6 +3920,22 @@ static void settle_parameter_context(Checker* me, InitializedBinding const* para
     if (!function || ty_contextual_parameter_type(me, parameter)) return;
     LazyMemo* own = lazy_type_state_peek((LazyType*)&parameter->lazy_type);
     if (own && own->evaluation_started) return;
+    if (function == my annotated_context_function && my annotated_context_signature) {
+        // Read by the function's own annotations while a call infers from them: the contextual signature they're
+        // lowered against types it, as it stays (tsc's getTypeOfSymbol caches what getContextuallyTypedParameterType
+        // gives then)
+        u32 at = 0;
+        for_each (i, vec_function_arg, &function->args) {
+            if (&i->initializer == parameter) {
+                Ty const* type = i->rest ? nullptr : ty_signature_param_type_at(me, my annotated_context_signature, at);
+                if (type) ty_link_set(me, KEY_CONTEXT_PARAM, parameter, type);
+                return;
+            }
+            bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
+            if (!is_this) at++;
+        }
+        return;
+    }
     ty_settle_function_context(me, function);
 }
 

@@ -1341,6 +1341,11 @@ struct Checker {
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
     struct OuterInference* outer_inference;
+    // The function whose annotations infer_from_annotated_params_of() is lowering, and the contextual signature it
+    // lowers them against: an unannotated parameter they read (`(x): typeof x => ...`) takes its type from it (tsc's
+    // getContextuallyTypedParameterType finds the argument's pushed contextual type)
+    FunctionImpl const* annotated_context_function;
+    Signature const* annotated_context_signature;
     // Every generic call inferring now, innermost first (OuterInference.enclosing), and the serial the last one got:
     // an object literal remembers which one its contextual type came from (KEY_LITERAL_INFERENCE)
     struct OuterInference* active_inferences;

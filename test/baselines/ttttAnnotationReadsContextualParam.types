@@ -1,0 +1,42 @@
+//// [test/cases/ttttAnnotationReadsContextualParam.ts] ////
+
+=== ttttAnnotationReadsContextualParam.ts ===
+// A context-sensitive function's annotations read while a generic call infers from them (tsc's
+// inferFromAnnotatedParametersAndReturn: `(x): typeof x => x`) type an unannotated parameter they mention by the
+// contextual signature they are lowered against (getContextuallyTypedParameterType finds the argument's contextual
+// type): no TS7006. openclaw's post-core-dependency-health.integration.test.ts
+// `payloads.map((payload): [typeof payload, number | null | undefined] => [payload, undefined])`
+declare function g<U>(cb: (v: string) => U): U;
+>g : <U>(cb: (v: string) => U) => U
+>cb : (v: string) => U
+>v : string
+
+const a = g((x): typeof x => x);
+>a : string
+>g((x): typeof x => x) : string
+>g : <U>(cb: (v: string) => U) => U
+>(x): typeof x => x : (x: string) => typeof x
+>x : string
+>x : string
+>x : string
+
+const payloads = ["missing", "hoisted"] as const;
+>payloads : readonly ["missing", "hoisted"]
+>["missing", "hoisted"] as const : readonly ["missing", "hoisted"]
+>["missing", "hoisted"] : readonly ["missing", "hoisted"]
+>"missing" : "missing"
+>"hoisted" : "hoisted"
+
+const r = payloads.map((payload): [typeof payload, number] => [payload, 1]);
+>r : ["hoisted" | "missing", number][]
+>payloads.map((payload): [typeof payload, number] => [payload, 1]) : ["hoisted" | "missing", number][]
+>payloads.map : <U>(callbackfn: (value: "hoisted" | "missing", index: number, array: readonly ("hoisted" | "missing")[]) => U, thisArg?: any) => U[]
+>payloads : readonly ["missing", "hoisted"]
+>map : <U>(callbackfn: (value: "hoisted" | "missing", index: number, array: readonly ("hoisted" | "missing")[]) => U, thisArg?: any) => U[]
+>(payload): [typeof payload, number] => [payload, 1] : (payload: "hoisted" | "missing") => [typeof payload, number]
+>payload : "hoisted" | "missing"
+>payload : "hoisted" | "missing"
+>[payload, 1] : ["hoisted" | "missing", number]
+>payload : "hoisted" | "missing"
+>1 : 1
+
