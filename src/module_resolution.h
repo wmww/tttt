@@ -124,6 +124,9 @@ typedef struct FileFormat {
     ResolutionMode mode;
     cstr package_json; // The nearest package.json, empty if there is none
     bool package_has_type;
+    // ...and it is "module" or "commonjs", which is what decides a file's emit format outside node16-nodenext (tsgo's
+    // GetImpliedNodeFormatForEmitWorker compares PackageJsonType with those two; `"type": "moduleX"` decides nothing)
+    bool package_type_decides;
 } FileFormat;
 FileFormat module_resolver_file_format(ModuleResolver* me, csview file);
 

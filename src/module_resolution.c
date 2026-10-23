@@ -2039,6 +2039,7 @@ FileFormat module_resolver_file_format(ModuleResolver* me, csview file) {
         ret.package_json = cstr_d(scope_dir, cstr_size(&scope_dir) > 1 ? "/" : "", "package.json");
         csview type = json_get_string(&scope->json, "type");
         ret.package_has_type = type.size > 0;
+        ret.package_type_decides = csview_equals(type, "module") || csview_equals(type, "commonjs");
         if (csview_equals(type, "module")) ret.mode = RESOLUTION_MODE_ESM;
     }
     if (ends_with(file, ".mts") || ends_with(file, ".mjs")) ret.mode = RESOLUTION_MODE_ESM;

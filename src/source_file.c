@@ -25,9 +25,9 @@ ModuleKind source_file_implied_format_for_emit(SourceFile const* me) {
     csview path = cstr_sv(&my canonical_path);
     if (csview_ends_with(path, ".cts") || csview_ends_with(path, ".cjs")) return MODULE_KIND_COMMONJS;
     if (csview_ends_with(path, ".mts") || csview_ends_with(path, ".mjs")) return MODULE_KIND_ESNEXT;
-    // (is_esm and package_has_type are only known with node16/nodenext resolution or in node_modules, where tsc looks
+    // (is_esm and package_type_decides are only known with node16/nodenext resolution or in node_modules, where tsc looks
     // at package.json)
-    if (my package_has_type) return my is_esm ? MODULE_KIND_ESNEXT : MODULE_KIND_COMMONJS;
+    if (my package_type_decides) return my is_esm ? MODULE_KIND_ESNEXT : MODULE_KIND_COMMONJS;
     return MODULE_KIND_NONE;
 }
 

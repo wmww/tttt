@@ -2332,7 +2332,7 @@ static bool dynamic_import_has_synthetic_default(Symbol* module, SourceFile cons
     // The target's format for emit (tsc's getImpliedNodeFormatForEmit): outside node16-nodenext only what its
     // extension or package.json `type` says
     csview path = target ? cstr_sv(&target->canonical_path) : c_sv("");
-    bool explicit_format = target && target->has_format && (node || target->package_has_type ||
+    bool explicit_format = target && target->has_format && (node || target->package_type_decides ||
         csview_ends_with(path, ".mts") || csview_ends_with(path, ".mjs") || csview_ends_with(path, ".cts") ||
         csview_ends_with(path, ".cjs"));
     if (explicit_format && esm_usage) {

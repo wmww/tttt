@@ -1,0 +1,14 @@
+//// [test/cases/ttttPackageTypeInvalidEmitFormat.ts] ////
+
+=== /a/node_modules/foo.d.ts ===
+export declare let x: number
+>x : number
+
+=== /a/b/app.ts ===
+import {x} from "foo";
+>x : any
+
+=== /a/c/app.ts ===
+import {x} from "foo";
+>x : number
+

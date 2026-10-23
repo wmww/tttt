@@ -884,7 +884,7 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
             options->module == MODULE_KIND_PRESERVE;
         if (csview_ends_with(name, ".cts") || csview_ends_with(name, ".cjs")) esm = false;
         else if (csview_ends_with(name, ".mts") || csview_ends_with(name, ".mjs")) esm = true;
-        else if (source->has_format && source->package_has_type) esm = source->is_esm;
+        else if (source->has_format && source->package_type_decides) esm = source->is_esm;
         mode = esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
     }
     if (options->module_resolution == MODULE_RESOLUTION_BUNDLER &&
@@ -896,7 +896,7 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
         bool cjs = options->module == MODULE_KIND_COMMONJS;
         if (csview_ends_with(name, ".cts") || csview_ends_with(name, ".cjs")) cjs = true;
         else if (csview_ends_with(name, ".mts") || csview_ends_with(name, ".mjs")) cjs = false;
-        else if (source->has_format && source->package_has_type) cjs = !source->is_esm;
+        else if (source->has_format && source->package_type_decides) cjs = !source->is_esm;
         if (cjs) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
     }
     if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
@@ -1722,6 +1722,7 @@ static SourceFile* program_make_source_text(Program const* me, csview canonical_
         bool extension_format = csview_ends_with(canonical, ".mts") || csview_ends_with(canonical, ".cts") ||
             csview_ends_with(canonical, ".mjs") || csview_ends_with(canonical, ".cjs");
         source_file->package_has_type = format.package_has_type && (in_node_modules || !extension_format);
+        source_file->package_type_decides = format.package_type_decides && source_file->package_has_type;
         if (cstr_size(&format.package_json)) {
             source_file->package_json = program_path_for_message(me, cstr_sv(&format.package_json));
         }

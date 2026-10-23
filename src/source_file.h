@@ -270,6 +270,7 @@ typedef struct SourceFile {
     bool is_esm;
     bool has_format; // Whether is_esm means anything: tsc's impliedNodeFormat isn't undefined
     bool package_has_type;
+    bool package_type_decides; // See FileFormat.package_type_decides
     cstr package_json;
     Scope* scope; // The file's scope, made when names are declared. A module's container is its module symbol
     // JavaScript `{}` initializers with expandos (`var o = {}; o.x = 1`) and the symbol they are the value of: the
