@@ -106,8 +106,8 @@ are suspects (vision.md "Decisions"). Open:
   parameter types lazily, tttt eagerly in signature_resolve_slow(); the same root as triage.md's missed TS2502 through
   `ReturnType<typeof h>`. Needs lazy parameter types in signature resolution: a design first, then a repro from MST's
   real types. (det 2026-10-23: re-entry now reads a whole record, the design that is left is in the kebo entry)
-- **better-drizzle's two TS2578** at tests/types/order-by-relations.ts:24,26 (uninvestigated; the K>1 TS2502 is fixed).
-- **mcp-linker's 1.73x types** (triage.md): the worst perfsweep ratio, a missing cache or a runaway.
+- **mcp-linker's 1.73x types** (triage.md): typed i18next's `t()` under an object contextual type, a base constraint
+  chain tsgo cuts at the recursion-identity limit and tttt doesn't (localized, not fixed).
 - **The indexed-access recursion identity** (triage.md): tsc's rule, reverted for youtube-enhancer's runaway (1.16M
   types against tsgo's 211k); needs a cut-down repro from src/validation/constraints.ts first.
 - **The source sweep's other 7** (es-toolkit, monkeytype, hono x2, better-auth, discordx, sunmao): each a confirmed
