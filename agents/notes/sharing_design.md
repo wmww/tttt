@@ -1,5 +1,10 @@
 # Sharing the type graph the way bun does: is it viable for tttt? (worker sg2, 2026-10-22)
 
+**Closed (2026-10-23)**: the laptop A/B (measurements.md "The 12-core box at 48cd9835") answered the recommendation
+below with a no: the best layout wins only on drizzle (-14% wall) and loses on zod (+2%), effect (+11%) and vue
+(+25%), the IPC gap to plain is 4-11%, and content order moves 3 drizzle elaboration chains away from tsc's text.
+Stages 1-3 are not built (vision.md "Decisions"). The rest of this note is the record.
+
 The question: is bun's sharing model (notes/bun_concurrency.md) incompatible with something tttt wants, or is it
 just work? Short answer: it's work, and less of it than the parked flag's history suggests. bun's one design choice
 tttt lacked, an **id-free deep-nesting order**, costs tttt ~2 suite tests and ~20-35 real-code diagnostics. Turned on

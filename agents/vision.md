@@ -2,16 +2,16 @@
 
 ## Goal
 A complete TypeScript typechecker in C, **distinctly faster than bun canary's `bun check`** (the fastest competitor:
-measurements.md "The 12-core box at 5f2cd699"), with typescript-go 7.1 (tsgo) as the oracle for every diagnostic,
+measurements.md "The 12-core box at 3a77c827"), with typescript-go 7.1 (tsgo) as the oracle for every diagnostic,
 type and emitted declaration. Restated by the human on 2026-10-22: speed first; memory is secondary until we are
 faster; correctness is never traded. Completeness first in the sense that nothing is built on a foundation that can't
 be fast or can't be complete. The suite's baselines are the first oracle, not the goal; real projects that are clean
 under tsc are the second.
 
-## State (2026-10-23: oracles at a5252a764 plus cor7's acb8dfe7f, main 0a1f67836; the laptop at bbe37c5f)
+## State (2026-10-23, the fourth coordinator's end: oracles at d7bc837b0, main past 8d4518ecc; the laptop at 3a77c827)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
   when it is on npm: todo.md). Suite with own tests and the dts component **13999 / 14035** (dts 1888 / 1910), the
-  same with `--no-defer-bodies`, `--checker-memory 0` 0 of 17671 differ; two of tttt's own tests fail by design
+  same with `--no-defer-bodies`, `--checker-memory 0` 0 of 17672 differ; two of tttt's own tests fail by design
   (known-failing tests for unfixed divergences: ttttThisInstantiatedMethodErased, hono's this-instantiated members;
   ttttDeferredBodyBeforeContextualParameters, tsc's deferred-body check order); the native suite's last 12
   configurations are argued or one-test mechanisms (bugs/tsgo_divergences.md).
@@ -30,57 +30,76 @@ under tsc are the second.
   run times out under load: triage.md), perfsweep median check ratio 0.28 (measured loaded; 0.17 last round), worst
   types ratio **1.73 (mcp-linker, refresh 5, unexamined: triage.md)**. Refresh 5 matched 94 / 100 projects on day one
   (the same 94% as refresh 4), 97 / 100 after five fixes.
-- **Speed** (the human's 12-core laptop, 24 threads; measurements.md "The 12-core box at bbe37c5f"): **tttt is ahead
-  of bun canary's wall on every corpus** at the defaults; vscode 1.70 s alone (level with 277be4bc; bun's 1.74 there).
-  nest 84 -> 58.6 ms median (-30%: the chunked parse of lib.dom took libs 12-19 -> 7 ms, 0 fallbacks); zod, vue and
-  TS6 -b faster. **react 0.09 -> 0.11 s and type-fest single 0.61 -> 0.68** are the relation HACK's removal: react's
-  form.tsx is 8 -> 44 ms at K1 alone, tsc's own work there, and bounds react at every checker count. Single-threaded
-  tttt is fastest everywhere. Hardware counters: tttt is **frontend-bound** (~50% of slots at K1), IPC 1.42 at K1; the
-  noinline splits took vscode K1 cycles -1.7% through fewer instructions, the simulated icache gain didn't show.
-  Round four's front end (the checker cap, AST slabs' first 4 MB on 4 KB pages, malloc_trim, the loader not blocking
-  on libs) is unmeasured on the laptop (todo.md "For the human"). What is left at the defaults: the small-program
-  floor (react's one file, per-checker memory: todo.md 1) and duplicated work across checkers (vscode 1.09x at K12,
-  mostly inherent: notes/duplication.md).
+- **Speed: the first win validated on the human's private project set.** The kernel-time round (stack pool, glibc
+  `M_MMAP_THRESHOLD` 32 MB / `M_TRIM_THRESHOLD` 1 GB, source texts kept mapped, huge-page big tables:
+  notes/kernel_time.md) made **330a6eb97 more than 10% faster than 1c31b0469 on most of the human's private
+  projects** ("the biggest validated win in a long time"). Before it, the private set moved only 0.98 over BOLT, the
+  huge text page, the parser's -14% and the front-end round: those were bench-fitted (Decisions). On the laptop
+  (measurements.md "The 12-core box at 3a77c827"): kernel cycles **21-28% of user -> 6-9%** on drizzle, zod, effect,
+  vue and vscode, TLB shootdowns per run **-95..-99%**, faults -79..-96%, walls **-13..-23%** on every mid and large
+  corpus (react -16%, nest level: start-up bound); **tttt beats bun canary 1.4.4 at the defaults on every bench
+  corpus, vscode 1.75 against 1.93 s** (vscode median 1.70). Peak RSS rose +4..15% for it (accepted: speed over
+  memory). Single-threaded tttt is fastest everywhere (vscode 9.6 s against bun's 12.9). Where the human's private
+  projects still lose to bun, tttt uses less total CPU on every one: the losses are critical path (idle cores), not
+  duplication (notes/bun_breadth.md, the breadth sweep not yet run).
+- **The exit tail** (wt-ktime2's 35130c775, landing with the merger's last batch: `git log main --grep reaper`):
+  `exit_detached()` (main.c) hands the address space to a detached CLONE_VM reaper so the caller sees the exit
+  before the kernel frees 1-5 GB of pages: the 7-66 ms tail (3-6% of wall) goes to ~0 (drizzle 0.290 -> 0.278,
+  vscode 1.93 -> 1.81 on this box). Its sys time is then nobody's: `TTTT_SYNC_EXIT=1` for honest sys (hacks.md).
+  Its follow-up, 2 MB-aligned huge arena chunks (`handoff/arena-huge-align.patch`: drizzle faults 73k -> 44k,
+  vscode 302k -> 187k, sys -10..-20%, RSS +1%), is ungated: todo.md first.
 - **The shipped build is `scripts/fastbuild.sh` -> `fast/tttt`**: GCC LTO + PGO, `-fno-plt`, `-z now`, then an
   llvm-bolt layout (llvm-bolt is a dependency), the hot text on a huge page at startup (`huge_text()`, verified via
-  smaps_rollup, with an `MADV_COLLAPSE` retry; `TTTT_HUGE_TEXT=0/2`: 20 of 20 nest runs took it on the laptop). The
-  measuring scripts take their binary from `fastbuild.sh --measured`. `release/` (plain -O3) stays the edit-test build.
-- **Memory**: the quarter-of-RAM `--checker-memory` default costs vscode 5.4 GB (K1 4.1 GB). Recycling costs 15-20%
-  of check time on vscode at small budgets and ~2 GB of the peak is the program plus per-thread state whatever the
-  budget: structural, deferred until we are distinctly faster. Small programs: AST slabs' first 4 MB per thread on 4
-  KB pages and a malloc_trim before checking took nest's peak 210 -> 169 MB and react's 293 -> 255 at the defaults;
-  the checkers' arenas are each checker's repeated work, not start-up slack (notes/front_end.md "Done").
-- Instructions: `test/instrcount.txt` (fast/tttt, every corpus, at acb8dfe7f): **vscode 66.39 G**. Round four was flat
-  (0a400eb6f -> acb8dfe7f: vscode +0.06%, type-fest -0.5%, vue -0.4%, the rest within 0.2%); react's +36% and
-  type-fest's +7% of round three stand (tsc's relation work: Decisions).
+  smaps_rollup, with an `MADV_COLLAPSE` retry; `TTTT_HUGE_TEXT=0/2`). The measuring scripts take their binary from
+  `fastbuild.sh --measured`. `release/` (plain -O3) stays the edit-test build.
+- **Memory**: vscode 5.5 GB at the defaults against bun's 2.2 (K1 4.3); the kernel round added +4..15% everywhere,
+  the small projects most in relative terms (nest +44 MB). The human now calls it "a lot" and worth cutting where it
+  is cheap (Decisions: three levers). Recycling costs 15-20% of check time on vscode at small budgets and ~2 GB of
+  the peak is the program plus per-thread state whatever the budget.
+- Instructions: `test/instrcount.txt` (fast/tttt, every corpus, at d7bc837b0): **vscode 66.37 G**, flat through the
+  kernel round (kernel work isn't in callgrind: its win is invisible to this oracle); react's +36% and type-fest's +7%
+  of round three stand (tsc's relation work: Decisions).
 
-## Direction (2026-10-23, after round four at 0a1f67836; the items and their numbers are in todo.md)
-The human's priorities: distinctly faster than bun; threading efficiency on mid-size and small projects is the key;
-easy wins first; the correctness long tail continues.
-0. **For the human**: the sharing A/B on the laptop (the prompt is notes/sharing_design.md "The laptop A/B") decides
-   stage 2; keep or revert the relation HACK's removal (one commit, react's and type-fest's cost); nest's libs-phase
-   sys time under the 4 KB-page AST slabs (`TTTT_AST_SMALL_KB=0` against the default).
-1. **Small projects**: react is bound by one file (form.tsx, ~44 ms at K1: a per-file cost tsc pays too; check
-   tsgo's time on that file); per-checker duplication is the rest.
-2. **Code footprint**: still ~50% frontend-bound (notes/code_layout.md, `scripts/inlinedup.py`).
-3. **The correctness long tail, continuously**: kebo's mobx-state-tree cycle (lazy parameter types in signature
-   resolution: a design first), better-drizzle's two TS2578, mcp-linker's 1.73x types, the indexed-access recursion
-   identity's repro, hono; a fifth refresh rule when the human reports new divergences.
-4. **Mid-size threading**: stage 1 (content order by default) and stage 2 (the shared graph on for K > 1, the plain
-   path at K1) of notes/sharing_design.md, as the laptop A/B decides; stage 3 (rollback) no-go for now.
-5. **Re-pin to 7.1.0 stable** when it ships.
+## Direction (2026-10-23, the fourth coordinator's hand-off; the items and their numbers are in todo.md)
+The human's priorities: distinctly faster than bun canary on real projects, judged on their private set; speed over
+memory, but memory is now worth cutting where it is cheap; easy, measured wins first; correctness never traded.
+0. **For the human**: the laptop asks (remaining kernel cycles, the exit tail under THP `always`, thread placement on
+   the hybrid CPU, the recycle-budget sweep, the bench on main after the reaper); keep or revert the relation HACK's
+   removal.
+1. **Land the arena alignment patch** (gated), then the **breadth bun sweep**: tttt against bun canary on the ~500
+   heaviest source-sweep projects, the worst dissected by `scripts/perfshape.sh`. That is where the human's remaining
+   losses live, and the expected remedies are policy and scheduling (more checkers when the critical path is long,
+   splitting what one dominating file holds, checking earlier).
+2. **Memory**: the recycle-budget default from the laptop sweep, per-file release if the census says it is large,
+   phase-boundary trims.
+3. **Kernel round three** from the laptop's `cycles:k` profile and the thread-placement experiment.
+4. **The correctness long tail, continuously**: kebo's mobx-state-tree cycle, better-drizzle's two TS2578,
+   mcp-linker's 1.73x types, the recursion identity's repro, hono; a fifth refresh rule when the human reports new
+   divergences.
+5. **Small projects**: react is form.tsx-bound (tsc too), nest start-up bound (the front end 2/3 of 55 ms).
+6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
-- **Bun's sharing model is work, not incompatible** (2026-10-23, sg2, notes/sharing_design.md): an id-free
-  deep-nesting order (bun's content order: height, then push order) costs 2-3 suite tests and ~20-35 real-code
-  diagnostics, all from the deep-nesting cut; with it the shared graph is deterministic (160 / 161 loaded K12 runs,
-  the miss effect's known residue, against 12 / 20 for today's flag, whose residue C came back with a parser inlining
-  change: a latent race); bun-style rollback would recheck 0-10% of the work on our corpora. Layout: the shard's
-  slots pointer split from its lock line (-4-5% check CPU under the flag; slot padding and file-end batching lose);
-  per-instruction premium drizzle 1.38 -> 1.29x, zod 1.26 -> 1.14, effect 1.16 -> 1.06; net check CPU against plain
-  K12 drizzle -11%, zod +4%, effect +10%. The staged path: stage 1 content order by default (go), stage 2 the flag on
-  for K > 1 with the plain path at K1 (go after the laptop A/B: the IPC gap, vue's 2x), stage 3 rollback (no-go now);
-  a warm prefix + fork() is not worth it. Awaiting the laptop.
+- **Perf work is judged by mechanism or breadth, not by the bench** (2026-10-23): the human's private project set is
+  the judge, and before the kernel round it moved 0.98 over a stretch of bench wins (BOLT -3.2% K1 wall, the huge
+  text page -4.6%, the parser's -14%, the front-end round), which were fitted to the 15 bench corpora. The kernel
+  round won >10% on most private projects because its argument was a mechanism (shootdowns and faults at the
+  defaults, present in every multi-threaded run), not a corpus. A perf change lands on a mechanism argument or a
+  breadth check (perfsweep, the bun breadth sweep, `scripts/perfshape.sh` reports the human can paste), and its
+  claim is stated as "where else this applies".
+- **The kernel and OS layer is a bottleneck this VM can't see** (2026-10-23): the shared 16-vCPU KVM box has THP
+  `madvise`, other agents' shootdowns in `/proc/interrupts` and no perf; on the laptop (THP `always`, idle) the
+  same changes cut faults -79..-96% where this box saw -8..-27%. Kernel cycles, faults, placement and anything
+  cycles-level are measured on the laptop with `perf stat` / `perf record -e cycles:k`, and sys is compared with
+  `TTTT_SYNC_EXIT=1` (the reaper hides the teardown's sys otherwise).
+- **Sharing the type graph is closed** (2026-10-23; notes/sharing_design.md, measurements.md "The 12-core box at
+  48cd9835"): bun's model is work, not incompatible (content nesting order makes the shared graph deterministic,
+  160 / 161 loaded runs), but on the laptop at K12 it wins only on drizzle (-14% wall) and loses on zod (+2%),
+  effect (+11%) and vue (+25%): the IPC gap of shared lines (plain against the best layout: drizzle 1.40 -> 1.24,
+  zod -7%, effect -4%, vue -9%; 4-11%) outweighs the instructions saved everywhere but drizzle-shaped projects, and
+  content order moves 3 of drizzle's elaboration chains away from tsc's text. Stages 1-3 are not built; the flag
+  stays in the tree, parked. The per-checker model is at the hardware's ceiling for tsc's algorithm; the absolute
+  wall is what matters and it leads bun.
 - **A semantics commit lands only with a repro or the full source sweep, gated at several checker counts**
   (2026-10-23): the indexed-access recursion identity (tsc's rule, landed without a repro "needed only in combination
   with" the removed HACK) regressed youtube-enhancer, outside the quarter sample (1.16M types against tsgo's 211k, a
@@ -105,8 +124,8 @@ easy wins first; the correctness long tail continues.
 - **The shared type graph is parked** (2026-10-21/22): built correct by construction and in the tree behind
   `TTTT_SHARED_GRAPH=1`, but at K12 each of its instructions costs 1.2-1.6x plain's, which outweighs the duplicated
   work it saves on ordinary projects, and its output still differs under load on effect (~1%). It wins 2.2-2.5x only
-  on recycle thrashers (dokploy, monkeytype). Reopened by the sharing study (above): content order and the split
-  shard lines answer the determinism and part of the premium; the laptop's counters decide (notes/shared_graph.md). The earlier lock/wait/redo design was deleted, not narrowed: waiting
+  on recycle thrashers (dokploy, monkeytype). The sharing study (above) answered the determinism and part of the
+  premium and the laptop's counters closed it (notes/shared_graph.md). The earlier lock/wait/redo design was deleted, not narrowed: waiting
   creates the cycles a redo must break, and the redo's history is no sequential checker's.
 - **The shared graph's ceiling is measured** (2026-10-22, notes/shared_graph.md "The ceiling, measured"): at most
   12% off a vscode checker at K24, below its own 1.2-1.6x per-instruction overhead: off the table for vscode; only
@@ -149,17 +168,24 @@ easy wins first; the correctness long tail continues.
   and `.d.ts` declarations are 2-6% of it (measurements.md "What the checkers re-derive").
 - **Defaults** (2026-10-22/23): `--threads` every core; checkers one per 16 KB of checked source (was 64 KB: nest and
   react get ~8 checkers, nest -20% wall at +13% RSS; level with K12 on the laptop, ahead of K4 on nest, xstate and
-  valibot), capped at ceil(checked bytes / the largest checked file) (10398e204: TypeScript6 8 -> 4, where the laptop
-  measured K4 -10% wall and -32% CPU), up to the physical cores, past them one per 4 MB up to the threads (only vscode gets 24); `--checker-memory`
+  valibot), capped at ceil(checked bytes / the largest checked file) only when that file is >= 1 MB (10398e204,
+  8d4518ecc: TypeScript6's 3.15 MB checker.ts 8 -> 4, where the laptop measured K4 -10% wall and -32% CPU; type-fest,
+  tanstack-router and react are not bounded by one file's bytes: type-fest's K4 was 0.28 s against K12's 0.18), up to the physical cores, past them one per 4 MB up to the threads (only vscode gets 24); `--checker-memory`
   a quarter of RAM (256 MB..8 GB; zero recycles on everything measured); a stolen file starts a fresh checker only
   when the thief holds half its budget. A wall gain must be weighed against CPU: K12 -> K24 on vscode bought 0.09 s
   for 12 CPU s.
-- **Memory is secondary until we are faster** (the human, 2026-10-22: the goal is distinctly faster than bun canary;
-  up to ~3x bun's peak is fine for a clear speed win). No budget knob: on vscode (16 threads, loaded) the default's
-  1.20 s / 5.15 GB against 1 GB's 1.39 s / 3.1 GB; recycling costs 15-20% of check time and ~2 GB of the peak is
-  budget-independent (measurements.md "Memory budget sweep on vscode"): structural, deferred. Closed on the way: the compact AST (2026-10-16: vscode's zero words are diffuse, exact-size variants reach
-  ~165 MB at most), the copying recycle (2026-10-17: costs about what re-derivation does), further struct diets
-  (< 120 MB left), freeing ASTs after their file (other files' checks read them).
+- **Speed over memory, but memory is now worth cutting cheaply** (the human, 2026-10-22/23: up to ~3x bun's peak was
+  fine for a clear speed win; at vscode 5.5 GB against bun's 2.2 it is now "a lot"). The kernel round's +4..15% RSS
+  was accepted for its walls. Three levers, in order of price: (1) the `--checker-memory` default (a quarter of RAM;
+  the laptop's 4096 / 3072 / 2048 sweep on vscode and drizzle, wall against RSS, decides it; on this box 1 GB was 1.39
+  s / 3.1 GB against the default's 1.20 s / 5.15 GB); (2) per-file release, dropping a checker's per-file results
+  (expression, flow, node memos, per-file relation work) at the file's end as bun does (most of its 2.2 GB on vscode):
+  structural: wt-memc's census found 82% of a zod checker's arena droppable at file end, mostly instantiated types,
+  but reaching it means copying survivors out, the copying recycle's design (todo.md 3, notes/memory.md); (3)
+  phase-boundary trims (small: a trim burst when no checker runs). ~2 GB of vscode's peak is budget-independent.
+  Closed on the way: the compact AST (2026-10-16: vscode's zero words are diffuse, exact-size variants reach ~165 MB
+  at most), the copying recycle (2026-10-17: costs about what re-derivation does), further struct diets (< 120 MB
+  left), freeing ASTs after their file (other files' checks read them).
 - **Output is independent of checker count, threads, budget and schedule**, byte for byte (`scripts/kdiff.py`,
   `checkerdiff.py`, `threadcheck.sh`, the recycle oracle): tsgo's is. A change that makes a flake rarer without a
   named mechanism is not a fix. Anything that could be history must be derived from the node or declaration, as tsc
@@ -242,8 +268,10 @@ core. All checker state is in `Checker`; the AST is read-only while checking. Wh
   types, conditional roots), so creation order still matters a little.
 - Perf: checks accumulate cost silently between perf rounds; deep generic code is where tsc's caches and shortcuts
   matter (every past check-up's wins were tsc caches tttt lacked).
-- **Competition**: bun canary is within 2% of tttt's wall on vscode (1.74 against 1.70 s) at 40% of its memory: the
-  lead is not yet "distinctly faster"; tsc-rs (a Rust tsgo
-  port at our pin, `scripts/bench.sh --tscrs`) spends the least CPU at few checkers. Our margin is single-threaded
-  efficiency, which many cores spend on all-core clocks, SMT and duplicated work.
+- **Competition**: tttt leads bun canary 1.4.4 at the defaults on every bench corpus (vscode 1.75 against 1.93 s,
+  ~10%) at 2.5x its peak memory, but the human's private set still has projects where bun wins (on wall, never on
+  total CPU): the lead is not yet "distinctly faster" everywhere, and the breadth sweep hasn't measured how many
+  projects that is. tsc-rs (a Rust tsgo port at our pin, `scripts/bench.sh --tscrs`) spends the least CPU at few
+  checkers. Our margin is single-threaded efficiency, which many cores spend on all-core clocks, SMT, idle cores
+  behind one dominating file and duplicated work.
 - tsgo is order dependent in places tttt isn't; tsgo 7.1's ordering rules are what `ty/order.c` must port, not patch.

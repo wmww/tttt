@@ -3,8 +3,8 @@ The live list of directions and ideas, roughly in order (vision.md "Direction" s
 is known, where the numbers are. Delete an entry when it lands, leaving its numbers in measurements.md; add new ones
 where they fit the order. Uninvestigated items go to triage.md, known bugs to `bugs/*.md`.
 
-Starting point: measurements.md "Oracle totals (2026-10-23, a5252a764 + acb8dfe7f)" and the laptop's latest
-section (at bbe37c5f; the counters at 2989c0f0). `test/instrcount.txt` is fast/tttt (BOLT) at a recycle-free K1, so a
+Starting point: measurements.md "Oracle totals (2026-10-23, d7bc837b0)" and the laptop's latest section (at
+3a77c827: the kernel round; the counters at 2989c0f0). `test/instrcount.txt` is fast/tttt (BOLT) at a recycle-free K1, so a
 jump against it needs attribution (policy, build or code) before it is celebrated.
 
 ## Always first: the re-pin to TypeScript 7.1.0 stable
@@ -29,43 +29,74 @@ Done when `grep -rn fed0bf24 scripts src test thirdparty/*.sh` is empty, no orac
 suite's lost list is fixed or written up. tsgo's `.tsbuildinfo` `version` string would matter only if a buildinfo is
 ever written (it isn't).
 
-The re-pin above is direction 5 (vision.md "Direction"). The human's priorities for the rest: distinctly faster than
-bun; threading efficiency on mid-size and small projects is the key; easy wins first; the correctness long tail
-continues.
+The re-pin above is direction 6 (vision.md "Direction"). The human's priorities for the rest: distinctly faster than
+bun canary on real projects, judged on their private set (perf work needs a mechanism argument or a breadth check,
+not the bench: vision.md "Decisions"); speed over memory, but memory is worth cutting where it is cheap; easy,
+measured wins first; correctness never traded.
 
 ## For the human
-- **The sharing A/B on the laptop** (the prompt: notes/sharing_design.md "The laptop A/B"): plain against today's
-  flag, flag + content order, flag + content + the split shard lines, and + batching, on drizzle, zod, effect and vue
-  at K12 with `perf stat` and `perf c2c`. The decision numbers are the IPC gap between plain and flag + content +
-  split, and vue's wall (2x slower under today's flag). It decides stage 2 (section 4).
+The prompts were given in conversation at the fourth coordinator's end; redo them from here, each with the exact
+command (measurements.md "How to measure": sys with `TTTT_SYNC_EXIT=1`):
+- **(a) The remaining kernel time**: `perf record -e cycles:k -g` top symbols on drizzle and vscode at the defaults
+  (kernel cycles are 6-9% of user there, 17% on react, 27% on nest). Feeds section 4.
+- **(b) The exit tail under THP `always`**: last output byte to exit with `TTTT_SYNC_EXIT=1` against the reaper's
+  default (this box, THP `madvise`, measured 7-66 ms; fewer pages to free on the laptop may make it smaller).
+- **(c) Thread placement on the hybrid CPU**: `taskset` tttt to the 8 Zen 5 threads, all 24, the 16 Zen 5c, and 12
+  one per core, on drizzle and vscode, wall and CPU. Feeds sections 2 and 4 (checker count policy).
+- **(d) The recycle-budget sweep**: `--checker-memory` 4096 / 3072 / 2048 against the default on vscode and drizzle,
+  wall against peak RSS. Decides section 3's first lever.
+- **(e) The bench on main after the reaper** (`scripts/bench.sh --runs 3 --checkers 12 --bun ...`), the arena
+  alignment patch too once it lands (section 1).
 - **Keep or revert the relation HACK's removal** (f38a8b493, one commit): react 0.09 -> 0.11 s at the defaults and
   type-fest single 0.61 -> 0.68 on the laptop (bbe37c5f), react +36% / type-fest +7% instructions; it is tsc's own
-  relation work (tsgo 84.6k relations on react, tttt 93.4k) and fixed pi-bolt's TypeBox chain. Kept unless the human
-  says otherwise.
-- **nest's libs-phase sys time under the 4 KB-page AST slabs** (triage.md): the worker measured it down, the merger
-  up, both on a loaded box. On the laptop: nest `--time` libs sys and wall, the default against
-  `TTTT_AST_SMALL_KB=0`. The RSS win (nest 210 -> 169 MB, react 293 -> 255) stands either way.
-- Laptop confirmations of round four: the checker cap (TypeScript6 at K4), the loader not blocking on libs (nest libs
-  + load 41 -> 37 ms here), malloc_trim's RSS.
+  relation work (tsgo 84.6k relations on react, tttt 93.4k, and form.tsx is half of tsgo's react check too) and fixed
+  pi-bolt's TypeBox chain. Kept unless the human says otherwise.
+- MADV_POPULATE_WRITE counts as minor faults on this box's kernel but not in the laptop's `perf stat page-faults`
+  (6.7k there against ~72k here on drizzle): compare faults like with like.
 
-## 1. Small projects
-react is bound by one file: `src/components/ui/form/form.tsx` (react-hook-form's Path/PathImpl) is ~44 ms at K1
-since the HACK's removal, 55-62 ms at the defaults, the next file 9-29 ms (measurements.md "The 12-core box at
-bbe37c5f"). It is tsc's work too: measure tsgo's time on that file (`scripts/tsgoprobe.sh` or a one-file tsconfig)
-before optimizing it; react's relation count against tsgo's is in "Smaller ideas". The rest is per-checker
-duplication (each checker's arena is its repeated work, 3-6 MB on nest, 12-33 MB on react: notes/front_end.md
-"Done"). Gates: RSS at many threads next to the wall; threadcheck/checkerdiff byte-identical.
+## 1. Land the arena alignment patch (first thing)
+`handoff/arena-huge-align.patch` (wt-ktime2's hand-off, `handoff/README.md`; src/ty/checker.c arena_alloc_chunk()):
+a huge-page arena chunk is mapped as whole 2 MB pages, 2 MB aligned (8 MB with its header, the untouched ends cut off
+as big_table() does). Today's 8 MB + 4 KB chunk gets THP only on its 3 aligned blocks, and its ends (~2 MB a chunk)
+are mapped 4 KB at a time. Measured on this box (A/B interleaved, `TTTT_SYNC_EXIT=1`, medians): drizzle faults 73k ->
+44k, sys 0.13 -> 0.11 s, RSS +0.8%; vscode 302k -> 187k, sys 0.71 -> 0.64; nest RSS 172 -> 177 MB (+3%). **Ungated**:
+the suite, threadcheck, checkerdiff, instrcount (should be flat) and the laptop's (e). Then delete `handoff/`'s
+throwaway tools (fault-instrumentation.patch, faults.sh, smaps.py, tail.py, ab2.sh) or move the useful ones to
+scripts/. Not started from ktime2's brief: does the pre-check malloc_trim still pay (RSS and madvise count with
+`TTTT_NO_TRIM=1`), and pre-faulting checkers' first chunks off the critical path (resolve names keeps ~4.5 of 16
+cores busy: a helper could populate them then).
 
-## 2. Code footprint
-Still ~50% frontend-bound after BOLT and huge text (op cache hit 63%, icache misses 23% of fetches at 2989c0f0).
-The noinline splits (ty_instantiate_mapped's ~110 copies, hop_whitespace_slow's ~30) simulated I1 misses -4.5..-6%,
-but on the laptop vscode K1's icache misses per instruction rose 1.4% and the cycles' -1.7% came from fewer
-instructions: the working set is what is left. `scripts/inlinedup.py` and the inlining ledger (notes/code_layout.md)
-list the next copies; the parser's hot path, the giant functions' source size, relate.c's inline-unit growth. Every
-claim confirmed with the laptop's counters (cachegrind's icache proxy misjudged `-fno-peel-loops`, BOLT and now the
-splits).
+## 2. The bun breadth sweep and its critical-path fixes
+Where the human's remaining losses to bun live. Not started: notes/bun_breadth.md has the tool (`scripts/perfshape.sh
+-p P --bun PATH`, f903d2e0e), how to get bun canary 1.4.4-canary.20261022.1, the sample (the ~500 largest of
+perfsweep's 767 projects with tsgo `check_s >= 0.3`) and the loss classes. The human's one fact about their losing
+projects: tttt uses less total CPU on every one, so the losses are critical path (idle cores), not duplication. One
+sample: trpc/packages/tests keeps 4 of 16 cores busy with 8 checkers, its costliest file 41% of the checkers' span.
+Expected remedies: policy and scheduling (more checkers when the critical path is long, splitting what one dominating
+file holds, starting checking earlier). Warm bun once per project (its first run was seconds slower).
 
-## 3. Correctness long tail (continuous)
+## 3. Memory: three levers, cheapest first
+vscode 5.5 GB at the defaults against bun's 2.2 (K1 4.3); the kernel round added +4..15% (vision.md "Decisions").
+- **The recycle-budget default** from the laptop's sweep (For the human, d): a fixed cap rather than a quarter of RAM
+  if 2-3 GB costs little wall.
+- **Per-file release**: drop what a checker made for one file at that file's end, as bun frees its per-task results
+  (most of its 2.2 GB on vscode). wt-memc's census (a4347f2e7: `scripts/filecensus.sh`, a `-DTTTT_SURVIVORS` build,
+  `TTTT_FILE_CENSUS=1`; method, partial table and design sketch in agents/notes/memory.md, landing with the merger):
+  **zod at K1, 82% of a checker's 275 MB arena is droppable at file end** (11% dead, 71% still referenced by later
+  files' results but not needed), mostly instantiated type structure (instantiate_members ~73 MB, builder_finish ~18,
+  mapped expansion ~13), not expression memos (4.5 MB); dropping it re-derives ~4% of types. The catch: a memo- and
+  scratch-only region is safe but reaches only 5-35 MB on zod; the full 80% needs "everything per file, survivors
+  copied out at file end", which is the copying recycle declined on 2026-10-17 (measurements.md "A copying checker
+  recycle"): reprice it against this census before deciding. Next: drizzle, effect, vscode at K1 and the defaults.
+  Gates: kdiff and the recycle oracle (a dropped result must never be read again), instructions.
+- **Phase-boundary trims**: a trim burst when no checker runs. Small.
+
+## 4. Kernel round three
+From the laptop's `cycles:k` profile (For the human, a) and the thread-placement experiment (c). What was measured and
+declined in round one is in notes/kernel_time.md ("Measured and not changed": glibc.malloc.hugetlb=1's faults -23..-35%
+at +19% RSS on nest). The rest of malloc (AST helpers, scopes, flow) is the next fault lever.
+
+## 5. Correctness long tail (continuous)
 New real-code sightings first; every unfixed divergence gets a known-failing test in `test/cases`. Grep `bugs/` for a
 repository's name before investigating it. **No semantics commit lands without a repro or the full source sweep, and
 a relation change runs kdiff on the affected project at K1 and K8/16** (better-drizzle's 742 was K>1 only). Hacks
@@ -94,22 +125,22 @@ are suspects (vision.md "Decisions"). Open:
 - Mutation seeds yield less each time; parser-recovery mutants (58-77 per seed, `scripts/mutate.py`,
   `failstats.py --syntax`) are untouched.
 
-## 4. Mid-size threading: the staged path, as the laptop decides
-notes/sharing_design.md "The staged path". The duplication across checkers is inherent per checker (vscode 1.09x at
-K12, drizzle 2.15x; notes/duplication.md); affinity, block stealing, cost-estimate dealing, variance sharing and the
-persistent pool are closed (vision.md "Decisions").
-- **Stage 1, content order by default** (go; a session plus the full, DT and source sweeps): `TTTT_NESTING_ORDER=
-  content` becomes the deep-nesting test, push numbers on both relation stacks and inference's as bun has them (the
-  prototype's push search is quadratic: +1.6% drizzle). Its parity cost recorded as known-failing: 2 suite tests
-  (inferFromNestedSameShapeTuple, ttttDeferredReferenceNormalizedInRelation), drizzle's 3 TS2416 chains, webpack's
-  TS2345, valibot's 5 flagflip sites. No gain alone; the precondition for stage 2.
-- **Stage 2, the flag on for K > 1 with the plain path at K1** (go only after the laptop A/B: premium ~1.1-1.3x,
-  drizzle cycles >= 15% below plain, zod and effect within 5%, vue no longer 2x). Before a default flip: the effect
-  cascade (C+V) closed, seeded schedules and 300-run loops, the full oracles flagged and plain identical, the
-  `ty_reduced_slow()` KEY_REDUCED_UNION race fixed (triage.md). 2-3 worker-sessions.
-- **Stage 3, rollback**: no-go for now.
+## 6. Small projects
+react is bound by one file: `src/components/ui/form/form.tsx` (react-hook-form's Path/PathImpl with zodResolver) is
+~37-44 ms of a ~94 ms K1 typecheck. **tsc pays the same** (measurements.md "The 12-core box at 48cd9835" part C: about
+half of tsgo's check time and 74% of its types; tttt does it 5x faster), so it bounds react at every checker count;
+react's relation count against tsgo's is in "Smaller ideas". nest is start-up bound (the front end is 2/3 of its
+55 ms; kernel 27.5% of user cycles after the kernel round, against 6-9% on the big corpora). The rest is per-checker
+duplication (each checker's arena is its repeated work, 3-6 MB on nest, 12-33 MB on react: notes/front_end.md
+"Done"). Gates: RSS at many threads next to the wall; threadcheck/checkerdiff byte-identical.
 
 ## Smaller ideas
+- **Code footprint**: still ~50% frontend-bound after BOLT and huge text (op cache hit 63%, icache misses 23% of
+  fetches at 2989c0f0). The noinline splits simulated I1 misses -4.5..-6%, but on the laptop vscode K1's icache misses
+  per instruction rose 1.4% and the cycles' -1.7% came from fewer instructions: the working set is what is left.
+  `scripts/inlinedup.py` and the inlining ledger (notes/code_layout.md) list the next copies. Lower priority since
+  BOLT and the huge text page didn't move the human's private set: a change here needs a mechanism argument and
+  the laptop's counters, not the bench.
 - **The small-program floor's leftovers** (fe4's leads on nest, laptop, before round three: link 10 ms, walk 7 ms):
   link's time is mostly AST arena madvise/munmap page faulting, not linking (pre-fault or reuse arenas; a parallel
   link per import-cycle level only if link is real work after that); the load pool's finish-file lock is its top

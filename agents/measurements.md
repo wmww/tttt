@@ -16,7 +16,7 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
 
 ## How to measure (notes that still hold)
 - **Instructions**: `scripts/instrcount.sh` (callgrind, K1 T1, fast/tttt since 92828ad6e (pgo/tttt 2026-10-19 ..
-  10-22): `fastbuild.sh --measured`; saved in `test/instrcount.txt`, vscode 66.39 G there at acb8dfe7f). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
+  10-22): `fastbuild.sh --measured`; saved in `test/instrcount.txt`, vscode 66.37 G there at d7bc837b0). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
   K1 the counts include recycling's warm-ups (type-fest, drizzle, vscode recycle at 256 MB): compare with
   `--checker-memory off` for the checker's own work. instrcount gives valgrind a 64 MB main stack (type-fest's
   IntRange needs ~16 MB). A worktree with symlinked corpora can measure some corpora differently (nest +8% once):
@@ -27,6 +27,14 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
 - **tsc-rs** (pingdotgg/ts-rust, a Rust port of tsgo at our pin fed0bf24): `scripts/bench.sh --tscrs PATH`.
 - **Peaks**: `/usr/bin/time` (no Python parent). `--time` prints RSS after parse / after names, arena and types.
   Recycling's peaks wobble +-10 MB with the sawtooth's phase.
+- **sys and CPU accounting: `TTTT_SYNC_EXIT=1`.** Since the exit reaper (main.c exit_detached(), wt-ktime2's
+  35130c775) the kernel's address-space teardown (7-66 ms, nest to vscode) runs in a detached CLONE_VM child after
+  the caller has the exit status: `/usr/bin/time` and wait4's rusage then undercount sys (and CPU) by it, and wall to
+  exit is 3-6% shorter. Set `TTTT_SYNC_EXIT=1` when comparing sys, kernel cycles or CPU across builds (bench.sh takes
+  a second, synced run per sample for CPU; perfshape.sh and perfsweep.py run synced and take wall to the last
+  output byte of `--time`); leave it unset for the user-visible wall. Valgrind, sanitizers, debug builds and
+  `TTTT_TEARDOWN` exit in the process anyway. MADV_POPULATE_WRITE counts as minor faults on this box's kernel and not
+  in the laptop's `perf stat page-faults`: compare faults within one box.
 - **perfsweep**: tsgo's side is cached cold (`test/perfsweep/tsgo.jsonl.gz`, incremental projects with their own
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
@@ -1230,29 +1238,34 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
-## Oracle totals (2026-10-23, a5252a764 + acb8dfe7f)
-The merger's `scripts/oracles.py` after round four at a5252a764 (02c372df4's message), then wt-cor7's acb8dfe7f with
-the whole source sweep's kdiff and recycle and every corpus' instructions (0a1f67836's message); the previous totals
-were 0a400eb6f's (`git log -S'Oracle totals (2026-10-23, 0a400eb6f)' -- agents/measurements.md`). Suite **13999 /
-14035** at main (13998 / 14034 at a5252a764; cor7 added one own test; dts 1888 / 1910), 0 lost; the two failing own
-tests fail by design (ttttThisInstantiatedMethodErased, ttttDeferredBodyBeforeContextualParameters). The same with
-`--no-defer-bodies`; `--checker-memory 0`: 0 of 17671 differ. Every corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway
-artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2 (all vue pluginScoped.ts, won't fix),
-source sweep `--sample 4` 1322 / 1324 (with refresh 5: 316 repositories, 5464 projects; refresh 5 added 28
-bun-lockfile repos, 100 projects), the full sweep 5454 / 5464 before cor7 (better-drizzle's :742 TS2502 fixed since),
-`-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects, clidiff 3974 / 3986 (text 3, diagnostics 9), kdiff 3 / 3969 and
-recycle 3 / 3969 after cor7 (rxjs, sequelize x2: tsgo-shared; 4 at a5252a764 with better-drizzle, whose TS2502 at
-src/types/plugins.ts:742 appeared at K>1 only, from c0a04350a; recycle's dokploy times out under load: triage.md).
-perfsweep 2000 projects, median check ratio 0.28 (the box loaded: 0.17 last round), worst types ratio **1.73**
-(mcp-linker, refresh 5: 139k types against tsgo's 81k, unexamined: triage.md; lit tsserver-plugin's 1.40 next).
+## Oracle totals (2026-10-23, d7bc837b0)
+The merger's `scripts/oracles.py` at d7bc837b0 (3a77c8275's message: the kernel round wt-ktime and wt-pb's
+perfshape.sh in), the last full run of the fourth coordinator's session; the previous totals were a5252a764 +
+acb8dfe7f's (`git log -S'Oracle totals (2026-10-23, a5252a764' -- agents/measurements.md`), and nothing moved. Suite
+**13999 / 14035** (dts 1888 / 1910), 0 lost; the two failing own tests fail by design (ttttThisInstantiatedMethodErased,
+ttttDeferredBodyBeforeContextualParameters). The same with `--no-defer-bodies`; `--checker-memory 0`: 0 of 17672
+differ. Every corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640,
+flagflip 16 / 2 / 2 (all vue pluginScoped.ts, won't fix), source sweep `--sample 4` 1322 / 1324 (316 repositories,
+5464 projects since refresh 5's 28 bun-lockfile repos), the full sweep 5454 / 5464 before cor7 (better-drizzle's
+:742 TS2502 fixed since), `-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects, clidiff 3974 / 3986 (text 3,
+diagnostics 9), kdiff 3 / 3969 and recycle 3 / 3969 (rxjs, sequelize x2: tsgo-shared; +1 timeout, dokploy's recycle
+run under load: triage.md). perfsweep 2000 projects, median check ratio 0.28 (the box loaded: 0.17 the round
+before), worst types ratio **1.73** (mcp-linker, refresh 5: 139k types against tsgo's 81k, unexamined: triage.md;
+lit tsserver-plugin's 1.40 next).
 
-**The round's instructions** (`scripts/instrcount.sh`, callgrind K1, fast/tttt, `test/instrcount.txt` at
-0a400eb6f -> acb8dfe7f): flat. vscode 66.346 -> 66.388 G (+0.06%), type-fest 8.705 -> 8.663 (-0.49%), vue 5.015 ->
+**Instructions at d7bc837b0** (`scripts/instrcount.sh`, callgrind K1, fast/tttt, against 0a1f67836's save): flat
+through the kernel round (vscode 66.374 G, -0.02%; the rest within +-0.25%, react +0.23%, type-fest -0.21%): its win
+is kernel work, which callgrind doesn't count. wt-ktime's own gates: drizzle/zod/vue at `--checkers 4
+--checker-memory 0` identical to K1, `--time` sys (median of 3, load ~23) typecheck vscode 991 -> 683 ms, drizzle
+104 -> 88; peak RSS at the defaults on this box after all four commits: drizzle 850 -> ~866 MB, vscode 5015 -> ~5160,
+nest 167 -> 172, zod 630 -> 646 (the laptop measured more: +4..15%, "at 3a77c827").
+
+**Round four before it** (the same tool, `test/instrcount.txt` 0a400eb6f -> acb8dfe7f): flat. vscode 66.346 -> 66.388 G (+0.06%), type-fest 8.705 -> 8.663 (-0.49%), vue 5.015 ->
 4.995 (-0.40%), valibot +0.17%, effect, zod, drizzle, xstate, nest -0.13..-0.18%, the rest within 0.07%. The round's
 checker fixes (cor6, cor7) and the front end's (fe6) moved nothing at K1; better-drizzle at K1 2.08M -> 364k types
 (tsgo 492k) is outside the corpora.
-Front end on this box (16 vCPUs, loaded; the laptop to confirm): the checker cap (10398e204) took TypeScript6 8 -> 4
-checkers, -5% instructions at T1, its longest checker +3%; AST slabs' first 4 MB per thread on 4 KB pages (50a59a729)
+Front end on this box (16 vCPUs, loaded; the laptop to confirm): the checker cap (10398e204; since 8d4518ecc only for a
+largest file >= 1 MB) took TypeScript6 8 -> 4 checkers, -5% instructions at T1, its longest checker +3%; AST slabs' first 4 MB per thread on 4 KB pages (50a59a729)
 nest peak 190 -> 169 MB, react 285 -> 268 (huge pages forced; with malloc_trim at the defaults 210 -> 169 and 293 -> 255), the libs phase's sys down a third here, up on the
 merger's run (triage.md); malloc_trim(0) before checking (03bca3127) -4 / -3 MB; the loader not blocking on libs
 (b6f8a4650) nest libs + load+parse files 41.3 -> 36.8 ms (libs phase 15.7 -> 0.2), react 143 -> 135 ms wall.

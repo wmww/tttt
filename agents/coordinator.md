@@ -95,8 +95,8 @@ checker policy at +13% RSS) without asking you is doing its job.
   several times a day; ask them to propose, choose within minutes, state the reason and the recovery lever if you
   accept a cost.
 - **Don't ask for a stop you may not answer.** An interim "stop and wait for my go" that the coordinator forgot to
-  answer idled a worker for an hour. Either say go in the same message that relays the numbers, or let the worker
-  continue to its next milestone.
+  answer idled a worker for an hour, and it happened more than once. When you relay numbers, say go (or stop) in the
+  same message; otherwise write briefs so the worker continues to its next milestone by default.
 - **Relay.** Workers can't reach each other; what one learns about a shared file goes to the other through you. Hand
   a finished worker's leads to the owner of the file, not to whoever found them.
 - **Resume, don't respawn.** A finished worker with its context is the cheapest agent for adjacent follow-ups.
@@ -110,6 +110,12 @@ checker policy at +13% RSS) without asking you is doing its job.
 - **Protect the human's attention**: status on request in a few lines with numbers; shell hygiene in briefs.
 
 ## Judging results
+- **Validate perf on a mechanism argument or a breadth check, not the bench.** The human's private project set is
+  the judge. A run of bench wins (BOLT, a huge text page, a -14% parser, a front-end round) moved it 0.98; the kernel
+  round, argued from a mechanism present in every multi-threaded run (TLB shootdowns and faults at the defaults),
+  moved it >10% on most projects. Before calling a perf change a win, say where else it applies and check it at
+  breadth (perfsweep, the bun breadth sweep, a `scripts/perfshape.sh` report the human can paste); 15 corpora are a
+  training set.
 - A win is a number against the same base build in the same worktree, A/B interleaved, load stated. "Within noise"
   is not a win. A rarer flake without a named mechanism is not a fix. Attribute instruction jumps before celebrating
   them (a -15% on drizzle was mostly a memory policy, not checker speed).
@@ -125,9 +131,13 @@ checker policy at +13% RSS) without asking you is doing its job.
   produced wrong answers in one week (a deep-nesting target push, a generic-mapped member fallback).
 - **Price a hack's removal against tsc's own work**, not against the hack's speed: removing a relation hack cost
   react +36% instructions, and tsgo's relation and type counts showed that was tsc's work, not a new runaway.
-- **Cycles-level claims need the laptop.** Cachegrind's icache proxy over-predicted `-fno-peel-loops` and
-  under-predicted BOLT; interning looked good in instructions and lost in cycles. Ask the human for `perf stat` on
-  the laptop before a layout, compiler or memory-system change becomes a decision.
+- **Cycles-level claims need the laptop, and so does the kernel and OS layer.** Cachegrind's icache proxy
+  over-predicted `-fno-peel-loops` and under-predicted BOLT; interning looked good in instructions and lost in
+  cycles. The biggest validated win was kernel time (21-28% of user cycles at the defaults) that this VM couldn't
+  show: THP `madvise`, other agents' interrupts, no perf, and callgrind doesn't count kernel work. Ask the human for
+  `perf stat` (cycles:k, page-faults, the TLB line of `/proc/interrupts`) on the laptop before a layout, compiler,
+  memory-system or threading change becomes a decision, and ask early for a kernel profile when walls and
+  instructions disagree.
 - Tests and oracles are the gate, speed on real projects is the goal, correctness is never traded. A feature faster
   on some projects and slower on others is a policy question (when to turn it on), not a default.
 - Write each verdict where the next reader looks: design knowledge in `agents/notes/`, numbers with the command and
@@ -146,8 +156,16 @@ repo (every branch merged or dropped, said in the commit message), scratch in /t
 push`.
 
 ## Winding down (handoff.md)
-When the human asks you to wind down, write `agents/handoff.md`: the state of in-flight work (each track, its branch
-and last commit, what it was doing), what was decided and why, what the next coordinator should check before
-believing it (numbers to re-measure, premises that may be stale), and which worktrees and branches exist. Commit it.
-The next coordinator reads it first, acts on it, folds anything durable into vision.md, todo.md or notes/, and deletes
-it in its first commit. There is no handoff.md between coordinators otherwise.
+When the human asks you to wind down, in this order:
+1. **Workers finish their current deliverable**, not the brief: each commits what it has and a hand-off paragraph
+   (what is done, what is measured, what is ungated, how to resume) in its notes file or a `handoff/` directory on
+   its branch, then stops. Half-measured work is committed as a patch file with its numbers, not landed.
+2. **Write `agents/handoff.md`** yourself: the state with numbers, each in-flight track (branch, last commit, what it
+   was doing, whether the merger will land it), what was decided and why, the human's pending asks (exact commands),
+   what the next coordinator should re-check before believing it, and which worktrees and branches exist. Commit it.
+3. **The merger lands** the branches (gated as usual; scripts-only and docs-only commits skip the oracles), runs the
+   final oracles and records them, removes the landed worktrees.
+4. **A docs worker refreshes vision.md, todo.md, measurements.md and this file last**, from handoff.md and the
+   merger's results, so the next coordinator finds the order in todo.md and the verdicts in vision.md.
+The next coordinator reads handoff.md first, acts on it, folds anything durable into vision.md, todo.md or notes/, and
+deletes it in its first commit. There is no handoff.md between coordinators otherwise.
