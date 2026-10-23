@@ -41,8 +41,10 @@ command (measurements.md "How to measure": sys with `TTTT_SYNC_EXIT=1`):
   (kernel cycles are 6-9% of user there, 17% on react, 27% on nest). Feeds section 4.
 - **(b) The exit tail under THP `always`**: last output byte to exit with `TTTT_SYNC_EXIT=1` against the reaper's
   default (this box, THP `madvise`, measured 7-66 ms; fewer pages to free on the laptop may make it smaller).
-- **(c) Thread placement on the hybrid CPU**: `taskset` tttt to the 8 Zen 5 threads, all 24, the 16 Zen 5c, and 12
-  one per core, on drizzle and vscode, wall and CPU. Feeds sections 2 and 4 (checker count policy).
+- **(c) Thread placement: withdrawn** (2026-10-23, the human): a rule that pins work to a kind of core would be
+  hill-climbing whichever machine runs the bench. Scheduling policy only on arguments that hold on any box (core and
+  thread counts, bytes, file sizes); the OS places threads. `physical_cores()` (main.c) stays: a per-core cap is such
+  an argument.
 - **(d) The recycle-budget sweep**: `--checker-memory` 4096 / 3072 / 2048 against the default on vscode and drizzle,
   wall against peak RSS. Decides section 3's first lever.
 - **(e) The bench on main after the reaper** (`scripts/bench.sh --runs 3 --checkers 12 --bun ...`), the arena
@@ -87,7 +89,7 @@ vscode 5.5 GB at the defaults against bun's 2.2 (K1 4.3); the kernel round added
 - **Phase-boundary trims**: a trim burst when no checker runs. Small.
 
 ## 4. Kernel round three
-From the laptop's `cycles:k` profile (For the human, a) and the thread-placement experiment (c). What was measured and
+From the laptop's `cycles:k` profile (For the human, a). What was measured and
 declined in round one is in notes/kernel_time.md ("Measured and not changed": glibc.malloc.hugetlb=1's faults -23..-35%
 at +19% RSS on nest). The rest of malloc (AST helpers, scopes, flow) is the next fault lever.
 

@@ -63,16 +63,15 @@ under tsc are the second.
 ## Direction (2026-10-23, the fourth coordinator's hand-off; the items and their numbers are in todo.md)
 The human's priorities: distinctly faster than bun canary on real projects, judged on their private set; speed over
 memory, but memory is now worth cutting where it is cheap; easy, measured wins first; correctness never traded.
-0. **For the human**: the laptop asks (remaining kernel cycles, the exit tail under THP `always`, thread placement on
-   the hybrid CPU, the recycle-budget sweep, the bench on main after the reaper); keep or revert the relation HACK's
-   removal.
+0. **For the human**: the laptop asks (remaining kernel cycles, the exit tail under THP `always`, the recycle-budget
+   sweep, the bench on main after the reaper); keep or revert the relation HACK's removal.
 1. The **breadth bun sweep**: tttt against bun canary on the ~500
    heaviest source-sweep projects, the worst dissected by `scripts/perfshape.sh`. That is where the human's remaining
    losses live, and the expected remedies are policy and scheduling (more checkers when the critical path is long,
    splitting what one dominating file holds, checking earlier).
 2. **Memory**: the recycle-budget default from the laptop sweep, per-file release if the census says it is large,
    phase-boundary trims.
-3. **Kernel round three** from the laptop's `cycles:k` profile and the thread-placement experiment.
+3. **Kernel round three** from the laptop's `cycles:k` profile.
 4. **The correctness long tail, continuously**: kebo's mobx-state-tree cycle, better-drizzle's two TS2578,
    mcp-linker's 1.73x types, the recursion identity's repro, hono; a fifth refresh rule when the human reports new
    divergences.
@@ -80,6 +79,11 @@ memory, but memory is now worth cutting where it is cheap; easy, measured wins f
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **No machine-specific tuning** (2026-10-23, the human): no pinning of work to kinds of cores, no `-march`, no
+  per-microarchitecture rules; the shipped build's PGO and BOLT profiles are instrumentation counts of the training
+  corpora (input-dependent, not machine-dependent) and the huge-page paths fall back at runtime. Defaults are derived
+  from arguments that hold on any Linux x86 box (core counts, bytes, file sizes, RAM); the laptop confirms a
+  mechanism, it does not suggest a rule. The hybrid-CPU placement experiment is withdrawn (todo.md).
 - **Perf work is judged by mechanism or breadth, not by the bench** (2026-10-23): the human's private project set is
   the judge, and before the kernel round it moved 0.98 over a stretch of bench wins (BOLT -3.2% K1 wall, the huge
   text page -4.6%, the parser's -14%, the front-end round), which were fitted to the 15 bench corpora. The kernel
