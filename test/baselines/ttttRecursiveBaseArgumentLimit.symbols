@@ -1,0 +1,39 @@
+//// [test/cases/ttttRecursiveBaseArgumentLimit.ts] ////
+
+=== ttttRecursiveBaseArgumentLimit.ts ===
+// KNOWN FAILING (bugs/sourcesweep_checker.md, opencode leftovers: starlight's schema.ts:119). tsgo reports TS5114
+// at the alias: its constraint check of the type argument resolves B's members, whose base's argument B["_input"]
+// resolves them again from the start until the instantiation stack is 100 deep. tttt reports at the use: TS5114
+// from members_reentered_unguarded()'s synthesized stack, then a real TS2589 from the instantiated property's
+// re-entry, two hits where tsgo has one
+declare abstract class ZodType<Input = any> {
+>ZodType : Symbol(ZodType, Decl(ttttRecursiveBaseArgumentLimit.ts, 0, 0))
+>Input : Symbol(Input, Decl(ttttRecursiveBaseArgumentLimit.ts, 5, 31))
+
+    readonly _input: Input;
+>_input : Symbol(ZodType._input, Decl(ttttRecursiveBaseArgumentLimit.ts, 5, 45))
+>Input : Symbol(Input, Decl(ttttRecursiveBaseArgumentLimit.ts, 5, 31))
+}
+declare class ZodUnion<T extends readonly ZodType[]> extends ZodType<T[number]["_input"]> {}
+>ZodUnion : Symbol(ZodUnion, Decl(ttttRecursiveBaseArgumentLimit.ts, 7, 1))
+>T : Symbol(T, Decl(ttttRecursiveBaseArgumentLimit.ts, 8, 23))
+>ZodType : Symbol(ZodType, Decl(ttttRecursiveBaseArgumentLimit.ts, 0, 0))
+>ZodType : Symbol(ZodType, Decl(ttttRecursiveBaseArgumentLimit.ts, 0, 0))
+>T : Symbol(T, Decl(ttttRecursiveBaseArgumentLimit.ts, 8, 23))
+
+type B = ZodUnion<[B, ...B[]]>;
+>B : Symbol(B, Decl(ttttRecursiveBaseArgumentLimit.ts, 8, 92))
+>ZodUnion : Symbol(ZodUnion, Decl(ttttRecursiveBaseArgumentLimit.ts, 7, 1))
+>B : Symbol(B, Decl(ttttRecursiveBaseArgumentLimit.ts, 8, 92))
+>B : Symbol(B, Decl(ttttRecursiveBaseArgumentLimit.ts, 8, 92))
+
+declare const b: B;
+>b : Symbol(b, Decl(ttttRecursiveBaseArgumentLimit.ts, 10, 13))
+>B : Symbol(B, Decl(ttttRecursiveBaseArgumentLimit.ts, 8, 92))
+
+const i = b._input;
+>i : Symbol(i, Decl(ttttRecursiveBaseArgumentLimit.ts, 11, 5))
+>b._input : Symbol(ZodType._input, Decl(ttttRecursiveBaseArgumentLimit.ts, 5, 45))
+>b : Symbol(b, Decl(ttttRecursiveBaseArgumentLimit.ts, 10, 13))
+>_input : Symbol(ZodType._input, Decl(ttttRecursiveBaseArgumentLimit.ts, 5, 45))
+

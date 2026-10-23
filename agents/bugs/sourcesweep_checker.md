@@ -444,6 +444,17 @@ which the sweep's cache no longer lists (its 62 configs are the packages'), so n
   path (is_iterable_like of the deferred indexed access) and reported TS2322. In the root project, JSX is React's while
   the components are solid's. [open]
 - **starlight schema.ts:119**: tsgo TS5114 ("Instantiations of type 'ZodType' appear infinitely circular"), tttt
-  TS2589. This is the instantiation-limit family (bugs/tsgo_divergences.md, MEMBERS nesting). [open]
+  TS2589 next to it. This is the instantiation-limit family (bugs/tsgo_divergences.md, MEMBERS nesting). Cut down
+  (scripts/reduce.py, then by hand) to test/cases/ttttRecursiveBaseArgumentLimit.ts, which is known failing:
+  `declare class ZodUnion<T extends readonly ZodType[]> extends ZodType<T[number]["_input"]> {}` and `type B =
+  ZodUnion<[B, ...B[]]>`.
+  - tsgo reports TS5114 at the alias. The constraint check of the type argument relates B to ZodType<any>, which needs
+    B's `_input`, whose base's argument B["_input"] resolves B's members again from the start (no in-flight state)
+    until the stack is 100 deep.
+  - tttt doesn't relate there (no error at the alias). At a use (`b._input`) it reports twice. First the TS5114 that
+    members_reentered_unguarded() synthesizes (hacks.md). Then a real TS2589 from the instantiated property's re-entry
+    (prop_type_slow, up to 200 levels), whose stack of indexed accesses names nothing.
+  - Two divergences: where the alias's constraint check goes, and a second limit hit after the synthesized one. The
+    first is the members stage E of agents/notes/reentrancy.md. [open]
 - A union member a non-generic alias names prints as the alias in tttt's error heads (`S` for `S | undefined`, `type S
   = readonly {...}[]`) and expanded in tsgo's. [open]
