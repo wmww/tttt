@@ -227,6 +227,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   what resolving them finds only when something uses a binding. tttt resolves aliases eagerly and has no use tracking
   outside noUnusedLocals, so a binding counts as used when its name appears as a word anywhere else in the file
   (`import_binding_mentioned`: a comment or string mentioning it too). A re-export or side-effect import has none.
+  The correct mechanism is tsc's: lazy alias resolution on use. A reference that resolves to the binding
+  (resolveName -> resolveAlias -> getTargetOfImportSpecifier/Clause) reports TS2307/TS2305 at the import the first
+  time. Closing this needs either use tracking in all modes (the resolve walk marking each alias it hits, like
+  `referenced` under noUnusedLocals) or deferring these aliases' error reporting to their first use in the checker.
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - `without_unit()` (ty/flow.c): the `!==`-a-unit filter of a union is memoized per (union, unit), KEY_FLOW_NOT_UNIT.
@@ -246,6 +250,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   type of the last `@param` that names no parameter only when the body references `arguments`, for TS8029. The
   parameters are looked up before the body walk sets `uses_arguments`, so the candidate's lookup errors are kept when
   the function's text has the word `arguments` anywhere (a string, a comment, a nested function's own `arguments` too).
+  The correct mechanism is tsc's containsArgumentsReference, which is the body walk's answer (`uses_arguments`, set in
+  expr.c: an `arguments` identifier not inside a nested non-arrow function). Closing this needs the candidate's
+  lookup errors to be kept until the body walk has run, then reported only if `uses_arguments`. That means a
+  buffered ErrorCtx that survives a parallel (sharded) walk, which today sends any non-shard context to `discarded`.
 
 ## Declarations and bindings (AST-side walk)
 - `ty_binding_assigned_type` (not memoised): tsc unions the undefined-stripped element with the default (subtype
