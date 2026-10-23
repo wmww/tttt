@@ -1,0 +1,53 @@
+//// [test/cases/npm__vobs_theme_TS2339.tsx] ////
+
+=== jsx.d.ts ===
+export interface A { id?: string }
+>id : string | undefined
+
+export interface S { d?: string }
+>d : string | undefined
+
+declare global {
+>global : any
+
+  namespace JSX {
+    type Element = any
+>Element : any
+
+    type IntrinsicElements = {
+>IntrinsicElements : IntrinsicElements
+
+      [K in keyof HTMLElementTagNameMap]: A
+    } & {
+      [K in keyof SVGElementTagNameMap]: S
+    }
+  }
+}
+=== a.tsx ===
+import './jsx'
+const x = <div id="a"></div>
+>x : any
+><div id="a"></div> : any
+>div : any
+>id : string
+>div : any
+
+const y = <circle d="x" />
+>y : any
+><circle d="x" /> : any
+>circle : any
+>d : string
+
+const z = <a id={1} />
+>z : any
+><a id={1} /> : any
+>a : any
+>id : number
+>1 : 1
+
+const w = <span nope="1" />
+>w : any
+><span nope="1" /> : any
+>span : any
+>nope : string
+

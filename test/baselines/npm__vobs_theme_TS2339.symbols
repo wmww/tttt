@@ -1,0 +1,59 @@
+//// [test/cases/npm__vobs_theme_TS2339.tsx] ////
+
+=== jsx.d.ts ===
+export interface A { id?: string }
+>A : Symbol(A, Decl(jsx.d.ts, 0, 0))
+>id : Symbol(A.id, Decl(jsx.d.ts, 0, 20))
+
+export interface S { d?: string }
+>S : Symbol(S, Decl(jsx.d.ts, 0, 34))
+>d : Symbol(S.d, Decl(jsx.d.ts, 1, 20))
+
+declare global {
+>global : Symbol(global, Decl(jsx.d.ts, 1, 33))
+
+  namespace JSX {
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 2, 16))
+
+    type Element = any
+>Element : Symbol(Element, Decl(jsx.d.ts, 3, 17))
+
+    type IntrinsicElements = {
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(jsx.d.ts, 4, 22))
+
+      [K in keyof HTMLElementTagNameMap]: A
+>K : Symbol(K, Decl(jsx.d.ts, 6, 7))
+>HTMLElementTagNameMap : Symbol(HTMLElementTagNameMap, Decl(lib.dom.d.ts, --, --))
+>A : Symbol(A, Decl(jsx.d.ts, 0, 0))
+
+    } & {
+      [K in keyof SVGElementTagNameMap]: S
+>K : Symbol(K, Decl(jsx.d.ts, 8, 7))
+>SVGElementTagNameMap : Symbol(SVGElementTagNameMap, Decl(lib.dom.d.ts, --, --))
+>S : Symbol(S, Decl(jsx.d.ts, 0, 34))
+    }
+  }
+}
+=== a.tsx ===
+import './jsx'
+const x = <div id="a"></div>
+>x : Symbol(x, Decl(a.tsx, 1, 5))
+>div : Symbol("div", Decl(lib.dom.d.ts, --, --))
+>id : Symbol(id, Decl(a.tsx, 1, 14))
+>div : Symbol("div", Decl(lib.dom.d.ts, --, --))
+
+const y = <circle d="x" />
+>y : Symbol(y, Decl(a.tsx, 2, 5))
+>circle : Symbol("circle", Decl(lib.dom.d.ts, --, --))
+>d : Symbol(d, Decl(a.tsx, 2, 17))
+
+const z = <a id={1} />
+>z : Symbol(z, Decl(a.tsx, 3, 5))
+>a : Symbol("a", Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>id : Symbol(id, Decl(a.tsx, 3, 12))
+
+const w = <span nope="1" />
+>w : Symbol(w, Decl(a.tsx, 4, 5))
+>span : Symbol("span", Decl(lib.dom.d.ts, --, --))
+>nope : Symbol(nope, Decl(a.tsx, 4, 15))
+

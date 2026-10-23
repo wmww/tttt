@@ -257,6 +257,17 @@ JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, JsxElement const* element, csvi
     }
     // (Object's members too: tsc's getIntrinsicTagSymbol asks getPropertyOfType, `<toString />` is Object's method)
     if (apparent->flags & TYF_OBJECT) ret.prop = ty_get_object_prop(me, apparent, atom);
+    // (An intersection of element maps, `{ [K in keyof HTMLElementTagNameMap]: A } & { [K in keyof
+    // SVGElementTagNameMap]: S }`: its property, tsc's getPropertyOfType of the intersection, whose type intersects
+    // the members' (`<a>` is in both maps: A & S)
+    else if (apparent->kind == TY_INTERSECTION) {
+        FoundProp found = ty_find_prop(me, apparent, atom);
+        if (found.found && found.prop) {
+            ret.prop = found.prop;
+            ret.props = found.type;
+            return ret;
+        }
+    }
     if (ret.prop) {
         ret.props = prop_type(me, ret.prop);
         return ret;
