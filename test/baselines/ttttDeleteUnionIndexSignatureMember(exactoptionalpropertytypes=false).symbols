@@ -1,0 +1,78 @@
+//// [test/cases/ttttDeleteUnionIndexSignatureMember.ts] ////
+
+=== ttttDeleteUnionIndexSignatureMember.ts ===
+// A union property's type takes in the index signatures of the members without the property (tsc's
+// createUnionOrIntersectionProperty): through an unknown or undefined-including one, `delete` needs no optional property
+type A = { enabled: boolean; k?: string };
+>A : Symbol(A, Decl(ttttDeleteUnionIndexSignatureMember.ts, 0, 0))
+>enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+>k : Symbol(k, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 28))
+
+declare function n(): A | null;
+>n : Symbol(n, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 42))
+>A : Symbol(A, Decl(ttttDeleteUnionIndexSignatureMember.ts, 0, 0))
+
+declare const r: Record<string, unknown>;
+>r : Symbol(r, Decl(ttttDeleteUnionIndexSignatureMember.ts, 4, 13))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+const job = n() ?? r;
+>job : Symbol(job, Decl(ttttDeleteUnionIndexSignatureMember.ts, 5, 5))
+>n : Symbol(n, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 42))
+>r : Symbol(r, Decl(ttttDeleteUnionIndexSignatureMember.ts, 4, 13))
+
+if (typeof job.k === "string") {
+>job.k : Symbol(k, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 28))
+>job : Symbol(job, Decl(ttttDeleteUnionIndexSignatureMember.ts, 5, 5))
+>k : Symbol(k, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 28))
+
+  delete job.enabled;
+>job.enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+>job : Symbol(job, Decl(ttttDeleteUnionIndexSignatureMember.ts, 5, 5))
+>enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+}
+delete job.enabled;
+>job.enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+>job : Symbol(job, Decl(ttttDeleteUnionIndexSignatureMember.ts, 5, 5))
+>enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+
+declare const s: A | { [k: string]: string };
+>s : Symbol(s, Decl(ttttDeleteUnionIndexSignatureMember.ts, 11, 13))
+>A : Symbol(A, Decl(ttttDeleteUnionIndexSignatureMember.ts, 0, 0))
+>k : Symbol(k, Decl(ttttDeleteUnionIndexSignatureMember.ts, 11, 24))
+
+delete s.enabled;
+>s.enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+>s : Symbol(s, Decl(ttttDeleteUnionIndexSignatureMember.ts, 11, 13))
+>enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+
+declare const u: A | { [k: string]: string | undefined };
+>u : Symbol(u, Decl(ttttDeleteUnionIndexSignatureMember.ts, 14, 13))
+>A : Symbol(A, Decl(ttttDeleteUnionIndexSignatureMember.ts, 0, 0))
+>k : Symbol(k, Decl(ttttDeleteUnionIndexSignatureMember.ts, 14, 24))
+
+delete u.enabled;
+>u.enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+>u : Symbol(u, Decl(ttttDeleteUnionIndexSignatureMember.ts, 14, 13))
+>enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+
+declare const a: A | { [k: string]: any };
+>a : Symbol(a, Decl(ttttDeleteUnionIndexSignatureMember.ts, 17, 13))
+>A : Symbol(A, Decl(ttttDeleteUnionIndexSignatureMember.ts, 0, 0))
+>k : Symbol(k, Decl(ttttDeleteUnionIndexSignatureMember.ts, 17, 24))
+
+delete a.enabled;
+>a.enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+>a : Symbol(a, Decl(ttttDeleteUnionIndexSignatureMember.ts, 17, 13))
+>enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+
+declare const ro: A | { readonly [k: string]: unknown };
+>ro : Symbol(ro, Decl(ttttDeleteUnionIndexSignatureMember.ts, 20, 13))
+>A : Symbol(A, Decl(ttttDeleteUnionIndexSignatureMember.ts, 0, 0))
+>k : Symbol(k, Decl(ttttDeleteUnionIndexSignatureMember.ts, 20, 34))
+
+delete ro.enabled;
+>ro.enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+>ro : Symbol(ro, Decl(ttttDeleteUnionIndexSignatureMember.ts, 20, 13))
+>enabled : Symbol(enabled, Decl(ttttDeleteUnionIndexSignatureMember.ts, 2, 10))
+

@@ -2851,11 +2851,20 @@ typedef struct MemberRefs {
     Prop const* props[16];
     Ty const* objects[16]; // The apparent type each was found on
     u32 len;
+    // A union's members without the property, through an index signature: its type is in the union property's (tsc's
+    // createUnionOrIntersectionProperty's indexTypes). INDEX_REF_*, reset by member_refs()
+    uint8_t index_mask;
 } MemberRefs;
+
+enum {
+    INDEX_REF_ANY_UNKNOWN = 1, // Some index signature's type is any or unknown (so is the property's)
+    INDEX_REF_UNDEFINED = 2, // ...can be undefined
+};
 
 // The properties named `name` of `object` (of every member of a union or intersection that has one), and whether the
 // property tsc makes of them is readonly (a union's if any of them is, an intersection's if all are). -1: none
 static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRefs* out, u32 depth) {
+    if (!depth) out->index_mask = 0;
     if (depth > 8) return -1;
     object = ty_reduced(me, object); // (tsc's getPropertyOfType: an intersection that is never has none)
     // Members first: the apparent type of an intersection with type parameters is a new type
@@ -2874,6 +2883,8 @@ static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRe
                     ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
                 if (!info) return -1;
                 readonly = info->readonly;
+                if (info->value->flags & (TYF_ANY | TYF_UNKNOWN)) out->index_mask |= INDEX_REF_ANY_UNKNOWN;
+                else if (ty_can_be_undefined(me, info->value)) out->index_mask |= INDEX_REF_UNDEFINED;
             }
             if (readonly < 0) continue;
             ret = ret < 0 ? readonly : is_union ? (ret || readonly) : (ret && readonly);
@@ -2986,8 +2997,10 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
         return;
     }
     if (!compiler_options()->strict_null_checks) return;
-    // The property tsc makes of them: optional if any is, of the union of their types
+    // The property tsc makes of them: optional if any is, of the union of their types (and of the index signatures'
+    // of a union's members without it)
     bool exact = compiler_options()->exact_optional_property_types;
+    if (refs.index_mask & INDEX_REF_ANY_UNKNOWN || (!exact && refs.index_mask & INDEX_REF_UNDEFINED)) return;
     for (u32 i = 0; i < refs.len; i++) {
         Prop const* prop = refs.props[i];
         if (exact ? (prop->flags & PROP_OPTIONAL) : (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_STRIP_UNDEFINED)) return;

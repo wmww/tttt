@@ -1,0 +1,83 @@
+//// [test/cases/ttttDeleteUnionIndexSignatureMember.ts] ////
+
+=== ttttDeleteUnionIndexSignatureMember.ts ===
+// A union property's type takes in the index signatures of the members without the property (tsc's
+// createUnionOrIntersectionProperty): through an unknown or undefined-including one, `delete` needs no optional property
+type A = { enabled: boolean; k?: string };
+>A : A
+>enabled : boolean
+>k : string | undefined
+
+declare function n(): A | null;
+>n : () => A | null
+
+declare const r: Record<string, unknown>;
+>r : Record<string, unknown>
+
+const job = n() ?? r;
+>job : A | Record<string, unknown>
+>n() ?? r : A | Record<string, unknown>
+>n() : A | null
+>n : () => A | null
+>r : Record<string, unknown>
+
+if (typeof job.k === "string") {
+>typeof job.k === "string" : boolean
+>typeof job.k : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>job.k : unknown
+>job : A | Record<string, unknown>
+>k : unknown
+>"string" : "string"
+
+  delete job.enabled;
+>delete job.enabled : boolean
+>job.enabled : unknown
+>job : A | Record<string, unknown>
+>enabled : unknown
+}
+delete job.enabled;
+>delete job.enabled : boolean
+>job.enabled : unknown
+>job : A | Record<string, unknown>
+>enabled : unknown
+
+declare const s: A | { [k: string]: string };
+>s : A | { [k: string]: string; }
+>k : string
+
+delete s.enabled;
+>delete s.enabled : boolean
+>s.enabled : string | boolean
+>s : A | { [k: string]: string; }
+>enabled : string | boolean
+
+declare const u: A | { [k: string]: string | undefined };
+>u : A | { [k: string]: string | undefined; }
+>k : string
+
+delete u.enabled;
+>delete u.enabled : boolean
+>u.enabled : string | boolean | undefined
+>u : A | { [k: string]: string | undefined; }
+>enabled : string | boolean | undefined
+
+declare const a: A | { [k: string]: any };
+>a : A | { [k: string]: any; }
+>k : string
+
+delete a.enabled;
+>delete a.enabled : boolean
+>a.enabled : any
+>a : A | { [k: string]: any; }
+>enabled : any
+
+declare const ro: A | { readonly [k: string]: unknown };
+>ro : A | { readonly [k: string]: unknown; }
+>k : string
+
+delete ro.enabled;
+>delete ro.enabled : boolean
+>ro.enabled : unknown
+>ro : A | { readonly [k: string]: unknown; }
+>enabled : unknown
+
