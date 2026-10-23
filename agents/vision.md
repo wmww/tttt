@@ -81,6 +81,9 @@ memory, but memory is now worth cutting where it is cheap; easy, measured wins f
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **opencode is a correctness project only** (2026-10-23, the human): github.com/anomalyco/opencode (clean under tsgo
+  7.1; 8-27 varying errors under tttt at the defaults, 10 at one checker, 12 with a fresh checker per file) joins the
+  source sweep for correctness and is excluded from every perf measurement, like openclaw.
 - **openclaw is a correctness project only** (2026-10-23, the human): github.com/openclaw/openclaw (clean under tsgo
   7.1, spurious and run-to-run varying errors under tttt at e6b76af2e) joins the source sweep for correctness and is
   excluded from every perf measurement (perfsweep, bench, instrcount, the bun breadth sweep); repos.txt marks it.
