@@ -103,7 +103,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
   plugin's parameters `[options?: Readonly<Options> | null | undefined]`. Cut-down probes without unified's Plugin
   conditional return type and CallableInstance base didn't reproduce. Repro test/cases/npm__nirholas_crypto-news_TS2345.ts
-  (11 files from reduce.py). [open]
+  (11 files from reduce.py). (claimed: cor10) [open]
 - Seed 20261028, tamagui/tamagui (@tamagui/codemod-flat-values@3.1.3, code/core/codemod-flat-values): spurious
   TS2339 "Property 'replaceWithText' does not exist on type 'never'" and TS2349 at src/transition.ts:302 (tsgo 0
   errors, tttt 2). `let node: A | B | null = null`, assigned in a loop after a type-predicate `continue`
