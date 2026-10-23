@@ -1,0 +1,42 @@
+//// [test/cases/ttttDeclarationReusedNodeLocalName.ts] ////
+
+=== entities.ts ===
+export interface Entity { offset: number; type: string }
+>Entity : Symbol(Entity, Decl(entities.ts, 0, 0))
+>offset : Symbol(Entity.offset, Decl(entities.ts, 0, 25))
+>type : Symbol(Entity.type, Decl(entities.ts, 0, 41))
+
+export class Context {
+>Context : Symbol(Context, Decl(entities.ts, 0, 56))
+
+    entities<T extends string[]>(...types: T) {
+>entities : Symbol(Context.entities, Decl(entities.ts, 1, 22))
+>T : Symbol(T, Decl(entities.ts, 2, 13))
+>types : Symbol(types, Decl(entities.ts, 2, 33))
+>T : Symbol(T, Decl(entities.ts, 2, 13))
+
+        type Selected = T extends [] ? string : T[number];
+>Selected : Symbol(Selected, Decl(entities.ts, 2, 47))
+>T : Symbol(T, Decl(entities.ts, 2, 13))
+>T : Symbol(T, Decl(entities.ts, 2, 13))
+
+        return [] as (Entity & { type: Selected; fragment: string })[];
+>Entity : Symbol(Entity, Decl(entities.ts, 0, 0))
+>type : Symbol(type, Decl(entities.ts, 4, 32))
+>Selected : Symbol(Selected, Decl(entities.ts, 2, 47))
+>fragment : Symbol(fragment, Decl(entities.ts, 4, 48))
+    }
+}
+=== recursive.ts ===
+export function recursive() {
+>recursive : Symbol(recursive, Decl(recursive.ts, 0, 0))
+
+    type Recursive = Recursive[];
+>Recursive : Symbol(Recursive, Decl(recursive.ts, 0, 29))
+>Recursive : Symbol(Recursive, Decl(recursive.ts, 0, 29))
+
+    return null as unknown as { r: Recursive };
+>r : Symbol(r, Decl(recursive.ts, 2, 31))
+>Recursive : Symbol(Recursive, Decl(recursive.ts, 0, 29))
+}
+

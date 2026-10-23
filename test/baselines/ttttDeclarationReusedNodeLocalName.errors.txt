@@ -1,0 +1,19 @@
+recursive.ts(1,17): error TS5088: The inferred type of 'recursive' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+
+
+==== entities.ts (0 errors) ====
+    export interface Entity { offset: number; type: string }
+    export class Context {
+        entities<T extends string[]>(...types: T) {
+            type Selected = T extends [] ? string : T[number];
+            return [] as (Entity & { type: Selected; fragment: string })[];
+        }
+    }
+==== recursive.ts (1 errors) ====
+    export function recursive() {
+                    ~~~~~~~~~
+!!! error TS5088: The inferred type of 'recursive' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+        type Recursive = Recursive[];
+        return null as unknown as { r: Recursive };
+    }
+    

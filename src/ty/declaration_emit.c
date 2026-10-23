@@ -166,6 +166,7 @@ typedef struct Walk {
     // Walking a type node the syntactic builder reuses (an assertion's, a function expression's annotations): a name
     // that isn't accessible from here makes it fall back instead (trackExistingEntityName)
     bool reusing;
+    TypeNode const* reused_node; // While reusing: the type reference or query whose first name is being checked
     Root root; // The declaration being serialized
     // The function declaration (a method, a constructor, an accessor) whose signature is being walked: tsc's
     // enclosingDeclaration, from which a written name resolves to the function's locals first, its body's included
@@ -930,6 +931,25 @@ static Symbol const* signature_name_resolution(Walk* me, Symbol const* symbol, c
     return local;
 }
 
+// A reused node whose name isn't accessible here is printed as its type (tsgo's visitExistingNodeTreeSymbols
+// recovery): whether that reports anything (the cyclic structure placeholder, TS2883...), which fails the whole reuse
+// (the error bubbles up the recovery scopes to tryReuseExistingNodeHelper, which then prints the declaration's type).
+// Without the node: as if it did
+static bool reused_node_fallback_errs(Walk* me) {
+    TypeNode const* node = my reused_node;
+    if (!node) return true;
+    Ty const* type = ty_from_node(my checker, node, (LowerCtx){ .generic = true });
+    if (!type) return true;
+    cstr* type_out = my type_out;
+    cstr* pseudo_out = my pseudo_out;
+    my type_out = my pseudo_out = nullptr;
+    isize_t before = vec_error_size(&my errs->errors);
+    print_type(me, type, true);
+    my type_out = type_out;
+    my pseudo_out = pseudo_out;
+    return vec_error_size(&my errs->errors) != before;
+}
+
 // tsc's isEntityNameVisible of a name in a written type, and handleSymbolAccessibilityError: `symbol` is what its first
 // identifier resolved to (null: unresolved, which the checker reports)
 static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 meaning) {
@@ -939,8 +959,14 @@ static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 me
     if (my reusing) {
         if (symbol->is_parameter) return; // (resolvable here, so visible)
         SymbolAccess access = symbol_accessibility_at(my scope, symbol, meaning);
-        if (access.kind != SYMBOL_ACCESSIBLE) my fell_back = true;
-        else paint(me, access.head);
+        if (access.kind == SYMBOL_ACCESSIBLE) {
+            paint(me, access.head);
+        } else if (!reused_node_fallback_errs(me)) {
+            // (tsgo's existing node visitor reprints the node as its type, the rest of the annotation reused)
+        } else {
+            // (... and an error doing that fails the reuse: the declaration prints its type)
+            my fell_back = true;
+        }
         return;
     }
     if (symbol_has_visible_declarations(symbol)) {
@@ -2777,10 +2803,14 @@ static void check_written_type(Walk* me, TypeNode const* type) {
         case TYPE_INTERSECTION:
             for_each (i, vec_type, &type->composite) check_written_type(me, i);
             return;
-        case TYPE_IDENTIFIER:
+        case TYPE_IDENTIFIER: {
+            TypeNode const* outer_node = my reused_node;
+            my reused_node = type;
             check_type_reference(me, type->identifier);
+            my reused_node = outer_node;
             for_each (i, vec_spanned_type, &type->identifier->generic_params) check_written_type(me, &i->type);
             return;
+        }
         case TYPE_TYPEOF:
             if (type->typeof_->expr) {
                 // `typeof this.#a`: the emitted declaration can't name a private member (tsgo's declaration transform of
@@ -2791,7 +2821,10 @@ static void check_written_type(Walk* me, TypeNode const* type) {
                     error_ctx_error_d(my errs, expr_outer_span(e), 7080, "Declaration emit elides private members, but '",
                         name, "' refers to a private member. Write an explicit type here.");
                 }
+                TypeNode const* outer_node = my reused_node;
+                my reused_node = type;
                 check_entity_expression(me, type->typeof_->expr);
+                my reused_node = outer_node;
                 // (And its type arguments, `typeof f<T>`: type nodes of the query)
                 for (Expr const* e = type->typeof_->expr; e->tag == EXPR_PROPERTY || e->tag == EXPR_GENERIC_PARAMS;) {
                     if (e->tag == EXPR_GENERIC_PARAMS) {

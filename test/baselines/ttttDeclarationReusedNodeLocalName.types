@@ -1,0 +1,37 @@
+//// [test/cases/ttttDeclarationReusedNodeLocalName.ts] ////
+
+=== entities.ts ===
+export interface Entity { offset: number; type: string }
+>offset : number
+>type : string
+
+export class Context {
+>Context : Context
+
+    entities<T extends string[]>(...types: T) {
+>entities : <T extends string[]>(...types: T) => (Entity & { type: T extends [] ? string : T[number]; fragment: string; })[]
+>types : T
+
+        type Selected = T extends [] ? string : T[number];
+>Selected : T extends [] ? string : T[number]
+
+        return [] as (Entity & { type: Selected; fragment: string })[];
+>[] as (Entity & { type: Selected; fragment: string })[] : (Entity & { type: T extends [] ? string : T[number]; fragment: string; })[]
+>[] : never[]
+>type : T extends [] ? string : T[number]
+>fragment : string
+    }
+}
+=== recursive.ts ===
+export function recursive() {
+>recursive : () => { r: any[]; }
+
+    type Recursive = Recursive[];
+>Recursive : any[]
+
+    return null as unknown as { r: Recursive };
+>null as unknown as { r: Recursive } : { r: any[]; }
+>null as unknown : unknown
+>r : any[]
+}
+

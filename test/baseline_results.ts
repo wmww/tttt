@@ -887,6 +887,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationReusedNodeLocalName': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationReusedNodeMappedUnderError': {
         errors: true,
         symbols: true,
