@@ -86,6 +86,22 @@ what was looked at, by root cause; the second lists the rest by code, uninvestig
 - A JSDoc link to a shadowed name keeps the outer import used (ttttHackJsdocLinkShadowed, hacks.md
   `unused_mark_jsdoc_links()`). [open]
 
+- **corH's codes (spurious TS2345, TS2353, TS2344, TS2719, TS2488), what is left after 2026-10-23's fixes**:
+  - Circularity tsc finds by re-entering below a call barrier, keeping the nested call's result: 72-R15b (+TS2345 at
+    `g15`'s `f15("wrong", null!, "also wrong")`, with -TS7022/-TS7023/-TS2502 on the defaults `b = g3()`, `b:
+    ReturnType<typeof g7>`, a method's `b = this.n()`, `o14`'s self-reference), the 10-C1 pattern: `function f3(a:
+    number, b = g3())` with g3 returning `f3(1, 1)`. tsc reaches the cycle only when the call gets as far as b's type
+    (`f1("wrong", 1)` fails at its first argument and has none). Stages C/D of agents/notes/reentrancy.md (its bun test
+    list has 10-C1 and 72-R15b). [design]
+  - 77-R02a +TS2353 (`'z' does not exist in type '{ a: number; y: number; }'` for a callback's pattern default against
+    the instantiated T): the same cause as bun_ts2322.md's 77-R02a entry (tsc checks the default against the
+    uninstantiated T and says TS2322). [dup]
+  - 77-R19a +TS2345: a rest parameter's element at a position is `R[index]` (an augmented `interface Array<T> { 0:
+    string }`): type_core.md. [dup]
+  - 08-C9a, 25-C20a, 33-C6c +TS2488: `const [x] = require("m")` binds named imports in tsgo: js.md. [dup]
+  - 88-R04a +TS2488 in a libReplacement file that skipDefaultLibCheck should skip: binder_modules.md. [dup]
+  - 83-R01c +TS2488 (`for (var i = [...x in b];;)`): tsgo's for-initializer DisallowIn: missing_checks.md. [dup]
+
 ## Not looked at, by code
 - Each paragraph below is a code and direction with the cases it mismatches in, uninvestigated: at least one open
   root cause each, counted here once. [open]
