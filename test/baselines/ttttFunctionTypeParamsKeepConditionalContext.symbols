@@ -1,0 +1,44 @@
+//// [test/cases/ttttFunctionTypeParamsKeepConditionalContext.ts] ////
+
+=== ttttFunctionTypeParamsKeepConditionalContext.ts ===
+// A function type in a conditional type's extends type keeps that context for its parameters' types (tsc's parseType
+// takes parseFunctionOrConstructorType before parsing a union, inheriting DisallowConditionalTypes; only the return
+// type resets it): the inner `extends` is TS1005 ',' expected. Babel's regression/nested-extends-in-arrow-type-param
+type A = 1; type B = 2; type D = 3; type E = 4; type F = 5; type G = 6;
+>A : Symbol(A, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 0, 0))
+>B : Symbol(B, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 11))
+>D : Symbol(D, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 23))
+>E : Symbol(E, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 35))
+>F : Symbol(F, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 47))
+>G : Symbol(G, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 59))
+
+type Equals = A extends (x: B extends C ? D : E) => 0 ? F : G;
+>Equals : Symbol(Equals, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 71))
+>A : Symbol(A, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 0, 0))
+>x : Symbol(x, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 4, 25))
+>B : Symbol(B, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 11))
+>C : Symbol(C, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 4, 37))
+>D : Symbol(D, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 4, 41))
+>E : Symbol(E, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 35))
+>F : Symbol(F, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 47))
+>G : Symbol(G, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 59))
+
+type Ok1 = A extends (x: (B extends 2 ? D : E)) => 0 ? F : G;
+>Ok1 : Symbol(Ok1, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 4, 62))
+>A : Symbol(A, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 0, 0))
+>x : Symbol(x, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 5, 22))
+>B : Symbol(B, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 11))
+>D : Symbol(D, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 23))
+>E : Symbol(E, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 35))
+>F : Symbol(F, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 47))
+>G : Symbol(G, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 59))
+
+type Ok2 = A extends () => B extends 2 ? D : E ? F : G;
+>Ok2 : Symbol(Ok2, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 5, 61))
+>A : Symbol(A, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 0, 0))
+>B : Symbol(B, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 11))
+>D : Symbol(D, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 23))
+>E : Symbol(E, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 35))
+>F : Symbol(F, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 47))
+>G : Symbol(G, Decl(ttttFunctionTypeParamsKeepConditionalContext.ts, 3, 59))
+

@@ -3704,6 +3704,17 @@ static bool parse_misplaced_type_predicate(Parser* parent, TypeNode* ret) {
     return parse_success(&p);
 }
 
+// A function or constructor type is tsc's parseType's own branch (parseFunctionOrConstructorType), not a primary type:
+// its parameters' types are in the context the function type is in (no conditional type in a conditional's extends
+// type: `A extends (x: B extends C ? D : E) => 0 ? F : G` is TS1005 at the inner `extends`), its return type isn't
+// (parseReturnType)
+static bool parse_function_type_keeping_context(Parser* p, bool disallow_conditional, FunctionImpl* ret) {
+    p->shared->disallow_conditional = disallow_conditional;
+    bool parsed = parse_function_args(p, true, true, true, false, ret);
+    p->shared->disallow_conditional = false;
+    return parsed;
+}
+
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     bool disallow_conditional = parent->shared->disallow_conditional;
     bool parsed = parse_type_inner(parent, min_precedence, ret);
@@ -3841,7 +3852,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             return parse_fail(&p);
         }
     } else if ((c == '(' || c == '<' || c == 'a' || c == 'n') &&
-        parse_function_args(&p, true, true, true, false, &parsed.func)
+        parse_function_type_keeping_context(&p, disallow_conditional, &parsed.func)
     ) {
         parsed.func.full_span = span_from(value_anchor);
         *ret = function_impl_into_type(parsed.func);
@@ -7117,6 +7128,7 @@ static bool parse_function_args_inner(
     if (parse_ret_type) {
         hop_whitespace(&p);
         Anchor ret_a = anchor(&p);
+        p.shared->disallow_conditional = false; // (tsc's parseReturnType; parse_type() restores it)
         if (parse_type_predicate(&p, ret)) {
             function_impl_set_ret_span(ret, span_from(ret_a));
             ret->ret_explicit = true;

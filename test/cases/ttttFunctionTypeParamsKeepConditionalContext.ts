@@ -1,0 +1,7 @@
+// A function type in a conditional type's extends type keeps that context for its parameters' types (tsc's parseType
+// takes parseFunctionOrConstructorType before parsing a union, inheriting DisallowConditionalTypes; only the return
+// type resets it): the inner `extends` is TS1005 ',' expected. Babel's regression/nested-extends-in-arrow-type-param
+type A = 1; type B = 2; type D = 3; type E = 4; type F = 5; type G = 6;
+type Equals = A extends (x: B extends C ? D : E) => 0 ? F : G;
+type Ok1 = A extends (x: (B extends 2 ? D : E)) => 0 ? F : G;
+type Ok2 = A extends () => B extends 2 ? D : E ? F : G;
