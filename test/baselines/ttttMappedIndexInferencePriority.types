@@ -1,0 +1,56 @@
+//// [test/cases/ttttMappedIndexInferencePriority.ts] ////
+
+=== ttttMappedIndexInferencePriority.ts ===
+// Index signatures inferred between two mapped types are of the homomorphic mapped type priority (tsc's
+// inferFromIndexTypes), below a naked type parameter beside the target's: KeyValuePair<"variable", F> (a resolved mapped
+// type) against KeyValuePair<any, S> = { [x: string]: S } | S infers the whole source for S (veto-party/baum)
+type KeyValuePair<A, Target> = A extends string ? { [key in A]: Target } : Target;
+>KeyValuePair : KeyValuePair<A, Target>
+
+interface IFeature<Path, From> { v(element: any): element is KeyValuePair<Path, From>; }
+>v : (element: any) => element is KeyValuePair<Path, From>
+>element : any
+
+interface Feat<Path, From> { v(element: any): element is KeyValuePair<Path, From>; }
+>v : (element: any) => element is KeyValuePair<Path, From>
+>element : any
+
+type F = { [x: string]: { [x: string]: {} } };
+>F : F
+>x : string
+>x : string
+
+type V = Feat<"variable", F> extends IFeature<any, infer St> ? St : never;
+>V : { variable: F; }
+
+declare const v: [V];
+>v : [{ variable: F; }]
+
+const z: 1 = v;
+>z : 1
+>v : [{ variable: F; }]
+
+type V3 = ((e: any) => e is { variable: F }) extends (e: any) => e is KeyValuePair<any, infer St> ? St : never;
+>V3 : F
+>e : any
+>variable : F
+>e : any
+
+declare const v3: [V3];
+>v3 : [F]
+
+const z3: 1 = v3;
+>z3 : 1
+>v3 : [F]
+
+type V4 = { variable: F } extends KeyValuePair<any, infer St> ? St : never;
+>V4 : F
+>variable : F
+
+declare const v4: [V4];
+>v4 : [F]
+
+const z4: 1 = v4;
+>z4 : 1
+>v4 : [F]
+

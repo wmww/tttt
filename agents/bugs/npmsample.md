@@ -61,7 +61,13 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   ...> chosen or combined differently). FromSchema itself agrees on both sides; a self-contained mimic of the two
   methods infers `{ [x: string]: {} }` in both, so the difference needs the real chain (597-line repro, reduce.py plus
   hand fixes for the names the cut left). Every one of the 101 extra diagnostics looks downstream of this (property
-  reads on `{} & { source: string }`, `unknown` entries): one root cause until a fix shows otherwise. (claimed: corB) [open]
+  reads on `{} & { source: string }`, `unknown` entries): one root cause until a fix shows otherwise. Root cause: inferFromIndexTypes between two mapped types
+  (the source `KeyValuePair<"variable", F>` resolved, the target `KeyValuePair<any, S>`) infers at HomomorphicMappedType
+  priority, below the naked S beside it, so S gets the whole `{ variable: F }` from the predicate (and F from
+  `ingestObject`, the common supertype F); tttt inferred F's index value at full priority. Repro
+  ttttMappedIndexInferencePriority. The npm test's errors pass; its types still differ on two other lines (`this.schema`
+  of a generic T printed as T where tsgo prints its constraint `Record<string, any> | {}`, and `keyof []` printed
+  expanded by tsgo). (claimed: corB) [fixed PENDING]
 - **npm__markw65_prettier-plugin-monkeyc_TS7034** (seed 20261031, @markw65/prettier-plugin-monkeyc@1.0.69,
   markw65/prettier-plugin-monkeyc; tsgo 13, tttt 15). src/printer.ts:74 `let rest, ...; ({ print: x, ..., ...rest } =
   estree)`: an auto-typed `let` (no initializer, no annotation) whose only assignment is an object rest element of a
@@ -97,7 +103,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
   plugin's parameters `[options?: Readonly<Options> | null | undefined]`. Cut-down probes without unified's Plugin
   conditional return type and CallableInstance base didn't reproduce. Repro test/cases/npm__nirholas_crypto-news_TS2345.ts
-  (11 files from reduce.py). (claimed: corB) [open]
+  (11 files from reduce.py). [open]
 - Seed 20261028, tamagui/tamagui (@tamagui/codemod-flat-values@3.1.3, code/core/codemod-flat-values): spurious
   TS2339 "Property 'replaceWithText' does not exist on type 'never'" and TS2349 at src/transition.ts:302 (tsgo 0
   errors, tttt 2). `let node: A | B | null = null`, assigned in a loop after a type-predicate `continue`

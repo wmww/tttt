@@ -1,0 +1,95 @@
+//// [test/cases/ttttMappedIndexInferencePriority.ts] ////
+
+=== ttttMappedIndexInferencePriority.ts ===
+// Index signatures inferred between two mapped types are of the homomorphic mapped type priority (tsc's
+// inferFromIndexTypes), below a naked type parameter beside the target's: KeyValuePair<"variable", F> (a resolved mapped
+// type) against KeyValuePair<any, S> = { [x: string]: S } | S infers the whole source for S (veto-party/baum)
+type KeyValuePair<A, Target> = A extends string ? { [key in A]: Target } : Target;
+>KeyValuePair : Symbol(KeyValuePair, Decl(ttttMappedIndexInferencePriority.ts, 0, 0))
+>A : Symbol(A, Decl(ttttMappedIndexInferencePriority.ts, 3, 18))
+>Target : Symbol(Target, Decl(ttttMappedIndexInferencePriority.ts, 3, 20))
+>A : Symbol(A, Decl(ttttMappedIndexInferencePriority.ts, 3, 18))
+>key : Symbol(key, Decl(ttttMappedIndexInferencePriority.ts, 3, 53))
+>A : Symbol(A, Decl(ttttMappedIndexInferencePriority.ts, 3, 18))
+>Target : Symbol(Target, Decl(ttttMappedIndexInferencePriority.ts, 3, 20))
+>Target : Symbol(Target, Decl(ttttMappedIndexInferencePriority.ts, 3, 20))
+
+interface IFeature<Path, From> { v(element: any): element is KeyValuePair<Path, From>; }
+>IFeature : Symbol(IFeature, Decl(ttttMappedIndexInferencePriority.ts, 3, 82))
+>Path : Symbol(Path, Decl(ttttMappedIndexInferencePriority.ts, 4, 19))
+>From : Symbol(From, Decl(ttttMappedIndexInferencePriority.ts, 4, 24))
+>v : Symbol(IFeature.v, Decl(ttttMappedIndexInferencePriority.ts, 4, 32))
+>element : Symbol(element, Decl(ttttMappedIndexInferencePriority.ts, 4, 35))
+>element : Symbol(element, Decl(ttttMappedIndexInferencePriority.ts, 4, 35))
+>KeyValuePair : Symbol(KeyValuePair, Decl(ttttMappedIndexInferencePriority.ts, 0, 0))
+>Path : Symbol(Path, Decl(ttttMappedIndexInferencePriority.ts, 4, 19))
+>From : Symbol(From, Decl(ttttMappedIndexInferencePriority.ts, 4, 24))
+
+interface Feat<Path, From> { v(element: any): element is KeyValuePair<Path, From>; }
+>Feat : Symbol(Feat, Decl(ttttMappedIndexInferencePriority.ts, 4, 88))
+>Path : Symbol(Path, Decl(ttttMappedIndexInferencePriority.ts, 5, 15))
+>From : Symbol(From, Decl(ttttMappedIndexInferencePriority.ts, 5, 20))
+>v : Symbol(Feat.v, Decl(ttttMappedIndexInferencePriority.ts, 5, 28))
+>element : Symbol(element, Decl(ttttMappedIndexInferencePriority.ts, 5, 31))
+>element : Symbol(element, Decl(ttttMappedIndexInferencePriority.ts, 5, 31))
+>KeyValuePair : Symbol(KeyValuePair, Decl(ttttMappedIndexInferencePriority.ts, 0, 0))
+>Path : Symbol(Path, Decl(ttttMappedIndexInferencePriority.ts, 5, 15))
+>From : Symbol(From, Decl(ttttMappedIndexInferencePriority.ts, 5, 20))
+
+type F = { [x: string]: { [x: string]: {} } };
+>F : Symbol(F, Decl(ttttMappedIndexInferencePriority.ts, 5, 84))
+>x : Symbol(x, Decl(ttttMappedIndexInferencePriority.ts, 6, 12))
+>x : Symbol(x, Decl(ttttMappedIndexInferencePriority.ts, 6, 27))
+
+type V = Feat<"variable", F> extends IFeature<any, infer St> ? St : never;
+>V : Symbol(V, Decl(ttttMappedIndexInferencePriority.ts, 6, 46))
+>Feat : Symbol(Feat, Decl(ttttMappedIndexInferencePriority.ts, 4, 88))
+>F : Symbol(F, Decl(ttttMappedIndexInferencePriority.ts, 5, 84))
+>IFeature : Symbol(IFeature, Decl(ttttMappedIndexInferencePriority.ts, 3, 82))
+>St : Symbol(St, Decl(ttttMappedIndexInferencePriority.ts, 7, 56))
+>St : Symbol(St, Decl(ttttMappedIndexInferencePriority.ts, 7, 56))
+
+declare const v: [V];
+>v : Symbol(v, Decl(ttttMappedIndexInferencePriority.ts, 8, 13))
+>V : Symbol(V, Decl(ttttMappedIndexInferencePriority.ts, 6, 46))
+
+const z: 1 = v;
+>z : Symbol(z, Decl(ttttMappedIndexInferencePriority.ts, 9, 5))
+>v : Symbol(v, Decl(ttttMappedIndexInferencePriority.ts, 8, 13))
+
+type V3 = ((e: any) => e is { variable: F }) extends (e: any) => e is KeyValuePair<any, infer St> ? St : never;
+>V3 : Symbol(V3, Decl(ttttMappedIndexInferencePriority.ts, 9, 15))
+>e : Symbol(e, Decl(ttttMappedIndexInferencePriority.ts, 10, 12))
+>e : Symbol(e, Decl(ttttMappedIndexInferencePriority.ts, 10, 12))
+>variable : Symbol(variable, Decl(ttttMappedIndexInferencePriority.ts, 10, 29))
+>F : Symbol(F, Decl(ttttMappedIndexInferencePriority.ts, 5, 84))
+>e : Symbol(e, Decl(ttttMappedIndexInferencePriority.ts, 10, 54))
+>e : Symbol(e, Decl(ttttMappedIndexInferencePriority.ts, 10, 54))
+>KeyValuePair : Symbol(KeyValuePair, Decl(ttttMappedIndexInferencePriority.ts, 0, 0))
+>St : Symbol(St, Decl(ttttMappedIndexInferencePriority.ts, 10, 93))
+>St : Symbol(St, Decl(ttttMappedIndexInferencePriority.ts, 10, 93))
+
+declare const v3: [V3];
+>v3 : Symbol(v3, Decl(ttttMappedIndexInferencePriority.ts, 11, 13))
+>V3 : Symbol(V3, Decl(ttttMappedIndexInferencePriority.ts, 9, 15))
+
+const z3: 1 = v3;
+>z3 : Symbol(z3, Decl(ttttMappedIndexInferencePriority.ts, 12, 5))
+>v3 : Symbol(v3, Decl(ttttMappedIndexInferencePriority.ts, 11, 13))
+
+type V4 = { variable: F } extends KeyValuePair<any, infer St> ? St : never;
+>V4 : Symbol(V4, Decl(ttttMappedIndexInferencePriority.ts, 12, 17))
+>variable : Symbol(variable, Decl(ttttMappedIndexInferencePriority.ts, 13, 11))
+>F : Symbol(F, Decl(ttttMappedIndexInferencePriority.ts, 5, 84))
+>KeyValuePair : Symbol(KeyValuePair, Decl(ttttMappedIndexInferencePriority.ts, 0, 0))
+>St : Symbol(St, Decl(ttttMappedIndexInferencePriority.ts, 13, 57))
+>St : Symbol(St, Decl(ttttMappedIndexInferencePriority.ts, 13, 57))
+
+declare const v4: [V4];
+>v4 : Symbol(v4, Decl(ttttMappedIndexInferencePriority.ts, 14, 13))
+>V4 : Symbol(V4, Decl(ttttMappedIndexInferencePriority.ts, 12, 17))
+
+const z4: 1 = v4;
+>z4 : Symbol(z4, Decl(ttttMappedIndexInferencePriority.ts, 15, 5))
+>v4 : Symbol(v4, Decl(ttttMappedIndexInferencePriority.ts, 14, 13))
+

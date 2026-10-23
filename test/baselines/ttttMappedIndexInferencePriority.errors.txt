@@ -1,0 +1,29 @@
+ttttMappedIndexInferencePriority.ts(10,7): error TS2322: Type '[{ variable: F; }]' is not assignable to type '1'.
+ttttMappedIndexInferencePriority.ts(13,7): error TS2322: Type '[F]' is not assignable to type '1'.
+ttttMappedIndexInferencePriority.ts(16,7): error TS2322: Type '[F]' is not assignable to type '1'.
+
+
+==== ttttMappedIndexInferencePriority.ts (3 errors) ====
+    // Index signatures inferred between two mapped types are of the homomorphic mapped type priority (tsc's
+    // inferFromIndexTypes), below a naked type parameter beside the target's: KeyValuePair<"variable", F> (a resolved mapped
+    // type) against KeyValuePair<any, S> = { [x: string]: S } | S infers the whole source for S (veto-party/baum)
+    type KeyValuePair<A, Target> = A extends string ? { [key in A]: Target } : Target;
+    interface IFeature<Path, From> { v(element: any): element is KeyValuePair<Path, From>; }
+    interface Feat<Path, From> { v(element: any): element is KeyValuePair<Path, From>; }
+    type F = { [x: string]: { [x: string]: {} } };
+    type V = Feat<"variable", F> extends IFeature<any, infer St> ? St : never;
+    declare const v: [V];
+    const z: 1 = v;
+          ~
+!!! error TS2322: Type '[{ variable: F; }]' is not assignable to type '1'.
+    type V3 = ((e: any) => e is { variable: F }) extends (e: any) => e is KeyValuePair<any, infer St> ? St : never;
+    declare const v3: [V3];
+    const z3: 1 = v3;
+          ~~
+!!! error TS2322: Type '[F]' is not assignable to type '1'.
+    type V4 = { variable: F } extends KeyValuePair<any, infer St> ? St : never;
+    declare const v4: [V4];
+    const z4: 1 = v4;
+          ~~
+!!! error TS2322: Type '[F]' is not assignable to type '1'.
+    

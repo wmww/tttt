@@ -1230,7 +1230,7 @@ static void infer_from_type_args(Checker* me, Inference* inf, Ty const* source, 
     }
 }
 
-static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty const* source, Members const* target_members);
+static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty const* source, Members const* target_members, u32 index_priority);
 
 static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if ((ty_is_tuple(source) || is_empty_tuple(source) || ty_is_array(me, source)) && ty_is_tuple(target)) {
@@ -1310,11 +1310,16 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         Ty const* target_type = ty_remove_missing(me, prop_type(me, target_prop), target_prop->flags & PROP_OPTIONAL);
         infer_from(me, inf, source_type, target_type);
     }
-    infer_from_signatures_and_indexes(me, inf, source, target_members);
+    // (Between two mapped types, index signatures are much like a homomorphic mapped type's variable: tsc's
+    // inferFromIndexTypes infers at HomomorphicMappedType priority then, below a naked type parameter beside it:
+    // `{ variable: F }` from KeyValuePair<"variable", F> against KeyValuePair<any, S> = `{ [x: string]: S } | S` infers
+    // the whole source for S, not F, veto-party/baum)
+    bool both_mapped = source->kind == TY_ANONYMOUS && source->anonymous.mapped && target->kind == TY_ANONYMOUS && target->anonymous.mapped;
+    infer_from_signatures_and_indexes(me, inf, source, target_members, both_mapped ? INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE : 0);
 }
 
 // The signatures and index signatures of infer_from_objects() (tsc's inferFromSignatures and inferFromIndexTypes)
-static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty const* source, Members const* target_members) {
+static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty const* source, Members const* target_members, u32 index_priority) {
     Members const* source_members = ty_members(me, source);
     // (An intersection's are its members', see resolve_intersection_members())
     infer_from_signature_lists(
@@ -1362,7 +1367,11 @@ static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty co
                 ty_buf_push(&types, source_members->index[j].value);
             }
         }
-        if (types.len) infer_from(me, inf, ty_union(me, types.data, types.len, nullptr, (TyList){0}), target_info->value);
+        if (types.len) {
+            Ty const* union_type = ty_union(me, types.data, types.len, nullptr, (TyList){0});
+            if (index_priority) infer_with_priority(me, inf, union_type, target_info->value, index_priority);
+            else infer_from(me, inf, union_type, target_info->value);
+        }
         ty_buf_drop(&types);
         ty_buf_drop(&seen);
     }
@@ -1370,7 +1379,9 @@ static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty co
     for (u32 i = 0; i < target_members->index_count; i++) {
         IndexInfo const* target_info = &target_members->index[i];
         IndexInfo const* source_info = ty_applicable_index_info(me, source, target_info->key);
-        if (source_info) infer_from(me, inf, source_info->value, target_info->value);
+        if (!source_info) continue;
+        if (index_priority) infer_with_priority(me, inf, source_info->value, target_info->value, index_priority);
+        else infer_from(me, inf, source_info->value, target_info->value);
     }
 }
 
@@ -2004,7 +2015,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             if (apparent != target && apparent->kind == TY_ANONYMOUS && !ty_members(me, apparent)->mapped &&
                 !types_definitely_unrelated(me, source, apparent)
             ) {
-                infer_from_signatures_and_indexes(me, inf, source, ty_members(me, apparent));
+                infer_from_signatures_and_indexes(me, inf, source, ty_members(me, apparent), 0);
             }
         }
     } else if (source->kind == TY_STRING_MAPPING && target->kind == TY_STRING_MAPPING) {
