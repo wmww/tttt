@@ -1,0 +1,93 @@
+//// [test/cases/ttttAugmentationCloneChain.ts] ////
+
+=== node_modules/m/node.d.ts ===
+export interface R { base: 1 }
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug2.d.ts, 1, 22))
+>base : Symbol(R.base, Decl(node.d.ts, 0, 20))
+
+export declare const R: R;
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug2.d.ts, 1, 22))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug3.d.ts, 1, 20))
+
+=== node_modules/m/b.d.ts ===
+
+export * from "./node.js";
+=== node_modules/m/index.d.ts ===
+export { R } from "./node.js";
+>R : Symbol(R, Decl(index.d.ts, 0, 8))
+
+=== aug0.d.ts ===
+declare module "m/node" { export interface R { d: 1 } }
+>"m/node" : Symbol("m/node", Decl(node.d.ts, 0, 0), Decl(aug0.d.ts, 0, 0))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug2.d.ts, 1, 22))
+>d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+
+export {}
+=== aug3.d.ts ===
+import "m";
+declare module "m" { export interface R { c: 1 } }
+>"m" : Symbol("m", Decl(index.d.ts, 0, 0), Decl(aug3.d.ts, 0, 11))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug3.d.ts, 1, 20))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+
+=== aug2.d.ts ===
+import "m/b";
+declare module "m/b" { export interface R { b: 1 } }
+>"m/b" : Symbol("m/b", Decl(b.d.ts, 0, 0), Decl(aug2.d.ts, 0, 13))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug2.d.ts, 1, 22))
+>b : Symbol(R.b, Decl(aug2.d.ts, 1, 43))
+
+=== use.ts ===
+import { R } from "m";
+>R : Symbol(R, Decl(use.ts, 0, 8))
+
+import { R as RB } from "m/b";
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug2.d.ts, 1, 22))
+>RB : Symbol(RB, Decl(use.ts, 1, 8))
+
+import { R as RN } from "m/node";
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug0.d.ts, 0, 25), Decl(aug2.d.ts, 1, 22))
+>RN : Symbol(RN, Decl(use.ts, 2, 8))
+
+declare const t: R; t.b; t.c; t.d;
+>t : Symbol(t, Decl(use.ts, 3, 13))
+>R : Symbol(R, Decl(use.ts, 0, 8))
+>t : Symbol(t, Decl(use.ts, 3, 13))
+>t.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>t : Symbol(t, Decl(use.ts, 3, 13))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>t.d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+>t : Symbol(t, Decl(use.ts, 3, 13))
+>d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+
+declare const tb: RB; tb.b; tb.c; tb.d;
+>tb : Symbol(tb, Decl(use.ts, 4, 13))
+>RB : Symbol(RB, Decl(use.ts, 1, 8))
+>tb : Symbol(tb, Decl(use.ts, 4, 13))
+>tb.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>tb : Symbol(tb, Decl(use.ts, 4, 13))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>tb.d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+>tb : Symbol(tb, Decl(use.ts, 4, 13))
+>d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+
+declare const tn: RN; tn.b; tn.c; tn.d;
+>tn : Symbol(tn, Decl(use.ts, 5, 13))
+>RN : Symbol(RN, Decl(use.ts, 2, 8))
+>tn : Symbol(tn, Decl(use.ts, 5, 13))
+>tn.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>tn : Symbol(tn, Decl(use.ts, 5, 13))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>tn.d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+>tn : Symbol(tn, Decl(use.ts, 5, 13))
+>d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+
+RN.b; RN.c; RN.d;
+>RN : Symbol(RN, Decl(use.ts, 2, 8))
+>RN.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>RN : Symbol(RN, Decl(use.ts, 2, 8))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>RN.d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+>RN : Symbol(RN, Decl(use.ts, 2, 8))
+>d : Symbol(R.d, Decl(aug0.d.ts, 0, 46))
+

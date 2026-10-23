@@ -1,0 +1,103 @@
+use.ts(5,11): error TS2339: Property 'a' does not exist on type 'R'.
+use.ts(5,16): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(6,23): error TS2339: Property 'a' does not exist on type 'R'.
+use.ts(6,28): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(7,32): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(7,38): error TS2339: Property 'c' does not exist on type 'R'.
+use.ts(8,26): error TS2339: Property 'a' does not exist on type 'R'.
+use.ts(8,38): error TS2339: Property 'c' does not exist on type 'R'.
+use.ts(9,4): error TS2339: Property 'a' does not exist on type 'R'.
+use.ts(9,10): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(9,22): error TS2339: Property 'a' does not exist on type 'R'.
+use.ts(9,28): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(10,10): error TS2339: Property 'A' does not exist on type 'Resource'.
+use.ts(14,18): error TS2339: Property 'B' does not exist on type 'Resource'.
+
+
+==== node_modules/m/package.json (0 errors) ====
+    { "name": "m", "exports": { ".": "./index.js", "./a": "./a.js", "./b": "./b.js" } }
+==== node_modules/m/node.d.ts (0 errors) ====
+    export interface R { base: 1 }
+    export declare const R: R;
+==== node_modules/m/a.d.ts (0 errors) ====
+    export * from "./node.js";
+==== node_modules/m/b.d.ts (0 errors) ====
+    export * from "./node.js";
+==== node_modules/m/index.d.ts (0 errors) ====
+    export { R } from "./node.js";
+==== node_modules/sst/package.json (0 errors) ====
+    { "name": "sst", "exports": { ".": "./dist/index.js", "./resource": "./dist/resource/index.js" } }
+==== node_modules/sst/dist/index.d.ts (0 errors) ====
+    export { Resource } from "./resource/index.js";
+==== node_modules/sst/dist/resource/index.d.ts (0 errors) ====
+    export * from "./node.js";
+==== node_modules/sst/dist/resource/node.d.ts (0 errors) ====
+    import type { Resource as BaseResource } from "./shared.js";
+    export interface Resource extends BaseResource {}
+    export declare const Resource: Resource;
+==== node_modules/sst/dist/resource/shared.d.ts (0 errors) ====
+    export interface Resource { App: { name: string } }
+==== aug1.d.ts (0 errors) ====
+    import "m/a";
+    declare module "m/a" { export interface R { a: 1 } }
+==== aug2.d.ts (0 errors) ====
+    import "m/b";
+    declare module "m/b" { export interface R { b: 1 } }
+==== aug3.d.ts (0 errors) ====
+    import "m";
+    declare module "m" { export interface R { c: 1 } }
+==== env.d.ts (0 errors) ====
+    declare module "sst" {
+      export interface Resource { A: { value: string } }
+    }
+    import "sst"
+    export {}
+==== stats.d.ts (0 errors) ====
+    import "sst/resource"
+    declare module "sst/resource" {
+      export interface Resource { B: { value: string } }
+    }
+==== use.ts (14 errors) ====
+    import { R } from "m";
+    import { R as RA } from "m/a";
+    import { R as RB } from "m/b";
+    import { Resource } from "sst";
+    R.base; R.a; R.b; R.c;
+              ~
+!!! error TS2339: Property 'a' does not exist on type 'R'.
+                   ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+    declare const t: R; t.a; t.b; t.c;
+                          ~
+!!! error TS2339: Property 'a' does not exist on type 'R'.
+                               ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+    declare const ta: RA; ta.a; ta.b; ta.c;
+                                   ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+                                         ~
+!!! error TS2339: Property 'c' does not exist on type 'R'.
+    declare const tb: RB; tb.a; tb.b; tb.c;
+                             ~
+!!! error TS2339: Property 'a' does not exist on type 'R'.
+                                         ~
+!!! error TS2339: Property 'c' does not exist on type 'R'.
+    RA.a; RA.b; RA.c; RB.a; RB.b; RB.c;
+       ~
+!!! error TS2339: Property 'a' does not exist on type 'R'.
+             ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+                         ~
+!!! error TS2339: Property 'a' does not exist on type 'R'.
+                               ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+    Resource.A.value;
+             ~
+!!! error TS2339: Property 'A' does not exist on type 'Resource'.
+    Resource.B.value;
+    Resource.App.name;
+    declare const res: Resource;
+    res.A.value; res.B.value; res.App;
+                     ~
+!!! error TS2339: Property 'B' does not exist on type 'Resource'.
+    

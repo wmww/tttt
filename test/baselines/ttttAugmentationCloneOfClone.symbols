@@ -1,0 +1,185 @@
+//// [test/cases/ttttAugmentationCloneOfClone.ts] ////
+
+=== node_modules/m/node.d.ts ===
+export interface R { base: 1 }
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug3.d.ts, 1, 20))
+>base : Symbol(R.base, Decl(node.d.ts, 0, 20))
+
+export declare const R: R;
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug3.d.ts, 1, 20))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug3.d.ts, 1, 20))
+
+=== node_modules/m/a.d.ts ===
+
+export * from "./node.js";
+=== node_modules/m/b.d.ts ===
+
+export * from "./node.js";
+=== node_modules/m/index.d.ts ===
+export { R } from "./node.js";
+>R : Symbol(R, Decl(index.d.ts, 0, 8))
+
+=== node_modules/sst/dist/index.d.ts ===
+export { Resource } from "./resource/index.js";
+>Resource : Symbol(Resource, Decl(index.d.ts, 0, 8))
+
+=== node_modules/sst/dist/resource/index.d.ts ===
+
+export * from "./node.js";
+=== node_modules/sst/dist/resource/node.d.ts ===
+import type { Resource as BaseResource } from "./shared.js";
+>Resource : Symbol(BaseResource, Decl(shared.d.ts, 0, 0))
+>BaseResource : Symbol(BaseResource, Decl(node.d.ts, 0, 13))
+
+export interface Resource extends BaseResource {}
+>Resource : Symbol(Resource, Decl(node.d.ts, 0, 60), Decl(node.d.ts, 2, 20), Decl(stats.d.ts, 1, 31))
+>BaseResource : Symbol(BaseResource, Decl(node.d.ts, 0, 13))
+
+export declare const Resource: Resource;
+>Resource : Symbol(Resource, Decl(node.d.ts, 0, 60), Decl(node.d.ts, 2, 20), Decl(stats.d.ts, 1, 31))
+>Resource : Symbol(Resource, Decl(node.d.ts, 0, 60), Decl(node.d.ts, 2, 20), Decl(stats.d.ts, 1, 31))
+
+=== node_modules/sst/dist/resource/shared.d.ts ===
+export interface Resource { App: { name: string } }
+>Resource : Symbol(Resource, Decl(shared.d.ts, 0, 0))
+>App : Symbol(Resource.App, Decl(shared.d.ts, 0, 27))
+>name : Symbol(name, Decl(shared.d.ts, 0, 34))
+
+=== aug1.d.ts ===
+import "m/a";
+declare module "m/a" { export interface R { a: 1 } }
+>"m/a" : Symbol("m/a", Decl(a.d.ts, 0, 0), Decl(aug1.d.ts, 0, 13))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug1.d.ts, 1, 22))
+>a : Symbol(R.a, Decl(aug1.d.ts, 1, 43))
+
+=== aug2.d.ts ===
+import "m/b";
+declare module "m/b" { export interface R { b: 1 } }
+>"m/b" : Symbol("m/b", Decl(b.d.ts, 0, 0), Decl(aug2.d.ts, 0, 13))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug2.d.ts, 1, 22))
+>b : Symbol(R.b, Decl(aug2.d.ts, 1, 43))
+
+=== aug3.d.ts ===
+import "m";
+declare module "m" { export interface R { c: 1 } }
+>"m" : Symbol("m", Decl(index.d.ts, 0, 0), Decl(aug3.d.ts, 0, 11))
+>R : Symbol(R, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug3.d.ts, 1, 20))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+
+=== env.d.ts ===
+declare module "sst" {
+>"sst" : Symbol("sst", Decl(index.d.ts, 0, 0), Decl(env.d.ts, 0, 0))
+
+  export interface Resource { A: { value: string } }
+>Resource : Symbol(Resource, Decl(node.d.ts, 0, 60), Decl(node.d.ts, 2, 20), Decl(env.d.ts, 0, 22))
+>A : Symbol(Resource.A, Decl(env.d.ts, 1, 29))
+>value : Symbol(value, Decl(env.d.ts, 1, 34))
+}
+import "sst"
+export {}
+=== stats.d.ts ===
+import "sst/resource"
+declare module "sst/resource" {
+>"sst/resource" : Symbol("sst/resource", Decl(index.d.ts, 0, 0), Decl(stats.d.ts, 0, 21))
+
+  export interface Resource { B: { value: string } }
+>Resource : Symbol(Resource, Decl(node.d.ts, 0, 60), Decl(node.d.ts, 2, 20), Decl(stats.d.ts, 1, 31))
+>B : Symbol(Resource.B, Decl(stats.d.ts, 2, 29))
+>value : Symbol(value, Decl(stats.d.ts, 2, 34))
+}
+=== use.ts ===
+import { R } from "m";
+>R : Symbol(R, Decl(use.ts, 0, 8))
+
+import { R as RA } from "m/a";
+>R : Symbol(RA, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug1.d.ts, 1, 22))
+>RA : Symbol(RA, Decl(use.ts, 1, 8))
+
+import { R as RB } from "m/b";
+>R : Symbol(RB, Decl(node.d.ts, 0, 0), Decl(node.d.ts, 1, 20), Decl(aug2.d.ts, 1, 22))
+>RB : Symbol(RB, Decl(use.ts, 2, 8))
+
+import { Resource } from "sst";
+>Resource : Symbol(Resource, Decl(use.ts, 3, 8))
+
+R.base; R.a; R.b; R.c;
+>R.base : Symbol(R.base, Decl(node.d.ts, 0, 20))
+>R : Symbol(R, Decl(use.ts, 0, 8))
+>base : Symbol(R.base, Decl(node.d.ts, 0, 20))
+>R : Symbol(R, Decl(use.ts, 0, 8))
+>R : Symbol(R, Decl(use.ts, 0, 8))
+>R.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>R : Symbol(R, Decl(use.ts, 0, 8))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+
+declare const t: R; t.a; t.b; t.c;
+>t : Symbol(t, Decl(use.ts, 5, 13))
+>R : Symbol(R, Decl(use.ts, 0, 8))
+>t : Symbol(t, Decl(use.ts, 5, 13))
+>t : Symbol(t, Decl(use.ts, 5, 13))
+>t.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>t : Symbol(t, Decl(use.ts, 5, 13))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+
+declare const ta: RA; ta.a; ta.b; ta.c;
+>ta : Symbol(ta, Decl(use.ts, 6, 13))
+>RA : Symbol(RA, Decl(use.ts, 1, 8))
+>ta.a : Symbol(RA.a, Decl(aug1.d.ts, 1, 43))
+>ta : Symbol(ta, Decl(use.ts, 6, 13))
+>a : Symbol(RA.a, Decl(aug1.d.ts, 1, 43))
+>ta : Symbol(ta, Decl(use.ts, 6, 13))
+>ta : Symbol(ta, Decl(use.ts, 6, 13))
+
+declare const tb: RB; tb.a; tb.b; tb.c;
+>tb : Symbol(tb, Decl(use.ts, 7, 13))
+>RB : Symbol(RB, Decl(use.ts, 2, 8))
+>tb : Symbol(tb, Decl(use.ts, 7, 13))
+>tb.b : Symbol(RB.b, Decl(aug2.d.ts, 1, 43))
+>tb : Symbol(tb, Decl(use.ts, 7, 13))
+>b : Symbol(RB.b, Decl(aug2.d.ts, 1, 43))
+>tb : Symbol(tb, Decl(use.ts, 7, 13))
+
+RA.a; RA.b; RA.c; RB.a; RB.b; RB.c;
+>RA : Symbol(RA, Decl(use.ts, 1, 8))
+>RA : Symbol(RA, Decl(use.ts, 1, 8))
+>RA.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>RA : Symbol(RA, Decl(use.ts, 1, 8))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>RB : Symbol(RB, Decl(use.ts, 2, 8))
+>RB : Symbol(RB, Decl(use.ts, 2, 8))
+>RB.c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+>RB : Symbol(RB, Decl(use.ts, 2, 8))
+>c : Symbol(R.c, Decl(aug3.d.ts, 1, 41))
+
+Resource.A.value;
+>Resource : Symbol(Resource, Decl(use.ts, 3, 8))
+
+Resource.B.value;
+>Resource.B.value : Symbol(value, Decl(stats.d.ts, 2, 34))
+>Resource.B : Symbol(Resource.B, Decl(stats.d.ts, 2, 29))
+>Resource : Symbol(Resource, Decl(use.ts, 3, 8))
+>B : Symbol(Resource.B, Decl(stats.d.ts, 2, 29))
+>value : Symbol(value, Decl(stats.d.ts, 2, 34))
+
+Resource.App.name;
+>Resource.App.name : Symbol(name, Decl(shared.d.ts, 0, 34))
+>Resource.App : Symbol(Resource.App, Decl(shared.d.ts, 0, 27))
+>Resource : Symbol(Resource, Decl(use.ts, 3, 8))
+>App : Symbol(Resource.App, Decl(shared.d.ts, 0, 27))
+>name : Symbol(name, Decl(shared.d.ts, 0, 34))
+
+declare const res: Resource;
+>res : Symbol(res, Decl(use.ts, 12, 13))
+>Resource : Symbol(Resource, Decl(use.ts, 3, 8))
+
+res.A.value; res.B.value; res.App;
+>res.A.value : Symbol(value, Decl(env.d.ts, 1, 34))
+>res.A : Symbol(Resource.A, Decl(env.d.ts, 1, 29))
+>res : Symbol(res, Decl(use.ts, 12, 13))
+>A : Symbol(Resource.A, Decl(env.d.ts, 1, 29))
+>value : Symbol(value, Decl(env.d.ts, 1, 34))
+>res : Symbol(res, Decl(use.ts, 12, 13))
+>res.App : Symbol(Resource.App, Decl(shared.d.ts, 0, 27))
+>res : Symbol(res, Decl(use.ts, 12, 13))
+>App : Symbol(Resource.App, Decl(shared.d.ts, 0, 27))
+

@@ -310,6 +310,14 @@ typedef struct SymbolRare {
     // (getSpellingSuggestionForName's tryResolveAlias), and that reports it then. Taken (atomically) by the first one;
     // the binder owns it (Binder.unreported_errs)
     ErrorCtx* unreported_errs;
+    // Module augmentations (scope.c's aug_merge_symbol(): tsc's mergeSymbol, which never changes a symbol the binder
+    // made but merges into a clone of it, and its mergedSymbols). `aug_merged`: the clone merged into (made of this
+    // symbol, or this symbol merged into it), what getMergedSymbol answers, one level deep. On a clone: `aug_clone`,
+    // what it was cloned from, and the symbol that took its place when it was its origin's merged symbol
+    struct Symbol* aug_merged;
+    struct Symbol* aug_clone_of;
+    struct Symbol* aug_absorbed_by;
+    bool aug_clone;
 } SymbolRare;
 
 typedef struct FileConflict {

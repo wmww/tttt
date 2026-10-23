@@ -1,0 +1,93 @@
+//// [test/cases/ttttAugmentationCloneChain.ts] ////
+
+=== node_modules/m/node.d.ts ===
+export interface R { base: 1 }
+>base : 1
+
+export declare const R: R;
+>R : R
+
+=== node_modules/m/b.d.ts ===
+
+export * from "./node.js";
+=== node_modules/m/index.d.ts ===
+export { R } from "./node.js";
+>R : R
+
+=== aug0.d.ts ===
+declare module "m/node" { export interface R { d: 1 } }
+>"m/node" : typeof import("m/node")
+>d : 1
+
+export {}
+=== aug3.d.ts ===
+import "m";
+declare module "m" { export interface R { c: 1 } }
+>"m" : typeof import("m")
+>c : 1
+
+=== aug2.d.ts ===
+import "m/b";
+declare module "m/b" { export interface R { b: 1 } }
+>"m/b" : typeof import("m/b")
+>b : 1
+
+=== use.ts ===
+import { R } from "m";
+>R : R
+
+import { R as RB } from "m/b";
+>R : R
+>RB : R
+
+import { R as RN } from "m/node";
+>R : R
+>RN : R
+
+declare const t: R; t.b; t.c; t.d;
+>t : R
+>t.b : any
+>t : R
+>b : any
+>t.c : 1
+>t : R
+>c : 1
+>t.d : 1
+>t : R
+>d : 1
+
+declare const tb: RB; tb.b; tb.c; tb.d;
+>tb : R
+>tb.b : any
+>tb : R
+>b : any
+>tb.c : 1
+>tb : R
+>c : 1
+>tb.d : 1
+>tb : R
+>d : 1
+
+declare const tn: RN; tn.b; tn.c; tn.d;
+>tn : R
+>tn.b : any
+>tn : R
+>b : any
+>tn.c : 1
+>tn : R
+>c : 1
+>tn.d : 1
+>tn : R
+>d : 1
+
+RN.b; RN.c; RN.d;
+>RN.b : any
+>RN : R
+>b : any
+>RN.c : 1
+>RN : R
+>c : 1
+>RN.d : 1
+>RN : R
+>d : 1
+

@@ -409,20 +409,6 @@ rework. While reducing it I found and fixed scripts/reentrytrace.py's tsgo overl
 After the Event/TS5088/re-entry/explicit-type fixes, what is left in opencode differs only in the root project
 (`opencode`, about 60k lines of tsc output: React's and solid's JSX together) and in core/tsconfig.tests.json, whose
 references aren't built (TS6305 everywhere, so the core imports are any). Each has a cut-down here:
-- **A module augmentation of a re-exported interface, cloned twice** (-TS2339 at packages/function/src/api.ts:38-39,
-  root project). The root sst-env.d.ts augments `"sst"` (`declare module "sst" { interface Resource {...} }` plus
-  `import "sst"; export {}`), where `Resource` is `export { Resource } from "./resource/index.js"`.
-  packages/stats/app/src/resource.d.ts augments `"sst/resource"` (`export *` from node.js). In tsgo's
-  mergeModuleAugmentation, the `export *` module merges its augmentation into a clone of node.ts's Resource. The `"sst"`
-  one resolves the alias to that clone and clones it again (mergeSymbol: a non-transient target is replaced by a clone
-  of its resolved symbol). getMergedSymbol is one level deep, so node.ts's `declare const Resource: Resource` sees the
-  first clone: B's members, not A's. tttt merges both. Repro (tsgo: TS2339 'A' with the second augmentation, none
-  without it): node_modules/sst with `exports` `.` -> dist/index (`export { Resource } from "./resource/index.js"`) and
-  `./resource` -> dist/resource/index (`export * from "./node.js"`); node.d.ts has `export interface Resource extends
-  Base {}` and `export declare const Resource: Resource`; env.d.ts has `declare module "sst" { export interface Resource
-  { A: ... } } import "sst"; export {}`; stats.d.ts has `import "sst/resource"; declare module "sst/resource" { export
-  interface Resource { B: ... } }`; a.ts reads `Resource.A.value`. Longstanding tsc behavior (Strada has the same
-  clone), so it would be emulated in the binder's augmentation merge. [open]
 - **The return type of a failed generic call** (-TS2322 at core/test/effect/layer-node/node-build.test.ts:49,
   tsconfig.tests.json). `Node.makeGlobalNode({ service, layer: Layer.effect(Result, Effect.as(<any>, ...)), deps:
   [<any>] })` fails its `layer: Implementation & CheckLayer<NoInfer<Implementation>>` check with Implementation =

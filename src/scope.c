@@ -4394,12 +4394,197 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
     }
 }
 
-// Whether merging an augmentation's name needs aliases resolved: then it waits until the others are merged, so that
-// what resolves through the module sees them
-static bool augmentation_entry_needs_resolving(Symbol const* module, csview name) {
-    Symbol const* existing = symbol_table_get(module->exports, name);
-    if (existing) return (existing->flags & SYMBOL_ALIAS) != 0;
-    return module->is_module && module->module->export_star_count;
+// The module augmentations' merges, as tsc's mergeModuleAugmentation and mergeSymbol make them: a symbol the binder made
+// is never changed, a merge goes into a clone of what the name resolves to (its declarations and exports then), which
+// the table the name is in then holds, and which getMergedSymbol answers for what it was cloned from and for what
+// merged into it (one level: a clone of a clone isn't what the first one's origin means). A clone is merged into in
+// place. So two paths to one declaration diverge: `declare module "sst"` merging through `export { Resource } from`
+// into a clone of what `declare module "sst/resource"` made through `export *`, which node.d.ts's own `Resource`
+// still means (opencode's api.ts, TS2339). aug_merge_fixup() then makes each symbol the clone it means
+static Symbol* aug_merged(Symbol const* s) {
+    return s->rare ? s->rare->aug_merged : nullptr;
+}
+
+static bool aug_is_clone(Symbol const* s) {
+    return s->rare && s->rare->aug_clone;
+}
+
+// tsc's cloneSymbol
+static Symbol* aug_clone(Binder* me, Symbol* of) {
+    Symbol* clone = binder_new_symbol(me, of->name, of->flags & ~SYMBOL_ALIAS);
+    clone->decl_flags_before = of->decl_flags_before;
+    clone->parent = of->parent;
+    clone->name_span = of->name_span;
+    clone->exported = of->exported;
+    clone->is_ambient = of->is_ambient;
+    clone->is_local = of->is_local;
+    clone->is_const = of->is_const;
+    clone->is_default_export = of->is_default_export;
+    clone->function = of->function;
+    clone->flow_start = of->flow_start;
+    for (u32 i = 0; i < of->decl_count; i++) symbol_add_decl(clone, of->decls[i]);
+    if (of->exports) {
+        symbol_ensure_exports(clone);
+        clone->exports->parent = of->exports->parent;
+        for (u32 i = 0; i < of->exports->count; i++) {
+            SymbolEntry const* entry = &of->exports->entries[i];
+            symbol_table_insert(clone->exports, binder_arena(me), symbol_entry_name(entry), entry->hash, entry->symbol);
+        }
+    }
+    SymbolRare* rare = symbol_rare_new(clone);
+    if (of->rare) *rare = *of->rare;
+    rare->aug_merged = nullptr;
+    rare->aug_absorbed_by = nullptr;
+    rare->aug_clone = true;
+    rare->aug_clone_of = of;
+    symbol_rare_mut(of)->aug_merged = clone;
+    return clone;
+}
+
+static void aug_merge_into_table(Binder* me, Symbol* owner, csview name, Symbol* source, ErrorCtx* errs, bool module_level);
+
+// tsc's mergeSymbol of an augmentation's declaration into what the name holds: what the name then means (the source
+// after a conflict through an alias, the target after one with it)
+static Symbol* aug_merge_symbol(Binder* me, Symbol* target, Symbol* source, ErrorCtx* errs) {
+    if (target == source) return target;
+    // TODO (as merge_symbol): a symbol of the shared lib program, an alias inside an augmentation
+    if (target->binder != me || source->flags & SYMBOL_ALIAS) return target;
+    if (target->flags & excluded_flags(source->flags)) {
+        report_conflicts(errs, target, source->decls[0].name, source->flags, true, (csview){0});
+        for (u32 i = 1; i < source->decl_count; i++) report_conflict(errs, source->decls[i].name, 2300);
+        return target;
+    }
+    Symbol* into = target;
+    if (!aug_is_clone(target)) {
+        Symbol* resolved = symbol_is_pure_alias(target) ? symbol_resolve_alias(target) : target;
+        if (!resolved || resolved->is_placeholder) return source;
+        if (resolved->binder != me) return target;
+        // (tsc's mergeSymbol resolves the target to compare, and reports a conflict at the alias's declarations)
+        if (resolved->flags & excluded_flags(source->flags)) {
+            report_conflicts(errs, target, source->decls[0].name, source->flags, true, (csview){0});
+            for (u32 i = 1; i < source->decl_count; i++) report_conflict(errs, source->decls[i].name, 2300);
+            return source;
+        }
+        // (A clone too, when the target isn't one: an alias of a clone, tsc's cloneSymbol of the resolved target)
+        into = resolved->is_module ? resolved : aug_clone(me, resolved);
+    }
+    into->decl_flags_before = into->flags;
+    into->flags |= source->flags;
+    into->is_ambient |= source->is_ambient;
+    for (u32 i = 0; i < source->decl_count; i++) symbol_add_decl(into, source->decls[i]);
+    if (source->exports) {
+        symbol_ensure_exports(into);
+        u32 count;
+        SymbolEntry* entries = symbol_table_collect(source->exports, &count);
+        for (u32 i = 0; i < count; i++) aug_merge_into_table(me, into, symbol_entry_name(&entries[i]), entries[i].symbol, errs, false);
+        free(entries);
+        source->exports = into->exports;
+    }
+    symbol_rare_mut(source)->aug_merged = into;
+    return into;
+}
+
+static void aug_set_entry(Binder* me, Symbol* owner, csview name, u64 hash, Symbol* symbol) {
+    i32 own = symbol_table_own_index(owner->exports, name, hash);
+    if (own >= 0) owner->exports->entries[own].symbol = symbol;
+    else symbol_table_insert(owner->exports, binder_arena(me), name, hash, symbol);
+    if (owner->is_module && owner->module->resolved_exports_state == ALIAS_DONE) {
+        i32 at = symbol_table_own_index(owner->module->resolved_exports, name, hash);
+        if (at >= 0) owner->module->resolved_exports->entries[at].symbol = symbol;
+        else symbol_table_insert(owner->module->resolved_exports, binder_arena(me), name, hash, symbol);
+    }
+}
+
+// tsc's mergeSymbolTable of one name, after (for a module, `module_level`) mergeModuleAugmentation's merge into what
+// `export *` brings the name from when the module has no own export of it
+static void aug_merge_into_table(Binder* me, Symbol* owner, csview name, Symbol* source, ErrorCtx* errs, bool module_level) {
+    u64 hash = symbol_name_hash(name);
+    Symbol* existing = symbol_table_get_own(owner->exports, name, hash);
+    if (module_level && !existing && owner->is_module && owner->module->export_star_count) {
+        Symbol* starred = symbol_table_lookup(module_resolved_exports(owner), name, hash);
+        if (starred) aug_merge_symbol(me, starred, source, errs);
+    }
+    if (existing) {
+        Symbol* merged = aug_merge_symbol(me, existing, source, errs);
+        // (mergeSymbolTable's mergedParent: a clone it merged into is the owner's from then on)
+        if (aug_is_clone(merged)) merged->parent = owner;
+        if (merged == source) source->parent = owner;
+        aug_set_entry(me, owner, name, hash, merged);
+        return;
+    }
+    Symbol* merged = aug_merged(source) ? aug_merged(source) : source;
+    if (merged == source) {
+        if (source->parent && source->parent->is_augmentation) symbol_rare_mut(source)->augmentation_name = source->parent->name;
+        source->parent = owner;
+    }
+    aug_set_entry(me, owner, name, hash, merged);
+}
+
+// After the merges, what each symbol means: the end of its chain of merged symbols (tsc's lookups apply getMergedSymbol
+// at every step: a table holds a clone, resolveName a symbol the binder made, getDeclaredTypeOfSymbol the merged one
+// again, so a clone of a clone is what its first one means). A symbol the binder made whose chain ends in a clone of it
+// becomes that clone (everything that names it then means it), and the clone's holders hold the symbol; what merged
+// into a clone is declared there (its nodes point at it). A clone a later merge went into in place after it was cloned
+// again keeps that merge to itself: nothing means it any more (tsc's too)
+static Symbol* aug_chain_end(Symbol* s) {
+    for (u32 guard = 0; s && s->rare && s->rare->aug_merged && guard < 1024; guard++) s = s->rare->aug_merged;
+    return s;
+}
+
+static Symbol* aug_final(Symbol* s) {
+    s = aug_chain_end(s);
+    if (s && s->rare && s->rare->aug_absorbed_by) s = s->rare->aug_absorbed_by;
+    return s;
+}
+
+static Symbol* aug_root(Symbol* s) {
+    for (u32 guard = 0; s && aug_is_clone(s) && guard < 1024; guard++) s = s->rare->aug_clone_of;
+    return s;
+}
+
+static void aug_fix_table(SymbolTable* table) {
+    for (u32 i = 0; table && i < table->count; i++) table->entries[i].symbol = aug_final(table->entries[i].symbol);
+}
+
+static void aug_merge_fixup(Binder* me) {
+    bool any = false;
+    for (u32 i = 0; i < my symbol_count; i++) {
+        Symbol* s = my symbols[i];
+        if (!aug_merged(s) || aug_is_clone(s)) continue;
+        any = true;
+        Symbol* clone = aug_chain_end(s);
+        if (!aug_is_clone(clone) || clone->rare->aug_absorbed_by || aug_root(clone) != s) continue;
+        s->flags = clone->flags;
+        s->decl_flags_before = clone->decl_flags_before;
+        s->is_ambient = clone->is_ambient;
+        s->parent = clone->parent;
+        s->decls = clone->decls;
+        s->decl_count = clone->decl_count;
+        s->decl_cap = clone->decl_cap;
+        s->exports = clone->exports;
+        clone->decls = nullptr;
+        clone->decl_count = clone->decl_cap = 0;
+        clone->flags = 0;
+        clone->rare->aug_absorbed_by = s;
+    }
+    if (!any) return;
+    for (u32 i = 0; i < my symbol_count; i++) {
+        Symbol* s = my symbols[i];
+        aug_fix_table(s->exports);
+        if (s->is_module && s->module) aug_fix_table(s->module->resolved_exports);
+        if (s->alias) {
+            s->alias->target = aug_final(s->alias->target);
+            s->alias->value_target = aug_final(s->alias->value_target);
+        }
+        s->parent = aug_final(s->parent);
+    }
+    for (u32 i = 0; i < my symbol_count; i++) {
+        Symbol* s = my symbols[i];
+        if (!aug_merged(s) || aug_is_clone(s)) continue;
+        Symbol* merged = aug_final(s);
+        if (merged == s) continue;
+        for (u32 d = 0; d < s->decl_count; d++) retarget_decl(&s->decls[d], merged);
+    }
 }
 
 // tsgo's bindCommonJSTypeExports, for every module and ambient module since TypeScript 7.1: the exports that have a
@@ -4513,15 +4698,12 @@ static void merge_augmentations(Binder* me) {
         error_ctx_error_d(decl->inner_scope->binder->errs, ref->span, 2665, "Invalid module name in augmentation. Module '",
             ref->path, "' resolves to an untyped module at '", module_ref_rare(ref)->resolved_path, "', which cannot be augmented.");
     }
-    // First what merges without resolving anything, then (in the same order) what needs aliases or `export *`
-    // resolved, and augmentations of an `export =` module, which go into what it assigns
-    // (Which entries wait is decided before anything merges: a merge can make a name an own export of the module)
-    bool** late_entries = calloc(my augmentation_count ? my augmentation_count : 1, sizeof(bool*));
-    panic_if(!late_entries, "out of memory");
+    // In the program's order (tsc's mergeModuleAugmentation for each file's augmentations): which clone a name means
+    // depends on it (aug_merge_symbol())
     // (Those that can't merge, TS2671/TS2649: tsc's mergeModuleAugmentation leaves them symbols of their own)
     bool* unmerged = calloc(my augmentation_count ? my augmentation_count : 1, sizeof(bool));
     panic_if(!unmerged, "out of memory");
-    for (int pass = 0; pass < 2; pass++) {
+    {
         for (u32 i = 0; i < my augmentation_count; i++) {
             NamespaceDecl* decl = my augmentations[i];
             Symbol* augmentation = decl->symbol;
@@ -4529,7 +4711,6 @@ static void merge_augmentations(Binder* me) {
             ErrorCtx* errs = decl->inner_scope->binder->errs;
             bool export_equals = symbol_table_get(module->exports, c_sv("export=")) != nullptr;
             if (export_equals) {
-                if (pass == 0) continue;
                 Symbol* assigned = module_export_equals(module);
                 if (!assigned || (assigned->is_placeholder && !assigned->is_unresolved)) continue;
                             // (tsc's unknownSymbol isn't a namespace either)
@@ -4583,24 +4764,16 @@ static void merge_augmentations(Binder* me) {
             }
             u32 count;
             SymbolEntry* entries = symbol_table_collect(augmentation->exports, &count);
-            if (pass == 0) {
-                late_entries[i] = calloc(count ? count : 1, sizeof(bool));
-                panic_if(!late_entries[i], "out of memory");
-                for (u32 j = 0; j < count; j++) late_entries[i][j] = augmentation_entry_needs_resolving(module, symbol_entry_name(&entries[j]));
-            }
             Symbol const* pattern = augmented_pattern(me, module);
             for (u32 j = 0; j < count; j++) {
-                bool late = export_equals || !late_entries[i] || late_entries[i][j];
-                if (late != (pass == 1)) continue;
                 bool shadows = pattern && !symbol_table_get_own(module->exports, symbol_entry_name(&entries[j]), entries[j].hash);
-                merge_into_exports(me, module, symbol_entry_name(&entries[j]), entries[j].symbol, errs);
+                aug_merge_into_table(me, module, symbol_entry_name(&entries[j]), entries[j].symbol, errs, true);
                 if (shadows) add_pattern_declarations(entries[j].symbol, symbol_table_get(pattern->exports, symbol_entry_name(&entries[j])));
             }
             free(entries);
         }
     }
-    for (u32 i = 0; i < my augmentation_count; i++) free(late_entries[i]);
-    free(late_entries);
+    aug_merge_fixup(me);
     // Every block of an augmentation sees the module's exports, and `declare module "m"` is the module
     for (u32 i = 0; i < my augmentation_count; i++) {
         NamespaceDecl* decl = my augmentations[i];

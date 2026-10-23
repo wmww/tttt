@@ -52,7 +52,7 @@ tttt's shape differs from tsgo's: it is lazy per declaration (each `Expr`, `Bind
 | `declareSymbol` (binder.go) | `scope.c` `declare_symbol`; `scope.c` `declare_symbol_split`; `scope.c` `scope_init_declaration` | tsc's `*Excludes` masks verbatim |
 | `declareModuleMember` (binder.go) | `scope.c` `scope_init_declaration`; `scope.c` `scope_add_port`; `scope.c` `declare_function_export` |  |
 | `mergeSymbol` (checker.go) | `scope.c` `merge_symbol` |  |
-| `mergeModuleAugmentation` (checker.go) | `scope.c` `merge_augmentations`; `scope.c` `binder_add_augmentation` | augmentations are collected and merged in a post-declare step |
+| `mergeModuleAugmentation` (checker.go) | `scope.c` `merge_augmentations`; `scope.c` `binder_add_augmentation` | augmentations are collected and merged in a post-declare step, in program order; `mergeSymbol`/`cloneSymbol`/`getMergedSymbol` are `aug_merge_symbol`/`aug_clone`/`aug_merge_fixup` |
 | `collectModuleReferences` (references.go) | `parser.c` `add_module_ref`; `source_file.c` `source_file_add_module_ref` | the parser records each module reference as it parses |
 | `bindExportAssignment` (binder.go) | `scope.c` `scope_export_default_expr`; `port_statement.c` `port_statement_add_names` |  |
 | `createFlowCondition` (binder.go) | `flow.c` `flow_new_condition` |  |

@@ -1,0 +1,201 @@
+//// [test/cases/ttttAugmentationCloneOfClone.ts] ////
+
+=== node_modules/m/node.d.ts ===
+export interface R { base: 1 }
+>base : 1
+
+export declare const R: R;
+>R : R
+
+=== node_modules/m/a.d.ts ===
+
+export * from "./node.js";
+=== node_modules/m/b.d.ts ===
+
+export * from "./node.js";
+=== node_modules/m/index.d.ts ===
+export { R } from "./node.js";
+>R : R
+
+=== node_modules/sst/dist/index.d.ts ===
+export { Resource } from "./resource/index.js";
+>Resource : import("sst/resource").Resource
+
+=== node_modules/sst/dist/resource/index.d.ts ===
+
+export * from "./node.js";
+=== node_modules/sst/dist/resource/node.d.ts ===
+import type { Resource as BaseResource } from "./shared.js";
+>Resource : any
+>BaseResource : BaseResource
+
+export interface Resource extends BaseResource {}
+export declare const Resource: Resource;
+>Resource : Resource
+
+=== node_modules/sst/dist/resource/shared.d.ts ===
+export interface Resource { App: { name: string } }
+>App : { name: string; }
+>name : string
+
+=== aug1.d.ts ===
+import "m/a";
+declare module "m/a" { export interface R { a: 1 } }
+>"m/a" : typeof import("m/a")
+>a : 1
+
+=== aug2.d.ts ===
+import "m/b";
+declare module "m/b" { export interface R { b: 1 } }
+>"m/b" : typeof import("m/b")
+>b : 1
+
+=== aug3.d.ts ===
+import "m";
+declare module "m" { export interface R { c: 1 } }
+>"m" : typeof import("m")
+>c : 1
+
+=== env.d.ts ===
+declare module "sst" {
+>"sst" : typeof import("sst")
+
+  export interface Resource { A: { value: string } }
+>A : { value: string; }
+>value : string
+}
+import "sst"
+export {}
+=== stats.d.ts ===
+import "sst/resource"
+declare module "sst/resource" {
+>"sst/resource" : typeof import("sst/resource")
+
+  export interface Resource { B: { value: string } }
+>B : { value: string; }
+>value : string
+}
+=== use.ts ===
+import { R } from "m";
+>R : R
+
+import { R as RA } from "m/a";
+>R : R
+>RA : R
+
+import { R as RB } from "m/b";
+>R : R
+>RB : R
+
+import { Resource } from "sst";
+>Resource : import("sst/resource").Resource
+
+R.base; R.a; R.b; R.c;
+>R.base : 1
+>R : R
+>base : 1
+>R.a : any
+>R : R
+>a : any
+>R.b : any
+>R : R
+>b : any
+>R.c : 1
+>R : R
+>c : 1
+
+declare const t: R; t.a; t.b; t.c;
+>t : R
+>t.a : any
+>t : R
+>a : any
+>t.b : any
+>t : R
+>b : any
+>t.c : 1
+>t : R
+>c : 1
+
+declare const ta: RA; ta.a; ta.b; ta.c;
+>ta : RA
+>ta.a : 1
+>ta : RA
+>a : 1
+>ta.b : any
+>ta : RA
+>b : any
+>ta.c : any
+>ta : RA
+>c : any
+
+declare const tb: RB; tb.a; tb.b; tb.c;
+>tb : RB
+>tb.a : any
+>tb : RB
+>a : any
+>tb.b : 1
+>tb : RB
+>b : 1
+>tb.c : any
+>tb : RB
+>c : any
+
+RA.a; RA.b; RA.c; RB.a; RB.b; RB.c;
+>RA.a : any
+>RA : R
+>a : any
+>RA.b : any
+>RA : R
+>b : any
+>RA.c : 1
+>RA : R
+>c : 1
+>RB.a : any
+>RB : R
+>a : any
+>RB.b : any
+>RB : R
+>b : any
+>RB.c : 1
+>RB : R
+>c : 1
+
+Resource.A.value;
+>Resource.A.value : any
+>Resource.A : any
+>Resource : import("sst/resource").Resource
+>A : any
+>value : any
+
+Resource.B.value;
+>Resource.B.value : string
+>Resource.B : { value: string; }
+>Resource : import("sst/resource").Resource
+>B : { value: string; }
+>value : string
+
+Resource.App.name;
+>Resource.App.name : string
+>Resource.App : { name: string; }
+>Resource : import("sst/resource").Resource
+>App : { name: string; }
+>name : string
+
+declare const res: Resource;
+>res : Resource
+
+res.A.value; res.B.value; res.App;
+>res.A.value : string
+>res.A : { value: string; }
+>res : Resource
+>A : { value: string; }
+>value : string
+>res.B.value : any
+>res.B : any
+>res : Resource
+>B : any
+>value : any
+>res.App : { name: string; }
+>res : Resource
+>App : { name: string; }
+

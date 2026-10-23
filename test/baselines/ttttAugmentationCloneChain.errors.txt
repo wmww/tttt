@@ -1,0 +1,41 @@
+use.ts(4,23): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(5,26): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(6,26): error TS2339: Property 'b' does not exist on type 'R'.
+use.ts(7,4): error TS2339: Property 'b' does not exist on type 'R'.
+
+
+==== node_modules/m/package.json (0 errors) ====
+    { "name": "m", "exports": { ".": "./index.js", "./b": "./b.js", "./node": "./node.js" } }
+==== node_modules/m/node.d.ts (0 errors) ====
+    export interface R { base: 1 }
+    export declare const R: R;
+==== node_modules/m/b.d.ts (0 errors) ====
+    export * from "./node.js";
+==== node_modules/m/index.d.ts (0 errors) ====
+    export { R } from "./node.js";
+==== aug0.d.ts (0 errors) ====
+    declare module "m/node" { export interface R { d: 1 } }
+    export {}
+==== aug3.d.ts (0 errors) ====
+    import "m";
+    declare module "m" { export interface R { c: 1 } }
+==== aug2.d.ts (0 errors) ====
+    import "m/b";
+    declare module "m/b" { export interface R { b: 1 } }
+==== use.ts (4 errors) ====
+    import { R } from "m";
+    import { R as RB } from "m/b";
+    import { R as RN } from "m/node";
+    declare const t: R; t.b; t.c; t.d;
+                          ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+    declare const tb: RB; tb.b; tb.c; tb.d;
+                             ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+    declare const tn: RN; tn.b; tn.c; tn.d;
+                             ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+    RN.b; RN.c; RN.d;
+       ~
+!!! error TS2339: Property 'b' does not exist on type 'R'.
+    
