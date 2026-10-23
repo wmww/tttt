@@ -12864,6 +12864,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttExtendedConfigDiagnosticLocated': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttExtendedEmptyStringOption': {
         errors: true,
         symbols: true,
@@ -14453,6 +14458,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'ttttVarianceReentersOwnReturnType': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'ttttVarianceRestartReentersBaseConstraint': {
         errors: true,
