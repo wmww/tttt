@@ -351,7 +351,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         i->initializer.binding.optional_parameter = (i->explicit_optional && !(i->rest && !i->initializer.binding.has_explicit_type && !my is_expression)) ||
             i->jsdoc_optional_initialized;
         initialized_binding_add_names(&i->initializer, function_scope, (BindingAddNamesProps){
-            .abstract_literals = true,
+            // (A `readonly` parameter of anything but a constructor isn't a parameter property: like a readonly property,
+            // its initializer keeps its literal type, tsc's isDeclarationReadonly; TS2369 reports it)
+            .abstract_literals = !(i->is_readonly_property && !my is_constructor),
             .is_function_arg = true,
             .full = i->span,
         });

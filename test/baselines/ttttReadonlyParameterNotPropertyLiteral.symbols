@@ -1,0 +1,42 @@
+//// [test/cases/ttttReadonlyParameterNotPropertyLiteral.ts] ////
+
+=== ttttReadonlyParameterNotPropertyLiteral.ts ===
+// A `readonly` parameter outside a constructor isn't a parameter property (TS2369): like a readonly property, its
+// initializer keeps its literal type (tsc's isDeclarationReadonly)
+function f(readonly h = 1) { const t: 1 = h; }
+>f : Symbol(f, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 0, 0))
+>h : Symbol(h, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 2, 11))
+>t : Symbol(t, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 2, 34))
+>h : Symbol(h, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 2, 11))
+
+function g(h = 1) { const t: 1 = h; }
+>g : Symbol(g, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 2, 46))
+>h : Symbol(h, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 3, 11))
+>t : Symbol(t, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 3, 25))
+>h : Symbol(h, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 3, 11))
+
+const a = (readonly s = "x") => s;
+>a : Symbol(a, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 4, 5))
+>s : Symbol(s, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 4, 11))
+>s : Symbol(s, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 4, 11))
+
+class C {
+>C : Symbol(C, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 4, 34))
+
+    constructor(readonly h = 1) { const t: 1 = h; }
+>h : Symbol(C.h, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 6, 16))
+>t : Symbol(t, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 6, 39))
+>h : Symbol(h, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 6, 16))
+
+    m(readonly k = true) { return k; }
+>m : Symbol(C.m, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 6, 51))
+>k : Symbol(k, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 7, 6))
+>k : Symbol(k, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 7, 6))
+}
+declare class D {
+>D : Symbol(D, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 8, 1))
+
+    constructor(readonly h = 1);
+>h : Symbol(D.h, Decl(ttttReadonlyParameterNotPropertyLiteral.ts, 10, 16))
+}
+

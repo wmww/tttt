@@ -1,0 +1,49 @@
+//// [test/cases/ttttReadonlyParameterNotPropertyLiteral.ts] ////
+
+=== ttttReadonlyParameterNotPropertyLiteral.ts ===
+// A `readonly` parameter outside a constructor isn't a parameter property (TS2369): like a readonly property, its
+// initializer keeps its literal type (tsc's isDeclarationReadonly)
+function f(readonly h = 1) { const t: 1 = h; }
+>f : (h?: 1) => void
+>h : 1
+>1 : 1
+>t : 1
+>h : 1
+
+function g(h = 1) { const t: 1 = h; }
+>g : (h?: number) => void
+>h : number
+>1 : 1
+>t : 1
+>h : number
+
+const a = (readonly s = "x") => s;
+>a : (s?: "x") => string
+>(readonly s = "x") => s : (s?: "x") => string
+>s : "x"
+>"x" : "x"
+>s : "x"
+
+class C {
+>C : C
+
+    constructor(readonly h = 1) { const t: 1 = h; }
+>h : number
+>1 : 1
+>t : 1
+>h : number
+
+    m(readonly k = true) { return k; }
+>m : (k?: true) => boolean
+>k : true
+>true : true
+>k : true
+}
+declare class D {
+>D : D
+
+    constructor(readonly h = 1);
+>h : number
+>1 : 1
+}
+

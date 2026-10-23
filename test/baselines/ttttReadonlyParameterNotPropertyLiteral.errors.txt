@@ -1,0 +1,37 @@
+ttttReadonlyParameterNotPropertyLiteral.ts(3,12): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttReadonlyParameterNotPropertyLiteral.ts(4,27): error TS2322: Type 'number' is not assignable to type '1'.
+ttttReadonlyParameterNotPropertyLiteral.ts(5,12): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttReadonlyParameterNotPropertyLiteral.ts(7,41): error TS2322: Type 'number' is not assignable to type '1'.
+ttttReadonlyParameterNotPropertyLiteral.ts(8,7): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttReadonlyParameterNotPropertyLiteral.ts(11,17): error TS2369: A parameter property is only allowed in a constructor implementation.
+ttttReadonlyParameterNotPropertyLiteral.ts(11,17): error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+
+
+==== ttttReadonlyParameterNotPropertyLiteral.ts (7 errors) ====
+    // A `readonly` parameter outside a constructor isn't a parameter property (TS2369): like a readonly property, its
+    // initializer keeps its literal type (tsc's isDeclarationReadonly)
+    function f(readonly h = 1) { const t: 1 = h; }
+               ~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+    function g(h = 1) { const t: 1 = h; }
+                              ~
+!!! error TS2322: Type 'number' is not assignable to type '1'.
+    const a = (readonly s = "x") => s;
+               ~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+    class C {
+        constructor(readonly h = 1) { const t: 1 = h; }
+                                            ~
+!!! error TS2322: Type 'number' is not assignable to type '1'.
+        m(readonly k = true) { return k; }
+          ~~~~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+    }
+    declare class D {
+        constructor(readonly h = 1);
+                    ~~~~~~~~~~~~~~
+!!! error TS2369: A parameter property is only allowed in a constructor implementation.
+                    ~~~~~~~~~~~~~~
+!!! error TS2371: A parameter initializer is only allowed in a function or constructor implementation.
+    }
+    
