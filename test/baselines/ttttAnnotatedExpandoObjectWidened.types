@@ -1,0 +1,42 @@
+//// [test/cases/ttttAnnotatedExpandoObjectWidened.ts] ////
+
+=== ttttAnnotatedExpandoObjectWidened.ts ===
+// An expando of an annotated variable has its object literal value widened (tsc's
+// getWidenedTypeForAssignmentDeclaration ends with getWidenedType): no longer fresh, it fails a weak `args` type with
+// "no properties in common" on the declaration, next to the assignment's own excess property error
+type S = ((a: string) => string) & { args?: Partial<{ ref?: number }> };
+>S : S
+>a : string
+>args : Partial<{ ref?: number; }> | undefined
+>ref : number | undefined
+
+export const D: S = (a) => a;
+>D : S
+>(a) => a : { (a: string): string; args: { disabled: boolean; }; }
+>a : string
+>a : string
+
+D.args = { disabled: false };
+>D.args = { disabled: false } : { disabled: boolean; }
+>D.args : Partial<{ ref?: number; }> | undefined
+>D : S
+>args : Partial<{ ref?: number; }> | undefined
+>{ disabled: false } : { disabled: boolean; }
+>disabled : boolean
+>false : false
+
+export const E: S = (a) => a;
+>E : S
+>(a) => a : { (a: string): string; args: { ref: string; }; }
+>a : string
+>a : string
+
+E.args = { ref: "x" };
+>E.args = { ref: "x" } : { ref: string; }
+>E.args : Partial<{ ref?: number; }> | undefined
+>E : S
+>args : Partial<{ ref?: number; }> | undefined
+>{ ref: "x" } : { ref: string; }
+>ref : string
+>"x" : "x"
+

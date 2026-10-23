@@ -1,0 +1,37 @@
+//// [test/cases/ttttAnnotatedExpandoObjectWidened.ts] ////
+
+=== ttttAnnotatedExpandoObjectWidened.ts ===
+// An expando of an annotated variable has its object literal value widened (tsc's
+// getWidenedTypeForAssignmentDeclaration ends with getWidenedType): no longer fresh, it fails a weak `args` type with
+// "no properties in common" on the declaration, next to the assignment's own excess property error
+type S = ((a: string) => string) & { args?: Partial<{ ref?: number }> };
+>S : Symbol(S, Decl(ttttAnnotatedExpandoObjectWidened.ts, 0, 0))
+>a : Symbol(a, Decl(ttttAnnotatedExpandoObjectWidened.ts, 3, 11))
+>args : Symbol(args, Decl(ttttAnnotatedExpandoObjectWidened.ts, 3, 36))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>ref : Symbol(ref, Decl(ttttAnnotatedExpandoObjectWidened.ts, 3, 53))
+
+export const D: S = (a) => a;
+>D : Symbol(D, Decl(ttttAnnotatedExpandoObjectWidened.ts, 4, 12))
+>S : Symbol(S, Decl(ttttAnnotatedExpandoObjectWidened.ts, 0, 0))
+>a : Symbol(a, Decl(ttttAnnotatedExpandoObjectWidened.ts, 4, 21))
+>a : Symbol(a, Decl(ttttAnnotatedExpandoObjectWidened.ts, 4, 21))
+
+D.args = { disabled: false };
+>D.args : Symbol(args, Decl(ttttAnnotatedExpandoObjectWidened.ts, 3, 36))
+>D : Symbol(D, Decl(ttttAnnotatedExpandoObjectWidened.ts, 4, 12))
+>args : Symbol(args, Decl(ttttAnnotatedExpandoObjectWidened.ts, 3, 36))
+>disabled : Symbol(disabled, Decl(ttttAnnotatedExpandoObjectWidened.ts, 5, 10))
+
+export const E: S = (a) => a;
+>E : Symbol(E, Decl(ttttAnnotatedExpandoObjectWidened.ts, 6, 12))
+>S : Symbol(S, Decl(ttttAnnotatedExpandoObjectWidened.ts, 0, 0))
+>a : Symbol(a, Decl(ttttAnnotatedExpandoObjectWidened.ts, 6, 21))
+>a : Symbol(a, Decl(ttttAnnotatedExpandoObjectWidened.ts, 6, 21))
+
+E.args = { ref: "x" };
+>E.args : Symbol(args, Decl(ttttAnnotatedExpandoObjectWidened.ts, 3, 36))
+>E : Symbol(E, Decl(ttttAnnotatedExpandoObjectWidened.ts, 6, 12))
+>args : Symbol(args, Decl(ttttAnnotatedExpandoObjectWidened.ts, 3, 36))
+>ref : Symbol(ref, Decl(ttttAnnotatedExpandoObjectWidened.ts, 7, 10))
+

@@ -1,0 +1,34 @@
+ttttAnnotatedExpandoObjectWidened.ts(5,14): error TS2322: Type '{ (a: string): string; args: { disabled: boolean; }; }' is not assignable to type 'S'.
+  Types of property 'args' are incompatible.
+    Type '{ disabled: boolean; }' has no properties in common with type 'Partial<{ ref?: number | undefined; }>'.
+ttttAnnotatedExpandoObjectWidened.ts(6,12): error TS2353: Object literal may only specify known properties, and 'disabled' does not exist in type 'Partial<{ ref?: number | undefined; }>'.
+ttttAnnotatedExpandoObjectWidened.ts(7,14): error TS2322: Type '{ (a: string): string; args: { ref: string; }; }' is not assignable to type 'S'.
+  Type '{ (a: string): string; args: { ref: string; }; }' is not assignable to type '{ args?: Partial<{ ref?: number | undefined; }> | undefined; }'.
+    The types of 'args.ref' are incompatible between these types.
+      Type 'string' is not assignable to type 'number'.
+ttttAnnotatedExpandoObjectWidened.ts(8,12): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+==== ttttAnnotatedExpandoObjectWidened.ts (4 errors) ====
+    // An expando of an annotated variable has its object literal value widened (tsc's
+    // getWidenedTypeForAssignmentDeclaration ends with getWidenedType): no longer fresh, it fails a weak `args` type with
+    // "no properties in common" on the declaration, next to the assignment's own excess property error
+    type S = ((a: string) => string) & { args?: Partial<{ ref?: number }> };
+    export const D: S = (a) => a;
+                 ~
+!!! error TS2322: Type '{ (a: string): string; args: { disabled: boolean; }; }' is not assignable to type 'S'.
+!!! error TS2322:   Types of property 'args' are incompatible.
+!!! error TS2322:     Type '{ disabled: boolean; }' has no properties in common with type 'Partial<{ ref?: number | undefined; }>'.
+    D.args = { disabled: false };
+               ~~~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'disabled' does not exist in type 'Partial<{ ref?: number | undefined; }>'.
+    export const E: S = (a) => a;
+                 ~
+!!! error TS2322: Type '{ (a: string): string; args: { ref: string; }; }' is not assignable to type 'S'.
+!!! error TS2322:   Type '{ (a: string): string; args: { ref: string; }; }' is not assignable to type '{ args?: Partial<{ ref?: number | undefined; }> | undefined; }'.
+!!! error TS2322:     The types of 'args.ref' are incompatible between these types.
+!!! error TS2322:       Type 'string' is not assignable to type 'number'.
+    E.args = { ref: "x" };
+               ~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

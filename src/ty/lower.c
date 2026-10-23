@@ -1879,8 +1879,12 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 return ty_widened_nullable(me, ty_widened_objects(me, ty_regular(me, ty_expr_type(me, decl->node))));
             }
             if (is_js_container(symbol, decl->node)) return ty_namespace_type(me, symbol);
-            // (An annotated variable's expando: the value as contextually typed by the annotation, its literals kept)
-            if (annotated_expando_type(me, symbol)) return ty_regular(me, assignment_declaration_type(me, symbol, decl));
+            // (An annotated variable's expando: the value as contextually typed by the annotation, its literals kept.
+            // An object literal is widened all the same, no longer fresh: tsc's getWidenedTypeForAssignmentDeclaration
+            // ends with getWidenedType, so `f.args = { x: 1 }` against a weak `args` type is "no properties in common")
+            if (annotated_expando_type(me, symbol)) {
+                return ty_widened_objects(me, ty_regular(me, assignment_declaration_type(me, symbol, decl)));
+            }
             {
                 Ty const* type = ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
                 // Nothing but null and undefined is any in JavaScript (tsc's getWidenedTypeForAssignmentDeclaration),
