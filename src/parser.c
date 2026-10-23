@@ -138,6 +138,8 @@ typedef struct ParserShared {
     char const* binary_marker;
     // Parsing the type arguments of `import<...>`: TS1326 replaces their own grammar errors (TS1099)
     bool import_type_args;
+    // A word with a unicode escape was parsed (note_escaped_names()): only then do keyword probes cook words
+    bool any_escaped_word;
     // The type member being parsed can't be a mapped type's `[K in T]` (tsc's isStartOfMappedType looks only at a type
     // literal's first member): it's a property named by an `in` expression
     bool no_mapped_member;
@@ -310,6 +312,7 @@ static ModuleRef* add_module_ref(Parser* p, cstr path, Span span) {
 
 // Its names are cooked from now on (name_cooked())
 static void note_escaped_names(ParserShared* shared) {
+    shared->any_escaped_word = true;
     if (shared->chunk) chunk_effect(shared, (ChunkEffect){ .kind = CHUNK_EFFECT_ESCAPED_NAMES });
     else names_register_source((SourceFile*)shared->source);
 }
@@ -1730,10 +1733,18 @@ typedef struct Tok {
     const char* start;
     const char* end;
     bool newline_before;
+    bool escaped; // A word with a unicode escape (tok_is() cooks it)
 } Tok;
 
 // The end of the token at c, tsc's scanner's idea of it but cheap: no values
+static const char* tok_scan_end_ex(Parser const* p, const char* c, bool* escaped);
 static const char* tok_scan_end(Parser const* p, const char* c) {
+    bool escaped;
+    return tok_scan_end_ex(p, c, &escaped);
+}
+
+static const char* tok_scan_end_ex(Parser const* p, const char* c, bool* escaped) {
+    *escaped = false;
     if (!*c) return at_eof(p, c) ? c : c + 1;
     // (A JSX file's `</`: tsc's scanner's LessThanSlashToken, wherever it is)
     if (c[0] == '<' && c[1] == '/' && c[2] != '*' && p->shared->source && p->shared->source->is_jsx) return c + 2;
@@ -1741,8 +1752,13 @@ static const char* tok_scan_end(Parser const* p, const char* c) {
     if (c[0] == '#' && c[1] == '!') return c + 2;
     int size = identifier_char_size(c + (*c == '#'), true);
     if (size) {
+        // (An escape is more than one character, like a non-ASCII one: only those are looked at)
+        if (size > 1 && c[*c == '#'] == '\\') *escaped = true;
         c += size + (*c == '#');
-        while ((size = identifier_char_size(c, false))) c += size;
+        while ((size = identifier_char_size(c, false))) {
+            if (size > 1 && *c == '\\') *escaped = true;
+            c += size;
+        }
         return c;
     }
     if ((*c >= '0' && *c <= '9') || (*c == '.' && c[1] >= '0' && c[1] <= '9')) {
@@ -1790,7 +1806,8 @@ static const char* tok_scan_end(Parser const* p, const char* c) {
 static Tok tok_at(Parser* parent, const char* pos, bool newline_before) {
     // (No trivia to hop: no child parser)
     if (GATE_ACTIVE && (unsigned char)*pos > ' ' && (unsigned char)*pos < 0x80 && *pos != '/') {
-        Tok fast = { .start = pos, .end = tok_scan_end(parent, pos), .newline_before = newline_before };
+        Tok fast = { .start = pos, .newline_before = newline_before };
+        fast.end = tok_scan_end_ex(parent, pos, &fast.escaped);
 #ifdef VERIFY_GATES
         gate_bypass = true;
         Tok slow = tok_at(parent, pos, newline_before);
@@ -1804,7 +1821,8 @@ static Tok tok_at(Parser* parent, const char* pos, bool newline_before) {
     p.whitespace = newline_before ? WHITESPACE_NEWLINE : WHITESPACE_NONE;
     p.whitespace_end = nullptr;
     hop_whitespace(&p);
-    Tok t = { .start = p.pos, .end = tok_scan_end(&p, p.pos), .newline_before = newline_before || p.whitespace == WHITESPACE_NEWLINE };
+    Tok t = { .start = p.pos, .newline_before = newline_before || p.whitespace == WHITESPACE_NEWLINE };
+    t.end = tok_scan_end_ex(&p, p.pos, &t.escaped);
     parse_fail(&p);
     return t;
 }
@@ -1818,21 +1836,17 @@ static Tok tok_next(Parser* parent, Tok t) {
     return tok_at(parent, t.end, false);
 }
 
-static bool tok_is_escaped_keyword(Tok t, const char* text);
+[[gnu::noinline]] static bool tok_is_escaped_keyword(Tok t, const char* text);
 
-static bool tok_is(Tok t, const char* text) {
+__attribute__((always_inline)) static inline bool tok_is(Tok t, const char* text) {
     size_t n = strlen(text);
-    size_t len = (size_t)(t.end - t.start);
-    if (len == n && memcmp(t.start, text, n) == 0) return true;
-    // A word spelled with unicode escapes is its keyword's token all the same (tsc's scanner; the parser reports
-    // TS1260 where it consumes one as a keyword): an escape where the characters stop matching
-    if (len <= n) return false;
-    size_t i = 0;
-    while (i < n && t.start[i] == text[i]) i++;
-    return t.start[i] == '\\' && tok_is_escaped_keyword(t, text);
+    // (A word spelled with unicode escapes is its keyword's token all the same: tsc's scanner; the parser reports
+    // TS1260 where it consumes one as a keyword)
+    return ((size_t)(t.end - t.start) == n && memcmp(t.start, text, n) == 0) ||
+        (__builtin_expect(t.escaped, 0) && tok_is_escaped_keyword(t, text));
 }
 
-static bool tok_is_escaped_keyword(Tok t, const char* text) {
+[[gnu::noinline]] static bool tok_is_escaped_keyword(Tok t, const char* text) {
     cstr cooked = identifier_name_value(csview_from_range(t.start, t.end));
     bool equal = strcmp(cstr_str(&cooked), text) == 0;
     cstr_drop(&cooked);
@@ -2410,6 +2424,20 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
     return parse_modifier_list_ex(parent, is_member, is_member, ret);
 }
 
+// A word with a unicode escape, `st\u0061tic`: into buf (16 bytes) as its cooked text, which *word then spans. False
+// for a word without one
+[[gnu::noinline]] static bool cook_escaped_word(Span* word, char* buf) {
+    if (!memchr(word->buf, '\\', (size_t)word->size)) return false;
+    cstr cooked = identifier_name_value(span_sv(*word));
+    size_t len = (size_t)cstr_size(&cooked);
+    if (len < 16) memcpy(buf, cstr_str(&cooked), len + 1);
+    else buf[0] = 0, len = 0;
+    cstr_drop(&cooked);
+    word->buf = buf;
+    word->size = (i32)len;
+    return true;
+}
+
 static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_const, ModifierList* ret) {
     Parser p = parser(parent);
     const char* end_pos = p.pos;
@@ -2428,31 +2456,24 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
         }
         // (Spelled with escapes it is the keyword all the same, TS1260 once taken as one: tsc's scanner makes it the
         // keyword's token, its parser's nextToken() reports it)
+        // (While it is looked at, mod.span is the cooked text then, restored once the modifier is taken)
         char cooked_buf[16];
-        csview word = span_sv(mod.span);
-        bool escaped = memchr(word.buf, '\\', (size_t)word.size) != nullptr;
-        if (escaped) {
-            cstr cooked = identifier_name_value(word);
-            size_t len = (size_t)cstr_size(&cooked);
-            if (len < sizeof(cooked_buf)) memcpy(cooked_buf, cstr_str(&cooked), len + 1);
-            else cooked_buf[0] = 0, len = 0;
-            cstr_drop(&cooked);
-            word = (csview){ cooked_buf, (isize)len };
-        }
+        Span written = mod.span;
+        bool escaped = __builtin_expect(p.shared->any_escaped_word, 0) && cook_escaped_word(&mod.span, cooked_buf);
 
         hop_whitespace(&p);
         // Only `static`, `export` and `default` can be followed by a line break (tsc's nextTokenCanFollowModifier):
         // `static\n x` is static, `export default\n@dec class C {}` a default export
         if (p.whitespace == WHITESPACE_NEWLINE &&
-            !(is_member && csview_equals(word, "static")) &&
-            !csview_equals(word, "export") &&
-            !(prev_was_export && csview_equals(word, "default"))
+            !(is_member && span_equals(mod.span, "static")) &&
+            !span_equals(mod.span, "export") &&
+            !(prev_was_export && span_equals(mod.span, "default"))
         ) {
             goto loop_end;
         }
 
         // `export default` is followed by any expression: `-1`, `` `a` ``, `!x`
-        bool export_default = prev_was_export && !is_member && csview_equals(word, "default");
+        bool export_default = prev_was_export && !is_member && span_equals(mod.span, "default");
         if (!is_identifier_char(*p.pos) && !identifier_char_size(p.pos, true) && !export_default) {
             switch (*p.pos) {
                 case '[': case '"': case '\'': break;
@@ -2466,7 +2487,7 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
                 case '@': // `export @decorator class`
                     // (Only after `export` and `default`: tsc's canFollowModifier has no `@`, `abstract @dec class` is
                     // an expression statement `abstract`)
-                    if (is_member || !(csview_equals(word, "export") || csview_equals(word, "default"))) {
+                    if (is_member || !(span_equals(mod.span, "export") || span_equals(mod.span, "default"))) {
                         goto loop_end;
                     }
                     break;
@@ -2476,14 +2497,14 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
                     break;
 
                 case '{': // `constructor(public { x })`, `export {}`; `static {` is a static block
-                    if (is_member && csview_equals(word, "static")) goto loop_end;
+                    if (is_member && span_equals(mod.span, "static")) goto loop_end;
                     break;
 
                 case '(':
                 case '<': // `export default <div />`
                     // (tsc's canFollowModifier has no `(` or `<`: `export default async () => {}` is an async arrow,
                     // `export default declare(...)` a call of a function named `declare`)
-                    if (is_member || !csview_equals(word, "default")) {
+                    if (is_member || !span_equals(mod.span, "default")) {
                         goto loop_end;
                     }
                     break;
@@ -2495,48 +2516,51 @@ static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_c
             }
         }
 
-        if (csview_equals(word, "readonly")) {
+        if (span_equals(mod.span, "readonly")) {
             mod.tag = MODIFIER_READONLY;
-        } else if (csview_equals(word, "abstract")) {
+        } else if (span_equals(mod.span, "abstract")) {
             mod.tag = MODIFIER_ABSTRACT;
-        } else if (csview_equals(word, "static")) {
+        } else if (span_equals(mod.span, "static")) {
             mod.tag = MODIFIER_STATIC;
             if (has_static) {
                 // Why is the logic for static different? I don't know
                 break;
             }
             has_static = true;
-        } else if (csview_equals(word, "accessor")) {
+        } else if (span_equals(mod.span, "accessor")) {
             mod.tag = MODIFIER_ACCESSOR;
-        } else if (csview_equals(word, "export")) {
+        } else if (span_equals(mod.span, "export")) {
             // tsc's canFollowExportModifier: `export {`, `export *`, `export as namespace` are export declarations
             if (!is_member && (*p.pos == '{' || *p.pos == '*' || starts_with_followed_by_word_break(&p, "as"))) break;
             mod.tag = MODIFIER_EXPORT;
-        } else if (csview_equals(word, "default") && (prev_was_export || (!is_member && can_follow_default_keyword(&p)))) {
+        } else if (span_equals(mod.span, "default") && (prev_was_export || (!is_member && can_follow_default_keyword(&p)))) {
             mod.tag = MODIFIER_EXPORT_DEFAULT;
-        } else if (csview_equals(word, "async")) {
+        } else if (span_equals(mod.span, "async")) {
             mod.tag = MODIFIER_ASYNC;
-        } else if (csview_equals(word, "declare")) {
+        } else if (span_equals(mod.span, "declare")) {
             mod.tag = MODIFIER_DECLARE;
-        } else if (csview_equals(word, "override")) {
+        } else if (span_equals(mod.span, "override")) {
             mod.tag = MODIFIER_OVERRIDE;
-        } else if (csview_equals(word, "private")) {
+        } else if (span_equals(mod.span, "private")) {
             mod.tag = MODIFIER_PRIVATE;
-        } else if (csview_equals(word, "protected")) {
+        } else if (span_equals(mod.span, "protected")) {
             mod.tag = MODIFIER_PROTECTED;
-        } else if (csview_equals(word, "public")) {
+        } else if (span_equals(mod.span, "public")) {
             mod.tag = MODIFIER_PUBLIC;
-        } else if (is_member && csview_equals(word, "const") && (permit_const || starts_with_followed_by_word_break(&p, "enum"))) {
+        } else if (is_member && span_equals(mod.span, "const") && (permit_const || starts_with_followed_by_word_break(&p, "enum"))) {
             mod.tag = MODIFIER_CONST;
-        } else if (is_member && csview_equals(word, "in")) {
+        } else if (is_member && span_equals(mod.span, "in")) {
             mod.tag = MODIFIER_IN; // (Only on a type parameter: TS1274)
-        } else if (is_member && csview_equals(word, "out")) {
+        } else if (is_member && span_equals(mod.span, "out")) {
             mod.tag = MODIFIER_OUT;
         } else {
             break;
         }
 
-        if (escaped) parse_error(&p, mod.span, 1260, "Keywords cannot contain escape characters.");
+        if (escaped) {
+            mod.span = written;
+            parse_error(&p, mod.span, 1260, "Keywords cannot contain escape characters.");
+        }
         vec_spanned_modifier_push(&ret->spanned, mod);
         ret->includes[mod.tag] = true;
         end_pos = span_end_ptr(mod.span);
@@ -3662,8 +3686,7 @@ static bool parse_unique_symbol_type(Parser* parent) {
 
 // A primitive type keyword not followed by `.` (tsc's parseKeywordAndNoDot): `string.x` names a namespace `string`
 __attribute__((always_inline)) static inline bool hop_type_keyword(Parser* p, char const* keyword) {
-    // (Or an escape, `\u0061ny`: the keyword all the same, TS1260, see hop_escaped_keyword())
-    if (*p->pos != *keyword && *p->pos != '\\') return false;
+    if (*p->pos != *keyword) return false;
     char const* start = p->pos;
     if (!hop_start_if_ends_on_word_break(p, keyword)) return false;
     char const* c = p->pos;
@@ -3677,6 +3700,27 @@ __attribute__((always_inline)) static inline bool hop_type_keyword(Parser* p, ch
 }
 
 static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, TypeNode* ret);
+
+// A primitive type keyword spelled with an escape, `\u0061ny` (the keyword all the same, TS1260: tsc's scanner)
+static bool hop_escaped_type_keyword(Parser* p, TypeNode* ret) {
+    static struct { const char* keyword; TypeNode const* type; } const keywords[] = {
+        { "any", &type_any }, { "unknown", &type_unknown }, { "never", &type_never }, { "boolean", &type_boolean },
+        { "number", &type_number }, { "string", &type_string }, { "symbol", &type_symbol }, { "bigint", &type_bigint },
+    };
+    for (size_t i = 0; i < c_arraylen(keywords); i++) {
+        char const* start = p->pos;
+        if (!hop_escaped_keyword(p, keywords[i].keyword)) continue;
+        char const* c = p->pos;
+        while (*c == ' ' || *c == '\t') c++;
+        if (*tok_peek(p).start == '.') {
+            p->pos = start;
+            return false;
+        }
+        *ret = *keywords[i].type;
+        return true;
+    }
+    return false;
+}
 
 // `this is T` and `asserts x (is T)` in any type position (tsc's parseNonArrayType; `x is T` is only a return type's):
 // a TYPE_PREDICATE, which the checker reports where a return type's predicate (FunctionImpl.predicate) isn't
@@ -3766,6 +3810,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         expect_type(&p, TYPE_PRECEDENCE_OPERATOR, ret);
         readonly_operator_operand = true;
     } else if ((c == '*' || c == '?' || c == '!' || c == 'f') && parse_jsdoc_prefix_type(&p, ret)) {
+    } else if (c == '\\' && hop_escaped_type_keyword(&p, ret)) {
     } else if (hop_type_keyword(&p, "any")) {
         *ret = type_any;
     } else if (hop_type_keyword(&p, "unknown")) {
