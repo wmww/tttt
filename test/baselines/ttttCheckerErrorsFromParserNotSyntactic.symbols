@@ -1,0 +1,31 @@
+//// [test/cases/ttttCheckerErrorsFromParserNotSyntactic.ts] ////
+
+=== a.ts ===
+import e = require(foo);
+>e : Symbol(e, Decl(a.ts, 0, 0))
+
+export {};
+const s1: number = "";
+>s1 : Symbol(s1, Decl(a.ts, 2, 5))
+
+=== b.ts ===
+function* g5() { const f = (a = yield "x") => { }; }
+>g5 : Symbol(g5, Decl(b.ts, 0, 0))
+>f : Symbol(f, Decl(b.ts, 0, 22))
+>a : Symbol(a, Decl(b.ts, 0, 28))
+
+function* g6() { const f = (a = yield) => { }; }
+>g6 : Symbol(g6, Decl(b.ts, 0, 52))
+>f : Symbol(f, Decl(b.ts, 1, 22))
+>a : Symbol(a, Decl(b.ts, 1, 28))
+
+const s2: number = "";
+>s2 : Symbol(s2, Decl(b.ts, 2, 5))
+
+=== c.ts ===
+function * foo(a = yield => yield) {
+>foo : Symbol(foo, Decl(c.ts, 0, 0))
+>a : Symbol(a, Decl(c.ts, 0, 15))
+>yield : Symbol(yield, Decl(c.ts, 0, 27))
+}
+

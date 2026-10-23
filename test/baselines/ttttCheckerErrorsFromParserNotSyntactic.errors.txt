@@ -1,0 +1,47 @@
+a.ts(1,20): error TS1141: String literal expected.
+a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+b.ts(1,33): error TS1163: A 'yield' expression is only allowed in a generator body.
+b.ts(1,33): error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+b.ts(2,33): error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+b.ts(2,33): error TS2304: Cannot find name 'yield'.
+b.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+c.ts(1,20): error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+c.ts(1,20): error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+c.ts(1,26): error TS1005: ',' expected.
+c.ts(1,29): error TS7006: Parameter 'yield' implicitly has an 'any' type.
+
+
+==== a.ts (2 errors) ====
+    import e = require(foo);
+                       ~~~
+!!! error TS1141: String literal expected.
+    export {};
+    const s1: number = "";
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== b.ts (5 errors) ====
+    function* g5() { const f = (a = yield "x") => { }; }
+                                    ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+                                    ~~~~~
+!!! error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+    function* g6() { const f = (a = yield) => { }; }
+                                    ~~~~~
+!!! error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+                                    ~~~~~
+!!! error TS2304: Cannot find name 'yield'.
+    const s2: number = "";
+          ~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+==== c.ts (4 errors) ====
+    function * foo(a = yield => yield) {
+                       ~~~~~
+!!! error TS2523: 'yield' expressions cannot be used in a parameter initializer.
+                       ~~~~~
+!!! error TS7057: 'yield' expression implicitly results in an 'any' type because its containing generator lacks a return-type annotation.
+                             ~~
+!!! error TS1005: ',' expected.
+                                ~~~~~
+!!! error TS7006: Parameter 'yield' implicitly has an 'any' type.
+    }
+    

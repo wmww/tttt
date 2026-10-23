@@ -779,6 +779,15 @@ static Error* grammar_error_s(Parser* me, Span span, unsigned ts_code, cstr mess
 }
 #define grammar_error(me, span, ts_code, ...) grammar_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 
+// An error tsc's checker reports with a plain error() (not a grammar error): semantic, so it neither makes the file one
+// with parse errors nor is dropped in one (`import e = require(foo)`'s TS1141, a parameter initializer's `yield`)
+static Error* checker_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+    my shared->errors_attempted++;
+    return add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code,
+        .phase = ERROR_PHASE_RESOLVE_NAMES });
+}
+#define checker_error(me, span, ts_code, ...) checker_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
 /// Builds the message from a display sequence
 #define parse_error(me, span, ts_code, ...) parse_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 
@@ -9896,12 +9905,13 @@ static inline bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* r
         // (tsc's error span for a yield expression is its keyword, without the `*`)
         Span keyword = op_span;
         keyword.size = 5;
-        parse_error(&p, keyword, 2523, "'yield' expressions cannot be used in a parameter initializer.");
+        // (tsgo's checker says it: not a parse error of the file)
+        checker_error(&p, keyword, 2523, "'yield' expressions cannot be used in a parameter initializer.");
     } else if (in_parameters && op == UNARY_OP_AWAIT) {
         // (tsc's checkAwaitExpression: the whole expression, a missing operand being a zero-width node before the
         // trivia)
         bool operand = span_valid(expr_outer_span(&expr)) && expr_outer_span(&expr).size;
-        parse_error(&p, operand ? span_between(op_span, expr_outer_span(&expr)) : op_span, 2524,
+        checker_error(&p, operand ? span_between(op_span, expr_outer_span(&expr)) : op_span, 2524,
             "'await' expressions cannot be used in a parameter initializer.");
     }
 
@@ -12424,7 +12434,8 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                     port_statement_rare_mut(statement)->target_path = ast_cstr_take(&path.string);
                     statement->target_path_span = span_from(path_anchor);
                 } else {
-                    parse_error(&require_p, span_from(path_anchor), 1141, "String literal expected.");
+                    // (tsgo's checker says it, checkExternalImportOrExportDeclaration: no parse error of the file)
+                    checker_error(&require_p, span_from(path_anchor), 1141, "String literal expected.");
                 }
                 value_drop(&path);
             } else {
@@ -12432,7 +12443,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                 Expr skipped;
                 if (parse_expr(&require_p, expr_ctx_null, &skipped)) {
                     parse_comma_ops_right_side(&require_p, &skipped); // (An Expression: commas too)
-                    parse_error(&require_p, expr_outer_span(&skipped), 1141, "String literal expected.");
+                    checker_error(&require_p, expr_outer_span(&skipped), 1141, "String literal expected.");
                     if (skipped.tag == EXPR_IDENTIFIER) port_statement_rare_mut(statement)->missing_specifier = skipped.inner_span;
                     expr_drop(&skipped);
                 } else {
@@ -16007,7 +16018,7 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     source->parse_error_starts = nullptr;
     source->parse_error_count = 0;
     for_each (i, vec_error, &shared.errors) {
-        if (i->grammar || i->js_syntax || is_js_syntax_code(i->ts_code)) continue;
+        if (i->grammar || i->js_syntax || is_js_syntax_code(i->ts_code) || i->phase != ERROR_PHASE_PARSE) continue;
         source->has_parse_errors = true;
         source->parse_error_starts = realloc(source->parse_error_starts, sizeof(char const*) * (source->parse_error_count + 1));
         source->parse_error_starts[source->parse_error_count++] = span_start_ptr(i->span);

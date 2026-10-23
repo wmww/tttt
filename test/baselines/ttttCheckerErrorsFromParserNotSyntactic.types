@@ -1,0 +1,40 @@
+//// [test/cases/ttttCheckerErrorsFromParserNotSyntactic.ts] ////
+
+=== a.ts ===
+import e = require(foo);
+>e : any
+>foo : any
+
+export {};
+const s1: number = "";
+>s1 : number
+>"" : ""
+
+=== b.ts ===
+function* g5() { const f = (a = yield "x") => { }; }
+>g5 : () => Generator<never, void, unknown>
+>f : (a?: any) => void
+>(a = yield "x") => { } : (a?: any) => void
+>a : any
+>yield "x" : any
+>"x" : "x"
+
+function* g6() { const f = (a = yield) => { }; }
+>g6 : () => Generator<never, void, unknown>
+>f : (a?: any) => void
+>(a = yield) => { } : (a?: any) => void
+>a : any
+>yield : any
+
+const s2: number = "";
+>s2 : number
+>"" : ""
+
+=== c.ts ===
+function * foo(a = yield => yield) {
+>foo : (a: any, yield: any) => Generator<never, void, unknown>
+>a : any
+>yield : any
+>yield : any
+}
+
