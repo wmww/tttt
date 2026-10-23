@@ -1015,7 +1015,8 @@ static bool load_directory(State* me, csview directory, PackageJson const* packa
     if (version_paths) {
         // The name `typesVersions` sees is the entry relative to the package
         csview base = entry.size ? cstr_sv(&entry_path) : cstr_sv(&index_path);
-        csview relative = csview_slice(base, directory.size + 1, base.size);
+        // (Empty for an entry that is the directory itself, `"types": "."`: tsc's GetRelativePathFromDirectory)
+        csview relative = base.size > directory.size ? csview_slice(base, directory.size + 1, base.size) : c_sv("");
         Search result = load_using_version_paths(
             me, version_paths, directory, relative, extensions, load_as_file_or_directory, out);
         if (result != SEARCH_CONTINUE) {

@@ -1,0 +1,15 @@
+a.ts(2,7): error TS2322: Type '"ts/index"' is not assignable to type '0'.
+
+
+==== node_modules/p/index.d.ts (0 errors) ====
+    export declare const which: "index";
+==== node_modules/p/package.json (0 errors) ====
+    {"name":"p","version":"1.0.0","types":".","typesVersions":{"*":{"*":["ts/*"]}}}
+==== node_modules/p/ts/index.d.ts (0 errors) ====
+    export declare const which: "ts/index";
+==== a.ts (1 errors) ====
+    import { which } from "p";
+    const x: 0 = which;
+          ~
+!!! error TS2322: Type '"ts/index"' is not assignable to type '0'.
+    
