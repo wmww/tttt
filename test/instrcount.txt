@@ -7,7 +7,7 @@ tanstack-router 3821000000 callgrind
 tsc 3624000000 callgrind
 type-fest 8648000000 callgrind
 valibot 2665000000 callgrind
-vscode 66334522229 callgrind
+vscode 67209000000 callgrind
 vue 4993000000 callgrind
 webpack 7535000000 callgrind
 xstate 2000000000 callgrind
