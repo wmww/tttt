@@ -74,6 +74,15 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **The npm workflow is the only priority; races and thread-count dependence outrank even it** (2026-10-23 late, the
+  human). Order: (1) any race or thread/checker-count dependence found anywhere (det3 owns them); (2) flip cases from
+  the random-npm sweep (tsgo and tttt disagree on whether a project has ANY error), each a minimal `test/cases/npm_*`
+  repro with `// origin:` and `// flip:` lines and a row in test/npmsample/repros.tsv, fixed at the root cause;
+  (3) finding more (sampling, setup, compare, repros) while flips are scarce; clones are deleted as processed.
+  Not worked until saturation: non-flip divergences, text differences, bun cases, the refresh sweeps, other work.
+  Tooling only if it speeds the pipeline up significantly. Perf must not regress (quickgate --vs-main per fix,
+  instrcount within +0.3%); landings are batched rather than immediate when that gives throughput. All untrusted
+  code runs sandboxed (installsandbox.py) or is reviewed; the pipeline brief is the coordinator's npmflow.md.
 - **Random repositories and all their dependencies are untrusted; installs run sandboxed and execute nothing of
   theirs** (2026-10-23, the human, after a review found two yarn-berry repos had run their own plugins/bundle during
   `npmsample.py` installs; both benign, host clean: agents/notes/install_security.md). Distinguish dependencies of
