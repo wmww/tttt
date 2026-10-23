@@ -800,8 +800,12 @@ static void add_array_literal(Inference* inf, Ty const* type) {
 // The tuples of the array literals nested in an argument's object and array literals (tsc flags array literal types
 // ObjectFlags.ArrayLiteral; tuples are interned here, so the inference remembers them instead). By the argument's type,
 // which a const context made readonly where the nested expressions' own types may not be
-static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* expr, Ty const* type, u32 depth) {
+// `target`: what the parameter has where the literal is, if known (null: anything), whose parts that mention no type
+// variable infer nothing, so their literals can't be candidates (`c: [1]` against `c: unknown` next to `a: T`, whose
+// number[] candidate isn't that literal)
+static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* expr, Ty const* type, Ty const* target, u32 depth) {
     if (depth > 4 || !type) return;
+    if (target && !(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
     if (expr->tag == EXPR_ARRAY && !ty_is_tuple(type) && ty_is_array(me, type)) {
         // An array: its element type is (the union of) the elements' types, each nested literal is one of its members
         Ty const* element = ty_reference_args(me, type).data[0];
@@ -818,7 +822,7 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
             u32 looked = 0;
             for_each (i, vec_expr, &expr->array) {
                 if (i->tag != (array_like ? EXPR_ARRAY : EXPR_OBJECT) || looked >= 8) continue;
-                add_nested_array_literals(me, inf, i, member, depth + 1);
+                add_nested_array_literals(me, inf, i, member, nullptr, depth + 1);
                 looked++;
             }
         }
@@ -832,15 +836,21 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
             if (i->tag == EXPR_SPREAD || n >= elements.len) return;
             Ty const* element = elements.data[n++];
             if (i->tag == EXPR_ARRAY && (ty_is_tuple(element) || ty_is_array(me, element))) add_array_literal(inf, element);
-            if (i->tag == EXPR_ARRAY || i->tag == EXPR_OBJECT) add_nested_array_literals(me, inf, i, element, depth + 1);
+            if (i->tag == EXPR_ARRAY || i->tag == EXPR_OBJECT) add_nested_array_literals(me, inf, i, element, nullptr, depth + 1);
         }
     } else if (expr->tag == EXPR_OBJECT) {
         for_each (i, vec_object_expr_item, &expr->object) {
             if (i->tag != OBJECT_ITEM_PROPERTY || (i->value.tag != EXPR_ARRAY && i->value.tag != EXPR_OBJECT) || i->computed_key) continue;
-            FoundProp prop = ty_find_prop(me, type, checker_atom(me, cstr_sv(&i->name_string)));
+            Atom const* name = checker_atom(me, cstr_sv(&i->name_string));
+            FoundProp prop = ty_find_prop(me, type, name);
             if (!prop.found) continue;
+            // (The parameter's property of the name, when the parameter is a plain object type that has it)
+            FoundProp target_prop = target && (target->flags & TYF_OBJECT) && !ty_is_generic_object(me, target) ?
+                ty_find_prop(me, target, name) : (FoundProp){0};
+            Ty const* nested_target = target_prop.found ? target_prop.type : nullptr;
+            if (nested_target && !(nested_target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
             if (i->value.tag == EXPR_ARRAY && (ty_is_tuple(prop.type) || ty_is_array(me, prop.type))) add_array_literal(inf, prop.type);
-            add_nested_array_literals(me, inf, &i->value, prop.type, depth + 1);
+            add_nested_array_literals(me, inf, &i->value, prop.type, nested_target, depth + 1);
         }
     }
 }
@@ -850,7 +860,7 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
     Arg const* arg = &args->data[i];
     bool literal = arg->type && !arg->spread && !arg->part_of_spread && arg->expr->tag == EXPR_ARRAY;
     if (literal && ty_is_array(me, arg->type)) add_array_literal(inf, arg->type);
-    if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, arg->expr, arg->type, 0);
+    if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, arg->expr, arg->type, param_type, 0);
     // (A tuple one is a literal candidate where it is inferred from as it is, see co_literals)
     inf->arg_tuple_literal = literal && ty_is_tuple(arg->type) ? arg->type : nullptr;
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);

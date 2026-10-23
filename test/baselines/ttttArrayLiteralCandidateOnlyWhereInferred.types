@@ -1,0 +1,55 @@
+//// [test/cases/ttttArrayLiteralCandidateOnlyWhereInferred.ts] ////
+
+=== ttttArrayLiteralCandidateOnlyWhereInferred.ts ===
+// An array literal where the parameter infers nothing (`c: unknown`) isn't a literal candidate: `xs`'s number[] stays
+// the first candidate and T is number[] (tsc marks literal types ObjectFlags.ArrayLiteral, tttt remembers them)
+declare const xs: number[];
+>xs : number[]
+
+declare function f<T>(x: { a: T, b: T, c: unknown }): T;
+>f : <T>(x: { a: T; b: T; c: unknown; }) => T
+>x : { a: T; b: T; c: unknown; }
+>a : T
+>b : T
+>c : unknown
+
+const r = f({ a: xs, b: ["s"], c: [1] });
+>r : number[]
+>f({ a: xs, b: ["s"], c: [1] }) : number[]
+>f : <T>(x: { a: T; b: T; c: unknown; }) => T
+>{ a: xs, b: ["s"], c: [1] } : { a: number[]; b: string[]; c: number[]; }
+>a : number[]
+>xs : number[]
+>b : string[]
+>["s"] : string[]
+>"s" : "s"
+>c : number[]
+>[1] : number[]
+>1 : 1
+
+const r2 = f({ a: xs, b: ["s"], c: 1 });
+>r2 : number[]
+>f({ a: xs, b: ["s"], c: 1 }) : number[]
+>f : <T>(x: { a: T; b: T; c: unknown; }) => T
+>{ a: xs, b: ["s"], c: 1 } : { a: number[]; b: string[]; c: number; }
+>a : number[]
+>xs : number[]
+>b : string[]
+>["s"] : string[]
+>"s" : "s"
+>c : number
+>1 : 1
+
+const r3 = f({ a: xs, b: ["s"] , c: [] });
+>r3 : number[]
+>f({ a: xs, b: ["s"] , c: [] }) : number[]
+>f : <T>(x: { a: T; b: T; c: unknown; }) => T
+>{ a: xs, b: ["s"] , c: [] } : { a: number[]; b: string[]; c: never[]; }
+>a : number[]
+>xs : number[]
+>b : string[]
+>["s"] : string[]
+>"s" : "s"
+>c : never[]
+>[] : never[]
+

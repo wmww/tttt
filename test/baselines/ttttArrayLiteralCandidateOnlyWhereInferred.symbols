@@ -1,0 +1,43 @@
+//// [test/cases/ttttArrayLiteralCandidateOnlyWhereInferred.ts] ////
+
+=== ttttArrayLiteralCandidateOnlyWhereInferred.ts ===
+// An array literal where the parameter infers nothing (`c: unknown`) isn't a literal candidate: `xs`'s number[] stays
+// the first candidate and T is number[] (tsc marks literal types ObjectFlags.ArrayLiteral, tttt remembers them)
+declare const xs: number[];
+>xs : Symbol(xs, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 13))
+
+declare function f<T>(x: { a: T, b: T, c: unknown }): T;
+>f : Symbol(f, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 27))
+>T : Symbol(T, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 19))
+>x : Symbol(x, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 22))
+>a : Symbol(a, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 26))
+>T : Symbol(T, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 19))
+>b : Symbol(b, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 32))
+>T : Symbol(T, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 19))
+>c : Symbol(c, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 38))
+>T : Symbol(T, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 3, 19))
+
+const r = f({ a: xs, b: ["s"], c: [1] });
+>r : Symbol(r, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 4, 5))
+>f : Symbol(f, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 27))
+>a : Symbol(a, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 4, 13))
+>xs : Symbol(xs, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 13))
+>b : Symbol(b, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 4, 20))
+>c : Symbol(c, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 4, 30))
+
+const r2 = f({ a: xs, b: ["s"], c: 1 });
+>r2 : Symbol(r2, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 5, 5))
+>f : Symbol(f, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 27))
+>a : Symbol(a, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 5, 14))
+>xs : Symbol(xs, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 13))
+>b : Symbol(b, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 5, 21))
+>c : Symbol(c, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 5, 31))
+
+const r3 = f({ a: xs, b: ["s"] , c: [] });
+>r3 : Symbol(r3, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 6, 5))
+>f : Symbol(f, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 27))
+>a : Symbol(a, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 6, 14))
+>xs : Symbol(xs, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 2, 13))
+>b : Symbol(b, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 6, 21))
+>c : Symbol(c, Decl(ttttArrayLiteralCandidateOnlyWhereInferred.ts, 6, 32))
+
