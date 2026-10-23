@@ -1912,6 +1912,13 @@ int main(int argc, const char** argv) {
     // for writing and stalling every other thread's page faults: vscode's front end made 21k of them. A 16 MB pad
     // until the checkers start; kept during checking it held up to 4% more peak RSS, trimmed less)
     mallopt(M_TOP_PAD, 16 << 20);
+    // (glibc gives a block of over M_MMAP_THRESHOLD a mapping of its own, unmapped at its free(), and gives a heap's
+    // free top back past M_TRIM_THRESHOLD with a madvise(): each one a TLB shootdown on every CPU running another of
+    // our threads, ~100 a run in the checkers on drizzle, zod or vue (the intern tables' and relation caches' growth).
+    // A one-shot CLI keeps what it freed: the blocks it frees are reused, malloc_trim() before checking gives the front
+    // end's back (which ignores the threshold). 32 MB is glibc's most; past it a block is still a mapping)
+    mallopt(M_MMAP_THRESHOLD, 32 << 20);
+    mallopt(M_TRIM_THRESHOLD, 1 << 30);
     int ret = run(argc, argv);
     ast_stats_print();
     return ret;
