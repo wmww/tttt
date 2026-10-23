@@ -144,7 +144,11 @@ argued here instead. Nothing a user sees differs in any of them.
   Rechecked 2026-10-21: `tsc -p packages/rxjs --noEmit --incremental false --pretty false --checkers 1`
   vs `16` (from `thirdparty/sources/rxjs`) differ in those chains; tttt `--threads 1 --checkers 1 --checker-memory off`
   is byte-identical to tsgo K1 over all 23300 lines. tttt's K16 differs from tsgo's K16 elsewhere (each side's split
-  relates other pairs first): both history-dependent, the oracle (K1) matched. Not a tttt bug; no fix wanted. [tsgo]
+  relates other pairs first): both history-dependent, the oracle (K1) matched. Not a tttt bug; no fix wanted.
+  Rechecked 2026-10-23 (det3) with the history rerun: still the only sweep project kdiff lists (220 of 23300 lines,
+  identical (file, line, code)). Decided (coordinator): stays. Only an elaboration chain's text moves, tsgo moves the
+  same way, and the detectors at hand are unsound (a second elaboration in a scratch relation state) or rerun most
+  failing projects (a trigger on every elaborated relation error). [tsgo]
 - **vue corpus 0 / 2** (pluginScoped.ts:190,27 and :235,25 -TS7006 `ss` on `n.nodes[0].each(ss => ...)`, 2026-10-21):
   tsgo's TS5115 runaway (pluginScoped.ts(107,3), which tttt reports too) leaves errorType in whichever
   cache the 100th instantiation lands in: tsgo's `tttt-oracle --type-at` gives `Pseudo.nodes : any[]` at :125 and :190
