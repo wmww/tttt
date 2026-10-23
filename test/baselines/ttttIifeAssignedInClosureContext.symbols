@@ -1,0 +1,97 @@
+//// [test/cases/ttttIifeAssignedInClosureContext.ts] ////
+
+=== ttttIifeAssignedInClosureContext.ts ===
+// An immediately invoked function assigned to an outer variable returns into the target's type (tsc's
+// getContextualReturnType of the IIFE, found up the tree), also when a flow query reaches the assignment before the
+// walk does: the closure's return type, inferred first, reads the variable after it (getQuickTypeOfExpression of the
+// call asks the function's return type). openclaw's package-update-swap.ts `rollbackResult ??= (async () => ...)()`
+class E extends Error {
+>E : Symbol(E, Decl(ttttIifeAssignedInClosureContext.ts, 0, 0))
+>Error : Symbol(Error, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+    readonly reason = "changed";
+>reason : Symbol(E.reason, Decl(ttttIifeAssignedInClosureContext.ts, 4, 23))
+}
+type R = { code: number; reason?: "changed" };
+>R : Symbol(R, Decl(ttttIifeAssignedInClosureContext.ts, 6, 1))
+>code : Symbol(code, Decl(ttttIifeAssignedInClosureContext.ts, 7, 10))
+>reason : Symbol(reason, Decl(ttttIifeAssignedInClosureContext.ts, 7, 24))
+
+type T = { rollback: () => Promise<R> };
+>T : Symbol(T, Decl(ttttIifeAssignedInClosureContext.ts, 7, 46))
+>rollback : Symbol(rollback, Decl(ttttIifeAssignedInClosureContext.ts, 8, 10))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>R : Symbol(R, Decl(ttttIifeAssignedInClosureContext.ts, 6, 1))
+
+declare const error: unknown;
+>error : Symbol(error, Decl(ttttIifeAssignedInClosureContext.ts, 9, 13))
+
+declare const e2: E;
+>e2 : Symbol(e2, Decl(ttttIifeAssignedInClosureContext.ts, 10, 13))
+>E : Symbol(E, Decl(ttttIifeAssignedInClosureContext.ts, 0, 0))
+
+function f() {
+>f : Symbol(f, Decl(ttttIifeAssignedInClosureContext.ts, 10, 20))
+
+    let rollbackResult: ReturnType<T["rollback"]> | undefined;
+>rollbackResult : Symbol(rollbackResult, Decl(ttttIifeAssignedInClosureContext.ts, 12, 7))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttIifeAssignedInClosureContext.ts, 7, 46))
+
+    const transaction: T = {
+>transaction : Symbol(transaction, Decl(ttttIifeAssignedInClosureContext.ts, 13, 9))
+>T : Symbol(T, Decl(ttttIifeAssignedInClosureContext.ts, 7, 46))
+
+        rollback: () => {
+>rollback : Symbol(rollback, Decl(ttttIifeAssignedInClosureContext.ts, 13, 28))
+
+            rollbackResult ??= (async () => {
+>rollbackResult : Symbol(rollbackResult, Decl(ttttIifeAssignedInClosureContext.ts, 12, 7))
+
+                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };
+>code : Symbol(code, Decl(ttttIifeAssignedInClosureContext.ts, 16, 24))
+>error : Symbol(error, Decl(ttttIifeAssignedInClosureContext.ts, 9, 13))
+>E : Symbol(E, Decl(ttttIifeAssignedInClosureContext.ts, 0, 0))
+>reason : Symbol(reason, Decl(ttttIifeAssignedInClosureContext.ts, 16, 60))
+>error.reason : Symbol(E.reason, Decl(ttttIifeAssignedInClosureContext.ts, 4, 23))
+>error : Symbol(error, Decl(ttttIifeAssignedInClosureContext.ts, 9, 13))
+>reason : Symbol(E.reason, Decl(ttttIifeAssignedInClosureContext.ts, 4, 23))
+
+            })();
+            return rollbackResult;
+>rollbackResult : Symbol(rollbackResult, Decl(ttttIifeAssignedInClosureContext.ts, 12, 7))
+
+        },
+    };
+    return transaction;
+>transaction : Symbol(transaction, Decl(ttttIifeAssignedInClosureContext.ts, 13, 9))
+}
+function g() {
+>g : Symbol(g, Decl(ttttIifeAssignedInClosureContext.ts, 22, 1))
+
+    let r: R | undefined;
+>r : Symbol(r, Decl(ttttIifeAssignedInClosureContext.ts, 24, 7))
+>R : Symbol(R, Decl(ttttIifeAssignedInClosureContext.ts, 6, 1))
+
+    const t = () => {
+>t : Symbol(t, Decl(ttttIifeAssignedInClosureContext.ts, 25, 9))
+
+        r = (() => {
+>r : Symbol(r, Decl(ttttIifeAssignedInClosureContext.ts, 24, 7))
+
+            return { code: 1, reason: e2.reason };
+>code : Symbol(code, Decl(ttttIifeAssignedInClosureContext.ts, 27, 20))
+>reason : Symbol(reason, Decl(ttttIifeAssignedInClosureContext.ts, 27, 29))
+>e2.reason : Symbol(E.reason, Decl(ttttIifeAssignedInClosureContext.ts, 4, 23))
+>e2 : Symbol(e2, Decl(ttttIifeAssignedInClosureContext.ts, 10, 13))
+>reason : Symbol(E.reason, Decl(ttttIifeAssignedInClosureContext.ts, 4, 23))
+
+        })();
+        return r;
+>r : Symbol(r, Decl(ttttIifeAssignedInClosureContext.ts, 24, 7))
+
+    };
+    return t;
+>t : Symbol(t, Decl(ttttIifeAssignedInClosureContext.ts, 25, 9))
+}
+

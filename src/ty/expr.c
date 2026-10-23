@@ -5852,18 +5852,27 @@ void ty_assign_iife_parameter_types(Checker* me, CallExpr const* call) {
     }
 }
 
-static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, ExprCtx ctx) {
+// An immediately invoked function returns into the call's contextual type (tsc's getContextualReturnType), which
+// only its return expressions see: the return type isn't widened against it (getReturnTypeFromBody). Pushed down by
+// whoever checks the call with that context, before anything asks for the callee's return type (a flow query's quick
+// type of an assigned `x = (() => ...)()`, tsc's getQuickTypeOfExpression, which finds the context up the tree). The
+// first context decides
+void ty_seed_iife_return_context(Checker* me, CallExpr const* call, Ty const* contextual) {
     Expr const* callee = &call->callable;
-    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
-    // An immediately invoked function returns into the call's contextual type (tsc's getContextualReturnType), which
-    // only its return expressions see: the return type isn't widened against it (getReturnTypeFromBody)
-    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !callee->function->ret_explicit && ctx.contextual &&
-        !(ctx.contextual->flags & (TYF_ANY | TYF_VOID))
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !callee->function->ret_explicit && contextual &&
+        !(contextual->flags & (TYF_ANY | TYF_VOID))
     ) {
         u64 key[2] = { KEY_CONTEXT_IIFE_RETURN, (u64)(uintptr_t)callee->function };
         void const** slot = intern_slot(me, &my links, key, 2);
-        if (!*slot) *slot = ctx.contextual;
+        if (!*slot) *slot = contextual;
     }
+}
+
+static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, ExprCtx ctx) {
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
+    ty_seed_iife_return_context(me, call, ctx.contextual);
     ty_assign_iife_parameter_types(me, call);
     // Inside an argument of a call inferring now, its body's return expressions are too: their contextual types see the
     // call's inferences (tsc's getInferenceContext walks up through the immediately invoked function)

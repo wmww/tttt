@@ -57,6 +57,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttArrayUnionMethodGenericMember': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttArrowPropertyTypeParamScope': {
         errors: true,
         symbols: true,
@@ -1232,6 +1237,11 @@ const baselines = {
         types: true,
     },
     'ttttHeritageHeadSameNames': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIifeAssignedInClosureContext': {
         errors: true,
         symbols: true,
         types: true,

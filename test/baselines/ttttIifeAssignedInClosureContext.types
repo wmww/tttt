@@ -1,0 +1,111 @@
+//// [test/cases/ttttIifeAssignedInClosureContext.ts] ////
+
+=== ttttIifeAssignedInClosureContext.ts ===
+// An immediately invoked function assigned to an outer variable returns into the target's type (tsc's
+// getContextualReturnType of the IIFE, found up the tree), also when a flow query reaches the assignment before the
+// walk does: the closure's return type, inferred first, reads the variable after it (getQuickTypeOfExpression of the
+// call asks the function's return type). openclaw's package-update-swap.ts `rollbackResult ??= (async () => ...)()`
+class E extends Error {
+>E : E
+>Error : Error
+
+    readonly reason = "changed";
+>reason : "changed"
+>"changed" : "changed"
+}
+type R = { code: number; reason?: "changed" };
+>R : R
+>code : number
+>reason : "changed" | undefined
+
+type T = { rollback: () => Promise<R> };
+>T : T
+>rollback : () => Promise<R>
+
+declare const error: unknown;
+>error : unknown
+
+declare const e2: E;
+>e2 : E
+
+function f() {
+>f : () => T
+
+    let rollbackResult: ReturnType<T["rollback"]> | undefined;
+>rollbackResult : Promise<R> | undefined
+
+    const transaction: T = {
+>transaction : T
+>{        rollback: () => {            rollbackResult ??= (async () => {                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };            })();            return rollbackResult;        },    } : { rollback: () => Promise<R>; }
+
+        rollback: () => {
+>rollback : () => Promise<R>
+>() => {            rollbackResult ??= (async () => {                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };            })();            return rollbackResult;        } : () => Promise<R>
+
+            rollbackResult ??= (async () => {
+>rollbackResult ??= (async () => {                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };            })() : Promise<R>
+>rollbackResult : Promise<R> | undefined
+>(async () => {                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };            })() : Promise<{ code: number; reason?: "changed" | undefined; }>
+>(async () => {                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };            }) : () => Promise<{ code: number; reason?: "changed" | undefined; }>
+>async () => {                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };            } : () => Promise<{ code: number; reason?: "changed" | undefined; }>
+
+                return { code: 1, ...(error instanceof E ? { reason: error.reason } : {}) };
+>{ code: 1, ...(error instanceof E ? { reason: error.reason } : {}) } : { code: number; reason?: "changed" | undefined; }
+>code : number
+>1 : 1
+>(error instanceof E ? { reason: error.reason } : {}) : { reason: "changed"; } | {}
+>error instanceof E ? { reason: error.reason } : {} : { reason: "changed"; } | {}
+>error instanceof E : boolean
+>error : unknown
+>E : typeof E
+>{ reason: error.reason } : { reason: "changed"; }
+>reason : "changed"
+>error.reason : "changed"
+>error : E
+>reason : "changed"
+>{} : {}
+
+            })();
+            return rollbackResult;
+>rollbackResult : Promise<R>
+
+        },
+    };
+    return transaction;
+>transaction : T
+}
+function g() {
+>g : () => () => R
+
+    let r: R | undefined;
+>r : R | undefined
+
+    const t = () => {
+>t : () => R
+>() => {        r = (() => {            return { code: 1, reason: e2.reason };        })();        return r;    } : () => R
+
+        r = (() => {
+>r = (() => {            return { code: 1, reason: e2.reason };        })() : { code: number; reason: "changed"; }
+>r : R | undefined
+>(() => {            return { code: 1, reason: e2.reason };        })() : { code: number; reason: "changed"; }
+>(() => {            return { code: 1, reason: e2.reason };        }) : () => { code: number; reason: "changed"; }
+>() => {            return { code: 1, reason: e2.reason };        } : () => { code: number; reason: "changed"; }
+
+            return { code: 1, reason: e2.reason };
+>{ code: 1, reason: e2.reason } : { code: number; reason: "changed"; }
+>code : number
+>1 : 1
+>reason : "changed"
+>e2.reason : "changed"
+>e2 : E
+>reason : "changed"
+
+        })();
+        return r;
+>r : R
+
+    };
+    return t;
+>t : () => R
+}
+

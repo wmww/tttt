@@ -973,6 +973,13 @@ Ty const* ty_flow_assigned_value_type(Checker* me, BinaryOpExpr const* assignmen
 
 // assignment: expr is its value, checked with the contextual type its target gives
 static Ty const* flow_expr_type_in(Checker* me, Expr const* expr, BinaryOpExpr const* assignment) {
+    // (The quick type of an immediately invoked function is its return type, whose return expressions the
+    // assignment's target contextually types)
+    if (assignment && expr->tag == EXPR_CALL && !expr->call->uses_new && expr->call->callable.tag == EXPR_FUNCTION &&
+        expr->call->callable.function->is_iife
+    ) {
+        ty_seed_iife_return_context(me, expr->call, ty_assigned_value_context(me, assignment));
+    }
     Ty const* quick = ty_quick_expr_type(me, expr, true);
     if (quick) return quick;
     LazyType* lazy = (LazyType*)&expr->lazy_type;
