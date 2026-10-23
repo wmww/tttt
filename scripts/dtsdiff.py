@@ -466,6 +466,7 @@ def main():
     ap.add_argument('--kdiff', type=int, metavar='K', help="tttt's own writes at 1 and K checkers (byte-identical: "
                     "tsgo's emit doesn't depend on its checker count either), no tsgo")
     args = ap.parse_args()
+    sourcesweep.check_sources()
     global LAST
 
     if args.tsc:

@@ -19,7 +19,7 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
   (tsgo-side runs keep at most MemAvailable / 8 GB processes, sweep.tsc_jobs(): openclaw's take 6-11 GB each)
   scripts/sourcesweep.py --build [...]    # the solutions instead: `tsc -b` against `tttt -b` (list_build_projects)
 """
-import argparse, collections, concurrent.futures, gzip, json, os, re, resource, signal, subprocess, sys, tempfile, threading, time, zlib
+import argparse, collections, concurrent.futures, gzip, hashlib, json, os, re, resource, signal, subprocess, sys, tempfile, threading, time, zlib
 
 import sweep, tscformat, tttt_run
 
@@ -139,6 +139,32 @@ def list_build_projects(filter=None):
     return projects
 
 
+def check_sources():
+    """scripts/sourcescheck.sh: warn (stderr) when the shared checkouts aren't as installed (a stray write into a
+    hardlinked dependency file corrupts every repo sharing it)"""
+    p = subprocess.run([os.path.join(ROOT, 'scripts/sourcescheck.sh')], capture_output=True, text=True)
+    if p.returncode:
+        print(f'WARNING: {p.stdout.strip()}', file=sys.stderr)
+
+
+def cached_projects(build, filter=None):
+    """list_build_projects() or list_projects(every_config=True), cached in /tmp by the state of the checkouts: the
+    walk over every repo takes ~1 min cold, the key is a stat of each repo's install marker and of the manifest"""
+    h = hashlib.sha1(f'{build} {os.path.getmtime(__file__)} {os.path.getmtime(MANIFEST)}'.encode())
+    for repo in list_repos():
+        marker = os.path.join(SOURCES, repo, '.tttt-installed')
+        h.update(f'{repo} {os.path.getmtime(marker) if os.path.exists(marker) else 0}\n'.encode())
+    cache = f'/tmp/sourcesweep-projects-{"build" if build else "p"}-{h.hexdigest()[:16]}.json'
+    try:
+        projects = json.load(open(cache))
+    except (OSError, ValueError):
+        projects = list_build_projects() if build else list_projects(every_config=True)
+        with open(cache + '.tmp', 'w') as f:
+            json.dump(projects, f)
+        os.replace(cache + '.tmp', cache)
+    return [p for p in projects if re.search(filter, p)] if filter else projects
+
+
 def run_tsc_build(project, timeout):
     """tsgo's `tsc -b --force` on a solution in a sandbox (bwrap: every checkout overlaid, what the build writes
     discarded, ngrx's outDir is outside its repo), from SOURCES like tttt"""
@@ -243,9 +269,10 @@ def main():
     ap.add_argument('--sample', type=int, help='only the projects whose name hashes to 0 modulo this')
     ap.add_argument('--build', action='store_true', help='the solutions, `-b` (list_build_projects), not every `-p`')
     args = ap.parse_args()
+    check_sources()
 
     global LAST, ORACLE
-    projects = list_build_projects(args.filter) if args.build else list_projects(args.filter, every_config=True)
+    projects = cached_projects(args.build, args.filter)
     if args.build:
         ORACLE = BUILD_ORACLE
         LAST = LAST.replace('.json', '-build.json')
