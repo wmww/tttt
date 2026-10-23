@@ -3690,13 +3690,10 @@ static bool parse_unique_symbol_type(Parser* parent) {
     if (!hop_start_if_ends_on_word_break(&p, "symbol")) {
         return parse_fail(&p);
     }
-    // (`unique symbol[]` is `unique` of `symbol[]`: tsc's parseTypeOperator takes a postfix type as its operand, which
-    // checkGrammarTypeOperatorNode says isn't `symbol`, TS1005)
-    Parser after = parser(&p);
-    hop_whitespace(&after);
-    bool postfix = after.whitespace != WHITESPACE_NEWLINE && *after.pos == '[';
-    parse_fail(&after);
-    if (postfix) return parse_fail(&p);
+    // `unique` is an operator on the postfix type after it (tsc's parseTypeOperator): `unique symbol[]` is
+    // `unique (symbol[])`, `unique symbol.x` names a type `symbol.x`
+    Tok next = tok_peek(&p);
+    if ((tok_is(next, "[") && !next.newline_before) || tok_is(next, ".")) return parse_fail(&p);
 
     return parse_success(&p);
 }

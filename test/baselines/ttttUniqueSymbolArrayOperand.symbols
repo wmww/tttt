@@ -1,0 +1,19 @@
+//// [test/cases/ttttUniqueSymbolArrayOperand.ts] ////
+
+=== ttttUniqueSymbolArrayOperand.ts ===
+// `unique` is an operator on the postfix type after it (tsc's parseTypeOperator): `unique symbol[]` is `unique (symbol[])`,
+// TS1005 'symbol' expected, of an error type
+declare const r2: unique symbol[];
+>r2 : Symbol(r2, Decl(ttttUniqueSymbolArrayOperand.ts, 2, 13))
+
+let s2: string = r2;
+>s2 : Symbol(s2, Decl(ttttUniqueSymbolArrayOperand.ts, 3, 3))
+>r2 : Symbol(r2, Decl(ttttUniqueSymbolArrayOperand.ts, 2, 13))
+
+declare const r3: unique symbol
+>r3 : Symbol(r3, Decl(ttttUniqueSymbolArrayOperand.ts, 4, 13))
+
+[];
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttUniqueSymbolArrayOperand.ts, 6, 5))
+
