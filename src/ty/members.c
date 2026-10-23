@@ -4299,6 +4299,15 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
         Prop const* prop = (member->flags & TYF_OBJECT) || member->kind == TY_UNION || member->kind == TY_INTERSECTION ?
             modifiers_prop(me, member, name, &member_flags) : nullptr;
         if (!prop) {
+            // (A union member without it but with an index signature that applies is in the union property too, not
+            // optional by it, readonly if the signature is: tsc's createUnionOrIntersectionProperty, CheckFlags.WritePartial.
+            // `Omit<Record<string, any> | { class?: string }, "x">` keeps `class` optional)
+            IndexInfo const* info = is_union && (member->flags & TYF_OBJECT) ?
+                ty_applicable_index_info(me, member, ty_prop_name_literal(me, name)) : nullptr;
+            if (info) {
+                if (info->readonly) readonly |= PROP_READONLY;
+                continue;
+            }
             if (is_union) return nullptr;
             continue;
         }

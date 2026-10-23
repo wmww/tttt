@@ -1,0 +1,115 @@
+//// [test/cases/ttttUnionModifiersIndexSignature.ts] ////
+
+=== ttttUnionModifiersIndexSignature.ts ===
+// A homomorphic mapped type over a union takes a key's optionality from the union's property, which a member with an
+// applicable index signature instead of the property joins without making it required (tsc's
+// createUnionOrIntersectionProperty, CheckFlags.WritePartial): `Omit<Record<string, any> | { class?: string }, "x">`
+// keeps `class` optional. openscience's frontend: solid-js's ComponentProps of a Kobalte polymorphic component, where
+// a computed `[DIFFS_TAG_NAME]` augmentation of an unresolved import gives JSX.IntrinsicElements an index signature,
+// fell to `Record<string, unknown>` and made `split.class` unknown (spurious TS2464s, TS2322s)
+type U = Record<string, any> | Record<string, unknown> | { class?: string };
+>U : Symbol(U, Decl(ttttUnionModifiersIndexSignature.ts, 0, 0))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>class : Symbol(class, Decl(ttttUnionModifiersIndexSignature.ts, 6, 58))
+
+export const o: Omit<U, "x"> = {};
+>o : Symbol(o, Decl(ttttUnionModifiersIndexSignature.ts, 7, 12))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(ttttUnionModifiersIndexSignature.ts, 0, 0))
+
+export const p: Pick<U, "class"> = {};
+>p : Symbol(p, Decl(ttttUnionModifiersIndexSignature.ts, 8, 12))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(ttttUnionModifiersIndexSignature.ts, 0, 0))
+
+export const m: { [K in keyof U]: U[K] } = {};
+>m : Symbol(m, Decl(ttttUnionModifiersIndexSignature.ts, 9, 12))
+>K : Symbol(K, Decl(ttttUnionModifiersIndexSignature.ts, 9, 19))
+>U : Symbol(U, Decl(ttttUnionModifiersIndexSignature.ts, 0, 0))
+>U : Symbol(U, Decl(ttttUnionModifiersIndexSignature.ts, 0, 0))
+>K : Symbol(K, Decl(ttttUnionModifiersIndexSignature.ts, 9, 19))
+
+type U2 = { readonly [k: string]: number } | { class?: number };
+>U2 : Symbol(U2, Decl(ttttUnionModifiersIndexSignature.ts, 9, 46))
+>k : Symbol(k, Decl(ttttUnionModifiersIndexSignature.ts, 10, 22))
+>class : Symbol(class, Decl(ttttUnionModifiersIndexSignature.ts, 10, 46))
+
+export const u2: Pick<U2, "class"> = {};
+>u2 : Symbol(u2, Decl(ttttUnionModifiersIndexSignature.ts, 11, 12))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>U2 : Symbol(U2, Decl(ttttUnionModifiersIndexSignature.ts, 9, 46))
+
+u2.class = 1;
+>u2.class : Symbol(class, Decl(ttttUnionModifiersIndexSignature.ts, 10, 46))
+>u2 : Symbol(u2, Decl(ttttUnionModifiersIndexSignature.ts, 11, 12))
+>class : Symbol(class, Decl(ttttUnionModifiersIndexSignature.ts, 10, 46))
+
+type U3 = { [k: string]: number } | { class: number };
+>U3 : Symbol(U3, Decl(ttttUnionModifiersIndexSignature.ts, 12, 13))
+>k : Symbol(k, Decl(ttttUnionModifiersIndexSignature.ts, 13, 13))
+>class : Symbol(class, Decl(ttttUnionModifiersIndexSignature.ts, 13, 37))
+
+export const u3: Pick<U3, "class"> = {};
+>u3 : Symbol(u3, Decl(ttttUnionModifiersIndexSignature.ts, 14, 12))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>U3 : Symbol(U3, Decl(ttttUnionModifiersIndexSignature.ts, 12, 13))
+
+interface IE { div: { class?: string }; [k: string]: { class?: string } }
+>IE : Symbol(IE, Decl(ttttUnionModifiersIndexSignature.ts, 14, 40))
+>div : Symbol(IE.div, Decl(ttttUnionModifiersIndexSignature.ts, 15, 14))
+>class : Symbol(class, Decl(ttttUnionModifiersIndexSignature.ts, 15, 21))
+>k : Symbol(k, Decl(ttttUnionModifiersIndexSignature.ts, 15, 41))
+>class : Symbol(class, Decl(ttttUnionModifiersIndexSignature.ts, 15, 54))
+
+type Component<P extends Record<string, any> = {}> = (props: P) => void;
+>Component : Symbol(Component, Decl(ttttUnionModifiersIndexSignature.ts, 15, 73))
+>P : Symbol(P, Decl(ttttUnionModifiersIndexSignature.ts, 16, 15))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>props : Symbol(props, Decl(ttttUnionModifiersIndexSignature.ts, 16, 54))
+>P : Symbol(P, Decl(ttttUnionModifiersIndexSignature.ts, 16, 15))
+
+type VC = keyof IE | Component<any>;
+>VC : Symbol(VC, Decl(ttttUnionModifiersIndexSignature.ts, 16, 72))
+>IE : Symbol(IE, Decl(ttttUnionModifiersIndexSignature.ts, 14, 40))
+>Component : Symbol(Component, Decl(ttttUnionModifiersIndexSignature.ts, 15, 73))
+
+type CP<T extends VC> = T extends Component<infer P> ? P : T extends keyof IE ? IE[T] : Record<string, unknown>;
+>CP : Symbol(CP, Decl(ttttUnionModifiersIndexSignature.ts, 17, 36))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 18, 8))
+>VC : Symbol(VC, Decl(ttttUnionModifiersIndexSignature.ts, 16, 72))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 18, 8))
+>Component : Symbol(Component, Decl(ttttUnionModifiersIndexSignature.ts, 15, 73))
+>P : Symbol(P, Decl(ttttUnionModifiersIndexSignature.ts, 18, 49))
+>P : Symbol(P, Decl(ttttUnionModifiersIndexSignature.ts, 18, 49))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 18, 8))
+>IE : Symbol(IE, Decl(ttttUnionModifiersIndexSignature.ts, 14, 40))
+>IE : Symbol(IE, Decl(ttttUnionModifiersIndexSignature.ts, 14, 40))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 18, 8))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+type ElementOf<T> = T extends HTMLElement ? T : any;
+>ElementOf : Symbol(ElementOf, Decl(ttttUnionModifiersIndexSignature.ts, 18, 112))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 19, 15))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 19, 15))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 19, 15))
+
+declare const K: <T extends VC = "div">(props: Omit<CP<T>, "x"> & { ref?: ElementOf<T> }) => void;
+>K : Symbol(K, Decl(ttttUnionModifiersIndexSignature.ts, 20, 13))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 20, 18))
+>VC : Symbol(VC, Decl(ttttUnionModifiersIndexSignature.ts, 16, 72))
+>props : Symbol(props, Decl(ttttUnionModifiersIndexSignature.ts, 20, 40))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>CP : Symbol(CP, Decl(ttttUnionModifiersIndexSignature.ts, 17, 36))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 20, 18))
+>ref : Symbol(ref, Decl(ttttUnionModifiersIndexSignature.ts, 20, 67))
+>ElementOf : Symbol(ElementOf, Decl(ttttUnionModifiersIndexSignature.ts, 18, 112))
+>T : Symbol(T, Decl(ttttUnionModifiersIndexSignature.ts, 20, 18))
+
+export const r: CP<typeof K> = { ref: 1 };
+>r : Symbol(r, Decl(ttttUnionModifiersIndexSignature.ts, 21, 12))
+>CP : Symbol(CP, Decl(ttttUnionModifiersIndexSignature.ts, 17, 36))
+>K : Symbol(K, Decl(ttttUnionModifiersIndexSignature.ts, 20, 13))
+>ref : Symbol(ref, Decl(ttttUnionModifiersIndexSignature.ts, 21, 32))
+

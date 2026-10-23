@@ -1,0 +1,81 @@
+//// [test/cases/ttttUnionModifiersIndexSignature.ts] ////
+
+=== ttttUnionModifiersIndexSignature.ts ===
+// A homomorphic mapped type over a union takes a key's optionality from the union's property, which a member with an
+// applicable index signature instead of the property joins without making it required (tsc's
+// createUnionOrIntersectionProperty, CheckFlags.WritePartial): `Omit<Record<string, any> | { class?: string }, "x">`
+// keeps `class` optional. openscience's frontend: solid-js's ComponentProps of a Kobalte polymorphic component, where
+// a computed `[DIFFS_TAG_NAME]` augmentation of an unresolved import gives JSX.IntrinsicElements an index signature,
+// fell to `Record<string, unknown>` and made `split.class` unknown (spurious TS2464s, TS2322s)
+type U = Record<string, any> | Record<string, unknown> | { class?: string };
+>U : U
+>class : string | undefined
+
+export const o: Omit<U, "x"> = {};
+>o : Omit<U, "x">
+>{} : {}
+
+export const p: Pick<U, "class"> = {};
+>p : Pick<U, "class">
+>{} : {}
+
+export const m: { [K in keyof U]: U[K] } = {};
+>m : { class?: any; }
+>{} : {}
+
+type U2 = { readonly [k: string]: number } | { class?: number };
+>U2 : U2
+>k : string
+>class : number | undefined
+
+export const u2: Pick<U2, "class"> = {};
+>u2 : Pick<U2, "class">
+>{} : {}
+
+u2.class = 1;
+>u2.class = 1 : 1
+>u2.class : any
+>u2 : Pick<U2, "class">
+>class : any
+>1 : 1
+
+type U3 = { [k: string]: number } | { class: number };
+>U3 : U3
+>k : string
+>class : number
+
+export const u3: Pick<U3, "class"> = {};
+>u3 : Pick<U3, "class">
+>{} : {}
+
+interface IE { div: { class?: string }; [k: string]: { class?: string } }
+>div : { class?: string; }
+>class : string | undefined
+>k : string
+>class : string | undefined
+
+type Component<P extends Record<string, any> = {}> = (props: P) => void;
+>Component : Component<P>
+>props : P
+
+type VC = keyof IE | Component<any>;
+>VC : VC
+
+type CP<T extends VC> = T extends Component<infer P> ? P : T extends keyof IE ? IE[T] : Record<string, unknown>;
+>CP : CP<T>
+
+type ElementOf<T> = T extends HTMLElement ? T : any;
+>ElementOf : ElementOf<T>
+
+declare const K: <T extends VC = "div">(props: Omit<CP<T>, "x"> & { ref?: ElementOf<T> }) => void;
+>K : <T extends VC = "div">(props: Omit<CP<T>, "x"> & { ref?: ElementOf<T>; }) => void
+>props : Omit<CP<T>, "x"> & { ref?: ElementOf<T>; }
+>ref : ElementOf<T> | undefined
+
+export const r: CP<typeof K> = { ref: 1 };
+>r : Omit<any, "x"> & { ref?: any; }
+>K : <T extends VC = "div">(props: Omit<CP<T>, "x"> & { ref?: ElementOf<T>; }) => void
+>{ ref: 1 } : { ref: number; }
+>ref : number
+>1 : 1
+
