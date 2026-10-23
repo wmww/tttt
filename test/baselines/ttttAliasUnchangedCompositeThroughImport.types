@@ -1,0 +1,40 @@
+//// [test/cases/ttttAliasUnchangedCompositeThroughImport.ts] ////
+
+=== src.ts ===
+export type Opts<T extends readonly any[]> = { [x: string]: any } & { onError?: 1 }
+>Opts : Opts<T>
+>x : string
+>onError : 1 | undefined
+
+export declare function reg<const T extends readonly any[]>(tools: T, options: Opts<T>): T
+>reg : <const T extends readonly any[]>(tools: T, options: Opts<T>) => T
+>tools : T
+>options : Opts<T>
+
+=== t.ts ===
+import { reg, type Opts } from './src'
+>reg : <const T extends readonly any[]>(tools: T, options: Opts<T>) => T
+>Opts : any
+
+declare const tool: any
+>tool : any
+
+declare const options: Opts<readonly [any]>
+>options : Opts<T>
+
+const r = reg([tool], options)
+>r : T
+>reg([tool], options) : T
+>reg : <const T extends readonly any[]>(tools: T, options: Opts<T>) => T
+>[tool] : any[]
+>tool : any
+>options : Opts<T>
+
+type Local<T> = { a: 1 } | { b: T }
+>Local : Local<T>
+>a : 1
+>b : T
+
+declare const local: Local<string>
+>local : Local<string>
+

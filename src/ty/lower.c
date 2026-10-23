@@ -514,6 +514,18 @@ TyList ty_alias_type_params(Checker* me, Symbol const* decl) {
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx, Symbol const* body_of);
 
+// An instantiation of a generic alias whose body is a union or intersection, made of the same constituents
+static bool unchanged_composite_body(Ty const* declared, Ty const* ret, Symbol const* decl) {
+    if (declared->alias != decl || ret == declared || ret->kind != declared->kind) return false;
+    if (declared->kind != TY_UNION && declared->kind != TY_INTERSECTION) return false;
+    if (declared->flags & TYF_BOOLEAN) return false;
+    if (ret->composite.types.len != declared->composite.types.len) return false;
+    for (u32 i = 0; i < ret->composite.types.len; i++) {
+        if (ret->composite.types.data[i] != declared->composite.types.data[i]) return false;
+    }
+    return true;
+}
+
 // `{ [P in keyof T]: X }` with T a type parameter: instantiating it keeps the name it was written with (tsc's
 // instantiateMappedType maps the constituents without the new alias), only a union made of it takes the new one
 static bool is_homomorphic_mapped_node(TypeNode const* node) {
@@ -817,7 +829,13 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             !(body_of && !(alias_is_local(body_of) && !alias_is_local(decl)));
         TyList written = { .data = args.data, .len = (u32)vec_spanned_type_size(&identifier->generic_params) };
         if (written.len > args.len) written.len = args.len;
-        if (through_import && ret->alias == decl && written.len < args.len && !ty_mapped_names_itself(me, ret)) {
+        if (through_import && unchanged_composite_body(declared, ret, decl)) {
+            // (A union or intersection whose constituents the arguments don't change is the alias's declared type
+            // itself, by its own type parameters: tsgo's instantiateTypeWorker returns the type when the members are
+            // the same and the alias passed down, the import's resolved one, is its own. Inference then reads its
+            // alias type arguments, the parameters themselves)
+            ret = declared;
+        } else if (through_import && ret->alias == decl && written.len < args.len && !ty_mapped_names_itself(me, ret)) {
             ret = ty_realias(me, ret, decl, written);
         } else if (through_import && ret->alias != decl && (
             (ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL && ret->conditional.root == declared->conditional.root) ||

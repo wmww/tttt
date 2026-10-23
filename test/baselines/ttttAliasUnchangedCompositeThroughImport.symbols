@@ -1,0 +1,48 @@
+//// [test/cases/ttttAliasUnchangedCompositeThroughImport.ts] ////
+
+=== src.ts ===
+export type Opts<T extends readonly any[]> = { [x: string]: any } & { onError?: 1 }
+>Opts : Symbol(Opts, Decl(src.ts, 0, 0))
+>T : Symbol(T, Decl(src.ts, 0, 17))
+>x : Symbol(x, Decl(src.ts, 0, 48))
+>onError : Symbol(onError, Decl(src.ts, 0, 69))
+
+export declare function reg<const T extends readonly any[]>(tools: T, options: Opts<T>): T
+>reg : Symbol(reg, Decl(src.ts, 0, 83))
+>T : Symbol(T, Decl(src.ts, 1, 28))
+>tools : Symbol(tools, Decl(src.ts, 1, 60))
+>T : Symbol(T, Decl(src.ts, 1, 28))
+>options : Symbol(options, Decl(src.ts, 1, 69))
+>Opts : Symbol(Opts, Decl(src.ts, 0, 0))
+>T : Symbol(T, Decl(src.ts, 1, 28))
+>T : Symbol(T, Decl(src.ts, 1, 28))
+
+=== t.ts ===
+import { reg, type Opts } from './src'
+>reg : Symbol(reg, Decl(t.ts, 0, 8))
+>Opts : Symbol(Opts, Decl(t.ts, 0, 13))
+
+declare const tool: any
+>tool : Symbol(tool, Decl(t.ts, 1, 13))
+
+declare const options: Opts<readonly [any]>
+>options : Symbol(options, Decl(t.ts, 2, 13))
+>Opts : Symbol(Opts, Decl(t.ts, 0, 13))
+
+const r = reg([tool], options)
+>r : Symbol(r, Decl(t.ts, 3, 5))
+>reg : Symbol(reg, Decl(t.ts, 0, 8))
+>tool : Symbol(tool, Decl(t.ts, 1, 13))
+>options : Symbol(options, Decl(t.ts, 2, 13))
+
+type Local<T> = { a: 1 } | { b: T }
+>Local : Symbol(Local, Decl(t.ts, 3, 30))
+>T : Symbol(T, Decl(t.ts, 4, 11))
+>a : Symbol(a, Decl(t.ts, 4, 17))
+>b : Symbol(b, Decl(t.ts, 4, 28))
+>T : Symbol(T, Decl(t.ts, 4, 11))
+
+declare const local: Local<string>
+>local : Symbol(local, Decl(t.ts, 5, 13))
+>Local : Symbol(Local, Decl(t.ts, 3, 30))
+

@@ -1,0 +1,18 @@
+t.ts(4,15): error TS2345: Argument of type 'any[]' is not assignable to parameter of type 'T'.
+  'any[]' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint 'readonly any[]'.
+
+
+==== src.ts (0 errors) ====
+    export type Opts<T extends readonly any[]> = { [x: string]: any } & { onError?: 1 }
+    export declare function reg<const T extends readonly any[]>(tools: T, options: Opts<T>): T
+==== t.ts (1 errors) ====
+    import { reg, type Opts } from './src'
+    declare const tool: any
+    declare const options: Opts<readonly [any]>
+    const r = reg([tool], options)
+                  ~~~~~~
+!!! error TS2345: Argument of type 'any[]' is not assignable to parameter of type 'T'.
+!!! error TS2345:   'any[]' is assignable to the constraint of type 'T', but 'T' could be instantiated with a different subtype of constraint 'readonly any[]'.
+    type Local<T> = { a: 1 } | { b: T }
+    declare const local: Local<string>
+    
