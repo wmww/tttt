@@ -108,6 +108,26 @@ Conclusion: on the sweep's projects the defaults, recycling and the invocation a
 the human's "over half of large tsgo-clean projects" (private projects, single-threaded too, per the coordinator) is
 a training-set gap, not a checker-count one: the measure is fresh large repositories (vision.md).
 
+## Random npm projects (scripts/npmsample.py; agents/notes/npm_sampling.md)
+`scripts/npmsample.py --seed S` (50 projects per seed, the first accepted in sample order; tsgo 7.1 via tttt-oracle,
+tttt at its defaults, both sandboxed; records in test/npmsample/S.*; divergences in agents/bugs/npmsample.md).
+
+| seed | date | tttt | byte-identical (mod lib paths) | same (file, line, code) | agree on clean |
+|---|---|---|---|---|---|
+| 20261023 | 2026-10-23 | 4dcca0d89 (main) | 44/50 | 46/50 | 49/50 |
+| 20261023 | 2026-10-23 | 8ec4e47a4 (+2 fixes) | 46/50 | 48/50 | 49/50 |
+
+Seed 20261023 differences at 8ec4e47a4 (all persist at --threads 1):
+
+| project | tsgo | tttt | missing | extra | codes |
+|---|---|---|---|---|---|
+| AkilSaji/firelab | 0 | 1 | 0 | 1 | +TS2538 (the clean disagreement) |
+| overture-stack/arranger modules/sqon | 40 | 41 | 2 | 3 | -TS2345 +TS2322 |
+| axiona/uri | 52 | 52 | 0 | 0 | text: TS2416 base type alias vs expanded |
+| alex-korneyko/ngx-summernote-mod | 46 | 46 | 0 | 0 | text: TS2769 elaboration unknown[] vs (string \| false)[] |
+| (fixed) JohnDeved/zooqle-api-ts | 22 | 19 | 3 | 0 | -TS2345 -TS2339 -TS2322 (68bd2051d) |
+| (fixed) vijay8856/react-native-find-background-location-vd | 2 | 4 | 0 | 2 | +TS5023 (8ec4e47a4) |
+
 ## Known correctness bugs
 `scripts/bugcount.py --save`, one line per run (per batch): the open root causes from the tags of agents/bugs/*.md and
 triage.md (agents/bugs/README.md), then the symptom counts it read (suite_*: failing tests by origin; bun: bun cases
