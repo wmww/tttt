@@ -1,0 +1,21 @@
+//// [test/cases/ttttReturnAnnotationInfersFromItself.ts] ////
+
+=== ttttReturnAnnotationInfersFromItself.ts ===
+// A return type annotation that infers from the function's own type is circular (TS2577, the call any): the
+// annotation isn't lowered again from inside its own lowering (bun's 99-V4 overflowed the stack)
+function f(): typeof f extends () => infer R ? R : never {
+>f : Symbol(f, Decl(ttttReturnAnnotationInfersFromItself.ts, 0, 0))
+>f : Symbol(f, Decl(ttttReturnAnnotationInfersFromItself.ts, 0, 0))
+>R : Symbol(R, Decl(ttttReturnAnnotationInfersFromItself.ts, 2, 42))
+>R : Symbol(R, Decl(ttttReturnAnnotationInfersFromItself.ts, 2, 42))
+
+    return null!;
+}
+const result = f();
+>result : Symbol(result, Decl(ttttReturnAnnotationInfersFromItself.ts, 5, 5))
+>f : Symbol(f, Decl(ttttReturnAnnotationInfersFromItself.ts, 0, 0))
+
+const probe: never = result;
+>probe : Symbol(probe, Decl(ttttReturnAnnotationInfersFromItself.ts, 6, 5))
+>result : Symbol(result, Decl(ttttReturnAnnotationInfersFromItself.ts, 5, 5))
+

@@ -6184,7 +6184,11 @@ static __attribute__((noinline)) Ty const* signature_return_type_slow(Checker* m
                 return compute_signature_return(me, sig, sig_rs);
             }
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
-            if (!sig_target(me, sig) && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
+            // (Not an annotated one, which would lower its annotation again: `function f(): typeof f extends () =>
+            // infer R ? R : never`, TS2577)
+            if (!sig_target(me, sig) && sig->function && !sig->function->is_type && !sig->function->ret_explicit) {
+                ty_function_return_type(me, sig->function);
+            }
             ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
             return ty_intrinsic(me, TY_CIRCULAR);
         case SW_LOOK_COMPUTE: break;

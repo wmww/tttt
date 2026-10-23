@@ -1,0 +1,17 @@
+ttttReturnAnnotationInfersFromItself.ts(3,15): error TS2577: Return type annotation circularly references itself.
+ttttReturnAnnotationInfersFromItself.ts(7,7): error TS2322: Type 'any' is not assignable to type 'never'.
+
+
+==== ttttReturnAnnotationInfersFromItself.ts (2 errors) ====
+    // A return type annotation that infers from the function's own type is circular (TS2577, the call any): the
+    // annotation isn't lowered again from inside its own lowering (bun's 99-V4 overflowed the stack)
+    function f(): typeof f extends () => infer R ? R : never {
+                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2577: Return type annotation circularly references itself.
+        return null!;
+    }
+    const result = f();
+    const probe: never = result;
+          ~~~~~
+!!! error TS2322: Type 'any' is not assignable to type 'never'.
+    
