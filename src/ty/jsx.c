@@ -232,7 +232,8 @@ JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, JsxElement const* element, csvi
     JsxIntrinsic ret = { .elements = ty_jsx_type(me, element, c_sv("IntrinsicElements")) };
     if (!ret.elements) return ret;
     Ty const* apparent = ty_apparent_type(me, ret.elements);
-    if (apparent->flags & TYF_OBJECT) ret.prop = ty_get_prop(me, apparent, checker_atom(me, name));
+    // (Object's members too: tsc's getIntrinsicTagSymbol asks getPropertyOfType, `<toString />` is Object's method)
+    if (apparent->flags & TYF_OBJECT) ret.prop = ty_get_object_prop(me, apparent, checker_atom(me, name));
     if (ret.prop) {
         ret.props = prop_type(me, ret.prop);
         return ret;

@@ -1,0 +1,14 @@
+ttttJsxIntrinsicObjectMember.tsx(4,21): error TS2322: Type '{ s: string; }' is not assignable to type '() => string'.
+  Property 's' does not exist on type '() => string'.
+
+
+==== ttttJsxIntrinsicObjectMember.tsx (1 errors) ====
+    // An intrinsic tag is looked up in JSX.IntrinsicElements with getPropertyOfType, which has Object's members: `toString`
+    // is Object's method, not the index signature's (bun's 27-P6)
+    declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { [k: string]: { s?: string } } }
+    const a = <toString s="x" />;
+                        ~
+!!! error TS2322: Type '{ s: string; }' is not assignable to type '() => string'.
+!!! error TS2322:   Property 's' does not exist on type '() => string'.
+    const b = <div s="x" />;
+    

@@ -1,0 +1,23 @@
+//// [test/cases/ttttJsxIntrinsicObjectMember.tsx] ////
+
+=== ttttJsxIntrinsicObjectMember.tsx ===
+// An intrinsic tag is looked up in JSX.IntrinsicElements with getPropertyOfType, which has Object's members: `toString`
+// is Object's method, not the index signature's (bun's 27-P6)
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { [k: string]: { s?: string } } }
+>JSX : Symbol(JSX, Decl(ttttJsxIntrinsicObjectMember.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttJsxIntrinsicObjectMember.tsx, 2, 23))
+>e : Symbol(Element.e, Decl(ttttJsxIntrinsicObjectMember.tsx, 2, 43))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxIntrinsicObjectMember.tsx, 2, 50))
+>k : Symbol(k, Decl(ttttJsxIntrinsicObjectMember.tsx, 2, 82))
+>s : Symbol(s, Decl(ttttJsxIntrinsicObjectMember.tsx, 2, 95))
+
+const a = <toString s="x" />;
+>a : Symbol(a, Decl(ttttJsxIntrinsicObjectMember.tsx, 3, 5))
+>toString : Symbol(Object.toString, Decl(lib.es5.d.ts, --, --))
+>s : Symbol(s, Decl(ttttJsxIntrinsicObjectMember.tsx, 3, 19))
+
+const b = <div s="x" />;
+>b : Symbol(b, Decl(ttttJsxIntrinsicObjectMember.tsx, 4, 5))
+>div : Symbol(JSX.IntrinsicElements.__index, Decl(ttttJsxIntrinsicObjectMember.tsx, 2, 80))
+>s : Symbol(s, Decl(ttttJsxIntrinsicObjectMember.tsx, 4, 14))
+

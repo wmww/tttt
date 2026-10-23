@@ -1,0 +1,22 @@
+//// [test/cases/ttttJsxIntrinsicObjectMember.tsx] ////
+
+=== ttttJsxIntrinsicObjectMember.tsx ===
+// An intrinsic tag is looked up in JSX.IntrinsicElements with getPropertyOfType, which has Object's members: `toString`
+// is Object's method, not the index signature's (bun's 27-P6)
+declare namespace JSX { interface Element { e: 1 } interface IntrinsicElements { [k: string]: { s?: string } } }
+>e : 1
+>k : string
+>s : string | undefined
+
+const a = <toString s="x" />;
+>a : JSX.Element
+><toString s="x" /> : JSX.Element
+>toString : () => string
+>s : string
+
+const b = <div s="x" />;
+>b : JSX.Element
+><div s="x" /> : JSX.Element
+>div : any
+>s : string
+
