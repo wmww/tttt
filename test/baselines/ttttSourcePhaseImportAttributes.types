@@ -1,0 +1,14 @@
+//// [test/cases/ttttSourcePhaseImportAttributes.ts] ////
+
+=== a.ts ===
+
+export {};
+=== b.ts ===
+import source a from "./a" with { type: 42 };
+>a : AbstractModuleSource
+>type : any
+
+import b from "./a" with { type: 42 };
+>b : any
+>type : any
+

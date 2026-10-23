@@ -496,7 +496,8 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     if (my in_ambient_module && my module_ref && !my jsdoc && module_name_is_relative(port_statement_target_path(me))) {
         error_ctx_error_d(errs, span_with_semicolon(span), 2439, "Import or export declaration in an ambient module "
             "declaration cannot reference module through relative module name.");
-    } else if (my attributes && my module_ref && !my jsdoc && !my in_namespace && !my is_import_require) {
+    } else if (my attributes && (my module_ref || my source_phase) && !my jsdoc && !my in_namespace && !my is_import_require) {
+        // (A source phase import's module isn't resolved, but its attributes are checked all the same)
         // (a string literal: not a template, which isStringLiteral isn't)
         for_each (i, vec_import_attribute, &my attributes->elements) {
             Expr const* value = &i->value;

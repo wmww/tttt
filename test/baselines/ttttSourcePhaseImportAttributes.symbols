@@ -1,0 +1,12 @@
+//// [test/cases/ttttSourcePhaseImportAttributes.ts] ////
+
+=== a.ts ===
+
+export {};
+=== b.ts ===
+import source a from "./a" with { type: 42 };
+>a : Symbol(a, Decl(b.ts, 0, 6))
+
+import b from "./a" with { type: 42 };
+>b : Symbol(b, Decl(b.ts, 1, 6))
+
