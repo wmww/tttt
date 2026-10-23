@@ -845,6 +845,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         program_set_file_size(program, file_size_of, nullptr);
     }
     program_set_checkers(program, opts->checkers);
+    program_set_build_mode(program, opts->build);
     // (TTTT_SHARED_GRAPH=1: the same, for scripts that run tttt with their own arguments: the oracles)
     char const* shared_env = getenv("TTTT_SHARED_GRAPH");
     program_set_shared_graph(program, opts->shared_graph || (shared_env && *shared_env && strcmp(shared_env, "0")));

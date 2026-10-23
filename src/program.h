@@ -119,6 +119,7 @@ void program_report_global_diagnostics(Program* me);
 // How many checkers program_typecheck() deals the files to (tsgo's --checkers). 0, the default: one per thread, fewer
 // for a small program (auto_checker_count()). The diagnostics don't depend on it (plan 62). Call it while loading
 void program_set_checkers(Program* me, u32 count);
+void program_set_build_mode(Program* me, bool build); // Built by `-b` (the build info file, program_verify_emit_paths())
 // --shared-graph: the checkers share one type graph (plan 86 stage 4, ty/graph.h): one after another, never recycled
 void program_set_shared_graph(Program* me, bool shared);
 // --first-touch-stamps: deep nesting orders types by when each checker first met them, not by id (plan 86 stage 4c)

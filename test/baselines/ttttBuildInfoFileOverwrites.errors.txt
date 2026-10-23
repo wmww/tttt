@@ -1,0 +1,12 @@
+error TS5056: Cannot write file 'p/a.js' because it would be overwritten by multiple input files.
+p/a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+
+
+!!! error TS5056: Cannot write file 'p/a.js' because it would be overwritten by multiple input files.
+==== p/tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "types": [], "incremental": true, "tsBuildInfoFile": "a.js" }, "files": ["a.ts"] }
+==== p/a.ts (1 errors) ====
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    

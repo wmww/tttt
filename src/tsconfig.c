@@ -208,7 +208,7 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
             }
             my options->paths_set = true;
         } else if (!strcmp(name, "baseUrl") || !strcmp(name, "outDir") || !strcmp(name, "outFile") ||
-            !strcmp(name, "rootDir") || !strcmp(name, "declarationDir")) {
+            !strcmp(name, "rootDir") || !strcmp(name, "declarationDir") || !strcmp(name, "tsBuildInfoFile")) {
             // Relative to the config that has them, which may be one this one extends
             if (value->tag != JSON_STRING) continue;
             cstr absolute = config_path(me, dir, cstr_sv(&value->string));

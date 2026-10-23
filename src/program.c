@@ -209,6 +209,10 @@ typedef struct Program {
     bool defer_bodies; // program_set_defer_bodies()
     _Atomic bool defer_failed; // program_defer_failed()
     atomic_uint ahead_next; // Materialize-ahead (plan 78, program_typecheck()): the next file of check_files a helper takes
+    bool build_mode; // Built by `-b`: a build info file is written whether or not the options are incremental
+    // Outputs other than the build info file blocked by TS5055/TS5056: tsgo's emit is skipped then (exit status 1);
+    // a blocked build info file alone skips nothing
+    u32 emit_blocked_outputs;
     // Output paths TS5055/TS5056 were reported for (relative to the working directory): tsc's hasEmitBlockingDiagnostics,
     // nothing is written there
     hmap_source_file_ptr emit_blocked;
@@ -3105,6 +3109,7 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
     } else {
         hmap_source_file_ptr_insert(seen, cstr_clone(key), nullptr);
     }
+    if (blocked) my emit_blocked_outputs++;
     if (blocked && !hmap_source_file_ptr_contains(&my emit_blocked, cstr_sv(&key))) {
         hmap_source_file_ptr_insert(&my emit_blocked, key, nullptr);
     } else {
@@ -3114,7 +3119,7 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
 }
 
 bool program_emit_any_blocked(Program const* me) {
-    return hmap_source_file_ptr_size(&my emit_blocked) > 0;
+    return my emit_blocked_outputs > 0;
 }
 
 bool program_emit_blocked(Program* me, csview output) {
@@ -3324,6 +3329,37 @@ static void program_set_declaration_paths(Program* me) {
     cstr_drop(&common_dir);
 }
 
+static cstr program_build_info_file_name(Program* me) {
+    CompilerOptions const* o = &my options;
+    if (!o->incremental && !o->composite && !my build_mode) return cstr_null;
+    if (cstr_size(&o->ts_build_info_file)) return absolute_path_of(program_cwd(me), cstr_sv(&o->ts_build_info_file));
+    if (!my config_source) return cstr_null;
+    cstr config = absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path));
+    cstr name = cstr_null;
+    if (cstr_size(&o->out_dir)) {
+        cstr out_dir = absolute_path_of(program_cwd(me), cstr_sv(&o->out_dir));
+        if (cstr_size(&o->root_dir)) {
+            cstr root_dir = absolute_path_of(program_cwd(me), cstr_sv(&o->root_dir));
+            cstr relative = relative_path_of(cstr_sv(&root_dir), cstr_sv(&config));
+            name = cstr_d(out_dir, "/", relative);
+            c_drop(cstr, &root_dir, &relative);
+        } else {
+            name = cstr_d(out_dir, "/", basename_of(cstr_sv(&config)));
+        }
+        cstr_drop(&out_dir);
+    } else {
+        name = cstr_clone(config);
+    }
+    cstr_drop(&config);
+    // (Its extension replaced: tspath's RemoveFileExtension then `.tsbuildinfo`)
+    csview base = basename_of(cstr_sv(&name));
+    isize dot = -1;
+    for (isize i = base.size - 1; i > 0 && dot < 0; i--) if (base.buf[i] == '.') dot = i;
+    if (dot > 0) cstr_resize(&name, cstr_size(&name) - (base.size - dot), '\0');
+    cstr_append_lit(&name, ".tsbuildinfo");
+    return name;
+}
+
 static void program_verify_emit_paths(Program* me) {
     CompilerOptions const* o = &my options;
     // tsc's verifyCompilerOptions: with an outDir and no rootDir, files on different drives have no common source
@@ -3365,6 +3401,22 @@ static void program_verify_emit_paths(Program* me) {
             cstr dts = emit_output_path(me, path, dir, cstr_sv(&common_dir), emit_declaration_extension(path));
             emit_verify_path(me, dts, &seen);
         }
+    }
+    // And the build info file (tsgo's GetBuildInfoFileName: incremental, composite or -b; tsBuildInfoFile, else the
+    // config's name in outDir, its extension .tsbuildinfo). Blocking it skips no emit unless it collides with an
+    // output, which is then blocked too (TS5056: exit status 1; TS5055 on an input: 2)
+    cstr build_info = program_build_info_file_name(me);
+    if (cstr_size(&build_info)) {
+        cstr cwd = cstr_null;
+        try (fs_get_cwd(my fs, &cwd)) or_panic;
+        cstr key = relative_path_of(cstr_sv(&cwd), cstr_sv(&build_info));
+        bool collides = hmap_source_file_ptr_contains(&seen, cstr_sv(&key));
+        c_drop(cstr, &cwd, &key);
+        u32 blocked_outputs = my emit_blocked_outputs;
+        emit_verify_path(me, build_info, &seen);
+        if (!collides) my emit_blocked_outputs = blocked_outputs;
+    } else {
+        cstr_drop(&build_info);
     }
     cstr_drop(&common_dir);
     hmap_source_file_ptr_drop(&seen);
@@ -4712,6 +4764,8 @@ TyGraph* program_graph(Program const* me) {
     return my graph;
 }
 
+
+void program_set_build_mode(Program* me, bool build) { my build_mode = build; }
 
 void program_set_checkers(Program* me, u32 count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);

@@ -1,0 +1,7 @@
+//// [test/cases/ttttBuildInfoFileOverwrites.ts] ////
+
+=== p/a.ts ===
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
