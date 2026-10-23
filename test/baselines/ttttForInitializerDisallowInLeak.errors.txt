@@ -1,0 +1,39 @@
+ttttForInitializerDisallowInLeak.ts(6,21): error TS1005: ',' expected.
+ttttForInitializerDisallowInLeak.ts(6,21): error TS7006: Parameter 'b' implicitly has an 'any' type.
+ttttForInitializerDisallowInLeak.ts(7,17): error TS1005: ',' expected.
+ttttForInitializerDisallowInLeak.ts(7,21): error TS1005: ')' expected.
+ttttForInitializerDisallowInLeak.ts(7,24): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(8,28): error TS1434: Unexpected keyword or identifier.
+ttttForInitializerDisallowInLeak.ts(8,30): error TS1128: Declaration or statement expected.
+ttttForInitializerDisallowInLeak.ts(8,35): error TS1005: ')' expected.
+ttttForInitializerDisallowInLeak.ts(8,38): error TS1128: Declaration or statement expected.
+
+
+==== ttttForInitializerDisallowInLeak.ts (9 errors) ====
+    // Known failing (agents/bugs/missing_checks.md "for-initializer DisallowIn"): tsgo's DisallowIn context of a for
+    // statement's initializer reaches into arrow parameters, array literals and nested function bodies (only
+    // parenthesized expressions, arguments, element accesses, templates, object literal values, conditional branches,
+    // binding patterns, nested variable statements and statement expressions clear it), so `x in b` there is a syntax error
+    declare let x: any, b: any;
+    for (var i = (a = x in b) => 1;;) {}
+                        ~~
+!!! error TS1005: ',' expected.
+                        ~~~~
+!!! error TS7006: Parameter 'b' implicitly has an 'any' type.
+    for (var j = [x in b];;) {}
+                    ~~
+!!! error TS1005: ',' expected.
+                        ~
+!!! error TS1005: ')' expected.
+                           ~
+!!! error TS1128: Declaration or statement expected.
+    for (var k = function () { x in b };;) {}
+                               ~
+!!! error TS1434: Unexpected keyword or identifier.
+                                 ~~
+!!! error TS1128: Declaration or statement expected.
+                                      ~
+!!! error TS1005: ')' expected.
+                                         ~
+!!! error TS1128: Declaration or statement expected.
+    

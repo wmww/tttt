@@ -457,3 +457,15 @@ Diagnostics-class leftovers, not fixed:
   in an extended config is fixed. Not fixed: tsgo's doubled TS2304 next to its TS2552 for `export { StringHash }` of a
   missing name under `@declaration` (declarationsForIndirectTypeAliasReference delete-stmt), most likely the
   declaration emitter resolving the name again without a suggestion (dts_emit.md's area). [open]
+- **For-initializer DisallowIn leaks into nested constructs in tsgo** (corF 2026-10-23, bun 83-R01c,
+  test/cases/ttttForInitializerDisallowInLeak.ts, known failing). tsgo's `for (` initializer is parsed in the
+  DisallowIn context, and the flag stays set inside arrow parameters, array literals and nested function and class
+  bodies. Only these clear it:
+  - parseExpressionAllowIn: parentheses, element access, template spans, computed names, and the expressions of
+    if/while/for/return/throw/switch/case/with;
+  - argument expressions, object literal values and conditional branches;
+  - binding patterns, property and enum initializers, and nested variable declaration lists.
+  So `for (var i = function () { x in b };;)` is TS1434/TS1128 there. tttt's ExprCtx.reject_in_operator is reset by
+  every nested context, so it misses these errors. The fix is a ParserShared flag, set at the for initializer and
+  cleared (saved and restored) at those sites. A missed clearing site gives spurious errors, and only adversarial code
+  is affected. [open]
