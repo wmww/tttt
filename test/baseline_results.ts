@@ -11592,6 +11592,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasReentersBelowCallBarrier': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasReentersBelowVarianceBarrier': {
         errors: true,
         symbols: true,
@@ -12013,6 +12018,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttContextualReturnNotOnStack': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttContravariantInferenceAliasedIntersection': {
         errors: true,
