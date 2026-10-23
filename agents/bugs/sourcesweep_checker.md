@@ -529,3 +529,23 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   declaration's type (likely its error-callee path, or a quick non-generic return type for `lazyToolNames(...)`), so
   it has no cycle. Next step: those 3 files as a test/cases repro (an undeclared callee alone may reproduce it). Not continued: the npm workflow comes
   first. [open]
+
+## Refresh 7: application monorepos on generic libraries (2026-10-23, cor9)
+Six repos installed before the installs were stopped (repos.txt "Refresh 7"; the rest pending a sandboxed
+ensure-sources.sh). At --threads 1: 74 / 79 projects, 4 / 6 repos; checkouts in thirdparty/sources/REPO.
+- **comp: +TS2604 on a generic template-literal JSX tag** (comp/apps/app, apps/portal, packages/ui-ish configs: 3
+  projects): node_modules/@trycompai/design-system/src/components/atoms/heading.tsx:48, `const Component = as ??
+  (\`h${level}\` as \`h${T}\`); <Component .../>` with `T extends '1' | ... | '6'`. tsc's
+  getUninstantiatedJsxSignaturesOfType (jsx.go) takes getApparentType of the tag type: an instantiable type's base
+  constraint, here "h1" | ... | "h6", whose members each give an intrinsic signature. tttt finds no signature for
+  `h${T}` (a type parameter T extends "h1" | "h2" works). Repro test/cases/ttttJsxTemplateLiteralTag.tsx (known
+  failing). [open]
+- **parabol: -TS7006 on kysely expression-builder callbacks** (packages/embedder, packages/server: 19 missing), e.g.
+  packages/embedder/EmbeddingsJobQueueStream.ts:47 `.where('id', '=', (eb) => eb...)` and
+  server/graphql/public/mutations/helpers/movePageToNewTeam.ts:19-36: tsgo reports the parameter implicitly any
+  (the contextual type there gives `eb` none), tttt types it from context. Not reduced. [open]
+- **parabol/packages/embedder: +TS2322 and +TS2344 at mergeAsyncIterators.ts:52**: `AsyncIterableIterator<{[P in
+  keyof T]: [ParseInt<\`${P}\`>, Result<T[P]>]}[number]>` with T a tuple of async iterators: tttt says "Type 'P' is
+  not assignable to type 'string | number | bigint | boolean | null | undefined'" (the template literal's placeholder)
+  and "Type 'T[P]' does not satisfy the constraint 'AsyncIterator<any, any, any>'": a homomorphic mapped type over a
+  tuple, whose P tsc keeps to the numeric-string keys (and T[P] to the element types). Not reduced. [open]

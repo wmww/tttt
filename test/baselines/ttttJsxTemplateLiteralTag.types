@@ -1,0 +1,66 @@
+//// [test/cases/ttttJsxTemplateLiteralTag.tsx] ////
+
+=== ttttJsxTemplateLiteralTag.tsx ===
+// comp (refresh 7, @trycompai/design-system's heading.tsx:48): a JSX tag whose type is a generic template literal
+// `h${T}` (T constrained to a union of literals). tsc's getUninstantiatedJsxSignaturesOfType takes the apparent type,
+// the base constraint "h1" | "h2" | "h3", each member an intrinsic element: no error. tttt reports TS2604 (known
+// failing, agents/bugs/sourcesweep_checker.md "Refresh 7"); a type parameter T extends "h1" | "h2" works.
+declare namespace JSX {
+  interface Element {}
+  interface IntrinsicElements {
+    h1: { id?: string }; h2: { id?: string }; h3: { id?: string };
+>h1 : { id?: string; }
+>id : string | undefined
+>h2 : { id?: string; }
+>id : string | undefined
+>h3 : { id?: string; }
+>id : string | undefined
+  }
+}
+type L = '1' | '2' | '3';
+>L : L
+
+function A<T extends L = '1'>(level: T, as?: `h${L}`) {
+>A : <T extends L = "1">(level: T, as?: `h${L}`) => JSX.Element
+>level : T
+>as : "h1" | "h2" | "h3" | undefined
+
+  const C = as ?? (`h${level}` as `h${T}`);
+>C : "h1" | "h2" | "h3" | `h${T}`
+>as ?? (`h${level}` as `h${T}`) : "h1" | "h2" | "h3" | `h${T}`
+>as : "h1" | "h2" | "h3" | undefined
+>(`h${level}` as `h${T}`) : `h${T}`
+>`h${level}` as `h${T}` : `h${T}`
+>`h${level}` : `h${T}`
+>level : T
+
+  return <C id="x" />;
+><C id="x" /> : JSX.Element
+>C : "h1" | "h2" | "h3" | `h${T}`
+>id : string
+}
+function B<T extends L>(level: T) {
+>B : <T extends L>(level: T) => JSX.Element
+>level : T
+
+  const C = `h${level}` as `h${T}`;
+>C : `h${T}`
+>`h${level}` as `h${T}` : `h${T}`
+>`h${level}` : `h${T}`
+>level : T
+
+  return <C id="x" />;
+><C id="x" /> : JSX.Element
+>C : `h${T}`
+>id : string
+}
+function D<T extends 'h1' | 'h2'>(C: T) {
+>D : <T extends 'h1' | 'h2'>(C: T) => JSX.Element
+>C : T
+
+  return <C id="x" />;
+><C id="x" /> : JSX.Element
+>C : T
+>id : string
+}
+

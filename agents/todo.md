@@ -60,6 +60,15 @@ wins first; land fast and gate in batches.
   plugin-add-graphql TS2345, plugin-smart-subscriptions -TS7023: a variance measurement re-entering an own return
   type, known-failing ttttVarianceReentersOwnReturnType), node-pg-migrate/docs (TS7's `typeof ts` typings), portabase
   (auth.ts:690 `never`, form.tsx:227 -TS2322), tanstack-ai/packages/ai-harness (-TS2615).
+- **Refresh 7, stopped at six repos** (cor9, repos.txt "Refresh 7": application monorepos on generic libraries,
+  `scripts/reposearch.py genericapp`): openbot, comp, thunderbolt, meridian, afilmory and parabol installed and
+  cached (74 / 79 projects, 4 / 6 repos at --threads 1; the leftovers are bugs/sourcesweep_checker.md "Refresh 7").
+  The other 38 picks are commented out in repos.txt (skyroc failed, four interrupted, 33 pending). Resuming needs
+  **ensure-sources.sh ported to `scripts/installsandbox.py`** (agents/notes/install_security.md: every install
+  sandboxed with its own cache root, not the sampler's `.cache/pm`, `--refuse` for yarnrc/pnpm-workspace hooks, the
+  dedupe step kept; test on skyroc), then the installs at -j 1, `--tsc-new` and the day-one table per repo (a repo
+  is clean only if every config matches) at --threads 1 and at the defaults. Dropped for now (2026-10-23, the npm
+  workflow first).
 - **Instruction counts**: today's fixes drift ~+0.8% on drizzle against `test/instrcount.txt` (a6af311ed). Attribute
   it (`scripts/instrcount.sh --vs REV` per batch boundary, abbuild.sh) before `--save`; the escaped-keyword cost was
   already taken back (9a5647e3b).

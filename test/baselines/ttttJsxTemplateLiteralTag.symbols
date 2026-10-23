@@ -1,0 +1,74 @@
+//// [test/cases/ttttJsxTemplateLiteralTag.tsx] ////
+
+=== ttttJsxTemplateLiteralTag.tsx ===
+// comp (refresh 7, @trycompai/design-system's heading.tsx:48): a JSX tag whose type is a generic template literal
+// `h${T}` (T constrained to a union of literals). tsc's getUninstantiatedJsxSignaturesOfType takes the apparent type,
+// the base constraint "h1" | "h2" | "h3", each member an intrinsic element: no error. tttt reports TS2604 (known
+// failing, agents/bugs/sourcesweep_checker.md "Refresh 7"); a type parameter T extends "h1" | "h2" works.
+declare namespace JSX {
+>JSX : Symbol(JSX, Decl(ttttJsxTemplateLiteralTag.tsx, 0, 0))
+
+  interface Element {}
+>Element : Symbol(Element, Decl(ttttJsxTemplateLiteralTag.tsx, 4, 23))
+
+  interface IntrinsicElements {
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxTemplateLiteralTag.tsx, 5, 22))
+
+    h1: { id?: string }; h2: { id?: string }; h3: { id?: string };
+>h1 : Symbol(IntrinsicElements.h1, Decl(ttttJsxTemplateLiteralTag.tsx, 6, 31))
+>id : Symbol(id, Decl(ttttJsxTemplateLiteralTag.tsx, 7, 9))
+>h2 : Symbol(IntrinsicElements.h2, Decl(ttttJsxTemplateLiteralTag.tsx, 7, 24))
+>id : Symbol(id, Decl(ttttJsxTemplateLiteralTag.tsx, 7, 30))
+>h3 : Symbol(IntrinsicElements.h3, Decl(ttttJsxTemplateLiteralTag.tsx, 7, 45))
+>id : Symbol(id, Decl(ttttJsxTemplateLiteralTag.tsx, 7, 51))
+  }
+}
+type L = '1' | '2' | '3';
+>L : Symbol(L, Decl(ttttJsxTemplateLiteralTag.tsx, 9, 1))
+
+function A<T extends L = '1'>(level: T, as?: `h${L}`) {
+>A : Symbol(A, Decl(ttttJsxTemplateLiteralTag.tsx, 10, 25))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 11, 11))
+>L : Symbol(L, Decl(ttttJsxTemplateLiteralTag.tsx, 9, 1))
+>level : Symbol(level, Decl(ttttJsxTemplateLiteralTag.tsx, 11, 30))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 11, 11))
+>as : Symbol(as, Decl(ttttJsxTemplateLiteralTag.tsx, 11, 39))
+>L : Symbol(L, Decl(ttttJsxTemplateLiteralTag.tsx, 9, 1))
+
+  const C = as ?? (`h${level}` as `h${T}`);
+>C : Symbol(C, Decl(ttttJsxTemplateLiteralTag.tsx, 12, 7))
+>as : Symbol(as, Decl(ttttJsxTemplateLiteralTag.tsx, 11, 39))
+>level : Symbol(level, Decl(ttttJsxTemplateLiteralTag.tsx, 11, 30))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 11, 11))
+
+  return <C id="x" />;
+>C : Symbol(C, Decl(ttttJsxTemplateLiteralTag.tsx, 12, 7))
+>id : Symbol(id, Decl(ttttJsxTemplateLiteralTag.tsx, 13, 11))
+}
+function B<T extends L>(level: T) {
+>B : Symbol(B, Decl(ttttJsxTemplateLiteralTag.tsx, 14, 1))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 15, 11))
+>L : Symbol(L, Decl(ttttJsxTemplateLiteralTag.tsx, 9, 1))
+>level : Symbol(level, Decl(ttttJsxTemplateLiteralTag.tsx, 15, 24))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 15, 11))
+
+  const C = `h${level}` as `h${T}`;
+>C : Symbol(C, Decl(ttttJsxTemplateLiteralTag.tsx, 16, 7))
+>level : Symbol(level, Decl(ttttJsxTemplateLiteralTag.tsx, 15, 24))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 15, 11))
+
+  return <C id="x" />;
+>C : Symbol(C, Decl(ttttJsxTemplateLiteralTag.tsx, 16, 7))
+>id : Symbol(id, Decl(ttttJsxTemplateLiteralTag.tsx, 17, 11))
+}
+function D<T extends 'h1' | 'h2'>(C: T) {
+>D : Symbol(D, Decl(ttttJsxTemplateLiteralTag.tsx, 18, 1))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 19, 11))
+>C : Symbol(C, Decl(ttttJsxTemplateLiteralTag.tsx, 19, 34))
+>T : Symbol(T, Decl(ttttJsxTemplateLiteralTag.tsx, 19, 11))
+
+  return <C id="x" />;
+>C : Symbol(C, Decl(ttttJsxTemplateLiteralTag.tsx, 19, 34))
+>id : Symbol(id, Decl(ttttJsxTemplateLiteralTag.tsx, 20, 11))
+}
+
