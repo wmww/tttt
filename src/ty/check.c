@@ -1173,6 +1173,19 @@ bool ty_relate_explaining(
     return relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, head_code, lines, errs);
 }
 
+bool ty_relate_explaining_at(
+    Checker* me, Ty const* source, Ty const* target, unsigned head_code, VecTyReportLine* lines, ErrorCtx* errs, Span span,
+    bool* overflowed
+) {
+    u32 limit_hits = my instantiation_limit_hits;
+    CurrentNode saved = ty_enter_node(me, span);
+    bool fits = relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, head_code, lines, errs);
+    ty_leave_node(me, saved);
+    *overflowed = !fits && my instantiation_limit_hits != limit_hits;
+    if (*overflowed) vec_ty_report_line_drop(lines);
+    return fits;
+}
+
 Error* ty_report_explained_with_head(ErrorCtx* errs, VecTyReportLine* lines, unsigned ts_code, cstr head, Span span) {
     return report_explained_with_head(errs, lines, ts_code, head, false, span);
 }
@@ -2831,7 +2844,11 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
         constraint = ty_instantiate(me, constraint, mapper);
         if (filled[i]->flags & TYF_ERROR) continue;
         VecTyReportLine lines = {0};
-        if (relate_explaining(me, TY_RELATION_ASSIGNABLE, filled[i], constraint, 2344, &lines, errs)) continue;
+        bool overflowed = false;
+        if (ty_relate_explaining_at(me, filled[i], constraint, 2344, &lines, errs, vec_spanned_type_at(args, i)->span, &overflowed)) {
+            continue;
+        }
+        if (overflowed) return;
         cstr source_str, target_str;
         ty_report_pair_cstr(me, ty_report_source(me, filled[i]), ty_report_target(me, filled[i], constraint), &source_str, &target_str);
         report_explained_with_head(errs, &lines, 2344, cstr_d(

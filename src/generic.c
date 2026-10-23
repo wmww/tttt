@@ -57,7 +57,8 @@ static void generic_check_default(GenericItem const* item, Ty const* param, Erro
     TyMapper const* mapper = ty_mapper_new(checker, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &fallback, .len = 1 });
     Ty const* target = ty_with_this_arg(checker, ty_instantiate(checker, constraint, mapper), fallback);
     VecTyReportLine lines = {0};
-    if (ty_relate_explaining(checker, fallback, target, 2344, &lines, errs)) return;
+    bool overflowed = false;
+    if (ty_relate_explaining_at(checker, fallback, target, 2344, &lines, errs, item->fallback_span, &overflowed) || overflowed) return;
     cstr source_str, target_str;
     ty_report_pair_cstr(checker, fallback, ty_report_target(checker, fallback, target), &source_str, &target_str);
     ty_report_explained_with_head(errs, &lines, 2344, cstr_d(

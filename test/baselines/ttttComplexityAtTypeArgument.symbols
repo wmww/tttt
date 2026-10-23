@@ -1,0 +1,33 @@
+//// [test/cases/ttttComplexityAtTypeArgument.ts] ////
+
+=== ttttComplexityAtTypeArgument.ts ===
+// A type argument whose constraint check runs out of relation budget: TS2859 at the argument and nothing else (tsc's
+// checkTypeRelatedTo with the error node), not TS2859 at the declaration plus TS2344 (bun's 17-SC4b and 87-R01e)
+type Digits = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+>Digits : Symbol(Digits, Decl(ttttComplexityAtTypeArgument.ts, 0, 0))
+
+type T1 = `${Digits}${Digits}${Digits}${Digits}` | undefined;
+>T1 : Symbol(T1, Decl(ttttComplexityAtTypeArgument.ts, 2, 72))
+>Digits : Symbol(Digits, Decl(ttttComplexityAtTypeArgument.ts, 0, 0))
+>Digits : Symbol(Digits, Decl(ttttComplexityAtTypeArgument.ts, 0, 0))
+>Digits : Symbol(Digits, Decl(ttttComplexityAtTypeArgument.ts, 0, 0))
+>Digits : Symbol(Digits, Decl(ttttComplexityAtTypeArgument.ts, 0, 0))
+
+type T2 = { a: string } | { b: number };
+>T2 : Symbol(T2, Decl(ttttComplexityAtTypeArgument.ts, 3, 61))
+>a : Symbol(a, Decl(ttttComplexityAtTypeArgument.ts, 4, 11))
+>b : Symbol(b, Decl(ttttComplexityAtTypeArgument.ts, 4, 27))
+
+type F<T extends T1 | T2> = T;
+>F : Symbol(F, Decl(ttttComplexityAtTypeArgument.ts, 4, 40))
+>T : Symbol(T, Decl(ttttComplexityAtTypeArgument.ts, 5, 7))
+>T1 : Symbol(T1, Decl(ttttComplexityAtTypeArgument.ts, 2, 72))
+>T2 : Symbol(T2, Decl(ttttComplexityAtTypeArgument.ts, 3, 61))
+>T : Symbol(T, Decl(ttttComplexityAtTypeArgument.ts, 5, 7))
+
+type G = F<T1 & T2>;
+>G : Symbol(G, Decl(ttttComplexityAtTypeArgument.ts, 5, 30))
+>F : Symbol(F, Decl(ttttComplexityAtTypeArgument.ts, 4, 40))
+>T1 : Symbol(T1, Decl(ttttComplexityAtTypeArgument.ts, 2, 72))
+>T2 : Symbol(T2, Decl(ttttComplexityAtTypeArgument.ts, 3, 61))
+

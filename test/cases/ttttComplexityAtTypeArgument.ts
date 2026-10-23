@@ -1,0 +1,7 @@
+// A type argument whose constraint check runs out of relation budget: TS2859 at the argument and nothing else (tsc's
+// checkTypeRelatedTo with the error node), not TS2859 at the declaration plus TS2344 (bun's 17-SC4b and 87-R01e)
+type Digits = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+type T1 = `${Digits}${Digits}${Digits}${Digits}` | undefined;
+type T2 = { a: string } | { b: number };
+type F<T extends T1 | T2> = T;
+type G = F<T1 & T2>;

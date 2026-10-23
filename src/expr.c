@@ -978,7 +978,9 @@ static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr 
         // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo, one run)
         Ty const* arg_type = ty_of_node(&arg->type);
         VecTyReportLine lines = {0};
-        if (ty_relate_explaining(checker, arg_type, constraint, 2344, &lines, errs)) continue;
+        bool overflowed = false;
+        if (ty_relate_explaining_at(checker, arg_type, constraint, 2344, &lines, errs, arg->span, &overflowed)) continue;
+        if (overflowed) return false;
         // (The head names the target as isRelatedTo left it: `T | undefined` is T for a non-nullable argument)
         // (A literal argument is its base type only against a target without literals: tsc's reportRelationError,
         // `Pair<"y">` against `"x"`)

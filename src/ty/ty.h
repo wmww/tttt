@@ -2917,6 +2917,12 @@ bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, S
 bool ty_relate_explaining(
     Checker* me, Ty const* source, Ty const* target, unsigned head_code, VecTyReportLine* lines, ErrorCtx* errs
 );
+// ty_relate_explaining() with the error node at `span`: a relation that runs into a limit reports that there (TS2859 for
+// a relation out of budget) and nothing else (tsc's checkTypeRelatedTo), `*overflowed` then (and `lines` dropped)
+bool ty_relate_explaining_at(
+    Checker* me, Ty const* source, Ty const* target, unsigned head_code, VecTyReportLine* lines, ErrorCtx* errs, Span span,
+    bool* overflowed
+);
 // Error `ts_code` with message `head`, then `lines` (both consumed)
 struct Error* ty_report_explained_with_head(ErrorCtx* errs, VecTyReportLine* lines, unsigned ts_code, cstr head, Span span);
 // `source` isn't assignable to `target` (the caller checked): error `ts_code` with message `head` (consumed), then why
