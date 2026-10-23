@@ -1,0 +1,40 @@
+//// [test/cases/ttttOptionalAnnotationReprintFacts.ts] ////
+
+=== ttttOptionalAnnotationReprintFacts.ts ===
+// An optional annotation is reprinted when it is the type without undefined by type facts (tsc's
+// typeNodeIsEquivalentToType: getTypeWithFacts(NEUndefined)): not `x?: T` with T constrained to undefined, nor `x?: void`
+function g<T>(a: { x?: T }) { return a; }
+>g : <T>(a: { x?: T; }) => { x?: T; }
+>a : { x?: T; }
+>x : T | undefined
+>a : { x?: T; }
+
+function h(a: { x?: number }) { return a; }
+>h : (a: { x?: number; }) => { x?: number; }
+>a : { x?: number; }
+>x : number | undefined
+>a : { x?: number; }
+
+function k(a: { x?: void }) { return a; }
+>k : (a: { x?: void; }) => { x?: void | undefined; }
+>a : { x?: void | undefined; }
+>x : void | undefined
+>a : { x?: void | undefined; }
+
+function m<T extends number>(a: { x?: T }) { return a; }
+>m : <T extends number>(a: { x?: T; }) => { x?: T; }
+>a : { x?: T; }
+>x : T | undefined
+>a : { x?: T; }
+
+declare const v: { x?: unknown; y?: any };
+>v : { x?: unknown; y?: any; }
+>x : unknown
+>y : any
+
+function n<T extends string | undefined>(a: { x?: T }) { return a; }
+>n : <T extends string | undefined>(a: { x?: T; }) => { x?: T; }
+>a : { x?: T; }
+>x : T | undefined
+>a : { x?: T; }
+

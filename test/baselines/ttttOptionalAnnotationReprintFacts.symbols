@@ -1,0 +1,46 @@
+//// [test/cases/ttttOptionalAnnotationReprintFacts.ts] ////
+
+=== ttttOptionalAnnotationReprintFacts.ts ===
+// An optional annotation is reprinted when it is the type without undefined by type facts (tsc's
+// typeNodeIsEquivalentToType: getTypeWithFacts(NEUndefined)): not `x?: T` with T constrained to undefined, nor `x?: void`
+function g<T>(a: { x?: T }) { return a; }
+>g : Symbol(g, Decl(ttttOptionalAnnotationReprintFacts.ts, 0, 0))
+>T : Symbol(T, Decl(ttttOptionalAnnotationReprintFacts.ts, 2, 11))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 2, 14))
+>x : Symbol(x, Decl(ttttOptionalAnnotationReprintFacts.ts, 2, 18))
+>T : Symbol(T, Decl(ttttOptionalAnnotationReprintFacts.ts, 2, 11))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 2, 14))
+
+function h(a: { x?: number }) { return a; }
+>h : Symbol(h, Decl(ttttOptionalAnnotationReprintFacts.ts, 2, 41))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 3, 11))
+>x : Symbol(x, Decl(ttttOptionalAnnotationReprintFacts.ts, 3, 15))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 3, 11))
+
+function k(a: { x?: void }) { return a; }
+>k : Symbol(k, Decl(ttttOptionalAnnotationReprintFacts.ts, 3, 43))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 4, 11))
+>x : Symbol(x, Decl(ttttOptionalAnnotationReprintFacts.ts, 4, 15))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 4, 11))
+
+function m<T extends number>(a: { x?: T }) { return a; }
+>m : Symbol(m, Decl(ttttOptionalAnnotationReprintFacts.ts, 4, 41))
+>T : Symbol(T, Decl(ttttOptionalAnnotationReprintFacts.ts, 5, 11))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 5, 29))
+>x : Symbol(x, Decl(ttttOptionalAnnotationReprintFacts.ts, 5, 33))
+>T : Symbol(T, Decl(ttttOptionalAnnotationReprintFacts.ts, 5, 11))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 5, 29))
+
+declare const v: { x?: unknown; y?: any };
+>v : Symbol(v, Decl(ttttOptionalAnnotationReprintFacts.ts, 6, 13))
+>x : Symbol(x, Decl(ttttOptionalAnnotationReprintFacts.ts, 6, 18))
+>y : Symbol(y, Decl(ttttOptionalAnnotationReprintFacts.ts, 6, 31))
+
+function n<T extends string | undefined>(a: { x?: T }) { return a; }
+>n : Symbol(n, Decl(ttttOptionalAnnotationReprintFacts.ts, 6, 42))
+>T : Symbol(T, Decl(ttttOptionalAnnotationReprintFacts.ts, 7, 11))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 7, 41))
+>x : Symbol(x, Decl(ttttOptionalAnnotationReprintFacts.ts, 7, 45))
+>T : Symbol(T, Decl(ttttOptionalAnnotationReprintFacts.ts, 7, 11))
+>a : Symbol(a, Decl(ttttOptionalAnnotationReprintFacts.ts, 7, 41))
+

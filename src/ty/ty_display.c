@@ -3794,7 +3794,8 @@ static bool annotation_is_d(Checker* me, TyDisplay d, TypeNode const* node, Ty c
     Ty const* annotated = node_type(me, d, node);
     // (A type that is the error type is taken to be whatever the annotation says: tsgo's pseudoTypeEquivalentToType)
     if (annotated == ty || (ty->flags & TYF_ERROR)) return true;
-    Ty const* target = optional ? ty_without_undefined(me, ty) : ty;
+    // (Without undefined by type facts: `x?: T` with T constrained to undefined, or `x?: void`, isn't reprinted)
+    Ty const* target = optional ? ty_with_ne_undefined_facts(me, ty) : ty;
     if (annotated == target) return true;
     // (Unions identical but for an alias, `string | number | null` and `type Id = number | string | null`: tsgo's
     // compareTypesIdentical in pseudoTypeEquivalentToType)
