@@ -1253,6 +1253,11 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
 ## Oracle totals (2026-10-23, the 7.1.0-beta re-pin)
+- Merge-time caches at the beta from the main tree (1976b1579 + this): dtsdiff `--tsc` 1574 projects in 182 s (1503 emit),
+  then `dtsdiff.py`: **1486 / 1503 projects fully match, 129309 / 129362 files** (was 1328 / 1350 at the nightly's cache, which
+  had fewer emitting projects), 0 one-sided writes, 1 "no output" (b4run/packages/postgres-storage: triage.md); flagflip
+  `--tsc --force` 168 cells in 882 s, then `flagflip.py`: **missing 16 / spurious 2 / other code 2, all vue pluginScoped.ts**
+  (unchanged: tsgo's TS5115 runaway artifact).
 The oracle moved from the 2026-10-08 nightly (fed0bf24) to **TypeScript 7.1.0-beta** (`v7.1-beta` = 3e923636), every
 cache regenerated with it (wt-repin) but dtsdiff's and flagflip's (main tree only). Before = d7bc837b0's totals below.
 - Suite **14137 / 14192** (dts 1897 / 1926; 14138 / 14193 rebased onto main's NoInfer repro), was 13999 / 14035 (dts
