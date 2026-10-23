@@ -1877,10 +1877,11 @@ typedef enum CallbackMode {
 } CallbackMode;
 
 // tsc's isInstantiatedGenericParameter: the parameter was generic before the signature was instantiated
-static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32 i) {
+// `origin`: what tsc's signature would have as its target when tttt's doesn't (null: sig_target())
+static bool is_instantiated_generic_param(Checker* me, Signature const* sig, Signature const* origin, u32 i) {
     // (Erased in one step from its target's target: tsc's erased signature's target is the instantiation it erases,
     // `m<U>(a: X)` of `Foo<S>` has `a: S`)
-    Signature const* target = sig->erased_in_one_step ? sig->declared_by : sig_target(me, sig);
+    Signature const* target = origin ? origin : sig->erased_in_one_step ? sig->declared_by : sig_target(me, sig);
     if (!target) return false;
     signature_resolve(me, target);
     Ty const* type = param_type_at(me, target, i);
@@ -1890,8 +1891,8 @@ static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32
 }
 
 // The one call signature of a callback parameter's type, if it is one
-static Signature const* callback_signature(Checker* me, Signature const* sig, u32 i, Ty const* type) {
-    if (is_instantiated_generic_param(me, sig, i)) return nullptr;
+static Signature const* callback_signature(Checker* me, Signature const* sig, Signature const* origin, u32 i, Ty const* type) {
+    if (is_instantiated_generic_param(me, sig, origin, i)) return nullptr;
     Signature const* ret = ty_single_signature_non_nullable(me, type, false, false);
     return ret && !signature_predicate(me, ret) ? ret : nullptr;
 }
@@ -2101,7 +2102,12 @@ static Ternary compare_signatures(
 
     // A generic source is instantiated in the context of the target's canonical signature, after the arity check,
     // which goes by the declared parameters (a conditional rest type takes any count, tsc's compareSignaturesRelated)
+    // (tsc's canonical signature and instantiation in context are instantiations of these, their targets, which
+    // isInstantiatedGenericParameter reads: `cb: T` of `Foo<F>`'s `m<U>` is F there, not T)
+    Signature const* source_origin = nullptr, * target_origin = nullptr;
     if (source_res->type_params.len && source_res->type_params.data != target_res->type_params.data) {
+        source_origin = source;
+        if (target_res->type_params.len) target_origin = target;
         target = canonical_signature(me, target);
         source = ty_instantiate_signature_in_context_of(me, source, target, nullptr, true);
     }
@@ -2154,8 +2160,8 @@ static Ternary compare_signatures(
         }
         // Two callbacks: their parameters are output positions, so only the signatures are compared, the other way
         // around (tsc's compareSignaturesRelated). A Promise<T> that uses T in callbacks only is covariant in T
-        Signature const* source_callback = callback ? nullptr : callback_signature(me, source, i, source_type);
-        Signature const* target_callback = source_callback ? callback_signature(me, target, i, target_type) : nullptr;
+        Signature const* source_callback = callback ? nullptr : callback_signature(me, source, source_origin, i, source_type);
+        Signature const* target_callback = source_callback ? callback_signature(me, target, target_origin, i, target_type) : nullptr;
         Ternary related = TERNARY_FALSE;
         if (target_callback &&
             ty_undefined_or_null_facts(me, source_type) == ty_undefined_or_null_facts(me, target_type)

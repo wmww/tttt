@@ -1,0 +1,49 @@
+//// [test/cases/ttttCanonicalSignatureCallbackParam.ts] ////
+
+=== ttttCanonicalSignatureCallbackParam.ts ===
+// A generic source compared in the context of the target: tsc's canonical signature and instantiation in context are
+// instantiations of the two, whose `cb: T` is the instantiated F, so cb is a callback (compared one way only)
+interface Foo<T> { m<U>(cb: T, u: U): void }
+>m : <U>(cb: T, u: U) => void
+>cb : T
+>u : U
+
+interface Bar<T> { m<U>(cb: T, u: U): void }
+>m : <U>(cb: T, u: U) => void
+>cb : T
+>u : U
+
+declare let f: Foo<(x: string) => void>;
+>f : Foo<(x: string) => void>
+>x : string
+
+declare let g: Bar<(x: string | number) => void>;
+>g : Bar<(x: string | number) => void>
+>x : string | number
+
+f = g;
+>f = g : Bar<(x: string | number) => void>
+>f : Foo<(x: string) => void>
+>g : Bar<(x: string | number) => void>
+
+interface Foo2<T> { m(cb: T): void }
+>m : (cb: T) => void
+>cb : T
+
+interface Bar2<T> { m(cb: T): void }
+>m : (cb: T) => void
+>cb : T
+
+declare let f2: Foo2<(x: string) => void>;
+>f2 : Foo2<(x: string) => void>
+>x : string
+
+declare let g2: Bar2<(x: string | number) => void>;
+>g2 : Bar2<(x: string | number) => void>
+>x : string | number
+
+f2 = g2;
+>f2 = g2 : Bar2<(x: string | number) => void>
+>f2 : Foo2<(x: string) => void>
+>g2 : Bar2<(x: string | number) => void>
+
