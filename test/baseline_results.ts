@@ -2231,6 +2231,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadIndexSignaturesLiteralUnion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttSpreadIntersectionIndexSignatures': {
         errors: true,
         symbols: true,

@@ -1,0 +1,99 @@
+//// [test/cases/ttttSpreadIndexSignaturesLiteralUnion.ts] ////
+
+=== ttttSpreadIndexSignaturesLiteralUnion.ts ===
+// Spreading objects with index signatures: the index signature's value is the union of theirs by getUnionType's
+// literal reduction, not subtypes (tsc's getUnionIndexInfos), so identical function types stay apart (openclaw's
+// shiki language table, 29 `() => Promise<typeof import(...)>` that tttt collapsed into one)
+const f1 = () => Promise.resolve({ x: 1 });
+>f1 : Symbol(f1, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 3, 5))
+>Promise.resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>x : Symbol(x, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 3, 34))
+
+const f2 = () => Promise.resolve({ x: 1 });
+>f2 : Symbol(f2, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 4, 5))
+>Promise.resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>x : Symbol(x, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 4, 34))
+
+const f3 = () => Promise.resolve({ x: 1 });
+>f3 : Symbol(f3, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 5, 5))
+>Promise.resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>resolve : Symbol(PromiseConstructor.resolve, Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>x : Symbol(x, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 5, 34))
+
+const info = [{ id: "a", al: ["q"], f: f1 }, { id: "b", f: f2 }, { id: "c", al: ["r"], f: f3 }] as const;
+>info : Symbol(info, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 5))
+>id : Symbol(id, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 15))
+>al : Symbol(al, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 24))
+>f : Symbol(f, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 35))
+>f1 : Symbol(f1, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 3, 5))
+>id : Symbol(id, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 46))
+>f : Symbol(f, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 55))
+>f2 : Symbol(f2, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 4, 5))
+>id : Symbol(id, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 66))
+>al : Symbol(al, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 75))
+>f : Symbol(f, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 86))
+>f3 : Symbol(f3, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 5, 5))
+>const : Symbol(const)
+
+export const base = Object.fromEntries(info.map((l) => [l.id, l.f]));
+>base : Symbol(base, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 7, 12))
+>Object.fromEntries : Symbol(ObjectConstructor.fromEntries, Decl(lib.es2019.object.d.ts, --, --), Decl(lib.es2019.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>fromEntries : Symbol(ObjectConstructor.fromEntries, Decl(lib.es2019.object.d.ts, --, --), Decl(lib.es2019.object.d.ts, --, --))
+>info.map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>info : Symbol(info, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 5))
+>map : Symbol(ReadonlyArray.map, Decl(lib.es5.d.ts, --, --))
+>l : Symbol(l, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 7, 49))
+>l.id : Symbol(id, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 15), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 46), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 66))
+>l : Symbol(l, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 7, 49))
+>id : Symbol(id, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 15), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 46), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 66))
+>l.f : Symbol(f, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 35), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 55), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 86))
+>l : Symbol(l, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 7, 49))
+>f : Symbol(f, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 35), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 55), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 86))
+
+export const alias = Object.fromEntries(info.flatMap((l) => ("al" in l ? l.al : []).map((a) => [a, l.f])));
+>alias : Symbol(alias, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 12))
+>Object.fromEntries : Symbol(ObjectConstructor.fromEntries, Decl(lib.es2019.object.d.ts, --, --), Decl(lib.es2019.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>fromEntries : Symbol(ObjectConstructor.fromEntries, Decl(lib.es2019.object.d.ts, --, --), Decl(lib.es2019.object.d.ts, --, --))
+>info.flatMap : Symbol(ReadonlyArray.flatMap, Decl(lib.es2019.array.d.ts, --, --))
+>info : Symbol(info, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 5))
+>flatMap : Symbol(ReadonlyArray.flatMap, Decl(lib.es2019.array.d.ts, --, --))
+>l : Symbol(l, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 54))
+>("al" in l ? l.al : []).map : Symbol(map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>l : Symbol(l, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 54))
+>l.al : Symbol(al, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 24), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 75))
+>l : Symbol(l, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 54))
+>al : Symbol(al, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 24), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 75))
+>map : Symbol(map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 89))
+>a : Symbol(a, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 89))
+>l.f : Symbol(f, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 35), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 55), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 86))
+>l : Symbol(l, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 54))
+>f : Symbol(f, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 35), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 55), Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 6, 86))
+
+export const all = { ...base, ...alias };
+>all : Symbol(all, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 9, 12))
+>base : Symbol(base, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 7, 12))
+>alias : Symbol(alias, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 8, 12))
+
+declare const a: { [k: string]: () => { y: string } };
+>a : Symbol(a, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 10, 13))
+>k : Symbol(k, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 10, 20))
+>y : Symbol(y, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 10, 39))
+
+declare const b: { [k: string]: () => { y: string } };
+>b : Symbol(b, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 11, 13))
+>k : Symbol(k, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 11, 20))
+>y : Symbol(y, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 11, 39))
+
+export const both = { ...a, ...b };
+>both : Symbol(both, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 12, 12))
+>a : Symbol(a, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 10, 13))
+>b : Symbol(b, Decl(ttttSpreadIndexSignaturesLiteralUnion.ts, 11, 13))
+

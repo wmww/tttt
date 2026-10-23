@@ -3797,7 +3797,9 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
                 if (left->index[i].key != right->index[j].key) continue;
                 // (A new one, without a declaration)
                 IndexInfo info = { .key = left->index[i].key, .param_name = my atoms.x };
-                info.value = union_of_two(me, left->index[i].value, right->index[j].value);
+                // (getUnionType's literal reduction, not subtypes: identical function types stay apart)
+                Ty const* values[2] = { left->index[i].value, right->index[j].value };
+                info.value = ty_union(me, values, 2, nullptr, (TyList){0});
                 info.readonly = left->index[i].readonly && right->index[j].readonly;
                 result.index[result.index_count++] = info;
             }

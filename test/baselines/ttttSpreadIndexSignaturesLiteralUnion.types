@@ -1,0 +1,139 @@
+//// [test/cases/ttttSpreadIndexSignaturesLiteralUnion.ts] ////
+
+=== ttttSpreadIndexSignaturesLiteralUnion.ts ===
+// Spreading objects with index signatures: the index signature's value is the union of theirs by getUnionType's
+// literal reduction, not subtypes (tsc's getUnionIndexInfos), so identical function types stay apart (openclaw's
+// shiki language table, 29 `() => Promise<typeof import(...)>` that tttt collapsed into one)
+const f1 = () => Promise.resolve({ x: 1 });
+>f1 : () => Promise<{ x: number; }>
+>() => Promise.resolve({ x: 1 }) : () => Promise<{ x: number; }>
+>Promise.resolve({ x: 1 }) : Promise<{ x: number; }>
+>Promise.resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>Promise : PromiseConstructor
+>resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+const f2 = () => Promise.resolve({ x: 1 });
+>f2 : () => Promise<{ x: number; }>
+>() => Promise.resolve({ x: 1 }) : () => Promise<{ x: number; }>
+>Promise.resolve({ x: 1 }) : Promise<{ x: number; }>
+>Promise.resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>Promise : PromiseConstructor
+>resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+const f3 = () => Promise.resolve({ x: 1 });
+>f3 : () => Promise<{ x: number; }>
+>() => Promise.resolve({ x: 1 }) : () => Promise<{ x: number; }>
+>Promise.resolve({ x: 1 }) : Promise<{ x: number; }>
+>Promise.resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>Promise : PromiseConstructor
+>resolve : { (): Promise<void>; <T>(value: T): Promise<Awaited<T>>; <T>(value: T | PromiseLike<T>): Promise<Awaited<T>>; }
+>{ x: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+const info = [{ id: "a", al: ["q"], f: f1 }, { id: "b", f: f2 }, { id: "c", al: ["r"], f: f3 }] as const;
+>info : readonly [{ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }]
+>[{ id: "a", al: ["q"], f: f1 }, { id: "b", f: f2 }, { id: "c", al: ["r"], f: f3 }] as const : readonly [{ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }]
+>[{ id: "a", al: ["q"], f: f1 }, { id: "b", f: f2 }, { id: "c", al: ["r"], f: f3 }] : readonly [{ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }]
+>{ id: "a", al: ["q"], f: f1 } : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; }
+>id : "a"
+>"a" : "a"
+>al : readonly ["q"]
+>["q"] : readonly ["q"]
+>"q" : "q"
+>f : () => Promise<{ x: number; }>
+>f1 : () => Promise<{ x: number; }>
+>{ id: "b", f: f2 } : { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; }
+>id : "b"
+>"b" : "b"
+>f : () => Promise<{ x: number; }>
+>f2 : () => Promise<{ x: number; }>
+>{ id: "c", al: ["r"], f: f3 } : { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>id : "c"
+>"c" : "c"
+>al : readonly ["r"]
+>["r"] : readonly ["r"]
+>"r" : "r"
+>f : () => Promise<{ x: number; }>
+>f3 : () => Promise<{ x: number; }>
+
+export const base = Object.fromEntries(info.map((l) => [l.id, l.f]));
+>base : { [k: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+>Object.fromEntries(info.map((l) => [l.id, l.f])) : { [k: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+>Object.fromEntries : { <T = any>(entries: Iterable<readonly [PropertyKey, T]>): { [k: string]: T; }; (entries: Iterable<readonly any[]>): any; }
+>Object : ObjectConstructor
+>fromEntries : { <T = any>(entries: Iterable<readonly [PropertyKey, T]>): { [k: string]: T; }; (entries: Iterable<readonly any[]>): any; }
+>info.map((l) => [l.id, l.f]) : ["a" | "b" | "c", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)][]
+>info.map : <U>(callbackfn: (value: { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }, index: number, array: readonly ({ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; })[]) => U, thisArg?: any) => U[]
+>info : readonly [{ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }]
+>map : <U>(callbackfn: (value: { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }, index: number, array: readonly ({ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; })[]) => U, thisArg?: any) => U[]
+>(l) => [l.id, l.f] : (l: { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }) => ["a" | "b" | "c", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)]
+>l : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>[l.id, l.f] : ["a" | "b" | "c", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)]
+>l.id : "a" | "b" | "c"
+>l : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>id : "a" | "b" | "c"
+>l.f : (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)
+>l : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>f : (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)
+
+export const alias = Object.fromEntries(info.flatMap((l) => ("al" in l ? l.al : []).map((a) => [a, l.f])));
+>alias : { [k: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+>Object.fromEntries(info.flatMap((l) => ("al" in l ? l.al : []).map((a) => [a, l.f]))) : { [k: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+>Object.fromEntries : { <T = any>(entries: Iterable<readonly [PropertyKey, T]>): { [k: string]: T; }; (entries: Iterable<readonly any[]>): any; }
+>Object : ObjectConstructor
+>fromEntries : { <T = any>(entries: Iterable<readonly [PropertyKey, T]>): { [k: string]: T; }; (entries: Iterable<readonly any[]>): any; }
+>info.flatMap((l) => ("al" in l ? l.al : []).map((a) => [a, l.f])) : ["q" | "r", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)][]
+>info.flatMap : <U, This = undefined>(callback: (this: This, value: { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }, index: number, array: ({ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; })[]) => U | readonly U[], thisArg?: This | undefined) => U[]
+>info : readonly [{ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; }, { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }]
+>flatMap : <U, This = undefined>(callback: (this: This, value: { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }, index: number, array: ({ readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; })[]) => U | readonly U[], thisArg?: This | undefined) => U[]
+>(l) => ("al" in l ? l.al : []).map((a) => [a, l.f]) : (this: undefined, l: { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }) => ["q" | "r", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)][]
+>l : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>("al" in l ? l.al : []).map((a) => [a, l.f]) : ["q" | "r", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)][]
+>("al" in l ? l.al : []).map : (<U>(callbackfn: (value: "q", index: number, array: readonly "q"[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: "r", index: number, array: readonly "r"[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: never, index: number, array: never[]) => U, thisArg?: any) => U[])
+>("al" in l ? l.al : []) : never[] | readonly ["q"] | readonly ["r"]
+>"al" in l ? l.al : [] : never[] | readonly ["q"] | readonly ["r"]
+>"al" in l : boolean
+>"al" : "al"
+>l : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>l.al : readonly ["q"] | readonly ["r"]
+>l : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>al : readonly ["q"] | readonly ["r"]
+>[] : never[]
+>map : (<U>(callbackfn: (value: "q", index: number, array: readonly "q"[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: "r", index: number, array: readonly "r"[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: never, index: number, array: never[]) => U, thisArg?: any) => U[])
+>(a) => [a, l.f] : (a: "q" | "r") => ["q" | "r", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)]
+>a : "q" | "r"
+>[a, l.f] : ["q" | "r", (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)]
+>a : "q" | "r"
+>l.f : (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)
+>l : { readonly id: "a"; readonly al: readonly ["q"]; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "b"; readonly f: () => Promise<{ x: number; }>; } | { readonly id: "c"; readonly al: readonly ["r"]; readonly f: () => Promise<{ x: number; }>; }
+>f : (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>)
+
+export const all = { ...base, ...alias };
+>all : { [x: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+>{ ...base, ...alias } : { [x: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+>base : { [k: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+>alias : { [k: string]: (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>) | (() => Promise<{ x: number; }>); }
+
+declare const a: { [k: string]: () => { y: string } };
+>a : { [k: string]: () => { y: string; }; }
+>k : string
+>y : string
+
+declare const b: { [k: string]: () => { y: string } };
+>b : { [k: string]: () => { y: string; }; }
+>k : string
+>y : string
+
+export const both = { ...a, ...b };
+>both : { [x: string]: (() => { y: string; }) | (() => { y: string; }); }
+>{ ...a, ...b } : { [x: string]: (() => { y: string; }) | (() => { y: string; }); }
+>a : { [k: string]: () => { y: string; }; }
+>b : { [k: string]: () => { y: string; }; }
+
