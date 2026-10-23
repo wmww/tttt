@@ -69,6 +69,17 @@ the divergence.
   context` is a value passed down to ty_check_expr(); a pull model needs a lazy-context sentinel or forcing "F's return
   context" in resolve_call() after the barrier is set. Known to matter: better-auth's 2 diagnostics and the zod getter
   case (bugs/missing_checks.md). Do it with a contextual-typing rework, not alone.
+- **Test list for C/D: bun's differential cases missing TS7022** (`scripts/buncases.py -k=-TS7022`, 46 cases on
+  2026-10-23): 08-C11e 09-C7b 09-P6 10-C1 10-C1b 10-C2b 10-C5 10-C5d 10-C5f 10-P2 11-P2 11-P4 16-C1a 16-C1b 16-C1c
+  17-C4 19-P4 21-C1b 22-C2b 30-P1 31-P1 31-P2 31-P7 31-P8 39-C5a 43-P1 51-L08 57-L15 59-L20 62-L13a 63-L04 63-L09
+  72-R15a 72-R15b 76-R20 81-R01 81-R09 85-R03a 85-R03c 85-R03g 85-R16c 89-R12e 89-R14 99-Q1 99-Q2 99-V4. Most are
+  circularities tsc finds through a call resolved while a declaration is in flight. The smallest is 10-C1b,
+  `function i2<T>(x: T, y = i2(x, undefined)) { return x; }`: tsc reports TS7022 on y, and tttt's only event under
+  `TTTT_DEBUG_REENTRY=1` is `NESTEDCALL a.ts:1` (the nested resolution's result is dropped, stage C). Also 10-C1
+  (`function g4() { return f4(1, 2); } function f4(a: number, b = g4())`: TS7023 g4 + TS7022 b) and 21-C1b
+  (`declare const helper: (n: number) => typeof k; const k = compute(1); function compute(v) { helper(1); return v; }`).
+  Not all are re-entry: some are other eager orders (16-C1a: a base type `Pick<typeof xa, "a">` with `xa = ya!`; 10-C2b:
+  a setter parameter `typeof x10` in x10's own initializer). Triage each with `scripts/reentrytrace.py` first.
 - **E. Members without in-flight state**: won't fix unless members.c adopts tsc's resolution order (bases instantiated
   with the reference's arguments); which instantiation is the 100th decides the error type. vue's 2 and arktype's
   TS5115 stay (bugs/tsgo_divergences.md).
