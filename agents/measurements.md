@@ -252,6 +252,21 @@ dropdown.tsx at 5.6). tsgo prints no per-file time, so a differential on both si
   and three quarters of its types, as it is ~40% of tttt's time and 72% of its types. tttt does it 5x faster. tsgo's
   form-alone times are noisy (GC); the type counts are exact.
 
+## bun's differential cases, day one (2026-10-23, ab01759ea + the global alias arity fix; `scripts/buncases.py`)
+bun's 2418 differential check cases (test/buncases/, bun 5c6d4e24c), 7 skipped (`types` the case doesn't ship), tsgo
+cached, tttt at its defaults (one checker on projects this small) and at `--checkers 1` and `4`; this box, loaded, 32 s
+wall at -j 12. The cases are shapes on which another tsgo reimplementation once diverged, so they are hard by
+selection: about half match.
+- 2411 cases: (file, line, code) match 1279 (53.0%), of them byte-identical 1073; spurious 312, missing 489, both 325,
+  crash 6 (4 SIGSEGV: 13-C11 41-C8b 88-R05b 99-V4; 36-C8 abort; 41-C12 exit 4), timeout 0; K-dependent 1 (17-C1d);
+  one log_error (54-L02a: scope.c's "Alias resolved while typechecking"). Before the arity fix 01-C12b crashed too.
+- tsgo agrees with bun's recorded 7.1 output (`theirs`) on 21 of the 22 cases carrying one.
+- Root causes by cases (cases / only-mismatch): -TS2322 122/54, +TS2322 92/40, +TS2339 59/32, -TS2339 48/27,
+  -TS7022 46/17, -TS1005 45/4, +TS1003 33, -TS1003 32, +TS1005 31, +TS2304 26, -TS2304 25, -TS2303 25/19 (circular
+  import alias), -TS7023 23/11, +TS7006 19; parser recovery (TS1005/1003/1128/1109/1434/1146) is a sizeable share.
+- Text-only (same (file, line, code), 206 cases): TS2322 header 98 (type printing), TS2322 chains ~20, columns ~30,
+  line order 10.
+
 ## Fresh repositories, fifth rule: TypeScript 7 adopters (2026-10-23)
 Refresh 6 (cor8, repos.txt "Refresh 6"): repositories whose root package.json depends on `@typescript/native-preview`
 or `typescript` 7 (the people who'd use tttt), `scripts/reposearch.py ts7` over 30 topics (stars 20..5000, pushed

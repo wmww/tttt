@@ -2,7 +2,7 @@
 """Every oracle in one go, one summary line each, for comparing a change against HEAD (plan 51's deletion census):
 the suite (saves test/baseline_results.ts like scripts/fasttest.sh -s, then the components lost/gained against git HEAD's),
 every pinned corpus, the CLI's whole output with message text (scripts/clidiff.py, from tsc's cached output; --quick:
-the corpora's), the DefinitelyTyped sweep, `$ExpectType`, flagflip, the source sweep, perf at breadth
+the corpora's), the DefinitelyTyped sweep, bun's differential cases, `$ExpectType`, flagflip, the source sweep, perf at breadth
 (scripts/perfsweep.py: check time and type count ratios against tsgo), declaration emit (scripts/dtsdiff.py), and the output's independence of the checker count
 (scripts/kdiff.py, the suite's --dump at 1 and 16 checkers) and of the checker's history (a fresh checker per file,
 --checker-memory 0, plan 67; the suite's too with deferred bodies, whose materializations are then dropped and made
@@ -72,6 +72,11 @@ def sweep():
     out = run(['scripts/sweep.py', '--no-build', '-n', '5'])
     m = re.search(r'match \d+, spurious \d+, missing \d+, both \d+, crash \d+, timeout \d+', out)
     print('sweep: ' + (m.group(0) if m else '?'), flush=True)
+
+def buncases():
+    out = run(['scripts/buncases.py', '--no-build', '-n', '5'])
+    m = re.search(r'match \d+ \([\d.]+%\), of them byte-identical \d+; spurious \d+, missing \d+, both \d+, crash \d+, timeout \d+; K-dependent \d+', out)
+    print('buncases: ' + (m.group(0) if m else '?'), flush=True)
 
 def expect():
     out = run(['scripts/expecttypes.py', '--no-build', '-n', '5'])
@@ -150,7 +155,7 @@ def recycle():
     print(f'recycle (fresh checker per file vs one): sources {m.group(1) if m else "?"} differ{m.group(2) or "" if m else ""}' +
           (': ' + ', '.join(projects[:12]) if projects else ''), flush=True)
 
-ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources,
+ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'buncases': buncases, 'expect': expect, 'flagflip': flagflip, 'sources': sources,
            'perf': perf, 'dts': dts, 'clidiff': clidiff, 'clidiff-corpora': lambda: clidiff(True), 'kdiff': kdiff,
            'recycle': recycle}
 
