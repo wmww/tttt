@@ -212,6 +212,11 @@ memory, but memory is now worth cutting where it is cheap; easy, measured wins f
   `checkerdiff.py`, `threadcheck.sh`, the recycle oracle): tsgo's is. A change that makes a flake rarer without a
   named mechanism is not a fix. Anything that could be history must be derived from the node or declaration, as tsc
   does, not from what a checker happened to compute first.
+- **Unambiguous tsgo bugs are not emulated** (2026-10-23, the human), unless longstanding or of a kind projects might
+  rely on. First case: tsgo 7.1-beta's `-b` build-wide file-system cache never sees writes, so a reference's outputs
+  probed before it was built stay missing (astro's, b4run's and atproto's TS2307 under `tsc -b`); a deterministic
+  simulation of its scheduler and cache was landed (7c2777878) and reverted the same day. bugs/sourcesweep_build.md
+  records the mechanism and the upstream state; those `-b` sweep misses are expected until tsgo fixes it.
 - **Correctness by construction over catching races**, and over fidelity to tsgo *artifacts* (a runaway's model, a
   cache collision): emulating those is special-casing in a respectable form. The suite's last 12 are off the table
   (2026-10-15): each is argued in bugs/tsgo_divergences.md or a mechanism needed by one test; work them only if real

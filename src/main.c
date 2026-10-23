@@ -85,9 +85,6 @@ typedef struct Options {
     // (as emit_owner, its build position) and the view of the earlier ones' it reads through
     EmitStore* emit_store;
     u32 emit_owner;
-    // Called once the program is loaded, with build_ctx and emit_owner (-b's ordering of what programs probe, build())
-    void (*build_loaded)(void* ctx, u32 job);
-    void* build_ctx;
     EmitView* emit_view;
     const char** paths;
     intptr_t path_count;
@@ -1015,7 +1012,6 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     program_finish_deferred_libs(program, "after the roots", c_sv(""));
     program_load_automatic_types(program);
     phase_done(opts, out, "load+parse files", &last_time);
-    if (opts->build_loaded) opts->build_loaded(opts->build_ctx, opts->emit_owner);
     // (The syntax errors of deferred bodies are only found when they're parsed: an output that has to have them all
     // without checking parses the bodies for them, and runs again without deferral if one has some)
     bool bodies_parsed = false;
@@ -1247,10 +1243,8 @@ typedef struct BuildJob {
     int ret;
     bool done; // Under Build.lock
     bool started; // Under Build.lock
-    bool loaded; // Under Build.lock: its program is loaded, it probes no more files (or it is done)
     // The jobs (by build position) whose emitted declarations the program sees, which it waits for, and its view of them
     bool* visible;
-    bool* referenced; // Those of them its project references (transitively)
     EmitView* view;
     // Under Build.lock: the jobs still to finish that read this one's emitted declarations, the job itself included
     // (emit_store_release() once none is left)
@@ -1265,22 +1259,10 @@ typedef struct Build {
     u32 count;
     BuildJob* jobs;
     EmitStore* store;
-    double const* start; // Each job's simulated start (EmitView)
-    bool threaded; // Build threads run the jobs (lock and done are live)
     atomic_uint end; // Nothing from here on is started (--stopBuildOnErrors)
     pthread_mutex_t lock;
     pthread_cond_t done;
 } Build;
-
-static void build_job_loaded(void* ctx, u32 i) {
-    Build* me = ctx;
-    if (my threaded) pthread_mutex_lock(&my lock);
-    my jobs[i].loaded = true;
-    if (my threaded) {
-        pthread_cond_broadcast(&my done);
-        pthread_mutex_unlock(&my lock);
-    }
-}
 
 static void build_run(Build* me, u32 i) {
     BuildJob* job = &my jobs[i];
@@ -1305,9 +1287,7 @@ static void build_run(Build* me, u32 i) {
     Options opts = my project_opts;
     opts.emit_store = my store;
     opts.emit_owner = i;
-    opts.emit_view = job->view = emit_view_new(my store, fs, job->visible, job->referenced, my start[i]);
-    opts.build_loaded = build_job_loaded;
-    opts.build_ctx = me;
+    opts.emit_view = job->view = emit_view_new(my store, fs, job->visible);
     job->result = check_files(&opts, &job->out, cstr_sv(&project->config), (ProjectSet*)my projects,
         my order[i], job->redirects, i + 1 == my count, &job->counts, !my project_opts.no_defer_bodies, &job->ret);
 }
@@ -1340,8 +1320,6 @@ static void* build_thread(void* arg) {
                 pending = true;
                 bool ready = true;
                 for (u32 j = 0; j < k && ready && my jobs[k].visible; j++) ready = !my jobs[k].visible[j] || my jobs[j].done;
-                // (What the earlier programs probed is in: EmitStore's misses)
-                for (u32 j = 0; j < k && ready; j++) ready = my jobs[j].done || my jobs[j].loaded;
                 if (ready) i = k;
             }
             if (i != UINT32_MAX || !pending) break;
@@ -1401,42 +1379,6 @@ static_failable build(Options const* opts, returns int) {
     }
     str_list_drop(&cycles);
 
-    // tsgo 7.1's builders take the projects in build order stably sorted by dependency depth (the orchestrator's
-    // computeScheduleOrder: projects without references in the build first, then their dependents...) and report them
-    // in build order. Jobs are numbered in that schedule order; printed[k] is the job of build position k
-    u32* printed = c_new_n(u32, count + 1);
-    {
-        u32 project_count = 0;
-        for (u32 k = 0; k < count; k++) if (order[k] + 1 > project_count) project_count = order[k] + 1;
-        u32* at = c_new_n(u32, project_count + 1);
-        for (u32 p = 0; p < project_count; p++) at[p] = UINT32_MAX;
-        for (u32 k = 0; k < count; k++) at[order[k]] = k;
-        u32* depth = c_new_n(u32, count + 1);
-        u32 max_depth = 0;
-        for (u32 k = 0; k < count; k++) {
-            Project const* p = project_set_at(projects, order[k]);
-            depth[k] = 0;
-            for (u32 r = 0; p->readable && r < p->reference_count; r++) {
-                u32 ref = p->referenced[r] < project_count ? at[p->referenced[r]] : UINT32_MAX;
-                if (ref < k && depth[ref] + 1 > depth[k]) depth[k] = depth[ref] + 1;
-            }
-            if (depth[k] > max_depth) max_depth = depth[k];
-        }
-        u32* scheduled = c_new_n(u32, count + 1);
-        u32 s = 0;
-        for (u32 d = 0; d <= max_depth && s < count; d++) {
-            for (u32 k = 0; k < count; k++) {
-                if (depth[k] != d) continue;
-                printed[k] = s;
-                scheduled[s++] = order[k];
-            }
-        }
-        memcpy(order, scheduled, sizeof(u32) * count);
-        c_free_n(scheduled, count + 1);
-        c_free_n(depth, count + 1);
-        c_free_n(at, project_count + 1);
-    }
-
     u32 jobs = opts->build_jobs ? opts->build_jobs : opts->threads >= 4 ? 2 : 1;
     if (jobs > count) jobs = count ? count : 1;
     Build b = { .opts = opts, .project_opts = *opts, .projects = projects, .order = order, .count = count };
@@ -1448,9 +1390,9 @@ static_failable build(Options const* opts, returns int) {
     atomic_init(&b.end, count);
     // Everything the programs read of the project set, made before any of them runs. A program reads the outputs of
     // the projects tsc -b built before it, references or not (an import into another package's `dist`). tsgo's
-    // builders (4, else --builders) take projects in schedule order and only wait for references: whether an
-    // unreferenced project is built by the time another starts is a race, which a simulation of the builders decides
-    // here (hacks.md). (The one way --builders changes the output, like tsgo's: `--builders 1` builds one at a time)
+    // builders (4, else --builders) take projects in build order and only wait for references: an unreferenced
+    // project is built by the time one 4 places later starts, else it races with it, and counts as not built
+    // (hacks.md). (The one way --builders changes the output, like tsgo's: `--builders 1` is tsc 5's sequential -b)
     u32 window = opts->build_jobs ? opts->build_jobs : TSGO_BUILDERS;
     // A program sees what its references (transitively) and the projects the window counts as built emitted, through
     // its view of the store
@@ -1460,99 +1402,16 @@ static_failable build(Options const* opts, returns int) {
     u32* position = c_new_n(u32, position_count ? position_count : 1);
     for (u32 i = 0; i < position_count; i++) position[i] = UINT32_MAX;
     for (u32 i = 0; i < count; i++) position[order[i]] = i;
-    // The builders simulated: each takes the next project in schedule order when it is free, waits for its references,
-    // then builds it in a time taken to grow with its root files' bytes. What finished before a project starts is
-    // built for it (TTTT_BUILD_SIM_DEBUG=1 prints the simulation)
-    double* start = c_new_n(double, count + 1);
-    double* finish = c_new_n(double, count + 1);
-    {
-        double* free_at = c_new_n(double, window);
-        for (u32 w = 0; w < window; w++) free_at[w] = 0;
-        for (u32 i = 0; i < count; i++) {
-            Project const* p = project_set_at(projects, order[i]);
-            double bytes = 0;
-            isize files = 0;
-            if (p->readable) {
-                StrList const* roots = project_set_root_files(projects, order[i]);
-                files = roots->count;
-                for (isize f = 0; f < roots->count; f++) {
-                    struct stat st;
-                    if (stat(cstr_str(&roots->items[f]), &st) == 0) bytes += (double)st.st_size;
-                }
-            }
-            // (tsgo's time per project as its root files' bytes and what any program costs, as many bytes of 60 KB: on
-            // the source sweep's solutions it races best; a fit of atproto's tsgo times to root file counts did worse)
-            double cost = 60000 + bytes;
-            if (getenv("TTTT_BUILD_SIM_DEBUG")) {
-                fprintf(stderr, "simin %u %.0f %zd %s refs", i, bytes, (size_t)files, cstr_str(&p->config));
-                for (u32 r = 0; p->readable && r < p->reference_count; r++) {
-                    u32 ref = p->referenced[r] < position_count ? position[p->referenced[r]] : UINT32_MAX;
-                    if (ref < i) fprintf(stderr, " %u", ref);
-                }
-                fprintf(stderr, "\n");
-            }
-            u32 builder = 0;
-            for (u32 w = 1; w < window; w++) if (free_at[w] < free_at[builder]) builder = w;
-            double at = free_at[builder];
-            for (u32 r = 0; p->readable && r < p->reference_count; r++) {
-                u32 ref = p->referenced[r] < position_count ? position[p->referenced[r]] : UINT32_MAX;
-                if (ref < i && finish[ref] > at) at = finish[ref];
-            }
-            start[i] = at;
-            finish[i] = free_at[builder] = at + cost;
-            if (getenv("TTTT_BUILD_SIM_DEBUG")) {
-                fprintf(stderr, "sim %u %.0f %.0f %s\n", i, start[i], finish[i], cstr_str(&p->config));
-            }
-        }
-        c_free_n(free_at, window);
-    }
-    // Jobs are numbered by simulated start (ties in schedule order): a program reads what tsgo's build-wide file
-    // system caches say, which depends on what the programs that started before it probed (EmitStore's misses), so
-    // each waits for those to have loaded
-    {
-        u32* by_start = c_new_n(u32, count + 1);
-        for (u32 i = 0; i < count; i++) by_start[i] = i;
-        // (Insertion sort, stable: builds are a few hundred projects at most)
-        for (u32 i = 1; i < count; i++) {
-            u32 v = by_start[i];
-            u32 j = i;
-            for (; j > 0 && start[by_start[j - 1]] > start[v]; j--) by_start[j] = by_start[j - 1];
-            by_start[j] = v;
-        }
-        u32* rank = c_new_n(u32, count + 1);
-        for (u32 r = 0; r < count; r++) rank[by_start[r]] = r;
-        u32* new_order = c_new_n(u32, count + 1);
-        double* new_start = c_new_n(double, count + 1);
-        double* new_finish = c_new_n(double, count + 1);
-        for (u32 r = 0; r < count; r++) {
-            new_order[r] = order[by_start[r]];
-            new_start[r] = start[by_start[r]];
-            new_finish[r] = finish[by_start[r]];
-        }
-        memcpy(order, new_order, sizeof(u32) * count);
-        memcpy(start, new_start, sizeof(double) * count);
-        memcpy(finish, new_finish, sizeof(double) * count);
-        for (u32 k = 0; k < count; k++) printed[k] = rank[printed[k]];
-        for (u32 i = 0; i < count; i++) position[order[i]] = i;
-        c_free_n(new_order, count + 1);
-        c_free_n(new_start, count + 1);
-        c_free_n(new_finish, count + 1);
-        c_free_n(rank, count + 1);
-        c_free_n(by_start, count + 1);
-    }
-    for (u32 i = 0; i < count; i++) emit_store_set_finish(b.store, i, finish[i]);
-    b.start = start;
     u32* stack = c_new_n(u32, count + 1);
     for (u32 i = 0; i < count; i++) {
-        b.jobs[i].out.buffered = true; // (Printed in build order, which isn't the schedule's)
+        b.jobs[i].out.buffered = jobs > 1;
         b.jobs[i].readers++;
         if (!project_set_at(projects, order[i])->readable) continue;
         project_set_root_files(projects, order[i]);
+        u32 built = i >= window ? i - window + 1 : 0;
         b.jobs[i].redirects = project_redirects_new(projects, order[i]);
         bool* visible = b.jobs[i].visible = calloc((size_t)count + 1, sizeof(bool));
-        bool* referenced = b.jobs[i].referenced = calloc((size_t)count + 1, sizeof(bool));
-        for (u32 j = 0; j < i; j++) {
-            if (finish[j] > start[i]) continue;
+        for (u32 j = 0; j < built; j++) {
             visible[j] = true;
             b.jobs[j].readers++;
         }
@@ -1563,9 +1422,7 @@ static_failable build(Options const* opts, returns int) {
             if (!p->readable) continue;
             for (u32 r = 0; r < p->reference_count; r++) {
                 u32 at = p->referenced[r] < position_count ? position[p->referenced[r]] : UINT32_MAX;
-                if (at >= i) continue;
-                referenced[at] = true;
-                if (visible[at]) continue;
+                if (at >= i || visible[at]) continue;
                 visible[at] = true;
                 b.jobs[at].readers++;
                 if (depth < count) stack[depth++] = p->referenced[r];
@@ -1573,12 +1430,10 @@ static_failable build(Options const* opts, returns int) {
         }
     }
     c_free_n(stack, count + 1);
-    c_free_n(finish, count + 1);
     c_free_n(position, position_count ? position_count : 1);
     pthread_t* threads = nullptr;
     build_epoch = now_ms();
     if (jobs > 1) {
-        b.threaded = true;
         pthread_mutex_init(&b.lock, nullptr);
         pthread_cond_init(&b.done, nullptr);
         threads = c_new_n(pthread_t, jobs);
@@ -1589,21 +1444,17 @@ static_failable build(Options const* opts, returns int) {
 
     CheckCounts counts = {0};
     FailableResult failure = {0};
-    u32 next_run = 0; // (Without build threads: the jobs are run here, in schedule order, as far as each print needs)
-    for (u32 k = 0; k < count; k++) {
-        u32 i = printed[k];
+    for (u32 i = 0; i < count; i++) {
         BuildJob* job = &b.jobs[i];
         if (jobs > 1) {
             pthread_mutex_lock(&b.lock);
             while (!job->done) pthread_cond_wait(&b.done, &b.lock);
             pthread_mutex_unlock(&b.lock);
+            output_flush(&job->out);
         } else {
-            for (; !job->done && next_run < count; next_run++) {
-                build_run(&b, next_run);
-                build_job_done(&b, next_run);
-            }
+            build_run(&b, i);
+            build_job_done(&b, i);
         }
-        output_flush(&job->out);
         error_summary_merge(&direct.summary, &job->out.summary);
         if (job->result.error) {
             // (What stops us checking at all: a later project's error isn't any less fatal, but this one comes first)
@@ -1639,13 +1490,10 @@ static_failable build(Options const* opts, returns int) {
         project_redirects_destroy(b.jobs[i].redirects);
         emit_view_destroy(b.jobs[i].view);
         free(b.jobs[i].visible);
-        free(b.jobs[i].referenced);
     }
     emit_store_destroy(b.store);
     free(b.jobs);
     free(order);
-    c_free_n(printed, count + 1);
-    c_free_n(start, count + 1);
     if (failure.error) {
 #ifdef DEBUG_BUILD
         project_set_destroy(projects);
