@@ -79,6 +79,9 @@ memory, but memory is now worth cutting where it is cheap; easy, measured wins f
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **openclaw is a correctness project only** (2026-10-23, the human): github.com/openclaw/openclaw (clean under tsgo
+  7.1, spurious and run-to-run varying errors under tttt at e6b76af2e) joins the source sweep for correctness and is
+  excluded from every perf measurement (perfsweep, bench, instrcount, the bun breadth sweep); repos.txt marks it.
 - **Diagnostic presence before exactness** (2026-10-23, the human): tttt must never report where tsgo doesn't nor
   stay silent where tsgo reports; that is absolute. Exact message text, elaboration chains, related info and printed
   types remain the goal, but where exactness would cost perf or great complexity it may be compromised and written up
