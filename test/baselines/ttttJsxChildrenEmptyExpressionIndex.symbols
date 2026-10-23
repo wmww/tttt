@@ -1,0 +1,93 @@
+//// [test/cases/ttttJsxChildrenEmptyExpressionIndex.tsx] ////
+
+=== ttttJsxChildrenEmptyExpressionIndex.tsx ===
+// Elaborating several JSX children against a list or a tuple, tsc's generateJsxChildren gives an empty `{/* */}`
+// child an index while the source tuple (checkJsxChildren) has no element for it: the children from there on are
+// compared with the next child's type, the empty expression is the error node, the last child is not compared.
+// openscience's message-part.tsx and its other `<Show>` lists with comments between the children (TS2322 at the
+// comment where tttt reported the last child)
+declare global {
+>global : Symbol(global, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 0, 0))
+
+  namespace JSX {
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 5, 16))
+
+    interface Element { e: 1 }
+>Element : Symbol(Element, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 6, 17))
+>e : Symbol(Element.e, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 7, 23))
+
+    interface ElementChildrenAttribute { children: {} }
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 7, 30))
+>children : Symbol(ElementChildrenAttribute.children, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 8, 40))
+
+    interface IntrinsicElements { div: { children?: (string | JSX.Element)[] } }
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 8, 55))
+>div : Symbol(IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+>children : Symbol(children, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 40))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 5, 16))
+>Element : Symbol(Element, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 6, 17))
+  }
+}
+declare function Box(props: { children: [JSX.Element, JSX.Element, string] }): JSX.Element;
+>Box : Symbol(Box, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 11, 1))
+>props : Symbol(props, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 12, 21))
+>children : Symbol(children, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 12, 29))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 5, 16))
+>Element : Symbol(JSX.Element, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 6, 17))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 5, 16))
+>Element : Symbol(JSX.Element, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 6, 17))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 5, 16))
+>Element : Symbol(JSX.Element, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 6, 17))
+
+declare const bad: number;
+>bad : Symbol(bad, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 13, 13))
+
+export const a = <div>
+>a : Symbol(a, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 14, 12))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+
+  <div />
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+
+  {/* a comment */}
+  {bad}
+>bad : Symbol(bad, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 13, 13))
+
+  <div />
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+
+  {bad}
+>bad : Symbol(bad, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 13, 13))
+
+</div>;
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+
+export const b = <Box>
+>b : Symbol(b, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 21, 12))
+>Box : Symbol(Box, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 11, 1))
+
+  <div />
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+
+  {/* a comment */}
+  {bad}
+>bad : Symbol(bad, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 13, 13))
+
+  text
+</Box>;
+>Box : Symbol(Box, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 11, 1))
+
+export const c = <div>
+>c : Symbol(c, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 27, 12))
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+
+  {bad}
+>bad : Symbol(bad, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 13, 13))
+
+  {/* a comment */}
+  <div />
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+
+</div>;
+>div : Symbol(JSX.IntrinsicElements.div, Decl(ttttJsxChildrenEmptyExpressionIndex.tsx, 9, 33))
+

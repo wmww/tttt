@@ -486,9 +486,26 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
             TyIterationTypes const* types = ty_iteration_types_of_iterable(me, other, ITERATION_FOR_OF);
             iterated = types ? types->yield_type : nullptr;
         }
-        u32 index = 0;
+        // (tsc's generateJsxChildren: an index per child but whitespace-only text, empty `{/* */}` expressions included,
+        // while the source is the tuple of the children's types without those (checkJsxChildren): the children after
+        // one are compared with the type of the child after them, the empty expression is the error node of the one it
+        // takes, and the last is compared as undefined)
+        Ty const* source_tuple = ty_access(me, source, name_type);
+        if (source_tuple && !ty_tuple_shape(source_tuple)) source_tuple = nullptr;
+        TyBuf real = {0};
         for_each (child, vec_jsx_child, &element->children) {
             if (!ty_jsx_child_is_semantic(child)) continue;
+            Value at = value_number((double)real.len);
+            Ty const* t = source_tuple ? ty_access(me, source_tuple, ty_literal(me, &at)) : nullptr;
+            if (!t) t = child->tag == JSX_CHILD_TEXT ? ty_intrinsic(me, TY_STRING) : ty_expr_type(me, &child->expr);
+            ty_buf_push(&real, t);
+        }
+        u32 index = 0;
+        for_each (child, vec_jsx_child, &element->children) {
+            if (child->tag == JSX_CHILD_TEXT && child->whitespace_only) continue;
+            bool empty = child->tag == JSX_CHILD_EMPTY_EXPR;
+            // (Past the source tuple's end: undefined, tsc's getIndexedAccessTypeOrUndefined of the tuple)
+            Ty const* child_type = index < real.len ? real.data[index] : ty_intrinsic(me, TY_UNDEFINED);
             Value index_value = value_number((double)index++);
             Ty const* child_name = ty_literal(me, &index_value);
             Ty const* element_target = iterated;
@@ -499,15 +516,9 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
             }
             if (!element_target) continue;
             bool text = child->tag == JSX_CHILD_TEXT;
-            Ty const* child_type = text ? ty_intrinsic(me, TY_STRING) : ty_expr_type(me, &child->expr);
-            // (The child as the source's children have it, widened for a mutable location: tsc's elaborateElementwise
-            // takes the source's element type)
-            Ty const* source_children = text ? nullptr : ty_access(me, source, name_type);
-            Ty const* source_child = source_children && ty_tuple_shape(source_children) ? ty_access(me, source_children, child_name) : nullptr;
-            if (source_child) child_type = source_child;
             if (ty_is_related(me, child_type, element_target, TY_RELATION_ASSIGNABLE)) continue;
             reported = true;
-            Expr const* inner = text ? nullptr : &child->expr;
+            Expr const* inner = text || empty ? nullptr : &child->expr;
             if (inner && elaborate_error(me, HEAD_TYPE, inner, child_type, element_target, errs)) continue;
             Ty const* specific = inner ? ty_mutable_location_type(me, inner, child_type) : child_type;
             if (specific != child_type && ((specific->flags & TYF_ANY) ||
@@ -525,6 +536,7 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
                 report_unassignable(me, HEAD_TYPE, specific, element_target, child->span, errs);
             }
         }
+        ty_buf_drop(&real);
     } else if (child_count > 1) {
         if (!ty_is_related(me, access_or_unknown(me, source, name_type), children_target, TY_RELATION_ASSIGNABLE)) {
             reported = true;

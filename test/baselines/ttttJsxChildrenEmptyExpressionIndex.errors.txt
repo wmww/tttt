@@ -1,0 +1,54 @@
+ttttJsxChildrenEmptyExpressionIndex.tsx(17,3): error TS2322: Type 'number' is not assignable to type 'string | Element'.
+ttttJsxChildrenEmptyExpressionIndex.tsx(19,3): error TS2322: Type 'number' is not assignable to type 'string | Element'.
+ttttJsxChildrenEmptyExpressionIndex.tsx(20,3): error TS2322: Type 'number' is not assignable to type 'string | Element'.
+ttttJsxChildrenEmptyExpressionIndex.tsx(24,3): error TS2322: Type 'number' is not assignable to type 'Element'.
+ttttJsxChildrenEmptyExpressionIndex.tsx(29,3): error TS2322: Type 'number' is not assignable to type 'string | Element'.
+ttttJsxChildrenEmptyExpressionIndex.tsx(31,3): error TS2322: Type 'undefined' is not assignable to type 'string | Element'.
+
+
+==== ttttJsxChildrenEmptyExpressionIndex.tsx (6 errors) ====
+    // Elaborating several JSX children against a list or a tuple, tsc's generateJsxChildren gives an empty `{/* */}`
+    // child an index while the source tuple (checkJsxChildren) has no element for it: the children from there on are
+    // compared with the next child's type, the empty expression is the error node, the last child is not compared.
+    // openscience's message-part.tsx and its other `<Show>` lists with comments between the children (TS2322 at the
+    // comment where tttt reported the last child)
+    declare global {
+      namespace JSX {
+        interface Element { e: 1 }
+        interface ElementChildrenAttribute { children: {} }
+        interface IntrinsicElements { div: { children?: (string | JSX.Element)[] } }
+      }
+    }
+    declare function Box(props: { children: [JSX.Element, JSX.Element, string] }): JSX.Element;
+    declare const bad: number;
+    export const a = <div>
+      <div />
+      {/* a comment */}
+      ~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string | Element'.
+      {bad}
+      <div />
+      ~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string | Element'.
+      {bad}
+      ~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string | Element'.
+    </div>;
+    export const b = <Box>
+      <div />
+      {/* a comment */}
+      ~~~~~~~~~~~~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'Element'.
+      {bad}
+      text
+    </Box>;
+    export const c = <div>
+      {bad}
+      ~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'string | Element'.
+      {/* a comment */}
+      <div />
+      ~~~~~~~
+!!! error TS2322: Type 'undefined' is not assignable to type 'string | Element'.
+    </div>;
+    

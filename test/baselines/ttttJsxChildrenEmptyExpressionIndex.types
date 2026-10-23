@@ -1,0 +1,91 @@
+//// [test/cases/ttttJsxChildrenEmptyExpressionIndex.tsx] ////
+
+=== ttttJsxChildrenEmptyExpressionIndex.tsx ===
+// Elaborating several JSX children against a list or a tuple, tsc's generateJsxChildren gives an empty `{/* */}`
+// child an index while the source tuple (checkJsxChildren) has no element for it: the children from there on are
+// compared with the next child's type, the empty expression is the error node, the last child is not compared.
+// openscience's message-part.tsx and its other `<Show>` lists with comments between the children (TS2322 at the
+// comment where tttt reported the last child)
+declare global {
+>global : any
+
+  namespace JSX {
+    interface Element { e: 1 }
+>e : 1
+
+    interface ElementChildrenAttribute { children: {} }
+>children : {}
+
+    interface IntrinsicElements { div: { children?: (string | JSX.Element)[] } }
+>div : { children?: (string | JSX.Element)[]; }
+>children : (string | Element)[] | undefined
+>JSX : any
+  }
+}
+declare function Box(props: { children: [JSX.Element, JSX.Element, string] }): JSX.Element;
+>Box : (props: { children: [JSX.Element, JSX.Element, string]; }) => JSX.Element
+>props : { children: [JSX.Element, JSX.Element, string]; }
+>children : [JSX.Element, JSX.Element, string]
+>JSX : any
+>JSX : any
+>JSX : any
+
+declare const bad: number;
+>bad : number
+
+export const a = <div>
+>a : JSX.Element
+><div>  <div />  {/* a comment */}  {bad}  <div />  {bad}</div> : JSX.Element
+>div : any
+
+  <div />
+><div /> : JSX.Element
+>div : any
+
+  {/* a comment */}
+  {bad}
+>bad : number
+
+  <div />
+><div /> : JSX.Element
+>div : any
+
+  {bad}
+>bad : number
+
+</div>;
+>div : any
+
+export const b = <Box>
+>b : JSX.Element
+><Box>  <div />  {/* a comment */}  {bad}  text</Box> : JSX.Element
+>Box : (props: { children: [JSX.Element, JSX.Element, string]; }) => JSX.Element
+
+  <div />
+><div /> : JSX.Element
+>div : any
+
+  {/* a comment */}
+  {bad}
+>bad : number
+
+  text
+</Box>;
+>Box : (props: { children: [JSX.Element, JSX.Element, string]; }) => JSX.Element
+
+export const c = <div>
+>c : JSX.Element
+><div>  {bad}  {/* a comment */}  <div /></div> : JSX.Element
+>div : any
+
+  {bad}
+>bad : number
+
+  {/* a comment */}
+  <div />
+><div /> : JSX.Element
+>div : any
+
+</div>;
+>div : any
+
