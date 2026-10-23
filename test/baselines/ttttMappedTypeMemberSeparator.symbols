@@ -1,0 +1,26 @@
+//// [test/cases/ttttMappedTypeMemberSeparator.ts] ////
+
+=== ttttMappedTypeMemberSeparator.ts ===
+// A mapped type's member ends at a `;`, a `}` or a newline, not a `,` (tsc's parseMappedType: parseSemicolon)
+type A = { [K in "a"]: 1; b: 2 };
+>A : Symbol(A, Decl(ttttMappedTypeMemberSeparator.ts, 0, 0))
+>K : Symbol(K, Decl(ttttMappedTypeMemberSeparator.ts, 1, 12))
+>b : Symbol(b, Decl(ttttMappedTypeMemberSeparator.ts, 1, 25))
+
+type B = { [K in "a"]: 1, };
+>B : Symbol(B, Decl(ttttMappedTypeMemberSeparator.ts, 1, 33))
+>K : Symbol(K, Decl(ttttMappedTypeMemberSeparator.ts, 2, 12))
+
+type C = { [K in "a"]: 1, b: 2 };
+>C : Symbol(C, Decl(ttttMappedTypeMemberSeparator.ts, 2, 28))
+>K : Symbol(K, Decl(ttttMappedTypeMemberSeparator.ts, 3, 12))
+>b : Symbol(b, Decl(ttttMappedTypeMemberSeparator.ts, 3, 25))
+
+type D = { [K in "a"]: 1
+>D : Symbol(D, Decl(ttttMappedTypeMemberSeparator.ts, 3, 33))
+>K : Symbol(K, Decl(ttttMappedTypeMemberSeparator.ts, 4, 12))
+
+, };
+const x: number = "";
+>x : Symbol(x, Decl(ttttMappedTypeMemberSeparator.ts, 6, 5))
+

@@ -6297,14 +6297,10 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
             accessor_body = false;
             continue;
         }
-        // Typescript accepts EITHER , ; or newlines in interfaces. You can MIX them!
-        // (Not after a mapped type's member: tsc's parseMappedType ends it with parseSemicolon, then the `,` is no
-        // member, TS1131 at the same place)
-        if (first_mapped && member_count == 1 && *p.pos == ',') {
-            parse_error(&p, span_from_token(&p), 1005, "';' expected.");
-            continue;
-        }
-        bool separated = hop_char(&p, ',');
+        // Typescript accepts EITHER , ; or newlines in interfaces. You can MIX them! Not after a mapped type's
+        // `[K in T]: X`, which ends at a `;`, a `}` or a newline (tsc's parseMappedType: parseSemicolon, then a `,`
+        // starts no member, TS1131: `[K in T]: X\n,` is that alone)
+        bool separated = !(first_mapped && member_count == 1) && hop_char(&p, ',');
         if (!separated &&
             *p.pos != '}' &&
             p.whitespace != WHITESPACE_NEWLINE
