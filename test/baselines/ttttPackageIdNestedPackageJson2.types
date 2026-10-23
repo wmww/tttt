@@ -1,0 +1,30 @@
+//// [test/cases/ttttPackageIdNestedPackageJson2.ts] ////
+
+=== /a.ts ===
+import { C } from "pd/sub";
+>C : typeof C
+
+import { c } from "dep";
+>c : C
+
+const y: C = c;
+>y : C
+>c : C
+
+=== /node_modules/dep/index.d.ts ===
+import { C } from "pd/sub";
+>C : typeof C
+
+export declare const c: C;
+>c : C
+
+=== /node_modules/dep/node_modules/pd/sub/index.d.ts ===
+export declare class C { private x: number; }
+>C : C
+>x : number
+
+=== /node_modules/pd/sub/index.d.ts ===
+export declare class C { private x: number; }
+>C : C
+>x : number
+

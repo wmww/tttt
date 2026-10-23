@@ -1,0 +1,28 @@
+//// [test/cases/ttttPackageIdRelativeImport.ts] ////
+
+=== /a.ts ===
+import { C as A } from "./node_modules/pa";
+>C : typeof A
+>A : typeof A
+
+import { C as B } from "./node_modules/dep/node_modules/pa";
+>C : typeof B
+>B : typeof B
+
+declare const b: B;
+>b : B
+
+const y: A = b;
+>y : A
+>b : B
+
+=== /node_modules/dep/node_modules/pa/index.d.ts ===
+export declare class C { private x: number; }
+>C : C
+>x : number
+
+=== /node_modules/pa/index.d.ts ===
+export declare class C { private x: number; }
+>C : C
+>x : number
+

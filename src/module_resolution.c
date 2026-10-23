@@ -28,6 +28,13 @@ typedef struct Found {
     // The package whose `exports` or `imports` mapped to it (tsc's getPackageId of the scope): its package id, outside
     // node_modules too (a package importing itself by name)
     cstr package_dir;
+    // package_dir is a subpath's own package.json (`node_modules/foo/bar/package.json`) found before the package's:
+    // the id is that one's whatever the file's path (tsgo's getPackageId with the nested packageInfo), none when it has
+    // no name or version
+    bool nested_package;
+    // A relative name found as a file (next to where it points, not a directory's index or package.json): tsgo's
+    // nodeLoadModuleByRelativeName gives that one, and only that one, the package id of the node_modules package it's in
+    bool relative_file;
     ResolvedKind kind;
     bool used_ts_extension;
     bool ts_extension_from_star; // used_ts_extension of a package.json target's `*` (load_package_json_field())
@@ -547,8 +554,18 @@ static void append_peer_dependencies(State* me, csview package_dir, PackageJson 
 
 // tsc's parseNodeModuleFromPath + withPackageId: the package directory after the last node_modules (`@scope/name`
 // for a scoped one) and what its package.json says
-static cstr package_id_of(State* me, csview path, csview package_dir, cstr* package_name) {
+static cstr package_id_of(State* me, csview path, csview package_dir, bool nested, cstr* package_name) {
     isize end = -1;
+    if (nested) {
+        // (Its own package.json's name and version, the file relative to it if it's under it)
+        PackageJson const* package = package_json_of(me, package_dir);
+        csview name = package ? json_get_string(&package->json, "name") : c_sv("");
+        csview version = package ? json_get_string(&package->json, "version") : c_sv("");
+        if (!name.size || !version.size) return cstr_null;
+        *package_name = cstr_from_sv(name);
+        bool under = path.size > package_dir.size && sv_starts_with(path, package_dir) && path.buf[package_dir.size] == '/';
+        return cstr_d(name, under ? csview_from_n(path.buf + package_dir.size, path.size - package_dir.size) : c_sv(""), "@", version);
+    }
     if (package_dir.size && path.size > package_dir.size && sv_starts_with(path, package_dir) && path.buf[package_dir.size] == '/') {
         end = package_dir.size;
     } else {
@@ -1446,6 +1463,10 @@ static Search load_from_node_modules_dir(State* me, csview node_modules, csview 
         bool found = (!directory_only && load_file(me, cstr_sv(&candidate), extensions, out)) ||
             load_directory(me, cstr_sv(&candidate), package, extensions, out);
         result = found ? SEARCH_FOUND : SEARCH_CONTINUE;
+        if (found) {
+            cstr_assign_sv(&out->package_dir, cstr_sv(&candidate));
+            out->nested_package = true;
+        }
     } else if (exports_rule) {
         // `exports` blocks every other way into the package
         cstr subpath = rest.size ? cstr_d("./", rest) : cstr_lit(".");
@@ -1617,6 +1638,19 @@ static Search node_try_resolve(State* me, csview name, int extensions, Found* ou
         ends_with(name, "/.") || ends_with(name, "/..");
     if (is_directory) cstr_append_lit(&candidate, "/");
     bool found = load_as_file_or_directory(me, cstr_sv(&candidate), extensions, out);
+    if (found && !is_directory) {
+        csview path = cstr_sv(&out->path);
+        csview stem = cstr_sv(&candidate);
+        csview path_dir = parent_of(path), stem_dir = parent_of(stem);
+        csview stem_base = csview_from_n(stem.buf + stem_dir.size, stem.size - stem_dir.size);
+        csview path_base = csview_from_n(path.buf + path_dir.size, path.size - path_dir.size);
+        // (`./x.js` found as x.d.ts: the stem without its extension)
+        isize dot = stem_base.size;
+        while (dot > 1 && stem_base.buf[dot - 1] != '.' && stem_base.buf[dot - 1] != '/') dot--;
+        csview stem_name = dot > 1 && stem_base.buf[dot - 1] == '.' ? csview_from_n(stem_base.buf, dot - 1) : stem_base;
+        out->relative_file = csview_equals_sv(path_dir, stem_dir) && sv_starts_with(path_base, stem_name) &&
+            (path_base.size == stem_name.size || path_base.buf[stem_name.size] == '.');
+    }
     cstr_drop(&candidate);
     // (tsgo's resolveNodeLikeWorker: whether what was found is in a node_modules, for a relative name too: a package's
     // own `./types` is an external library import)
@@ -1755,7 +1789,11 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         ret.used_ts_extension = found.used_ts_extension;
         ret.ts_extension_from_star = found.ts_extension_from_star;
         ret.arbitrary_extension = found.arbitrary_extension;
-        ret.package_id = package_id_of(&state, cstr_sv(&ret.path), cstr_sv(&found.package_dir), &ret.package_name);
+        // (A relative or rooted name found as a directory has no package id, whatever node_modules it reaches: tsgo
+        // sets it on the node_modules package and exports/imports paths, and on a relative name's file)
+        if (!module_name_is_relative(specifier) || found.relative_file) {
+            ret.package_id = package_id_of(&state, cstr_sv(&ret.path), cstr_sv(&found.package_dir), found.nested_package, &ret.package_name);
+        }
         // (Not for a relative name, external or not: tsgo's relative branch is createResolvedModule, without
         // createResolvedModuleHandlingSymlink's realpath)
         if (!module_name_is_relative(specifier)) apply_realpath(me, &ret);

@@ -1,0 +1,23 @@
+/a.ts(4,7): error TS2322: Type 'import("/node_modules/dep/node_modules/pa/index").C' is not assignable to type 'import("/node_modules/pa/index").C'.
+  Types have separate declarations of a private property 'x'.
+
+
+==== /tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+    
+==== /a.ts (1 errors) ====
+    import { C as A } from "./node_modules/pa";
+    import { C as B } from "./node_modules/dep/node_modules/pa";
+    declare const b: B;
+    const y: A = b;
+          ~
+!!! error TS2322: Type 'import("/node_modules/dep/node_modules/pa/index").C' is not assignable to type 'import("/node_modules/pa/index").C'.
+!!! error TS2322:   Types have separate declarations of a private property 'x'.
+==== /node_modules/dep/node_modules/pa/index.d.ts (0 errors) ====
+    export declare class C { private x: number; }
+==== /node_modules/dep/node_modules/pa/package.json (0 errors) ====
+    {"name":"pa","version":"1.0.0"}
+==== /node_modules/pa/index.d.ts (0 errors) ====
+    export declare class C { private x: number; }
+==== /node_modules/pa/package.json (0 errors) ====
+    {"name":"pa","version":"1.0.0"}

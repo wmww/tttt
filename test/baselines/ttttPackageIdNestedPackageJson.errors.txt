@@ -1,0 +1,29 @@
+/a.ts(3,7): error TS2322: Type 'import("/node_modules/dep/node_modules/pd/dist/sub").C' is not assignable to type 'import("/node_modules/pd/dist/sub").C'.
+  Types have separate declarations of a private property 'x'.
+
+
+==== /tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["es2022"], "module": "esnext", "moduleResolution": "bundler" }, "files": ["a.ts"] }
+    
+==== /a.ts (1 errors) ====
+    import { C } from "pd/sub";
+    import { c } from "dep";
+    const y: C = c;
+          ~
+!!! error TS2322: Type 'import("/node_modules/dep/node_modules/pd/dist/sub").C' is not assignable to type 'import("/node_modules/pd/dist/sub").C'.
+!!! error TS2322:   Types have separate declarations of a private property 'x'.
+==== /node_modules/dep/index.d.ts (0 errors) ====
+    import { C } from "pd/sub";
+    export declare const c: C;
+==== /node_modules/dep/node_modules/pd/dist/sub.d.ts (0 errors) ====
+    export declare class C { private x: number; }
+==== /node_modules/dep/node_modules/pd/package.json (0 errors) ====
+    {"name":"pd","version":"1.0.0"}
+==== /node_modules/dep/node_modules/pd/sub/package.json (0 errors) ====
+    {"types":"../dist/sub.d.ts"}
+==== /node_modules/pd/dist/sub.d.ts (0 errors) ====
+    export declare class C { private x: number; }
+==== /node_modules/pd/package.json (0 errors) ====
+    {"name":"pd","version":"1.0.0"}
+==== /node_modules/pd/sub/package.json (0 errors) ====
+    {"types":"../dist/sub.d.ts"}

@@ -1,0 +1,30 @@
+//// [test/cases/ttttPackageIdRelativeImport.ts] ////
+
+=== /a.ts ===
+import { C as A } from "./node_modules/pa";
+>C : Symbol(A, Decl(index.d.ts, 0, 0))
+>A : Symbol(A, Decl(a.ts, 0, 8))
+
+import { C as B } from "./node_modules/dep/node_modules/pa";
+>C : Symbol(B, Decl(index.d.ts, 0, 0))
+>B : Symbol(B, Decl(a.ts, 1, 8))
+
+declare const b: B;
+>b : Symbol(b, Decl(a.ts, 2, 13))
+>B : Symbol(B, Decl(a.ts, 1, 8))
+
+const y: A = b;
+>y : Symbol(y, Decl(a.ts, 3, 5))
+>A : Symbol(A, Decl(a.ts, 0, 8))
+>b : Symbol(b, Decl(a.ts, 2, 13))
+
+=== /node_modules/dep/node_modules/pa/index.d.ts ===
+export declare class C { private x: number; }
+>C : Symbol(C, Decl(index.d.ts, 0, 0))
+>x : Symbol(C.x, Decl(index.d.ts, 0, 24))
+
+=== /node_modules/pa/index.d.ts ===
+export declare class C { private x: number; }
+>C : Symbol(C, Decl(index.d.ts, 0, 0))
+>x : Symbol(C.x, Decl(index.d.ts, 0, 24))
+
