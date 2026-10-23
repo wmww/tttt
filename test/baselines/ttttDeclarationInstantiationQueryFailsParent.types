@@ -1,0 +1,106 @@
+//// [test/cases/ttttDeclarationInstantiationQueryFailsParent.ts] ////
+
+=== a.ts ===
+function createDeferred<T>() {
+>createDeferred : <T>() => { promise: Promise<T>; resolve: (v: T) => void; }
+
+    let resolve!: (v: T) => void;
+>resolve : (v: T) => void
+>v : T
+
+    const promise = new Promise<T>(r => { resolve = r; });
+>promise : Promise<T>
+>new Promise<T>(r => { resolve = r; }) : Promise<T>
+>Promise : PromiseConstructor
+>r => { resolve = r; } : (r: (value: T | PromiseLike<T>) => void) => void
+>r : (value: T | PromiseLike<T>) => void
+>resolve = r : (value: T | PromiseLike<T>) => void
+>resolve : (v: T) => void
+>r : (value: T | PromiseLike<T>) => void
+
+    return { promise, resolve };
+>{ promise, resolve } : { promise: Promise<T>; resolve: (v: T) => void; }
+>promise : Promise<T>
+>resolve : (v: T) => void
+}
+export function harness() {
+>harness : () => { ops: { result: ReturnType<typeof createDeferred<unknown>>; }[]; }
+
+    const ops: Array<{ result: ReturnType<typeof createDeferred<unknown>> }> = [];
+>ops : { result: ReturnType<typeof createDeferred<unknown>>; }[]
+>result : { promise: Promise<unknown>; resolve: (v: unknown) => void; }
+>createDeferred : <T>() => { promise: Promise<T>; resolve: (v: T) => void; }
+>[] : never[]
+
+    return { ops };
+>{ ops } : { ops: { result: ReturnType<typeof createDeferred<unknown>>; }[]; }
+>ops : { result: ReturnType<typeof createDeferred<unknown>>; }[]
+}
+export function harnessArray() {
+>harnessArray : () => { ops: { items: Array<typeof createDeferred<number>>; }[]; }
+
+    const ops: { items: Array<typeof createDeferred<number>> }[] = [];
+>ops : { items: Array<typeof createDeferred<number>>; }[]
+>items : (typeof createDeferred<number>)[]
+>createDeferred : <T>() => { promise: Promise<T>; resolve: (v: T) => void; }
+>[] : never[]
+
+    return { ops };
+>{ ops } : { ops: { items: Array<typeof createDeferred<number>>; }[]; }
+>ops : { items: Array<typeof createDeferred<number>>; }[]
+}
+export function harnessUnion() {
+>harnessUnion : () => { result: ReturnType<typeof createDeferred<string>> | undefined; }
+
+    const op: { result: ReturnType<typeof createDeferred<string>> | undefined } = { result: undefined };
+>op : { result: ReturnType<typeof createDeferred<string>> | undefined; }
+>result : { promise: Promise<string>; resolve: (v: string) => void; } | undefined
+>createDeferred : <T>() => { promise: Promise<T>; resolve: (v: T) => void; }
+>{ result: undefined } : { result: undefined; }
+>result : undefined
+>undefined : undefined
+
+    return op;
+>op : { result: ReturnType<typeof createDeferred<string>> | undefined; }
+}
+export function harnessDirect() {
+>harnessDirect : () => { make: typeof createDeferred<boolean>; }
+
+    const op: { make: typeof createDeferred<boolean> } = { make: createDeferred };
+>op : { make: typeof createDeferred<boolean>; }
+>make : typeof createDeferred<boolean>
+>createDeferred : <T>() => { promise: Promise<T>; resolve: (v: T) => void; }
+>{ make: createDeferred } : { make: <T>() => { promise: Promise<T>; resolve: (v: T) => void; }; }
+>make : <T>() => { promise: Promise<T>; resolve: (v: T) => void; }
+>createDeferred : <T>() => { promise: Promise<T>; resolve: (v: T) => void; }
+
+    return op;
+>op : { make: typeof createDeferred<boolean>; }
+}
+=== b.ts ===
+import { harness, harnessArray, harnessUnion, harnessDirect } from "./a";
+>harness : () => { ops: { result: ReturnType<any>; }[]; }
+>harnessArray : () => { ops: { items: Array<any>; }[]; }
+>harnessUnion : () => { result: ReturnType<any> | undefined; }
+>harnessDirect : () => { make: any; }
+
+export async function host() { return harness(); }
+>host : () => Promise<{ ops: { result: ReturnType<any>; }[]; }>
+>harness() : { ops: { result: ReturnType<any>; }[]; }
+>harness : () => { ops: { result: ReturnType<any>; }[]; }
+
+export function hostArray() { return harnessArray(); }
+>hostArray : () => { ops: { items: Array<any>; }[]; }
+>harnessArray() : { ops: { items: Array<any>; }[]; }
+>harnessArray : () => { ops: { items: Array<any>; }[]; }
+
+export function hostUnion() { return harnessUnion(); }
+>hostUnion : () => { result: ReturnType<any> | undefined; }
+>harnessUnion() : { result: ReturnType<any> | undefined; }
+>harnessUnion : () => { result: ReturnType<any> | undefined; }
+
+export function hostDirect() { return harnessDirect(); }
+>hostDirect : () => { make: any; }
+>harnessDirect() : { make: any; }
+>harnessDirect : () => { make: any; }
+

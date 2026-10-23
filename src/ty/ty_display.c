@@ -3308,6 +3308,114 @@ static char const* readonly_operand_start(TypeNode const* node, SourceFile const
     return decl_map_skip_trivia(start + 8, end);
 }
 
+// The instantiation expression type `typeof f<T>` makes, if printing it fails: its `typeof` node can't be reused
+// here (see ty_display()'s cyclic structure placeholder for it)
+static Ty const* failing_instantiation_query(Checker* me, TyDisplay d, TypeNode const* node) {
+    if (node->tag != TYPE_TYPEOF || !simple_node_fails(me, d, node)) return nullptr;
+    Ty const* ty = node_type(me, d, node);
+    if (ty->kind != TY_ANONYMOUS || !ty->anonymous.applies_type_args) return nullptr;
+    TypeNode const* query = intern_get(&my links, (u64[]){ KEY_INSTANTIATION_QUERY, ty->id }, 2);
+    return query && simple_node_fails(me, d, query) ? ty : nullptr;
+}
+
+// Whether printing `ty` prints `target` (as far as a few levels of unions, references and object members go)
+static bool type_prints_type(Checker* me, Ty const* ty, Ty const* target, u32 depth) {
+    if (ty == target) return true;
+    if (depth > 4) return false;
+    for (u32 i = 0; i < ty->alias_args.len; i++) {
+        if (type_prints_type(me, ty->alias_args.data[i], target, depth + 1)) return true;
+    }
+    if (ty->alias) return false;
+    switch ((TyKind)ty->kind) {
+        case TY_REFERENCE: {
+            TyList args = ty_reference_args(me, ty);
+            for (u32 i = 0; i < args.len; i++) {
+                if (type_prints_type(me, args.data[i], target, depth + 1)) return true;
+            }
+            return false;
+        }
+        case TY_UNION:
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (type_prints_type(me, ty->composite.types.data[i], target, depth + 1)) return true;
+            }
+            return false;
+        case TY_ANONYMOUS: {
+            if (ty->anonymous.applies_type_args) return false;
+            Members const* members = ty_members(me, ty);
+            for (u32 i = 0; i < members->prop_count; i++) {
+                if (type_prints_type(me, prop_type(me, members->props[i]), target, depth + 1)) return true;
+            }
+            return false;
+        }
+        default:
+            return false;
+    }
+}
+
+// Whether reusing `node` fails because a part of it does: tsgo's existing node visitor reprints a part that can't be
+// reused as its type, and an error doing that (a `typeof f<T>` whose node can't be reused: the cyclic structure
+// placeholder) fails the node around it, which prints its type instead, the error dropped (the recovery scope),
+// unless that type prints the failing part again: then the error goes up another node
+static bool node_part_fails(Checker* me, TyDisplay d, TypeNode const* node, Ty const** failing);
+static bool node_child_fails(Checker* me, TyDisplay d, TypeNode const* child, Ty const** failing) {
+    Ty const* query = failing_instantiation_query(me, d, child);
+    if (query) {
+        *failing = query;
+        return true;
+    }
+    Ty const* inner = nullptr;
+    if (!node_part_fails(me, d, child, &inner)) return false;
+    if (!type_prints_type(me, node_type(me, d, child), inner, 0)) return false;
+    *failing = inner;
+    return true;
+}
+
+static bool node_part_fails(Checker* me, TyDisplay d, TypeNode const* node, Ty const** failing) {
+    switch (node->tag) {
+        case TYPE_IDENTIFIER: {
+            IdentifierType const* identifier = node->identifier;
+            if (identifier->keyword) return false;
+            for_each (i, vec_spanned_type, &identifier->generic_params) {
+                if (node_child_fails(me, d, &i->type, failing)) return true;
+            }
+            return false;
+        }
+        case TYPE_ARRAY: return node_child_fails(me, d, node->array.element, failing);
+        case TYPE_INDEXED:
+            return node_child_fails(me, d, &node->indexed->interface, failing) || node_child_fails(me, d, &node->indexed->index, failing);
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (node_child_fails(me, d, i, failing)) return true;
+            }
+            return false;
+        default: return false;
+    }
+}
+
+// Whether a node mentions `typeof x<...>` anywhere it is looked into above (a cheap first test)
+static bool node_has_instantiation_query(TypeNode const* node) {
+    switch (node->tag) {
+        case TYPE_TYPEOF: return node->typeof_->expr && node->typeof_->expr->tag == EXPR_GENERIC_PARAMS;
+        case TYPE_IDENTIFIER:
+            if (node->identifier->keyword) return false;
+            for_each (i, vec_spanned_type, &node->identifier->generic_params) {
+                if (node_has_instantiation_query(&i->type)) return true;
+            }
+            return false;
+        case TYPE_ARRAY: return node_has_instantiation_query(node->array.element);
+        case TYPE_INDEXED: return node_has_instantiation_query(&node->indexed->interface) || node_has_instantiation_query(&node->indexed->index);
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (node_has_instantiation_query(i)) return true;
+            }
+            return false;
+        default: return false;
+    }
+}
+
 static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
     // `readonly T` of what isn't an array or tuple (TS1354): reprinted as written, `readonly (T | null)` around a
     // JSDoc `?T` (the operator is printed, then the node again without it)
@@ -3331,6 +3439,13 @@ static void display_node_impl(Checker* me, TyDisplay d, TypeNode const* node) {
     if (!(node->tag == TYPE_CALLABLE || node->tag == TYPE_ARRAY || node->tag == TYPE_INDEXED || node->tag == TYPE_KEYOF ||
             node->tag == TYPE_TERNARY || node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION || node->tag == TYPE_JSDOC)) {
         d.in_extends = false;
+    }
+    // (Declaration emit: a part that fails the node, its type instead, see node_part_fails(). Elsewhere the placeholder
+    // is no error, tsgo's AllowAnonymousIdentifier: it stays in the node)
+    Ty const* failing = nullptr;
+    if (d.tracker && node->tag != TYPE_TYPEOF && node_has_instantiation_query(node) && node_part_fails(me, d, node, &failing)) {
+        display_node_fallback(me, d, node);
+        return;
     }
     // (Only a fallback of this very node, see display_node_identifier() and display_node_typeof(), is an element)
     bool array_element = d.array_element_node && !node->parenthesized;

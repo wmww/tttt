@@ -568,6 +568,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationInstantiationQueryFailsParent': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationKeyofFallbackConstituentParens': {
         errors: true,
         symbols: true,

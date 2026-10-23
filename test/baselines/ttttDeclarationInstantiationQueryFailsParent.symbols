@@ -1,0 +1,99 @@
+//// [test/cases/ttttDeclarationInstantiationQueryFailsParent.ts] ////
+
+=== a.ts ===
+function createDeferred<T>() {
+>createDeferred : Symbol(createDeferred, Decl(a.ts, 0, 0))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+
+    let resolve!: (v: T) => void;
+>resolve : Symbol(resolve, Decl(a.ts, 1, 7))
+>v : Symbol(v, Decl(a.ts, 1, 19))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+
+    const promise = new Promise<T>(r => { resolve = r; });
+>promise : Symbol(promise, Decl(a.ts, 2, 9))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(a.ts, 0, 24))
+>r : Symbol(r, Decl(a.ts, 2, 35))
+>resolve : Symbol(resolve, Decl(a.ts, 1, 7))
+>r : Symbol(r, Decl(a.ts, 2, 35))
+
+    return { promise, resolve };
+>promise : Symbol(promise, Decl(a.ts, 3, 12))
+>resolve : Symbol(resolve, Decl(a.ts, 3, 21))
+}
+export function harness() {
+>harness : Symbol(harness, Decl(a.ts, 4, 1))
+
+    const ops: Array<{ result: ReturnType<typeof createDeferred<unknown>> }> = [];
+>ops : Symbol(ops, Decl(a.ts, 6, 9))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>result : Symbol(result, Decl(a.ts, 6, 22))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>createDeferred : Symbol(createDeferred, Decl(a.ts, 0, 0))
+
+    return { ops };
+>ops : Symbol(ops, Decl(a.ts, 7, 12))
+}
+export function harnessArray() {
+>harnessArray : Symbol(harnessArray, Decl(a.ts, 8, 1))
+
+    const ops: { items: Array<typeof createDeferred<number>> }[] = [];
+>ops : Symbol(ops, Decl(a.ts, 10, 9))
+>items : Symbol(items, Decl(a.ts, 10, 16))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 3 more)
+>createDeferred : Symbol(createDeferred, Decl(a.ts, 0, 0))
+
+    return { ops };
+>ops : Symbol(ops, Decl(a.ts, 11, 12))
+}
+export function harnessUnion() {
+>harnessUnion : Symbol(harnessUnion, Decl(a.ts, 12, 1))
+
+    const op: { result: ReturnType<typeof createDeferred<string>> | undefined } = { result: undefined };
+>op : Symbol(op, Decl(a.ts, 14, 9))
+>result : Symbol(result, Decl(a.ts, 14, 15))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>createDeferred : Symbol(createDeferred, Decl(a.ts, 0, 0))
+>result : Symbol(result, Decl(a.ts, 14, 83))
+>undefined : Symbol(undefined)
+
+    return op;
+>op : Symbol(op, Decl(a.ts, 14, 9))
+}
+export function harnessDirect() {
+>harnessDirect : Symbol(harnessDirect, Decl(a.ts, 16, 1))
+
+    const op: { make: typeof createDeferred<boolean> } = { make: createDeferred };
+>op : Symbol(op, Decl(a.ts, 18, 9))
+>make : Symbol(make, Decl(a.ts, 18, 15))
+>createDeferred : Symbol(createDeferred, Decl(a.ts, 0, 0))
+>make : Symbol(make, Decl(a.ts, 18, 58))
+>createDeferred : Symbol(createDeferred, Decl(a.ts, 0, 0))
+
+    return op;
+>op : Symbol(op, Decl(a.ts, 18, 9))
+}
+=== b.ts ===
+import { harness, harnessArray, harnessUnion, harnessDirect } from "./a";
+>harness : Symbol(harness, Decl(b.ts, 0, 8))
+>harnessArray : Symbol(harnessArray, Decl(b.ts, 0, 17))
+>harnessUnion : Symbol(harnessUnion, Decl(b.ts, 0, 31))
+>harnessDirect : Symbol(harnessDirect, Decl(b.ts, 0, 45))
+
+export async function host() { return harness(); }
+>host : Symbol(host, Decl(b.ts, 0, 73))
+>harness : Symbol(harness, Decl(b.ts, 0, 8))
+
+export function hostArray() { return harnessArray(); }
+>hostArray : Symbol(hostArray, Decl(b.ts, 1, 50))
+>harnessArray : Symbol(harnessArray, Decl(b.ts, 0, 17))
+
+export function hostUnion() { return harnessUnion(); }
+>hostUnion : Symbol(hostUnion, Decl(b.ts, 2, 54))
+>harnessUnion : Symbol(harnessUnion, Decl(b.ts, 0, 31))
+
+export function hostDirect() { return harnessDirect(); }
+>hostDirect : Symbol(hostDirect, Decl(b.ts, 3, 54))
+>harnessDirect : Symbol(harnessDirect, Decl(b.ts, 0, 45))
+

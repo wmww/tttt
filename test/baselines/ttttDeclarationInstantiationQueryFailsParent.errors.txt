@@ -1,0 +1,37 @@
+b.ts(3,17): error TS5088: The inferred type of 'hostArray' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+b.ts(5,17): error TS5088: The inferred type of 'hostDirect' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+
+
+==== a.ts (0 errors) ====
+    function createDeferred<T>() {
+        let resolve!: (v: T) => void;
+        const promise = new Promise<T>(r => { resolve = r; });
+        return { promise, resolve };
+    }
+    export function harness() {
+        const ops: Array<{ result: ReturnType<typeof createDeferred<unknown>> }> = [];
+        return { ops };
+    }
+    export function harnessArray() {
+        const ops: { items: Array<typeof createDeferred<number>> }[] = [];
+        return { ops };
+    }
+    export function harnessUnion() {
+        const op: { result: ReturnType<typeof createDeferred<string>> | undefined } = { result: undefined };
+        return op;
+    }
+    export function harnessDirect() {
+        const op: { make: typeof createDeferred<boolean> } = { make: createDeferred };
+        return op;
+    }
+==== b.ts (2 errors) ====
+    import { harness, harnessArray, harnessUnion, harnessDirect } from "./a";
+    export async function host() { return harness(); }
+    export function hostArray() { return harnessArray(); }
+                    ~~~~~~~~~
+!!! error TS5088: The inferred type of 'hostArray' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+    export function hostUnion() { return harnessUnion(); }
+    export function hostDirect() { return harnessDirect(); }
+                    ~~~~~~~~~~
+!!! error TS5088: The inferred type of 'hostDirect' references a type with a cyclic structure which cannot be trivially serialized. A type annotation is necessary.
+    
