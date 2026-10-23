@@ -4417,7 +4417,9 @@ static bool has_non_circular_base_constraint(Checker* me, Ty const* ty);
 // is circular), anything else's base constraint
 static Ty const* constraint_of_type(Checker* me, Ty const* ty) {
     switch ((TyKind)ty->kind) {
-        case TY_TYPE_PARAM: return ty_param_constraint(me, ty); // (gated itself)
+        // (Gated by its own base constraint, a copy's too: tsc's getConstraintOfTypeParameter asks
+        // hasNonCircularBaseConstraint of the type parameter itself, so a chain of constraints starts over there)
+        case TY_TYPE_PARAM: return has_non_circular_base_constraint(me, ty) ? ty_param_constraint(me, ty) : nullptr;
         case TY_INDEXED: return has_non_circular_base_constraint(me, ty) ? constraint_of_indexed(me, ty) : nullptr;
         case TY_CONDITIONAL: return has_non_circular_base_constraint(me, ty) ? ty_conditional_constraint(me, ty) : nullptr;
         default: return base_constraint(me, ty, nullptr);

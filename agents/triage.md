@@ -129,24 +129,6 @@ intersection's property symbol to bugs/type_core.md.
   pointer` at the default threads (every run; HEAD 8a20b3d3c's relate.c too), not at `--threads 1`; release builds don't.
   A debug-only heap misuse on some thread path: run it under valgrind/ASan. [open]
 
-- mcp-linker (source sweep refresh 5) makes 1.73x tsgo's types (139k against 81k), localized 2026-10-23 (cor8): typed
-  i18next. `{t("delete")}` as a JSX child (any contextual type with an object member: ReactNode, `{ a: 1 } | string`)
-  with src/types/i18n.d.ts's CustomTypeOptions makes 84k types against tsgo's 4.6k for that one call (`string` as the
-  contextual type: 3.4k, no blowup). Return-type inference from the object reaches the target `$NoInfer<Ret>` =
-  `[Ret][Ret extends any ? 0 : never]` (infer.c, the TY_INDEXED target with an object source: tsc's
-  inferFromObjectTypes -> typesDefinitelyUnrelated -> getPropertiesOfType(target) takes the same apparent type), whose
-  base constraint chain distributes TFunctionReturn's conditionals over the ~1000 translation keys: tttt computes
-  `ParseTReturnWithFallback<"key", ...>` for every key (27 times each), tsgo's chain (an instrumented getResolvedBaseConstraint
-  printing `BC depth type`) stops at depth 11 where the same conditional root is on the stack; tttt reaches those roots
-  at depth 7-9 (its Ns already "translation": a different instantiation path, unexplained) and goes on. Repro: a project
-  extending mcp-linker's tsconfig with `files: [src/types/i18n.d.ts, a.tsx]`, a.tsx `const { t } = useTranslation();
-  export const n: { a: 1 } = t("delete");`; compare `--time`'s types with tsgo's `--extendedDiagnostics`. Both
-  chains start alike (`Ret` -> `KeyWithContext<AppendKeyPrefix<Key, KPrefix>, TOpt> extends ...`, KPrefix and Ns
-  generic); tsgo's stays generic in Ns all the way (`NsByTOptions<Ns, TOpt>`), tttt's meets `NsByTOptions<"translation",
-  TOpt>` about 600 steps in, so the keys become concrete and distribute: look for where a conditional's own mapper
-  (TFunctionReturn's alias arguments) is applied in tttt's distributive constraint and not in tsgo's
-  getConstraintOfDistributiveConditionalType (instrumented getResolvedBaseConstraint printing `BC depth type` on both
-  sides; /tmp builds, see notes/instrumenting_tsgo.md). [open]
 - dtsdiff at the 7.1.0-beta cache (2026-10-23) lists b4run/packages/postgres-storage as "CRASH (no output)" in its
   emit-mode sandbox run, while `tttt -p ... --noEmit` on it exits 2 with five TS2307 (`@b4run/sdk`,
   `@b4run/permissions`: workspace packages without built declarations; the beta's `-b` sweep write-up in
