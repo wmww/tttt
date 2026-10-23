@@ -106,7 +106,15 @@ argued here instead. Nothing a user sees differs in any of them.
   checkerdiff -k 16 on every corpus with the filter: 0 differing (no owner failed to reproduce a dropped
   diagnostic). webpack was "twice: DIFFERENT", probably the experiment's own stderr count line. Not implemented: K>1
   output is K1's anyway once the limit fallback recheck exists, and with a deterministic deal the rule only matters for
-  history-dependent reports. Revisit if tttt's K>1 output should equal tsgo's at the same K. [design]
+  history-dependent reports. Revisit if tttt's K>1 output should equal tsgo's at the same K. Measured on the source
+  sweep at the defaults (det3, 2026-10-23, a TTTT_OWNER_STATS counter, not committed): 2277 of 6858 configs ran
+  several checkers. They had 737 diagnostics reported by a checker in a file it didn't check. For 381 of them, in 8
+  configs (dyad pg-schema-classifier, mermaid/e2e, openapi-typescript, quill, trpc nuxt, react-native-image-marker
+  expo, pothos eslint, ark solid-start), the file's own checker didn't report them: declaration-merge conflicts
+  (TS2717, TS2687, TS2428, TS2300) that tttt reports once per symbol, from whichever checker resolves it. tttt's output
+  there is K-stable and equal to tsgo K1 (mermaid/e2e, quill checked: K1 = K16, = tsgo --singleThreaded, and also
+  = tsgo --checkers 8, so tsgo's owners report their own). The owner rule would drop those 381 at K>1. It needs the
+  owners to report their own merge conflicts first, and buys no K-stability: don't. [design]
 - sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff); tttt's K16 shows it
   since costliest-first (2026-10-20: kdiff 2 -> 4, sequelize and sequelize/packages/core; `TTTT_NO_COSTLIEST_FIRST=1`
   hides it again). The defaults match tsc. Rechecked 2026-10-21 with the pinned tsgo (`tsc -p packages/core --noEmit
