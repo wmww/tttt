@@ -4593,7 +4593,10 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             TyCondBranch if_false = lower_branch(&node->ternary->if_false, ctx);
             // (tsc's isDistributive looks at the check type: a type parameter substituted by an outer true branch
             // isn't one)
-            bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub) && check_type->kind == TY_TYPE_PARAM;
+            // (A `this` check type is the class's or interface's this-type parameter: a type parameter, distributive)
+            TypeNode const* check_node = &node->ternary->maybe_sub;
+            bool this_check = check_node->tag == TYPE_IDENTIFIER && check_node->identifier->keyword == KEYWORD_IDENTIFIER_THIS;
+            bool distributive = (is_naked_type_param_node(check_node) || this_check) && check_type->kind == TY_TYPE_PARAM;
             TyBuf infers = {0};
             collect_declared_infers(me, extends_node, &infers);
             // (tsc's checkTuples looks at the nodes: `T extends [infer A]` with T a tuple doesn't defer on its elements)

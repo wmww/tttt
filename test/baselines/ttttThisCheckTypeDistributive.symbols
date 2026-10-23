@@ -1,0 +1,43 @@
+//// [test/cases/ttttThisCheckTypeDistributive.ts] ////
+
+=== ttttThisCheckTypeDistributive.ts ===
+// A conditional type whose check type is `this` is distributive (tsc's isDistributive: the check type is a type
+// parameter, the this-type one): its constraint goes through the this type's constraint, `1` for `this extends Foo`,
+// and its branches mention its check type (bun's 09-C9b, 19-C4a, 19-C1f)
+class Foo { a = 1; p!: this extends Foo ? 1 : 2; m() { const x: 1 = this.p; } }
+>Foo : Symbol(Foo, Decl(ttttThisCheckTypeDistributive.ts, 0, 0))
+>a : Symbol(Foo.a, Decl(ttttThisCheckTypeDistributive.ts, 3, 11))
+>p : Symbol(Foo.p, Decl(ttttThisCheckTypeDistributive.ts, 3, 18))
+>Foo : Symbol(Foo, Decl(ttttThisCheckTypeDistributive.ts, 0, 0))
+>m : Symbol(Foo.m, Decl(ttttThisCheckTypeDistributive.ts, 3, 48))
+>x : Symbol(x, Decl(ttttThisCheckTypeDistributive.ts, 3, 60))
+>this.p : Symbol(Foo.p, Decl(ttttThisCheckTypeDistributive.ts, 3, 18))
+>this : Symbol(Foo, Decl(ttttThisCheckTypeDistributive.ts, 0, 0))
+>p : Symbol(Foo.p, Decl(ttttThisCheckTypeDistributive.ts, 3, 18))
+
+interface I { k: "i"; p: this extends { k: "i" } ? 1 : 2 }
+>I : Symbol(I, Decl(ttttThisCheckTypeDistributive.ts, 3, 79))
+>k : Symbol(I.k, Decl(ttttThisCheckTypeDistributive.ts, 4, 13))
+>p : Symbol(I.p, Decl(ttttThisCheckTypeDistributive.ts, 4, 21))
+>k : Symbol(k, Decl(ttttThisCheckTypeDistributive.ts, 4, 39))
+
+function fi<T extends I>(t: T) { const a: 1 = t.p; }
+>fi : Symbol(fi, Decl(ttttThisCheckTypeDistributive.ts, 4, 58))
+>T : Symbol(T, Decl(ttttThisCheckTypeDistributive.ts, 5, 12))
+>I : Symbol(I, Decl(ttttThisCheckTypeDistributive.ts, 3, 79))
+>t : Symbol(t, Decl(ttttThisCheckTypeDistributive.ts, 5, 25))
+>T : Symbol(T, Decl(ttttThisCheckTypeDistributive.ts, 5, 12))
+>a : Symbol(a, Decl(ttttThisCheckTypeDistributive.ts, 5, 38))
+>t.p : Symbol(I.p, Decl(ttttThisCheckTypeDistributive.ts, 4, 21))
+>t : Symbol(t, Decl(ttttThisCheckTypeDistributive.ts, 5, 25))
+>p : Symbol(I.p, Decl(ttttThisCheckTypeDistributive.ts, 4, 21))
+
+class K { p!: this extends string ? this : this; m() { this.p = this; } }
+>K : Symbol(K, Decl(ttttThisCheckTypeDistributive.ts, 5, 52))
+>p : Symbol(K.p, Decl(ttttThisCheckTypeDistributive.ts, 6, 9))
+>m : Symbol(K.m, Decl(ttttThisCheckTypeDistributive.ts, 6, 48))
+>this.p : Symbol(K.p, Decl(ttttThisCheckTypeDistributive.ts, 6, 9))
+>this : Symbol(K, Decl(ttttThisCheckTypeDistributive.ts, 5, 52))
+>p : Symbol(K.p, Decl(ttttThisCheckTypeDistributive.ts, 6, 9))
+>this : Symbol(K, Decl(ttttThisCheckTypeDistributive.ts, 5, 52))
+
