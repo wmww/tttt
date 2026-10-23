@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <sys/mman.h>
+#include <sys/prctl.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -51,6 +52,7 @@ static void read_debug_env() {
             !strcmp(getenv("TTTT_NESTING_ORDER"), "content") ? 3 : 0,
         .rollback_stats = getenv("TTTT_ROLLBACK_STATS") != nullptr,
         .deep_hit_no_taint = getenv("TTTT_DEEP_HIT_NO_TAINT") != nullptr,
+        .vma_names = getenv("TTTT_VMA_NAMES") != nullptr,
     };
 }
 
@@ -157,6 +159,14 @@ u64 memory_available_bytes(void) {
     return available;
 }
 
+void vma_name(void* addr, size_t len, char const* name) {
+    if (!debug_env.vma_names) return;
+    char full[64];
+    snprintf(full, sizeof full, "tttt-%s", name);
+    // (PR_SET_VMA, PR_SET_VMA_ANON_NAME: CONFIG_ANON_VMA_NAME kernels, 5.17 on; an older one just says no)
+    prctl(0x53564d41, 0, (unsigned long)addr, len, (unsigned long)full);
+}
+
 bool huge_pages_take(size_t bytes) {
     if (debug_env.huge_pages >= 0) return debug_env.huge_pages;
     pthread_once(&huge_page_budget_once, read_huge_page_budget);
@@ -197,6 +207,7 @@ void* big_table(size_t count, size_t size) {
     char* start = (char*)(((uintptr_t)raw + align - 1) & ~(uintptr_t)(align - 1));
     if (start > raw) munmap(raw, (size_t)(start - raw));
     if (start + mapped < raw + mapped + align) munmap(start + mapped, (size_t)(raw + mapped + align - (start + mapped)));
+    vma_name(start, mapped, "table");
     if (huge_pages_take(mapped)) madvise(start, mapped, MADV_HUGEPAGE);
     // (Written before read: no zero page to copy)
     madvise(start, bytes, MADV_POPULATE_WRITE);

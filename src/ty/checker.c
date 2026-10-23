@@ -115,6 +115,7 @@ static void* arena_alloc_chunk(Arena* me, size_t size) {
             memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
             panic_if(memory == MAP_FAILED, "out of memory");
         }
+        vma_name(memory, mapped, my huge_first ? "checker" : "arena");
         ArenaChunk* chunk = memory;
         chunk->huge = huge;
         chunk->cap = cap;

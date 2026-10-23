@@ -17,6 +17,7 @@ void source_file_register(SourceFile* file) {
     // Never freed (indexes outlive programs): mmapped, so leak checks don't count it
     if (!*chunk) {
         void* mem = mmap(nullptr, sizeof(SourceFile const*) << SPAN_FILE_CHUNK_BITS, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        if (mem != MAP_FAILED) vma_name(mem, sizeof(SourceFile const*) << SPAN_FILE_CHUNK_BITS, "span");
         panic_if(mem == MAP_FAILED, "mmap failed");
         *chunk = mem;
     }

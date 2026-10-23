@@ -5843,8 +5843,10 @@ static void check_share(Program* me, u32 c, u32 count) {
             struct timespec file_cpu_end;
             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &file_cpu_end);
             double cpu_ms = (double)(file_cpu_end.tv_sec - file_cpu_start.tv_sec) * 1e3 + (double)(file_cpu_end.tv_nsec - file_cpu_start.tv_nsec) / 1e6;
-            char more[96];
-            snprintf(more, sizeof more, ", cpu %.1f ms, holds %.1f MB, done at %.1f ms", cpu_ms, (double)checker_memory(checker) / (1 << 20), end_ms);
+            char more[160];
+            snprintf(more, sizeof more, ", cpu %.1f ms, holds %.1f MB, done at %.1f ms, %u types, %llu bytes", cpu_ms,
+                (double)checker_memory(checker) / (1 << 20), end_ms, checker_type_count(checker) - rb_types,
+                (unsigned long long)share_cost(source));
             print_file_time(my file_shares[at] == c ? "check" : "check taken", file_start, source, c, more);
         }
         for (; moot_watch && scanned < vec_error_size(&checker->errs->errors); scanned++) {

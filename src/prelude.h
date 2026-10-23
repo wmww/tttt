@@ -65,6 +65,7 @@ typedef struct DebugEnv {
     // thread CPU ns, types made, cycle keys closed, limit hits, deep cuts), and the census' VC lines name the file
     bool rollback_stats;
     bool deep_hit_no_taint; // TTTT_DEEP_HIT_NO_TAINT: a relation cache hit concluded under a deep cut is no taint event
+    bool vma_names;          // TTTT_VMA_NAMES: anonymous mappings named by kind in /proc/PID/smaps (vma_name(), scripts/rsstimeline.py)
 } DebugEnv;
 extern DebugEnv debug_env;
 
@@ -80,6 +81,9 @@ u64 process_resident_bytes(void);
 // (v2) with limits, the least that any of them still leaves (memory.max and memory.high minus memory.current, the
 // cgroup's and each ancestor's), whichever is less; TTTT_MEM_AVAILABLE_MB overrides it (testing). 0: unknown
 u64 memory_available_bytes(void);
+// Under TTTT_VMA_NAMES, names an anonymous mapping `[anon:tttt-NAME]` in /proc/PID/smaps (PR_SET_VMA_ANON_NAME), for
+// RSS attribution by kind (scripts/rsstimeline.py); a no-op otherwise
+void vma_name(void* addr, size_t len, char const* name);
 // A madvised chunk of `bytes` that huge_pages_take() allowed is unmapped: its blocks are free again
 void huge_pages_give(size_t bytes);
 

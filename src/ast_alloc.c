@@ -84,6 +84,7 @@ static char* take_slab(size_t size, char** end) {
         // Aligned to the segment size: map twice as much and cut the ends off
         char* raw = mmap(nullptr, segment + AST_SEGMENT, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
         panic_if(raw == MAP_FAILED, "Couldn't reserve address space for the AST");
+        vma_name(raw, segment + AST_SEGMENT, "ast");
         char* start = (char*)(((uintptr_t)raw + AST_SEGMENT - 1) & ~(uintptr_t)(AST_SEGMENT - 1));
         if (start > raw) munmap(raw, (size_t)(start - raw));
         if (start + segment < raw + segment + AST_SEGMENT) munmap(start + segment, (size_t)(raw + segment + AST_SEGMENT - (start + segment)));

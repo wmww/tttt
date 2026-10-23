@@ -810,6 +810,7 @@ static char* text_read_slot(size_t size) {
         // big files, which made the load phase 20-40% slower on vscode)
         void* chunk = mmap(nullptr, TEXT_READ_CHUNK, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
         if (chunk == MAP_FAILED) return nullptr;
+        vma_name(chunk, TEXT_READ_CHUNK, "text");
         text_read_at = chunk;
         text_read_left = TEXT_READ_CHUNK;
     }

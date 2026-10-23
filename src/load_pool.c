@@ -171,6 +171,7 @@ int worker_thread_create(pthread_t* thread, void* (*fn)(void*), void* arg) {
             pthread_mutex_unlock(&stacks.lock);
             return EAGAIN;
         }
+        vma_name(raw, stacks.size + STACK_GUARD, "stack");
         // (Nothing is mapped in yet: no flush)
         mprotect(raw, STACK_GUARD, PROT_NONE);
         stack = raw + STACK_GUARD;
