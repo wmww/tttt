@@ -1508,6 +1508,27 @@ typedef struct ResolvingLoop {
 
 static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, ResolvingLoop const* resolving);
 
+// The symbols (identifiers' Symbols, properties' Props) whose explicit type type_of_dotted_name() is reading further up
+// the stack: asked again meanwhile, one has none (tsc's resolvingExplicitTypeOfSymbol). `const xs: ReturnType<typeof
+// f>[] = []` with `xs.push(x)` in f before f's `return x`: the flow analysis of x asks whether the push is an assertion
+// while xs's type is being read for an outer one, and the push has no effects (openclaw's providerHolds)
+// THREADSAFETY: a checker runs on one thread, and the stack unwinds before it moves on
+static thread_local void const* explicit_resolving[64];
+static thread_local u32 explicit_resolving_len;
+
+static bool explicit_resolving_enter(void const* key) {
+    for (u32 i = 0; i < explicit_resolving_len; i++) {
+        if (explicit_resolving[i] == key) return false;
+    }
+    if (explicit_resolving_len < c_arraylen(explicit_resolving)) explicit_resolving[explicit_resolving_len] = key;
+    explicit_resolving_len++;
+    return true;
+}
+
+static void explicit_resolving_leave(void) {
+    explicit_resolving_len--;
+}
+
 static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
     return type_of_dotted_name_resolving(me, expr, nullptr);
 }
@@ -1560,7 +1581,10 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
             if (!iterable) return nullptr;
             return ty_iterated_type(me, loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable, span_null, nullptr);
         }
-        return ty_identifier_reference_type(me, &expr->identifier);
+        if (!explicit_resolving_enter(symbol)) return nullptr;
+        Ty const* ret = ty_identifier_reference_type(me, &expr->identifier);
+        explicit_resolving_leave();
+        return ret;
     }
     if (expr->tag != EXPR_PROPERTY) return nullptr;
     if (ty_is_import_meta(expr)) return ty_import_meta_expr_type(me, expr);
@@ -1573,7 +1597,10 @@ static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, Re
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
     if (!prop || !prop_has_explicit_type(prop)) return nullptr;
     // (An optional one has undefined in its type, an optional method's too: tsc's getTypeOfSymbol. Not callable then)
-    return prop_type(me, prop);
+    if (!explicit_resolving_enter(prop)) return nullptr;
+    Ty const* ret = prop_type(me, prop);
+    explicit_resolving_leave();
+    return ret;
 }
 
 // tsc's isDottedName: `a`, `this`, `super`, `a.b.c`

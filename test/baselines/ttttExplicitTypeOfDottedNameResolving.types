@@ -1,0 +1,88 @@
+//// [test/cases/ttttExplicitTypeOfDottedNameResolving.ts] ////
+
+=== ttttExplicitTypeOfDottedNameResolving.ts ===
+// The explicit type of a dotted name read for an assertion check is none while it is read further up (tsc's
+// getExplicitTypeOfSymbol: resolvingExplicitTypeOfSymbol). holds' type is asked for by one flow analysis's effects
+// check of a call statement, and hold's return type then walks back over `holds.push(h)`, whose effects check finds
+// holds again: no effects, rather than a cycle (openclaw's server.chat-membership-authority.product.test.ts)
+declare function deferred(): { promise: Promise<void> };
+>deferred : () => { promise: Promise<void>; }
+>promise : Promise<void>
+
+declare function it(name: string, fn: () => Promise<void>): void;
+>it : (name: string, fn: () => Promise<void>) => void
+>name : string
+>fn : () => Promise<void>
+
+it("x", async () => {
+>it("x", async () => {  const holds: ReturnType<typeof hold>[] = [];  function hold(message: string) {    const h = { message, entered: deferred(), claimed: false };    holds.push(h);    return h;  }  let reply = "a";  hold("b");  const found = holds.find((c) => !c.claimed);  if (found) found.claimed = true;  reply.length;}) : void
+>it : (name: string, fn: () => Promise<void>) => void
+>"x" : "x"
+>async () => {  const holds: ReturnType<typeof hold>[] = [];  function hold(message: string) {    const h = { message, entered: deferred(), claimed: false };    holds.push(h);    return h;  }  let reply = "a";  hold("b");  const found = holds.find((c) => !c.claimed);  if (found) found.claimed = true;  reply.length;} : () => Promise<void>
+
+  const holds: ReturnType<typeof hold>[] = [];
+>holds : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]
+>hold : (message: string) => { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>[] : never[]
+
+  function hold(message: string) {
+>hold : (message: string) => { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>message : string
+
+    const h = { message, entered: deferred(), claimed: false };
+>h : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>{ message, entered: deferred(), claimed: false } : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>message : string
+>entered : { promise: Promise<void>; }
+>deferred() : { promise: Promise<void>; }
+>deferred : () => { promise: Promise<void>; }
+>claimed : boolean
+>false : false
+
+    holds.push(h);
+>holds.push(h) : number
+>holds.push : (...items: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]) => number
+>holds : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]
+>push : (...items: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]) => number
+>h : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+
+    return h;
+>h : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+  }
+  let reply = "a";
+>reply : string
+>"a" : "a"
+
+  hold("b");
+>hold("b") : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>hold : (message: string) => { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>"b" : "b"
+
+  const found = holds.find((c) => !c.claimed);
+>found : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; } | undefined
+>holds.find((c) => !c.claimed) : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; } | undefined
+>holds.find : { <S extends { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }>(predicate: (value: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }, index: number, obj: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]) => value is S, thisArg?: any): S | undefined; (predicate: (value: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }, index: number, obj: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]) => unknown, thisArg?: any): { message: string; entered: { promise: Promise<void>; }; claimed: boolean; } | undefined; }
+>holds : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]
+>find : { <S extends { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }>(predicate: (value: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }, index: number, obj: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]) => value is S, thisArg?: any): S | undefined; (predicate: (value: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }, index: number, obj: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }[]) => unknown, thisArg?: any): { message: string; entered: { promise: Promise<void>; }; claimed: boolean; } | undefined; }
+>(c) => !c.claimed : (c: { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }) => boolean
+>c : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>!c.claimed : boolean
+>c.claimed : boolean
+>c : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>claimed : boolean
+
+  if (found) found.claimed = true;
+>found : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; } | undefined
+>found.claimed = true : true
+>found.claimed : boolean
+>found : { message: string; entered: { promise: Promise<void>; }; claimed: boolean; }
+>claimed : boolean
+>true : true
+
+  reply.length;
+>reply.length : number
+>reply : string
+>length : number
+
+});
+

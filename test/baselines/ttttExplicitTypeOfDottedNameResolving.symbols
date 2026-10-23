@@ -1,0 +1,75 @@
+//// [test/cases/ttttExplicitTypeOfDottedNameResolving.ts] ////
+
+=== ttttExplicitTypeOfDottedNameResolving.ts ===
+// The explicit type of a dotted name read for an assertion check is none while it is read further up (tsc's
+// getExplicitTypeOfSymbol: resolvingExplicitTypeOfSymbol). holds' type is asked for by one flow analysis's effects
+// check of a call statement, and hold's return type then walks back over `holds.push(h)`, whose effects check finds
+// holds again: no effects, rather than a cycle (openclaw's server.chat-membership-authority.product.test.ts)
+declare function deferred(): { promise: Promise<void> };
+>deferred : Symbol(deferred, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 0, 0))
+>promise : Symbol(promise, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 4, 30))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+declare function it(name: string, fn: () => Promise<void>): void;
+>it : Symbol(it, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 4, 56))
+>name : Symbol(name, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 5, 20))
+>fn : Symbol(fn, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 5, 33))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+
+it("x", async () => {
+>it : Symbol(it, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 4, 56))
+
+  const holds: ReturnType<typeof hold>[] = [];
+>holds : Symbol(holds, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 7, 7))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>hold : Symbol(hold, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 7, 46))
+
+  function hold(message: string) {
+>hold : Symbol(hold, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 7, 46))
+>message : Symbol(message, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 8, 16))
+
+    const h = { message, entered: deferred(), claimed: false };
+>h : Symbol(h, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 9))
+>message : Symbol(message, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 15))
+>entered : Symbol(entered, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 24))
+>deferred : Symbol(deferred, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 0, 0))
+>claimed : Symbol(claimed, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 45))
+
+    holds.push(h);
+>holds.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>holds : Symbol(holds, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 7, 7))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>h : Symbol(h, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 9))
+
+    return h;
+>h : Symbol(h, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 9))
+  }
+  let reply = "a";
+>reply : Symbol(reply, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 13, 5))
+
+  hold("b");
+>hold : Symbol(hold, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 7, 46))
+
+  const found = holds.find((c) => !c.claimed);
+>found : Symbol(found, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 15, 7))
+>holds.find : Symbol(Array.find, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>holds : Symbol(holds, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 7, 7))
+>find : Symbol(Array.find, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>c : Symbol(c, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 15, 28))
+>c.claimed : Symbol(claimed, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 45))
+>c : Symbol(c, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 15, 28))
+>claimed : Symbol(claimed, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 45))
+
+  if (found) found.claimed = true;
+>found : Symbol(found, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 15, 7))
+>found.claimed : Symbol(claimed, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 45))
+>found : Symbol(found, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 15, 7))
+>claimed : Symbol(claimed, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 9, 45))
+
+  reply.length;
+>reply.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>reply : Symbol(reply, Decl(ttttExplicitTypeOfDottedNameResolving.ts, 13, 5))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+});
+
