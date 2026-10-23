@@ -1,0 +1,87 @@
+//// [test/cases/ttttIntersectionApparentThisArg.ts] ////
+
+=== ttttIntersectionApparentThisArg.ts ===
+// An intersection's members see it as their `this` when its type variables are made apparent (tsc's
+// getApparentTypeOfIntersectionType: getTypeWithThisArgument with the original intersection)
+interface I { me: this; f(): this }
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>f : Symbol(I.f, Decl(ttttIntersectionApparentThisArg.ts, 2, 23))
+
+function g<T>(t: T & I) { const a = t.me; const b = t.f(); return [a, b] }
+>g : Symbol(g, Decl(ttttIntersectionApparentThisArg.ts, 2, 35))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 3, 11))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 3, 14))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 3, 11))
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>a : Symbol(a, Decl(ttttIntersectionApparentThisArg.ts, 3, 31))
+>t.me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 3, 14))
+>me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>b : Symbol(b, Decl(ttttIntersectionApparentThisArg.ts, 3, 47))
+>t.f : Symbol(I.f, Decl(ttttIntersectionApparentThisArg.ts, 2, 23))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 3, 14))
+>f : Symbol(I.f, Decl(ttttIntersectionApparentThisArg.ts, 2, 23))
+>a : Symbol(a, Decl(ttttIntersectionApparentThisArg.ts, 3, 31))
+>b : Symbol(b, Decl(ttttIntersectionApparentThisArg.ts, 3, 47))
+
+function h(t: { x: 1 } & I) { const a = t.me; const b = t.f(); return [a, b] }
+>h : Symbol(h, Decl(ttttIntersectionApparentThisArg.ts, 3, 74))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 4, 11))
+>x : Symbol(x, Decl(ttttIntersectionApparentThisArg.ts, 4, 15))
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>a : Symbol(a, Decl(ttttIntersectionApparentThisArg.ts, 4, 35))
+>t.me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 4, 11))
+>me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>b : Symbol(b, Decl(ttttIntersectionApparentThisArg.ts, 4, 51))
+>t.f : Symbol(I.f, Decl(ttttIntersectionApparentThisArg.ts, 2, 23))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 4, 11))
+>f : Symbol(I.f, Decl(ttttIntersectionApparentThisArg.ts, 2, 23))
+>a : Symbol(a, Decl(ttttIntersectionApparentThisArg.ts, 4, 35))
+>b : Symbol(b, Decl(ttttIntersectionApparentThisArg.ts, 4, 51))
+
+function k<T extends { y: 2 }>(t: T & I) { const a = t.me; return a }
+>k : Symbol(k, Decl(ttttIntersectionApparentThisArg.ts, 4, 78))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 5, 11))
+>y : Symbol(y, Decl(ttttIntersectionApparentThisArg.ts, 5, 22))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 5, 31))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 5, 11))
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>a : Symbol(a, Decl(ttttIntersectionApparentThisArg.ts, 5, 48))
+>t.me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 5, 31))
+>me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>a : Symbol(a, Decl(ttttIntersectionApparentThisArg.ts, 5, 48))
+
+declare function f<U>(x: { me: U }): U;
+>f : Symbol(f, Decl(ttttIntersectionApparentThisArg.ts, 5, 69))
+>U : Symbol(U, Decl(ttttIntersectionApparentThisArg.ts, 6, 19))
+>x : Symbol(x, Decl(ttttIntersectionApparentThisArg.ts, 6, 22))
+>me : Symbol(me, Decl(ttttIntersectionApparentThisArg.ts, 6, 26))
+>U : Symbol(U, Decl(ttttIntersectionApparentThisArg.ts, 6, 19))
+>U : Symbol(U, Decl(ttttIntersectionApparentThisArg.ts, 6, 19))
+
+function g2<T>(t: T & I): T & I { return f(t); }
+>g2 : Symbol(g2, Decl(ttttIntersectionApparentThisArg.ts, 6, 39))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 7, 12))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 7, 15))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 7, 12))
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 7, 12))
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>f : Symbol(f, Decl(ttttIntersectionApparentThisArg.ts, 5, 69))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 7, 15))
+
+function g3<T>(t: T & I): T & I { return t.me; }
+>g3 : Symbol(g3, Decl(ttttIntersectionApparentThisArg.ts, 7, 48))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 8, 12))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 8, 15))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 8, 12))
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>T : Symbol(T, Decl(ttttIntersectionApparentThisArg.ts, 8, 12))
+>I : Symbol(I, Decl(ttttIntersectionApparentThisArg.ts, 0, 0))
+>t.me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+>t : Symbol(t, Decl(ttttIntersectionApparentThisArg.ts, 8, 15))
+>me : Symbol(I.me, Decl(ttttIntersectionApparentThisArg.ts, 2, 13))
+

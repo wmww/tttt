@@ -1,0 +1,71 @@
+//// [test/cases/ttttIntersectionApparentThisArg.ts] ////
+
+=== ttttIntersectionApparentThisArg.ts ===
+// An intersection's members see it as their `this` when its type variables are made apparent (tsc's
+// getApparentTypeOfIntersectionType: getTypeWithThisArgument with the original intersection)
+interface I { me: this; f(): this }
+>me : this
+>f : () => this
+
+function g<T>(t: T & I) { const a = t.me; const b = t.f(); return [a, b] }
+>g : <T>(t: T & I) => (T & I)[]
+>t : T & I
+>a : T & I
+>t.me : T & I
+>t : T & I
+>me : T & I
+>b : T & I
+>t.f() : T & I
+>t.f : () => T & I
+>t : T & I
+>f : () => T & I
+>[a, b] : (T & I)[]
+>a : T & I
+>b : T & I
+
+function h(t: { x: 1 } & I) { const a = t.me; const b = t.f(); return [a, b] }
+>h : (t: { x: 1; } & I) => ({ x: 1; } & I)[]
+>t : { x: 1; } & I
+>x : 1
+>a : { x: 1; } & I
+>t.me : { x: 1; } & I
+>t : { x: 1; } & I
+>me : { x: 1; } & I
+>b : { x: 1; } & I
+>t.f() : { x: 1; } & I
+>t.f : () => { x: 1; } & I
+>t : { x: 1; } & I
+>f : () => { x: 1; } & I
+>[a, b] : ({ x: 1; } & I)[]
+>a : { x: 1; } & I
+>b : { x: 1; } & I
+
+function k<T extends { y: 2 }>(t: T & I) { const a = t.me; return a }
+>k : <T extends { y: 2; }>(t: T & I) => T & I
+>y : 2
+>t : T & I
+>a : T & I
+>t.me : T & I
+>t : T & I
+>me : T & I
+>a : T & I
+
+declare function f<U>(x: { me: U }): U;
+>f : <U>(x: { me: U; }) => U
+>x : { me: U; }
+>me : U
+
+function g2<T>(t: T & I): T & I { return f(t); }
+>g2 : <T>(t: T & I) => T & I
+>t : T & I
+>f(t) : T & I
+>f : <U>(x: { me: U; }) => U
+>t : T & I
+
+function g3<T>(t: T & I): T & I { return t.me; }
+>g3 : <T>(t: T & I) => T & I
+>t : T & I
+>t.me : T & I
+>t : T & I
+>me : T & I
+

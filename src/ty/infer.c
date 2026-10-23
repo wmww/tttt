@@ -1942,6 +1942,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                     parts[i] = member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED) ? ty_apparent_type(me, member) : member;
                     changed |= parts[i] != member;
                 }
+                // (The others see the intersection as it was as their `this`, as in apparent_type_of_intersection())
+                for (u32 i = 0; changed && i < members.len; i++) {
+                    Ty const* member = members.data[i];
+                    if (parts[i] != member || (member->kind == TY_REFERENCE && member->reference.this_arg)) continue;
+                    parts[i] = ty_with_this_arg(me, member, source);
+                }
                 Ty const* apparent = changed ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : source;
                 free(parts);
                 if (apparent != source && !(apparent->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) {

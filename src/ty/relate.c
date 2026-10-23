@@ -1458,6 +1458,14 @@ static inline Ty const* apparent_type(Checker* me, Ty const* ty) {
         parts[i] = member_generic ? apparent_type(me, member) : member;
         changed |= parts[i] != member;
     }
+    // (The other members see the intersection as it was as their `this`, not the apparent one: tsc's
+    // getTypeWithThisArgument(type, thisArgument) maps every member with the original. `interface I { me: this }`,
+    // `t.me` with `t: T & I` is `T & I`)
+    for (u32 i = 0; changed && i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (parts[i] != member || (member->kind == TY_REFERENCE && member->reference.this_arg)) continue;
+        parts[i] = ty_with_this_arg(me, member, ty);
+    }
     Ty const* ret = changed ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : ty;
     if (parts != stack_buf) free(parts);
     // (What the members made of it may be apparent itself: `T & object` without strictNullChecks is `{} & object`,
