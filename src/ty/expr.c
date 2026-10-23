@@ -5200,9 +5200,12 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
 
     Ty const* ret;
     if (as_tuple) {
-        // (A const type parameter constrained to a mutable array gets a mutable tuple)
+        // (A const type parameter constrained to a mutable array gets a mutable tuple. Of the apparent contextual type,
+        // tsc's getApparentTypeOfContextualType: under `...cases: X` with `const X extends (string | [string, A])[]`,
+        // the context `X[1]` of `['b', a]` is `string | [string, A]`, which has a mutable member)
         ret = spreads_never ? ty_intrinsic(me, TY_NEVER) :
-            tuple_of(me, elements, flags, count, ctx.is_const && !ty_some_mutable_array_like(me, ctx.contextual));
+            tuple_of(me, elements, flags, count, ctx.is_const &&
+                !ty_some_mutable_array_like(me, ctx.contextual ? apparent_contextual_type(me, ctx.contextual) : nullptr));
     } else {
         // Without strictNullChecks null and undefined elements don't show next to others
         bool strict = compiler_options()->strict_null_checks;

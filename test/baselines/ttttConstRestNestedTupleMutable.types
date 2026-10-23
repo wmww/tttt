@@ -1,0 +1,91 @@
+//// [test/cases/ttttConstRestNestedTupleMutable.ts] ////
+
+=== ttttConstRestNestedTupleMutable.ts ===
+// An array literal under a const type parameter is readonly unless its apparent contextual type has a mutable
+// array-like member: tsc's checkArrayLiteral reads getApparentTypeOfContextualType, so under `...cases: X` with
+// `const X extends Item[]` the context `X[1]` of `['b', sa]` is Item, whose `[string, Ad<any>]` keeps the tuple
+// mutable and X inferred (not its constraint) without a contextual return type (sphi/osis's enumAdapter tests)
+interface Ad<R> { r: R }
+>r : R
+
+type Item = string | [string, Ad<any>];
+>Item : Item
+
+type ItemRepr<I extends Item> = I extends [infer T extends string, Ad<infer R>] ? [T, R] : I;
+>ItemRepr : ItemRepr<I>
+
+declare const sa: Ad<string>;
+>sa : Ad<string>
+
+declare function k<const X extends Item[]>(...cases: X): X;
+>k : <const X extends Item[]>(...cases: X) => X
+>cases : X
+
+const e1 = k('a', ['b', sa]);
+>e1 : ["a", ["b", Ad<string>]]
+>k('a', ['b', sa]) : ["a", ["b", Ad<string>]]
+>k : <const X extends Item[]>(...cases: X) => X
+>'a' : "a"
+>['b', sa] : ["b", Ad<string>]
+>'b' : "b"
+>sa : Ad<string>
+
+const z1: number = e1;
+>z1 : number
+>e1 : ["a", ["b", Ad<string>]]
+
+declare function h<const X extends Item[]>(...cases: X): { o: { [I in keyof X]: ItemRepr<X[I]> }[number] };
+>h : <const X extends Item[]>(...cases: X) => { o: { [I in keyof X]: ItemRepr<X[I]>; }[number]; }
+>cases : X
+>o : { [I in keyof X]: ItemRepr<X[I]>; }[number]
+
+const e2 = h('a', ['b', sa]).o;
+>e2 : "a" | ["b", string]
+>h('a', ['b', sa]).o : "a" | ["b", string]
+>h('a', ['b', sa]) : { o: "a" | ["b", string]; }
+>h : <const X extends Item[]>(...cases: X) => { o: { [I in keyof X]: ItemRepr<X[I]>; }[number]; }
+>'a' : "a"
+>['b', sa] : ["b", Ad<string>]
+>'b' : "b"
+>sa : Ad<string>
+>o : "a" | ["b", string]
+
+const z2: number = e2;
+>z2 : number
+>e2 : "a" | ["b", string]
+
+declare function r<const X extends readonly Item[]>(...cases: X): X;
+>r : <const X extends readonly Item[]>(...cases: X) => X
+>cases : X
+
+const e3 = r('a', ['b', sa]);
+>e3 : readonly ["a", ["b", Ad<string>]]
+>r('a', ['b', sa]) : readonly ["a", ["b", Ad<string>]]
+>r : <const X extends readonly Item[]>(...cases: X) => X
+>'a' : "a"
+>['b', sa] : ["b", Ad<string>]
+>'b' : "b"
+>sa : Ad<string>
+
+const z3: number = e3;
+>z3 : number
+>e3 : readonly ["a", ["b", Ad<string>]]
+
+declare function g<const X extends Item[]>(x: X): X;
+>g : <const X extends Item[]>(x: X) => X
+>x : X
+
+const e4 = g(['a', ['b', sa]]);
+>e4 : ["a", ["b", Ad<string>]]
+>g(['a', ['b', sa]]) : ["a", ["b", Ad<string>]]
+>g : <const X extends Item[]>(x: X) => X
+>['a', ['b', sa]] : ["a", ["b", Ad<string>]]
+>'a' : "a"
+>['b', sa] : ["b", Ad<string>]
+>'b' : "b"
+>sa : Ad<string>
+
+const z4: number = e4;
+>z4 : number
+>e4 : ["a", ["b", Ad<string>]]
+

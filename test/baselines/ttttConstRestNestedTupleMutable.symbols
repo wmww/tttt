@@ -1,0 +1,108 @@
+//// [test/cases/ttttConstRestNestedTupleMutable.ts] ////
+
+=== ttttConstRestNestedTupleMutable.ts ===
+// An array literal under a const type parameter is readonly unless its apparent contextual type has a mutable
+// array-like member: tsc's checkArrayLiteral reads getApparentTypeOfContextualType, so under `...cases: X` with
+// `const X extends Item[]` the context `X[1]` of `['b', sa]` is Item, whose `[string, Ad<any>]` keeps the tuple
+// mutable and X inferred (not its constraint) without a contextual return type (sphi/osis's enumAdapter tests)
+interface Ad<R> { r: R }
+>Ad : Symbol(Ad, Decl(ttttConstRestNestedTupleMutable.ts, 0, 0))
+>R : Symbol(R, Decl(ttttConstRestNestedTupleMutable.ts, 4, 13))
+>r : Symbol(Ad.r, Decl(ttttConstRestNestedTupleMutable.ts, 4, 17))
+>R : Symbol(R, Decl(ttttConstRestNestedTupleMutable.ts, 4, 13))
+
+type Item = string | [string, Ad<any>];
+>Item : Symbol(Item, Decl(ttttConstRestNestedTupleMutable.ts, 4, 24))
+>Ad : Symbol(Ad, Decl(ttttConstRestNestedTupleMutable.ts, 0, 0))
+
+type ItemRepr<I extends Item> = I extends [infer T extends string, Ad<infer R>] ? [T, R] : I;
+>ItemRepr : Symbol(ItemRepr, Decl(ttttConstRestNestedTupleMutable.ts, 5, 39))
+>I : Symbol(I, Decl(ttttConstRestNestedTupleMutable.ts, 6, 14))
+>Item : Symbol(Item, Decl(ttttConstRestNestedTupleMutable.ts, 4, 24))
+>I : Symbol(I, Decl(ttttConstRestNestedTupleMutable.ts, 6, 14))
+>T : Symbol(T, Decl(ttttConstRestNestedTupleMutable.ts, 6, 48))
+>Ad : Symbol(Ad, Decl(ttttConstRestNestedTupleMutable.ts, 0, 0))
+>R : Symbol(R, Decl(ttttConstRestNestedTupleMutable.ts, 6, 75))
+>T : Symbol(T, Decl(ttttConstRestNestedTupleMutable.ts, 6, 48))
+>R : Symbol(R, Decl(ttttConstRestNestedTupleMutable.ts, 6, 75))
+>I : Symbol(I, Decl(ttttConstRestNestedTupleMutable.ts, 6, 14))
+
+declare const sa: Ad<string>;
+>sa : Symbol(sa, Decl(ttttConstRestNestedTupleMutable.ts, 7, 13))
+>Ad : Symbol(Ad, Decl(ttttConstRestNestedTupleMutable.ts, 0, 0))
+
+declare function k<const X extends Item[]>(...cases: X): X;
+>k : Symbol(k, Decl(ttttConstRestNestedTupleMutable.ts, 7, 29))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 8, 19))
+>Item : Symbol(Item, Decl(ttttConstRestNestedTupleMutable.ts, 4, 24))
+>cases : Symbol(cases, Decl(ttttConstRestNestedTupleMutable.ts, 8, 43))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 8, 19))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 8, 19))
+
+const e1 = k('a', ['b', sa]);
+>e1 : Symbol(e1, Decl(ttttConstRestNestedTupleMutable.ts, 9, 5))
+>k : Symbol(k, Decl(ttttConstRestNestedTupleMutable.ts, 7, 29))
+>sa : Symbol(sa, Decl(ttttConstRestNestedTupleMutable.ts, 7, 13))
+
+const z1: number = e1;
+>z1 : Symbol(z1, Decl(ttttConstRestNestedTupleMutable.ts, 10, 5))
+>e1 : Symbol(e1, Decl(ttttConstRestNestedTupleMutable.ts, 9, 5))
+
+declare function h<const X extends Item[]>(...cases: X): { o: { [I in keyof X]: ItemRepr<X[I]> }[number] };
+>h : Symbol(h, Decl(ttttConstRestNestedTupleMutable.ts, 10, 22))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 11, 19))
+>Item : Symbol(Item, Decl(ttttConstRestNestedTupleMutable.ts, 4, 24))
+>cases : Symbol(cases, Decl(ttttConstRestNestedTupleMutable.ts, 11, 43))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 11, 19))
+>o : Symbol(o, Decl(ttttConstRestNestedTupleMutable.ts, 11, 58))
+>I : Symbol(I, Decl(ttttConstRestNestedTupleMutable.ts, 11, 65))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 11, 19))
+>ItemRepr : Symbol(ItemRepr, Decl(ttttConstRestNestedTupleMutable.ts, 5, 39))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 11, 19))
+>I : Symbol(I, Decl(ttttConstRestNestedTupleMutable.ts, 11, 65))
+
+const e2 = h('a', ['b', sa]).o;
+>e2 : Symbol(e2, Decl(ttttConstRestNestedTupleMutable.ts, 12, 5))
+>h('a', ['b', sa]).o : Symbol(o, Decl(ttttConstRestNestedTupleMutable.ts, 11, 58))
+>h : Symbol(h, Decl(ttttConstRestNestedTupleMutable.ts, 10, 22))
+>sa : Symbol(sa, Decl(ttttConstRestNestedTupleMutable.ts, 7, 13))
+>o : Symbol(o, Decl(ttttConstRestNestedTupleMutable.ts, 11, 58))
+
+const z2: number = e2;
+>z2 : Symbol(z2, Decl(ttttConstRestNestedTupleMutable.ts, 13, 5))
+>e2 : Symbol(e2, Decl(ttttConstRestNestedTupleMutable.ts, 12, 5))
+
+declare function r<const X extends readonly Item[]>(...cases: X): X;
+>r : Symbol(r, Decl(ttttConstRestNestedTupleMutable.ts, 13, 22))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 14, 19))
+>Item : Symbol(Item, Decl(ttttConstRestNestedTupleMutable.ts, 4, 24))
+>cases : Symbol(cases, Decl(ttttConstRestNestedTupleMutable.ts, 14, 52))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 14, 19))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 14, 19))
+
+const e3 = r('a', ['b', sa]);
+>e3 : Symbol(e3, Decl(ttttConstRestNestedTupleMutable.ts, 15, 5))
+>r : Symbol(r, Decl(ttttConstRestNestedTupleMutable.ts, 13, 22))
+>sa : Symbol(sa, Decl(ttttConstRestNestedTupleMutable.ts, 7, 13))
+
+const z3: number = e3;
+>z3 : Symbol(z3, Decl(ttttConstRestNestedTupleMutable.ts, 16, 5))
+>e3 : Symbol(e3, Decl(ttttConstRestNestedTupleMutable.ts, 15, 5))
+
+declare function g<const X extends Item[]>(x: X): X;
+>g : Symbol(g, Decl(ttttConstRestNestedTupleMutable.ts, 16, 22))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 17, 19))
+>Item : Symbol(Item, Decl(ttttConstRestNestedTupleMutable.ts, 4, 24))
+>x : Symbol(x, Decl(ttttConstRestNestedTupleMutable.ts, 17, 43))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 17, 19))
+>X : Symbol(X, Decl(ttttConstRestNestedTupleMutable.ts, 17, 19))
+
+const e4 = g(['a', ['b', sa]]);
+>e4 : Symbol(e4, Decl(ttttConstRestNestedTupleMutable.ts, 18, 5))
+>g : Symbol(g, Decl(ttttConstRestNestedTupleMutable.ts, 16, 22))
+>sa : Symbol(sa, Decl(ttttConstRestNestedTupleMutable.ts, 7, 13))
+
+const z4: number = e4;
+>z4 : Symbol(z4, Decl(ttttConstRestNestedTupleMutable.ts, 19, 5))
+>e4 : Symbol(e4, Decl(ttttConstRestNestedTupleMutable.ts, 18, 5))
+

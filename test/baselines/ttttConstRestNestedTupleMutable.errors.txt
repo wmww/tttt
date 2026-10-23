@@ -1,0 +1,38 @@
+ttttConstRestNestedTupleMutable.ts(11,7): error TS2322: Type '["a", ["b", Ad<string>]]' is not assignable to type 'number'.
+ttttConstRestNestedTupleMutable.ts(14,7): error TS2322: Type '"a" | ["b", string]' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+ttttConstRestNestedTupleMutable.ts(17,7): error TS2322: Type 'readonly ["a", ["b", Ad<string>]]' is not assignable to type 'number'.
+ttttConstRestNestedTupleMutable.ts(20,7): error TS2322: Type '["a", ["b", Ad<string>]]' is not assignable to type 'number'.
+
+
+==== ttttConstRestNestedTupleMutable.ts (4 errors) ====
+    // An array literal under a const type parameter is readonly unless its apparent contextual type has a mutable
+    // array-like member: tsc's checkArrayLiteral reads getApparentTypeOfContextualType, so under `...cases: X` with
+    // `const X extends Item[]` the context `X[1]` of `['b', sa]` is Item, whose `[string, Ad<any>]` keeps the tuple
+    // mutable and X inferred (not its constraint) without a contextual return type (sphi/osis's enumAdapter tests)
+    interface Ad<R> { r: R }
+    type Item = string | [string, Ad<any>];
+    type ItemRepr<I extends Item> = I extends [infer T extends string, Ad<infer R>] ? [T, R] : I;
+    declare const sa: Ad<string>;
+    declare function k<const X extends Item[]>(...cases: X): X;
+    const e1 = k('a', ['b', sa]);
+    const z1: number = e1;
+          ~~
+!!! error TS2322: Type '["a", ["b", Ad<string>]]' is not assignable to type 'number'.
+    declare function h<const X extends Item[]>(...cases: X): { o: { [I in keyof X]: ItemRepr<X[I]> }[number] };
+    const e2 = h('a', ['b', sa]).o;
+    const z2: number = e2;
+          ~~
+!!! error TS2322: Type '"a" | ["b", string]' is not assignable to type 'number'.
+!!! error TS2322:   Type 'string' is not assignable to type 'number'.
+    declare function r<const X extends readonly Item[]>(...cases: X): X;
+    const e3 = r('a', ['b', sa]);
+    const z3: number = e3;
+          ~~
+!!! error TS2322: Type 'readonly ["a", ["b", Ad<string>]]' is not assignable to type 'number'.
+    declare function g<const X extends Item[]>(x: X): X;
+    const e4 = g(['a', ['b', sa]]);
+    const z4: number = e4;
+          ~~
+!!! error TS2322: Type '["a", ["b", Ad<string>]]' is not assignable to type 'number'.
+    

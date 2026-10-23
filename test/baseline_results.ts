@@ -297,9 +297,9 @@ const baselines = {
         types: true,
     },
     'ttttConstRestNestedTupleMutable': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ttttConstructorNarrowsThisType': {
         errors: true,
@@ -2504,6 +2504,11 @@ const baselines = {
         types: true,
     },
     'ttttUmdGlobalUnknownExportEquals': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUninferredConstraintBeforeInferredOnes': {
         errors: true,
         symbols: true,
         types: true,
