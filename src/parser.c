@@ -6284,6 +6284,13 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                     break;
 
                 case CLASS_ITEM_INTERFACE_MEMBER:
+                    if (item.interface_memeber.key.tag == INTERFACE_KEY_EXPR && item.interface_memeber.accessor &&
+                        item.interface_memeber.accessor->initializer && !item.interface_memeber.accessor_kind
+                    ) {
+                        Span at = expr_outer_span(item.interface_memeber.accessor->initializer);
+                        if (is_declaration) grammar_error(&p, at, 1246, "An interface property cannot have an initializer.");
+                        else grammar_error(&p, at, 1247, "A type literal property cannot have an initializer.");
+                    }
                     list_push(vec_interface_member, &members, item.interface_memeber);
                     item.interface_memeber = (InterfaceMember){0};
                     break;
@@ -8802,6 +8809,19 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
         expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+    }
+    if (is_type && !ret->is_method) {
+        // An initializer is parsed (tsc's parsePropertyOrMethodSignature), the grammar check says TS1246/TS1247
+        // (see the type literal loop, which knows which)
+        Parser init = parser(&p);
+        hop_whitespace(&init);
+        Expr value;
+        if (parse_initialization(&init, expr_ctx_null, &value)) {
+            parse_success(&init);
+            interface_member_accessor(ret)->initializer = ast_new(Expr, value);
+        } else {
+            parse_fail(&init);
+        }
     }
 
     return parse_success(&p);

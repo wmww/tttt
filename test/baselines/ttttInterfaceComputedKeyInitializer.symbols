@@ -1,0 +1,35 @@
+//// [test/cases/ttttInterfaceComputedKeyInitializer.ts] ////
+
+=== ttttInterfaceComputedKeyInitializer.ts ===
+// A computed-key interface or type literal member with an initializer is TS1246/TS1247 and the rest of the
+// declaration still parses.
+declare const K: any;
+>K : Symbol(K, Decl(ttttInterfaceComputedKeyInitializer.ts, 2, 13))
+
+interface T { [K]: number | undefined = undefined; }
+>T : Symbol(T, Decl(ttttInterfaceComputedKeyInitializer.ts, 2, 21))
+>[K] : Symbol(T[K], Decl(ttttInterfaceComputedKeyInitializer.ts, 3, 13))
+>K : Symbol(K, Decl(ttttInterfaceComputedKeyInitializer.ts, 2, 13))
+>undefined : Symbol(undefined)
+
+interface U { a: number = 1; }
+>U : Symbol(U, Decl(ttttInterfaceComputedKeyInitializer.ts, 3, 52))
+>a : Symbol(U.a, Decl(ttttInterfaceComputedKeyInitializer.ts, 4, 13))
+
+interface V { [K]: number = 1; }
+>V : Symbol(V, Decl(ttttInterfaceComputedKeyInitializer.ts, 4, 30))
+>[K] : Symbol(V[K], Decl(ttttInterfaceComputedKeyInitializer.ts, 5, 13))
+>K : Symbol(K, Decl(ttttInterfaceComputedKeyInitializer.ts, 2, 13))
+
+interface W { [K]: (() => 1) | undefined = undefined; }
+>W : Symbol(W, Decl(ttttInterfaceComputedKeyInitializer.ts, 5, 32))
+>[K] : Symbol(W[K], Decl(ttttInterfaceComputedKeyInitializer.ts, 6, 13))
+>K : Symbol(K, Decl(ttttInterfaceComputedKeyInitializer.ts, 2, 13))
+>undefined : Symbol(undefined)
+
+type L = { [K]: string = ""; b: number };
+>L : Symbol(L, Decl(ttttInterfaceComputedKeyInitializer.ts, 6, 55))
+>[K] : Symbol([K], Decl(ttttInterfaceComputedKeyInitializer.ts, 7, 10))
+>K : Symbol(K, Decl(ttttInterfaceComputedKeyInitializer.ts, 2, 13))
+>b : Symbol(b, Decl(ttttInterfaceComputedKeyInitializer.ts, 7, 28))
+

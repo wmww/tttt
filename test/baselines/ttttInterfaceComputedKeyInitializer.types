@@ -1,0 +1,34 @@
+//// [test/cases/ttttInterfaceComputedKeyInitializer.ts] ////
+
+=== ttttInterfaceComputedKeyInitializer.ts ===
+// A computed-key interface or type literal member with an initializer is TS1246/TS1247 and the rest of the
+// declaration still parses.
+declare const K: any;
+>K : any
+
+interface T { [K]: number | undefined = undefined; }
+>[K] : number | undefined
+>K : any
+>undefined : undefined
+
+interface U { a: number = 1; }
+>a : number
+>1 : 1
+
+interface V { [K]: number = 1; }
+>[K] : number
+>K : any
+>1 : 1
+
+interface W { [K]: (() => 1) | undefined = undefined; }
+>[K] : (() => 1) | undefined
+>K : any
+>undefined : undefined
+
+type L = { [K]: string = ""; b: number };
+>L : L
+>[K] : string
+>K : any
+>"" : ""
+>b : number
+

@@ -1,0 +1,27 @@
+ttttInterfaceComputedKeyInitializer.ts(4,41): error TS1246: An interface property cannot have an initializer.
+ttttInterfaceComputedKeyInitializer.ts(5,27): error TS1246: An interface property cannot have an initializer.
+ttttInterfaceComputedKeyInitializer.ts(6,29): error TS1246: An interface property cannot have an initializer.
+ttttInterfaceComputedKeyInitializer.ts(7,44): error TS1246: An interface property cannot have an initializer.
+ttttInterfaceComputedKeyInitializer.ts(8,26): error TS1247: A type literal property cannot have an initializer.
+
+
+==== ttttInterfaceComputedKeyInitializer.ts (5 errors) ====
+    // A computed-key interface or type literal member with an initializer is TS1246/TS1247 and the rest of the
+    // declaration still parses.
+    declare const K: any;
+    interface T { [K]: number | undefined = undefined; }
+                                            ~~~~~~~~~
+!!! error TS1246: An interface property cannot have an initializer.
+    interface U { a: number = 1; }
+                              ~
+!!! error TS1246: An interface property cannot have an initializer.
+    interface V { [K]: number = 1; }
+                                ~
+!!! error TS1246: An interface property cannot have an initializer.
+    interface W { [K]: (() => 1) | undefined = undefined; }
+                                               ~~~~~~~~~
+!!! error TS1246: An interface property cannot have an initializer.
+    type L = { [K]: string = ""; b: number };
+                             ~~
+!!! error TS1247: A type literal property cannot have an initializer.
+    
