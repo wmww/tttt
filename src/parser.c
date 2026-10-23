@@ -1571,6 +1571,23 @@ static bool hop_escaped_keyword(Parser* parent, const char* keyword) {
     return true;
 }
 
+// A word that is `keyword` once its escapes are cooked, consumed as an identifier: no TS1260 (tsc's createIdentifier
+// takes its token with nextTokenWithoutCheck)
+static bool hop_word_cooked(Parser* parent, const char* keyword) {
+    if (!may_start_keyword(parent->pos, keyword)) return false;
+    const char* start = parent->pos;
+    Span word;
+    if (!parse_identifier_or_keyword(parent, &word)) {
+        parent->pos = start;
+        return false;
+    }
+    cstr cooked = identifier_name_value(span_sv(word));
+    bool equal = strcmp(cstr_str(&cooked), keyword) == 0;
+    cstr_drop(&cooked);
+    if (!equal) parent->pos = start;
+    return equal;
+}
+
 static inline bool starts_with_followed_by_word_break(Parser* parent, const char* prefix) {
     // (Without a child parser unless an escape may spell the keyword: hop_escaped_keyword() reports TS1260)
     const char* at = parent->pos;
@@ -12182,15 +12199,16 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
         // `type` is a modifier unless it is the name: `{ type }`, `{ type, a }`, `{ type as x }` and `{ type as as }`
         // rename or take something called type, `{ type as }` and `{ type as as x }` are type-only (tsc's
         // parseImportOrExportSpecifier)
+        // (Each of those is taken as an identifier name: escaped, it isn't TS1260)
         Parser type_p = parser(&p);
-        if (hop_start_if_ends_on_word_break(&type_p, "type")) {
+        if (hop_word_cooked(&type_p, "type")) {
             hop_whitespace(&type_p);
             Parser as_p = parser(&type_p);
             bool type_is_name = *type_p.pos == ',' || *type_p.pos == '}';
-            if (hop_start_if_ends_on_word_break(&as_p, "as")) {
+            if (hop_word_cooked(&as_p, "as")) {
                 hop_whitespace(&as_p);
                 bool ends = *as_p.pos == ',' || *as_p.pos == '}';
-                if (hop_start_if_ends_on_word_break(&as_p, "as")) {
+                if (hop_word_cooked(&as_p, "as")) {
                     hop_whitespace(&as_p);
                     type_is_name = *as_p.pos == ',' || *as_p.pos == '}';
                 } else {

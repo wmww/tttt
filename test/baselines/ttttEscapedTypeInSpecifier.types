@@ -1,0 +1,28 @@
+//// [test/cases/ttttEscapedTypeInSpecifier.ts] ////
+
+=== m.ts ===
+type T = number;
+>T : number
+
+export type { T as as };
+>T : any
+>as : number
+
+export const x = 1;
+>x : 1
+>1 : 1
+
+=== a.ts ===
+// An import or export specifier's leading `type` (and the `as` after it) is taken as an identifier name first (tsc's
+// parseImportOrExportSpecifier via parseModuleExportName, createIdentifier's nextTokenWithoutCheck): spelled with an
+// escape, it's no TS1260 even where it ends up the type-only modifier. Babel's
+// type-only-import-export-specifiers/*-invalid-escaped-type-only fixtures
+import { typ\u0065 as } from "./m";
+>as : any
+
+import { typ\u0065 x } from "./m";
+>x : 1
+
+export { typ\u0065 as } from "./m";
+>as : any
+
