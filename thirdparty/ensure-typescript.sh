@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The TypeScript 7 oracle (plan 54): microsoft/TypeScript `main` at the commit a `typescript@7.1.0-dev` nightly was
+# The TypeScript 7 oracle (plan 54): microsoft/TypeScript `main` at the commit a `typescript@7.1.0` prerelease was
 # built from (npm's gitHead), with tsgo's Go sources under tsc/ and the native test suite in tsc/testdata. Not
 # committed. Also fetches the Go toolchain go.mod asks for (thirdparty/go, sha256-checked) and
 # builds tsgo's CLI from the same commit into typescript/built/tsc, so every oracle runs one pinned compiler.
@@ -13,9 +13,9 @@
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-# typescript@7.1.0-dev.20261008.1 (npm `next` on 2026-10-08)
-TS_COMMIT=fed0bf24149fb1ed36039212648bafdafc1ea10e
-TS_VERSION="7.1.0-dev.20261008.1 (${TS_COMMIT:0:8})"
+# typescript@7.1.0-beta (npm `beta`, git tag v7.1-beta, 2026-10-19)
+TS_COMMIT=3e9236361fa97a9e6c685f4833ac457ae2d8c50a
+TS_VERSION="7.1.0-beta (${TS_COMMIT:0:8})"
 GO_VERSION=go1.27.2
 GO_SHA256=ecbadb99091a3f46e31f5f934b068b1864eafa7995211b39eaddf76996045fe5
 

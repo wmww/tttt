@@ -4,7 +4,7 @@ tttt is a work-in-progress TypeScript reimplementation in C.
 ## Objective
 The project's focus is performance, ideally beating the new typescript-go. But we need to fully support the TypeScript language first. That's what you're working on today.
 
-The oracle is TypeScript 7.1 (`main` at a 7.1 nightly; `thirdparty/ensure-typescript.sh`: tsgo's Go sources and native test suite in `thirdparty/typescript`, its CLI at `thirdparty/typescript/built/tsc`). The test suite, libs, probes (`filetest.sh`/`tscbaseline.sh`/`mutate.py`, through `scripts/tsgoprobe.sh`), the sweeps' tool (`tttt-oracle`, `test/oracle/README.md`) and every cached expectation are tsgo 7.1's.
+The oracle is TypeScript 7.1 (the 7.1.0-beta, `v7.1-beta` = 3e923636; `thirdparty/ensure-typescript.sh`: tsgo's Go sources and native test suite in `thirdparty/typescript`, its CLI at `thirdparty/typescript/built/tsc`). The test suite, libs, probes (`filetest.sh`/`tscbaseline.sh`/`mutate.py`, through `scripts/tsgoprobe.sh`), the sweeps' tool (`tttt-oracle`, `test/oracle/README.md`) and every cached expectation are tsgo 7.1's.
 
 Tests are the oracle, but not the true end goal. Special casing tests, or getting a few more tests to pass under an architecture that is fundamentally flawed doesn't help anyone. Keep the big picture in mind.
 

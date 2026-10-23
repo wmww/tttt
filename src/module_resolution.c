@@ -614,10 +614,10 @@ static PackageJson const* package_scope_of(State* me, csview directory, cstr* sc
     return nullptr;
 }
 
-// tsc's version as typesVersions and `types@` conditions test it (tsgo's core.Version(), "7.1.0-dev": a prerelease, so
+// tsc's version as typesVersions and `types@` conditions test it (tsgo's core.Version(), "7.1.0-beta": a prerelease, so
 // `>=7.1` holds and `>=7.1.0` doesn't), with tsgo's semver package's rules (internal/semver/version_range.go)
 static const long TS_VERSION[3] = { 7, 1, 0 };
-#define TS_VERSION_PRERELEASE "dev"
+#define TS_VERSION_PRERELEASE "beta"
 
 // A comparator's operand: major.minor.patch and a prerelease ("" none, else its dot-separated identifiers)
 typedef struct SemVer {

@@ -1507,7 +1507,7 @@ static_failable build(Options const* opts, returns int) {
 }
 
 // The TypeScript version tttt checks like (what --version says)
-#define TTTT_TYPESCRIPT_VERSION "7.1.0-dev"
+#define TTTT_TYPESCRIPT_VERSION "7.1.0-beta"
 
 // A command line error (tsc's TS5023 and friends) in the format diagnostics are printed in
 static int command_line_error(int pretty, unsigned code, cstr message) {

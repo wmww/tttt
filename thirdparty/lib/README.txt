@@ -1,1 +1,1 @@
-These libraries come from upstream TypeScript 7.1.0-dev.20261008.1 (fed0bf24) (tsc/internal/bundled/libs)
+These libraries come from upstream TypeScript 7.1.0-beta (3e923636) (tsc/internal/bundled/libs)

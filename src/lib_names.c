@@ -107,8 +107,8 @@ char const* const lib_names[] = {
     "esnext.array",
     "esnext.collection",
     "esnext.error",
-    "esnext.iterator",
     "esnext.typedarrays",
+    "esnext.iterator",
     "esnext.promise",
     "esnext.date",
     "esnext.decorators",
@@ -136,10 +136,9 @@ char const* const lib_aliases[][2] = {
     { "esnext.array", "es2026.array" },
     { "esnext.collection", "es2026.collection" },
     { "esnext.error", "es2026.error" },
-    { "esnext.iterator", "es2026.iterator" },
     { "esnext.typedarrays", "es2026.typedarrays" },
 };
-u32 const lib_alias_count = 15;
+u32 const lib_alias_count = 14;
 
 char const* const tsc_option_names[] = {
     "help", "help", "watch", "preserveWatchOutput", "listFiles", "explainFiles", "listEmittedFiles", "pretty",

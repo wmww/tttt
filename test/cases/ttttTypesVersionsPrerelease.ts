@@ -1,4 +1,4 @@
-// typesVersions ranges are tested against tsgo's version 7.1.0-dev with tsgo's semver rules: a prerelease, so
+// typesVersions ranges are tested against tsgo's version 7.1.0-beta with tsgo's semver rules: a prerelease, so
 // `>=7.1.0` and `^7.1.0` don't hold, `>=7.1`, `7.x`, `<7.1.0` and `7.1.0-alpha - 7.2` do (bun-types 1.4's
 // `{ ">=7.1": { "index.d.ts": ["ts7.1/index.d.ts"] } }`, which declares its import-attribute modules: emailthing,
 // source sweep refresh 5). tttt tested them against 6.0
