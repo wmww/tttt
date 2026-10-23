@@ -101,7 +101,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   then `if (!node) return`, then `() => node!.replaceWithText(..)` in a closure past the last assignment. Without the
   optional-chain read it matches. Guess: the closure's narrowing past the last assignment (tsc 5.4's
   isPastLastAssignment) goes through the optional chain's flow condition and narrows to never. Repro
-  test/cases/npm__tamagui_codemod-flat-values_TS2339.ts (13 lines). [flip] [open]
+  test/cases/npm__tamagui_codemod-flat-values_TS2339.ts (13 lines). (claimed: cor10) [flip] [open]
 
 ## Real-world flips from other sources
 - **rw_foldkit_TS6133** (source sweep, foldkit packages/foldkit/tsconfig.build.json and tsconfig.docs.json; tsgo 0,
