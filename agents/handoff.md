@@ -47,7 +47,14 @@ prompts (workers must not `rm -rf` variable paths).
 3. **wt-memc** (worker memc): memory census for per-file release: what share of a checker's arena is per-file
    results (expression/flow/node memos, per-file relation work) that nothing reads after the file is done (bun frees
    those at task end; that is most of its 2.2 GB on vscode), the design of a per-file region dropped at file end, and
-   the recycle-budget tradeoff; results into agents/notes/memory.md. The human asked whether RSS can be cut
+   the recycle-budget tradeoff; results into agents/notes/memory.md. Measured so far (zod only, one checker, no
+   recycling): **82% of the 275 MB arena is droppable at file end** (71% still referenced by later files' results but
+   not needed, 11% dead), mostly instantiated type structure (instantiate_members ~73 MB, builder_finish ~18, mapped-
+   type expansion ~13), NOT expression memos (4.5 MB); re-derivation if dropped ~4% of types. Design: a memo/scratch-
+   only per-file region is safe but reaches only 5-35 MB on zod; "everything per file, survivors copied into the shared
+   graph at file end" reaches the 80% but is the copying-recycle design measurements.md declined. The census tool:
+   `scripts/filecensus.sh` (a -DTTTT_SURVIVORS build). Next: drizzle, effect, vscode at K1 and the defaults. The human
+   asked whether RSS can be cut
    substantially at little speed cost: three levers in order: the recycle-budget default (laptop sweep pending:
    `--checker-memory` 4096/3072/2048 on vscode and drizzle, wall vs RSS), per-file release (structural), phase-
    boundary trims (small; a trim burst when no checker runs).
