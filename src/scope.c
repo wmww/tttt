@@ -3938,6 +3938,24 @@ static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs) {
             return resolve_default_target(item, module, assigned, errs);
 
         case PORT_EXPORT_SPECIFIC: {
+            // `namespace N { export { v }; }` (TS1194) or `declare global { export { v }; }`: tsc's resolveName looks in
+            // the module declaration's exports before its locals, where the specifier itself is `v`, and skips an export
+            // specifier alias only in a source file or an ambient non-global module declaration: it is its own target,
+            // TS2303, misplaced or not
+            // (Not when the block's locals have the name, which resolveName looks at before the exports, `import v =
+            // ...; export { v }`, nor when the export is more than the specifier, `export let v` in another block:
+            // TS2484 below)
+            Scope const* in = my alias->scope;
+            bool exports_first = in->kind == SCOPE_GLOBAL_AUGMENTATION ||
+                (in->kind == SCOPE_NAMESPACE && !in->ambient && !(in->container && in->container->is_module));
+            if (exports_first && !(my flags & SYMBOL_ANY_MEANING & ~(u32)SYMBOL_ALIAS) &&
+                !symbol_table_get(scope_locals((Scope*)in), port_item_name(item->source_name)) &&
+                span_valid(item->source_name) && csview_equals_sv(span_sv(item->source_name), span_sv(item->decl_name))
+            ) {
+                error_ctx_error_d(my alias->scope->binder->errs, item->decl_name, 2303, "Circular definition of import alias '",
+                    item->decl_name, "'.");
+                return nullptr;
+            }
             Symbol* found = scope_resolve(my alias->scope, span_sv(item->source_name), SYMBOL_ANY_MEANING);
             // (tsc's primitive types and `undefined` aren't symbols its resolveName finds)
             if (symbol_is_builtin_type(found)) found = nullptr;

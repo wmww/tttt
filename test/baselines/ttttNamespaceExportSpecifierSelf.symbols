@@ -1,0 +1,30 @@
+//// [test/cases/ttttNamespaceExportSpecifierSelf.ts] ////
+
+=== ttttNamespaceExportSpecifierSelf.ts ===
+// `export { v }` in a namespace or `declare global` resolves v in the module declaration's exports first, where it
+// is the specifier itself (tsc's resolveName skips export specifier aliases only in source files and ambient
+// non-global module declarations): TS2303 next to the misplaced-export error. A `declare namespace` doesn't cycle
+export {};
+const v = 1;
+>v : Symbol(v, Decl(ttttNamespaceExportSpecifierSelf.ts, 4, 5))
+
+const w = 2;
+>w : Symbol(w, Decl(ttttNamespaceExportSpecifierSelf.ts, 5, 5))
+
+namespace N { export { v }; }
+>N : Symbol(N, Decl(ttttNamespaceExportSpecifierSelf.ts, 5, 12))
+>v : Symbol(v, Decl(ttttNamespaceExportSpecifierSelf.ts, 6, 22))
+
+namespace O { export { w as w2 }; }
+>O : Symbol(O, Decl(ttttNamespaceExportSpecifierSelf.ts, 6, 29))
+>w : Symbol(w, Decl(ttttNamespaceExportSpecifierSelf.ts, 5, 5))
+>w2 : Symbol(w2, Decl(ttttNamespaceExportSpecifierSelf.ts, 7, 22))
+
+declare global { export { v }; }
+>global : Symbol(global, Decl(ttttNamespaceExportSpecifierSelf.ts, 7, 35))
+>v : Symbol(v, Decl(ttttNamespaceExportSpecifierSelf.ts, 8, 25))
+
+declare namespace P { export { v }; }
+>P : Symbol(P, Decl(ttttNamespaceExportSpecifierSelf.ts, 8, 32))
+>v : Symbol(v, Decl(ttttNamespaceExportSpecifierSelf.ts, 9, 30))
+

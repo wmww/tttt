@@ -1,0 +1,29 @@
+ttttNamespaceExportSpecifierSelf.ts(7,15): error TS1194: Export declarations are not permitted in a namespace.
+ttttNamespaceExportSpecifierSelf.ts(7,24): error TS2303: Circular definition of import alias 'v'.
+ttttNamespaceExportSpecifierSelf.ts(8,15): error TS1194: Export declarations are not permitted in a namespace.
+ttttNamespaceExportSpecifierSelf.ts(9,18): error TS2666: Exports and export assignments are not permitted in module augmentations.
+ttttNamespaceExportSpecifierSelf.ts(9,27): error TS2303: Circular definition of import alias 'v'.
+
+
+==== ttttNamespaceExportSpecifierSelf.ts (5 errors) ====
+    // `export { v }` in a namespace or `declare global` resolves v in the module declaration's exports first, where it
+    // is the specifier itself (tsc's resolveName skips export specifier aliases only in source files and ambient
+    // non-global module declarations): TS2303 next to the misplaced-export error. A `declare namespace` doesn't cycle
+    export {};
+    const v = 1;
+    const w = 2;
+    namespace N { export { v }; }
+                  ~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+                           ~
+!!! error TS2303: Circular definition of import alias 'v'.
+    namespace O { export { w as w2 }; }
+                  ~~~~~~~~~~~~~~~~~~~
+!!! error TS1194: Export declarations are not permitted in a namespace.
+    declare global { export { v }; }
+                     ~~~~~~
+!!! error TS2666: Exports and export assignments are not permitted in module augmentations.
+                              ~
+!!! error TS2303: Circular definition of import alias 'v'.
+    declare namespace P { export { v }; }
+    
