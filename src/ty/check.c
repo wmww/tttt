@@ -1606,6 +1606,9 @@ static bool suggestion_accessible(Checker* me, PropertyExpr const* access, Prop 
 // tsc's getSuggestedSymbolForNonexistentProperty: the property of `object` whose name is closest to `name` (of a union,
 // those all its members have)
 Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
+    // (Of the reduced type, tsc's getPropertiesOfType through getReducedApparentType: a member that is an intersection of
+    // conflicting discriminants, `Rect & Arrow`, is never and has nothing to say)
+    object = ty_reduced(me, object);
     TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
     Ty const* first = nullptr;
     for (u32 i = 0; i < parts.len && !first; i++) {

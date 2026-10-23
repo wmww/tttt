@@ -1,0 +1,58 @@
+//// [test/cases/ttttSuggestionReducedUnion.ts] ////
+
+=== ttttSuggestionReducedUnion.ts ===
+// A spelling suggestion goes by the reduced union: a member that is an intersection of conflicting discriminants
+// (`Rect & Arrow`, never) offers no properties and doesn't hide the others' (tsc's getPropertiesOfType through
+// getReducedApparentType; bun's 44-C6b, excalidraw's element types narrowed by a generic predicate)
+type Base = Readonly<{ id: string; x: number }>;
+>Base : Readonly<{ id: string; x: number; }>
+>id : string
+>x : number
+
+type Rect = Base & { type: "rectangle" };
+>Rect : Rect
+>type : "rectangle"
+
+type Linear = Base & Readonly<{ type: "line" | "arrow"; points: number[] }>;
+>Linear : Linear
+>type : "arrow" | "line"
+>points : number[]
+
+type Arrow = Linear & Readonly<{ type: "arrow"; elbowed: boolean }>;
+>Arrow : Arrow
+>type : "arrow"
+>elbowed : boolean
+
+declare const v1: (Rect & Arrow) | Arrow;
+>v1 : Arrow
+
+v1.elbowedX;
+>v1.elbowedX : any
+>v1 : Arrow
+>elbowedX : any
+
+declare const v4: (Rect & Arrow) | (Linear & Arrow);
+>v4 : Readonly<{ id: string; x: number; }> & Readonly<{ type: "line" | "arrow"; points: number[]; }> & Readonly<{ type: "arrow"; elbowed: boolean; }>
+
+v4.elbowedX;
+>v4.elbowedX : any
+>v4 : Readonly<{ id: string; x: number; }> & Readonly<{ type: "line" | "arrow"; points: number[]; }> & Readonly<{ type: "arrow"; elbowed: boolean; }>
+>elbowedX : any
+
+type El = Rect | Linear | Arrow;
+>El : El
+
+declare const isArrow: <T extends El>(e?: T | null) => e is T & Arrow;
+>isArrow : <T extends El>(e?: T | null) => e is T & Arrow
+>e : T | null | undefined
+
+function f(e: El) { if (isArrow(e)) { e.elbowedX; } }
+>f : (e: El) => void
+>e : El
+>isArrow(e) : boolean
+>isArrow : <T extends El>(e?: T | null) => e is T & Arrow
+>e : El
+>e.elbowedX : any
+>e : Arrow | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "line" | "arrow"; points: number[]; }> & Readonly<{ id: string; x: number; }> & Readonly<{ type: "arrow"; elbowed: boolean; }>) | (Readonly<{ id: string; x: number; }> & Readonly<{ type: "line" | "arrow"; points: number[]; }> & Readonly<{ type: "arrow"; elbowed: boolean; }> & Readonly<{ id: string; x: number; }>)
+>elbowedX : any
+

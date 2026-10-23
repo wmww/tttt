@@ -1,0 +1,74 @@
+//// [test/cases/ttttSuggestionReducedUnion.ts] ////
+
+=== ttttSuggestionReducedUnion.ts ===
+// A spelling suggestion goes by the reduced union: a member that is an intersection of conflicting discriminants
+// (`Rect & Arrow`, never) offers no properties and doesn't hide the others' (tsc's getPropertiesOfType through
+// getReducedApparentType; bun's 44-C6b, excalidraw's element types narrowed by a generic predicate)
+type Base = Readonly<{ id: string; x: number }>;
+>Base : Symbol(Base, Decl(ttttSuggestionReducedUnion.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>id : Symbol(id, Decl(ttttSuggestionReducedUnion.ts, 3, 22))
+>x : Symbol(x, Decl(ttttSuggestionReducedUnion.ts, 3, 34))
+
+type Rect = Base & { type: "rectangle" };
+>Rect : Symbol(Rect, Decl(ttttSuggestionReducedUnion.ts, 3, 48))
+>Base : Symbol(Base, Decl(ttttSuggestionReducedUnion.ts, 0, 0))
+>type : Symbol(type, Decl(ttttSuggestionReducedUnion.ts, 4, 20))
+
+type Linear = Base & Readonly<{ type: "line" | "arrow"; points: number[] }>;
+>Linear : Symbol(Linear, Decl(ttttSuggestionReducedUnion.ts, 4, 41))
+>Base : Symbol(Base, Decl(ttttSuggestionReducedUnion.ts, 0, 0))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(ttttSuggestionReducedUnion.ts, 5, 31))
+>points : Symbol(points, Decl(ttttSuggestionReducedUnion.ts, 5, 55))
+
+type Arrow = Linear & Readonly<{ type: "arrow"; elbowed: boolean }>;
+>Arrow : Symbol(Arrow, Decl(ttttSuggestionReducedUnion.ts, 5, 76))
+>Linear : Symbol(Linear, Decl(ttttSuggestionReducedUnion.ts, 4, 41))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>type : Symbol(type, Decl(ttttSuggestionReducedUnion.ts, 6, 32))
+>elbowed : Symbol(elbowed, Decl(ttttSuggestionReducedUnion.ts, 6, 47))
+
+declare const v1: (Rect & Arrow) | Arrow;
+>v1 : Symbol(v1, Decl(ttttSuggestionReducedUnion.ts, 7, 13))
+>Rect : Symbol(Rect, Decl(ttttSuggestionReducedUnion.ts, 3, 48))
+>Arrow : Symbol(Arrow, Decl(ttttSuggestionReducedUnion.ts, 5, 76))
+>Arrow : Symbol(Arrow, Decl(ttttSuggestionReducedUnion.ts, 5, 76))
+
+v1.elbowedX;
+>v1 : Symbol(v1, Decl(ttttSuggestionReducedUnion.ts, 7, 13))
+
+declare const v4: (Rect & Arrow) | (Linear & Arrow);
+>v4 : Symbol(v4, Decl(ttttSuggestionReducedUnion.ts, 9, 13))
+>Rect : Symbol(Rect, Decl(ttttSuggestionReducedUnion.ts, 3, 48))
+>Arrow : Symbol(Arrow, Decl(ttttSuggestionReducedUnion.ts, 5, 76))
+>Linear : Symbol(Linear, Decl(ttttSuggestionReducedUnion.ts, 4, 41))
+>Arrow : Symbol(Arrow, Decl(ttttSuggestionReducedUnion.ts, 5, 76))
+
+v4.elbowedX;
+>v4 : Symbol(v4, Decl(ttttSuggestionReducedUnion.ts, 9, 13))
+
+type El = Rect | Linear | Arrow;
+>El : Symbol(El, Decl(ttttSuggestionReducedUnion.ts, 10, 12))
+>Rect : Symbol(Rect, Decl(ttttSuggestionReducedUnion.ts, 3, 48))
+>Linear : Symbol(Linear, Decl(ttttSuggestionReducedUnion.ts, 4, 41))
+>Arrow : Symbol(Arrow, Decl(ttttSuggestionReducedUnion.ts, 5, 76))
+
+declare const isArrow: <T extends El>(e?: T | null) => e is T & Arrow;
+>isArrow : Symbol(isArrow, Decl(ttttSuggestionReducedUnion.ts, 12, 13))
+>T : Symbol(T, Decl(ttttSuggestionReducedUnion.ts, 12, 24))
+>El : Symbol(El, Decl(ttttSuggestionReducedUnion.ts, 10, 12))
+>e : Symbol(e, Decl(ttttSuggestionReducedUnion.ts, 12, 38))
+>T : Symbol(T, Decl(ttttSuggestionReducedUnion.ts, 12, 24))
+>e : Symbol(e, Decl(ttttSuggestionReducedUnion.ts, 12, 38))
+>T : Symbol(T, Decl(ttttSuggestionReducedUnion.ts, 12, 24))
+>Arrow : Symbol(Arrow, Decl(ttttSuggestionReducedUnion.ts, 5, 76))
+
+function f(e: El) { if (isArrow(e)) { e.elbowedX; } }
+>f : Symbol(f, Decl(ttttSuggestionReducedUnion.ts, 12, 70))
+>e : Symbol(e, Decl(ttttSuggestionReducedUnion.ts, 13, 11))
+>El : Symbol(El, Decl(ttttSuggestionReducedUnion.ts, 10, 12))
+>isArrow : Symbol(isArrow, Decl(ttttSuggestionReducedUnion.ts, 12, 13))
+>e : Symbol(e, Decl(ttttSuggestionReducedUnion.ts, 13, 11))
+>e : Symbol(e, Decl(ttttSuggestionReducedUnion.ts, 13, 11))
+
