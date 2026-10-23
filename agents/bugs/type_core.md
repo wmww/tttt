@@ -193,6 +193,15 @@ passing tests).
   evaluating `wrap2(target)` while wrap2's return type is in flight; how tsgo's ordering avoids the cycle
   (contextuallyCheckFunctionExpressionOrObjectLiteralMethod decides `get`'s return type from its body too) wasn't
   worked out. Not corpus-visible. [open]
+- First-checker-wins circularity diagnostics make `--checkers 4` output vary run to run (bun's 92-R16b, 2026-10-23):
+  a.ts `type A = { [K in "a"]: B[K & keyof B] }; declare const a: A; a.a;`, b.ts the same with A and B swapped.
+  TS2615 is reported where the cycle is first met, so it depends on history, in tsc too: with `"files": ["b.ts",
+  "a.ts"]` tsgo and tttt K1 both report it at b.ts, and K1 in file order both report it at a.ts only.
+  `TTTT_CHECK_ONLY=b.ts --checkers 1` reproduces the b.ts copy. With `--checkers 4`, tsgo (2 files) reports a.ts
+  only. tttt reports it at b.ts too in about 1 run in 3 (30 runs: 20 one way, 10 the other), so here the two files
+  sometimes land in different checkers: the file-to-checker assignment (work taking?) isn't deterministic for a
+  forced K above the file count. The default K is 1 on projects this small. Worth a look at how files are dealt
+  when K exceeds what the sizes call for: tsgo's assignment is static. [open]
 ## Classes and declarations
 - Mixin leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
