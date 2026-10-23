@@ -66,3 +66,25 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   element. tsc's getAssignedType has no case for a spread assignment: the rest gets the error type, so the auto-typed
   `let` is any from there on; tttt's pattern_path_type returned nothing for an object rest, which left the auto type
   (unassigned: TS7034). Fixed in pattern_path_type (src/ty/flow.c). [fixed 2026-10-23]
+- Seed 20261029, vobsjs/vobs (@vobs/theme): `x?. (args)` (whitespace between `?.` and `(`) was TS1003 Identifier
+  expected, and the syntax error hid the program's other diagnostics. Repro test/cases/npm__vobs_theme_TS1003.ts.
+  [fixed daf488efd]
+- Seed 20261029, vobsjs/vobs (@vobs/theme), behind the parser bug: `JSX.IntrinsicElements` an intersection of mapped
+  types over HTMLElementTagNameMap and SVGElementTagNameMap had no tags (569 spurious TS2339 'div' does not exist).
+  Repro test/cases/npm__vobs_theme_TS2339.tsx. [fixed ef9b44945]
+- Seed 20261029, ionic-team/stencil-component-starter: spurious TS2320 on @vitest/expect's `interface Assertion<T>`
+  (13 of them; tsgo is clean). @vitest/expect declares Assertion and `export type { Assertion }`, vitest augments it
+  (`declare module "@vitest/expect"`) and re-exports it (`export { Assertion } from '@vitest/expect'`), and
+  @stencil/vitest augments it through the re-export (`declare module 'vitest' { interface Assertion extends
+  CustomMatchers }`). tsgo's mergeSymbol merges each augmentation into a clone (cloneSymbol of the resolved target, a
+  clone of a clone the second time), and getMergedSymbol of the original declaration is only the first clone, so the
+  interface @vitest/expect declares never has CustomMatchers as a base: no conflict with JestAssertion's
+  jest.Matchers members. tttt's aug_merge_symbol/aug_merge_fixup (scope.c) put the second augmentation's base into
+  what the declaration means. Symbols differ too (tsgo's import from 'outer' has 2 declarations). Repro
+  test/cases/npm_My-first-stencil-project-001_TS2320.ts (inner/outer/aug, 30 lines). [flip] [open]
+- Seed 20261029, nirholas/free-crypto-news: spurious TS2345 on unified's `.use(rehypeHighlight.default, { detect:
+  true, ignoreMissing: true })` (`use<P extends unknown[]>(plugin: Plugin<P, Input, Output>, ...parameters: P |
+  [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
+  plugin's parameters `[options?: Readonly<Options> | null | undefined]`. Cut-down probes without unified's Plugin
+  conditional return type and CallableInstance base didn't reproduce. Repro test/cases/npm__nirholas_crypto-news_TS2345.ts
+  (11 files from reduce.py). [open]
