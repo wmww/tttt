@@ -103,6 +103,8 @@ the divergence.
   `TTTT_DEBUG_REENTRY=1` is `NESTEDCALL a.ts:1` (the nested resolution's result is dropped, stage C). Also 10-C1
   (`function g4() { return f4(1, 2); } function f4(a: number, b = g4())`: TS7023 g4 + TS7022 b) and 21-C1b
   (`declare const helper: (n: number) => typeof k; const k = compute(1); function compute(v) { helper(1); return v; }`).
+  Real code: crowd-dev's connectors (`const log = ctx.child({ cursor })` re-entered through cursor's back edge and an
+  annotated `const connection: T | null = fetchPage(ctx, log)`'s assignment narrowing, bugs/sourcesweep_checker.md).
   Not all are re-entry: some are other eager orders (16-C1a: a base type `Pick<typeof xa, "a">` with `xa = ya!`; 10-C2b:
   a setter parameter `typeof x10` in x10's own initializer). Triage each with `scripts/reentrytrace.py` first.
 - **E. Members without in-flight state**: won't fix unless members.c adopts tsc's resolution order (bases instantiated

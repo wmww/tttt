@@ -486,12 +486,18 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   ... 338 more ...}' is not assignable ...`), src/features/chat/kit/message-actions.tsx:1249, permissions/notch-list.tsx:216
   (`IntrinsicAttributes & Omit<HTMLMotionProps<"div">, "ref"> & RefAttributes<HT...`); plus one +TS2551. Guess: a
   spread of motion's HTMLMotionProps against an Omit/intersection target (relation of a big mapped/intersection). [open]
-- **crowd-dev/services/libs/connectors: TS7022 on the wrong `nodes` loops**: tsgo reports TS7022 at
-  src/connectors/github/syncs/pullRequestComments.ts:32 and pullRequestReviewComments.ts:50, :86; tttt instead at
-  prWalk.ts:198, syncs/discussions.ts:124, issueComments.ts:86, issues.ts:33 (`'nodes' implicitly has type 'any' ...
-  referenced directly or indirectly in its own initializer`). Same at K1 and the defaults. Guess: a paginating loop
-  variable whose initializer calls a generic GraphQL helper; which declarations are in a circularity depends on the
-  resolution order. [open]
+- **crowd-dev/services/libs/connectors: TS7022 on the wrong declarations** (refresh 8). Two causes, neither order
+  dependent (K1, K16 and TTTT_CHECK_ONLY agree):
+  - tttt's spurious TS7022 on `nodes` (prWalk.ts:198, syncs/discussions.ts:124, issueComments.ts:86, issues.ts:33):
+    `const { pageInfo, nodes } = data...` with data circular through pageInfo gave every name of the pattern the
+    circular marker. [fixed 7b564dfa0]
+  - tsgo's TS7022 on `log` (syncs/pullRequestComments.ts:32, pullRequestReviewComments.ts:50, :86), missing in tttt:
+    `do { const log = ctx.child({ cursor }); const connection: string | null = fetchPage(ctx, log); cursor =
+    connection; } while (cursor)` with `fetchPage<T>(c: any, log: T)` (a generic call: no quick type). tsgo reaches
+    log again through cursor's back edge, connection's assignment narrowing and fetchPage's argument, below the call
+    barrier: `scripts/reentrytrace.py` on that 10-line file shows tsgo's REENTER 0 at the fetchPage line and
+    NESTEDCALL at both calls, tttt re-entering ten times and dropping the nested results. The re-entry model's stages
+    C/D (agents/notes/reentrancy.md): the nested call's result kept. [design]
 - **mulmoclaude: +TS2345 `unknown` to `string`** at server/utils/validateEntryList.ts:40 (configs mulmoclaude/server,
   mulmoclaude/test): `hasStringProp` is unresolved there (its package isn't built: TS2305 on both sides), so `item:
   unknown` isn't narrowed and `item[spec.echoProp]` (a generic key) was TS18046 and then `unknown`; tsc's
