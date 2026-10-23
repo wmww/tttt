@@ -1,0 +1,39 @@
+//// [test/cases/ttttJsdocLinkLocalInBlock.ts] ////
+
+=== ttttJsdocLinkLocalInBlock.ts ===
+// A JSDoc `{@link x}` before a statement in a block names x from there: a local only a link names is used (bun's 31-SC5)
+export function k(): number {
+>k : Symbol(k, Decl(ttttJsdocLinkLocalInBlock.ts, 0, 0))
+
+    if (Math.random() > 0.5) {
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+
+        const limit = 10;
+>limit : Symbol(limit, Decl(ttttJsdocLinkLocalInBlock.ts, 3, 13))
+
+        /** At most {@link limit}. */
+        const x = 1;
+>x : Symbol(x, Decl(ttttJsdocLinkLocalInBlock.ts, 5, 13))
+
+        return x;
+>x : Symbol(x, Decl(ttttJsdocLinkLocalInBlock.ts, 5, 13))
+    }
+    for (const item of [1]) {
+>item : Symbol(item, Decl(ttttJsdocLinkLocalInBlock.ts, 8, 14))
+
+        /** See {@linkcode item}. */
+        return 1;
+    }
+    const lim = 10;
+>lim : Symbol(lim, Decl(ttttJsdocLinkLocalInBlock.ts, 12, 9))
+
+    /* Not a JSDoc: {@link lim} */
+    const y = 1;
+>y : Symbol(y, Decl(ttttJsdocLinkLocalInBlock.ts, 14, 9))
+
+    return y;
+>y : Symbol(y, Decl(ttttJsdocLinkLocalInBlock.ts, 14, 9))
+}
+

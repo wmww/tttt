@@ -381,6 +381,36 @@ void unused_mark_jsdoc_links(SourceFile const* file) {
     }
 }
 
+// The `{@link X}` tags of the JSDoc comments right before a statement in a block, resolved where the statement is: a
+// local only a link names is used (tsc resolves the link names of the node the JSDoc belongs to, from there). The
+// file's own statements' links are unused_mark_jsdoc_links()'s, which looks from the file's scope
+void unused_mark_leading_jsdoc_links(Scope const* names, char const* statement_start, char const* file_start) {
+    if (!unused_enabled() || !statement_start) return;
+    char const* at = statement_start;
+    while (true) {
+        while (at > file_start && (at[-1] == ' ' || at[-1] == '\t' || at[-1] == '\n' || at[-1] == '\r')) at--;
+        if (at - file_start < 5 || at[-1] != '/' || at[-2] != '*') return;
+        char const* open = at - 2;
+        while (open > file_start && !(open[0] == '/' && open[1] == '*')) open--;
+        if (open[0] != '/' || open[1] != '*') return;
+        bool jsdoc = open[2] == '*' && open[3] != '/';
+        for (char const* p = open; jsdoc && p + 5 < at; p++) {
+            if (memcmp(p, "@link", 5)) continue;
+            char const* name = p + 5;
+            if (!strncmp(name, "code", 4)) name += 4;
+            else if (!strncmp(name, "plain", 5)) name += 5;
+            if (*name != ' ' && *name != '\t') continue;
+            while (*name == ' ' || *name == '\t') name++;
+            char const* end = name;
+            while (end < at && is_identifier_char(*end)) end++;
+            if (end == name) continue;
+            csview sv = csview_from_n(name, end - name);
+            unused_mark_referenced(names, scope_resolve(names, sv, SYMBOL_ANY_MEANING), SYMBOL_ANY_MEANING);
+        }
+        at = open;
+    }
+}
+
 // tsc's checkUnusedClassMembers: private members nothing read (ty_mark_member_referenced())
 static void report_class_members(Reporter const* r, ClassDecl const* me) {
     Checker* checker = current_checker;
