@@ -106,6 +106,9 @@ openapi-typescript https://github.com/openapi-ts/openapi-typescript.git d46a319a
 # run-tsgo.mts does: ensure-sources.sh installs with scripts off)
 # perf: no openclaw
 openclaw https://github.com/openclaw/openclaw.git faeacc706b4887e65c4db1e6ac992179a6f82630
+# opencode: correctness only, excluded from perf tests (the human's tester, 2026-10-23)
+# perf: no opencode
+opencode https://github.com/anomalyco/opencode.git 4232b8bcd624965b2c35fa39c50e7fe9ae8b6f1f
 openspec https://github.com/Fission-AI/OpenSpec.git 9111a7654d7800391459431fff4eaf66e33a3d2e
 orama https://github.com/oramasearch/orama.git b030e1bd1d330327bad1483f2d9c88a9ea0d493c
 pi https://github.com/earendil-works/pi.git 1cedd32724abfcb0915f76cc61b6827e2c16dbad

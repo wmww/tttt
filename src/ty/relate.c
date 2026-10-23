@@ -8134,7 +8134,6 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
         if (source == target) return TERNARY_TRUE;
     }
-    if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
     Ty const* original_target = target;
     if (deferred) {
         // (And simplified indexed accesses: the target as written to)
@@ -8164,6 +8163,9 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (source->kind == TY_INTERSECTION) source = ty_regular(me, normalized_intersection(me, source, false));
         if (source == target) return TERNARY_TRUE;
     }
+    // (Identity relates what both normalize to as well, tsc's isRelatedTo: `Exclude<Services<I>, never>` of two
+    // signatures' own I's is never on both sides, so the two CheckDependencies<I, ...> they're in are identical)
+    if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
     // A type parameter is related to exactly its constraint (tsc's isRelatedTo fast path: otherwise a union target, a
     // large `keyof` one, is broken down first and its every member compared with the type parameter's constraint)
     if (source->kind == TY_TYPE_PARAM && st->relation != TY_RELATION_IDENTITY && ty_param_constraint(me, source) == target) {
