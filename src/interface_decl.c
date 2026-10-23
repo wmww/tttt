@@ -251,13 +251,15 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     }
 
     interface_typecheck(&my type.interface, my symbol, errs);
-    // Once for all declarations of the interface, by the first one that is checked (a lib's aren't, nor one in a
-    // declaration file under skipLibCheck: a global augmentation in a .d.ts, react-scan's `interface Window`)
+    // Once for all declarations of the interface, by the first one that is checked (a lib's only when lib files are
+    // checked, `lib: ["dom", "webworker"]` conflicting; nor one in a declaration file under skipLibCheck: a global
+    // augmentation in a .d.ts, react-scan's `interface Window`)
     InterfaceDecl const* first_checked = nullptr;
+    bool libs_checked = lib_files_checked();
     for (u32 d = 0; my symbol && d < my symbol->decl_count && !first_checked; d++) {
         SymbolDecl const* decl = &my symbol->decls[d];
         SourceFile const* file = decl->kind == SYMBOL_DECL_INTERFACE ? span_source(decl->name) : nullptr;
-        if (file && !file->is_stdlib && source_file_is_checked(file)) first_checked = decl->node;
+        if (file && (!file->is_stdlib || libs_checked) && source_file_is_checked(file)) first_checked = decl->node;
     }
     if (first_checked == me) {
         // (Every one of them: pothos's global PothosSchemaTypes.SchemaBuilderOptions has 19)

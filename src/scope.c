@@ -1361,7 +1361,8 @@ static void report_file_conflict(Binder* binder, PendingFileConflict const* conf
     if (!(source_file && source_file->plain_js)) {
         for (u32 i = 0; i < source->decl_count; i++) {
             Span at = source->decls[i].name;
-            Error* error = report_conflict_named(errs, at, code, display, false, true);
+            // (A lib file's too, when lib files are checked: `lib: ["dom", "webworker"]` conflicts on both sides)
+            Error* error = report_conflict_named(errs, at, code, display, lib_too, true);
             for (u32 t = 0; t < conflict->target_decls; t++) add_duplicate_related_named(error, at, target->decls[t].name, display);
         }
     }

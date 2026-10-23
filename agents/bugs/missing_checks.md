@@ -469,3 +469,17 @@ Diagnostics-class leftovers, not fixed:
   every nested context, so it misses these errors. The fix is a ParserShared flag, set at the for initializer and
   cleared (saved and restored) at those sites. A missed clearing site gives spurious errors, and only adversarial code
   is affected. [open]
+
+## Lib files conflicting with each other (2026-10-23, corF: an old-tsconfig probe, `lib: ["dom", "webworker"]`)
+- **Conflicts between two lib files went unreported on the later lib's side** (tsgo reports 514 diagnostics on a
+  `dom` + `webworker` config, tttt reported 269 of them, so a project tsgo fails still failed, but with half of the
+  diagnostics). There were two mechanisms, both treating a lib file as never checked:
+  - report_file_conflict() (scope.c) reported the merge's source side (the later file's declarations) without
+    `lib_too`. TS2300/TS2451 for lib.webworker.d.ts's declarations were then dropped, and only lib.dom.d.ts's
+    were kept.
+  - interface_decl.c's once-per-symbol member check (ty_check_object_type_duplicate_members: TS2717 for a property
+    declared again with another type) chose the first non-lib declaration. So an interface declared only in libs
+    (GPUExternalTextureDescriptor, RTCDataChannel...) was never checked.
+
+  Both now count a lib file as checked when lib files are (lib_files_checked(): neither skipLibCheck nor
+  skipDefaultLibCheck), as tsgo does. Repro: test/cases/ttttLibDomWebworkerConflicts.ts. [fixed 2026-10-23]

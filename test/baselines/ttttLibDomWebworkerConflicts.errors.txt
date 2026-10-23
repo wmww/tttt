@@ -1,0 +1,522 @@
+ttttLibDomWebworkerConflicts.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+lib.dom.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.dom.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.dom.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.dom.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.dom.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.dom.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'MAP_READ'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'MAP_WRITE'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_SRC'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_DST'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'INDEX'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'VERTEX'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'UNIFORM'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'STORAGE'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'INDIRECT'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'QUERY_RESOLVE'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'RED'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'GREEN'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'BLUE'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'ALPHA'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'ALL'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'READ'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'WRITE'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'VERTEX'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'FRAGMENT'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COMPUTE'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_SRC'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_DST'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'TEXTURE_BINDING'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'STORAGE_BINDING'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'RENDER_ATTACHMENT'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'TRANSIENT_ATTACHMENT'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AddressType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImportExportKind'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'TableKind'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AddressValue'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ExportValue'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'Exports'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImportValue'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'Imports'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ModuleImports'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ValueType'.
+lib.dom.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'name'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AlgorithmIdentifier'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AllowSharedBufferSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'BigInteger'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'BlobPart'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'BluetoothServiceUUID'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'BodyInit'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'BufferSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CSSKeywordish'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CSSNumberish'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CSSPerspectiveValue'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CSSUnparsedSegment'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasImageSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CookieList'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'DOMHighResTimeStamp'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'EpochTimeStamp'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'EventListenerOrEventListenerObject'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'FileSystemWriteChunkType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'Float32List'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'FormDataEntryValue'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLbitfield'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLboolean'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLclampf'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLenum'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLfloat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLint'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLint64'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLintptr'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLsizei'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLsizeiptr'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLuint'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GLuint64'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBindingResource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferDynamicOffset'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferUsageFlags'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUColor'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUColorWriteFlags'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCopyExternalImageSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUDepthBias'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUExtent3D'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFlagsConstant'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIndex32'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIntegerCoordinate'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIntegerCoordinateOut'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUMapModeFlags'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUOrigin2D'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUOrigin3D'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPipelineConstantValue'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSampleMask'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUShaderStageFlags'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSignedOffset32'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize32'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize32Out'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize64'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize64Out'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStencilValue'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureUsageFlags'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'HashAlgorithmIdentifier'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'HeadersInit'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'IDBValidKey'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImageBitmapSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImageBufferSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImageDataArray'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'Int32List'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'MessageEventSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'NamedCurve'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'OffscreenRenderingContext'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'OnErrorEventHandler'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'PerformanceEntryList'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamController'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamReadResult'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamReader'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ReportList'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RequestInfo'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'TexImageSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'TimerHandler'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'Transferable'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'URLPatternInput'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'Uint32List'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'XMLHttpRequestBodyInit'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AacBitstreamFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AlphaOption'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AudioSampleFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'AvcBitstreamFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'BinaryType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'BitrateMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CSSMathOperator'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CSSNumericBaseType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasDirection'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFillRule'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFontKerning'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFontStretch'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFontVariantCaps'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasLineCap'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasLineJoin'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasTextAlign'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasTextBaseline'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasTextRendering'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ClientTypes'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CodecState'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ColorGamut'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ColorSpaceConversion'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CompressionFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'CookieSameSite'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'DocumentVisibilityState'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'EncodedAudioChunkType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'EncodedVideoChunkType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'EndingType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'FileSystemHandleKind'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'FlowControlType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'FontDisplay'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'FontFaceLoadStatus'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'FontFaceSetLoadStatus'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUAddressMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUAutoLayoutMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBlendFactor'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBlendOperation'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferBindingType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferMapState'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCanvasAlphaMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCanvasToneMappingMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCompareFunction'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCompilationMessageType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCullMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUDeviceLostReason'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUErrorFilter'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFeatureName'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFilterMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFrontFace'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIndexFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPULoadOp'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUMipmapFilterMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPipelineErrorReason'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPowerPreference'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPrimitiveTopology'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUQueryType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSamplerBindingType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStencilOperation'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStorageTextureAccess'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStoreOp'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureAspect'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureDimension'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureSampleType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureViewDimension'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUVertexFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GPUVertexStepMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'GlobalCompositeOperation'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'HardwareAcceleration'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'HdrMetadataType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'IDBCursorDirection'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'IDBRequestReadyState'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'IDBTransactionDurability'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'IDBTransactionMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImageDataPixelFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImageOrientation'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ImageSmoothingQuality'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'KeyFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'KeyType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'KeyUsage'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'LatencyMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'LockMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'MediaDecodingType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'MediaEncodingType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'MediaKeysRequirement'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'NotificationDirection'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'NotificationPermission'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'OffscreenRenderingContextId'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'OpusBitstreamFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ParityType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'PermissionName'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'PermissionState'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'PredefinedColorSpace'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'PremultiplyAlpha'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'PushEncryptionKeyName'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RTCDataChannelState'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamReaderMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ReferrerPolicy'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RequestCache'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RequestCredentials'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RequestDestination'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RequestMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RequestPriority'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'RequestRedirect'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ResizeQuality'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ResponseType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'SecurityPolicyViolationEventDisposition'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ServiceWorkerState'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'ServiceWorkerUpdateViaCache'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'TaskPriority'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'TransferFunction'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'VideoColorPrimaries'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'VideoEncoderBitrateMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'VideoMatrixCoefficients'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'VideoPixelFormat'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'VideoTransferCharacteristics'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'WebGLPowerPreference'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'WebTransportCongestionControl'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'WebTransportErrorSource'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'WebTransportReliabilityMode'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'WorkerType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'WriteCommandType'.
+lib.dom.d.ts(--,--): error TS2300: Duplicate identifier 'XMLHttpRequestResponseType'.
+lib.webworker.d.ts(--,--): error TS2717: Subsequent property declarations must have the same type.  Property 'source' must be of type 'HTMLVideoElement | VideoFrame', but here has type 'VideoFrame'.
+lib.webworker.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'CSSNumericValue' must be of type '{ new (): CSSNumericValue; prototype: CSSNumericValue; parse(cssText: string): CSSNumericValue; }', but here has type '{ new (): CSSNumericValue; prototype: CSSNumericValue; }'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'CSSStyleValue' must be of type '{ new (): CSSStyleValue; prototype: CSSStyleValue; parse(property: string, cssText: string): CSSStyleValue; parseAll(property: string, cssText: string): CSSStyleValue[]; }', but here has type '{ new (): CSSStyleValue; prototype: CSSStyleValue; }'.
+lib.webworker.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.webworker.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.webworker.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.webworker.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'FormData' must be of type '{ new (form?: HTMLFormElement | undefined, submitter?: HTMLElement | null | undefined): FormData; prototype: FormData; }', but here has type '{ new (): FormData; prototype: FormData; }'.
+lib.webworker.d.ts(--,--): error TS2717: Subsequent property declarations must have the same type.  Property 'canvas' must be of type 'HTMLCanvasElement | OffscreenCanvas', but here has type 'OffscreenCanvas'.
+lib.webworker.d.ts(--,--): error TS2374: Duplicate index signature for type 'number'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'Notification' must be of type '{ new (title: string, options?: NotificationOptions | undefined): Notification; prototype: Notification; readonly maxActions: number; readonly permission: NotificationPermission; requestPermission(deprecatedCallback?: NotificationPermissionCallback | undefined): Promise<NotificationPermission>; }', but here has type '{ new (title: string, options?: NotificationOptions | undefined): Notification; prototype: Notification; readonly maxActions: number; readonly permission: NotificationPermission; }'.
+lib.webworker.d.ts(--,--): error TS2717: Subsequent property declarations must have the same type.  Property '"error"' must be of type 'RTCErrorEvent', but here has type 'Event'.
+lib.webworker.d.ts(--,--): error TS2717: Subsequent property declarations must have the same type.  Property 'onerror' must be of type '((this: RTCDataChannel, ev: RTCErrorEvent) => any) | null', but here has type '((this: RTCDataChannel, ev: Event) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'URL' must be of type '{ new (url: string | URL, base?: string | URL | undefined): URL; prototype: URL; canParse(url: string | URL, base?: string | URL | undefined): boolean; createObjectURL(obj: Blob | MediaSource): string; parse(url: string | URL, base?: string | URL | undefined): URL | null; revokeObjectURL(url: string): void; }', but here has type '{ new (url: string | URL, base?: string | URL | undefined): URL; prototype: URL; canParse(url: string | URL, base?: string | URL | undefined): boolean; createObjectURL(obj: Blob): string; parse(url: string | URL, base?: string | URL | undefined): URL | null; revokeObjectURL(url: string): void; }'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'MAP_READ'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'MAP_WRITE'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_SRC'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_DST'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'INDEX'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'VERTEX'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'UNIFORM'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'STORAGE'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'INDIRECT'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'QUERY_RESOLVE'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'RED'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'GREEN'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'BLUE'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'ALPHA'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'ALL'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'READ'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'WRITE'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'VERTEX'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'FRAGMENT'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COMPUTE'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_SRC'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'COPY_DST'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'TEXTURE_BINDING'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'STORAGE_BINDING'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'RENDER_ATTACHMENT'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'TRANSIENT_ATTACHMENT'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AddressType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImportExportKind'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'TableKind'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AddressValue'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ExportValue'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'Exports'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImportValue'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'Imports'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ModuleImports'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ValueType'.
+lib.webworker.d.ts(--,--): error TS2451: Cannot redeclare block-scoped variable 'name'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'location' must be of type 'Location', but here has type 'WorkerLocation'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'navigator' must be of type 'Navigator', but here has type 'WorkerNavigator'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'onerror' must be of type 'OnErrorEventHandler', but here has type '((this: DedicatedWorkerGlobalScope, ev: ErrorEvent) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'onlanguagechange' must be of type '((this: Window, ev: Event) => any) | null', but here has type '((this: DedicatedWorkerGlobalScope, ev: Event) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'onoffline' must be of type '((this: Window, ev: Event) => any) | null', but here has type '((this: DedicatedWorkerGlobalScope, ev: Event) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'ononline' must be of type '((this: Window, ev: Event) => any) | null', but here has type '((this: DedicatedWorkerGlobalScope, ev: Event) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'onrejectionhandled' must be of type '((this: Window, ev: PromiseRejectionEvent) => any) | null', but here has type '((this: DedicatedWorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'onunhandledrejection' must be of type '((this: Window, ev: PromiseRejectionEvent) => any) | null', but here has type '((this: DedicatedWorkerGlobalScope, ev: PromiseRejectionEvent) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'self' must be of type 'Window & typeof globalThis', but here has type 'WorkerGlobalScope & typeof globalThis'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'onmessage' must be of type '((this: Window, ev: MessageEvent<any>) => any) | null', but here has type '((this: DedicatedWorkerGlobalScope, ev: MessageEvent<any>) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2403: Subsequent variable declarations must have the same type.  Variable 'onmessageerror' must be of type '((this: Window, ev: MessageEvent<any>) => any) | null', but here has type '((this: DedicatedWorkerGlobalScope, ev: MessageEvent<any>) => any) | null'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AlgorithmIdentifier'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AllowSharedBufferSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'BigInteger'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'BlobPart'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'BluetoothServiceUUID'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'BodyInit'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'BufferSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CSSKeywordish'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CSSNumberish'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CSSPerspectiveValue'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CSSUnparsedSegment'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasImageSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CookieList'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'DOMHighResTimeStamp'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'EpochTimeStamp'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'EventListenerOrEventListenerObject'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'FileSystemWriteChunkType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'Float32List'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'FormDataEntryValue'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLbitfield'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLboolean'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLclampf'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLenum'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLfloat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLint'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLint64'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLintptr'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLsizei'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLsizeiptr'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLuint'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GLuint64'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBindingResource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferDynamicOffset'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferUsageFlags'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUColor'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUColorWriteFlags'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCopyExternalImageSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUDepthBias'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUExtent3D'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFlagsConstant'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIndex32'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIntegerCoordinate'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIntegerCoordinateOut'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUMapModeFlags'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUOrigin2D'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUOrigin3D'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPipelineConstantValue'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSampleMask'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUShaderStageFlags'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSignedOffset32'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize32'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize32Out'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize64'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSize64Out'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStencilValue'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureUsageFlags'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'HashAlgorithmIdentifier'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'HeadersInit'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'IDBValidKey'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImageBitmapSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImageBufferSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImageDataArray'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'Int32List'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'MessageEventSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'NamedCurve'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'OffscreenRenderingContext'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'OnErrorEventHandler'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'PerformanceEntryList'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamController'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamReadResult'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamReader'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ReportList'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RequestInfo'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'TexImageSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'TimerHandler'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'Transferable'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'URLPatternInput'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'Uint32List'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'XMLHttpRequestBodyInit'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AacBitstreamFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AlphaOption'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AudioSampleFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'AvcBitstreamFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'BinaryType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'BitrateMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CSSMathOperator'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CSSNumericBaseType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasDirection'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFillRule'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFontKerning'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFontStretch'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasFontVariantCaps'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasLineCap'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasLineJoin'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasTextAlign'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasTextBaseline'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CanvasTextRendering'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ClientTypes'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CodecState'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ColorGamut'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ColorSpaceConversion'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CompressionFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'CookieSameSite'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'DocumentVisibilityState'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'EncodedAudioChunkType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'EncodedVideoChunkType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'EndingType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'FileSystemHandleKind'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'FlowControlType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'FontDisplay'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'FontFaceLoadStatus'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'FontFaceSetLoadStatus'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUAddressMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUAutoLayoutMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBlendFactor'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBlendOperation'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferBindingType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUBufferMapState'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCanvasAlphaMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCanvasToneMappingMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCompareFunction'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCompilationMessageType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUCullMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUDeviceLostReason'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUErrorFilter'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFeatureName'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFilterMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUFrontFace'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUIndexFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPULoadOp'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUMipmapFilterMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPipelineErrorReason'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPowerPreference'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUPrimitiveTopology'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUQueryType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUSamplerBindingType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStencilOperation'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStorageTextureAccess'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUStoreOp'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureAspect'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureDimension'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureSampleType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUTextureViewDimension'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUVertexFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GPUVertexStepMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'GlobalCompositeOperation'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'HardwareAcceleration'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'HdrMetadataType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'IDBCursorDirection'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'IDBRequestReadyState'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'IDBTransactionDurability'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'IDBTransactionMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImageDataPixelFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImageOrientation'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ImageSmoothingQuality'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'KeyFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'KeyType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'KeyUsage'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'LatencyMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'LockMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'MediaDecodingType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'MediaEncodingType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'MediaKeysRequirement'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'NotificationDirection'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'NotificationPermission'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'OffscreenRenderingContextId'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'OpusBitstreamFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ParityType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'PermissionName'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'PermissionState'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'PredefinedColorSpace'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'PremultiplyAlpha'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'PushEncryptionKeyName'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RTCDataChannelState'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamReaderMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ReadableStreamType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ReferrerPolicy'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RequestCache'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RequestCredentials'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RequestDestination'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RequestMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RequestPriority'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'RequestRedirect'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ResizeQuality'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ResponseType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'SecurityPolicyViolationEventDisposition'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ServiceWorkerState'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'ServiceWorkerUpdateViaCache'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'TaskPriority'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'TransferFunction'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'VideoColorPrimaries'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'VideoEncoderBitrateMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'VideoMatrixCoefficients'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'VideoPixelFormat'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'VideoTransferCharacteristics'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'WebGLPowerPreference'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'WebTransportCongestionControl'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'WebTransportErrorSource'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'WebTransportReliabilityMode'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'WorkerType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'WriteCommandType'.
+lib.webworker.d.ts(--,--): error TS2300: Duplicate identifier 'XMLHttpRequestResponseType'.
+
+
+==== ttttLibDomWebworkerConflicts.ts (1 errors) ====
+    // Two lib files that conflict (tsgo checks them unless skipLibCheck/skipDefaultLibCheck): a duplicate between them is
+    // reported at both declarations, and a property declared again with another type by a later lib's interface is TS2717
+    const sentinel: number = "";
+          ~~~~~~~~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    
