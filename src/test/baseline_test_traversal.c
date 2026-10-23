@@ -1557,6 +1557,9 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
         if (i->decl_name.buf != i->source_name.buf) {
             // (a string literal name, `{ "<X>" as x }`, is no expression to tsc's walker: no line)
             bool quoted = i->source_name.size && (i->source_name.buf[0] == '"' || i->source_name.buf[0] == '\'');
+            // (A misplaced export specifier, TS1233, in a body walked late: nothing resolved it, tsc's walker does
+            // (getSymbolAtLocation). Up front the binder's link did, so both modes print the same)
+            if (!i->source_symbol && i->wrong_context && !quoted) symbol_resolve_alias((Symbol*)i->symbol);
             if (i->source_symbol && !quoted) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = symbol_declaration_spans(i->source_symbol),

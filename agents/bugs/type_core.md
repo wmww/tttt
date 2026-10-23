@@ -193,6 +193,12 @@ passing tests).
   evaluating `wrap2(target)` while wrap2's return type is in flight; how tsgo's ordering avoids the cycle
   (contextuallyCheckFunctionExpressionOrObjectLiteralMethod decides `get`'s return type from its body too) wasn't
   worked out. Not corpus-visible. [open]
+- An unused private member is history-dependent in tsgo too (bun's 39-P7, 2026-10-23): x.ts `import './y'; export
+  class C { private x = 1 }`, y.ts `new C()["x"]`. y.ts comes first in program order, so one checker has marked `x`
+  referenced when x.ts reports unused members; a checker that never checked y.ts reports TS6133. `tsgo --checkers 1`
+  and the suite baseline report nothing, tsgo's default (4 checkers) reports TS6133; tttt at `--checker-memory 0` and
+  `TTTT_CHECK_ONLY=x.ts` report it too. Same rule as tsc, so scripts/oracles.py's recycle comparison skips it with
+  92-R16b (HISTORY_DEPENDENT). Removing it would mean a program-wide reference pass tsgo doesn't have. [tsgo-shared]
 - First-checker-wins circularity diagnostics make `--checkers 4` output vary run to run (bun's 92-R16b, 2026-10-23):
   a.ts `type A = { [K in "a"]: B[K & keyof B] }; declare const a: A; a.a;`, b.ts the same with A and B swapped.
   TS2615 is reported where the cycle is first met, so it depends on history, in tsc too: with `"files": ["b.ts",

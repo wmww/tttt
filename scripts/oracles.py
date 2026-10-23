@@ -50,11 +50,23 @@ def suite():
             os.mkdir(d)
             run(['release/baseline_tests', '--dump', d] + extra)
         names = sorted(f for f in os.listdir(dirs[0]) if f.endswith(('.errors.txt', '.d.ts')))
-        differing = [f for f in names if not os.path.exists(os.path.join(dirs[1], f)) or
-                     not filecmp.cmp(os.path.join(dirs[0], f), os.path.join(dirs[1], f), shallow=False)]
+        differing = [f for f in names if f.split('.')[0] not in HISTORY_DEPENDENT and
+                     (not os.path.exists(os.path.join(dirs[1], f)) or
+                      not filecmp.cmp(os.path.join(dirs[0], f), os.path.join(dirs[1], f), shallow=False))]
         print(f'suite --checker-memory 0: {len(differing)} of {len(names)} diagnostics/declaration '
               f'outputs differ', flush=True)
         for n in differing[:20]: print('   ', n)
+
+# Tests whose diagnostics depend on what a checker saw before, in tsgo too, so a fresh checker per file differs from
+# one checker by tsc's own rules (agents/bugs/type_core.md): not compared under --checker-memory 0
+HISTORY_DEPENDENT = {
+    # A private member read only from another file: referenced only once that file is checked (tsgo's isReferenced is
+    # per checker: `tsgo --checkers 1` reports no TS6133, its default 4 does)
+    'bun39-P7',
+    # A cycle through two files' mapped types: TS2615 where the cycle is first met (tsgo with "files": [b, a] reports
+    # it at b.ts)
+    'bun92-R16b',
+}
 
 def corpora():
     rows = []

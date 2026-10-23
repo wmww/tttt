@@ -3992,7 +3992,10 @@ static Symbol* resolve_alias_target_in(Symbol* me, ErrorCtx* errs) {
                 return nullptr;
             }
             if (is_global_declaration(my binder, found)) report_non_local_export(errs, item->source_name);
-            unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
+            // (Not a misplaced one, TS1233: tsc's checkExportDeclaration stops at the grammar error, so its specifiers
+            // never reach markAliasReferenced; only the symbol walk resolves them. Its local stays unused whether the
+            // body was walked up front or deferred, bun03-SC8)
+            if (!item->wrong_context) unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
             item->source_symbol = found;
             Symbol* target = resolve_if_pure_alias(found);
             // An `import x = A.B` that resolves to nothing is exported as a value (tsc's checkExportSpecifier checks the

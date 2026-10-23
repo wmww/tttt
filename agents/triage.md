@@ -172,3 +172,8 @@ intersection's property symbol to bugs/type_core.md.
   from the same GOCACHE (tsgotrace/overlaycheck builds share it): the link failed with "cannot open file .../cache/..:
   no such file" and the rerun succeeded. Take the script's flock around the clean, or clean only when no `go` process
   uses the cache (2026-10-23). [open]
+- A gate run during /tmp quota exhaustion (oracles at 03bf32424, 2026-10-23) produced 487 false kdiff suite
+  differences (dump writes failed; 0 differ at 03bf32424 and at 85b7c7520 on a free /tmp) and 9 openclaw SIGKILLs:
+  oracles.py should check free space and write failures before comparing dumps. Also: the suite's K1/K16 kdiff runs
+  at `--threads 1`, where checker 0 apparently takes every other checker's unstarted share (deal_files / check_share), so it
+  compares little; `--threads 16` would deal for real. [open]
