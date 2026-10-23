@@ -1870,9 +1870,12 @@ typedef enum CallbackMode {
 
 // tsc's isInstantiatedGenericParameter: the parameter was generic before the signature was instantiated
 static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32 i) {
-    if (!sig_target(me, sig)) return false;
-    signature_resolve(me, sig_target(me, sig));
-    Ty const* type = param_type_at(me, sig_target(me, sig), i);
+    // (Erased in one step from its target's target: tsc's erased signature's target is the instantiation it erases,
+    // `m<U>(a: X)` of `Foo<S>` has `a: S`)
+    Signature const* target = sig->erased_in_one_step ? sig->declared_by : sig_target(me, sig);
+    if (!target) return false;
+    signature_resolve(me, target);
+    Ty const* type = param_type_at(me, target, i);
     if (!type) return false;
     if (ty_is_generic_index(type)) return true;
     return (type->flags & TYF_OBJECT) && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_generic_mapped(me, type);
@@ -2285,6 +2288,8 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
                 .mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len }),
                
                 .instantiates_own_params = true,
+                .erased_in_one_step = true,
+                .declared_by = sig,
             };
             // (Its own until resolved: published with --shared-graph once it is)
             *slot = ret;

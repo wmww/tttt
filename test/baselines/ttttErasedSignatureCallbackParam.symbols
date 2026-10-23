@@ -1,0 +1,144 @@
+//// [test/cases/ttttErasedSignatureCallbackParam.ts] ////
+
+=== ttttErasedSignatureCallbackParam.ts ===
+// An erased signature's parameter is a callback unless it was generic in the instantiation erased (tsc's
+// isInstantiatedGenericParameter reads the erased signature's target): `m<U>(a: X)` of `Foo<S>` has `a: S`
+type S = (p: string) => string;
+>S : Symbol(S, Decl(ttttErasedSignatureCallbackParam.ts, 0, 0))
+>p : Symbol(p, Decl(ttttErasedSignatureCallbackParam.ts, 2, 10))
+
+type T = (p: string | number) => string | number;
+>T : Symbol(T, Decl(ttttErasedSignatureCallbackParam.ts, 2, 31))
+>p : Symbol(p, Decl(ttttErasedSignatureCallbackParam.ts, 3, 10))
+
+interface Foo<X> { m<U>(a: X, b: U): void; m<U>(a: X, b: U, c: U): void }
+>Foo : Symbol(Foo, Decl(ttttErasedSignatureCallbackParam.ts, 3, 49))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 4, 14))
+>m : Symbol(Foo.m, Decl(ttttErasedSignatureCallbackParam.ts, 4, 18), Decl(ttttErasedSignatureCallbackParam.ts, 4, 42))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 4, 21))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 4, 24))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 4, 14))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 4, 29))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 4, 21))
+>m : Symbol(Foo.m, Decl(ttttErasedSignatureCallbackParam.ts, 4, 18), Decl(ttttErasedSignatureCallbackParam.ts, 4, 42))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 4, 45))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 4, 48))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 4, 14))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 4, 53))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 4, 45))
+>c : Symbol(c, Decl(ttttErasedSignatureCallbackParam.ts, 4, 59))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 4, 45))
+
+interface Bar { m<U>(a: T, b: U): void; m<U>(a: T, b: U, c: U): void }
+>Bar : Symbol(Bar, Decl(ttttErasedSignatureCallbackParam.ts, 4, 73))
+>m : Symbol(Bar.m, Decl(ttttErasedSignatureCallbackParam.ts, 5, 15), Decl(ttttErasedSignatureCallbackParam.ts, 5, 39))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 5, 18))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 5, 21))
+>T : Symbol(T, Decl(ttttErasedSignatureCallbackParam.ts, 2, 31))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 5, 26))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 5, 18))
+>m : Symbol(Bar.m, Decl(ttttErasedSignatureCallbackParam.ts, 5, 15), Decl(ttttErasedSignatureCallbackParam.ts, 5, 39))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 5, 42))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 5, 45))
+>T : Symbol(T, Decl(ttttErasedSignatureCallbackParam.ts, 2, 31))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 5, 50))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 5, 42))
+>c : Symbol(c, Decl(ttttErasedSignatureCallbackParam.ts, 5, 56))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 5, 42))
+
+declare let foo: Foo<S>;
+>foo : Symbol(foo, Decl(ttttErasedSignatureCallbackParam.ts, 6, 11))
+>Foo : Symbol(Foo, Decl(ttttErasedSignatureCallbackParam.ts, 3, 49))
+>S : Symbol(S, Decl(ttttErasedSignatureCallbackParam.ts, 0, 0))
+
+let bar: Bar = foo;
+>bar : Symbol(bar, Decl(ttttErasedSignatureCallbackParam.ts, 7, 3))
+>Bar : Symbol(Bar, Decl(ttttErasedSignatureCallbackParam.ts, 4, 73))
+>foo : Symbol(foo, Decl(ttttErasedSignatureCallbackParam.ts, 6, 11))
+
+interface Foo2<X> { m<U>(a: X, b: U): void }
+>Foo2 : Symbol(Foo2, Decl(ttttErasedSignatureCallbackParam.ts, 7, 19))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 8, 15))
+>m : Symbol(Foo2.m, Decl(ttttErasedSignatureCallbackParam.ts, 8, 19))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 8, 22))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 8, 25))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 8, 15))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 8, 30))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 8, 22))
+
+interface Bar2 { m<U>(a: T, b: U): void }
+>Bar2 : Symbol(Bar2, Decl(ttttErasedSignatureCallbackParam.ts, 8, 44))
+>m : Symbol(Bar2.m, Decl(ttttErasedSignatureCallbackParam.ts, 9, 16))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 9, 19))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 9, 22))
+>T : Symbol(T, Decl(ttttErasedSignatureCallbackParam.ts, 2, 31))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 9, 27))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 9, 19))
+
+declare let foo2: Foo2<S>;
+>foo2 : Symbol(foo2, Decl(ttttErasedSignatureCallbackParam.ts, 10, 11))
+>Foo2 : Symbol(Foo2, Decl(ttttErasedSignatureCallbackParam.ts, 7, 19))
+>S : Symbol(S, Decl(ttttErasedSignatureCallbackParam.ts, 0, 0))
+
+let bar2: Bar2 = foo2;
+>bar2 : Symbol(bar2, Decl(ttttErasedSignatureCallbackParam.ts, 11, 3))
+>Bar2 : Symbol(Bar2, Decl(ttttErasedSignatureCallbackParam.ts, 8, 44))
+>foo2 : Symbol(foo2, Decl(ttttErasedSignatureCallbackParam.ts, 10, 11))
+
+interface Foo3<X> { m(a: X): void; m(a: X, b: 1): void }
+>Foo3 : Symbol(Foo3, Decl(ttttErasedSignatureCallbackParam.ts, 11, 22))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 12, 15))
+>m : Symbol(Foo3.m, Decl(ttttErasedSignatureCallbackParam.ts, 12, 19), Decl(ttttErasedSignatureCallbackParam.ts, 12, 34))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 12, 22))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 12, 15))
+>m : Symbol(Foo3.m, Decl(ttttErasedSignatureCallbackParam.ts, 12, 19), Decl(ttttErasedSignatureCallbackParam.ts, 12, 34))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 12, 37))
+>X : Symbol(X, Decl(ttttErasedSignatureCallbackParam.ts, 12, 15))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 12, 42))
+
+interface Bar3 { m(a: T): void; m(a: T, b: 1): void }
+>Bar3 : Symbol(Bar3, Decl(ttttErasedSignatureCallbackParam.ts, 12, 56))
+>m : Symbol(Bar3.m, Decl(ttttErasedSignatureCallbackParam.ts, 13, 16), Decl(ttttErasedSignatureCallbackParam.ts, 13, 31))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 13, 19))
+>T : Symbol(T, Decl(ttttErasedSignatureCallbackParam.ts, 2, 31))
+>m : Symbol(Bar3.m, Decl(ttttErasedSignatureCallbackParam.ts, 13, 16), Decl(ttttErasedSignatureCallbackParam.ts, 13, 31))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 13, 34))
+>T : Symbol(T, Decl(ttttErasedSignatureCallbackParam.ts, 2, 31))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 13, 39))
+
+declare let foo3: Foo3<S>;
+>foo3 : Symbol(foo3, Decl(ttttErasedSignatureCallbackParam.ts, 14, 11))
+>Foo3 : Symbol(Foo3, Decl(ttttErasedSignatureCallbackParam.ts, 11, 22))
+>S : Symbol(S, Decl(ttttErasedSignatureCallbackParam.ts, 0, 0))
+
+let bar3: Bar3 = foo3;
+>bar3 : Symbol(bar3, Decl(ttttErasedSignatureCallbackParam.ts, 15, 3))
+>Bar3 : Symbol(Bar3, Decl(ttttErasedSignatureCallbackParam.ts, 12, 56))
+>foo3 : Symbol(foo3, Decl(ttttErasedSignatureCallbackParam.ts, 14, 11))
+
+interface Foo4 { m<U>(a: S, b: U): void; m<U>(a: S, b: U, c: U): void }
+>Foo4 : Symbol(Foo4, Decl(ttttErasedSignatureCallbackParam.ts, 15, 22))
+>m : Symbol(Foo4.m, Decl(ttttErasedSignatureCallbackParam.ts, 16, 16), Decl(ttttErasedSignatureCallbackParam.ts, 16, 40))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 16, 19))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 16, 22))
+>S : Symbol(S, Decl(ttttErasedSignatureCallbackParam.ts, 0, 0))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 16, 27))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 16, 19))
+>m : Symbol(Foo4.m, Decl(ttttErasedSignatureCallbackParam.ts, 16, 16), Decl(ttttErasedSignatureCallbackParam.ts, 16, 40))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 16, 43))
+>a : Symbol(a, Decl(ttttErasedSignatureCallbackParam.ts, 16, 46))
+>S : Symbol(S, Decl(ttttErasedSignatureCallbackParam.ts, 0, 0))
+>b : Symbol(b, Decl(ttttErasedSignatureCallbackParam.ts, 16, 51))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 16, 43))
+>c : Symbol(c, Decl(ttttErasedSignatureCallbackParam.ts, 16, 57))
+>U : Symbol(U, Decl(ttttErasedSignatureCallbackParam.ts, 16, 43))
+
+declare let foo4: Foo4;
+>foo4 : Symbol(foo4, Decl(ttttErasedSignatureCallbackParam.ts, 17, 11))
+>Foo4 : Symbol(Foo4, Decl(ttttErasedSignatureCallbackParam.ts, 15, 22))
+
+let bar4: Bar = foo4;
+>bar4 : Symbol(bar4, Decl(ttttErasedSignatureCallbackParam.ts, 18, 3))
+>Bar : Symbol(Bar, Decl(ttttErasedSignatureCallbackParam.ts, 4, 73))
+>foo4 : Symbol(foo4, Decl(ttttErasedSignatureCallbackParam.ts, 17, 11))
+

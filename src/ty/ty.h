@@ -800,6 +800,9 @@ struct Signature {
     // Its own type parameters are cloned whatever the mapper (tsc's instantiateSignature always does; clone_type_params()
     // skips it where nothing can tell, but a function expression typed by it shows its clones in the types baseline)
     bool fresh_type_params;
+    // Made by ty_erased_signature() in one step from its target's target: `declared_by` is the instantiation it erases
+    // (tsc's erased signature's target, which isInstantiatedGenericParameter reads)
+    bool erased_in_one_step;
     LowerCtx ctx;
     // Exactly one source: a function (a declaration/expression, or a function type node, see FunctionImpl.is_type)
     // or a target to instantiate

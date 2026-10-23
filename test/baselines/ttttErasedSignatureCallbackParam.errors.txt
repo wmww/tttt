@@ -1,0 +1,38 @@
+ttttErasedSignatureCallbackParam.ts(16,5): error TS2322: Type 'Foo3<S>' is not assignable to type 'Bar3'.
+  Types of property 'm' are incompatible.
+    Type '{ (a: S): void; (a: S, b: 1): void; }' is not assignable to type '{ (a: T): void; (a: T, b: 1): void; }'.
+      Types of parameters 'a' and 'a' are incompatible.
+        Type 'T' is not assignable to type 'S'.
+          Type 'string | number' is not assignable to type 'string'.
+            Type 'number' is not assignable to type 'string'.
+
+
+==== ttttErasedSignatureCallbackParam.ts (1 errors) ====
+    // An erased signature's parameter is a callback unless it was generic in the instantiation erased (tsc's
+    // isInstantiatedGenericParameter reads the erased signature's target): `m<U>(a: X)` of `Foo<S>` has `a: S`
+    type S = (p: string) => string;
+    type T = (p: string | number) => string | number;
+    interface Foo<X> { m<U>(a: X, b: U): void; m<U>(a: X, b: U, c: U): void }
+    interface Bar { m<U>(a: T, b: U): void; m<U>(a: T, b: U, c: U): void }
+    declare let foo: Foo<S>;
+    let bar: Bar = foo;
+    interface Foo2<X> { m<U>(a: X, b: U): void }
+    interface Bar2 { m<U>(a: T, b: U): void }
+    declare let foo2: Foo2<S>;
+    let bar2: Bar2 = foo2;
+    interface Foo3<X> { m(a: X): void; m(a: X, b: 1): void }
+    interface Bar3 { m(a: T): void; m(a: T, b: 1): void }
+    declare let foo3: Foo3<S>;
+    let bar3: Bar3 = foo3;
+        ~~~~
+!!! error TS2322: Type 'Foo3<S>' is not assignable to type 'Bar3'.
+!!! error TS2322:   Types of property 'm' are incompatible.
+!!! error TS2322:     Type '{ (a: S): void; (a: S, b: 1): void; }' is not assignable to type '{ (a: T): void; (a: T, b: 1): void; }'.
+!!! error TS2322:       Types of parameters 'a' and 'a' are incompatible.
+!!! error TS2322:         Type 'T' is not assignable to type 'S'.
+!!! error TS2322:           Type 'string | number' is not assignable to type 'string'.
+!!! error TS2322:             Type 'number' is not assignable to type 'string'.
+    interface Foo4 { m<U>(a: S, b: U): void; m<U>(a: S, b: U, c: U): void }
+    declare let foo4: Foo4;
+    let bar4: Bar = foo4;
+    
