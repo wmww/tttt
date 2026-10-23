@@ -1,0 +1,31 @@
+ttttJsxChildrenGenericPropsNoElaboration.tsx(4,82): error TS2322: Type '{ children: string[]; }' is not assignable to type 'P'.
+  'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: string[]; }'.
+ttttJsxChildrenGenericPropsNoElaboration.tsx(5,81): error TS2322: Type '{ children: string; }' is not assignable to type 'P'.
+  'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: string; }'.
+ttttJsxChildrenGenericPropsNoElaboration.tsx(6,81): error TS2322: Type '{ x: number; children: string; }' is not assignable to type 'P'.
+  'P' could be instantiated with an arbitrary type which could be unrelated to '{ x: number; children: string; }'.
+ttttJsxChildrenGenericPropsNoElaboration.tsx(7,91): error TS2322: Type '{ children: [string, number]; }' is not assignable to type 'P'.
+  'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: [string, number]; }'.
+
+
+==== ttttJsxChildrenGenericPropsNoElaboration.tsx (4 errors) ====
+    // Children aren't elaborated against a generic props type's `P["children"]` (tsc's getIndexedAccessType defers it, and
+    // elaborateElementwise skips an indexed access): the attributes as a whole are reported
+    declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+    function W<P extends { children: number[] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{"b"}</C>; }
+                                                                                     ~
+!!! error TS2322: Type '{ children: string[]; }' is not assignable to type 'P'.
+!!! error TS2322:   'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: string[]; }'.
+    function W2<P extends { children: number }>(C: (p: P) => JSX.Element) { return <C>{"a"}</C>; }
+                                                                                    ~
+!!! error TS2322: Type '{ children: string; }' is not assignable to type 'P'.
+!!! error TS2322:   'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: string; }'.
+    function W3<P extends { children: number }>(C: (p: P) => JSX.Element) { return <C x={1}>{"a"}</C>; }
+                                                                                    ~
+!!! error TS2322: Type '{ x: number; children: string; }' is not assignable to type 'P'.
+!!! error TS2322:   'P' could be instantiated with an arbitrary type which could be unrelated to '{ x: number; children: string; }'.
+    function W4<P extends { children: [number, string] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{1}</C>; }
+                                                                                              ~
+!!! error TS2322: Type '{ children: [string, number]; }' is not assignable to type 'P'.
+!!! error TS2322:   'P' could be instantiated with an arbitrary type which could be unrelated to '{ children: [string, number]; }'.
+    

@@ -466,7 +466,8 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
     Atom const* children_name = ty_jsx_children_prop_name(me, element);
     if (!children_name) children_name = my atoms.children;
     Ty const* name_type = ty_prop_name_literal(me, children_name);
-    Ty const* children_target = ty_access(me, target, name_type);
+    // (Of a generic target, `P["children"]` as it is: tsc's getIndexedAccessType defers it)
+    Ty const* children_target = ty_is_generic_object(me, target) ? ty_indexed(me, target, name_type) : ty_access(me, target, name_type);
     if (!children_target) children_target = ty_intrinsic(me, TY_UNKNOWN_);
     Ty const* array_like = filter_members(me, children_target, is_iterable_like, true);
     Ty const* non_array_like = filter_members(me, children_target, is_iterable_like, false);
@@ -509,7 +510,10 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
             Value index_value = value_number((double)index++);
             Ty const* child_name = ty_literal(me, &index_value);
             Ty const* element_target = iterated;
-            Ty const* indexed = !(tuple_like->flags & TYF_NEVER) ? ty_access(me, tuple_like, child_name) : nullptr;
+            // (Of a generic list, `P["children"]`, an indexed access tsc doesn't elaborate on: its
+            // getIndexedAccessTypeOrUndefined defers it)
+            Ty const* indexed = !(tuple_like->flags & TYF_NEVER) && !ty_is_generic_object(me, tuple_like) ?
+                ty_access(me, tuple_like, child_name) : nullptr;
             if (indexed && indexed->kind != TY_INDEXED) {
                 Ty const* both[2] = { iterated, indexed };
                 element_target = iterated ? ty_union(me, both, 2, nullptr, (TyList){0}) : indexed;

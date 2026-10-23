@@ -1,0 +1,62 @@
+//// [test/cases/ttttJsxChildrenGenericPropsNoElaboration.tsx] ////
+
+=== ttttJsxChildrenGenericPropsNoElaboration.tsx ===
+// Children aren't elaborated against a generic props type's `P["children"]` (tsc's getIndexedAccessType defers it, and
+// elaborateElementwise skips an indexed access): the attributes as a whole are reported
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 0, 0))
+>Element : Symbol(Element, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 23))
+>e : Symbol(Element.e, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 43))
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 50))
+>children : Symbol(ElementChildrenAttribute.children, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 87))
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 102))
+
+function W<P extends { children: number[] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{"b"}</C>; }
+>W : Symbol(W, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 135))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 11))
+>children : Symbol(children, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 22))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 45))
+>p : Symbol(p, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 49))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 11))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 23))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 45))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 45))
+
+function W2<P extends { children: number }>(C: (p: P) => JSX.Element) { return <C>{"a"}</C>; }
+>W2 : Symbol(W2, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 3, 100))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 12))
+>children : Symbol(children, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 23))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 44))
+>p : Symbol(p, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 48))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 12))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 23))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 44))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 44))
+
+function W3<P extends { children: number }>(C: (p: P) => JSX.Element) { return <C x={1}>{"a"}</C>; }
+>W3 : Symbol(W3, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 4, 94))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 12))
+>children : Symbol(children, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 23))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 44))
+>p : Symbol(p, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 48))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 12))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 23))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 44))
+>x : Symbol(x, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 81))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 44))
+
+function W4<P extends { children: [number, string] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{1}</C>; }
+>W4 : Symbol(W4, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 5, 100))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 6, 12))
+>children : Symbol(children, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 6, 23))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 6, 54))
+>p : Symbol(p, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 6, 58))
+>P : Symbol(P, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 6, 12))
+>JSX : Symbol(JSX, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 0, 0))
+>Element : Symbol(JSX.Element, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 2, 23))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 6, 54))
+>C : Symbol(C, Decl(ttttJsxChildrenGenericPropsNoElaboration.tsx, 6, 54))
+

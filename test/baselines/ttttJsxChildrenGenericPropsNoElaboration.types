@@ -1,0 +1,57 @@
+//// [test/cases/ttttJsxChildrenGenericPropsNoElaboration.tsx] ////
+
+=== ttttJsxChildrenGenericPropsNoElaboration.tsx ===
+// Children aren't elaborated against a generic props type's `P["children"]` (tsc's getIndexedAccessType defers it, and
+// elaborateElementwise skips an indexed access): the attributes as a whole are reported
+declare namespace JSX { interface Element { e: 1 } interface ElementChildrenAttribute { children: {} } interface IntrinsicElements {} }
+>e : 1
+>children : {}
+
+function W<P extends { children: number[] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{"b"}</C>; }
+>W : <P extends { children: number[]; }>(C: (p: P) => JSX.Element) => JSX.Element
+>children : number[]
+>C : (p: P) => JSX.Element
+>p : P
+>JSX : any
+><C>{"a"}{"b"}</C> : JSX.Element
+>C : (p: P) => JSX.Element
+>"a" : "a"
+>"b" : "b"
+>C : (p: P) => JSX.Element
+
+function W2<P extends { children: number }>(C: (p: P) => JSX.Element) { return <C>{"a"}</C>; }
+>W2 : <P extends { children: number; }>(C: (p: P) => JSX.Element) => JSX.Element
+>children : number
+>C : (p: P) => JSX.Element
+>p : P
+>JSX : any
+><C>{"a"}</C> : JSX.Element
+>C : (p: P) => JSX.Element
+>"a" : "a"
+>C : (p: P) => JSX.Element
+
+function W3<P extends { children: number }>(C: (p: P) => JSX.Element) { return <C x={1}>{"a"}</C>; }
+>W3 : <P extends { children: number; }>(C: (p: P) => JSX.Element) => JSX.Element
+>children : number
+>C : (p: P) => JSX.Element
+>p : P
+>JSX : any
+><C x={1}>{"a"}</C> : JSX.Element
+>C : (p: P) => JSX.Element
+>x : number
+>1 : 1
+>"a" : "a"
+>C : (p: P) => JSX.Element
+
+function W4<P extends { children: [number, string] }>(C: (p: P) => JSX.Element) { return <C>{"a"}{1}</C>; }
+>W4 : <P extends { children: [number, string]; }>(C: (p: P) => JSX.Element) => JSX.Element
+>children : [number, string]
+>C : (p: P) => JSX.Element
+>p : P
+>JSX : any
+><C>{"a"}{1}</C> : JSX.Element
+>C : (p: P) => JSX.Element
+>"a" : "a"
+>1 : 1
+>C : (p: P) => JSX.Element
+
