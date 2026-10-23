@@ -1,0 +1,14 @@
+// @strict: true
+// A function on the right of `&&` in an argument a generic call infers from gets its contextual signature from what the
+// call inferred so far, like on the right of `||` (tsc's getContextualTypeForBinaryOperand passes the expression's
+// contextual type on): no TS7006. openclaw's session-cost-usage-cache.worker.test.ts
+// `run.call(this, input, { ...options, onRequest: onRequest && ((value, context) => ...) })`
+type Opts = { onRequest?: (value: unknown) => string };
+declare const onRequest: ((value: unknown) => string) | undefined;
+declare function h(input: number, options: Opts): void;
+declare function g<A extends any[]>(f: (...args: A) => void, ...args: A): void;
+g(h, 1, { onRequest: onRequest && ((value) => "") });
+declare function g2<A>(f: (a: A) => void, a: A): void;
+declare function h2(options: Opts): void;
+g2(h2, { onRequest: onRequest && ((value) => "") });
+g2(h2, { onRequest: (0, (value) => "") });

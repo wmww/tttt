@@ -1,0 +1,65 @@
+//// [test/cases/ttttAndAndInferenceContext.ts] ////
+
+=== ttttAndAndInferenceContext.ts ===
+// A function on the right of `&&` in an argument a generic call infers from gets its contextual signature from what the
+// call inferred so far, like on the right of `||` (tsc's getContextualTypeForBinaryOperand passes the expression's
+// contextual type on): no TS7006. openclaw's session-cost-usage-cache.worker.test.ts
+// `run.call(this, input, { ...options, onRequest: onRequest && ((value, context) => ...) })`
+type Opts = { onRequest?: (value: unknown) => string };
+>Opts : Symbol(Opts, Decl(ttttAndAndInferenceContext.ts, 0, 0))
+>onRequest : Symbol(onRequest, Decl(ttttAndAndInferenceContext.ts, 4, 13))
+>value : Symbol(value, Decl(ttttAndAndInferenceContext.ts, 4, 27))
+
+declare const onRequest: ((value: unknown) => string) | undefined;
+>onRequest : Symbol(onRequest, Decl(ttttAndAndInferenceContext.ts, 5, 13))
+>value : Symbol(value, Decl(ttttAndAndInferenceContext.ts, 5, 27))
+
+declare function h(input: number, options: Opts): void;
+>h : Symbol(h, Decl(ttttAndAndInferenceContext.ts, 5, 66))
+>input : Symbol(input, Decl(ttttAndAndInferenceContext.ts, 6, 19))
+>options : Symbol(options, Decl(ttttAndAndInferenceContext.ts, 6, 33))
+>Opts : Symbol(Opts, Decl(ttttAndAndInferenceContext.ts, 0, 0))
+
+declare function g<A extends any[]>(f: (...args: A) => void, ...args: A): void;
+>g : Symbol(g, Decl(ttttAndAndInferenceContext.ts, 6, 55))
+>A : Symbol(A, Decl(ttttAndAndInferenceContext.ts, 7, 19))
+>f : Symbol(f, Decl(ttttAndAndInferenceContext.ts, 7, 36))
+>args : Symbol(args, Decl(ttttAndAndInferenceContext.ts, 7, 40))
+>A : Symbol(A, Decl(ttttAndAndInferenceContext.ts, 7, 19))
+>args : Symbol(args, Decl(ttttAndAndInferenceContext.ts, 7, 60))
+>A : Symbol(A, Decl(ttttAndAndInferenceContext.ts, 7, 19))
+
+g(h, 1, { onRequest: onRequest && ((value) => "") });
+>g : Symbol(g, Decl(ttttAndAndInferenceContext.ts, 6, 55))
+>h : Symbol(h, Decl(ttttAndAndInferenceContext.ts, 5, 66))
+>onRequest : Symbol(onRequest, Decl(ttttAndAndInferenceContext.ts, 8, 9))
+>onRequest : Symbol(onRequest, Decl(ttttAndAndInferenceContext.ts, 5, 13))
+>value : Symbol(value, Decl(ttttAndAndInferenceContext.ts, 8, 36))
+
+declare function g2<A>(f: (a: A) => void, a: A): void;
+>g2 : Symbol(g2, Decl(ttttAndAndInferenceContext.ts, 8, 53))
+>A : Symbol(A, Decl(ttttAndAndInferenceContext.ts, 9, 20))
+>f : Symbol(f, Decl(ttttAndAndInferenceContext.ts, 9, 23))
+>a : Symbol(a, Decl(ttttAndAndInferenceContext.ts, 9, 27))
+>A : Symbol(A, Decl(ttttAndAndInferenceContext.ts, 9, 20))
+>a : Symbol(a, Decl(ttttAndAndInferenceContext.ts, 9, 41))
+>A : Symbol(A, Decl(ttttAndAndInferenceContext.ts, 9, 20))
+
+declare function h2(options: Opts): void;
+>h2 : Symbol(h2, Decl(ttttAndAndInferenceContext.ts, 9, 54))
+>options : Symbol(options, Decl(ttttAndAndInferenceContext.ts, 10, 20))
+>Opts : Symbol(Opts, Decl(ttttAndAndInferenceContext.ts, 0, 0))
+
+g2(h2, { onRequest: onRequest && ((value) => "") });
+>g2 : Symbol(g2, Decl(ttttAndAndInferenceContext.ts, 8, 53))
+>h2 : Symbol(h2, Decl(ttttAndAndInferenceContext.ts, 9, 54))
+>onRequest : Symbol(onRequest, Decl(ttttAndAndInferenceContext.ts, 11, 8))
+>onRequest : Symbol(onRequest, Decl(ttttAndAndInferenceContext.ts, 5, 13))
+>value : Symbol(value, Decl(ttttAndAndInferenceContext.ts, 11, 35))
+
+g2(h2, { onRequest: (0, (value) => "") });
+>g2 : Symbol(g2, Decl(ttttAndAndInferenceContext.ts, 8, 53))
+>h2 : Symbol(h2, Decl(ttttAndAndInferenceContext.ts, 9, 54))
+>onRequest : Symbol(onRequest, Decl(ttttAndAndInferenceContext.ts, 12, 8))
+>value : Symbol(value, Decl(ttttAndAndInferenceContext.ts, 12, 25))
+

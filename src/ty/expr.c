@@ -3317,11 +3317,15 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             break;
         }
         case BINARY_OP_AND_AND:
-        case BINARY_OP_COMMA:
+        case BINARY_OP_COMMA: {
             left = ty_expr_type(me, &binary->left);
-            right = check_with(me, &binary->right, (ExprCtx){ .contextual = passed_on_context(ctx).contextual,
-                .skip_sensitive = ctx.skip_sensitive });
+            ExprCtx passed = passed_on_context(ctx);
+            passed.is_const = false;
+            passed.generic_mode = nullptr;
+            passed.template_context = false;
+            right = check_with(me, &binary->right, passed);
             break;
+        }
         default:
             left = ty_expr_type(me, &binary->left);
             right = ty_expr_type(me, &binary->right);
