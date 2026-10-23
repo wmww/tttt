@@ -1251,23 +1251,23 @@ const baselines = {
         types: true,
     },
     'bun08-C6a': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun08-C6b': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun08-C7a': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun08-C7b': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'bun08-C8': {
@@ -5926,7 +5926,7 @@ const baselines = {
         types: true,
     },
     'bun31-SC5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9506,9 +9506,9 @@ const baselines = {
         types: false,
     },
     'bun73-R12': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bun73-R13a': {
         errors: true,
@@ -11673,6 +11673,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAssignmentPatternCallInference': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAssignmentPatternDefaultsInfer': {
         errors: true,
         symbols: true,
@@ -11689,6 +11694,16 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttAugmentationCloneChain': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'ttttAugmentationCloneOfClone': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttAugmentationQualifiedName': {
         errors: true,
@@ -13641,6 +13656,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsdocLinkLocalInBlock': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsdocTypedModuleExportsChecked': {
         errors: true,
         symbols: true,
@@ -13807,6 +13827,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttLogicalAssignElementUnionKey': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLoopPartialIndexType': {
         errors: true,
         symbols: true,
@@ -13957,6 +13982,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttNamespaceImportExportEqualsUnion': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttNarrowImportedEnum': {
         errors: true,
         symbols: true,
@@ -14029,6 +14059,11 @@ const baselines = {
         types: true,
     },
     'ttttNeverReductionTypeVariableHasNeverType': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNoInferUnionNotElaborated': {
         errors: true,
         symbols: true,
         types: true,
@@ -14513,6 +14548,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttSyntheticDefaultFirstUsage': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttTemplatePlaceholderCurrentNode': {
         errors: true,
