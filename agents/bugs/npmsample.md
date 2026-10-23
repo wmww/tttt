@@ -42,7 +42,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   tried together at each location for bundler/node16/nodenext) and reports TS7016, then TS2503 for `React.` namespaces;
   tttt goes on to @types/react (as if TypeScript extensions were tried everywhere before JavaScript, node10's two
   passes). Missing 3 TS7016 + 1 TS2503 there; not a flip (both have errors). Guess: the module resolver's extension
-  passes for paths mappings (src/ module resolution). The clone is deleted. [open]
+  passes for paths mappings (src/ module resolution). The clone is deleted. (claimed: cor10) [open]
 - **npm__veto-party_baum__package_manager__npm_TS2339** (seed 20261024, @veto-party/baum__package_manager__npm@0.2.0-pre-54,
   veto-party/baum; tsgo 5, tttt 106). `type IConfigMapStructure = typeof VariableFeature.makeInstance extends () =>
   IFeature<any, any, infer Structure> ? (Structure extends Record<infer Key, infer Value> ? Map<Key, Value> : never) :
