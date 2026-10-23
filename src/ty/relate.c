@@ -8403,6 +8403,12 @@ bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target) {
     return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
 }
 
+// Whether the pair ran out of budget before and is cached as that (tsc's RelationComparisonResultComplexityOverflow)
+bool ty_relation_overflowed(Checker* me, Ty const* source, Ty const* target, TyRelation relation) {
+    bool constrained;
+    return relation_cache_get(&my relations[relation], relation_key_of(me, source, target, &constrained)) & CACHE_OVERFLOW;
+}
+
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation) {
     return check_related(me, source, target, relation, nullptr, 0);
 }

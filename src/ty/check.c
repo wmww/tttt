@@ -745,9 +745,11 @@ static bool check_assignable(
         if (errs) elaborate_error(me, head, expr, source, target, errs);
         return false;
     }
-    // (What ran into the instantiation limits has been reported as that, TS2589)
-    if (my instantiation_limit_hits != limit_hits) {
-        if (errs && my relation_complexity_hits != complexity_hits) {
+    // (What ran into the instantiation limits has been reported as that, TS2589. A pair that ran out of budget before
+    // is cached as that: explaining it reports TS2859 again and nothing else, tsc's recursiveTypeRelatedTo)
+    bool overflowed = my instantiation_limit_hits == limit_hits && ty_relation_overflowed(me, source, target, TY_RELATION_ASSIGNABLE);
+    if (my instantiation_limit_hits != limit_hits || overflowed) {
+        if (errs && (my relation_complexity_hits != complexity_hits || overflowed)) {
             // tsc's explaining pass runs out of budget too, which reports TS2859 a second time, and nothing else
             // (tsc's checkTypeRelatedTo with the error node: reported there)
             VecTyReportLine lines = {0};

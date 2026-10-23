@@ -1,0 +1,32 @@
+//// [test/cases/ttttComplexityOverflowCachedAssign.ts] ////
+
+=== ttttComplexityOverflowCachedAssign.ts ===
+// A pair that ran out of budget is cached as that: assigning it again reports TS2859 only, no TS2322 (tsc's
+// recursiveTypeRelatedTo reports the cached overflow while explaining)
+type Digits = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+>Digits : Digits
+
+type T1 = `${Digits}${Digits}${Digits}${Digits}` | undefined;
+>T1 : T1
+
+type T2 = { a: string } | { b: number };
+>T2 : T2
+>a : string
+>b : number
+
+declare let y: T1 & T2; declare let z: T1 | T2;
+>y : T1 & T2
+>z : T1 | T2
+
+z = y; z = y;
+>z = y : T1 & T2
+>z : T1 | T2
+>y : T1 & T2
+>z = y : T1 & T2
+>z : T1 | T2
+>y : T1 & T2
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+
