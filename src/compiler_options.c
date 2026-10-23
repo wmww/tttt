@@ -340,6 +340,19 @@ bool compiler_options_lib_name_valid(csview name) {
     return false;
 }
 
+// A `/// <reference lib>` name: a lib name, or a lib's file name, `lib.es2022.d.ts` (tsgo's GetLibFileName)
+bool compiler_options_lib_reference_valid(csview name) {
+    if (compiler_options_lib_name_valid(name)) return true;
+    if (name.size <= 9 || !name_equals(csview_slice(name, 0, 4), "lib.") || !name_equals(csview_slice(name, name.size - 5, name.size), ".d.ts")) {
+        return false;
+    }
+    csview inner = csview_slice(name, 4, name.size - 5);
+    for (u32 i = 0; i < lib_name_count; i++) {
+        if (name_equals(inner, lib_names[i]) && csview_iequals(compiler_options_lib_file_name(inner), lib_names[i])) return true;
+    }
+    return false;
+}
+
 cstr compiler_options_lib_names_message(void) {
     cstr ret = cstr_lit("Argument for '--lib' option must be: ");
     for (u32 i = 0; i < lib_name_count; i++) {

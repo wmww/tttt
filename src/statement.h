@@ -293,6 +293,7 @@ typedef struct SourceDirectiveStatement {
     cstr not_found;
     bool not_found_extensionless; // A path without extension that no .ts/.tsx/.d.ts completes: TS6231
     bool not_found_network; // A network path (path_is_network()): TS5116, never looked up
+    bool lib_unknown; // A lib reference to no lib name or file (tsgo's GetLibFileName): TS2726/TS2727, never loaded
     // A path to a referenced project's source whose output declaration file isn't built: TS6305 (absolute paths)
     cstr unbuilt_output, unbuilt_source;
     bool self_reference; // A path to the file it is in: TS1006

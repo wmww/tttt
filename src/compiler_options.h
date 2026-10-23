@@ -254,6 +254,7 @@ void compiler_options_drop(CompilerOptions* me);
 CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value);
 // A name `lib` takes (case insensitive), and TS6046's message listing them
 bool compiler_options_lib_name_valid(csview name);
+bool compiler_options_lib_reference_valid(csview name);
 cstr compiler_options_lib_names_message(void);
 // The file a lib name means (lib.NAME.d.ts), lowercase or not: `esnext.bigint` is es2020.bigint
 csview compiler_options_lib_file_name(csview name);

@@ -13,6 +13,7 @@
 #include "flow.h"
 #include "unused.h"
 #include "module_resolution.h"
+#include "lib_names.h"
 
 static void export_assignment_check_isolated(Statement const* me, Scope* names, ErrorCtx* errs);
 
@@ -1983,6 +1984,30 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 }
                 error_ctx_error_d(errs, span, 6305, "Output file '", my source_directive->unbuilt_output,
                     "' has not been built from source file '", my source_directive->unbuilt_source, "'.");
+            }
+            if (my source_directive->lib_unknown) {
+                // tsgo's processingDiagnostic: the name lowercased, with a suggestion among the lib names (TS2727)
+                Span span = my source_directive->path_span;
+                if (span.size >= 2 && (*span.buf == '"' || *span.buf == '\'')) {
+                    span_set_sv(&span, csview_slice(span_sv(span), 1, span.size - 1));
+                }
+                cstr name = cstr_clone(my source_directive->path);
+                cstr_lowercase(&name);
+                csview unqualified = cstr_sv(&name);
+                if (csview_starts_with(unqualified, "lib.")) unqualified = csview_slice(unqualified, 4, unqualified.size);
+                if (csview_ends_with(unqualified, ".d.ts")) unqualified = csview_slice(unqualified, 0, unqualified.size - 5);
+                csview* names = malloc(sizeof(csview) * lib_name_count);
+                panic_if(!names, "out of memory");
+                for (u32 i = 0; i < lib_name_count; i++) names[i] = csview_from(lib_names[i]);
+                isize found = spelling_suggestion(unqualified, names, lib_name_count);
+                if (found >= 0) {
+                    error_ctx_error_d(errs, span, 2727, "Cannot find lib definition for '", name, "'. Did you mean '",
+                        names[found], "'?");
+                } else {
+                    error_ctx_error_d(errs, span, 2726, "Cannot find lib definition for '", name, "'.");
+                }
+                free(names);
+                cstr_drop(&name);
             }
             if (cstr_size(&my source_directive->not_found)) {
                 // Without the quotes

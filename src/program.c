@@ -650,6 +650,12 @@ void program_set_lib_dir(Program* me, csview dir) {
 static cstr lib_reference_file_name(csview path) {
     cstr name = cstr_from_sv(path);
     cstr_lowercase(&name);
+    // (A lib's file name is the lib: `lib.dom.d.ts`, tsgo's LibFilesSet. tttt's lib directory names them `dom.d.ts`)
+    if (cstr_size(&name) > 9 && csview_starts_with(cstr_sv(&name), "lib.") && csview_ends_with(cstr_sv(&name), ".d.ts")) {
+        cstr inner = cstr_from_sv(csview_slice(cstr_sv(&name), 4, cstr_size(&name)));
+        cstr_drop(&name);
+        return inner;
+    }
     cstr ret = cstr_d(compiler_options_lib_file_name(cstr_sv(&name)), ".d.ts");
     cstr_drop(&name);
     return ret;
@@ -1249,6 +1255,13 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                     // processLibReferenceDirectives, `@types/node` has some): a lib like the ones the options name. An
                     // unknown name is ignored (TODO: TS2726). The harness keeps libs in a shared program, which a
                     // test's file can't add to (TODO)
+                    // A name no lib has, nor a lib file's (tsgo's GetLibFileName): TS2726, nothing loaded
+                    if (!my loading_stdlib && !my options.no_lib &&
+                        !compiler_options_lib_reference_valid(cstr_sv(&statement->source_directive->path))
+                    ) {
+                        statement->source_directive->lib_unknown = true;
+                        break;
+                    }
                     cstr name = lib_reference_file_name(cstr_sv(&statement->source_directive->path));
                     csview lib_name = csview_slice(cstr_sv(&name), 0, cstr_size(&name) - 5); // (Without `.d.ts`)
                     if ((my loading_stdlib || (my follow_lib_references && !my options.no_lib)) &&
