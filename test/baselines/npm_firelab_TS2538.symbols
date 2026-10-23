@@ -1,0 +1,35 @@
+//// [test/cases/npm_firelab_TS2538.ts] ////
+
+=== npm_firelab_TS2538.ts ===
+// origin: npm firelab@0.1.0 https://github.com/AkilSaji/firelab tsconfig.bench.json seed 20261023
+// flip: yes
+// A truthiness-narrowed generic indexed access (NonNullable<Partial<Record<K, keyof Caps>>[M]>) indexes Caps: no TS2538
+type Caps = { a: boolean };
+>Caps : Symbol(Caps, Decl(npm_firelab_TS2538.ts, 0, 0))
+>a : Symbol(a, Decl(npm_firelab_TS2538.ts, 3, 13))
+
+declare const CAP_FOR: Partial<Record<"x" | "y", keyof Caps>>;
+>CAP_FOR : Symbol(CAP_FOR, Decl(npm_firelab_TS2538.ts, 4, 13))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Caps : Symbol(Caps, Decl(npm_firelab_TS2538.ts, 0, 0))
+
+function f<M extends "x" | "y">(caps: Caps, method: M) {
+>f : Symbol(f, Decl(npm_firelab_TS2538.ts, 4, 62))
+>M : Symbol(M, Decl(npm_firelab_TS2538.ts, 5, 11))
+>caps : Symbol(caps, Decl(npm_firelab_TS2538.ts, 5, 32))
+>Caps : Symbol(Caps, Decl(npm_firelab_TS2538.ts, 0, 0))
+>method : Symbol(method, Decl(npm_firelab_TS2538.ts, 5, 43))
+>M : Symbol(M, Decl(npm_firelab_TS2538.ts, 5, 11))
+
+    const cap = CAP_FOR[method];
+>cap : Symbol(cap, Decl(npm_firelab_TS2538.ts, 6, 9))
+>CAP_FOR : Symbol(CAP_FOR, Decl(npm_firelab_TS2538.ts, 4, 13))
+>method : Symbol(method, Decl(npm_firelab_TS2538.ts, 5, 43))
+
+    if (cap) caps[cap];
+>cap : Symbol(cap, Decl(npm_firelab_TS2538.ts, 6, 9))
+>caps : Symbol(caps, Decl(npm_firelab_TS2538.ts, 5, 32))
+>cap : Symbol(cap, Decl(npm_firelab_TS2538.ts, 6, 9))
+}
+

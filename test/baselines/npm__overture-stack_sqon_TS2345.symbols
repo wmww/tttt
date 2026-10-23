@@ -1,0 +1,436 @@
+//// [test/cases/npm__overture-stack_sqon_TS2345.ts] ////
+
+=== modules/sqon/src/builder/index.test.ts ===
+import { SqonBuilder } from '#builder/index.js';
+>SqonBuilder : Symbol(SqonBuilder, Decl(index.test.ts, 0, 8))
+
+		const study = { op: 'in', content: { fieldName: 'study', value: ['a'] } } as const;
+>study : Symbol(study, Decl(index.test.ts, 1, 7))
+>op : Symbol(op, Decl(index.test.ts, 1, 17))
+>content : Symbol(content, Decl(index.test.ts, 1, 27))
+>fieldName : Symbol(fieldName, Decl(index.test.ts, 1, 38))
+>value : Symbol(value, Decl(index.test.ts, 1, 58))
+>const : Symbol(const)
+
+		const site = { op: 'in', content: { fieldName: 'site', value: ['b'] } } as const;
+>site : Symbol(site, Decl(index.test.ts, 2, 7))
+>op : Symbol(op, Decl(index.test.ts, 2, 16))
+>content : Symbol(content, Decl(index.test.ts, 2, 26))
+>fieldName : Symbol(fieldName, Decl(index.test.ts, 2, 37))
+>value : Symbol(value, Decl(index.test.ts, 2, 56))
+>const : Symbol(const)
+
+			assert.deepEqual(SqonBuilder.or([study, site]).toValue(), { op: 'or', content: [study, site] });
+>SqonBuilder.or : Symbol(or, Decl(index.ts, 3, 28))
+>SqonBuilder : Symbol(SqonBuilder, Decl(index.test.ts, 0, 8))
+>or : Symbol(or, Decl(index.ts, 3, 28))
+>study : Symbol(study, Decl(index.test.ts, 1, 7))
+>site : Symbol(site, Decl(index.test.ts, 2, 7))
+>op : Symbol(op, Decl(index.test.ts, 3, 62))
+>content : Symbol(content, Decl(index.test.ts, 3, 72))
+>study : Symbol(study, Decl(index.test.ts, 1, 7))
+>site : Symbol(site, Decl(index.test.ts, 2, 7))
+
+=== modules/sqon/src/builder/index.ts ===
+import type { SqonCombination, SqonNode } from '#schema/index.js';
+>SqonCombination : Symbol(SqonCombination, Decl(index.ts, 0, 13))
+>SqonNode : Symbol(SqonNode, Decl(index.ts, 0, 30))
+
+/**
+ */
+export const SqonBuilder = {
+>SqonBuilder : Symbol(SqonBuilder, Decl(index.ts, 3, 12))
+
+	or: (content: SqonNode | SqonNode[], pivot?: string): SqonBuilderHandle =>
+>or : Symbol(or, Decl(index.ts, 3, 28))
+>content : Symbol(content, Decl(index.ts, 4, 6))
+>SqonNode : Symbol(SqonNode, Decl(index.ts, 0, 30))
+>SqonNode : Symbol(SqonNode, Decl(index.ts, 0, 30))
+>pivot : Symbol(pivot, Decl(index.ts, 4, 37))
+>SqonBuilderHandle : Symbol(SqonBuilderHandle)
+
+		createBuilder(emptySqon()).or(content, pivot),
+>content : Symbol(content, Decl(index.ts, 4, 6))
+>pivot : Symbol(pivot, Decl(index.ts, 4, 37))
+
+};
+=== modules/sqon/src/schema/constants.ts ===
+
+=== modules/sqon/src/schema/index.ts ===
+import { z as zod } from 'zod';
+>z : Symbol(z, Decl(index.d.cts, 1, 8))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+
+const FieldNameSchema = zod
+>FieldNameSchema : Symbol(FieldNameSchema, Decl(index.ts, 1, 5))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+
+export const InLikeFilterSchema = zod.looseObject({
+>InLikeFilterSchema : Symbol(InLikeFilterSchema, Decl(index.ts, 2, 12))
+>zod.looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+
+		fieldName: FieldNameSchema,
+>fieldName : Symbol(fieldName, Decl(index.ts, 2, 51))
+>FieldNameSchema : Symbol(FieldNameSchema, Decl(index.ts, 1, 5))
+
+});
+export const AllFilterSchema = zod.looseObject({
+>AllFilterSchema : Symbol(AllFilterSchema, Decl(index.ts, 5, 12))
+>zod.looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+
+	op: zod.literal('all'),
+>op : Symbol(op, Decl(index.ts, 5, 48))
+>zod.literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+
+});
+export const RangeLikeFilterSchema = zod.looseObject({
+>RangeLikeFilterSchema : Symbol(RangeLikeFilterSchema, Decl(index.ts, 8, 12))
+>zod.looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+
+		fieldName: FieldNameSchema,
+>fieldName : Symbol(fieldName, Decl(index.ts, 8, 54))
+>FieldNameSchema : Symbol(FieldNameSchema, Decl(index.ts, 1, 5))
+
+});
+export const BetweenFilterSchema = zod.looseObject({
+>BetweenFilterSchema : Symbol(BetweenFilterSchema, Decl(index.ts, 11, 12))
+>zod.looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+
+	op: zod.literal('between'),
+>op : Symbol(op, Decl(index.ts, 11, 52))
+>zod.literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+
+});
+export const WildcardFilterSchema = zod.looseObject({
+>WildcardFilterSchema : Symbol(WildcardFilterSchema, Decl(index.ts, 14, 12))
+>zod.looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>looseObject : Symbol(zod.looseObject, Decl(schemas.d.cts, 8, 1))
+
+	op: zod.union([zod.literal('wildcard'), zod.literal('filter')]),
+>op : Symbol(op, Decl(index.ts, 14, 53))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>zod.literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+>zod.literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+>zod : Symbol(zod, Decl(index.ts, 0, 8))
+>literal : Symbol(zod.literal, Decl(schemas.d.cts, 11, 1))
+
+});
+export type { SqonCombination, SqonLeaf, SqonNode } from './types.js';
+>SqonCombination : Symbol(SqonCombination, Decl(index.ts, 17, 13))
+>SqonLeaf : Symbol(SqonLeaf, Decl(index.ts, 17, 30))
+>SqonNode : Symbol(SqonNode, Decl(index.ts, 17, 40))
+
+=== modules/sqon/src/schema/types.ts ===
+import type { z as zod } from 'zod';
+>z : Symbol(z, Decl(index.d.cts, 1, 8))
+>zod : Symbol(zod, Decl(types.ts, 0, 13))
+
+import type {
+	AllFilterSchema,
+>AllFilterSchema : Symbol(AllFilterSchema, Decl(types.ts, 1, 13))
+
+} from './index.js';
+export type SqonLeaf =
+>SqonLeaf : Symbol(SqonLeaf, Decl(types.ts, 3, 20))
+
+	| zod.infer<typeof AllFilterSchema>
+>zod : Symbol(zod, Decl(types.ts, 0, 13))
+>infer : Symbol(zod.infer, Decl(external.d.cts, 1, 13))
+>AllFilterSchema : Symbol(AllFilterSchema, Decl(types.ts, 1, 13))
+
+export type SqonCombination = {
+>SqonCombination : Symbol(SqonCombination, Decl(types.ts, 5, 36))
+
+	content: SqonNode[];
+>content : Symbol(content, Decl(types.ts, 6, 31))
+>SqonNode : Symbol(SqonNode, Decl(types.ts, 8, 2))
+
+};
+export type SqonNode = SqonLeaf | SqonCombination;
+>SqonNode : Symbol(SqonNode, Decl(types.ts, 8, 2))
+>SqonLeaf : Symbol(SqonLeaf, Decl(types.ts, 3, 20))
+>SqonCombination : Symbol(SqonCombination, Decl(types.ts, 5, 36))
+
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/zod/index.d.cts ===
+import * as z from "./v4/classic/external.cjs";
+>z : Symbol(z, Decl(index.d.cts, 0, 6))
+
+export { z, z as default };
+>z : Symbol(z, Decl(index.d.cts, 1, 8))
+>z : Symbol(z, Decl(index.d.cts, 0, 6))
+>default : Symbol(default, Decl(index.d.cts, 1, 11))
+
+=== node_modules/zod/v4/classic/external.d.cts ===
+export * from "./schemas.cjs";
+export type { infer } from "../core/index.cjs";
+>infer : Symbol(infer, Decl(external.d.cts, 1, 13))
+
+=== node_modules/zod/v4/classic/schemas.d.cts ===
+import * as core from "../core/index.cjs";
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+
+import { util, type $ZodNumberFormats } from "../core/index.cjs";
+>util : Symbol(util, Decl(schemas.d.cts, 1, 8))
+>$ZodNumberFormats : Symbol($ZodNumberFormats, Decl(schemas.d.cts, 1, 14))
+
+export interface ZodType<out Output = unknown, out Input = unknown, out Internals extends core.$ZodTypeInternals<Output, Input> = core.$ZodTypeInternals<Output, Input>> extends core.$ZodType<Output, Input, Internals> {
+>ZodType : Symbol(ZodType, Decl(schemas.d.cts, 1, 65))
+>Output : Symbol(Output, Decl(schemas.d.cts, 2, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 2, 46))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 2, 67))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>Output : Symbol(Output, Decl(schemas.d.cts, 2, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 2, 46))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>Output : Symbol(Output, Decl(schemas.d.cts, 2, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 2, 46))
+>core.$ZodType : Symbol(core.$ZodType, Decl(schemas.d.cts, 3, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodType : Symbol(core.$ZodType, Decl(schemas.d.cts, 3, 1))
+>Output : Symbol(Output, Decl(schemas.d.cts, 2, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 2, 46))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 2, 67))
+}
+export interface _ZodType<out Internals extends core.$ZodTypeInternals = core.$ZodTypeInternals> extends ZodType<any, any, Internals> {
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 3, 1))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 4, 26))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>ZodType : Symbol(ZodType, Decl(schemas.d.cts, 1, 65))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 4, 26))
+}
+export interface ZodObject<
+>ZodObject : Symbol(ZodObject, Decl(schemas.d.cts, 5, 1))
+
+out Shape extends core.$ZodShape = core.$ZodLooseShape, out Config extends core.$ZodObjectConfig = core.$strip> extends _ZodType<core.$ZodObjectInternals<Shape, Config>>, core.$ZodObject<Shape, Config> {
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 6, 27))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodShape : Symbol(core.$ZodShape)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodLooseShape : Symbol(core.$ZodLooseShape)
+>Config : Symbol(Config, Decl(schemas.d.cts, 7, 55))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodObjectConfig : Symbol(core.$ZodObjectConfig)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$strip : Symbol(core.$strip)
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 3, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodObjectInternals : Symbol(core.$ZodObjectInternals, Decl(schemas.d.cts, 14, 2))
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 6, 27))
+>Config : Symbol(Config, Decl(schemas.d.cts, 7, 55))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 6, 27))
+>Config : Symbol(Config, Decl(schemas.d.cts, 7, 55))
+}
+export declare function looseObject<T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams): ZodObject<util.Writeable<T>, core.$loose>;
+>looseObject : Symbol(looseObject, Decl(schemas.d.cts, 8, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 36))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodLooseShape : Symbol(core.$ZodLooseShape)
+>shape : Symbol(shape, Decl(schemas.d.cts, 9, 67))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 36))
+>params : Symbol(params, Decl(schemas.d.cts, 9, 76))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodObjectParams : Symbol(core.$ZodObjectParams)
+>ZodObject : Symbol(ZodObject, Decl(schemas.d.cts, 5, 1))
+>util : Symbol(util, Decl(schemas.d.cts, 1, 8))
+>Writeable : Symbol(util.Writeable, Decl(util.d.cts, 0, 0))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 36))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$loose : Symbol(core.$loose, Decl(schemas.d.cts, 11, 11))
+
+export interface ZodLiteral<T extends util.Literal = util.Literal> extends _ZodType<core.$ZodLiteralInternals<T>>, core.$ZodLiteral<T> {
+>ZodLiteral : Symbol(ZodLiteral, Decl(schemas.d.cts, 9, 161))
+>T : Symbol(T, Decl(schemas.d.cts, 10, 28))
+>util : Symbol(util, Decl(schemas.d.cts, 1, 8))
+>Literal : Symbol(util.Literal)
+>util : Symbol(util, Decl(schemas.d.cts, 1, 8))
+>Literal : Symbol(util.Literal)
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 3, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodLiteralInternals : Symbol(core.$ZodLiteralInternals, Decl(schemas.d.cts, 18, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 10, 28))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>T : Symbol(T, Decl(schemas.d.cts, 10, 28))
+}
+export declare function literal<const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams): ZodLiteral<T>;
+>literal : Symbol(literal, Decl(schemas.d.cts, 11, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 12, 32))
+>util : Symbol(util, Decl(schemas.d.cts, 1, 8))
+>Literal : Symbol(util.Literal)
+>value : Symbol(value, Decl(schemas.d.cts, 12, 62))
+>T : Symbol(T, Decl(schemas.d.cts, 12, 32))
+>params : Symbol(params, Decl(schemas.d.cts, 12, 71))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodLiteralParams : Symbol(core.$ZodLiteralParams)
+>ZodLiteral : Symbol(ZodLiteral, Decl(schemas.d.cts, 9, 161))
+>T : Symbol(T, Decl(schemas.d.cts, 12, 32))
+
+=== node_modules/zod/v4/core/core.d.cts ===
+export type output<T> = T extends {
+>output : Symbol(output, Decl(core.d.cts, 0, 0))
+>T : Symbol(T, Decl(core.d.cts, 0, 19))
+>T : Symbol(T, Decl(core.d.cts, 0, 19))
+
+} ? T["_zod"]["output"] : unknown;
+>T : Symbol(T, Decl(core.d.cts, 0, 19))
+
+export type { output as infer };
+>output : Symbol(output, Decl(core.d.cts, 0, 0))
+>infer : Symbol(infer, Decl(core.d.cts, 2, 13))
+
+=== node_modules/zod/v4/core/index.d.cts ===
+export * from "./core.cjs";
+export * from "./schemas.cjs";
+export * as util from "./util.cjs";
+>util : Symbol(util, Decl(index.d.cts, 2, 6))
+
+=== node_modules/zod/v4/core/schemas.d.cts ===
+import * as util from "./util.cjs";
+>util : Symbol(util, Decl(schemas.d.cts, 0, 6))
+
+export interface $ZodTypeInternals<out O = unknown, out I = unknown> extends _$ZodTypeInternals {
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>O : Symbol(O, Decl(schemas.d.cts, 1, 35))
+>I : Symbol(I, Decl(schemas.d.cts, 1, 51))
+
+    output: O;
+>output : Symbol($ZodTypeInternals.output, Decl(schemas.d.cts, 1, 97))
+>O : Symbol(O, Decl(schemas.d.cts, 1, 35))
+}
+export interface $ZodType<O = unknown, I = unknown, Internals extends $ZodTypeInternals<O, I> = $ZodTypeInternals<O, I>> {
+>$ZodType : Symbol($ZodType, Decl(schemas.d.cts, 3, 1))
+>O : Symbol(O, Decl(schemas.d.cts, 4, 26))
+>I : Symbol(I, Decl(schemas.d.cts, 4, 38))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 4, 51))
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>O : Symbol(O, Decl(schemas.d.cts, 4, 26))
+>I : Symbol(I, Decl(schemas.d.cts, 4, 38))
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>O : Symbol(O, Decl(schemas.d.cts, 4, 26))
+>I : Symbol(I, Decl(schemas.d.cts, 4, 38))
+
+    _zod: Internals;
+>_zod : Symbol($ZodType._zod, Decl(schemas.d.cts, 4, 122))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 4, 51))
+}
+/**
+ */
+export type $InferObjectOutput<T extends $ZodLooseShape, Extra extends Record<string, unknown>> = string extends keyof T ? util.IsAny<T[keyof T]> extends true ? Record<string, unknown> : Record<string, core.output<T[keyof T]>> : keyof (T & Extra) extends never ? Record<string, never> : util.Prettify<{
+>$InferObjectOutput : Symbol($InferObjectOutput, Decl(schemas.d.cts, 6, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>$ZodLooseShape : Symbol($ZodLooseShape)
+>Extra : Symbol(Extra, Decl(schemas.d.cts, 9, 56))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>util : Symbol(util, Decl(schemas.d.cts, 0, 6))
+>IsAny : Symbol(util.IsAny)
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>core : Symbol(core)
+>output : Symbol(core.output)
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>Extra : Symbol(Extra, Decl(schemas.d.cts, 9, 56))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>util : Symbol(util, Decl(schemas.d.cts, 0, 6))
+>Prettify : Symbol(util.Prettify, Decl(util.d.cts, 2, 7))
+
+    -readonly [k in keyof T as T[k] extends OptionalOutSchema ? k : never]?: T[k]["_zod"]["output"];
+>k : Symbol(k, Decl(schemas.d.cts, 10, 15))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>k : Symbol(k, Decl(schemas.d.cts, 10, 15))
+>OptionalOutSchema : Symbol(OptionalOutSchema)
+>k : Symbol(k, Decl(schemas.d.cts, 10, 15))
+>T : Symbol(T, Decl(schemas.d.cts, 9, 31))
+>k : Symbol(k, Decl(schemas.d.cts, 10, 15))
+
+} & Extra>;
+>Extra : Symbol(Extra, Decl(schemas.d.cts, 9, 56))
+
+export type $loose = {
+>$loose : Symbol($loose, Decl(schemas.d.cts, 11, 11))
+
+    out: Record<string, unknown>;
+>out : Symbol(out, Decl(schemas.d.cts, 12, 22))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+};
+export interface $ZodObjectInternals<
+>$ZodObjectInternals : Symbol($ZodObjectInternals, Decl(schemas.d.cts, 14, 2))
+
+out Shape extends $ZodShape = $ZodShape, out Config extends $ZodObjectConfig = $ZodObjectConfig> extends _$ZodTypeInternals {
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 15, 37))
+>$ZodShape : Symbol($ZodShape)
+>$ZodShape : Symbol($ZodShape)
+>Config : Symbol(Config, Decl(schemas.d.cts, 16, 40))
+>$ZodObjectConfig : Symbol($ZodObjectConfig)
+>$ZodObjectConfig : Symbol($ZodObjectConfig)
+
+    output: $InferObjectOutput<Shape, Config["out"]>;
+>output : Symbol($ZodObjectInternals.output, Decl(schemas.d.cts, 16, 125))
+>$InferObjectOutput : Symbol($InferObjectOutput, Decl(schemas.d.cts, 6, 1))
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 15, 37))
+>Config : Symbol(Config, Decl(schemas.d.cts, 16, 40))
+}
+export interface $ZodLiteralInternals<T extends util.Literal = util.Literal> extends $ZodTypeInternals<T, T> {
+>$ZodLiteralInternals : Symbol($ZodLiteralInternals, Decl(schemas.d.cts, 18, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 19, 38))
+>util : Symbol(util, Decl(schemas.d.cts, 0, 6))
+>Literal : Symbol(util.Literal)
+>util : Symbol(util, Decl(schemas.d.cts, 0, 6))
+>Literal : Symbol(util.Literal)
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 0, 35))
+>T : Symbol(T, Decl(schemas.d.cts, 19, 38))
+>T : Symbol(T, Decl(schemas.d.cts, 19, 38))
+}
+=== node_modules/zod/v4/core/util.d.cts ===
+export type Writeable<T> = {
+>Writeable : Symbol(Writeable, Decl(util.d.cts, 0, 0))
+>T : Symbol(T, Decl(util.d.cts, 0, 22))
+
+    -readonly [P in keyof T]: T[P];
+>P : Symbol(P, Decl(util.d.cts, 1, 15))
+>T : Symbol(T, Decl(util.d.cts, 0, 22))
+>T : Symbol(T, Decl(util.d.cts, 0, 22))
+>P : Symbol(P, Decl(util.d.cts, 1, 15))
+
+} & {};
+export type Prettify<T> = {
+>Prettify : Symbol(Prettify, Decl(util.d.cts, 2, 7))
+>T : Symbol(T, Decl(util.d.cts, 3, 21))
+
+    [K in keyof T]: T[K];
+>K : Symbol(K, Decl(util.d.cts, 4, 5))
+>T : Symbol(T, Decl(util.d.cts, 3, 21))
+>T : Symbol(T, Decl(util.d.cts, 3, 21))
+>K : Symbol(K, Decl(util.d.cts, 4, 5))
+
+} & {};
+

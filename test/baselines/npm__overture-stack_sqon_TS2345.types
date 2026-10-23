@@ -1,0 +1,347 @@
+//// [test/cases/npm__overture-stack_sqon_TS2345.ts] ////
+
+=== modules/sqon/src/builder/index.test.ts ===
+import { SqonBuilder } from '#builder/index.js';
+>SqonBuilder : { or: (content: import("../schema/types.js").SqonNode | import("../schema/types.js").SqonNode[], pivot?: string) => SqonBuilderHandle; }
+
+		const study = { op: 'in', content: { fieldName: 'study', value: ['a'] } } as const;
+>study : { readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ['a']; }; }
+>{ op: 'in', content: { fieldName: 'study', value: ['a'] } } as const : { readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ["a"]; }; }
+>{ op: 'in', content: { fieldName: 'study', value: ['a'] } } : { readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ["a"]; }; }
+>op : "in"
+>'in' : "in"
+>content : { readonly fieldName: 'study'; readonly value: readonly ["a"]; }
+>{ fieldName: 'study', value: ['a'] } : { readonly fieldName: 'study'; readonly value: readonly ["a"]; }
+>fieldName : "study"
+>'study' : "study"
+>value : readonly ["a"]
+>['a'] : readonly ["a"]
+>'a' : "a"
+
+		const site = { op: 'in', content: { fieldName: 'site', value: ['b'] } } as const;
+>site : { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ['b']; }; }
+>{ op: 'in', content: { fieldName: 'site', value: ['b'] } } as const : { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ["b"]; }; }
+>{ op: 'in', content: { fieldName: 'site', value: ['b'] } } : { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ["b"]; }; }
+>op : "in"
+>'in' : "in"
+>content : { readonly fieldName: 'site'; readonly value: readonly ["b"]; }
+>{ fieldName: 'site', value: ['b'] } : { readonly fieldName: 'site'; readonly value: readonly ["b"]; }
+>fieldName : "site"
+>'site' : "site"
+>value : readonly ["b"]
+>['b'] : readonly ["b"]
+>'b' : "b"
+
+			assert.deepEqual(SqonBuilder.or([study, site]).toValue(), { op: 'or', content: [study, site] });
+>assert.deepEqual(SqonBuilder.or([study, site]).toValue(), { op: 'or', content: [study, site] }) : any
+>assert.deepEqual : any
+>assert : any
+>deepEqual : any
+>SqonBuilder.or([study, site]).toValue() : any
+>SqonBuilder.or([study, site]).toValue : any
+>SqonBuilder.or([study, site]) : SqonBuilderHandle
+>SqonBuilder.or : (content: import("../schema/types.js").SqonNode | import("../schema/types.js").SqonNode[], pivot?: string) => SqonBuilderHandle
+>SqonBuilder : { or: (content: import("../schema/types.js").SqonNode | import("../schema/types.js").SqonNode[], pivot?: string) => SqonBuilderHandle; }
+>or : (content: import("../schema/types.js").SqonNode | import("../schema/types.js").SqonNode[], pivot?: string) => SqonBuilderHandle
+>[study, site] : ({ readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ['a']; }; } | { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ['b']; }; })[]
+>study : { readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ['a']; }; }
+>site : { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ['b']; }; }
+>toValue : any
+>{ op: 'or', content: [study, site] } : { op: string; content: ({ readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ['a']; }; } | { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ['b']; }; })[]; }
+>op : string
+>'or' : "or"
+>content : ({ readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ['a']; }; } | { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ['b']; }; })[]
+>[study, site] : ({ readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ['a']; }; } | { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ['b']; }; })[]
+>study : { readonly op: 'in'; readonly content: { readonly fieldName: 'study'; readonly value: readonly ['a']; }; }
+>site : { readonly op: 'in'; readonly content: { readonly fieldName: 'site'; readonly value: readonly ['b']; }; }
+
+=== modules/sqon/src/builder/index.ts ===
+import type { SqonCombination, SqonNode } from '#schema/index.js';
+>SqonCombination : SqonCombination
+>SqonNode : SqonNode
+
+/**
+ */
+export const SqonBuilder = {
+>SqonBuilder : { or: (content: SqonNode | SqonNode[], pivot?: string) => SqonBuilderHandle; }
+>{	or: (content: SqonNode | SqonNode[], pivot?: string): SqonBuilderHandle =>		createBuilder(emptySqon()).or(content, pivot),} : { or: (content: SqonNode | SqonNode[], pivot?: string) => SqonBuilderHandle; }
+
+	or: (content: SqonNode | SqonNode[], pivot?: string): SqonBuilderHandle =>
+>or : (content: SqonNode | SqonNode[], pivot?: string) => SqonBuilderHandle
+>(content: SqonNode | SqonNode[], pivot?: string): SqonBuilderHandle =>		createBuilder(emptySqon()).or(content, pivot) : (content: SqonNode | SqonNode[], pivot?: string) => SqonBuilderHandle
+>content : SqonNode[] | SqonNode
+>pivot : string | undefined
+
+		createBuilder(emptySqon()).or(content, pivot),
+>createBuilder(emptySqon()).or(content, pivot) : any
+>createBuilder(emptySqon()).or : any
+>createBuilder(emptySqon()) : any
+>createBuilder : any
+>emptySqon() : any
+>emptySqon : any
+>or : any
+>content : SqonNode[] | SqonNode
+>pivot : string | undefined
+
+};
+=== modules/sqon/src/schema/constants.ts ===
+
+=== modules/sqon/src/schema/index.ts ===
+import { z as zod } from 'zod';
+>z : typeof zod
+>zod : typeof zod
+
+const FieldNameSchema = zod
+>FieldNameSchema : typeof zod
+>zod : typeof zod
+
+export const InLikeFilterSchema = zod.looseObject({
+>InLikeFilterSchema : zod.ZodObject<{ fieldName: typeof zod; }, import("zod/v4/core").$loose>
+>zod.looseObject({		fieldName: FieldNameSchema,}) : zod.ZodObject<{ fieldName: typeof zod; }, import("zod/v4/core").$loose>
+>zod.looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>zod : typeof zod
+>looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>{		fieldName: FieldNameSchema,} : { fieldName: typeof zod; }
+
+		fieldName: FieldNameSchema,
+>fieldName : typeof zod
+>FieldNameSchema : typeof zod
+
+});
+export const AllFilterSchema = zod.looseObject({
+>AllFilterSchema : zod.ZodObject<{ op: zod.ZodLiteral<"all">; }, import("zod/v4/core").$loose>
+>zod.looseObject({	op: zod.literal('all'),}) : zod.ZodObject<{ op: zod.ZodLiteral<"all">; }, import("zod/v4/core").$loose>
+>zod.looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>zod : typeof zod
+>looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>{	op: zod.literal('all'),} : { op: zod.ZodLiteral<"all">; }
+
+	op: zod.literal('all'),
+>op : zod.ZodLiteral<"all">
+>zod.literal('all') : zod.ZodLiteral<"all">
+>zod.literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>zod : typeof zod
+>literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>'all' : "all"
+
+});
+export const RangeLikeFilterSchema = zod.looseObject({
+>RangeLikeFilterSchema : zod.ZodObject<{ fieldName: typeof zod; }, import("zod/v4/core").$loose>
+>zod.looseObject({		fieldName: FieldNameSchema,}) : zod.ZodObject<{ fieldName: typeof zod; }, import("zod/v4/core").$loose>
+>zod.looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>zod : typeof zod
+>looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>{		fieldName: FieldNameSchema,} : { fieldName: typeof zod; }
+
+		fieldName: FieldNameSchema,
+>fieldName : typeof zod
+>FieldNameSchema : typeof zod
+
+});
+export const BetweenFilterSchema = zod.looseObject({
+>BetweenFilterSchema : zod.ZodObject<{ op: zod.ZodLiteral<"between">; }, import("zod/v4/core").$loose>
+>zod.looseObject({	op: zod.literal('between'),}) : zod.ZodObject<{ op: zod.ZodLiteral<"between">; }, import("zod/v4/core").$loose>
+>zod.looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>zod : typeof zod
+>looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>{	op: zod.literal('between'),} : { op: zod.ZodLiteral<"between">; }
+
+	op: zod.literal('between'),
+>op : zod.ZodLiteral<"between">
+>zod.literal('between') : zod.ZodLiteral<"between">
+>zod.literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>zod : typeof zod
+>literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>'between' : "between"
+
+});
+export const WildcardFilterSchema = zod.looseObject({
+>WildcardFilterSchema : zod.ZodObject<{ op: any; }, import("zod/v4/core").$loose>
+>zod.looseObject({	op: zod.union([zod.literal('wildcard'), zod.literal('filter')]),}) : zod.ZodObject<{ op: any; }, import("zod/v4/core").$loose>
+>zod.looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>zod : typeof zod
+>looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => zod.ZodObject<import("../../../../node_modules/zod/v4/core/util.cjs").Writeable<T>, import("zod/v4/core").$loose>
+>{	op: zod.union([zod.literal('wildcard'), zod.literal('filter')]),} : { op: any; }
+
+	op: zod.union([zod.literal('wildcard'), zod.literal('filter')]),
+>op : any
+>zod.union([zod.literal('wildcard'), zod.literal('filter')]) : any
+>zod.union : any
+>zod : typeof zod
+>union : any
+>[zod.literal('wildcard'), zod.literal('filter')] : (zod.ZodLiteral<"filter"> | zod.ZodLiteral<"wildcard">)[]
+>zod.literal('wildcard') : zod.ZodLiteral<"wildcard">
+>zod.literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>zod : typeof zod
+>literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>'wildcard' : "wildcard"
+>zod.literal('filter') : zod.ZodLiteral<"filter">
+>zod.literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>zod : typeof zod
+>literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => zod.ZodLiteral<T>
+>'filter' : "filter"
+
+});
+export type { SqonCombination, SqonLeaf, SqonNode } from './types.js';
+>SqonCombination : import("./types.js").SqonCombination
+>SqonLeaf : { [x: string]: unknown; op?: "all" | undefined; }
+>SqonNode : import("./types.js").SqonNode
+
+=== modules/sqon/src/schema/types.ts ===
+import type { z as zod } from 'zod';
+>z : typeof zod
+>zod : any
+
+import type {
+	AllFilterSchema,
+>AllFilterSchema : any
+
+} from './index.js';
+export type SqonLeaf =
+>SqonLeaf : { [x: string]: unknown; op?: "all" | undefined; }
+
+	| zod.infer<typeof AllFilterSchema>
+>zod : any
+>AllFilterSchema : zod.ZodObject<{ op: zod.ZodLiteral<"all">; }, import("zod/v4/core").$loose>
+
+export type SqonCombination = {
+>SqonCombination : SqonCombination
+
+	content: SqonNode[];
+>content : SqonNode[]
+
+};
+export type SqonNode = SqonLeaf | SqonCombination;
+>SqonNode : SqonNode
+
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/zod/index.d.cts ===
+import * as z from "./v4/classic/external.cjs";
+>z : typeof z
+
+export { z, z as default };
+>z : typeof z
+>z : typeof z
+>default : typeof z
+
+=== node_modules/zod/v4/classic/external.d.cts ===
+export * from "./schemas.cjs";
+export type { infer } from "../core/index.cjs";
+>infer : import("../core/core.d.cts").output<T>
+
+=== node_modules/zod/v4/classic/schemas.d.cts ===
+import * as core from "../core/index.cjs";
+>core : typeof core
+
+import { util, type $ZodNumberFormats } from "../core/index.cjs";
+>util : typeof util
+>$ZodNumberFormats : any
+
+export interface ZodType<out Output = unknown, out Input = unknown, out Internals extends core.$ZodTypeInternals<Output, Input> = core.$ZodTypeInternals<Output, Input>> extends core.$ZodType<Output, Input, Internals> {
+>core : any
+>core : any
+>core : any
+}
+export interface _ZodType<out Internals extends core.$ZodTypeInternals = core.$ZodTypeInternals> extends ZodType<any, any, Internals> {
+>core : any
+>core : any
+}
+export interface ZodObject<
+out Shape extends core.$ZodShape = core.$ZodLooseShape, out Config extends core.$ZodObjectConfig = core.$strip> extends _ZodType<core.$ZodObjectInternals<Shape, Config>>, core.$ZodObject<Shape, Config> {
+>core : any
+>core : any
+>core : any
+>core : any
+>core : any
+>core : any
+}
+export declare function looseObject<T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams): ZodObject<util.Writeable<T>, core.$loose>;
+>looseObject : <T extends core.$ZodLooseShape>(shape: T, params?: string | core.$ZodObjectParams) => ZodObject<util.Writeable<T>, core.$loose>
+>core : any
+>shape : T
+>params : any
+>core : any
+>util : any
+>core : any
+
+export interface ZodLiteral<T extends util.Literal = util.Literal> extends _ZodType<core.$ZodLiteralInternals<T>>, core.$ZodLiteral<T> {
+>util : any
+>util : any
+>core : any
+>core : any
+}
+export declare function literal<const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams): ZodLiteral<T>;
+>literal : <const T extends util.Literal>(value: T, params?: string | core.$ZodLiteralParams) => ZodLiteral<T>
+>util : any
+>value : T
+>params : any
+>core : any
+
+=== node_modules/zod/v4/core/core.d.cts ===
+export type output<T> = T extends {
+>output : output<T>
+
+} ? T["_zod"]["output"] : unknown;
+export type { output as infer };
+>output : any
+>infer : output<T>
+
+=== node_modules/zod/v4/core/index.d.cts ===
+export * from "./core.cjs";
+export * from "./schemas.cjs";
+export * as util from "./util.cjs";
+>util : typeof import("./util.cjs")
+
+=== node_modules/zod/v4/core/schemas.d.cts ===
+import * as util from "./util.cjs";
+>util : typeof util
+
+export interface $ZodTypeInternals<out O = unknown, out I = unknown> extends _$ZodTypeInternals {
+    output: O;
+>output : O
+}
+export interface $ZodType<O = unknown, I = unknown, Internals extends $ZodTypeInternals<O, I> = $ZodTypeInternals<O, I>> {
+    _zod: Internals;
+>_zod : Internals
+}
+/**
+ */
+export type $InferObjectOutput<T extends $ZodLooseShape, Extra extends Record<string, unknown>> = string extends keyof T ? util.IsAny<T[keyof T]> extends true ? Record<string, unknown> : Record<string, core.output<T[keyof T]>> : keyof (T & Extra) extends never ? Record<string, never> : util.Prettify<{
+>$InferObjectOutput : $InferObjectOutput<T, Extra>
+>util : any
+>true : true
+>core : any
+>util : any
+
+    -readonly [k in keyof T as T[k] extends OptionalOutSchema ? k : never]?: T[k]["_zod"]["output"];
+} & Extra>;
+export type $loose = {
+>$loose : $loose
+
+    out: Record<string, unknown>;
+>out : Record<string, unknown>
+
+};
+export interface $ZodObjectInternals<
+out Shape extends $ZodShape = $ZodShape, out Config extends $ZodObjectConfig = $ZodObjectConfig> extends _$ZodTypeInternals {
+    output: $InferObjectOutput<Shape, Config["out"]>;
+>output : $InferObjectOutput<Shape, Config["out"]>
+}
+export interface $ZodLiteralInternals<T extends util.Literal = util.Literal> extends $ZodTypeInternals<T, T> {
+>util : any
+>util : any
+}
+=== node_modules/zod/v4/core/util.d.cts ===
+export type Writeable<T> = {
+>Writeable : { -readonly [P in keyof T]: T[P]; }
+
+    -readonly [P in keyof T]: T[P];
+} & {};
+export type Prettify<T> = {
+>Prettify : { [K in keyof T]: T[K]; }
+
+    [K in keyof T]: T[K];
+} & {};
+

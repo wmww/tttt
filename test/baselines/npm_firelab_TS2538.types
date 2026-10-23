@@ -1,0 +1,31 @@
+//// [test/cases/npm_firelab_TS2538.ts] ////
+
+=== npm_firelab_TS2538.ts ===
+// origin: npm firelab@0.1.0 https://github.com/AkilSaji/firelab tsconfig.bench.json seed 20261023
+// flip: yes
+// A truthiness-narrowed generic indexed access (NonNullable<Partial<Record<K, keyof Caps>>[M]>) indexes Caps: no TS2538
+type Caps = { a: boolean };
+>Caps : Caps
+>a : boolean
+
+declare const CAP_FOR: Partial<Record<"x" | "y", keyof Caps>>;
+>CAP_FOR : Partial<Record<"x" | "y", "a">>
+
+function f<M extends "x" | "y">(caps: Caps, method: M) {
+>f : <M extends "x" | "y">(caps: Caps, method: M) => void
+>caps : Caps
+>method : M
+
+    const cap = CAP_FOR[method];
+>cap : Partial<Record<"x" | "y", "a">>[M]
+>CAP_FOR[method] : Partial<Record<"x" | "y", "a">>[M]
+>CAP_FOR : Partial<Record<"x" | "y", "a">>
+>method : M
+
+    if (cap) caps[cap];
+>cap : Partial<Record<"x" | "y", "a">>[M]
+>caps[cap] : Caps[NonNullable<Partial<Record<"x" | "y", "a">>[M]>]
+>caps : Caps
+>cap : NonNullable<Partial<Record<"x" | "y", "a">>[M]>
+}
+
