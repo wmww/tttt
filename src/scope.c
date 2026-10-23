@@ -3269,18 +3269,29 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
 // there through symbol accessibility, plan 04 stage 3)
 static bool esm_imports_cjs(PortItem const* item, SourceFile const* target);
 
+// tsc's canHaveSyntheticDefault outside node16-nodenext for a CommonJS target (an ES module importing it): a
+// declaration file without a default export of its own or an `__esModule` marker, a JavaScript file without ES module
+// syntax or the marker. (A TypeScript file has one only with `export =`, which namespace_import_type() handles)
+static bool esm_cjs_can_have_synthetic_default(Symbol* module, SourceFile const* target) {
+    if (symbol_get_export(module, c_sv("__esModule"))) return false;
+    if (target->is_declaration) return !symbol_get_export(module, c_sv("default"));
+    return target->is_js && !span_valid(target->module_indicator);
+}
+
 static Symbol* make_gather_target(Symbol* me, Symbol* module) {
     PortItem* item = my alias->item;
     Symbol* ret = binder_new_symbol(my binder, port_item_name(item->decl_name), SYMBOL_VALUE_MODULE);
     ret->name_span = item->decl_name;
     ModuleKind module_kind = compiler_options()->module;
     SourceFile const* file = item->module_ref ? item->module_ref->file : nullptr;
+    bool node = module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT;
     if (item->tag == PORT_IMPORT_GATHER && file && !file->is_json && module->is_module && module->module->file &&
-        module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT && esm_imports_cjs(item, file)
+        esm_imports_cjs(item, file) && (node || esm_cjs_can_have_synthetic_default(module, file))
     ) {
-        // An ES module's `import * as ns` of a CommonJS one in Node.js: the module's exports, and in its type a
-        // synthetic `default` that is the module, overriding a declared one. A module of its own, not named like the
-        // module (tsc's resolveESModuleSymbol -> getTypeWithSyntheticDefaultImportType, cloneTypeAsModuleType)
+        // An ES module's `import * as ns` of a CommonJS one: the module's exports, and in its type a synthetic
+        // `default` that is the module, overriding a declared one. A module of its own, not named like the module
+        // (tsc's resolveESModuleSymbol -> getTypeWithSyntheticDefaultImportType, cloneTypeAsModuleType; isEsmCjsRef
+        // whatever the module setting, the default where canHaveSyntheticDefault: always in Node.js)
         ret->exports = arena_new(binder_arena(my binder), SymbolTable);
         u32 count;
         SymbolEntry* entries = symbol_collect_exports(module, &count);

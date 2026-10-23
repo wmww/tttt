@@ -1,0 +1,35 @@
+//// [test/cases/ttttEsmNamespaceOfCjsDefaultBundler.ts] ////
+
+=== lib.d.cts ===
+export declare const version: string;
+>version : Symbol(version, Decl(lib.d.cts, 0, 20))
+
+export declare const versionMajorMinor = "7.0";
+>versionMajorMinor : Symbol(versionMajorMinor, Decl(lib.d.cts, 1, 20))
+
+=== marked.d.cts ===
+export declare const __esModule: true;
+>__esModule : Symbol(__esModule, Decl(marked.d.cts, 0, 20))
+
+export declare const x: number;
+>x : Symbol(x, Decl(marked.d.cts, 1, 20))
+
+=== user.mts ===
+import * as ns from './lib.cjs'
+>ns : Symbol(ns, Decl(user.mts, 0, 6))
+
+import * as marked from './marked.cjs'
+>marked : Symbol(marked, Decl(user.mts, 1, 6))
+
+const v: number = ns.default.versionMajorMinor
+>v : Symbol(v, Decl(user.mts, 2, 5))
+>ns.default.versionMajorMinor : Symbol(ns.versionMajorMinor, Decl(lib.d.cts, 1, 20))
+>ns.default : Symbol(default)
+>ns : Symbol(ns, Decl(user.mts, 0, 6))
+>default : Symbol(default)
+>versionMajorMinor : Symbol(ns.versionMajorMinor, Decl(lib.d.cts, 1, 20))
+
+const w = marked.default
+>w : Symbol(w, Decl(user.mts, 3, 5))
+>marked : Symbol(marked, Decl(user.mts, 1, 6))
+

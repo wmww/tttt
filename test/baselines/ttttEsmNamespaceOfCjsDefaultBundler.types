@@ -1,0 +1,39 @@
+//// [test/cases/ttttEsmNamespaceOfCjsDefaultBundler.ts] ////
+
+=== lib.d.cts ===
+export declare const version: string;
+>version : string
+
+export declare const versionMajorMinor = "7.0";
+>versionMajorMinor : "7.0"
+>"7.0" : "7.0"
+
+=== marked.d.cts ===
+export declare const __esModule: true;
+>__esModule : true
+>true : true
+
+export declare const x: number;
+>x : number
+
+=== user.mts ===
+import * as ns from './lib.cjs'
+>ns : typeof ns
+
+import * as marked from './marked.cjs'
+>marked : typeof marked
+
+const v: number = ns.default.versionMajorMinor
+>v : number
+>ns.default.versionMajorMinor : "7.0"
+>ns.default : typeof import("./lib.cjs")
+>ns : typeof ns
+>default : typeof import("./lib.cjs")
+>versionMajorMinor : "7.0"
+
+const w = marked.default
+>w : any
+>marked.default : any
+>marked : typeof marked
+>default : any
+

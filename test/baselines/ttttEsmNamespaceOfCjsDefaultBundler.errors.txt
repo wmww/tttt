@@ -1,0 +1,20 @@
+user.mts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.
+user.mts(4,18): error TS2339: Property 'default' does not exist on type 'typeof import("marked")'.
+
+
+==== lib.d.cts (0 errors) ====
+    export declare const version: string;
+    export declare const versionMajorMinor = "7.0";
+==== marked.d.cts (0 errors) ====
+    export declare const __esModule: true;
+    export declare const x: number;
+==== user.mts (2 errors) ====
+    import * as ns from './lib.cjs'
+    import * as marked from './marked.cjs'
+    const v: number = ns.default.versionMajorMinor
+          ~
+!!! error TS2322: Type 'string' is not assignable to type 'number'.
+    const w = marked.default
+                     ~~~~~~~
+!!! error TS2339: Property 'default' does not exist on type 'typeof import("marked")'.
+    

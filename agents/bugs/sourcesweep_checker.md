@@ -369,3 +369,24 @@ rest element; a spread instantiated to `undefined`). Left:
   the files a checker saw (scripts/kdiff.py territory, plan 62). Fixed by acb8dfe7f (an any/unknown target property
   no longer asks for the source property's type, tsc's isPropertySymbolTypeRelated): the same at K1-K16. Remaining: TS2578 at
   tests/types/order-by-relations.ts:24,26 (uninvestigated).
+
+## Refresh 6 leftovers (2026-10-23, corG: tanstack-ai, node-pg-migrate, portabase)
+- **tanstack-ai/packages/ai-harness -TS2615** (`Type of property 'agents' circularly references itself in mapped type
+  'Pick<SessionImpl<HarnessDefinition<any, any, any, ?, readonly AnyTool[], any>>, PublicSessionMember>'`): a tsgo
+  order artifact. tsgo reports it at 1 site at `--checkers 1` (session/handle.ts:500, `new Proxy(session.agents, ...)`)
+  and at 4 at its default checker count (define.ts:465, base.ts:668, handle.ts:500, requests.ts:398): its output depends
+  on which files a checker saw first. The `?` is a variance marker: an instrumented tsgo (a stack dump at
+  getTypeOfMappedSymbol's TS2615) shows the cycle inside inferTypeArguments of the `new Proxy(...)` call: a relation
+  reaches getVariances (of an alias over HarnessDefinition, `SessionWithMetadata`'s TMetadataSchema is the `?`), whose
+  marker instantiation relates Pick<SessionImpl<...>>'s mapped `agents` (`AgentHandles<THarness>`, a mapped type over
+  `HarnessAgentsOf<THarness>`) while that same `agents` symbol's type is on the resolution stack (stack: sym agents,
+  TAgent, HarnessAgentsOf<THarness>, sym agents), 180+ relater frames deep. tttt's relation takes another path and
+  never re-enters. Not pursued: matching it means matching tsgo's relation order and caching frame by frame on a 10k
+  line project for a diagnostic tsgo itself doesn't report consistently.
+- **portabase -TS2322** (components/ui/form.tsx:227, not in corG's brief): tsgo says `useForm<TypeOf<Z>>({...})`
+  returns `UseFormReturn<output<Z>, any, TFieldValues>`, react-hook-form's third type parameter defaulting to
+  `TFieldValues` left uninstantiated (the default of a partially given type argument list); tttt instantiates it.
+  Not investigated further.
+- **node-pg-migrate docs TS2741 text**: `import * as typescript from 'typescript'` in a .d.mts of a CommonJS .d.cts
+  is a clone module type that tsgo prints `typeof import("<path>/lib/version")`; tttt prints the namespace symbol's
+  name, `typeof typescript` (also under node16-nodenext: make_gather_target's synthetic-default namespace symbol).

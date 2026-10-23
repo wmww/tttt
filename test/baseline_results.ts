@@ -52,6 +52,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasUnchangedCompositeThroughImport': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAliasedNarrowingNarrowedObject': {
         errors: true,
         symbols: true,
@@ -312,6 +317,11 @@ const baselines = {
         types: true,
     },
     'ttttConstRestNestedTupleMutable': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConstTupleLiteralCandidateLast': {
         errors: true,
         symbols: true,
         types: true,
@@ -1113,6 +1123,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDestructuredReducedNeverSilent': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDisplayDepthTruncation': {
         errors: true,
         symbols: true,
@@ -1198,6 +1213,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttEscapedTypeInSpecifier': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttEsmNamespaceOfCjsDefaultBundler': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttEvolvingArrayPushArgument': {
         errors: true,
         symbols: true,
@@ -1219,6 +1244,11 @@ const baselines = {
         types: true,
     },
     'ttttExcessPropsNoInferIntersection': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttExcessTargetKeepsAliasName': {
         errors: true,
         symbols: true,
         types: true,
@@ -1339,6 +1369,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttHackElseIfUnreachable': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttHackYieldAwaitComment': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttHeritageConstraintLaterDefault': {
         errors: true,
         symbols: true,
@@ -1395,6 +1435,11 @@ const baselines = {
         types: true,
     },
     'ttttImportTypeExportEqualsOtherExports': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttImportTypeIdentifierFirst': {
         errors: true,
         symbols: true,
         types: true,
@@ -1775,6 +1820,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxChildrenEmptyExpressionIndex': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxClosingTagOwnName': {
         errors: true,
         symbols: true,
@@ -1892,6 +1942,11 @@ const baselines = {
         types: true,
     },
     'ttttLoopPartialSpread': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttManyInterfaceDeclarationsSubsequentProperty': {
         errors: true,
         symbols: true,
         types: true,
@@ -2190,6 +2245,16 @@ const baselines = {
         dts: true,
     },
     'ttttQualifiedNameValueThroughShadowingNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttQuickTypeOptionalCall': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttReadonlyTypeOperatorGrammar': {
         errors: true,
         symbols: true,
         types: true,
@@ -2497,6 +2562,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTupleListRecovery': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTupleMissingPropertiesElaboration': {
         errors: true,
         symbols: true,
@@ -2543,6 +2613,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeParameterMissingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypePredicateOptionalParameter': {
         errors: true,
         symbols: true,
         types: true,
@@ -2597,6 +2672,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttUnionIndexSignaturesCommonKeys': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttUnionLiteralPaddedIndexSignatureOnly': {
         errors: true,
         symbols: true,
@@ -2608,6 +2688,11 @@ const baselines = {
         types: true,
     },
     'ttttUnionMemberNormalizedTargetName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnionModifiersIndexSignature': {
         errors: true,
         symbols: true,
         types: true,
