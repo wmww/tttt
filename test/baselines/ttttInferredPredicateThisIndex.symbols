@@ -1,0 +1,36 @@
+//// [test/cases/ttttInferredPredicateThisIndex.ts] ////
+
+=== ttttInferredPredicateThisIndex.ts ===
+// An inferred type predicate's parameter index counts a `this` parameter (tsc's checkIfExpressionRefinesAnyParameter
+// indexes fn.Parameters()): `isStr(this: void, x)` is about its second argument, which a call doesn't have, so the
+// call narrows nothing (bun's 11-C12)
+declare const a: string | number;
+>a : Symbol(a, Decl(ttttInferredPredicateThisIndex.ts, 3, 13))
+
+function isStr(this: void, x: string | number) { return typeof x === "string"; }
+>isStr : Symbol(isStr, Decl(ttttInferredPredicateThisIndex.ts, 3, 33))
+>this : Symbol(this, Decl(ttttInferredPredicateThisIndex.ts, 4, 15))
+>x : Symbol(x, Decl(ttttInferredPredicateThisIndex.ts, 4, 26))
+>x : Symbol(x, Decl(ttttInferredPredicateThisIndex.ts, 4, 26))
+
+const t: never = isStr;
+>t : Symbol(t, Decl(ttttInferredPredicateThisIndex.ts, 5, 5))
+>isStr : Symbol(isStr, Decl(ttttInferredPredicateThisIndex.ts, 3, 33))
+
+if (isStr(a)) { a.toUpperCase(); }
+>isStr : Symbol(isStr, Decl(ttttInferredPredicateThisIndex.ts, 3, 33))
+>a : Symbol(a, Decl(ttttInferredPredicateThisIndex.ts, 3, 13))
+>a : Symbol(a, Decl(ttttInferredPredicateThisIndex.ts, 3, 13))
+
+function isNum(x: string | number) { return typeof x === "number"; }
+>isNum : Symbol(isNum, Decl(ttttInferredPredicateThisIndex.ts, 6, 34))
+>x : Symbol(x, Decl(ttttInferredPredicateThisIndex.ts, 7, 15))
+>x : Symbol(x, Decl(ttttInferredPredicateThisIndex.ts, 7, 15))
+
+if (isNum(a)) { a.toFixed(); }
+>isNum : Symbol(isNum, Decl(ttttInferredPredicateThisIndex.ts, 6, 34))
+>a : Symbol(a, Decl(ttttInferredPredicateThisIndex.ts, 3, 13))
+>a.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(ttttInferredPredicateThisIndex.ts, 3, 13))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+

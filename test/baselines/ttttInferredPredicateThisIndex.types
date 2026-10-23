@@ -1,0 +1,48 @@
+//// [test/cases/ttttInferredPredicateThisIndex.ts] ////
+
+=== ttttInferredPredicateThisIndex.ts ===
+// An inferred type predicate's parameter index counts a `this` parameter (tsc's checkIfExpressionRefinesAnyParameter
+// indexes fn.Parameters()): `isStr(this: void, x)` is about its second argument, which a call doesn't have, so the
+// call narrows nothing (bun's 11-C12)
+declare const a: string | number;
+>a : string | number
+
+function isStr(this: void, x: string | number) { return typeof x === "string"; }
+>isStr : (this: void, x: string | number) => x is string
+>this : void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+
+const t: never = isStr;
+>t : never
+>isStr : (this: void, x: string | number) => x is string
+
+if (isStr(a)) { a.toUpperCase(); }
+>isStr(a) : boolean
+>isStr : (this: void, x: string | number) => x is string
+>a : string | number
+>a.toUpperCase() : any
+>a.toUpperCase : any
+>a : string | number
+>toUpperCase : any
+
+function isNum(x: string | number) { return typeof x === "number"; }
+>isNum : (x: string | number) => x is number
+>x : string | number
+>typeof x === "number" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"number" : "number"
+
+if (isNum(a)) { a.toFixed(); }
+>isNum(a) : boolean
+>isNum : (x: string | number) => x is number
+>a : string | number
+>a.toFixed() : string
+>a.toFixed : (fractionDigits?: number) => string
+>a : number
+>toFixed : (fractionDigits?: number) => string
+

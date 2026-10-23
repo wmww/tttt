@@ -4000,8 +4000,10 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
         u32 index = 0;
         for_each (i, vec_function_arg, &function->args) {
             Binding const* binding = &i->initializer.binding;
-            if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+            // (The index counts a `this` parameter too: tsc's checkIfExpressionRefinesAnyParameter indexes
+            // fn.Parameters(), so `isStr(this: void, x)` predicates about its second argument, which a call doesn't have)
             u32 at = index++;
+            if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
             Symbol const* symbol = binding->tag == BINDING_IDENTIFIER ? binding->symbol : nullptr;
             if (!symbol || i->rest || symbol_assignments(symbol)->is_assigned) continue;
             Ty const* init = ty_type_of_symbol(me, symbol);

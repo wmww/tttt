@@ -1,0 +1,21 @@
+ttttInferredPredicateThisIndex.ts(6,7): error TS2322: Type '(this: void, x: string | number) => x is string' is not assignable to type 'never'.
+ttttInferredPredicateThisIndex.ts(7,19): error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+  Property 'toUpperCase' does not exist on type 'number'.
+
+
+==== ttttInferredPredicateThisIndex.ts (2 errors) ====
+    // An inferred type predicate's parameter index counts a `this` parameter (tsc's checkIfExpressionRefinesAnyParameter
+    // indexes fn.Parameters()): `isStr(this: void, x)` is about its second argument, which a call doesn't have, so the
+    // call narrows nothing (bun's 11-C12)
+    declare const a: string | number;
+    function isStr(this: void, x: string | number) { return typeof x === "string"; }
+    const t: never = isStr;
+          ~
+!!! error TS2322: Type '(this: void, x: string | number) => x is string' is not assignable to type 'never'.
+    if (isStr(a)) { a.toUpperCase(); }
+                      ~~~~~~~~~~~
+!!! error TS2339: Property 'toUpperCase' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toUpperCase' does not exist on type 'number'.
+    function isNum(x: string | number) { return typeof x === "number"; }
+    if (isNum(a)) { a.toFixed(); }
+    
