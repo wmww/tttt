@@ -1,0 +1,31 @@
+ttttVoidContextualReturnInfersCall.ts(12,49): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'Set<unknown>' is not assignable to parameter of type 'Set<string> | ((prev: Set<string>) => Set<string>)'.
+      Type 'Set<unknown>' is not assignable to type 'Set<string>'.
+        Type 'unknown' is not assignable to type 'string'.
+
+
+==== ttttVoidContextualReturnInfersCall.ts (1 errors) ====
+    // A void contextual return type is a contextual type for the returned call's return type inference too (tsc's
+    // getContextualReturnType keeps void): U's candidate void fails `U extends Set<string>`, so U is Set<string> where
+    // the argument is contextually typed and `new Set()` infers string. openclaw's solid `onClick={() => setIds(new Set())}`
+    export type Setter<in out T> = {
+        <U extends T>(...args: undefined extends T ? [] : [value: Exclude<U, Function> | ((prev: T) => U)]): undefined extends T ? undefined : U;
+        <U extends T>(value: (prev: T) => U): U;
+        <U extends T>(value: Exclude<U, Function>): U;
+        <U extends T>(value: Exclude<U, Function> | ((prev: T) => U)): U;
+    };
+    declare const setIds: Setter<Set<string>>;
+    const h1: () => void = () => setIds(new Set());
+    const h2: (e: MouseEvent) => any = () => setIds(new Set());
+                                                    ~~~~~~~~~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type 'Set<unknown>' is not assignable to parameter of type 'Set<string> | ((prev: Set<string>) => Set<string>)'.
+!!! error TS2769:       Type 'Set<unknown>' is not assignable to type 'Set<string>'.
+!!! error TS2769:         Type 'unknown' is not assignable to type 'string'.
+!!! related TS2771 ttttVoidContextualReturnInfersCall.ts:8:5: The last overload is declared here.
+    declare function btn(p: { onClick?: (e: MouseEvent) => void }): void;
+    btn({ onClick: () => setIds(new Set()) });
+    btn({ onClick: () => { return setIds(new Set()); } });
+    

@@ -47,6 +47,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAliasedNarrowingNarrowedObject': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnnotatedConstKeyNameFromInitializer': {
         errors: true,
         symbols: true,
@@ -1385,6 +1390,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttInferToIndexedAccessNoProperties': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInferToIndexedMappedTemplate': {
         errors: true,
         symbols: true,
@@ -2567,6 +2577,11 @@ const baselines = {
         types: true,
     },
     'ttttVarianceRestartReentersBaseConstraint': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttVoidContextualReturnInfersCall': {
         errors: true,
         symbols: true,
         types: true,

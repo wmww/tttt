@@ -1500,9 +1500,10 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
                     return nullptr;
                 }
             }
-            Ty const* ret = signature_return_type(me, sig);
-            u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;
-            return ret && !(ret->flags & ignored) ? ret : nullptr;
+            // (void too: tsc's getContextualReturnType doesn't leave it out, and a call's return type inference
+            // infers from it, a candidate that fails its constraint: `onClick={() => setIds(new Set())}` with solid's
+            // `<U extends T>(value: Exclude<U, Function> | ...) => U` contextually types `new Set()` by T)
+            return signature_return_type(me, sig);
         }
     }
     Signature const* sig = ty_link_get(me, KEY_CONTEXT_RETURN, function);
@@ -1514,9 +1515,7 @@ Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* functi
             return nullptr;
         }
     }
-    Ty const* ret = signature_return_type(me, sig);
-    u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;
-    return ret && !(ret->flags & ignored) ? ret : nullptr;
+    return signature_return_type(me, sig);
 }
 
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function) {
