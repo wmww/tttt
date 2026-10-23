@@ -1,0 +1,164 @@
+//// [test/cases/ttttAliasedNarrowingNarrowedObject.ts] ////
+
+=== ttttAliasedNarrowingNarrowedObject.ts ===
+// A condition aliased in a const narrows `node.name` when `name` is readonly in the type `node` has there: tsc's
+// isConstantReference reads the symbol the access resolved to, on `node`'s narrowed type (the declared Node has no
+// `name`). openclaw's `const ok = ts.isObjectBindingPattern(node.name) && ...; if (ok) use(node.name)` after
+// `ts.isVariableDeclaration(node)`
+interface Node { kind: number }
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>kind : Symbol(Node.kind, Decl(ttttAliasedNarrowingNarrowedObject.ts, 4, 16))
+
+interface Ident extends Node { kind: 1; text: string }
+>Ident : Symbol(Ident, Decl(ttttAliasedNarrowingNarrowedObject.ts, 4, 31))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>kind : Symbol(Ident.kind, Decl(ttttAliasedNarrowingNarrowedObject.ts, 5, 30))
+>text : Symbol(Ident.text, Decl(ttttAliasedNarrowingNarrowedObject.ts, 5, 39))
+
+interface ObjPat extends Node { kind: 2; elements: string[] }
+>ObjPat : Symbol(ObjPat, Decl(ttttAliasedNarrowingNarrowedObject.ts, 5, 54))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>kind : Symbol(ObjPat.kind, Decl(ttttAliasedNarrowingNarrowedObject.ts, 6, 31))
+>elements : Symbol(ObjPat.elements, Decl(ttttAliasedNarrowingNarrowedObject.ts, 6, 40))
+
+interface ArrPat extends Node { kind: 3; items: number[] }
+>ArrPat : Symbol(ArrPat, Decl(ttttAliasedNarrowingNarrowedObject.ts, 6, 61))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>kind : Symbol(ArrPat.kind, Decl(ttttAliasedNarrowingNarrowedObject.ts, 7, 31))
+>items : Symbol(ArrPat.items, Decl(ttttAliasedNarrowingNarrowedObject.ts, 7, 40))
+
+type BindingName = Ident | ObjPat | ArrPat;
+>BindingName : Symbol(BindingName, Decl(ttttAliasedNarrowingNarrowedObject.ts, 7, 58))
+>Ident : Symbol(Ident, Decl(ttttAliasedNarrowingNarrowedObject.ts, 4, 31))
+>ObjPat : Symbol(ObjPat, Decl(ttttAliasedNarrowingNarrowedObject.ts, 5, 54))
+>ArrPat : Symbol(ArrPat, Decl(ttttAliasedNarrowingNarrowedObject.ts, 6, 61))
+
+interface VarDecl extends Node { readonly kind: 4; readonly name: BindingName; readonly initializer?: Node }
+>VarDecl : Symbol(VarDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 8, 43))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>kind : Symbol(VarDecl.kind, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 32))
+>name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+>BindingName : Symbol(BindingName, Decl(ttttAliasedNarrowingNarrowedObject.ts, 7, 58))
+>initializer : Symbol(VarDecl.initializer, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 78))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+
+interface MutDecl extends Node { kind: 5; name: BindingName }
+>MutDecl : Symbol(MutDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 108))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>kind : Symbol(MutDecl.kind, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 32))
+>name : Symbol(MutDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 41))
+>BindingName : Symbol(BindingName, Decl(ttttAliasedNarrowingNarrowedObject.ts, 7, 58))
+
+declare function isVarDecl(n: Node): n is VarDecl;
+>isVarDecl : Symbol(isVarDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 61))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 11, 27))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 11, 27))
+>VarDecl : Symbol(VarDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 8, 43))
+
+declare function isMutDecl(n: Node): n is MutDecl;
+>isMutDecl : Symbol(isMutDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 11, 50))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 12, 27))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 12, 27))
+>MutDecl : Symbol(MutDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 108))
+
+declare function isIdent(n: Node): n is Ident;
+>isIdent : Symbol(isIdent, Decl(ttttAliasedNarrowingNarrowedObject.ts, 12, 50))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 13, 25))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 13, 25))
+>Ident : Symbol(Ident, Decl(ttttAliasedNarrowingNarrowedObject.ts, 4, 31))
+
+declare function isObj(n: Node): n is ObjPat;
+>isObj : Symbol(isObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 13, 46))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 14, 23))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 14, 23))
+>ObjPat : Symbol(ObjPat, Decl(ttttAliasedNarrowingNarrowedObject.ts, 5, 54))
+
+declare function useObj(p: ObjPat): void;
+>useObj : Symbol(useObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 14, 45))
+>p : Symbol(p, Decl(ttttAliasedNarrowingNarrowedObject.ts, 15, 24))
+>ObjPat : Symbol(ObjPat, Decl(ttttAliasedNarrowingNarrowedObject.ts, 5, 54))
+
+declare function other(n: Node): boolean;
+>other : Symbol(other, Decl(ttttAliasedNarrowingNarrowedObject.ts, 15, 41))
+>n : Symbol(n, Decl(ttttAliasedNarrowingNarrowedObject.ts, 16, 23))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+
+function visit(node: Node) {
+>visit : Symbol(visit, Decl(ttttAliasedNarrowingNarrowedObject.ts, 16, 41))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>Node : Symbol(Node, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(ttttAliasedNarrowingNarrowedObject.ts, 0, 0))
+
+    if (isVarDecl(node) && !isIdent(node.name)) {
+>isVarDecl : Symbol(isVarDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 61))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>isIdent : Symbol(isIdent, Decl(ttttAliasedNarrowingNarrowedObject.ts, 12, 50))
+>node.name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+
+        const ok = node.initializer && isObj(node.name) && other(node.initializer);
+>ok : Symbol(ok, Decl(ttttAliasedNarrowingNarrowedObject.ts, 19, 13))
+>node.initializer : Symbol(VarDecl.initializer, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 78))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>initializer : Symbol(VarDecl.initializer, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 78))
+>isObj : Symbol(isObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 13, 46))
+>node.name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+>other : Symbol(other, Decl(ttttAliasedNarrowingNarrowedObject.ts, 15, 41))
+>node.initializer : Symbol(VarDecl.initializer, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 78))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>initializer : Symbol(VarDecl.initializer, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 78))
+
+        if (ok) {
+>ok : Symbol(ok, Decl(ttttAliasedNarrowingNarrowedObject.ts, 19, 13))
+
+            useObj(node.name);
+>useObj : Symbol(useObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 14, 45))
+>node.name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+        }
+    }
+    if (isVarDecl(node)) {
+>isVarDecl : Symbol(isVarDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 61))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+
+        const ok = isObj(node.name);
+>ok : Symbol(ok, Decl(ttttAliasedNarrowingNarrowedObject.ts, 25, 13))
+>isObj : Symbol(isObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 13, 46))
+>node.name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+
+        if (ok) useObj(node.name);
+>ok : Symbol(ok, Decl(ttttAliasedNarrowingNarrowedObject.ts, 25, 13))
+>useObj : Symbol(useObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 14, 45))
+>node.name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>name : Symbol(VarDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 9, 50))
+    }
+    if (isMutDecl(node)) {
+>isMutDecl : Symbol(isMutDecl, Decl(ttttAliasedNarrowingNarrowedObject.ts, 11, 50))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+
+        const ok = isObj(node.name);
+>ok : Symbol(ok, Decl(ttttAliasedNarrowingNarrowedObject.ts, 29, 13))
+>isObj : Symbol(isObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 13, 46))
+>node.name : Symbol(MutDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 41))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>name : Symbol(MutDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 41))
+
+        if (ok) useObj(node.name);
+>ok : Symbol(ok, Decl(ttttAliasedNarrowingNarrowedObject.ts, 29, 13))
+>useObj : Symbol(useObj, Decl(ttttAliasedNarrowingNarrowedObject.ts, 14, 45))
+>node.name : Symbol(MutDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 41))
+>node : Symbol(node, Decl(ttttAliasedNarrowingNarrowedObject.ts, 17, 15))
+>name : Symbol(MutDecl.name, Decl(ttttAliasedNarrowingNarrowedObject.ts, 10, 41))
+    }
+}
+

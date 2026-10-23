@@ -1,0 +1,147 @@
+//// [test/cases/ttttAliasedNarrowingNarrowedObject.ts] ////
+
+=== ttttAliasedNarrowingNarrowedObject.ts ===
+// A condition aliased in a const narrows `node.name` when `name` is readonly in the type `node` has there: tsc's
+// isConstantReference reads the symbol the access resolved to, on `node`'s narrowed type (the declared Node has no
+// `name`). openclaw's `const ok = ts.isObjectBindingPattern(node.name) && ...; if (ok) use(node.name)` after
+// `ts.isVariableDeclaration(node)`
+interface Node { kind: number }
+>kind : number
+
+interface Ident extends Node { kind: 1; text: string }
+>kind : 1
+>text : string
+
+interface ObjPat extends Node { kind: 2; elements: string[] }
+>kind : 2
+>elements : string[]
+
+interface ArrPat extends Node { kind: 3; items: number[] }
+>kind : 3
+>items : number[]
+
+type BindingName = Ident | ObjPat | ArrPat;
+>BindingName : BindingName
+
+interface VarDecl extends Node { readonly kind: 4; readonly name: BindingName; readonly initializer?: Node }
+>kind : 4
+>name : BindingName
+>initializer : Node | undefined
+
+interface MutDecl extends Node { kind: 5; name: BindingName }
+>kind : 5
+>name : BindingName
+
+declare function isVarDecl(n: Node): n is VarDecl;
+>isVarDecl : (n: Node) => n is VarDecl
+>n : Node
+
+declare function isMutDecl(n: Node): n is MutDecl;
+>isMutDecl : (n: Node) => n is MutDecl
+>n : Node
+
+declare function isIdent(n: Node): n is Ident;
+>isIdent : (n: Node) => n is Ident
+>n : Node
+
+declare function isObj(n: Node): n is ObjPat;
+>isObj : (n: Node) => n is ObjPat
+>n : Node
+
+declare function useObj(p: ObjPat): void;
+>useObj : (p: ObjPat) => void
+>p : ObjPat
+
+declare function other(n: Node): boolean;
+>other : (n: Node) => boolean
+>n : Node
+
+function visit(node: Node) {
+>visit : (node: Node) => void
+>node : Node
+
+    if (isVarDecl(node) && !isIdent(node.name)) {
+>isVarDecl(node) && !isIdent(node.name) : boolean
+>isVarDecl(node) : boolean
+>isVarDecl : (n: Node) => n is VarDecl
+>node : Node
+>!isIdent(node.name) : boolean
+>isIdent(node.name) : boolean
+>isIdent : (n: Node) => n is Ident
+>node.name : BindingName
+>node : VarDecl
+>name : BindingName
+
+        const ok = node.initializer && isObj(node.name) && other(node.initializer);
+>ok : boolean | undefined
+>node.initializer && isObj(node.name) && other(node.initializer) : boolean | undefined
+>node.initializer && isObj(node.name) : boolean | undefined
+>node.initializer : Node | undefined
+>node : VarDecl
+>initializer : Node | undefined
+>isObj(node.name) : boolean
+>isObj : (n: Node) => n is ObjPat
+>node.name : ArrPat | ObjPat
+>node : VarDecl
+>name : ArrPat | ObjPat
+>other(node.initializer) : boolean
+>other : (n: Node) => boolean
+>node.initializer : Node
+>node : VarDecl
+>initializer : Node
+
+        if (ok) {
+>ok : boolean | undefined
+
+            useObj(node.name);
+>useObj(node.name) : void
+>useObj : (p: ObjPat) => void
+>node.name : ObjPat
+>node : VarDecl
+>name : ObjPat
+        }
+    }
+    if (isVarDecl(node)) {
+>isVarDecl(node) : boolean
+>isVarDecl : (n: Node) => n is VarDecl
+>node : Node
+
+        const ok = isObj(node.name);
+>ok : boolean
+>isObj(node.name) : boolean
+>isObj : (n: Node) => n is ObjPat
+>node.name : BindingName
+>node : VarDecl
+>name : BindingName
+
+        if (ok) useObj(node.name);
+>ok : boolean
+>useObj(node.name) : void
+>useObj : (p: ObjPat) => void
+>node.name : ObjPat
+>node : VarDecl
+>name : ObjPat
+    }
+    if (isMutDecl(node)) {
+>isMutDecl(node) : boolean
+>isMutDecl : (n: Node) => n is MutDecl
+>node : Node
+
+        const ok = isObj(node.name);
+>ok : boolean
+>isObj(node.name) : boolean
+>isObj : (n: Node) => n is ObjPat
+>node.name : BindingName
+>node : MutDecl
+>name : BindingName
+
+        if (ok) useObj(node.name);
+>ok : boolean
+>useObj(node.name) : void
+>useObj : (p: ObjPat) => void
+>node.name : BindingName
+>node : MutDecl
+>name : BindingName
+    }
+}
+

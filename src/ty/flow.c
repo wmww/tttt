@@ -2956,7 +2956,9 @@ static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32
         }
         Symbol const* symbol = reference->identifier.target;
         if (reference->identifier.keyword || !symbol || !(symbol->is_const || !symbol_assignments(symbol)->is_assigned)) return nullptr;
-        return depth ? ty_identifier_reference_type(me, &reference->identifier) : constant;
+        // (The object of a property is its type there, narrowed: tsc reads the symbol the access resolved to, on the
+        // narrowed type, `isVarDecl(node)` then `node.name` is VariableDeclaration's readonly name)
+        return depth ? ty_expr_type(me, reference) : constant;
     }
     if (reference->tag != EXPR_PROPERTY) return nullptr;
     if (ty_is_import_meta(reference)) return ty_import_meta_expr_type(me, reference);
