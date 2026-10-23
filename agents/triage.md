@@ -154,9 +154,6 @@ intersection's property symbol to bugs/type_core.md.
   (exports.Kind = {}));` gives `exports.Kind : Symbol(Kind, Decl(enums.js, 4, 25))` in tttt, `4, 27` in tsgo (the
   inner `exports.Kind`'s start; tttt's column is two before it, the space after `||`). Repro:
   test/cases/ttttDeclarationCommonJsExportedAliasMap.ts without its `@noTypesAndSymbols`. [text]
-- `scripts/kdiff.py` reports a run killed for memory (SIGKILL under load) as a differing project, indistinguishable
-  from a real K-dependence in its summary (openclaw/src/agents at K16 needs 8 GB; two false "differ" entries on
-  2026-10-23). Give it a per-run memory limit and a separate "killed/timeout" verdict like the sweeps' (det, 2026-10-23). [harness]
 - **`import("pkg/dist/x.js")` against tsgo's `import("pkg/dist/x")` in a printed type** (corF 2026-10-23): the tools
   worker's kebo case (scratchpad briefs/kebo-ts7022-case.ts, mobx-state-tree under node_modules with `typings`,
   module preserve / bundler) prints `types.model`'s return type with the `.js` extension where tsgo drops it. Uninvestigated. [text]
