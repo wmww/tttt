@@ -90,3 +90,10 @@ alias unknown program-wide. Not done (one DT package). [fixed 2ac9f2f52]
 - ambientModuleImportingItselfNotResolved's symbols: tsgo names the module specifier `"foo"` inside `declare module
   "foo" { import _foo from "foo"; }` as `Symbol(_foo, ...)` (the module's symbol printed through the default import's
   alias of itself), tttt `Symbol("foo", ...)`. Errors and types pass (#64491 is implemented). [text]
+
+- **A libReplacement file isn't a default library for skipDefaultLibCheck** (bun 88-R04a: `"libReplacement": true,
+  "skipDefaultLibCheck": true` with a broken `node_modules/@typescript/lib-es2015`): tsgo's
+  IsSourceFileDefaultLibrary counts the replacement (it's loaded as the lib), so SkipTypeChecking skips it; tttt checks
+  it (program.c marks only `is_stdlib` files unchecked, a replacement is loaded as an ordinary file) and reports a
+  TS2488 in iterable.d.ts. Needs the replacement paths recorded where program_lib_replacement() resolves them (main
+  thread and load pool alike). [open]
