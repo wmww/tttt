@@ -1,0 +1,66 @@
+//// [test/cases/ttttInferDeferredArrayAliasesByNode.ts] ////
+
+=== ttttInferDeferredArrayAliasesByNode.ts ===
+// Inference walks two deferred array references (arrays written as alias bodies) as objects, stopping at deeply
+// nested ones; their recursion identity is their node, as tsc's getRecursionIdentity has it, not Array: BB2<number>
+// to BB<T> reaches number to T (bun's 17-C1d inferred nothing, then at more checkers nothing at all)
+type CC<T> = T[]; type BB<T> = CC<T>[]; type AA<T> = BB<T>[];
+>CC : Symbol(CC, Decl(ttttInferDeferredArrayAliasesByNode.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 8))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 8))
+>BB : Symbol(BB, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 17))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 26))
+>CC : Symbol(CC, Decl(ttttInferDeferredArrayAliasesByNode.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 26))
+>AA : Symbol(AA, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 39))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 48))
+>BB : Symbol(BB, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 17))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 48))
+
+type CC2<T> = T[]; type BB2<T> = CC2<T>[]; type AA2<T> = BB2<T>[];
+>CC2 : Symbol(CC2, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 61))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 9))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 9))
+>BB2 : Symbol(BB2, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 18))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 28))
+>CC2 : Symbol(CC2, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 61))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 28))
+>AA2 : Symbol(AA2, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 42))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 52))
+>BB2 : Symbol(BB2, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 18))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 52))
+
+declare function f<T>(x: AA<T>): T;
+>f : Symbol(f, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 66))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 5, 19))
+>x : Symbol(x, Decl(ttttInferDeferredArrayAliasesByNode.ts, 5, 22))
+>AA : Symbol(AA, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 39))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 5, 19))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 5, 19))
+
+declare let v: AA2<number>;
+>v : Symbol(v, Decl(ttttInferDeferredArrayAliasesByNode.ts, 6, 11))
+>AA2 : Symbol(AA2, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 42))
+
+const r7: string = f(v);
+>r7 : Symbol(r7, Decl(ttttInferDeferredArrayAliasesByNode.ts, 7, 5))
+>f : Symbol(f, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 66))
+>v : Symbol(v, Decl(ttttInferDeferredArrayAliasesByNode.ts, 6, 11))
+
+declare function h<T>(x: BB<T>): T;
+>h : Symbol(h, Decl(ttttInferDeferredArrayAliasesByNode.ts, 7, 24))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 8, 19))
+>x : Symbol(x, Decl(ttttInferDeferredArrayAliasesByNode.ts, 8, 22))
+>BB : Symbol(BB, Decl(ttttInferDeferredArrayAliasesByNode.ts, 3, 17))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 8, 19))
+>T : Symbol(T, Decl(ttttInferDeferredArrayAliasesByNode.ts, 8, 19))
+
+declare let u: BB2<number>;
+>u : Symbol(u, Decl(ttttInferDeferredArrayAliasesByNode.ts, 9, 11))
+>BB2 : Symbol(BB2, Decl(ttttInferDeferredArrayAliasesByNode.ts, 4, 18))
+
+const r8: string = h(u);
+>r8 : Symbol(r8, Decl(ttttInferDeferredArrayAliasesByNode.ts, 10, 5))
+>h : Symbol(h, Decl(ttttInferDeferredArrayAliasesByNode.ts, 7, 24))
+>u : Symbol(u, Decl(ttttInferDeferredArrayAliasesByNode.ts, 9, 11))
+

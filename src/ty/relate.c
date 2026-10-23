@@ -6774,7 +6774,11 @@ static Ty const* recursion_identity(Ty const* ty) {
     switch ((TyKind)ty->kind) {
         // (One made from a type node first is its own: tsgo 7.1's getRecursionIdentityFromTarget skips ObjectFlags.FromTypeNode,
         // such a node can't be the source of generative recursion without being instantiated)
-        case TY_REFERENCE: return ty->reference.from_type_node && !ty->reference.deferred ? ty : ty->reference.target;
+        // (A deferred one is its node: tsc tracks each manifest reference by its AST node, so `BB2<number>`, a `CC2<T>[]`
+        // in an alias, and `CC2<number>`, `T[]`, are two identities, not two arrays)
+        case TY_REFERENCE:
+            if (ty->reference.deferred) return (Ty const*)(void const*)ty->reference.deferred->node;
+            return ty->reference.from_type_node ? ty : ty->reference.target;
         // (A non-generic class or interface is its symbol: tsc's getRecursionIdentity. `interface M { [k: string]: V }`
         // with `V = string | M` nests as M)
         case TY_DECLARED: return ty;
