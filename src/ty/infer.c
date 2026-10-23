@@ -609,13 +609,13 @@ Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig
 }
 
 Signature const* ty_instantiate_signature_in_context_of(
-    Checker* me, Signature const* sig, Signature const* contextual, TyMapper const* context_mapper
+    Checker* me, Signature const* sig, Signature const* contextual, TyMapper const* context_mapper, bool in_relation
 ) {
     SigResolved const* sig_rs = signature_resolve(me, sig);
     signature_resolve(me, contextual);
     Inference inf;
     inference_init(&inf, sig_rs->type_params);
-    inf.within_relation = true;
+    inf.within_relation = in_relation;
     // (Parameters to parameters, covariantly: the contextual signature's parameter types are what `sig`'s receive)
     infer_from_params(me, &inf, (InferStep){ .top = true, .priority = INFER_PRIORITY_NORMAL }, contextual, sig, context_mapper);
     if (!context_mapper) {

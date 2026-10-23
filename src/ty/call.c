@@ -1047,7 +1047,7 @@ Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* 
         if (propagated) return ty_signature_type(me, propagated);
     }
     TyMapper const* so_far = fix_for_generic_function(me, mode->sig, mode->inf, wanted);
-    return ty_signature_type(me, ty_instantiate_signature_in_context_of(me, generic, wanted, so_far));
+    return ty_signature_type(me, ty_instantiate_signature_in_context_of(me, generic, wanted, so_far, false));
 }
 
 // tsc's couldContainTypeVariables at the top: an object type named by a non-generic type alias declared outside any
@@ -1085,7 +1085,7 @@ static void infer_from_generic_function_arg(Checker* me, Signature const* sig, I
         }
     }
     TyMapper const* so_far = fix_for_generic_function(me, sig, inf, contextual);
-    Signature const* instantiated = ty_instantiate_signature_in_context_of(me, generic, contextual, so_far);
+    Signature const* instantiated = ty_instantiate_signature_in_context_of(me, generic, contextual, so_far, false);
     infer_types(me, inf, ty_signature_type(me, instantiated), param_type, INFER_PRIORITY_NORMAL);
 }
 

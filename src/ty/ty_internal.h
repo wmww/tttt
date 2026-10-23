@@ -418,9 +418,11 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
 Ty const* ty_signature_type(Checker* me, Signature const* sig);
 // tsc's instantiateSignatureInContextOf: `sig`'s type parameters inferred from the parameter types of `contextual`
 // (instantiated with `context_mapper`, the inference of an enclosing call, if any), without one also from its return
-// type
+// type. `in_relation`: for the relation in progress (compareSignaturesRelated), whose comparison checks the inferences
+// against their constraints (tsc passes its compareTypes); otherwise assignability, whatever relation is in progress
+// further up (a declaration's type evaluated from inside one is no part of it)
 Signature const* ty_instantiate_signature_in_context_of(
-    Checker* me, Signature const* sig, Signature const* contextual, TyMapper const* context_mapper
+    Checker* me, Signature const* sig, Signature const* contextual, TyMapper const* context_mapper, bool in_relation
 );
 // tsc's higher-order inference (the first branch of instantiateTypeWithSingleGenericCallSignature): a generic function
 // `sig` passed where the non-generic `contextual` is wanted (in terms of the type parameters `inf` infers) is

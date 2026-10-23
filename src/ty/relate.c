@@ -2092,7 +2092,7 @@ static Ternary compare_signatures(
     // which goes by the declared parameters (a conditional rest type takes any count, tsc's compareSignaturesRelated)
     if (source_res->type_params.len && source_res->type_params.data != target_res->type_params.data) {
         target = canonical_signature(me, target);
-        source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
+        source = ty_instantiate_signature_in_context_of(me, source, target, nullptr, true);
     }
 
     // A rest parameter that isn't an array relates by its elements, not by what it's instantiated with

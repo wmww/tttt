@@ -58,6 +58,15 @@ passing tests).
   Instantiation) passes; do it if another shows up (from the laziness work).
 
 ## Relations, instantiation, reduction
+- (det, 2026-10-23, fixed; no cut-down repro) A generic function argument's instantiation in context ran its
+  constraint check under whatever relation was in progress further up (`my relating`, ty_is_related_within): openclaw's
+  zod `z.object({...}).transform(omitUndefinedFields)` (src/infra/restart-sentinel-store.ts) evaluated from inside an
+  identity relation (Awaited's conditional -> compare_signatures -> infer_to_union's is_identical -> a prop's
+  declaration) inferred T = object for good. Now only compare_signatures passes `in_relation`. The repro needs zod's
+  real types: `TTTT_CHECK_ONLY=openclaw/src/infra/outbound/delivery-queue-recovery-params.ts,openclaw/src/gateway/server.config-security-policy.test.ts
+  tttt -p openclaw/src/gateway --checkers 1 --threads 1` from thirdparty/sources (TS2339 'requiresRestart' on 'object'
+  before the fix); zod-like `.d.ts` imitations (a generic `transform<U>` with an `omit<T extends object>` argument,
+  reached through a signature relation, a class property, `Awaited<ReturnType<...>>`) didn't route through identity.
 - (atproto probe, 2026-10-20; symbols baseline only) Property access on an intersection whose apparent type is any
   (a generic member constrained to any) finds the object member's symbol in tttt; tsc's
   getApparentTypeOfIntersectionType makes the whole apparent type any, no symbol. Probe:
