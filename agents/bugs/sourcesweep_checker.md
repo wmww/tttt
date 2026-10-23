@@ -410,9 +410,11 @@ anomalyco/opencode at 4232b8bc (repos.txt, `# perf: no opencode`). After det2's 
 re-enter below call barriers, type arguments before the reference, contextual return inference not on the stack)
 packages/core is clean under every mode (20 default runs identical, K1, `--checker-memory 0`, K16) and
 `scripts/sourcesweep.py -f '^opencode/'` gives 60 / 62; the earlier app/desktop/web/storybook/ai/ui
-TS2769/TS2339/TS2740/TS5088 mismatches are fixed. What is left differs only in the root project (`opencode`,
-about 60k lines of tsc output: React's and solid's JSX together) and in core/tsconfig.tests.json, whose
-references aren't built (TS6305 everywhere, so the core imports are any):
+TS2769/TS2339/TS2740/TS5088 mismatches are fixed (rechecked by corB at 2f81c6966: 60 / 62, kdiff 0 / 3 on
+core/sdk/tui). The two left are node-build.test.ts:49 (core/tsconfig.tests.json, whose references aren't built:
+TS6305 everywhere, so the core imports are any) and starlight's schema.ts:119. The typewriter and alias-printing items
+below were seen in the root project (`opencode`, about 60k lines of tsc output: React's and solid's JSX together),
+which the sweep's cache no longer lists (its 62 configs are the packages'), so nothing measures them now:
 - **The return type of a failed generic call** (-TS2322 at core/test/effect/layer-node/node-build.test.ts:49,
   tsconfig.tests.json). Both checkers fail the argument check of `layer: Implementation &
   CheckLayer<NoInfer<Implementation>>` with Implementation = Layer.Any, but they return different types afterwards.
