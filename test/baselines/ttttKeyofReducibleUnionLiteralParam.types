@@ -1,0 +1,34 @@
+//// [test/cases/ttttKeyofReducibleUnionLiteralParam.ts] ////
+
+=== ttttKeyofReducibleUnionLiteralParam.ts ===
+// tsc's isReducibleIntersection fills type parameters with a literal equal to nothing: `{ k: T | "a" } & { k: "b" }`
+// may reduce to never once instantiated, so `keyof` a union containing it is deferred
+type U<T> = ({ k: T | "a"; x: 1 } & { k: "b"; y: 2 }) | { k: "c"; z: 3 };
+>U : U<T>
+>k : "a" | T
+>x : 1
+>k : "b"
+>y : 2
+>k : "c"
+>z : 3
+
+type K<T> = keyof U<T>;
+>K : keyof U<T>
+
+type K2 = K<"z">;
+>K2 : "k" | "z"
+
+type U2 = U<"z">;
+>U2 : { k: "c"; z: 3; }
+
+type K3 = keyof U2;
+>K3 : "k" | "z"
+
+const r1: K<"z"> = "z";
+>r1 : "k" | "z"
+>"z" : "z"
+
+const r2: K<"b"> = "x";
+>r2 : "k"
+>"x" : "x"
+

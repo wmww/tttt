@@ -4094,6 +4094,33 @@ bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
 // literal in one and a type parameter in the other (`{ src: "child" } & { src: TSrc }`). tsc's isReducibleIntersection
 // instantiates the type parameters with a never that counts as a literal and asks getReducedType; this looks for the
 // shape that makes that never
+static bool literal_in(Ty const* t, Ty const* literal) {
+    if (t == literal) return true;
+    if (t->kind != TY_UNION) return false;
+    for (u32 i = 0; i < t->composite.types.len; i++) {
+        if (t->composite.types.data[i] == literal) return true;
+    }
+    return false;
+}
+
+// Whether `other` with its type parameters filled with tsc's uniqueLiteralType (a literal equal to nothing) is
+// disjoint from the literal-like `a_type`: a type parameter, or a union of type parameters and literals none of
+// which `a_type` has (`T | "a"` next to `"b"`)
+static bool filled_disjoint(Ty const* a_type, Ty const* other) {
+    if (other->kind == TY_TYPE_PARAM) return true;
+    if (other->kind != TY_UNION || !(other->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    bool has_param = false;
+    for (u32 i = 0; i < other->composite.types.len; i++) {
+        Ty const* m = other->composite.types.data[i];
+        if (m->kind == TY_TYPE_PARAM) {
+            has_param = true;
+        } else if (!is_literal_like(m) || (m->flags & TYF_NULLABLE) || literal_in(a_type, m)) {
+            return false;
+        }
+    }
+    return has_param;
+}
+
 static bool is_reducible_intersection(Checker* me, Ty const* ty) {
     TyList parts = ty->composite.types;
     for (u32 i = 0; i < parts.len; i++) {
@@ -4111,7 +4138,7 @@ static bool is_reducible_intersection(Checker* me, Ty const* ty) {
                 // instantiation would see `"a" | undefined` reduce too)
                 if (!a_type) a_type = (prop->flags & PROP_OPTIONAL) ? ty_without_undefined(me, prop_type(me, prop)) : prop_type(me, prop);
                 if (!is_literal_like(a_type) || (a_type->flags & TYF_NULLABLE)) break;
-                if (prop_type(me, other)->kind == TY_TYPE_PARAM) return true;
+                if (filled_disjoint(a_type, prop_type(me, other))) return true;
             }
         }
     }
