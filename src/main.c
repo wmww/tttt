@@ -403,6 +403,7 @@ static_failable apply_compiler_options(Options const* opts, csview config, Progr
     // tttt writes declarations (plan 64), not JavaScript: it emits like tsc only where tsc would only emit declarations,
     // else it is `tsc --noEmit`
     if (opts->implicit_no_emit && !(options->emit_declaration_only && (options->declaration || options->composite))) {
+        if (!options->no_emit) options->no_emit_implied = true;
         ignore compiler_options_set(options, c_sv("noEmit"), c_sv("true"));
     }
     compiler_options_resolve(options);
@@ -924,7 +925,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         if (counts) counts->errors += config_errors;
         // (An emitting program with noEmitOnError skipped its emit: 1)
         CompilerOptions const* options = program_options(program);
-        bool skipped = !options->no_emit && options->no_emit_on_error;
+        bool skipped = !compiler_options_no_emit_given(options) && options->no_emit_on_error;
         str_list_drop(&root_files);
         destroy_program(program, errs, last);
         // (tsgo: diagnostics and no file to emit is ExitStatus.DiagnosticsPresent_OutputsGenerated, 2)
@@ -1180,7 +1181,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     // tsgo 7.1's EmitAndReportStatistics: diagnostics are ExitStatus.DiagnosticsPresent_OutputsGenerated (2), --noEmit
     // included (handleNoEmitOptions doesn't count as a skipped emit), unless the emit was skipped (1): noEmitOnError, or
     // (-b, which emits) a declaration diagnostic
-    if (ret) ret = !options->no_emit && (options->no_emit_on_error || declaration_blocked) ? 1 : 2;
+    if (ret) ret = !compiler_options_no_emit_given(options) && (options->no_emit_on_error || declaration_blocked || program_emit_any_blocked(program)) ? 1 : 2;
     destroy_program(program, errs, last);
     if (!last) phase_done(opts, out, "free", &last_time);
     return ok(ret);

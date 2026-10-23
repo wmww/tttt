@@ -103,9 +103,6 @@ EXIT_STATUS = {"Success": 0, "DiagnosticsPresent_OutputsSkipped": 1, "Diagnostic
                "InvalidProject_OutputsSkipped": 3, "ProjectReferenceCycle_OutputsSkipped": 4}
 
 
-# Option errors tsc's program reports only when it emits (verifyCompilerOptions under !noEmit): the common source
-# directory (TS5011), outputs overwriting inputs or each other (TS5055, TS5056). (A composite project's TS6059 isn't)
-EMIT_ONLY_CODES = {5011, 5055, 5056}
 
 
 def expected_diagnostics(output):
@@ -181,10 +178,6 @@ def run(name, scenario, tttt, keep, verbose):
         out = proc.stdout + proc.stderr
         # Paths tttt prints relative to the current directory, tsc too
         expected = expected_diagnostics(output)
-        # (tttt is `tsc --noEmit` and tsc's command emits: the option errors only an emitting program reports aren't
-        # tttt's, plan 54)
-        if "-b" not in args and "--build" not in args and not any(a.lower() == "--noemit" for a in args):
-            expected = Counter({k: n for k, n in expected.items() if k[2] not in EMIT_ONLY_CODES})
         actual = actual_diagnostics(out, root)
         unknown = "Unknown option" in out or "isn't supported" in out
         return expected, actual, args, out, unknown, proc.returncode

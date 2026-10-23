@@ -176,6 +176,9 @@ typedef struct CompilerOptions {
     ModuleKind module;
     ModuleResolutionKind module_resolution; // Never classic or node10 (removed in TypeScript 7)
     ModuleResolutionKind module_resolution_removed; // `moduleResolution: classic|node10|node` as given (TS5108)
+    // The CLI set noEmit for a config that would emit JavaScript (tttt emits none, main.c): exit codes are still an
+    // emitting program's
+    bool no_emit_implied;
     bool capture_suggestions; // The test harness's `@captureSuggestions`: suggestion diagnostics are reported too
     // The harness's `@useCaseSensitiveFileNames: false` (tsc's host setting): only compares file names' roots (TS5009)
     bool case_insensitive_file_names;
@@ -231,6 +234,13 @@ typedef struct CompilerOptions {
     bool is_set[COMPILER_BOOL_OPTION_COUNT];
     bool target_set, module_set, module_resolution_set, module_detection_set;
 } CompilerOptions;
+
+// noEmit as the program's options say it, not as the CLI implies it for a config that would emit JavaScript
+// (CompilerOptions.no_emit_implied): the option checks tsc makes only of an emitting program (TS5011, TS5055, TS5056,
+// TS5096) are made
+static inline bool compiler_options_no_emit_given(CompilerOptions const* me) {
+    return me->no_emit && !me->no_emit_implied;
+}
 
 typedef enum CompilerOptionSetResult {
     COMPILER_OPTION_OK,

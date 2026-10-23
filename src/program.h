@@ -164,6 +164,8 @@ void program_set_declarations_only(Program* me, bool only);
 // Whether tsc would emit the file at all (sourceFileMayBeEmitted: not a declaration file, a library's, a referenced
 // project's)
 bool program_source_may_be_emitted(Program const* me, SourceFile const* source);
+// Whether TS5055/TS5056 blocked any output path (tsc then skips that file's emit: exit status 1)
+bool program_emit_any_blocked(Program const* me);
 // Whether an output path (absolute) is one TS5055/TS5056 said can't be written (tsc's IsEmitBlocked)
 bool program_emit_blocked(Program* me, csview output);
 

@@ -2837,7 +2837,7 @@ static void program_validate_options(Program* me) {
         option_error_d(me, with, "preserveConstEnums", true, 5091, "Option 'preserveConstEnums' cannot be disabled when '",
             with, "' is enabled.");
     }
-    if (o->allow_importing_ts_extensions && !(o->no_emit || o->emit_declaration_only || o->rewrite_relative_import_extensions)) {
+    if (o->allow_importing_ts_extensions && !(compiler_options_no_emit_given(o) || o->emit_declaration_only || o->rewrite_relative_import_extensions)) {
         option_error_d(me, "allowImportingTsExtensions", nullptr, false, 5096,
             "Option 'allowImportingTsExtensions' can only be used when one of 'noEmit', 'emitDeclarationOnly', or 'rewriteRelativeImportExtensions' is set.");
     }
@@ -3035,9 +3035,12 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
     bool blocked = false;
     if (program_find_source(me, cstr_sv(&output))) {
         blocked = true;
+        // (tsc names the output by its absolute path)
+        cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&output));
         Error* error = error_ctx_global_error_d(
-            my errs, 5055, "Cannot write file '", output, "' because it would overwrite input file."
+            my errs, 5055, "Cannot write file '", absolute, "' because it would overwrite input file."
         );
+        cstr_drop(&absolute);
         if (!cstr_size(&my options.config_dir)) {
             error_sub_error_d(error, span_null, TS_CODE_NONE,
                 "Adding a tsconfig.json file will help organize projects that contain both TypeScript and JavaScript "
@@ -3049,9 +3052,11 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
     cstr key = relative_path_of(cstr_sv(&cwd), cstr_sv(&output));
     cstr_drop(&cwd);
     if (hmap_source_file_ptr_get(seen, cstr_sv(&key))) {
+        cstr absolute = absolute_path_of(program_cwd(me), cstr_sv(&output));
         error_ctx_global_error_d(
-            my errs, 5056, "Cannot write file '", output, "' because it would be overwritten by multiple input files."
+            my errs, 5056, "Cannot write file '", absolute, "' because it would be overwritten by multiple input files."
         );
+        cstr_drop(&absolute);
         blocked = true;
     } else {
         hmap_source_file_ptr_insert(seen, cstr_clone(key), nullptr);
@@ -3062,6 +3067,10 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
         cstr_drop(&key);
     }
     cstr_drop(&output);
+}
+
+bool program_emit_any_blocked(Program const* me) {
+    return hmap_source_file_ptr_size(&my emit_blocked) > 0;
 }
 
 bool program_emit_blocked(Program* me, csview output) {
@@ -3119,7 +3128,7 @@ static cstr computed_common_dir(Program* me, csview cwd, csview base_dir) {
 // common directory of its files, so where those differ the rootDir has to be said (TS5011)
 static void program_verify_inferred_root_dir(Program* me) {
     CompilerOptions const* o = &my options;
-    if (o->no_emit || o->composite || cstr_size(&o->root_dir) || !my config_source || !cstr_size(&o->config_dir)) return;
+    if (compiler_options_no_emit_given(o) || o->composite || cstr_size(&o->root_dir) || !my config_source || !cstr_size(&o->config_dir)) return;
     bool declaration_dir = (o->declaration || o->composite) && cstr_size(&o->declaration_dir);
     if (!cstr_size(&o->out_dir) && !declaration_dir && !cstr_size(&o->out_file)) return;
     csview cwd = program_cwd(me);
@@ -3289,7 +3298,7 @@ static void program_verify_emit_paths(Program* me) {
             option_error_d(me, "outDir", nullptr, true, 5009, "Cannot find the common subdirectory path for the input files.");
         }
     }
-    if (o->no_emit || o->suppress_output_path_check) return;
+    if (compiler_options_no_emit_given(o) || o->suppress_output_path_check) return;
     bool declarations = o->declaration || o->composite;
     hmap_source_file_ptr seen = {0};
     // tsc's getCommonSourceDirectory, only needed with an outDir or declarationDir
