@@ -3802,8 +3802,8 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         merged.own = false;
         // (Under exactOptionalPropertyTypes only the missing goes: tsc's removeMissingOrUndefinedType)
         bool exact = compiler_options()->exact_optional_property_types;
-        Ty const* right_type = exact ? ty_remove_missing(me, r->type, true) : ty_without_undefined(me, r->type);
-        if (l->type && (exact ? ty_remove_missing(me, l->type, true) : ty_without_undefined(me, l->type)) != right_type) {
+        Ty const* right_type = exact ? ty_remove_missing(me, r->type, true) : ty_with_ne_undefined_facts(me, r->type);
+        if (l->type && (exact ? ty_remove_missing(me, l->type, true) : ty_with_ne_undefined_facts(me, l->type)) != right_type) {
             Ty const* both[2] = { l->type, right_type };
             merged.type = ty_union_subtype_reduced(me, both, 2);
         }

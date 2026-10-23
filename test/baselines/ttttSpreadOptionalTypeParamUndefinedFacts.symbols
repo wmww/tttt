@@ -1,0 +1,46 @@
+//// [test/cases/ttttSpreadOptionalTypeParamUndefinedFacts.ts] ////
+
+=== ttttSpreadOptionalTypeParamUndefinedFacts.ts ===
+// An optional property spread over another takes undefined out by type facts (tsc's getSpreadType:
+// removeMissingOrUndefinedType): a T constrained to undefined goes too
+function f5<T extends undefined>(a: { x?: T }) { const s2 = { x: 2, ...a }; const n2: number = s2.x; }
+>f5 : Symbol(f5, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 0, 0))
+>T : Symbol(T, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 12))
+>a : Symbol(a, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 33))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 37))
+>T : Symbol(T, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 12))
+>s2 : Symbol(s2, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 54))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 61))
+>a : Symbol(a, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 33))
+>n2 : Symbol(n2, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 81))
+>s2.x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 61), Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 37))
+>s2 : Symbol(s2, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 54))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 61), Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 37))
+
+function f6<T extends string | undefined>(a: { x?: T }) { const s2 = { x: 2, ...a }; return s2.x; }
+>f6 : Symbol(f6, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 2, 102))
+>T : Symbol(T, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 12))
+>a : Symbol(a, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 42))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 46))
+>T : Symbol(T, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 12))
+>s2 : Symbol(s2, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 63))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 70))
+>a : Symbol(a, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 42))
+>s2.x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 70), Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 46))
+>s2 : Symbol(s2, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 63))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 70), Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 46))
+
+function f7(a: { x?: void | string }) { const s2 = { x: 2, ...a }; return s2.x; }
+>f7 : Symbol(f7, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 3, 99))
+>a : Symbol(a, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 12))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 16))
+>s2 : Symbol(s2, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 45))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 52))
+>a : Symbol(a, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 12))
+>s2.x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 52), Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 16))
+>s2 : Symbol(s2, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 45))
+>x : Symbol(x, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 52), Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 4, 16))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttSpreadOptionalTypeParamUndefinedFacts.ts, 5, 5))
+

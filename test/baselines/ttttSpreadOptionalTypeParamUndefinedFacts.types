@@ -1,0 +1,49 @@
+//// [test/cases/ttttSpreadOptionalTypeParamUndefinedFacts.ts] ////
+
+=== ttttSpreadOptionalTypeParamUndefinedFacts.ts ===
+// An optional property spread over another takes undefined out by type facts (tsc's getSpreadType:
+// removeMissingOrUndefinedType): a T constrained to undefined goes too
+function f5<T extends undefined>(a: { x?: T }) { const s2 = { x: 2, ...a }; const n2: number = s2.x; }
+>f5 : <T extends undefined>(a: { x?: T; }) => void
+>a : { x?: T | undefined; }
+>x : T | undefined
+>s2 : { x: number; }
+>{ x: 2, ...a } : { x: number; }
+>x : number
+>2 : 2
+>a : { x?: T | undefined; }
+>n2 : number
+>s2.x : number
+>s2 : { x: number; }
+>x : number
+
+function f6<T extends string | undefined>(a: { x?: T }) { const s2 = { x: 2, ...a }; return s2.x; }
+>f6 : <T extends string | undefined>(a: { x?: T; }) => number | T
+>a : { x?: T; }
+>x : T | undefined
+>s2 : { x: number | T; }
+>{ x: 2, ...a } : { x: number | T; }
+>x : number
+>2 : 2
+>a : { x?: T; }
+>s2.x : number | T
+>s2 : { x: number | T; }
+>x : number | T
+
+function f7(a: { x?: void | string }) { const s2 = { x: 2, ...a }; return s2.x; }
+>f7 : (a: { x?: void | string; }) => string | number
+>a : { x?: void | string | undefined; }
+>x : void | string | undefined
+>s2 : { x: string | number; }
+>{ x: 2, ...a } : { x: string | number; }
+>x : number
+>2 : 2
+>a : { x?: void | string | undefined; }
+>s2.x : string | number
+>s2 : { x: string | number; }
+>x : string | number
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

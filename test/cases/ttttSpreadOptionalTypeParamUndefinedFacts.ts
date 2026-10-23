@@ -1,0 +1,6 @@
+// An optional property spread over another takes undefined out by type facts (tsc's getSpreadType:
+// removeMissingOrUndefinedType): a T constrained to undefined goes too
+function f5<T extends undefined>(a: { x?: T }) { const s2 = { x: 2, ...a }; const n2: number = s2.x; }
+function f6<T extends string | undefined>(a: { x?: T }) { const s2 = { x: 2, ...a }; return s2.x; }
+function f7(a: { x?: void | string }) { const s2 = { x: 2, ...a }; return s2.x; }
+const sentinel: number = "";
