@@ -29,7 +29,13 @@ if test "${1:-}" = --clean; then
     for d in /tmp/abbuild-*/; do
         test -d "$d" || continue
         d=${d%/}
-        if test "${2:-}" = all || test -z "$(find "$d/.used" -mmin -1440 2>/dev/null)"; then
+        # (Never one a process runs in or from: an oracle on a frozen tree, a build)
+        busy=$(for p in /proc/[0-9]*; do
+            for l in "$p/cwd" "$p/exe"; do r=$(readlink "$l" 2>/dev/null) && case "$r/" in "$d/"*) echo "${p#/proc/}";; esac; done
+        done | sort -u | head -3 | tr '\n' ' ')
+        if test -n "$busy"; then
+            echo "keeping $d: in use (pid $busy)" >&2
+        elif test "${2:-}" = all || test -z "$(find "$d/.used" -mmin -1440 2>/dev/null)"; then
             echo "removing $d" >&2
             ( flock 9; rm -rf "$d" ) 9> "$d.lock"
             rm -f "$d.lock"
