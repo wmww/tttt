@@ -211,8 +211,8 @@ static Ty const* recursion_identity(Ty const* ty);
 // Relation cache
 
 void relation_cache_drop(RelationCache* me) {
-    free(my keys);
-    free(my values);
+    big_table_free(my keys, sizeof(u64) * my cap);
+    big_table_free(my values, my cap);
     *me = (RelationCache){0};
 }
 
@@ -234,8 +234,8 @@ static void relation_cache_put(RelationCache* me, u64 key, unsigned value) {
     // (At most 5/8 full: a miss probes to an empty slot, see link_set())
     if ((my len + 1) * 8 > my cap * 5) {
         RelationCache bigger = { .cap = my cap ? my cap * 2 : 256 };
-        bigger.keys = zeroed_table(bigger.cap, sizeof(u64));
-        bigger.values = zeroed_table(bigger.cap, 1);
+        bigger.keys = big_table(bigger.cap, sizeof(u64));
+        bigger.values = big_table(bigger.cap, 1);
         panic_if(!bigger.keys || !bigger.values, "out of memory");
         for (u32 i = 0; i < my cap; i++) {
             if (my keys[i]) {

@@ -1,6 +1,9 @@
+// madvise(), which strict -std=c2x hides
+#define _DEFAULT_SOURCE
 #include "prelude.h"
 #include <pthread.h>
 #include <stdatomic.h>
+#include <sys/mman.h>
 
 #ifdef DEBUG_ALLOCATOR_ACTIVE
 _Atomic intptr_t debug_allocation_count = 0;
@@ -87,4 +90,51 @@ bool huge_pages_take(size_t bytes) {
 
 void huge_pages_give(size_t bytes) {
     if (debug_env.huge_pages < 0) atomic_fetch_add(&huge_page_budget, (long long)bytes);
+}
+
+// Big tables by size class (log2 of the pages' bytes, from 2 MB): what big_table_free() kept
+enum { BIG_TABLE_MIN_SHIFT = 21 };
+static pthread_mutex_t big_tables_lock = PTHREAD_MUTEX_INITIALIZER;
+static void* big_tables_free[64];
+
+static u32 big_table_class(size_t bytes) {
+    u32 shift = BIG_TABLE_MIN_SHIFT;
+    while (((size_t)1 << shift) < bytes) shift++;
+    return shift;
+}
+
+void* big_table(size_t count, size_t size) {
+    size_t bytes = count * size;
+    if (bytes < ((size_t)1 << BIG_TABLE_MIN_SHIFT)) return zeroed_table(count, size);
+    u32 shift = big_table_class(bytes);
+    size_t mapped = (size_t)1 << shift;
+    pthread_mutex_lock(&big_tables_lock);
+    void* ret = big_tables_free[shift];
+    if (ret) big_tables_free[shift] = *(void**)ret;
+    pthread_mutex_unlock(&big_tables_lock);
+    if (ret) return memset(ret, 0, bytes);
+    // (2 MB aligned: map 2 MB more and cut the ends off)
+    size_t align = (size_t)1 << BIG_TABLE_MIN_SHIFT;
+    char* raw = mmap(nullptr, mapped + align, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    panic_if(raw == MAP_FAILED, "out of memory");
+    char* start = (char*)(((uintptr_t)raw + align - 1) & ~(uintptr_t)(align - 1));
+    if (start > raw) munmap(raw, (size_t)(start - raw));
+    if (start + mapped < raw + mapped + align) munmap(start + mapped, (size_t)(raw + mapped + align - (start + mapped)));
+    if (huge_pages_take(mapped)) madvise(start, mapped, MADV_HUGEPAGE);
+    // (Written before read: no zero page to copy)
+    madvise(start, bytes, MADV_POPULATE_WRITE);
+    return start;
+}
+
+void big_table_free(void* table, size_t bytes) {
+    if (!table) return;
+    if (bytes < ((size_t)1 << BIG_TABLE_MIN_SHIFT)) {
+        free(table);
+        return;
+    }
+    u32 shift = big_table_class(bytes);
+    pthread_mutex_lock(&big_tables_lock);
+    *(void**)table = big_tables_free[shift];
+    big_tables_free[shift] = table;
+    pthread_mutex_unlock(&big_tables_lock);
 }

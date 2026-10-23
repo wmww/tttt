@@ -87,6 +87,13 @@ static inline void* zeroed_table(size_t count, size_t size) {
     return memset(ret, 0, count * size);
 }
 
+// zeroed_table() for a checker's growing hash tables (intern, link and relation tables, which double), freed only
+// with big_table_free(p, bytes). A table of 2 MB or more is pages of its own, huge pages while huge_pages_take()
+// allows, and its free keeps them for the next table of its size (re-zeroed) rather than unmapping them: glibc's
+// pages are faulted 4 KB at a time, and a munmap() is a TLB shootdown on every thread
+void* big_table(size_t count, size_t size);
+void big_table_free(void* table, size_t bytes);
+
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
 #define PANIC_DBG panic("AAaaa")
 #define PANIC_AFTER_DBG(count, ...) do { \

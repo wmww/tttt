@@ -248,7 +248,7 @@ __attribute__((always_inline)) static inline InternEntry* intern_find(InternTabl
 
 static void intern_grow(InternTable* me) {
     InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len, .shared = my shared, .others = my others, .taint = my taint };
-    bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
+    bigger.entries = big_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
     for (u32 i = 0; i < my cap; i++) {
         InternEntry* entry = &my entries[i];
@@ -259,7 +259,7 @@ static void intern_grow(InternTable* me) {
             bigger.entries[j] = *entry;
         }
     }
-    free(my entries);
+    big_table_free(my entries, sizeof(InternEntry) * my cap);
     *me = bigger;
 }
 
@@ -605,7 +605,7 @@ static inline void link_set(LinkTable* table, u32 kind, void const* subject, voi
     // (At most 5/8 full: most lookups miss, and a miss probes to an empty slot, ~3.4 probes at 5/8 against ~8.5 at 3/4)
     if ((table->len + 1) * 8 > table->cap * 5) {
         LinkTable bigger = { .cap = table_grown(table->cap, 1024), .len = table->len };
-        bigger.entries = zeroed_table(bigger.cap, sizeof(LinkEntry));
+        bigger.entries = big_table(bigger.cap, sizeof(LinkEntry));
         panic_if(!bigger.entries, "out of memory");
         for (u32 i = 0; i < table->cap; i++) {
             LinkEntry entry = table->entries[i];
@@ -614,7 +614,7 @@ static inline void link_set(LinkTable* table, u32 kind, void const* subject, voi
             while (bigger.entries[j].key) j = table_next(j, bigger.cap);
             bigger.entries[j] = entry;
         }
-        free(table->entries);
+        big_table_free(table->entries, sizeof(LinkEntry) * table->cap);
         *table = bigger;
     }
     u64 key = link_key(kind, subject);
@@ -939,10 +939,10 @@ void checker_drop(Checker* me) {
     }
     free(my index_atoms);
     free(my index_atoms_by_name);
-    free(my types.entries);
-    free(my links.entries);
-    free(my node_links.entries);
-    free(my intersection_props.entries);
+    big_table_free(my types.entries, sizeof(InternEntry) * my types.cap);
+    big_table_free(my links.entries, sizeof(LinkEntry) * my links.cap);
+    big_table_free(my node_links.entries, sizeof(LinkEntry) * my node_links.cap);
+    big_table_free(my intersection_props.entries, sizeof(InternEntry) * my intersection_props.cap);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
     ty_active_mappers_drop(me);
     free(my flow_loops);
