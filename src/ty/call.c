@@ -3488,9 +3488,18 @@ fail:
 static bool surely_no_effects(Checker* me, Signature const* sig) {
     while (sig->target) sig = sig->target;
     FunctionImpl const* function = sig->function;
-    if (!function || function->is_type || !function->ret_explicit || function->predicate) return false;
+    if (!function || function->is_type || function->predicate) return false;
     SourceFile const* file = span_source(function->full_span);
-    return file && !file->is_js && !signature_declared_never(me, sig);
+    if (!file || file->is_js) return false;
+    if (!function->ret_explicit) {
+        // Unannotated, its only effect is an inferred type predicate (tsc's getTypePredicateFromBody), which a
+        // generator or async function, or a block body without a `return` of a value, never has: `seed(scope)` whose
+        // parameter is `ReturnType<typeof createScope>`, called in createScope (openclaw's
+        // session-canonical-key.test.ts, a spurious TS7023/TS2502)
+        if (function->is_async || function->is_generator) return true;
+        return !function->expression_body && !function_impl_has_explicit_return(function);
+    }
+    return !signature_declared_never(me, sig);
 }
 
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call) {

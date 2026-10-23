@@ -1,0 +1,59 @@
+//// [test/cases/ttttUnannotatedCallNoEffects.ts] ////
+
+=== ttttUnannotatedCallNoEffects.ts ===
+// A call statement to an unannotated function whose body returns no value has no effects (tsc's
+// getTypePredicateFromBody infers a predicate only from a single `return` of a value): deciding so doesn't type its
+// parameters, which may need what is being inferred. openclaw's session-canonical-key.test.ts, `seed(scope, entry)` in
+// createScope with seed's `scope: ReturnType<typeof createScope>`
+declare function save(x: { a: string; key: string }, e: unknown): void;
+>save : (x: { a: string; key: string; }, e: unknown) => void
+>x : { a: string; key: string; }
+>a : string
+>key : string
+>e : unknown
+
+function createScope(entry?: unknown, key = "k") {
+>createScope : (entry?: unknown, key?: string) => { a: string; key: string; }
+>entry : unknown
+>key : string
+>"k" : "k"
+
+    const scope = { a: "main", key };
+>scope : { a: string; key: string; }
+>{ a: "main", key } : { a: string; key: string; }
+>a : string
+>"main" : "main"
+>key : string
+
+    if (entry) {
+>entry : unknown
+
+        seed(scope, entry);
+>seed(scope, entry) : void
+>seed : (scope: ReturnType<typeof createScope>, entry: unknown, k?: string) => void
+>scope : { a: string; key: string; }
+>entry : {}
+    }
+    return scope;
+>scope : { a: string; key: string; }
+}
+function seed(scope: ReturnType<typeof createScope>, entry: unknown, k = scope.key) {
+>seed : (scope: ReturnType<typeof createScope>, entry: unknown, k?: string) => void
+>scope : { a: string; key: string; }
+>createScope : (entry?: unknown, key?: string) => { a: string; key: string; }
+>entry : unknown
+>k : string
+>scope.key : string
+>scope : { a: string; key: string; }
+>key : string
+
+    save({ ...scope, key: k }, entry);
+>save({ ...scope, key: k }, entry) : void
+>save : (x: { a: string; key: string; }, e: unknown) => void
+>{ ...scope, key: k } : { a: string; key: string; }
+>scope : { a: string; key: string; }
+>key : string
+>k : string
+>entry : unknown
+}
+

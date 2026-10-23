@@ -1,0 +1,54 @@
+//// [test/cases/ttttUnannotatedCallNoEffects.ts] ////
+
+=== ttttUnannotatedCallNoEffects.ts ===
+// A call statement to an unannotated function whose body returns no value has no effects (tsc's
+// getTypePredicateFromBody infers a predicate only from a single `return` of a value): deciding so doesn't type its
+// parameters, which may need what is being inferred. openclaw's session-canonical-key.test.ts, `seed(scope, entry)` in
+// createScope with seed's `scope: ReturnType<typeof createScope>`
+declare function save(x: { a: string; key: string }, e: unknown): void;
+>save : Symbol(save, Decl(ttttUnannotatedCallNoEffects.ts, 0, 0))
+>x : Symbol(x, Decl(ttttUnannotatedCallNoEffects.ts, 4, 22))
+>a : Symbol(a, Decl(ttttUnannotatedCallNoEffects.ts, 4, 26))
+>key : Symbol(key, Decl(ttttUnannotatedCallNoEffects.ts, 4, 37))
+>e : Symbol(e, Decl(ttttUnannotatedCallNoEffects.ts, 4, 52))
+
+function createScope(entry?: unknown, key = "k") {
+>createScope : Symbol(createScope, Decl(ttttUnannotatedCallNoEffects.ts, 4, 71))
+>entry : Symbol(entry, Decl(ttttUnannotatedCallNoEffects.ts, 5, 21))
+>key : Symbol(key, Decl(ttttUnannotatedCallNoEffects.ts, 5, 37))
+
+    const scope = { a: "main", key };
+>scope : Symbol(scope, Decl(ttttUnannotatedCallNoEffects.ts, 6, 9))
+>a : Symbol(a, Decl(ttttUnannotatedCallNoEffects.ts, 6, 19))
+>key : Symbol(key, Decl(ttttUnannotatedCallNoEffects.ts, 6, 30))
+
+    if (entry) {
+>entry : Symbol(entry, Decl(ttttUnannotatedCallNoEffects.ts, 5, 21))
+
+        seed(scope, entry);
+>seed : Symbol(seed, Decl(ttttUnannotatedCallNoEffects.ts, 11, 1))
+>scope : Symbol(scope, Decl(ttttUnannotatedCallNoEffects.ts, 6, 9))
+>entry : Symbol(entry, Decl(ttttUnannotatedCallNoEffects.ts, 5, 21))
+    }
+    return scope;
+>scope : Symbol(scope, Decl(ttttUnannotatedCallNoEffects.ts, 6, 9))
+}
+function seed(scope: ReturnType<typeof createScope>, entry: unknown, k = scope.key) {
+>seed : Symbol(seed, Decl(ttttUnannotatedCallNoEffects.ts, 11, 1))
+>scope : Symbol(scope, Decl(ttttUnannotatedCallNoEffects.ts, 12, 14))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>createScope : Symbol(createScope, Decl(ttttUnannotatedCallNoEffects.ts, 4, 71))
+>entry : Symbol(entry, Decl(ttttUnannotatedCallNoEffects.ts, 12, 52))
+>k : Symbol(k, Decl(ttttUnannotatedCallNoEffects.ts, 12, 68))
+>scope.key : Symbol(key, Decl(ttttUnannotatedCallNoEffects.ts, 6, 30))
+>scope : Symbol(scope, Decl(ttttUnannotatedCallNoEffects.ts, 12, 14))
+>key : Symbol(key, Decl(ttttUnannotatedCallNoEffects.ts, 6, 30))
+
+    save({ ...scope, key: k }, entry);
+>save : Symbol(save, Decl(ttttUnannotatedCallNoEffects.ts, 0, 0))
+>scope : Symbol(scope, Decl(ttttUnannotatedCallNoEffects.ts, 12, 14))
+>key : Symbol(key, Decl(ttttUnannotatedCallNoEffects.ts, 13, 20))
+>k : Symbol(k, Decl(ttttUnannotatedCallNoEffects.ts, 12, 68))
+>entry : Symbol(entry, Decl(ttttUnannotatedCallNoEffects.ts, 12, 52))
+}
+
