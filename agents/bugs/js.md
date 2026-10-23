@@ -55,3 +55,12 @@ beta gives the clause `<string>` (any non-entity clause takes the tag's type arg
 has neither `value` nor `extra` (TS2339 on both); tttt reports TS2315 "Type '(Anonymous class)' is not generic" and
 `new B()` "not constructable" (TS2351). What tsgo's resolveBaseTypesOfClass does with type arguments on a
 non-generic constructor type isn't emulated. [open]
+
+- **`const [x] = require("m")` and `const { ...rest } = require("m")` are named imports in tsgo** (bun 08-C9a,
+  25-C20a, 33-C6c): tsgo's binder declares an alias for every binding element of a require-initialized declaration
+  (ast.IsVariableDeclarationInitializedToRequire walks a BindingElement up to its declaration), array patterns and
+  object rest elements included, so `const [arr2] = require("./esm2")` reports TS2305 "has no exported member 'arr2'"
+  and `const [x] = require("./m")` with `exports.x` is silent. tttt's note_require_declaration() (parser.c) takes only
+  identifiers and object patterns of plain properties, so it destructures the module object: a spurious TS2488 (the
+  namespace isn't iterable) and a missing TS2305. Not confirmed whether Strada does the same (likely a tsgo
+  simplification, then [tsgo]). [open]
