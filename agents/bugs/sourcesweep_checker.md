@@ -382,7 +382,9 @@ rest element; a spread instantiated to `undefined`). Left:
 - **portabase -TS2322** (components/ui/form.tsx:227, not in corG's brief): tsgo says `useForm<TypeOf<Z>>({...})`
   returns `UseFormReturn<output<Z>, any, TFieldValues>`, react-hook-form's third type parameter defaulting to
   `TFieldValues` left uninstantiated (the default of a partially given type argument list); tttt instantiates it.
-  Not investigated further. [open]
+  Cause: when no candidate is checked because the explicit type arguments fail their constraints, tsc fills the
+  missing type arguments with their defaults as written (getTypeArgumentsFromNodes); tttt instantiated them.
+  Repro ttttTypeArgumentConstraintFailureDefaults. [fixed 5e8c02f34]
 - **node-pg-migrate docs TS2741 text**: `import * as typescript from 'typescript'` in a .d.mts of a CommonJS .d.cts
   is a clone module type that tsgo prints `typeof import("<path>/lib/version")`; tttt prints the namespace symbol's
   name, `typeof typescript` (also under node16-nodenext: make_gather_target's synthetic-default namespace symbol). [text]
