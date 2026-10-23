@@ -1029,9 +1029,20 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
         auto entry = hmap_package_flag_insert(&my packages, cstr_clone(resolved.package_name), 0);
         if (resolved.kind == RESOLVED_DTS) entry.ref->second = 1;
     }
-    if (my options.no_resolve) {
-        // Nothing is added to the program, but a name may still mean a file that is part of it
+    if (program_options_of(me, source)->no_resolve) {
+        // Nothing is added to the program, but a name may still mean a file that is part of it (the file's own options:
+        // a referenced project's output declaration file resolves with that project's, tsgo's
+        // resolveImportsAndModuleAugmentations)
         if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source(me, cstr_sv(&resolved.path));
+        csview redirected_from = resolved.kind == RESOLVED_DTS && !ref->file ?
+            program_source_of_output(me, cstr_sv(&resolved.path)) : c_sv("");
+        if (redirected_from.size) {
+            // A referenced project's source whose output isn't in the program: TS6305 (tsc's resolveExternalModule
+            // finds the project reference of the source it resolved to)
+            ref->failure = MODULE_REF_NOT_BUILT;
+            cstr_take(&module_ref_rare_mut(ref)->unbuilt_output, cstr_clone(resolved.path));
+            cstr_take(&module_ref_rare_mut(ref)->resolved_path, cstr_from_sv(redirected_from));
+        }
         if (owned) resolved_module_drop(&resolved);
         return;
     }
