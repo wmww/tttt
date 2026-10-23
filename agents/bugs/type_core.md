@@ -57,6 +57,12 @@ passing tests).
   `ty_infer_type_predicate` checks a body; tsc reads predicates lazily). Its test (recursiveGenericSignature
   Instantiation) passes; do it if another shows up (from the laziness work). [note]
 
+- A spread's properties under a `const` type parameter (2026-10-23, corB): `defineContract<const C>(c: C)` with
+  `defineContract({ operations: { [k]: { ...base, kind: "action" } } })`: tsgo prints the inner object as `{ input:
+  ...; kind: "action"; }` (the spread result's properties aren't readonly, getSpreadType drops it), tttt as `{
+  readonly input: ...; readonly kind: "action"; }` (types baseline only; openclaw's plugin-sdk/feature-plugin.test.ts).
+  [open]
+
 ## Relations, instantiation, reduction
 - (det, 2026-10-23, fixed; no cut-down repro) A generic function argument's instantiation in context ran its
   constraint check under whatever relation was in progress further up (`my relating`, ty_is_related_within): openclaw's

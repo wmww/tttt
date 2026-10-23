@@ -9,6 +9,15 @@ HasNeverType (fixed). The combined import's member symbols went to bugs/binder_m
 intersection's property symbol to bugs/type_core.md. 
 
 
+- scripts/reduce.py on openclaw (2026-10-23, corB): `scripts/reduce.py --project
+  /home/ai/tttt/thirdparty/sources/openclaw --config test/tsconfig/tsconfig.core.test.gateway-other.json --keep
+  "placement-projector.test.ts.*TS2345" --tttt-has` printed "the copy does not reproduce" with no differences: the
+  copy's generated config had `"files": []` (reduce.json's cfg had all 629, so something rewrote it empty before the
+  probe), and with the files put back by hand the copy's workspace packages don't resolve
+  (node_modules/@openclaw/session-url-contract/src/*.ts: TS2307 for `@openclaw/normalization-core/*`, pnpm workspace
+  links). What worked instead: a /tmp tsconfig extending the sub-config with one file in `files`, `rootDir: "/"`,
+  `typeRoots` pointing at the checkout's @types, a node_modules symlink and a package.json with type=module. [open]
+
 - tttt -b on TypeScript6/src reserves ~12 GB of address space on 16 cores (ast_alloc.c:83 panic under ulimit -v 12 GB; realworld.py's and clidiff.py's caps raised to 48: typescript-eslint's -b reserves 22-28 GB, the same at 4eadfcc74, varying run to run with the load): look at the per-thread/per-builder AST and arena reservation sizes, they scale with the core count. [note]
 
 - Missing TS2322 (2026-10-21, IntersectionState audit): `function f<X extends string>(m: Uppercase<X>) { let y:
