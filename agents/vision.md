@@ -40,8 +40,10 @@ under tsc are the second.
   corpus (react -16%, nest level: start-up bound); **tttt beats bun canary 1.4.4 at the defaults on every bench
   corpus, vscode 1.75 against 1.93 s** (vscode median 1.70). Peak RSS rose +4..15% for it (accepted: speed over
   memory). Single-threaded tttt is fastest everywhere (vscode 9.6 s against bun's 12.9). Where the human's private
-  projects still lose to bun, tttt uses less total CPU on every one: the losses are critical path (idle cores), not
-  duplication (notes/bun_breadth.md, the breadth sweep not yet run).
+  projects still lose to bun, tttt uses less total CPU on every one. The breadth sweep (2026-10-23, 487 source sweep
+  projects, notes/bun_breadth.md): bun wins on wall on 116 (24%, median ratio 0.82); tttt's front end is slower than
+  bun's load on 431 (median 1.55x) and runs at ~2 cores, its check faster on 429 (0.64x); the check-side losses are
+  single files (slow React shapes, a library warm-up each checker pays), not the checker count.
 - **The exit tail** (6d7cc707e; the measuring scripts count the teardown again with 29c1119ef):
   `exit_detached()` (main.c) hands the address space to a detached CLONE_VM reaper so the caller sees the exit
   before the kernel frees 1-5 GB of pages: the 7-66 ms tail (3-6% of wall) goes to ~0 (drizzle 0.290 -> 0.278,
