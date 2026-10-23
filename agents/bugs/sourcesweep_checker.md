@@ -404,3 +404,38 @@ the return type below the variance barrier, and gets FSM<Types>. Small details f
 That makes this the "Outstanding stages" C/D model of agents/notes/reentrancy.md (nested call results superseding,
 return contexts pulled), plus return types re-entering below the variance barrier, not a local fix. Left for that
 rework. While reducing it I found and fixed scripts/reentrytrace.py's tsgo overlay: `Symbol.Name` is a method now. [design]
+
+## opencode leftovers (2026-10-23, corB)
+After the Event/TS5088/re-entry/explicit-type fixes, what is left in opencode differs only in the root project
+(`opencode`, about 60k lines of tsc output: React's and solid's JSX together) and in core/tsconfig.tests.json, whose
+references aren't built (TS6305 everywhere, so the core imports are any). Each has a cut-down here:
+- **A module augmentation of a re-exported interface, cloned twice** (-TS2339 at packages/function/src/api.ts:38-39,
+  root project). The root sst-env.d.ts augments `"sst"` (`declare module "sst" { interface Resource {...} }` plus
+  `import "sst"; export {}`), where `Resource` is `export { Resource } from "./resource/index.js"`.
+  packages/stats/app/src/resource.d.ts augments `"sst/resource"` (`export *` from node.js). In tsgo's
+  mergeModuleAugmentation, the `export *` module merges its augmentation into a clone of node.ts's Resource. The `"sst"`
+  one resolves the alias to that clone and clones it again (mergeSymbol: a non-transient target is replaced by a clone
+  of its resolved symbol). getMergedSymbol is one level deep, so node.ts's `declare const Resource: Resource` sees the
+  first clone: B's members, not A's. tttt merges both. Repro (tsgo: TS2339 'A' with the second augmentation, none
+  without it): node_modules/sst with `exports` `.` -> dist/index (`export { Resource } from "./resource/index.js"`) and
+  `./resource` -> dist/resource/index (`export * from "./node.js"`); node.d.ts has `export interface Resource extends
+  Base {}` and `export declare const Resource: Resource`; env.d.ts has `declare module "sst" { export interface Resource
+  { A: ... } } import "sst"; export {}`; stats.d.ts has `import "sst/resource"; declare module "sst/resource" { export
+  interface Resource { B: ... } }`; a.ts reads `Resource.A.value`. Longstanding tsc behavior (Strada has the same
+  clone), so it would be emulated in the binder's augmentation merge. [open]
+- **The return type of a failed generic call** (-TS2322 at core/test/effect/layer-node/node-build.test.ts:49,
+  tsconfig.tests.json). `Node.makeGlobalNode({ service, layer: Layer.effect(Result, Effect.as(<any>, ...)), deps:
+  [<any>] })` fails its `layer: Implementation & CheckLayer<NoInfer<Implementation>>` check with Implementation =
+  Layer.Any in both checkers. tsgo then returns `Provider<never, ...>` (LayerOutput<Any>); tttt's overload-failure
+  re-inference (call.c, make_candidate with skip flags) gets `Provider<Result, ...>`, so the next node's deps check
+  doesn't fail. It reproduces with /tmp probes extending the tests config (an inline `Layer.effect(...)` argument and
+  an `any` dep are both needed). The self-contained mimic (n3-style const type params, an intersection with
+  NoInfer checks) doesn't reproduce yet. [open]
+- **JSX children elaboration under a generic target** (typewriter.tsx:52, root project). tsgo reports TS2746
+  (several children for `(IntrinsicAttributes & DynamicProps<"p" | T, ...>)["children"]`); tttt took the elementwise
+  path (is_iterable_like of the deferred indexed access) and reported TS2322. In the root project, JSX is React's while
+  the components are solid's. [open]
+- **starlight schema.ts:119**: tsgo TS5114 ("Instantiations of type 'ZodType' appear infinitely circular"), tttt
+  TS2589. This is the instantiation-limit family (bugs/tsgo_divergences.md, MEMBERS nesting). [open]
+- A union member a non-generic alias names prints as the alias in tttt's error heads (`S` for `S | undefined`, `type S
+  = readonly {...}[]`) and expanded in tsgo's. [open]
