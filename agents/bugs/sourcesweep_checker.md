@@ -390,3 +390,21 @@ rest element; a spread instantiated to `undefined`). Left:
 - **node-pg-migrate docs TS2741 text**: `import * as typescript from 'typescript'` in a .d.mts of a CommonJS .d.cts
   is a clone module type that tsgo prints `typeof import("<path>/lib/version")`; tttt prints the namespace symbol's
   name, `typeof typescript` (also under node16-nodenext: make_gather_target's synthetic-default namespace symbol).
+
+## pothos's TS7023: the variance measurement re-entering an own return type (2026-10-23, corF)
+-TS7023 at pothos/packages/plugin-smart-subscriptions/src/cache-node.ts:41 (`managerForField`), only in
+pothos/tsconfig.eslint.json, where packages/core/src is in the program. The known-failing
+test/cases/ttttVarianceReentersOwnReturnType.ts reproduces it in 12 lines. tsgo checks the method body before asking
+for its return type. `new FSM(this)` infers from `this` to CacheNode<T>, which needs CacheNode's variances. The
+outermost measurement compares CacheNode<sub> with CacheNode<super>, and through FSM's `cacheNode` gets back to
+CacheNode's members. managerForField's return type is then asked for below the variance barrier (reentrytrace: REENTER
+3 variance x2, RETINFLIGHT variance, NESTEDCALL x2). That nested resolution checks `return this.fieldManager`, whose
+assignment narrowing re-resolves the call (nested). One more level down, the return type is pushed again above the
+barrier and the cycle is found: TS7023, `() => any`. tttt resolves the call once (`NESTEDCALL 1`), never re-enters
+the return type below the variance barrier, and gets FSM<Types>. Small details flip tsgo's outcome:
+- `x!: Types` as CacheNode's first property: no TS7023.
+- Explicit `new FSM<Types>(this)`: none.
+- In the multi-file form, the order of the files decides it.
+That makes this the "Outstanding stages" C/D model of agents/notes/reentrancy.md (nested call results superseding,
+return contexts pulled), plus return types re-entering below the variance barrier, not a local fix. Left for that
+rework. While reducing it I found and fixed scripts/reentrytrace.py's tsgo overlay: `Symbol.Name` is a method now.

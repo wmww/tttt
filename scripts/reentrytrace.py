@@ -56,10 +56,10 @@ var ttttMembers = map[*Type]int{}
 func ttttEntity(e TypeSystemEntity) string {
 	switch v := e.(type) {
 	case *ast.Symbol:
-		return "sym:" + v.Name
+		return "sym:" + v.Name()
 	case *Type:
 		if v.symbol != nil {
-			return fmt.Sprintf("type#%d:%s", v.id, v.symbol.Name)
+			return fmt.Sprintf("type#%d:%s", v.id, v.symbol.Name())
 		}
 		return fmt.Sprintf("type#%d", v.id)
 	case *Signature:

@@ -1,0 +1,22 @@
+ttttVarianceReentersOwnReturnType.ts(7,3): error TS7023: 'managerForField' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+
+
+==== ttttVarianceReentersOwnReturnType.ts (1 errors) ====
+    // Known failing (agents/bugs/sourcesweep_checker.md "pothos's TS7023"): tsgo checks the body first, and the call's
+    // inference from `this` to CacheNode<T> measures CacheNode's variance, which compares managerForField's type: its return
+    // type is asked for below the variance barrier, re-enters the same call nested and, a level further, finds the
+    // cycle: TS7023 and `() => any`. tttt gets FSM<Types> (pothos plugin-smart-subscriptions' cache-node.ts:41)
+    class CacheNode<Types> {
+      fieldManager: FSM<Types> | null = null;
+      managerForField() {
+      ~~~~~~~~~~~~~~~
+!!! error TS7023: 'managerForField' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+        this.fieldManager = new FSM(this);
+        return this.fieldManager;
+      }
+    }
+    class FSM<Types> {
+      cacheNode!: CacheNode<Types>;
+      constructor(cacheNode: CacheNode<Types>) {}
+    }
+    

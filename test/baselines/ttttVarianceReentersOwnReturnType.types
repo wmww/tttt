@@ -1,0 +1,41 @@
+//// [test/cases/ttttVarianceReentersOwnReturnType.ts] ////
+
+=== ttttVarianceReentersOwnReturnType.ts ===
+// Known failing (agents/bugs/sourcesweep_checker.md "pothos's TS7023"): tsgo checks the body first, and the call's
+// inference from `this` to CacheNode<T> measures CacheNode's variance, which compares managerForField's type: its return
+// type is asked for below the variance barrier, re-enters the same call nested and, a level further, finds the
+// cycle: TS7023 and `() => any`. tttt gets FSM<Types> (pothos plugin-smart-subscriptions' cache-node.ts:41)
+class CacheNode<Types> {
+>CacheNode : CacheNode<Types>
+
+  fieldManager: FSM<Types> | null = null;
+>fieldManager : FSM<Types> | null
+
+  managerForField() {
+>managerForField : () => any
+
+    this.fieldManager = new FSM(this);
+>this.fieldManager = new FSM(this) : FSM<Types>
+>this.fieldManager : FSM<Types> | null
+>this : this
+>fieldManager : FSM<Types> | null
+>new FSM(this) : FSM<Types>
+>FSM : typeof FSM
+>this : this
+
+    return this.fieldManager;
+>this.fieldManager : FSM<Types>
+>this : this
+>fieldManager : FSM<Types>
+  }
+}
+class FSM<Types> {
+>FSM : FSM<Types>
+
+  cacheNode!: CacheNode<Types>;
+>cacheNode : CacheNode<Types>
+
+  constructor(cacheNode: CacheNode<Types>) {}
+>cacheNode : CacheNode<Types>
+}
+

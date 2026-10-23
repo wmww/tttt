@@ -1,0 +1,47 @@
+//// [test/cases/ttttVarianceReentersOwnReturnType.ts] ////
+
+=== ttttVarianceReentersOwnReturnType.ts ===
+// Known failing (agents/bugs/sourcesweep_checker.md "pothos's TS7023"): tsgo checks the body first, and the call's
+// inference from `this` to CacheNode<T> measures CacheNode's variance, which compares managerForField's type: its return
+// type is asked for below the variance barrier, re-enters the same call nested and, a level further, finds the
+// cycle: TS7023 and `() => any`. tttt gets FSM<Types> (pothos plugin-smart-subscriptions' cache-node.ts:41)
+class CacheNode<Types> {
+>CacheNode : Symbol(CacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 0, 0))
+>Types : Symbol(Types, Decl(ttttVarianceReentersOwnReturnType.ts, 4, 16))
+
+  fieldManager: FSM<Types> | null = null;
+>fieldManager : Symbol(CacheNode.fieldManager, Decl(ttttVarianceReentersOwnReturnType.ts, 4, 24))
+>FSM : Symbol(FSM, Decl(ttttVarianceReentersOwnReturnType.ts, 10, 1))
+>Types : Symbol(Types, Decl(ttttVarianceReentersOwnReturnType.ts, 4, 16))
+
+  managerForField() {
+>managerForField : Symbol(CacheNode.managerForField, Decl(ttttVarianceReentersOwnReturnType.ts, 5, 41))
+
+    this.fieldManager = new FSM(this);
+>this.fieldManager : Symbol(CacheNode.fieldManager, Decl(ttttVarianceReentersOwnReturnType.ts, 4, 24))
+>this : Symbol(CacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 0, 0))
+>fieldManager : Symbol(CacheNode.fieldManager, Decl(ttttVarianceReentersOwnReturnType.ts, 4, 24))
+>FSM : Symbol(FSM, Decl(ttttVarianceReentersOwnReturnType.ts, 10, 1))
+>this : Symbol(CacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 0, 0))
+
+    return this.fieldManager;
+>this.fieldManager : Symbol(CacheNode.fieldManager, Decl(ttttVarianceReentersOwnReturnType.ts, 4, 24))
+>this : Symbol(CacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 0, 0))
+>fieldManager : Symbol(CacheNode.fieldManager, Decl(ttttVarianceReentersOwnReturnType.ts, 4, 24))
+  }
+}
+class FSM<Types> {
+>FSM : Symbol(FSM, Decl(ttttVarianceReentersOwnReturnType.ts, 10, 1))
+>Types : Symbol(Types, Decl(ttttVarianceReentersOwnReturnType.ts, 11, 10))
+
+  cacheNode!: CacheNode<Types>;
+>cacheNode : Symbol(FSM.cacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 11, 18))
+>CacheNode : Symbol(CacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 0, 0))
+>Types : Symbol(Types, Decl(ttttVarianceReentersOwnReturnType.ts, 11, 10))
+
+  constructor(cacheNode: CacheNode<Types>) {}
+>cacheNode : Symbol(cacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 13, 14))
+>CacheNode : Symbol(CacheNode, Decl(ttttVarianceReentersOwnReturnType.ts, 0, 0))
+>Types : Symbol(Types, Decl(ttttVarianceReentersOwnReturnType.ts, 11, 10))
+}
+
