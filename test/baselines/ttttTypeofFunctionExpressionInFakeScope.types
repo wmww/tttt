@@ -1,0 +1,61 @@
+//// [test/cases/ttttTypeofFunctionExpressionInFakeScope.ts] ////
+
+=== ttttTypeofFunctionExpressionInFakeScope.ts ===
+// A function expression of a top-level variable, met again inside its own inferred type, is `typeof v` where tsgo's
+// enterNewScope made a fake scope the enclosing declaration (a signature with parameters or type parameters on the
+// way, or a mapped type): only directly in the variable's own declaration is it the cyclic structure (TS5088).
+// opencode's packages/ai: `export const configure = (input: Config) => { ...; return { ..., configure } }`
+export const configure = (input: string) => {
+>configure : (input: string) => { chat: (id: string) => string; configure: typeof configure; }
+>(input: string) => {    const chat = (id: string) => id + input;    return { chat, configure };} : (input: string) => { chat: (id: string) => string; configure: typeof configure; }
+>input : string
+
+    const chat = (id: string) => id + input;
+>chat : (id: string) => string
+>(id: string) => id + input : (id: string) => string
+>id : string
+>id + input : string
+>id : string
+>input : string
+
+    return { chat, configure };
+>{ chat, configure } : { chat: (id: string) => string; configure: (input: string) => { chat: (id: string) => string; configure: typeof configure; }; }
+>chat : (id: string) => string
+>configure : (input: string) => { chat: (id: string) => string; configure: typeof configure; }
+
+};
+export var x = function somefn(a: number) { return somefn; };
+>x : (a: number) => typeof x
+>function somefn(a: number) { return somefn; } : (a: number) => typeof x
+>somefn : (a: number) => typeof x
+>a : number
+>somefn : (a: number) => typeof x
+
+export const y = () => ({ f: (q: number) => y });
+>y : () => { f: (q: number) => typeof y; }
+>() => ({ f: (q: number) => y }) : () => { f: (q: number) => typeof y; }
+>({ f: (q: number) => y }) : { f: (q: number) => () => { f: (q: number) => typeof y; }; }
+>{ f: (q: number) => y } : { f: (q: number) => () => { f: (q: number) => typeof y; }; }
+>f : (q: number) => () => { f: (q: number) => typeof y; }
+>(q: number) => y : (q: number) => () => { f: (q: number) => typeof y; }
+>q : number
+>y : () => { f: (q: number) => typeof y; }
+
+export const w = <T,>() => [w];
+>w : <T>() => (typeof w)[]
+><T,>() => [w] : <T>() => (typeof w)[]
+>[w] : (<T>() => any)[]
+>w : <T>() => (typeof w)[]
+
+export const b1 = () => { return { b1 }; };
+>b1 : () => { b1: typeof b1; }
+>() => { return { b1 }; } : () => { b1: typeof b1; }
+>{ b1 } : { b1: () => { b1: typeof b1; }; }
+>b1 : () => { b1: typeof b1; }
+
+export const d5 = function () { return { d5 }; };
+>d5 : () => { d5: typeof d5; }
+>function () { return { d5 }; } : () => { d5: typeof d5; }
+>{ d5 } : { d5: () => { d5: typeof d5; }; }
+>d5 : () => { d5: typeof d5; }
+

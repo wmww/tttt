@@ -178,6 +178,8 @@ typedef struct Walk {
     // Walking an object literal's members (tsgo's pseudoTypeToNode sets InObjectTypeLiteral): `this` printed there is
     // inaccessible (TS2527)
     bool in_object_literal;
+    // Inside a pseudo signature with parameters or type parameters (TyDisplay.fake_scope: tsgo's enterNewScope)
+    bool fake_scope;
     // The diagnostics reported since this index are of the declaration being emitted (tsc deduplicates them)
     isize_t emitting_errors;
     DeclTracker tracker;
@@ -587,6 +589,7 @@ static void print_type(Walk* me, Ty const* type, bool reports) {
     ty_display(my checker, (TyDisplay){
         .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker, .at = my emitting.name,
         .suppress_fallback = !reports, .in_object_literal = my in_object_literal, .param_names = &names,
+        .fake_scope = my fake_scope,
     }, type);
     ty_param_names_drop(&names);
     if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
@@ -1581,12 +1584,16 @@ static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
         case PSEUDO_TUPLE:
             for (u32 i = 0; i < pseudo->count; i++) pseudo_to_node(me, pseudo->types[i]);
             return;
-        case PSEUDO_SIGNATURE:
+        case PSEUDO_SIGNATURE: {
             reuse_signature(me, pseudo->function);
+            bool outer_fake_scope = my fake_scope;
+            if (pseudo->count || vec_generic_item_size(&pseudo->function->generic.items)) my fake_scope = true;
             pseudo_params_to_node(me, pseudo->params, pseudo->count);
             // (An arrow function's expression body has the function as its parent)
             pseudo_to_node_in(me, pseudo->ret, nullptr, pseudo->function->expression_body ? pseudo->function : nullptr, true);
+            my fake_scope = outer_fake_scope;
             return;
+        }
         case PSEUDO_OBJECT: {
             bool outer_in_object = my in_object_literal;
             my in_object_literal = true;
@@ -1597,10 +1604,17 @@ static void pseudo_to_node(Walk* me, Pseudo const* pseudo) {
                     check_entity_expression(me, member->item->computed_key);
                 }
                 if (member->function) reuse_signature(me, member->function);
+                bool outer_fake_scope = my fake_scope;
+                if (member->kind == PSEUDO_MEMBER_METHOD && member->function &&
+                    (member->param_count || vec_generic_item_size(&member->function->generic.items))
+                ) {
+                    my fake_scope = true;
+                }
                 pseudo_params_to_node(me, member->params, member->param_count);
                 bool property = member->kind == PSEUDO_MEMBER_PROPERTY && member->item->tag == OBJECT_ITEM_PROPERTY;
                 bool in_return = member->kind == PSEUDO_MEMBER_METHOD || member->kind == PSEUDO_MEMBER_GETTER;
                 if (member->type) pseudo_to_node_in(me, member->type, property ? member->item : nullptr, nullptr, in_return);
+                my fake_scope = outer_fake_scope;
             }
             my in_object_literal = outer_in_object;
             return;

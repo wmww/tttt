@@ -3351,6 +3351,10 @@ typedef struct TyDisplay {
     // printed inside doesn't report to the tracker again
     bool suppress_fallback;
     bool in_object_literal; // Inside a type literal's members (tsc's InObjectTypeLiteral): `this` can't be written there
+    // Inside a signature with parameters or type parameters, or a mapped type: tsgo's enterNewScope made a fake scope the
+    // enclosing declaration, so a function expression met inside its own variable's type is `typeof v` there
+    // (shouldWriteTypeOfFunctionSymbol: the variable's declaration is no longer the enclosing one)
+    bool fake_scope;
     // The parameters of the signatures being printed (innermost first): the fake scope tsc's enterNewScope makes for a
     // signature, where a reused `typeof x` must still mean the same (see name_accessible())
     struct TyDisplayParams const* printed_params;

@@ -4343,6 +4343,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         .function = function, .outer = d.printed_params, .serial = d.printed ? ++d.printed->serial : 0,
     };
     if (d.types_baseline || d.reuse_nodes) d.printed_params = &printed;
+    if (root->function && (param_count || sig_res(me, sig)->type_params.len)) d.fake_scope = true;
     // (tsc's signatureToSignatureDeclarationHelper makes the parameters' nodes before the `this` parameter's: a
     // message counts their length first, so a long `this` type is what gets cut short, `Record<...>`. Printed in
     // place afterwards; not where positions are mapped or comments copied)
@@ -4794,6 +4795,7 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     cstr constraint_text = cstr_null;
     TyDisplay cd = d;
     cd.target = &constraint_text;
+    d.fake_scope = true; // (Its type parameter's scope, after the constraint)
     if (wrapper) {
         TyDisplay fresh = reused_if(cd, false);
         if (keyof_wrapper) out(fresh, c_sv("keyof "));
@@ -5701,6 +5703,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
             TyDisplayParams printed = { .params = sig ? sig_res(me, sig)->params : nullptr, .count = sig ? sig_res(me, sig)->param_count : 0,
                 .function = pseudo->function, .outer = d.printed_params, .serial = d.printed ? ++d.printed->serial : 0 };
             if (sig) sig_d.printed_params = &printed;
+            if (pseudo->count || vec_generic_item_size(&pseudo->function->generic.items)) sig_d.fake_scope = true;
             u32 saved = param_names_enter(sig_d); // (Its type parameters are its own: a sibling may reuse their names)
             display_node_type_params(me, sig_d, &pseudo->function->generic);
             display_pseudo_params(me, sig_d, pseudo->params, pseudo->count, sig);
@@ -5756,6 +5759,7 @@ static void display_pseudo(Checker* me, TyDisplay d, Pseudo const* pseudo, Ty co
                             .function = member->function, .outer = member_d.printed_params,
                             .serial = member_d.printed ? ++member_d.printed->serial : 0 };
                         if (sig) method_d.printed_params = &printed;
+                        if (member->param_count || vec_generic_item_size(&member->function->generic.items)) method_d.fake_scope = true;
                         display_node_type_params(me, method_d, &member->function->generic);
                         display_pseudo_params(me, method_d, member->params, member->param_count, sig);
                         out(method_d, is_const ? c_sv(" => ") : c_sv(": "));
@@ -6398,6 +6402,10 @@ static Symbol const* anonymous_type_query(TyDisplay d, Ty const* ty, csview* mem
         FunctionImpl const* impl = ty->anonymous.function;
         Symbol const* named = impl->symbol && is_non_local_function(impl->symbol) ? impl->symbol :
             function_impl_rare(impl)->top_level_variable;
+        // (A function expression's variable is named in its own declaration too from a fake scope: tsgo's
+        // shouldWriteTypeOfFunctionSymbol takes the variable's symbol where its declaration isn't the enclosing one)
+        bool variable = named && named == function_impl_rare(impl)->top_level_variable;
+        if (variable && d.fake_scope && d.tracker && d.enclosing && symbol_value_accessible_at(d.enclosing, named)) return named;
         if (typeof_function_in_declaration(d, named)) return named;
     }
     if (!ty->anonymous.function && !ty->anonymous.is_reverse &&
@@ -7306,12 +7314,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     bool here = span_valid(d.at) && (span_eq(d.at, own) || span_contains_span(d.at, expression->full_span));
                     // (Declaration emit can't name the function expression from its variable's declaration: the
                     // structural fallback, which is the cyclic placeholder, tsgo's shouldWriteTypeOfFunctionSymbol)
-                    if (here && d.tracker) {
+                    if (here && d.tracker && !d.fake_scope) {
                         d.tracker->report(d.tracker, DECL_REPORT_CYCLIC, c_sv(""));
                         out_elided(d); // (A message\'s cyclic structure placeholder is `...`: tsc\'s createElidedInformationPlaceholder)
                         return;
                     }
-                    if (here && span_valid(expression->name) && expression->symbol) out(d, span_sv(expression->name));
+                    // (Declaration emit names the variable from a fake scope too: tsgo's shouldWriteTypeOfFunctionSymbol takes
+                    // the variable's symbol wherever its declaration isn't the enclosing one)
+                    if (here && !d.tracker && span_valid(expression->name) && expression->symbol) out(d, span_sv(expression->name));
                     else out_symbol_name(me, d, variable, SYMBOL_VALUE);
                     return;
                 }

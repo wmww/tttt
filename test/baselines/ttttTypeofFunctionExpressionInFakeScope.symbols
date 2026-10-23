@@ -1,0 +1,47 @@
+//// [test/cases/ttttTypeofFunctionExpressionInFakeScope.ts] ////
+
+=== ttttTypeofFunctionExpressionInFakeScope.ts ===
+// A function expression of a top-level variable, met again inside its own inferred type, is `typeof v` where tsgo's
+// enterNewScope made a fake scope the enclosing declaration (a signature with parameters or type parameters on the
+// way, or a mapped type): only directly in the variable's own declaration is it the cyclic structure (TS5088).
+// opencode's packages/ai: `export const configure = (input: Config) => { ...; return { ..., configure } }`
+export const configure = (input: string) => {
+>configure : Symbol(configure, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 4, 12))
+>input : Symbol(input, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 4, 26))
+
+    const chat = (id: string) => id + input;
+>chat : Symbol(chat, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 5, 9))
+>id : Symbol(id, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 5, 18))
+>id : Symbol(id, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 5, 18))
+>input : Symbol(input, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 4, 26))
+
+    return { chat, configure };
+>chat : Symbol(chat, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 6, 12))
+>configure : Symbol(configure, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 6, 18))
+
+};
+export var x = function somefn(a: number) { return somefn; };
+>x : Symbol(x, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 8, 10))
+>somefn : Symbol(somefn, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 8, 14))
+>a : Symbol(a, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 8, 31))
+>somefn : Symbol(somefn, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 8, 14))
+
+export const y = () => ({ f: (q: number) => y });
+>y : Symbol(y, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 9, 12))
+>f : Symbol(f, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 9, 25))
+>q : Symbol(q, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 9, 30))
+>y : Symbol(y, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 9, 12))
+
+export const w = <T,>() => [w];
+>w : Symbol(w, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 10, 12))
+>T : Symbol(T, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 10, 18))
+>w : Symbol(w, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 10, 12))
+
+export const b1 = () => { return { b1 }; };
+>b1 : Symbol(b1, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 11, 12))
+>b1 : Symbol(b1, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 11, 34))
+
+export const d5 = function () { return { d5 }; };
+>d5 : Symbol(d5, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 12, 12))
+>d5 : Symbol(d5, Decl(ttttTypeofFunctionExpressionInFakeScope.ts, 12, 40))
+

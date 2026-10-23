@@ -175,3 +175,6 @@ intersection's property symbol to bugs/type_core.md.
   extends keyof M>(t, "ev", h)` over a 33-branch MapOf had K's constraint `keyof M` come out never (TS2345), though
   `<T, M extends MapOf<T>>(t: T): M` inferred M right. So the unknown fallback is not just conservative: a chain of 65
   `infer`s or 33 outer type parameters still takes it. [open]
+- `export const g = (h = g) => 1` (declaration emit on): tsgo reports TS7022 on g (the parameter's default reads g
+  while g is in flight); tttt reports nothing (before 2026-10-23 it reported TS5088 instead). A circularity through a
+  parameter initializer of the variable's own function expression. [open]
