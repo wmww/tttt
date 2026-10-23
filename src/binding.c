@@ -550,7 +550,12 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
     if (my default_value) {
         Ty const* default_type = ty_binding_default_type(current_checker, me);
         expr_typecheck(my default_value, errs);
-        if ((my tag == BINDING_ARRAY || my tag == BINDING_OBJECT) && binding_is_parameter(me)) {
+        // (Only where the default makes the element's type: an element of an any pattern is any, its default
+        // unread, tsc's getBindingElementTypeFromParentType returning the any parent type before
+        // checkDeclarationInitializer pads it: `({ t: { n } = {} }) => {}` contextually typed by `(o: any) => void`)
+        bool any_parent = my parent &&
+            (ty_binding_type(current_checker, my parent, (LowerCtx){ .generic = true })->flags & TYF_ANY);
+        if ((my tag == BINDING_ARRAY || my tag == BINDING_OBJECT) && binding_is_parameter(me) && !any_parent) {
             binding_add_padded_implicit_any_errors(me, default_type, errs);
         }
         // An element's default is assigned to the element (tsc's checkVariableLikeDeclaration: the initializer of the

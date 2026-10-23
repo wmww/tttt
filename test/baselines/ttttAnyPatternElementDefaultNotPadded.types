@@ -1,0 +1,60 @@
+//// [test/cases/ttttAnyPatternElementDefaultNotPadded.ts] ////
+
+=== ttttAnyPatternElementDefaultNotPadded.ts ===
+// An element of a pattern whose type is any is any: its default `{}` isn't read, so it isn't padded with the
+// nested pattern's names, which then aren't implicitly any (tsc's getBindingElementTypeFromParentType returns the
+// any parent type first). pothos's plugin-with-input fieldWithInput, whose options type was an unresolved any
+declare let fn: (options: any) => void;
+>fn : (options: any) => void
+>options : any
+
+fn = function ({ typeOptions: { name: typeName, ...rest } = {}, argOptions: { name: argName = 'input', ...a2 } = {}, input }) {
+>fn = function ({ typeOptions: { name: typeName, ...rest } = {}, argOptions: { name: argName = 'input', ...a2 } = {}, input }) {  typeName;} : ({ typeOptions: { name: typeName, ...rest }, argOptions: { name: argName, ...a2 }, input }: any) => void
+>fn : (options: any) => void
+>function ({ typeOptions: { name: typeName, ...rest } = {}, argOptions: { name: argName = 'input', ...a2 } = {}, input }) {  typeName;} : ({ typeOptions: { name: typeName, ...rest }, argOptions: { name: argName, ...a2 }, input }: any) => void
+>typeOptions : any
+>name : any
+>typeName : any
+>rest : any
+>{} : {}
+>argOptions : any
+>name : any
+>argName : any
+>'input' : "input"
+>a2 : any
+>{} : {}
+>input : any
+
+  typeName;
+>typeName : any
+
+};
+const h2: (options: any) => void = ({ t: { n, ...r } = {} }) => n;
+>h2 : (options: any) => void
+>options : any
+>({ t: { n, ...r } = {} }) => n : ({ t: { n, ...r } }: any) => any
+>t : any
+>n : any
+>r : any
+>{} : {}
+>n : any
+
+// (Not an any parent: padded, TS7031)
+const h: (options: { t: any }) => void = ({ t: { n } = {} }) => n;
+>h : (options: { t: any; }) => void
+>options : { t: any; }
+>t : any
+>({ t: { n } = {} }) => n : ({ t: { n } }: { t: any; }) => any
+>t : any
+>n : any
+>{} : {}
+>n : any
+
+const g: (options: any) => void = ({ n } = {}) => n;
+>g : (options: any) => void
+>options : any
+>({ n } = {}) => n : ({ n }?: any) => any
+>n : any
+>{} : {}
+>n : any
+
