@@ -1,0 +1,81 @@
+//// [test/cases/ttttContextualReturnNotOnStack.ts] ////
+
+=== ttttContextualReturnNotOnStack.ts ===
+// IQux is first asked inside Qux's call (tsc checks the alias's type arguments before the reference): the call's
+// inference reaches QuxRepository's base, IQux, typeof Qux, and Qux again below the call's barrier. The nested
+// resolution of the same call asks for `() => QuxRepository`'s return type, which the outer contextual check is
+// inferring: tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod does that without pushTypeResolution, so
+// it is inferred again rather than a cycle (TS2456/TS7022/TS7023 otherwise; mikro-orm tests/defineEntity.test.ts)
+declare class EntityRepository<T> { entity: T }
+>EntityRepository : EntityRepository<T>
+>entity : T
+
+type Constructor<T> = new (...args: any[]) => T
+>Constructor : Constructor<T>
+>args : any[]
+
+declare function defineEntity<P, R = never>(meta: {
+>defineEntity : <P, R = never>(meta: { name: string; repository?: () => R; properties: P; }) => { properties: P; repository: R; }
+>meta : { name: string; repository?: () => R; properties: P; }
+
+  name: string
+>name : string
+
+  repository?: () => R
+>repository : (() => R) | undefined
+
+  properties: P
+>properties : P
+
+}): { properties: P; repository: R }
+>properties : P
+>repository : R
+
+type InferEntity<S> = S extends { properties: infer P } ? P : never
+>InferEntity : InferEntity<S>
+>properties : P
+
+export function test() {
+>test : () => { properties: { id: number; title: string; }; repository: typeof QuxRepository; }
+
+  type IQux = InferEntity<typeof Qux>
+>IQux : { id: number; title: string; }
+>Qux : { properties: { id: number; title: string; }; repository: typeof QuxRepository; }
+
+  class QuxRepository extends EntityRepository<IQux> {
+>QuxRepository : QuxRepository
+>EntityRepository : EntityRepository<{ id: number; title: string; }>
+
+    another(): string { return "x" }
+>another : () => string
+>"x" : "x"
+  }
+
+  const Qux = defineEntity({
+>Qux : { properties: { id: number; title: string; }; repository: typeof QuxRepository; }
+>defineEntity({    name: "Qux",    repository: () => QuxRepository,    properties: { id: 1, title: "" },  }) : { properties: { id: number; title: string; }; repository: typeof QuxRepository; }
+>defineEntity : <P, R = never>(meta: { name: string; repository?: () => R; properties: P; }) => { properties: P; repository: R; }
+>{    name: "Qux",    repository: () => QuxRepository,    properties: { id: 1, title: "" },  } : { name: string; repository: () => typeof QuxRepository; properties: { id: number; title: string; }; }
+
+    name: "Qux",
+>name : string
+>"Qux" : "Qux"
+
+    repository: () => QuxRepository,
+>repository : () => typeof QuxRepository
+>() => QuxRepository : () => typeof QuxRepository
+>QuxRepository : typeof QuxRepository
+
+    properties: { id: 1, title: "" },
+>properties : { id: number; title: string; }
+>{ id: 1, title: "" } : { id: number; title: string; }
+>id : number
+>1 : 1
+>title : string
+>"" : ""
+
+  })
+  return Qux
+>Qux : { properties: { id: number; title: string; }; repository: typeof QuxRepository; }
+}
+

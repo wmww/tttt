@@ -1,0 +1,89 @@
+//// [test/cases/ttttContextualReturnNotOnStack.ts] ////
+
+=== ttttContextualReturnNotOnStack.ts ===
+// IQux is first asked inside Qux's call (tsc checks the alias's type arguments before the reference): the call's
+// inference reaches QuxRepository's base, IQux, typeof Qux, and Qux again below the call's barrier. The nested
+// resolution of the same call asks for `() => QuxRepository`'s return type, which the outer contextual check is
+// inferring: tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod does that without pushTypeResolution, so
+// it is inferred again rather than a cycle (TS2456/TS7022/TS7023 otherwise; mikro-orm tests/defineEntity.test.ts)
+declare class EntityRepository<T> { entity: T }
+>EntityRepository : Symbol(EntityRepository, Decl(ttttContextualReturnNotOnStack.ts, 0, 0))
+>T : Symbol(T, Decl(ttttContextualReturnNotOnStack.ts, 5, 31))
+>entity : Symbol(EntityRepository.entity, Decl(ttttContextualReturnNotOnStack.ts, 5, 35))
+>T : Symbol(T, Decl(ttttContextualReturnNotOnStack.ts, 5, 31))
+
+type Constructor<T> = new (...args: any[]) => T
+>Constructor : Symbol(Constructor, Decl(ttttContextualReturnNotOnStack.ts, 5, 47))
+>T : Symbol(T, Decl(ttttContextualReturnNotOnStack.ts, 6, 17))
+>args : Symbol(args, Decl(ttttContextualReturnNotOnStack.ts, 6, 27))
+>T : Symbol(T, Decl(ttttContextualReturnNotOnStack.ts, 6, 17))
+
+declare function defineEntity<P, R = never>(meta: {
+>defineEntity : Symbol(defineEntity, Decl(ttttContextualReturnNotOnStack.ts, 6, 47))
+>P : Symbol(P, Decl(ttttContextualReturnNotOnStack.ts, 7, 30))
+>R : Symbol(R, Decl(ttttContextualReturnNotOnStack.ts, 7, 32))
+>meta : Symbol(meta, Decl(ttttContextualReturnNotOnStack.ts, 7, 44))
+
+  name: string
+>name : Symbol(name, Decl(ttttContextualReturnNotOnStack.ts, 7, 51))
+
+  repository?: () => R
+>repository : Symbol(repository, Decl(ttttContextualReturnNotOnStack.ts, 8, 14))
+>R : Symbol(R, Decl(ttttContextualReturnNotOnStack.ts, 7, 32))
+
+  properties: P
+>properties : Symbol(properties, Decl(ttttContextualReturnNotOnStack.ts, 9, 22))
+>P : Symbol(P, Decl(ttttContextualReturnNotOnStack.ts, 7, 30))
+
+}): { properties: P; repository: R }
+>properties : Symbol(properties, Decl(ttttContextualReturnNotOnStack.ts, 11, 5))
+>P : Symbol(P, Decl(ttttContextualReturnNotOnStack.ts, 7, 30))
+>repository : Symbol(repository, Decl(ttttContextualReturnNotOnStack.ts, 11, 20))
+>R : Symbol(R, Decl(ttttContextualReturnNotOnStack.ts, 7, 32))
+
+type InferEntity<S> = S extends { properties: infer P } ? P : never
+>InferEntity : Symbol(InferEntity, Decl(ttttContextualReturnNotOnStack.ts, 11, 36))
+>S : Symbol(S, Decl(ttttContextualReturnNotOnStack.ts, 12, 17))
+>S : Symbol(S, Decl(ttttContextualReturnNotOnStack.ts, 12, 17))
+>properties : Symbol(properties, Decl(ttttContextualReturnNotOnStack.ts, 12, 33))
+>P : Symbol(P, Decl(ttttContextualReturnNotOnStack.ts, 12, 51))
+>P : Symbol(P, Decl(ttttContextualReturnNotOnStack.ts, 12, 51))
+
+export function test() {
+>test : Symbol(test, Decl(ttttContextualReturnNotOnStack.ts, 12, 67))
+
+  type IQux = InferEntity<typeof Qux>
+>IQux : Symbol(IQux, Decl(ttttContextualReturnNotOnStack.ts, 14, 24))
+>InferEntity : Symbol(InferEntity, Decl(ttttContextualReturnNotOnStack.ts, 11, 36))
+>Qux : Symbol(Qux, Decl(ttttContextualReturnNotOnStack.ts, 21, 7))
+
+  class QuxRepository extends EntityRepository<IQux> {
+>QuxRepository : Symbol(QuxRepository, Decl(ttttContextualReturnNotOnStack.ts, 15, 37))
+>EntityRepository : Symbol(EntityRepository, Decl(ttttContextualReturnNotOnStack.ts, 0, 0))
+>IQux : Symbol(IQux, Decl(ttttContextualReturnNotOnStack.ts, 14, 24))
+
+    another(): string { return "x" }
+>another : Symbol(QuxRepository.another, Decl(ttttContextualReturnNotOnStack.ts, 17, 54))
+  }
+
+  const Qux = defineEntity({
+>Qux : Symbol(Qux, Decl(ttttContextualReturnNotOnStack.ts, 21, 7))
+>defineEntity : Symbol(defineEntity, Decl(ttttContextualReturnNotOnStack.ts, 6, 47))
+
+    name: "Qux",
+>name : Symbol(name, Decl(ttttContextualReturnNotOnStack.ts, 21, 28))
+
+    repository: () => QuxRepository,
+>repository : Symbol(repository, Decl(ttttContextualReturnNotOnStack.ts, 22, 16))
+>QuxRepository : Symbol(QuxRepository, Decl(ttttContextualReturnNotOnStack.ts, 15, 37))
+
+    properties: { id: 1, title: "" },
+>properties : Symbol(properties, Decl(ttttContextualReturnNotOnStack.ts, 23, 36))
+>id : Symbol(id, Decl(ttttContextualReturnNotOnStack.ts, 24, 17))
+>title : Symbol(title, Decl(ttttContextualReturnNotOnStack.ts, 24, 24))
+
+  })
+  return Qux
+>Qux : Symbol(Qux, Decl(ttttContextualReturnNotOnStack.ts, 21, 7))
+}
+

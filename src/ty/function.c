@@ -418,7 +418,7 @@ bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
     return in_flight;
 }
 
-static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer, bool isolate);
+static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer, bool isolate, bool contextual_check);
 
 // The inferred return type if it is known already (tsc's signature.resolvedReturnType), else null
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
@@ -440,24 +440,30 @@ bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
 }
 
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
-    return function_return_type(me, function, false, true);
+    return function_return_type(me, function, false, true, false);
 }
 
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
     my argument_return_depth++;
-    Ty const* ret = function_return_type(me, function, true, false);
+    Ty const* ret = function_return_type(me, function, true, false, true);
     my argument_return_depth--;
     return ret;
 }
 
 Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function) {
-    return function_return_type(me, function, true, true);
+    return function_return_type(me, function, true, true, false);
 }
 
 // The return type is inferred (any if it depended on itself, TS7023): the first inference to finish publishes it, a
 // nested one asked for from below a call's barrier included (tsc's `if signature.resolvedReturnType == nil`). The
 // record's word (plan 86 stage 4f): published when clean, this worker's own otherwise
-static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer, bool isolate) {
+// `contextual_check`: a function argument's first contextual check infers it (tsc's
+// contextuallyCheckFunctionExpressionOrObjectLiteralMethod calls getReturnTypeFromBody without pushTypeResolution):
+// it is on the resolution stack only as a RESOLVING_ARGUMENT_RETURN, which nothing finds as a cycle, so a request
+// meanwhile (getReturnTypeOfSignature) infers it again, nested, and that one is what a third request finds (mikro-orm's
+// `repository: () => QuxRepository` met again through the identity of its own type while defineEntity's call is
+// resolved again below its barrier)
+static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer, bool isolate, bool contextual_check) {
     if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
     if (!function->ret_explicit && function_impl_setter_type(function)) return ty_from_node(me, function_impl_setter_type(function), function_lower_ctx);
@@ -491,7 +497,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
                 // A function expression nothing has checked yet: its context root first, which may infer it too
                 // (ty_settle_function_context(): the inferred return type sees the contextual one the walk gives it,
                 // whoever asks first, another checker of the shared graph included)
-                if (function->context_root && ty_settle_function_context(me, function)) return function_return_type(me, function, keep_outer, isolate);
+                if (function->context_root && ty_settle_function_context(me, function)) return function_return_type(me, function, keep_outer, isolate, contextual_check);
                 break;
         }
     }
@@ -500,7 +506,10 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         return FR_TYPE(v);
     }
     u64 taint = sw_claim_fast(me, &memo->word, &memo->state);
-    ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
+    // (A contextual check nested in another of the same function is an ordinary inference: tsc's nested
+    // getReturnTypeOfSignature pushes)
+    contextual_check = contextual_check && !ty_in_flight_entry(me, RESOLVING_ARGUMENT_RETURN, function);
+    ty_resolving_push(me, contextual_check ? RESOLVING_ARGUMENT_RETURN : RESOLVING_FUNCTION_RETURN, function);
     // Self-contained (tsc's checkExpressionCached of the body), except for a function argument's contextual check
     // (ty_argument_return_type(): tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod infers it with the
     // argument's check mode, and checkExpressionCachedEx isolates only in CheckMode.Normal): a loop in progress around
@@ -522,7 +531,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     Ty const* type = infer_return_type(me, function);
     bool promise_missing = inferred_promise_missing;
     inferred_promise_missing = false;
-    bool circular = ty_resolving_pop(me);
+    bool circular = ty_resolving_pop(me) && !contextual_check;
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
     if (sw_mine_in_flight_fast(me, &memo->word, &memo->state)) {

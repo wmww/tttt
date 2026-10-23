@@ -54,7 +54,8 @@ with a different nested result; a 20-line `ba.ts` repro in bugs/sourcesweep_buil
 
 ## Experiments (reverted)
 1. Aliases re-entering below the call barrier too (tsc's rule): suite unchanged, mikro-orm/tests gained TS2456/TS7022/
-   TS7023 at defineEntity.test.ts:205-215 because of the then-present "once" flag. **Redone and kept 2026-10-23**
+   TS7023 at defineEntity.test.ts:205-215 because of the then-present "once" flag. **Landed 2026-10-23, with the two
+   order fixes it needed** (below)
    (opencode): `type P = Schema.Type<typeof P>` beside `const P = withStatics(s, { make: (input: Omit<P, "id">): P
    => ... })`. Reached from the alias first, P's call infers from the arrow, whose parameters meet the alias in flight
    below the call's barrier: tsgo re-enters (REENTER 2 call, instrumented), while tttt made the alias the error type for
@@ -66,7 +67,18 @@ with a different nested result; a 20-line `ba.ts` repro in bugs/sourcesweep_buil
    backstop in prop_type_slow() returned circular for `PluginInternal.list` (so the call `PluginInternal.list()` was
    any and the supervisor got TS7006/TS2322) only when location-service-map.ts came first. Raised to 16 (64 gave byte-identical output on opencode, mikro-orm and crawlee); tsgo has no
    bound. TTTT_CHECK_ONLY=src/location-service-map.ts,src/plugin/supervisor.ts at --checkers 1 in packages/core was
-   the recipe.
+   the recipe. mikro-orm/tests regressed again (TS2456/TS7022/TS7023 at defineEntity.test.ts:205-215), without any
+   "once" flag: (1) tsc's checkTypeReferenceNode checks type arguments before resolving the reference, so `type IQux =
+   InferEntity<typeof Qux>` evaluates Qux first and IQux is first asked inside Qux's call (tttt resolved the alias
+   first; identifier_type_typecheck_args() now runs first); (2) the nested resolution of defineEntity's call (below its
+   barrier, after IQux -> typeof Qux re-entered Qux) asks, through an identity relation in inference, for the return
+   type of `repository: () => QuxRepository`, which the outer contextual check is inferring. tsc's
+   contextuallyCheckFunctionExpressionOrObjectLiteralMethod calls getReturnTypeFromBody without pushTypeResolution,
+   so the request infers it again, nested; tttt's ty_argument_return_type() pushed RESOLVING_FUNCTION_RETURN and found
+   the cycle above the barrier. Now the contextual check doesn't push, and a return in flight with no stack entry
+   re-enters (test/cases/ttttContextualReturnNotOnStack.ts). (2) alone fixes the reduced case and mikro-orm; (1) is
+   tsc's order. Found by an instrumented tsgo printing every pushTypeResolution cycle and below-barrier re-entry with
+   Go stacks (a small overlay of checker.go, built with GOCACHE outside /tmp).
 2. The outermost variance measurement moving `resolving_start` for declarations and returns too: loses
    classVarianceResolveCircularity2's TS7022 (the nested call and variance paths differ).
 Lesson: the pieces only work together; generalizing one site's rule while the others keep their approximations moves

@@ -2663,6 +2663,10 @@ Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function); /
 typedef enum ResolvingKind {
     RESOLVING_DECLARATION, // A LazyType of a declaration
     RESOLVING_FUNCTION_RETURN,
+    // A function argument's return type inferred by its contextual check (ty_argument_return_type()): tsc's
+    // getReturnTypeFromBody pushes nothing, so nothing looks for it as a cycle; it only stops a second contextual check
+    // from going without an entry too (that one is a RESOLVING_FUNCTION_RETURN)
+    RESOLVING_ARGUMENT_RETURN,
     RESOLVING_PROP,
     RESOLVING_ALIAS,
     RESOLVING_BINDING, // An annotated Binding, or an identifier in a pattern (see ty_binding_type())
