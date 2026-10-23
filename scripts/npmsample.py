@@ -7,7 +7,8 @@ by tsgo and tttt, and every difference is a tttt bug (or a formatting-only one, 
   scripts/npmsample.py --seed S [-N 50]       # sample, setup, compare, clean: the whole batch
   scripts/npmsample.py sample --seed S [-n 2000]   # test/npmsample/S.candidates.jsonl (TS packages, GitHub repos)
   scripts/npmsample.py setup --seed S [-N 50]      # clone + install + bench config + tsgo trial, resumable
-  scripts/npmsample.py compare --seed S [--last] [-k CODE] [--no-threads1]
+  scripts/npmsample.py compare --seed S [--last] [-k CODE] [--keep]   # tttt at the defaults twice and --threads 1:
+                                                   # any two differing is verdict `varies`, priority 1; matches deleted
   scripts/npmsample.py clean --seed S [--all] [--except NAME...]   # delete the clones (diverging ones kept without --all)
 
 Files: test/npmsample/S.candidates.jsonl (sample order), S.setup.jsonl (one line per candidate looked at: accepted or
@@ -711,7 +712,7 @@ def head_commit():
     return subprocess.run(['git', '-C', ROOT, 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True).stdout.strip()
 
 
-def compare_one(seed, name, config, tsc_cache, lock, threads1):
+def compare_one(seed, name, config, tsc_cache, lock, delete_same):
     base = os.path.join(NS, str(seed))
     bench = os.path.join(base, config)
     if not os.path.exists(bench):
@@ -727,6 +728,8 @@ def compare_one(seed, name, config, tsc_cache, lock, threads1):
                 f.write(json.dumps(cached) + '\n')
     g_text, g_status = cached['text'], cached['status']
     d_text, d_code, d_status = tttt_check(bench)
+    # (Races and checker-count dependence outrank everything: the defaults twice and --threads 1 each time)
+    runs = [(d_text, d_code, d_status), tttt_check(bench), tttt_check(bench, threads=1)]
     g, d = keys(g_text), keys(d_text)
     miss, extra = g - d, d - g
     r = {'name': name, 'config': config, 'tsgo_exit': g_status, 'tsgo_n': sum(g.values()), 'tttt_exit': d_code,
@@ -734,6 +737,16 @@ def compare_one(seed, name, config, tsc_cache, lock, threads1):
          'codes_missing': sorted({k[2] for k in miss}), 'codes_extra': sorted({k[2] for k in extra})}
     same = normalize(g_text) == normalize(d_text) and g_status == d_code
     r['verdict'] = ('crash' if d_status != 'ok' else 'same' if same else 'text' if not miss and not extra else 'differ')
+    shapes = {(tuple(normalize(t)), c, st) for t, c, st in runs}
+    r['runs_agree'] = len(shapes) == 1
+    r['threads1_same'] = (normalize(runs[2][0]), runs[2][1]) == (normalize(d_text), d_code)
+    if not r['runs_agree']:
+        r['verdict'] = 'varies'
+        a, b = runs[0], next(x for x in runs[1:] if (normalize(x[0]), x[1], x[2]) != (normalize(a[0]), a[1], a[2]))
+        ka, kb = keys(a[0]), keys(b[0])
+        r['varies'] = {'defaults_twice_same': (normalize(runs[1][0]), runs[1][1]) == (normalize(d_text), d_code),
+                       'only_first': sorted(map(list, ka - kb))[:5], 'only_other': sorted(map(list, kb - ka))[:5],
+                       'statuses': [x[2] for x in runs], 'exits': [x[1] for x in runs]}
     lines = {(f, l, c): f'{f}({l}): TS{c} {m[:200]}' for f, l, _, c, m in tscformat.parse(g_text + '\n' + d_text)}
     if miss or extra:
         k = sorted(extra or miss)[0]
@@ -744,15 +757,15 @@ def compare_one(seed, name, config, tsc_cache, lock, threads1):
         r['example'] = f'tsgo: {a[first] if first < len(a) else "(end)"} / tttt: {b[first] if first < len(b) else "(end)"}'
         if g_status != d_code:
             r['example'] += f' (exit {g_status} vs {d_code})'
-    if r['verdict'] != 'same' and threads1:
-        t_text, t_code, t_status = tttt_check(bench, threads=1)
-        r['threads1_same'] = normalize(t_text) == normalize(d_text) and t_code == d_code
+    if r['verdict'] == 'same' and delete_same:
+        # (A matching project is never needed again: deleted at once)
+        shutil.rmtree(REPO_OF(bench), ignore_errors=True)
     r['_g'] = g_text
     r['_d'] = d_text
     return r
 
 
-def cmd_compare(seed, jobs, threads1, last, code):
+def cmd_compare(seed, jobs, delete_same, last, code):
     base = os.path.join(NS, str(seed))
     last_path = os.path.join(base, 'compare.json')
     if last:
@@ -763,7 +776,7 @@ def cmd_compare(seed, jobs, threads1, last, code):
         tsc_cache = {r['name']: r for r in read_jsonl(os.path.join(base, 'tsc.jsonl'))}
         lock = threading.Lock()
         with concurrent.futures.ThreadPoolExecutor(jobs) as ex:
-            results = list(ex.map(lambda row: compare_one(seed, row[0], row[1], tsc_cache, lock, threads1), rows))
+            results = list(ex.map(lambda row: compare_one(seed, row[0], row[1], tsc_cache, lock, delete_same), rows))
         json.dump(results, open(last_path, 'w'))
         commit = head_commit()
         with open(files(seed, 'results.jsonl'), 'w') as f:
@@ -783,12 +796,16 @@ def cmd_compare(seed, jobs, threads1, last, code):
                         print(f'{r["name"]}: {side}: {lines.get(k, k)}')
         return
     results = [r for r in results if r.get('verdict') != 'gone']
+    for r in results:
+        if r.get('verdict') == 'varies':
+            print(f'PRIORITY 1: {r["name"]}: tttt runs differ (defaults, defaults, --threads 1): {json.dumps(r["varies"])}')
     print(f'{"project":44} {"tsgo":>5} {"tttt":>5} {"miss":>5} {"extra":>5}  t1  verdict  codes / example')
     for r in results:
         if r['verdict'] == 'same':
             continue
         codes = ' '.join([f'-{c}' for c in r['codes_missing']] + [f'+{c}' for c in r['codes_extra']])
         t1 = {True: 'same', False: 'DIFF', None: '-'}[r.get('threads1_same')]
+        t1 = t1 if r.get('runs_agree', True) else 'VARY'
         print(f'{r["name"][:44]:44} {r["tsgo_n"]:5} {r["tttt_n"]:5} {r["missing"]:5} {r["extra"]:5}  {t1:4} '
               f'{r["verdict"]:7}  {codes}\n{"":46}{r.get("example", r.get("tttt_status", ""))[:200]}')
     n = len(results)
@@ -836,8 +853,8 @@ def main():
     ap.add_argument('-j', type=int, default=4, help='candidates set up / projects compared at once')
     ap.add_argument('--last', action='store_true')
     ap.add_argument('-k', metavar='CODE', help="compare: list each project's instances of a code")
-    ap.add_argument('--no-threads1', action='store_true', help='compare: skip the --threads 1 rerun of differences')
-    ap.add_argument('--keep', action='store_true', help="the whole batch: don't clean at the end")
+    ap.add_argument('--keep', action='store_true', help="compare and the whole batch: keep the clones (no deleting "
+                    "matching projects, no clean)")
     ap.add_argument('--all', action='store_true', help='clean: the diverging clones too')
     ap.add_argument('--except', dest='keep_names', nargs='*', default=[], help='clean: also keep these clones')
     args = ap.parse_args()
@@ -848,7 +865,7 @@ def main():
         if not cmd_setup(args.seed, args.N, args.j) and c is None:
             sys.exit('setup: fewer than N accepted (sample more names with -n, then rerun)')
     if c in ('compare', None):
-        cmd_compare(args.seed, args.j, not args.no_threads1, args.last, args.k)
+        cmd_compare(args.seed, args.j, not args.keep, args.last, args.k)
     if c == 'clean' or (c is None and not args.keep):
         cmd_clean(args.seed, args.all, args.keep_names)
 
