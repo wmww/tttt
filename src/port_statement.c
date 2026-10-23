@@ -130,6 +130,40 @@ static bool port_statement_is_export_declaration(PortStatement const* me) {
     }
 }
 
+// Whether something may use one of an import's bindings: its name appears as a word in the file outside the statement
+// (a comment's or string's too). tsc resolves, and reports what resolving finds, only for a binding something uses;
+// tttt has no use tracking outside noUnusedLocals (hacks.md, "Import attribute errors and uses")
+static bool import_binding_mentioned(PortStatement const* me) {
+    SourceFile const* file = span_source(my keyword_span);
+    if (!file || !my attributes) return true;
+    char const* text = cstr_str(&file->contents);
+    char const* end = text + cstr_size(&file->contents);
+    char const* skip_from = span_start_ptr(my keyword_span);
+    char const* skip_to = span_end_ptr(my attributes->span);
+    PortItem const* items[64];
+    u32 count = 0;
+    if (my main.tag == PORT_IMPORT_DEFAULT || my main.tag == PORT_IMPORT_GATHER) items[count++] = &my main;
+    for_each (i, vec_port_item, &my items) {
+        if ((i->tag == PORT_IMPORT_SPECIFIC || i->tag == PORT_IMPORT_DEFAULT) && count < c_arraylen(items)) items[count++] = i;
+    }
+    for (u32 k = 0; k < count; k++) {
+        csview name = span_sv(items[k]->decl_name);
+        if (!name.size) continue;
+        for (char const* c = text; c + name.size <= end; c++) {
+            if (c >= skip_from && c < skip_to) {
+                c = skip_to - 1;
+                continue;
+            }
+            if (memcmp(c, name.buf, (size_t)name.size) != 0) continue;
+            bool before = c > text && (isalnum((unsigned char)c[-1]) || c[-1] == '_' || c[-1] == '$' || (unsigned char)c[-1] >= 0x80);
+            char const* after_c = c + name.size;
+            bool after = after_c < end && (isalnum((unsigned char)*after_c) || *after_c == '_' || *after_c == '$' || (unsigned char)*after_c >= 0x80);
+            if (!before && !after) return true;
+        }
+    }
+    return false;
+}
+
 void port_statement_add_names(PortStatement* me, Scope* scope) {
     // (tsc's checkGrammarModuleElementContext: a file, a namespace body or an ambient module's)
     bool top = scope->kind == SCOPE_MODULE || scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION ||
@@ -166,10 +200,8 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     if (my attributes && my module_ref && !my jsdoc && !my in_namespace && !my is_import_require) {
         bool invalid = false;
         for_each (i, vec_import_attribute, &my attributes->elements) invalid |= !import_attribute_value_is_string_literal(&i->value);
-        // (An import's bindings are taken as used, which resolves and reports them in tsc: see attribute_value_error())
-        bool bindings = my main.tag == PORT_IMPORT_DEFAULT || my main.tag == PORT_IMPORT_GATHER;
-        for_each (i, vec_port_item, &my items) bindings |= i->tag == PORT_IMPORT_SPECIFIC || i->tag == PORT_IMPORT_DEFAULT;
-        if (bindings) invalid = false;
+        // (A binding something may use is resolved and reported in tsc: see import_binding_mentioned())
+        if (invalid && import_binding_mentioned(me)) invalid = false;
         my main.clause_unchecked = invalid;
         for_each (i, vec_port_item, &my items) i->clause_unchecked = invalid;
     }
@@ -185,13 +217,10 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 // What tsc's checkGrammarImportClause says about a phase modifier (`import defer`, `import source`), 0 if nothing
 // An attribute value that isn't a string literal (TS2858): tsc's checkExternalImportOrExportDeclaration returns false on
 // checkGrammarImportAttributeValues, so the declaration's module isn't checked, only resolved (and reported) when
-// something uses one of its bindings. Approximated by whether it has bindings to use: an import's are taken as used, a
-// re-export or a side-effect import has none (hacks.md: tttt has no use tracking outside noUnusedLocals)
+// something uses one of its bindings: import_binding_mentioned() (a re-export or side-effect import has none)
 static bool attribute_value_error(PortStatement const* me) {
     if (!my attributes || my jsdoc || my in_namespace || my is_import_require) return false;
-    bool bindings = my main.tag == PORT_IMPORT_DEFAULT || my main.tag == PORT_IMPORT_GATHER;
-    for_each (i, vec_port_item, &my items) bindings |= i->tag == PORT_IMPORT_SPECIFIC || i->tag == PORT_IMPORT_DEFAULT;
-    if (bindings) return false;
+    if (import_binding_mentioned(me)) return false;
     for_each (i, vec_import_attribute, &my attributes->elements) {
         if (!import_attribute_value_is_string_literal(&i->value)) return true;
     }

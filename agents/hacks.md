@@ -225,8 +225,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - **Import attribute errors and uses** (`attribute_value_error` and the `clause_unchecked` setup in `port_statement.c`):
   with a non-string attribute value (TS2858) tsc checks neither the declaration's module nor its bindings, and reports
   what resolving them finds only when something uses a binding. tttt resolves aliases eagerly and has no use tracking
-  outside noUnusedLocals, so it treats an import's bindings as used (reported) and a re-export's or side-effect
-  import's as unused (silent). An unused import with such an attribute gets a TS2307/TS2305 tsc doesn't give.
+  outside noUnusedLocals, so a binding counts as used when its name appears as a word anywhere else in the file
+  (`import_binding_mentioned`: a comment or string mentioning it too). A re-export or side-effect import has none.
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - `without_unit()` (ty/flow.c): the `!==`-a-unit filter of a union is memoized per (union, unit), KEY_FLOW_NOT_UNIT.
