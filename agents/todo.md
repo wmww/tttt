@@ -105,7 +105,7 @@ are suspects (vision.md "Decisions"). Open:
 - **kebo's mobx-state-tree cycle** (bugs/sourcesweep_checker.md "fourth rule"): tsc resolves a returned function's
   parameter types lazily, tttt eagerly in signature_resolve_slow(); the same root as triage.md's missed TS2502 through
   `ReturnType<typeof h>`. Needs lazy parameter types in signature resolution: a design first, then a repro from MST's
-  real types.
+  real types. (det 2026-10-23: re-entry now reads a whole record, the design that is left is in the kebo entry)
 - **better-drizzle's two TS2578** at tests/types/order-by-relations.ts:24,26 (uninvestigated; the K>1 TS2502 is fixed).
 - **mcp-linker's 1.73x types** (triage.md): the worst perfsweep ratio, a missing cache or a runaway.
 - **The indexed-access recursion identity** (triage.md): tsc's rule, reverted for youtube-enhancer's runaway (1.16M

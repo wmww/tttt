@@ -5827,9 +5827,27 @@ SigResolved const* sig_resolved_new(Checker* me, SigResolved init) {
 }
 
 // The record of a signature_resolve() in flight in this worker, null if none
+static void function_signature_params(Checker* me, Signature const* sig, SigResolved* r, SigResolving* frame,
+    SigResolving const* from);
+
+// The record of a signature in flight here, read by a re-entry (a cycle). While a function's parameters are being typed
+// that is all of them, typed now as tsc's getTypeOfSymbol types a parameter when it is asked for (the one in flight is
+// circular): what is filled so far depends on which parameter the cycle started from, and a record with some of the
+// parameters (`Expected 2-0 arguments`) is no signature tsc would have
 static SigResolved const* sig_resolving_record(Checker* me, Signature const* sig) {
-    for (SigResolving const* i = my sig_resolving; i; i = i->outer) {
-        if (i->sig == sig) return i->res;
+    for (SigResolving* i = my sig_resolving; i; i = i->outer) {
+        if (i->sig != sig) continue;
+        SigResolved const* r = i->res;
+        if (r->params || r->target || !sig->function) return r;
+        if (i->whole) return i->whole;
+        if (i->completing) return r; // (Re-entered again while typing the rest: no parameters yet)
+        i->completing = true;
+        SigResolved* whole = arena_new(&my arena, SigResolved);
+        *whole = *r;
+        function_signature_params(me, sig, whole, nullptr, i);
+        i->completing = false;
+        i->whole = whole;
+        return whole;
     }
     return nullptr;
 }
@@ -5893,6 +5911,96 @@ void signature_copy(Checker* me, Signature* copy, Signature const* original) {
     atomic_store_explicit(&copy->res.v, v, memory_order_relaxed);
 }
 
+// A function's parameters, into `r` once all of them are typed, `frame` following the progress: a re-entry while they
+// are being typed reads them all (sig_resolving_record()), `from` the frame in flight: those it typed as typed, the one
+// it is typing any (tsc asks a parameter's type only for an argument or a rest: `foo()` in `function bar(a = foo())`
+// with `function foo(a = bar())` never asks foo's `a`, so no cycle is reported), the rest typed now as tsc's
+// getTypeOfSymbol types one when it is asked for
+static void function_signature_params(Checker* me, Signature const* sig, SigResolved* r, SigResolving* frame,
+    SigResolving const* from
+) {
+    FunctionImpl const* function = sig->function;
+    u32 min_args = 0;
+    LowerCtx ctx = sig->ctx;
+    // A function can be anywhere, a function type is lowered knowing whether some type parameter is in scope
+    ctx.generic |= !function->is_type || r->type_params.len > 0;
+    ctx.method = false; // Parameter types aren't methods (callbacks are compared with tsc's callback rule)
+    u32 count = (u32)vec_function_arg_size(&function->args);
+    SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
+    if (frame) {
+        frame->typing = params;
+        frame->typed = 0;
+    }
+    u32 iife_arg_count = function->is_iife ? ty_iife_effective_arg_count(me, function) : 0;
+    // The arguments it takes are up to its last required parameter: one with a default before it is required too
+    // (tsc's minArgumentCount and isOptionalParameter)
+    for_each (i, vec_function_arg, &function->args) {
+        SigParam* param = &params[i_index];
+        param->name = checker_atom(me, span_sv(i->initializer.binding.content_span));
+        param->rest = i->rest;
+        param->decl = i;
+        // (A missing initializer, `n: number=)`, is one: tsc's missing identifier)
+        Expr const* initial = initialized_binding_value(&i->initializer);
+        param->optional = i->explicit_optional || initial->tag != EXPR_IMPLICIT_ANY || initial->missing;
+        if (!from) {
+            param->type = ty_binding_type(me, &i->initializer.binding, ctx);
+            if (frame) frame->typed = (u32)i_index + 1;
+        } else if (i_index < from->typed) {
+            param->type = from->typing[i_index].type;
+        } else if (i_index == from->typed) {
+            param->type = ty_intrinsic(me, TY_ANY);
+        } else {
+            param->type = ty_binding_type(me, &i->initializer.binding, ctx);
+        }
+        if (!from && !function->has_body && !i->initializer.binding.has_explicit_type && compiler_options()->no_implicit_any) {
+            report_renamed_bodiless_elements(me, &i->initializer.binding);
+        }
+        // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
+        // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's
+        // optional by the effective ones, tuple spreads expanded)
+        bool iife = function->is_iife && !i->initializer.binding.has_explicit_type;
+        if (iife && i_index >= iife_arg_count && !i->rest) param->optional = true;
+        bool past_written = iife && i_index >= function_impl_rare(function)->iife_arg_count;
+        if (!param->optional && !param->rest && !past_written) min_args = (u32)i_index + 1;
+    }
+    for (u32 j = 0; j < min_args; j++) {
+        if (!params[j].optional || params[j].decl->explicit_optional) continue;
+        // (Its type still takes undefined, which the default replaces: tsc's addOptionality for a parameter with
+        // an initializer)
+        params[j].optional = false;
+        if (compiler_options()->strict_null_checks) {
+            Ty const* parts[2] = { params[j].type, ty_intrinsic(me, TY_UNDEFINED) };
+            params[j].type = ty_union(me, parts, 2, nullptr, (TyList){0});
+        }
+    }
+    // An optional parameter's type has its undefined (tsc's getTypeOfParameter, addOptionality)
+    for (u32 j = 0; j < count; j++) {
+        if (!params[j].optional || params[j].rest) continue;
+        Ty const* added = ty_optional_param_type(me, params[j].type);
+        params[j].undefined_added = added != params[j].type;
+        params[j].type = added;
+    }
+    // (Nor one with a contextual signature: tsgo's isUntypedSignatureInJSFile asks getContextualType)
+    if (function_is_untyped_js(function) && !(function->is_expression && ty_function_assigned_contextual_signature(me, function))) {
+        min_args = 0;
+    }
+    if (count && params[0].name == my atoms.this_) {
+        // `this: T` is about how the function is called, not an argument
+        if (min_args && !params[0].optional) min_args--;
+        r->this_type = params[0].type;
+        params++;
+        count--;
+    } else if (function->is_expression && ty_function_is_context_sensitive(function)) {
+        // A function expression without one takes its contextual signature's `this` (tsc's
+        // assignContextualParameterTypes gives the signature a thisParameter)
+        u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
+        r->this_type = intern_get(&my links, this_key, 2);
+    }
+    r->min_args = min_args;
+    r->params = params;
+    r->param_count = count;
+}
+
 SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     uintptr_t v;
@@ -5952,70 +6060,7 @@ SigResolved const* signature_resolve_slow(Checker* me, Signature const* const_si
             Signature const* contextual = ty_function_assigned_contextual_signature(me, function);
             if (contextual) r->type_params = sig_res(me, contextual)->type_params;
         }
-        LowerCtx ctx = sig->ctx;
-        // A function can be anywhere, a function type is lowered knowing whether some type parameter is in scope
-        ctx.generic |= !function->is_type || r->type_params.len > 0;
-        ctx.method = false; // Parameter types aren't methods (callbacks are compared with tsc's callback rule)
-        u32 count = (u32)vec_function_arg_size(&function->args);
-        SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
-        u32 iife_arg_count = function->is_iife ? ty_iife_effective_arg_count(me, function) : 0;
-        // The arguments it takes are up to its last required parameter: one with a default before it is required too
-        // (tsc's minArgumentCount and isOptionalParameter)
-        for_each (i, vec_function_arg, &function->args) {
-            SigParam* param = &params[i_index];
-            param->name = checker_atom(me, span_sv(i->initializer.binding.content_span));
-            param->rest = i->rest;
-            param->decl = i;
-            // (A missing initializer, `n: number=)`, is one: tsc's missing identifier)
-            Expr const* initial = initialized_binding_value(&i->initializer);
-            param->optional = i->explicit_optional || initial->tag != EXPR_IMPLICIT_ANY || initial->missing;
-            param->type = ty_binding_type(me, &i->initializer.binding, ctx);
-            if (!function->has_body && !i->initializer.binding.has_explicit_type && compiler_options()->no_implicit_any) {
-                report_renamed_bodiless_elements(me, &i->initializer.binding);
-            }
-            // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
-            // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's
-            // optional by the effective ones, tuple spreads expanded)
-            bool iife = function->is_iife && !i->initializer.binding.has_explicit_type;
-            if (iife && i_index >= iife_arg_count && !i->rest) param->optional = true;
-            bool past_written = iife && i_index >= function_impl_rare(function)->iife_arg_count;
-            if (!param->optional && !param->rest && !past_written) r->min_args = (u32)i_index + 1;
-        }
-        for (u32 j = 0; j < r->min_args; j++) {
-            if (!params[j].optional || params[j].decl->explicit_optional) continue;
-            // (Its type still takes undefined, which the default replaces: tsc's addOptionality for a parameter with
-            // an initializer)
-            params[j].optional = false;
-            if (compiler_options()->strict_null_checks) {
-                Ty const* parts[2] = { params[j].type, ty_intrinsic(me, TY_UNDEFINED) };
-                params[j].type = ty_union(me, parts, 2, nullptr, (TyList){0});
-            }
-        }
-        // An optional parameter's type has its undefined (tsc's getTypeOfParameter, addOptionality)
-        for (u32 j = 0; j < count; j++) {
-            if (!params[j].optional || params[j].rest) continue;
-            Ty const* added = ty_optional_param_type(me, params[j].type);
-            params[j].undefined_added = added != params[j].type;
-            params[j].type = added;
-        }
-        // (Nor one with a contextual signature: tsgo's isUntypedSignatureInJSFile asks getContextualType)
-        if (function_is_untyped_js(function) && !(function->is_expression && ty_function_assigned_contextual_signature(me, function))) {
-            r->min_args = 0;
-        }
-        if (count && params[0].name == my atoms.this_) {
-            // `this: T` is about how the function is called, not an argument
-            if (r->min_args && !params[0].optional) r->min_args--;
-            r->this_type = params[0].type;
-            params++;
-            count--;
-        } else if (function->is_expression && ty_function_is_context_sensitive(function)) {
-            // A function expression without one takes its contextual signature's `this` (tsc's
-            // assignContextualParameterTypes gives the signature a thisParameter)
-            u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
-            r->this_type = intern_get(&my links, this_key, 2);
-        }
-        r->params = params;
-        r->param_count = count;
+        function_signature_params(me, sig, r, &frame, nullptr);
     }
     if (sig->class_instance) {
         r->type_params = sig->class_type_params;

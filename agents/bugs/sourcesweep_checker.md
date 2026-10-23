@@ -348,6 +348,19 @@ rest element; a spread instantiated to `undefined`). Left:
   is in flight (signature_resolve_slow's eager parameters, the same root as triage.md's missed TS2502 through
   `ReturnType<typeof h>`). Reproduces checking the file alone (TTTT_CHECK_ONLY); a 10-line imitation with a plain
   `model(p, actions)` doesn't, so the cut needs MST's real types (Instance/SnapshotIn over IModelType). No repro yet.
+  **Same root as openclaw's TS2554 'Expected 2-0 arguments' (det, 2026-10-23)**: a re-entry of a function's signature
+  while its parameters were being typed read the half-built record (min_args set, param_count still 0), which is no
+  signature tsc ever has, and what it left behind depended on which entry point a checker reached first (openclaw core
+  72-149 errors by checker count, run-to-run variance under work stealing). Now (members.c sig_resolving_record(),
+  function_signature_params()) the record is filled only once every parameter is typed, and a re-entry gets all of
+  them: those typed so far, the one in flight as any (tsc asks a parameter's type only for an argument or a rest, so a
+  call that passes none sees no cycle: functionWithDefaultParameterWithNoStatements16), the rest typed then. Still
+  eager, not tsc's lazy parameters: a re-entry that passes an argument for the in-flight parameter gets any where tsc
+  would report a circularity (TS2502/TS7022), and the parameters after it are typed inside the cycle rather than when
+  asked. The full design (the remaining kebo cause, if it is this): SigParam.type as a lazily typed slot per parameter
+  (getTypeOfSymbol on the parameter, its own cycle detection through ty_binding_type's resolving stack), the record's
+  shape (count, min_args, optional, rest, this) derived from the node up front, so signature_resolve never types a
+  parameter nobody asked for. Every reader of `params[i].type` would go through an accessor; measure first.
 - **hono/tsconfig.build.json, hono/tsconfig.spec.json (+TS2769 at src/request.ts:214)**: in the full sweep on this
   branch and with main's release binary too (not from the refresh), not in the `--sample 4` quarter. Uninvestigated.
 - **better-drizzle (+TS2502 'transaction' at src/types/plugins.ts:742,2, default checkers only)**: after c0a04350a, tsc's

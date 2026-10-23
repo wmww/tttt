@@ -1958,6 +1958,12 @@ typedef struct SigResolving {
     Signature const* sig;
     SigResolved const* res;
     struct SigResolving* outer;
+    // While a function's parameters are being typed: those typed so far (the next one is in flight), and a re-entry's
+    // record with all of them (members.c sig_resolving_record())
+    SigParam const* typing;
+    u32 typed;
+    SigResolved const* whole;
+    bool completing;
 } SigResolving;
 SigResolved const* signature_resolve_slow(Checker* me, Signature const* sig);
 SigResolved const* sig_res_slow(Checker* me, Signature const* sig);

@@ -435,6 +435,10 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   SortItem<output<T>> (generic keys) against `{ [K in keyof A | keyof B]: (A & B)[K] }`.
 
 ## Type core (`src/ty/`)
+- **A signature re-entered while its parameters are being typed** (members.c sig_resolving_record(),
+  function_signature_params()): the re-entry gets every parameter, the one in flight as any and the later ones typed
+  inside the cycle. Correct: tsc's lazy parameter types (getTypeOfSymbol per parameter when asked), where an argument
+  for the in-flight one reports the circularity (TS2502/TS7022). Design: bugs/sourcesweep_checker.md's kebo entry.
 - **Two circularity diagnostics come from printing a type for its side effects** (the string is dropped):
   lower_node()'s TYPE_INDEXED case prints an anonymous object whose indexed access failed (`ty_to_cstr(object)`), so
   that resolving its member types makes `type A = { a: A }["x"]` circular like `{ a: A }["a"]`; the satisfies case of

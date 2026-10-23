@@ -1362,6 +1362,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInstantiationExpressionParameterCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInstantiationStackTailCall': {
         errors: true,
         symbols: true,

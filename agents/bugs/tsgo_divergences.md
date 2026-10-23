@@ -88,6 +88,10 @@ argued here instead. Nothing a user sees differs in any of them.
   hides it again). The defaults match tsc. Rechecked 2026-10-21 with the pinned tsgo (`tsc -p packages/core --noEmit
   --incremental false --pretty false --checkers 1` vs `16`, from `thirdparty/sources/sequelize`): K16 adds TS7022
   :335 and drops TS2322 :1053 and TS2488 :1080, exactly tttt's K16 difference (`scripts/kdiff.py -f sequelize`).
+  **At the defaults it is run-to-run variance in tttt, not in tsgo** (det, 2026-10-23: 2 of 15 runs differ on the
+  16-core box): tsgo deals files to checkers statically per K, tttt's work stealing makes the deal schedule dependent,
+  so any K dependence, tsgo-shared or not, shows as a flake at the defaults. The cycle itself is tsgo's entry-order
+  artifact; the flake is ours.
 - rxjs/packages/rxjs's TS2322 elaborations (2026-10-18, since b3c2fbfa normalized deferred references in the
   relation): tsgo `--singleThreaded` (the cached oracle) says "types returned by '[bufferTime](...)[bufferTime](...)
   [groupBy]'" with `number[][]` below, tsgo `--checkers 16` "'[bufferTime](...)[groupBy]'" with `number[]`: which
