@@ -1,0 +1,53 @@
+//// [test/cases/ttttErrorIndexStaysError.ts] ////
+
+=== ttttErrorIndexStaysError.ts ===
+// An indexed access by the error type (an unresolved name) on an object without index signatures is the error type
+// itself (tsc's getPropertyTypeForIndexType returns an any index type as it is): a homomorphic mapped type over it
+// maps nothing and an intersection with it is any, so pothos's `Opts & Partial<Inferred[Unresolved]>` options take
+// anything (a spurious TS2345 there)
+import type { Missing } from 'nowhere';
+>Missing : any
+
+interface Inf<R = unknown> { extensions?: R }
+>extensions : R | undefined
+
+interface Opts { req: boolean }
+>req : boolean
+
+type ByKind<T extends Missing, R> = { Interface: Opts & Partial<Inf<R>[T['kind']]> };
+>ByKind : ByKind<T, R>
+>Interface : Opts & Partial<Inf<R>[T["kind"]]>
+
+declare function field(o: ByKind<Missing, 1>['Interface']): void;
+>field : (o: ByKind<Missing, 1>['Interface']) => void
+>o : any
+
+field({});
+>field({}) : void
+>field : (o: ByKind<Missing, 1>['Interface']) => void
+>{} : {}
+
+type A3 = Opts & Partial<Inf<1>[Missing]>;
+>A3 : any
+
+declare const a3: A3;
+>a3 : any
+
+const n3: never = a3;
+>n3 : never
+>a3 : any
+
+declare const anyKey: any;
+>anyKey : any
+
+type B = Opts & Partial<Inf<1>[typeof anyKey]>;
+>B : B
+>anyKey : any
+
+declare const b: B;
+>b : B
+
+const nb: never = b;
+>nb : never
+>b : B
+

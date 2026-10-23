@@ -386,14 +386,17 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
     if (index->flags & TYF_ANY) {
         // What the index signatures say (any is assignable to every key type: the specific ones, else a string one,
         // tsc's getPropertyTypeForIndexType with getApplicableIndexInfo)
+        // Without one, the index itself: the error type stays one (`Partial<Inf[Unresolved]>` maps nothing, and an
+        // intersection with it is any), tsc's IsTypeAny(indexType) return
         u32 any_key_kinds = TYF_OBJECT | TYF_INTERSECTION;
         Ty const* apparent = ty_apparent_type(me, object);
+        Ty const* without = (index->flags & TYF_ERROR) ? index : ty_intrinsic(me, TY_ANY);
         if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
             Ty const* ret = ty_union_any_index_type(me, apparent, index, any_key_kinds);
-            return !ret ? ty_intrinsic(me, TY_ANY) : include_undefined ? with_missing(me, ret) : ret;
+            return !ret ? without : include_undefined ? with_missing(me, ret) : ret;
         }
         IndexInfo const* info = (apparent->flags & any_key_kinds) ? ty_applicable_index_info(me, apparent, index) : nullptr;
-        if (!info) return ty_intrinsic(me, TY_ANY);
+        if (!info) return without;
         return include_undefined ? with_missing(me, info->value) : info->value;
     }
     // (A generic intersection, `keyof T & string`, is a generic index: the access is deferred, tsc's getIndexedAccessType)

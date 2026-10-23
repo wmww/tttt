@@ -1,0 +1,74 @@
+//// [test/cases/ttttErrorIndexStaysError.ts] ////
+
+=== ttttErrorIndexStaysError.ts ===
+// An indexed access by the error type (an unresolved name) on an object without index signatures is the error type
+// itself (tsc's getPropertyTypeForIndexType returns an any index type as it is): a homomorphic mapped type over it
+// maps nothing and an intersection with it is any, so pothos's `Opts & Partial<Inferred[Unresolved]>` options take
+// anything (a spurious TS2345 there)
+import type { Missing } from 'nowhere';
+>Missing : Symbol(Missing, Decl(ttttErrorIndexStaysError.ts, 4, 13))
+
+interface Inf<R = unknown> { extensions?: R }
+>Inf : Symbol(Inf, Decl(ttttErrorIndexStaysError.ts, 4, 39))
+>R : Symbol(R, Decl(ttttErrorIndexStaysError.ts, 5, 14))
+>extensions : Symbol(Inf.extensions, Decl(ttttErrorIndexStaysError.ts, 5, 28))
+>R : Symbol(R, Decl(ttttErrorIndexStaysError.ts, 5, 14))
+
+interface Opts { req: boolean }
+>Opts : Symbol(Opts, Decl(ttttErrorIndexStaysError.ts, 5, 45))
+>req : Symbol(Opts.req, Decl(ttttErrorIndexStaysError.ts, 6, 16))
+
+type ByKind<T extends Missing, R> = { Interface: Opts & Partial<Inf<R>[T['kind']]> };
+>ByKind : Symbol(ByKind, Decl(ttttErrorIndexStaysError.ts, 6, 31))
+>T : Symbol(T, Decl(ttttErrorIndexStaysError.ts, 7, 12))
+>Missing : Symbol(Missing, Decl(ttttErrorIndexStaysError.ts, 4, 13))
+>R : Symbol(R, Decl(ttttErrorIndexStaysError.ts, 7, 30))
+>Interface : Symbol(Interface, Decl(ttttErrorIndexStaysError.ts, 7, 37))
+>Opts : Symbol(Opts, Decl(ttttErrorIndexStaysError.ts, 5, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Inf : Symbol(Inf, Decl(ttttErrorIndexStaysError.ts, 4, 39))
+>R : Symbol(R, Decl(ttttErrorIndexStaysError.ts, 7, 30))
+>T : Symbol(T, Decl(ttttErrorIndexStaysError.ts, 7, 12))
+
+declare function field(o: ByKind<Missing, 1>['Interface']): void;
+>field : Symbol(field, Decl(ttttErrorIndexStaysError.ts, 7, 85))
+>o : Symbol(o, Decl(ttttErrorIndexStaysError.ts, 8, 23))
+>ByKind : Symbol(ByKind, Decl(ttttErrorIndexStaysError.ts, 6, 31))
+>Missing : Symbol(Missing, Decl(ttttErrorIndexStaysError.ts, 4, 13))
+
+field({});
+>field : Symbol(field, Decl(ttttErrorIndexStaysError.ts, 7, 85))
+
+type A3 = Opts & Partial<Inf<1>[Missing]>;
+>A3 : Symbol(A3, Decl(ttttErrorIndexStaysError.ts, 9, 10))
+>Opts : Symbol(Opts, Decl(ttttErrorIndexStaysError.ts, 5, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Inf : Symbol(Inf, Decl(ttttErrorIndexStaysError.ts, 4, 39))
+>Missing : Symbol(Missing, Decl(ttttErrorIndexStaysError.ts, 4, 13))
+
+declare const a3: A3;
+>a3 : Symbol(a3, Decl(ttttErrorIndexStaysError.ts, 11, 13))
+>A3 : Symbol(A3, Decl(ttttErrorIndexStaysError.ts, 9, 10))
+
+const n3: never = a3;
+>n3 : Symbol(n3, Decl(ttttErrorIndexStaysError.ts, 12, 5))
+>a3 : Symbol(a3, Decl(ttttErrorIndexStaysError.ts, 11, 13))
+
+declare const anyKey: any;
+>anyKey : Symbol(anyKey, Decl(ttttErrorIndexStaysError.ts, 13, 13))
+
+type B = Opts & Partial<Inf<1>[typeof anyKey]>;
+>B : Symbol(B, Decl(ttttErrorIndexStaysError.ts, 13, 26))
+>Opts : Symbol(Opts, Decl(ttttErrorIndexStaysError.ts, 5, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Inf : Symbol(Inf, Decl(ttttErrorIndexStaysError.ts, 4, 39))
+>anyKey : Symbol(anyKey, Decl(ttttErrorIndexStaysError.ts, 13, 13))
+
+declare const b: B;
+>b : Symbol(b, Decl(ttttErrorIndexStaysError.ts, 15, 13))
+>B : Symbol(B, Decl(ttttErrorIndexStaysError.ts, 13, 26))
+
+const nb: never = b;
+>nb : Symbol(nb, Decl(ttttErrorIndexStaysError.ts, 16, 5))
+>b : Symbol(b, Decl(ttttErrorIndexStaysError.ts, 15, 13))
+
