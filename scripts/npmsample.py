@@ -9,7 +9,7 @@ by tsgo and tttt, and every difference is a tttt bug (or a formatting-only one, 
   scripts/npmsample.py setup --seed S [-N 50]      # clone + install + bench config + tsgo trial, resumable
   scripts/npmsample.py compare --seed S [--last] [-k CODE] [--keep]   # tttt at the defaults twice and --threads 1:
                                                    # any two differing is verdict `varies`, priority 1; matches deleted
-  scripts/npmsample.py clean --seed S [--all] [--except NAME...]   # delete the clones (diverging ones kept without --all)
+  scripts/npmsample.py clean --seed S [--all] [--except NAME...]   # delete the clones compare matched (--all: all)
 
 Files: test/npmsample/S.candidates.jsonl (sample order), S.setup.jsonl (one line per candidate looked at: accepted or
 the skip reason, package@version, the package manager, every config change), S.tsv (name, config path relative to
@@ -644,6 +644,13 @@ def cmd_setup(seed, n, jobs):
     accepted = sum(1 for r in done.values() if r['status'] == 'accepted')
     todo = [c for c in cands if c['i'] not in done]
     os.makedirs(os.path.join(NS, str(seed)), exist_ok=True)
+    # (clean refuses to run while this file names a live process)
+    pid_file = os.path.join(NS, str(seed), '.setup.pid')
+    other = setup_running(seed)
+    if other and other != os.getpid():
+        sys.exit(f'setup: another setup of seed {seed} is running (pid {other})')
+    with open(pid_file, 'w') as f:
+        f.write(str(os.getpid()))
     print(f'setup: {accepted}/{n} accepted, {len(done)} candidates done, {len(todo)} left', flush=True)
     lock = threading.Lock()
     stop = threading.Event()
@@ -687,6 +694,7 @@ def cmd_setup(seed, n, jobs):
                     break
     # (The package managers' caches only matter while installing: the installed files are copies or hardlinks)
     shutil.rmtree(seed_cache(seed), ignore_errors=True)
+    os.remove(pid_file)
     acc = write_tsv(seed, n)
     print(f'setup: {len(acc)}/{n} accepted -> {os.path.relpath(files(seed, "tsv"), ROOT)}')
     return len(acc) >= n
@@ -826,31 +834,46 @@ def cmd_compare(seed, jobs, delete_same, last, code):
 
 # ----------------------------------------------------------------------------------------------------------- clean
 
+def setup_running(seed):
+    """The pid of a live `setup` of this seed (its pid file in the seed directory), else None"""
+    try:
+        pid = int(open(os.path.join(NS, str(seed), '.setup.pid')).read())
+        os.kill(pid, 0)
+        return pid
+    except (OSError, ValueError):
+        return None
+
+
 def cmd_clean(seed, everything, keep):
+    """Deletes the clones `compare` matched (those it compared and found the same), or with --all every clone; a clone
+    never compared (setup still running, an interrupted compare, a spare beyond N) stays without --all"""
+    pid = setup_running(seed)
+    if pid:
+        sys.exit(f'clean: a setup of seed {seed} is running (pid {pid}); refusing')
     # (The batch's package-manager caches: corepack's managers and ts6 stay)
     shutil.rmtree(seed_cache(seed), ignore_errors=True)
     base = os.path.join(NS, str(seed))
     if not os.path.isdir(base):
         return
-    diverging = set()
     last_path = os.path.join(base, 'compare.json')
-    if os.path.exists(last_path) and not everything:
-        diverging = {r['name'] for r in json.load(open(last_path)) if r.get('verdict') not in ('same', 'gone')}
-    diverging |= set(keep)
-    removed = 0
+    compared = {r['name']: r.get('verdict') for r in json.load(open(last_path))} if os.path.exists(last_path) else {}
+    removed, kept = 0, []
     for d in sorted(os.listdir(base)):
         p = os.path.join(base, d)
-        if os.path.isdir(p) and re.match(r'^\d{4}-', d) and d not in diverging:
+        if not (os.path.isdir(p) and re.match(r'^\d{4}-', d)):
+            continue
+        if everything or (compared.get(d) == 'same' and d not in keep):
             shutil.rmtree(p)
             removed += 1
+        else:
+            kept.append(f'{d} ({compared.get(d, "not compared")})')
     if everything:
         for f in ('tsc.jsonl', 'compare.json'):
             if os.path.exists(os.path.join(base, f)):
                 os.remove(os.path.join(base, f))
         if not os.listdir(base):
             os.rmdir(base)
-    print(f'clean: {removed} clones deleted' + (f', kept {len(diverging)}: {" ".join(sorted(diverging))}'
-                                                 if diverging else ''))
+    print(f'clean: {removed} clones deleted' + (f', kept {len(kept)}: {" ".join(kept)}' if kept else ''))
 
 
 def main():
