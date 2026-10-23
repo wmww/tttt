@@ -14,6 +14,10 @@ root package.json, a root lockfile and a root tsconfig.json (local `extends` fol
       verbatimModuleSyntax, references); prints the matched settings too
   scripts/reposearch.py appbun TOPIC,TOPIC... PER    # app's rule, but only repos whose one lockfile is bun's
       (bun.lock/bun.lockb: refresh 5; ensure-sources.sh installs them with a pinned bun)
+  scripts/reposearch.py ts7 TOPIC,TOPIC... PER [PAGES]  # TypeScript 7 adopters (refresh 6): stars 20..5000, pushed
+      since 2026-07-01, any root lockfile (bun's too), no deno.json, a root tsconfig.json, and a root package.json
+      depending on `@typescript/native-preview` or on `typescript` 7 (the people who'd use tttt); PAGES of 100
+      search results per topic (default 1)
 
 Prints `topic owner/name stars default-branch`; pin each with `git ls-remote URL HEAD` and append it to repos.txt
 under a comment saying the rule (refresh 2, 2026-10-18, is the example). Files are read from raw.githubusercontent.com.
@@ -58,15 +62,26 @@ for topic in topics:
     lang = 'JavaScript' if mode == 'checkjs' else 'TypeScript'
     q = f'topic:{topic}+language:{lang}+stars:300..3000+pushed:>2025-06-01+size:<200000'
     if mode in ('app', 'appbun'): q = f'topic:{topic}+language:TypeScript+stars:40..400+pushed:>2025-10-22+size:<200000'
-    res = get(f'https://api.github.com/search/repositories?q={q}&sort=stars&order=desc&per_page=100')
-    time.sleep(7)
+    if mode == 'ts7': q = f'topic:{topic}+language:TypeScript+stars:20..5000+pushed:>2026-07-01+size:<200000'
+    items = []
+    for page in range(1, (int(sys.argv[4]) if len(sys.argv) > 4 else 1) + 1):
+        res = get(f'https://api.github.com/search/repositories?q={q}&sort=stars&order=desc&per_page=100&page={page}')
+        time.sleep(7)
+        items += (res or {}).get('items', [])
+        if len((res or {}).get('items', [])) < 100: break
     n = 0
-    for r in (res or {}).get('items', []):
+    for r in items:
         full = r['full_name']
         if full.lower() in existing or r['fork'] or r['archived']: continue
-        if raw(full, 'package.json') is None: continue
+        pj = raw(full, 'package.json')
+        if pj is None: continue
+        if mode == 'ts7':
+            if not re.search(r'"@typescript/native-preview"\s*:|"typescript"\s*:\s*"[\^~>=]*7\.', pj): continue
+            if raw(full, 'deno.json') is not None or raw(full, 'deno.jsonc') is not None: continue
         other = any(raw(full, f) is not None for f in ('pnpm-lock.yaml', 'yarn.lock', 'package-lock.json'))
-        if mode == 'appbun':
+        if mode == 'ts7':
+            if not other and raw(full, 'bun.lock') is None and raw(full, 'bun.lockb') is None: continue
+        elif mode == 'appbun':
             if other or (raw(full, 'bun.lockb') is None and raw(full, 'bun.lock') is None): continue
         elif not other: continue
         if mode in ('app', 'appbun') and (raw(full, 'deno.json') is not None or raw(full, 'deno.jsonc') is not None): continue
@@ -78,6 +93,8 @@ for topic in topics:
             ok = re.search(r'"references"\s*:\s*\[\s*\{', c)
         elif mode == 'decorators':
             ok = re.search(r'"experimentalDecorators"\s*:\s*true', c)
+        elif mode == 'ts7':
+            ok = True
         elif mode in ('app', 'appbun'):
             feats = [k for k, rx in (
                 ('nonstrict', r'"strict"\s*:\s*false'), ('allowJs', r'"(allowJs|checkJs)"\s*:\s*true'),
