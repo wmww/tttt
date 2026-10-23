@@ -1204,6 +1204,19 @@ static void infer_from_annotated_params_of_inner(Checker* me, Inference* inf, Fu
 // A conditional expression with a generic call returning a function as a branch (`c ? share() : shareReplay(..)`),
 // which the first pass skips like tsc's SkipGenericFunctions does wherever it is in the argument
 static bool ternary_has_generic_call(Checker* me, Expr const* expr) {
+    if (expr->tag == EXPR_BINARY_OP) {
+        // (The operands tsc's check mode reaches as it does a conditional's branches: `maybe ?? box()`, `(0, box())`)
+        switch (expr->binary_op->op) {
+            case BINARY_OP_OR_OR:
+            case BINARY_OP_EH_EH:
+                return ternary_has_generic_call(me, &expr->binary_op->left) || ternary_has_generic_call(me, &expr->binary_op->right);
+            case BINARY_OP_AND_AND:
+            case BINARY_OP_COMMA:
+                return ternary_has_generic_call(me, &expr->binary_op->right);
+            default:
+                return false;
+        }
+    }
     if (expr->tag != EXPR_TERNARY) return ty_calls_generic_function_returning_function(me, expr);
     return ternary_has_generic_call(me, &expr->ternary->yes) || ternary_has_generic_call(me, &expr->ternary->no);
 }
@@ -1213,7 +1226,7 @@ static bool ternary_has_generic_call(Checker* me, Expr const* expr) {
 static bool is_literal_arg(Checker* me, Arg const* arg) {
     if (arg->spread || arg->part_of_spread) return false;
     if (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY || arg->expr->tag == EXPR_JSX_ATTRIBUTES) return true;
-    return arg->expr->tag == EXPR_TERNARY && ternary_has_generic_call(me, arg->expr);
+    return (arg->expr->tag == EXPR_TERNARY || arg->expr->tag == EXPR_BINARY_OP) && ternary_has_generic_call(me, arg->expr);
 }
 
 // The contextual type of a literal argument in the first pass: what the return type says about the type parameters

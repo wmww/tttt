@@ -320,6 +320,12 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         // (A conditional expression's branches are what it is: tsc skips a generic call in either under
         // SkipGenericFunctions like at the top, `cond ? share() : shareReplay(...)`)
         if (expr->tag == EXPR_ARRAY || expr->tag == EXPR_TERNARY || expr->tag == EXPR_JSX_ATTRIBUTES) return compute(me, expr, ctx);
+        // (And the operands of `??`, `||`, `&&` and `,` like a conditional's branches, `useFn(maybe ?? box(), 2)`)
+        if (expr->tag == EXPR_BINARY_OP && (expr->binary_op->op == BINARY_OP_OR_OR || expr->binary_op->op == BINARY_OP_EH_EH ||
+            expr->binary_op->op == BINARY_OP_AND_AND || expr->binary_op->op == BINARY_OP_COMMA)
+        ) {
+            return compute(me, expr, ctx);
+        }
         if (expr->tag == EXPR_OBJECT) {
             // (Nor is the contextual type its methods' `this` goes by: the check against the call's chosen candidate,
             // which a remembered type may answer without checking again, is what tsc's resolved signature says)
@@ -386,7 +392,7 @@ Ty const* ty_check_literal_argument(
     return check_with(me, expr, (ExprCtx){
         .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr), .skip_sensitive = skip_sensitive,
         .generic_mode = expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY || expr->tag == EXPR_TERNARY ||
-            expr->tag == EXPR_JSX_ATTRIBUTES ? mode : nullptr,
+            expr->tag == EXPR_JSX_ATTRIBUTES || expr->tag == EXPR_BINARY_OP ? mode : nullptr,
     });
 }
 
@@ -3357,14 +3363,13 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             // a function there the signature what the call inferred makes, not the one the first pass saw)
             ExprCtx passed = passed_on_context(ctx);
             passed.is_const = false;
-            passed.generic_mode = nullptr;
             passed.template_context = false;
             left = check_with(me, &binary->left, passed);
             // (The left operand's type when there is no contextual type, or when it is a binding pattern's: tsc's
             // getContextualTypeForBinaryOperand, `let { a, b } = opts ?? { a: new Set(), b: new Set() }`)
             bool from_pattern = ctx.contextual && (ctx.contextual->flags & TYF_BINDING_PATTERN);
             right = check_with(me, &binary->right, ctx.contextual && !from_pattern ? passed :
-                (ExprCtx){ .contextual = left, .skip_sensitive = ctx.skip_sensitive });
+                (ExprCtx){ .contextual = left, .skip_sensitive = ctx.skip_sensitive, .generic_mode = ctx.generic_mode });
             break;
         }
         case BINARY_OP_AND_AND:
@@ -3372,7 +3377,6 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             left = ty_expr_type(me, &binary->left);
             ExprCtx passed = passed_on_context(ctx);
             passed.is_const = false;
-            passed.generic_mode = nullptr;
             passed.template_context = false;
             right = check_with(me, &binary->right, passed);
             break;
