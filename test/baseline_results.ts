@@ -9462,7 +9462,7 @@ const baselines = {
     },
     'bun73-R01e': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'bun73-R01f': {
@@ -11841,6 +11841,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttCircularPatternOtherNamesPlainAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttClassAnyBaseIndex': {
         errors: true,
         symbols: true,
@@ -12824,6 +12829,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDestructuredNullableUnionInitial': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDestructuredReducedNeverSilent': {
         errors: true,
         symbols: true,
@@ -13751,12 +13761,22 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxRuntimeInScript': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsxShiftTypeArguments': {
         errors: false,
         symbols: false,
         types: false,
     },
     'ttttJsxSkippedAttributesSubtype': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsxSpreadAndChildrenContextual': {
         errors: true,
         symbols: true,
         types: true,
@@ -13777,6 +13797,11 @@ const baselines = {
         types: true,
     },
     'ttttKeyofReducibleUnionLiteralParam': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttKeyofRemappedGenericOmit': {
         errors: true,
         symbols: true,
         types: true,
@@ -13836,6 +13861,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLimitRerunOneChecker': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLiteralGetterDuringResolution': {
         errors: true,
         symbols: true,
@@ -13868,6 +13898,11 @@ const baselines = {
         dts: true,
     },
     'ttttLogicalAssignElementUnionKey': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttLoopNeverCallSilentNever': {
         errors: true,
         symbols: true,
         types: true,
@@ -14332,6 +14367,11 @@ const baselines = {
         types: true,
     },
     'ttttReferenceFromTypeNodeRecursionIdentity': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRegexNulByte': {
         errors: true,
         symbols: true,
         types: true,
@@ -14890,6 +14930,11 @@ const baselines = {
         types: true,
     },
     'ttttUniqueSymbolArrayOperand': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnknownGenericElementAccess': {
         errors: true,
         symbols: true,
         types: true,

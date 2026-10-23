@@ -74,6 +74,15 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **Random repositories and all their dependencies are untrusted; installs run sandboxed and execute nothing of
+  theirs** (2026-10-23, the human, after a review found two yarn-berry repos had run their own plugins/bundle during
+  `npmsample.py` installs; both benign, host clean: agents/notes/install_security.md). Distinguish dependencies of
+  known-good software (the pinned corpora) from literally random packages and the repos found by sampling and
+  searching, which get the strict treatment: bwrap with an empty $HOME and a scrubbed env, pnpm `--ignore-pnpmfile`,
+  yarn with YARN_IGNORE_PATH=1 and no plugins (a .yarnrc.yml with yarnPath/plugins/hooks is refused or rewritten:
+  removing build steps is a valid alternative to reviewing them), pinned package-manager majors, forced registry;
+  nothing from node_modules is ever executed (only our own tsc 6, tsgo and tttt run, in bwrap). `scripts/
+  installsandbox.py` (worker npm) is the one implementation; ensure-sources.sh uses it too.
 - **Random npm projects are the correctness measure; bun cases are deprioritized** (2026-10-23, the human): their
   method (agents/notes/npm_sampling.md: sample npm names with a recorded seed, clone the repos, bench config, tsgo
   7.1 against tttt) found 6 of 50 random projects diverging and 1 of 50 flipping clean/has-errors on that day's main,

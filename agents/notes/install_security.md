@@ -33,3 +33,10 @@ Worker secreview's findings (read-only; the full report is in the coordinator's 
    downloads only.
 5. Optionally `--registry=https://registry.npmjs.org` against .npmrc mirrors (two repos used npmmirror.com).
 6. Run tsgo/showConfig in the sandbox too (no execution risk; limits writes).
+
+## Policy (2026-10-23, the human)
+Random repositories AND their dependencies are equally untrusted (a lockfile can point anywhere; the fallbacks
+re-resolve); dependencies of known-good software (the pinned corpora) are a different matter. Random installs run
+sandboxed, or their build/hook steps are removed, or they are reviewed before anything executes; nothing from
+node_modules is executed by us (no npx, no bins, no `yarn tsc`). The installer and the sampler share one
+implementation, `scripts/installsandbox.py`.
