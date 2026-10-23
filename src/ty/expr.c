@@ -3776,10 +3776,13 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
 // tsc's getSpreadType of two object types, `left` (tsc's emptyObjectType if `left_empty`) becoming the result
 // The literal's own accessor as a spread takes it (tsc's getSpreadSymbol): a property of the accessor's type unless it's
 // already as readonly as the spread makes it, a set-only one undefined
+// The new property has no value declaration, so it gets no excess property check: `const o: Options = { ...defaults, get extra() { return 1; } }` is fine
 static ObjectLiteralProp spread_accessor(Checker* me, ObjectLiteralProp prop, bool readonly) {
     if (!prop.accessor || prop.type) return prop;
     bool setonly = (prop.flags & PROP_SETTER) && !(prop.flags & PROP_GETTER);
     if (!setonly && readonly == !!(prop.flags & PROP_READONLY)) return prop;
+    prop.own_merged = prop.own || prop.own_merged;
+    prop.own = false;
     prop.type = setonly ? ty_intrinsic(me, TY_UNDEFINED) : ty_object_literal_accessor_type(me, prop.accessor, true);
     prop.accessor = prop.setter = nullptr;
     prop.flags = (prop.flags & ~(u32)(PROP_GETTER | PROP_SETTER | PROP_READONLY)) | PROP_NO_VALUE_DECLARATION |
@@ -3831,7 +3834,9 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
     }
     for (u32 i = 0; i < left->count; i++) {
         if (literal_builder_skips(right, left->props[i].name)) continue;
-        if (!literal_builder_find((LiteralBuilder*)right, left->props[i].name)) literal_builder_add(&result, left->props[i]);
+        if (!literal_builder_find((LiteralBuilder*)right, left->props[i].name)) {
+            literal_builder_add(&result, spread_accessor(me, left->props[i], readonly));
+        }
     }
     // Index signatures: right's into nothing, else the keys both have (tsc's getUnionIndexInfos)
     if (left->empty_object) {
@@ -4910,7 +4915,10 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .methods = methods,
             .method_count = method_count,
             // (Named as its symbol's first declaration writes it: `{ kk: 1, [k]: 2 }` is `kk`)
-            .name_span = symbol && member_items[0] != item_index && literal_item_is_late(i) ? object->data[member_items[0]].name_span : i->name_span,
+            // (An accessor pair is one symbol, declared by its first accessor: tsc's valueDeclaration, where an excess
+            // property is reported)
+            .name_span = symbol && member_items[0] != item_index && (literal_item_is_late(i) || is_accessor) ?
+                object->data[member_items[0]].name_span : i->name_span,
             .decl_spans = decl_span,
             .decl_span_count = decl_span_count,
             .name_is_value = name_is_value,
