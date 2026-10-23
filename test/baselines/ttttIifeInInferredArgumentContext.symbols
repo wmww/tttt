@@ -1,0 +1,119 @@
+//// [test/cases/ttttIifeInInferredArgumentContext.ts] ////
+
+=== ttttIifeInInferredArgumentContext.ts ===
+// An immediately invoked function inside an argument of a call inferring now: asking for its return type there must
+// not check its context root (the return expression of `resolve`) out of context, which would leave `err` without a
+// contextual signature for good (TS7006). The callee of a call has no contextual type: it's context-checked without one
+type Rec = { update?: { key: string; pin?: { owner: string } }; onErr?: (err: unknown) => void };
+>Rec : Symbol(Rec, Decl(ttttIifeInInferredArgumentContext.ts, 0, 0))
+>update : Symbol(update, Decl(ttttIifeInInferredArgumentContext.ts, 3, 12))
+>key : Symbol(key, Decl(ttttIifeInInferredArgumentContext.ts, 3, 23))
+>pin : Symbol(pin, Decl(ttttIifeInInferredArgumentContext.ts, 3, 36))
+>owner : Symbol(owner, Decl(ttttIifeInInferredArgumentContext.ts, 3, 44))
+>onErr : Symbol(onErr, Decl(ttttIifeInInferredArgumentContext.ts, 3, 63))
+>err : Symbol(err, Decl(ttttIifeInInferredArgumentContext.ts, 3, 73))
+
+type Turn<R> = { result?: R; rec: Rec };
+>Turn : Symbol(Turn, Decl(ttttIifeInInferredArgumentContext.ts, 3, 97))
+>R : Symbol(R, Decl(ttttIifeInInferredArgumentContext.ts, 4, 10))
+>result : Symbol(result, Decl(ttttIifeInInferredArgumentContext.ts, 4, 16))
+>R : Symbol(R, Decl(ttttIifeInInferredArgumentContext.ts, 4, 10))
+>rec : Symbol(rec, Decl(ttttIifeInInferredArgumentContext.ts, 4, 28))
+>Rec : Symbol(Rec, Decl(ttttIifeInInferredArgumentContext.ts, 0, 0))
+
+type Params<T, R> = { raw: T; adapter: { ingest: () => { raw: T }; resolve: () => Turn<R> | Promise<Turn<R>> } };
+>Params : Symbol(Params, Decl(ttttIifeInInferredArgumentContext.ts, 4, 40))
+>T : Symbol(T, Decl(ttttIifeInInferredArgumentContext.ts, 5, 12))
+>R : Symbol(R, Decl(ttttIifeInInferredArgumentContext.ts, 5, 14))
+>raw : Symbol(raw, Decl(ttttIifeInInferredArgumentContext.ts, 5, 21))
+>T : Symbol(T, Decl(ttttIifeInInferredArgumentContext.ts, 5, 12))
+>adapter : Symbol(adapter, Decl(ttttIifeInInferredArgumentContext.ts, 5, 29))
+>ingest : Symbol(ingest, Decl(ttttIifeInInferredArgumentContext.ts, 5, 40))
+>raw : Symbol(raw, Decl(ttttIifeInInferredArgumentContext.ts, 5, 56))
+>T : Symbol(T, Decl(ttttIifeInInferredArgumentContext.ts, 5, 12))
+>resolve : Symbol(resolve, Decl(ttttIifeInInferredArgumentContext.ts, 5, 66))
+>Turn : Symbol(Turn, Decl(ttttIifeInInferredArgumentContext.ts, 3, 97))
+>R : Symbol(R, Decl(ttttIifeInInferredArgumentContext.ts, 5, 14))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>Turn : Symbol(Turn, Decl(ttttIifeInInferredArgumentContext.ts, 3, 97))
+>R : Symbol(R, Decl(ttttIifeInInferredArgumentContext.ts, 5, 14))
+
+declare function run<T, R = string>(p: Params<T, R>): void;
+>run : Symbol(run, Decl(ttttIifeInInferredArgumentContext.ts, 5, 113))
+>T : Symbol(T, Decl(ttttIifeInInferredArgumentContext.ts, 6, 21))
+>R : Symbol(R, Decl(ttttIifeInInferredArgumentContext.ts, 6, 23))
+>p : Symbol(p, Decl(ttttIifeInInferredArgumentContext.ts, 6, 36))
+>Params : Symbol(Params, Decl(ttttIifeInInferredArgumentContext.ts, 4, 40))
+>T : Symbol(T, Decl(ttttIifeInInferredArgumentContext.ts, 6, 21))
+>R : Symbol(R, Decl(ttttIifeInInferredArgumentContext.ts, 6, 23))
+
+run({
+>run : Symbol(run, Decl(ttttIifeInInferredArgumentContext.ts, 5, 113))
+
+  raw: 1,
+>raw : Symbol(raw, Decl(ttttIifeInInferredArgumentContext.ts, 8, 5))
+
+  adapter: {
+>adapter : Symbol(adapter, Decl(ttttIifeInInferredArgumentContext.ts, 9, 9))
+
+    ingest: () => ({ raw: 1 }),
+>ingest : Symbol(ingest, Decl(ttttIifeInInferredArgumentContext.ts, 10, 12))
+>raw : Symbol(raw, Decl(ttttIifeInInferredArgumentContext.ts, 11, 20))
+
+    resolve: () => ({
+>resolve : Symbol(resolve, Decl(ttttIifeInInferredArgumentContext.ts, 11, 31))
+
+      rec: {
+>rec : Symbol(rec, Decl(ttttIifeInInferredArgumentContext.ts, 12, 21))
+
+        update: { key: "k", pin: (() => { return undefined; })() },
+>update : Symbol(update, Decl(ttttIifeInInferredArgumentContext.ts, 13, 12))
+>key : Symbol(key, Decl(ttttIifeInInferredArgumentContext.ts, 14, 17))
+>pin : Symbol(pin, Decl(ttttIifeInInferredArgumentContext.ts, 14, 27))
+>undefined : Symbol(undefined)
+
+        onErr: (err) => { String(err); },
+>onErr : Symbol(onErr, Decl(ttttIifeInInferredArgumentContext.ts, 14, 67))
+>err : Symbol(err, Decl(ttttIifeInInferredArgumentContext.ts, 15, 16))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>err : Symbol(err, Decl(ttttIifeInInferredArgumentContext.ts, 15, 16))
+
+      },
+    }),
+  },
+});
+
+run({
+>run : Symbol(run, Decl(ttttIifeInInferredArgumentContext.ts, 5, 113))
+
+  raw: 1,
+>raw : Symbol(raw, Decl(ttttIifeInInferredArgumentContext.ts, 21, 5))
+
+  adapter: {
+>adapter : Symbol(adapter, Decl(ttttIifeInInferredArgumentContext.ts, 22, 9))
+
+    ingest: () => ({ raw: 1 }),
+>ingest : Symbol(ingest, Decl(ttttIifeInInferredArgumentContext.ts, 23, 12))
+>raw : Symbol(raw, Decl(ttttIifeInInferredArgumentContext.ts, 24, 20))
+
+    resolve: () => ({
+>resolve : Symbol(resolve, Decl(ttttIifeInInferredArgumentContext.ts, 24, 31))
+
+      result: 1,
+>result : Symbol(result, Decl(ttttIifeInInferredArgumentContext.ts, 25, 21))
+
+      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },
+>rec : Symbol(rec, Decl(ttttIifeInInferredArgumentContext.ts, 26, 16))
+>update : Symbol(update, Decl(ttttIifeInInferredArgumentContext.ts, 27, 12))
+>key : Symbol(key, Decl(ttttIifeInInferredArgumentContext.ts, 27, 22))
+>pin : Symbol(pin, Decl(ttttIifeInInferredArgumentContext.ts, 27, 32))
+>owner : Symbol(owner, Decl(ttttIifeInInferredArgumentContext.ts, 27, 47))
+>onErr : Symbol(onErr, Decl(ttttIifeInInferredArgumentContext.ts, 27, 67))
+>err : Symbol(err, Decl(ttttIifeInInferredArgumentContext.ts, 27, 76))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>err : Symbol(err, Decl(ttttIifeInInferredArgumentContext.ts, 27, 76))
+
+    }),
+  },
+});
+

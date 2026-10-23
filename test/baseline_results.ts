@@ -150,6 +150,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttBindingElementKeyNoName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttBlockTypeParamPossiblyReferenced': {
         errors: true,
         symbols: true,
@@ -1270,6 +1275,11 @@ const baselines = {
         types: true,
     },
     'ttttIifeAssignedInClosureContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttIifeInInferredArgumentContext': {
         errors: true,
         symbols: true,
         types: true,

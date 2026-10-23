@@ -5879,6 +5879,16 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
     ty_assign_iife_parameter_types(me, call);
     // Inside an argument of a call inferring now, its body's return expressions are too: their contextual types see the
     // call's inferences (tsc's getInferenceContext walks up through the immediately invoked function)
+    // The callee is checked below, without a contextual type (it has none: tsc's getContextualType of a call's
+    // expression), which decides it has no contextual signature (KEY_CONTEXT_CHECKED). Decided now: asked for its return
+    // type first, it would otherwise look unsettled and have its context root checked from here, out of the context the
+    // call is in (inside an argument of a call inferring now, a function next to it would get no contextual signature
+    // for good: openclaw's signal event-handler.ts TS7006)
+    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !function_impl_rare(callee->function)->jsdoc_signature_type &&
+        !ty_link_get(me, KEY_CONTEXT_CHECKED, callee->function)
+    ) {
+        ty_link_set(me, KEY_CONTEXT_CHECKED, callee->function, &context_checked_none);
+    }
     if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !call->uses_new && !callee->function->ret_explicit &&
         ty_outer_inference_active(me) && !ty_function_return_in_flight(me, callee->function)
     ) {

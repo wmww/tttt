@@ -1,0 +1,144 @@
+//// [test/cases/ttttIifeInInferredArgumentContext.ts] ////
+
+=== ttttIifeInInferredArgumentContext.ts ===
+// An immediately invoked function inside an argument of a call inferring now: asking for its return type there must
+// not check its context root (the return expression of `resolve`) out of context, which would leave `err` without a
+// contextual signature for good (TS7006). The callee of a call has no contextual type: it's context-checked without one
+type Rec = { update?: { key: string; pin?: { owner: string } }; onErr?: (err: unknown) => void };
+>Rec : Rec
+>update : { key: string; pin?: { owner: string; }; } | undefined
+>key : string
+>pin : { owner: string; } | undefined
+>owner : string
+>onErr : ((err: unknown) => void) | undefined
+>err : unknown
+
+type Turn<R> = { result?: R; rec: Rec };
+>Turn : Turn<R>
+>result : R | undefined
+>rec : Rec
+
+type Params<T, R> = { raw: T; adapter: { ingest: () => { raw: T }; resolve: () => Turn<R> | Promise<Turn<R>> } };
+>Params : Params<T, R>
+>raw : T
+>adapter : { ingest: () => { raw: T; }; resolve: () => Turn<R> | Promise<Turn<R>>; }
+>ingest : () => { raw: T; }
+>raw : T
+>resolve : () => Turn<R> | Promise<Turn<R>>
+
+declare function run<T, R = string>(p: Params<T, R>): void;
+>run : <T, R = string>(p: Params<T, R>) => void
+>p : Params<T, R>
+
+run({
+>run({  raw: 1,  adapter: {    ingest: () => ({ raw: 1 }),    resolve: () => ({      rec: {        update: { key: "k", pin: (() => { return undefined; })() },        onErr: (err) => { String(err); },      },    }),  },}) : void
+>run : <T, R = string>(p: Params<T, R>) => void
+>{  raw: 1,  adapter: {    ingest: () => ({ raw: 1 }),    resolve: () => ({      rec: {        update: { key: "k", pin: (() => { return undefined; })() },        onErr: (err) => { String(err); },      },    }),  },} : { raw: number; adapter: { ingest: () => { raw: number; }; resolve: () => { rec: { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }; }; }; }
+
+  raw: 1,
+>raw : number
+>1 : 1
+
+  adapter: {
+>adapter : { ingest: () => { raw: number; }; resolve: () => { rec: { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }; }; }
+>{    ingest: () => ({ raw: 1 }),    resolve: () => ({      rec: {        update: { key: "k", pin: (() => { return undefined; })() },        onErr: (err) => { String(err); },      },    }),  } : { ingest: () => { raw: number; }; resolve: () => { rec: { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }; }; }
+
+    ingest: () => ({ raw: 1 }),
+>ingest : () => { raw: number; }
+>() => ({ raw: 1 }) : () => { raw: number; }
+>({ raw: 1 }) : { raw: number; }
+>{ raw: 1 } : { raw: number; }
+>raw : number
+>1 : 1
+
+    resolve: () => ({
+>resolve : () => { rec: { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }; }
+>() => ({      rec: {        update: { key: "k", pin: (() => { return undefined; })() },        onErr: (err) => { String(err); },      },    }) : () => { rec: { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }; }
+>({      rec: {        update: { key: "k", pin: (() => { return undefined; })() },        onErr: (err) => { String(err); },      },    }) : { rec: { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }; }
+>{      rec: {        update: { key: "k", pin: (() => { return undefined; })() },        onErr: (err) => { String(err); },      },    } : { rec: { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }; }
+
+      rec: {
+>rec : { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }
+>{        update: { key: "k", pin: (() => { return undefined; })() },        onErr: (err) => { String(err); },      } : { update: { key: string; pin: undefined; }; onErr: (err: unknown) => void; }
+
+        update: { key: "k", pin: (() => { return undefined; })() },
+>update : { key: string; pin: undefined; }
+>{ key: "k", pin: (() => { return undefined; })() } : { key: string; pin: undefined; }
+>key : string
+>"k" : "k"
+>pin : undefined
+>(() => { return undefined; })() : undefined
+>(() => { return undefined; }) : () => undefined
+>() => { return undefined; } : () => undefined
+>undefined : undefined
+
+        onErr: (err) => { String(err); },
+>onErr : (err: unknown) => void
+>(err) => { String(err); } : (err: unknown) => void
+>err : unknown
+>String(err) : string
+>String : StringConstructor
+>err : unknown
+
+      },
+    }),
+  },
+});
+
+run({
+>run({  raw: 1,  adapter: {    ingest: () => ({ raw: 1 }),    resolve: () => ({      result: 1,      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },    }),  },}) : void
+>run : <T, R = string>(p: Params<T, R>) => void
+>{  raw: 1,  adapter: {    ingest: () => ({ raw: 1 }),    resolve: () => ({      result: 1,      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },    }),  },} : { raw: number; adapter: { ingest: () => { raw: number; }; resolve: () => { result: number; rec: { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }; }; }; }
+
+  raw: 1,
+>raw : number
+>1 : 1
+
+  adapter: {
+>adapter : { ingest: () => { raw: number; }; resolve: () => { result: number; rec: { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }; }; }
+>{    ingest: () => ({ raw: 1 }),    resolve: () => ({      result: 1,      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },    }),  } : { ingest: () => { raw: number; }; resolve: () => { result: number; rec: { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }; }; }
+
+    ingest: () => ({ raw: 1 }),
+>ingest : () => { raw: number; }
+>() => ({ raw: 1 }) : () => { raw: number; }
+>({ raw: 1 }) : { raw: number; }
+>{ raw: 1 } : { raw: number; }
+>raw : number
+>1 : 1
+
+    resolve: () => ({
+>resolve : () => { result: number; rec: { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }; }
+>() => ({      result: 1,      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },    }) : () => { result: number; rec: { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }; }
+>({      result: 1,      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },    }) : { result: number; rec: { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }; }
+>{      result: 1,      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },    } : { result: number; rec: { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }; }
+
+      result: 1,
+>result : number
+>1 : 1
+
+      rec: { update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } },
+>rec : { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }
+>{ update: { key: "k", pin: (() => ({ owner: "o" }))() }, onErr: (err) => { String(err); } } : { update: { key: string; pin: { owner: string; }; }; onErr: (err: unknown) => void; }
+>update : { key: string; pin: { owner: string; }; }
+>{ key: "k", pin: (() => ({ owner: "o" }))() } : { key: string; pin: { owner: string; }; }
+>key : string
+>"k" : "k"
+>pin : { owner: string; }
+>(() => ({ owner: "o" }))() : { owner: string; }
+>(() => ({ owner: "o" })) : () => { owner: string; }
+>() => ({ owner: "o" }) : () => { owner: string; }
+>({ owner: "o" }) : { owner: string; }
+>{ owner: "o" } : { owner: string; }
+>owner : string
+>"o" : "o"
+>onErr : (err: unknown) => void
+>(err) => { String(err); } : (err: unknown) => void
+>err : unknown
+>String(err) : string
+>String : StringConstructor
+>err : unknown
+
+    }),
+  },
+});
+
