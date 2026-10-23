@@ -1619,6 +1619,9 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
             // `string | Ref<string>`)
             everywhere = ty_find_prop(me, ty_apparent_type(me, parts.data[j]), prop->name).found;
         }
+        // (Nor where the union's members disagree on its visibility: the union has no such property, tsc's
+        // createUnionOrIntersectionProperty)
+        if (everywhere && object->kind == TY_UNION) everywhere = !ty_union_non_public_conflict(me, object, prop->name);
         if (everywhere && me->suggestion_access) everywhere = suggestion_accessible(me, me->suggestion_access, prop, first);
         names[i] = everywhere ? candidate : (csview){0};
     }

@@ -1,0 +1,43 @@
+ttttUnionNonPublicNoSuggestion.ts(3,17): error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+ttttUnionNonPublicNoSuggestion.ts(4,23): error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+ttttUnionNonPublicNoSuggestion.ts(5,29): error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+ttttUnionNonPublicNoSuggestion.ts(6,25): error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+ttttUnionNonPublicNoSuggestion.ts(10,4): error TS2551: Property 'memberX' does not exist on type 'Default | Public'. Did you mean 'member'?
+  Property 'memberX' does not exist on type 'Default'.
+ttttUnionNonPublicNoSuggestion.ts(11,5): error TS2339: Property 'memberX' does not exist on type 'Default | Protected | Public'.
+  Property 'memberX' does not exist on type 'Default'.
+ttttUnionNonPublicNoSuggestion.ts(12,5): error TS2339: Property 'memberX' does not exist on type 'Default | Private'.
+  Property 'memberX' does not exist on type 'Default'.
+
+
+==== ttttUnionNonPublicNoSuggestion.ts (7 errors) ====
+    // A union whose members disagree on a property's visibility has no such property (tsc's
+    // createUnionOrIntersectionProperty), so it is no spelling suggestion either: TS2339, not TS2551
+    class Default { member: string; }
+                    ~~~~~~
+!!! error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+    class Public { public member: string; }
+                          ~~~~~~
+!!! error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+    class Protected { protected member: string; }
+                                ~~~~~~
+!!! error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+    class Private { private member: number; }
+                            ~~~~~~
+!!! error TS2564: Property 'member' has no initializer and is not definitely assigned in the constructor.
+    declare var v5: Default | Public;
+    declare var v11: Default | Public | Protected;
+    declare var v12: Default | Private;
+    v5.memberX;
+       ~~~~~~~
+!!! error TS2551: Property 'memberX' does not exist on type 'Default | Public'. Did you mean 'member'?
+!!! error TS2551:   Property 'memberX' does not exist on type 'Default'.
+    v11.memberX;
+        ~~~~~~~
+!!! error TS2339: Property 'memberX' does not exist on type 'Default | Protected | Public'.
+!!! error TS2339:   Property 'memberX' does not exist on type 'Default'.
+    v12.memberX;
+        ~~~~~~~
+!!! error TS2339: Property 'memberX' does not exist on type 'Default | Private'.
+!!! error TS2339:   Property 'memberX' does not exist on type 'Default'.
+    

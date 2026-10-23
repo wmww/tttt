@@ -1,0 +1,45 @@
+//// [test/cases/ttttUnionNonPublicNoSuggestion.ts] ////
+
+=== ttttUnionNonPublicNoSuggestion.ts ===
+// A union whose members disagree on a property's visibility has no such property (tsc's
+// createUnionOrIntersectionProperty), so it is no spelling suggestion either: TS2339, not TS2551
+class Default { member: string; }
+>Default : Default
+>member : string
+
+class Public { public member: string; }
+>Public : Public
+>member : string
+
+class Protected { protected member: string; }
+>Protected : Protected
+>member : string
+
+class Private { private member: number; }
+>Private : Private
+>member : number
+
+declare var v5: Default | Public;
+>v5 : Default | Public
+
+declare var v11: Default | Public | Protected;
+>v11 : Default | Protected | Public
+
+declare var v12: Default | Private;
+>v12 : Default | Private
+
+v5.memberX;
+>v5.memberX : any
+>v5 : Default | Public
+>memberX : any
+
+v11.memberX;
+>v11.memberX : any
+>v11 : Default | Protected | Public
+>memberX : any
+
+v12.memberX;
+>v12.memberX : any
+>v12 : Default | Private
+>memberX : any
+

@@ -1,0 +1,46 @@
+//// [test/cases/ttttUnionNonPublicNoSuggestion.ts] ////
+
+=== ttttUnionNonPublicNoSuggestion.ts ===
+// A union whose members disagree on a property's visibility has no such property (tsc's
+// createUnionOrIntersectionProperty), so it is no spelling suggestion either: TS2339, not TS2551
+class Default { member: string; }
+>Default : Symbol(Default, Decl(ttttUnionNonPublicNoSuggestion.ts, 0, 0))
+>member : Symbol(Default.member, Decl(ttttUnionNonPublicNoSuggestion.ts, 2, 15))
+
+class Public { public member: string; }
+>Public : Symbol(Public, Decl(ttttUnionNonPublicNoSuggestion.ts, 2, 33))
+>member : Symbol(Public.member, Decl(ttttUnionNonPublicNoSuggestion.ts, 3, 14))
+
+class Protected { protected member: string; }
+>Protected : Symbol(Protected, Decl(ttttUnionNonPublicNoSuggestion.ts, 3, 39))
+>member : Symbol(Protected.member, Decl(ttttUnionNonPublicNoSuggestion.ts, 4, 17))
+
+class Private { private member: number; }
+>Private : Symbol(Private, Decl(ttttUnionNonPublicNoSuggestion.ts, 4, 45))
+>member : Symbol(Private.member, Decl(ttttUnionNonPublicNoSuggestion.ts, 5, 15))
+
+declare var v5: Default | Public;
+>v5 : Symbol(v5, Decl(ttttUnionNonPublicNoSuggestion.ts, 6, 11))
+>Default : Symbol(Default, Decl(ttttUnionNonPublicNoSuggestion.ts, 0, 0))
+>Public : Symbol(Public, Decl(ttttUnionNonPublicNoSuggestion.ts, 2, 33))
+
+declare var v11: Default | Public | Protected;
+>v11 : Symbol(v11, Decl(ttttUnionNonPublicNoSuggestion.ts, 7, 11))
+>Default : Symbol(Default, Decl(ttttUnionNonPublicNoSuggestion.ts, 0, 0))
+>Public : Symbol(Public, Decl(ttttUnionNonPublicNoSuggestion.ts, 2, 33))
+>Protected : Symbol(Protected, Decl(ttttUnionNonPublicNoSuggestion.ts, 3, 39))
+
+declare var v12: Default | Private;
+>v12 : Symbol(v12, Decl(ttttUnionNonPublicNoSuggestion.ts, 8, 11))
+>Default : Symbol(Default, Decl(ttttUnionNonPublicNoSuggestion.ts, 0, 0))
+>Private : Symbol(Private, Decl(ttttUnionNonPublicNoSuggestion.ts, 4, 45))
+
+v5.memberX;
+>v5 : Symbol(v5, Decl(ttttUnionNonPublicNoSuggestion.ts, 6, 11))
+
+v11.memberX;
+>v11 : Symbol(v11, Decl(ttttUnionNonPublicNoSuggestion.ts, 7, 11))
+
+v12.memberX;
+>v12 : Symbol(v12, Decl(ttttUnionNonPublicNoSuggestion.ts, 8, 11))
+
