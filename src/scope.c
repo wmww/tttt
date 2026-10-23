@@ -5694,7 +5694,22 @@ bool symbol_alias_of_unknown(Symbol const* symbol) {
         (!symbol->alias->target || symbol->alias->target->is_placeholder);
 }
 
-Symbol const* scope_unknown_alias(Scope const* me) {
+// An alias of something with exports (`import * as ns`, an import of a namespace): an alias of nothing among those
+// exports (tsc's getCandidateListForSymbol looking in the exported members of what the alias resolves to)
+static Symbol const* exported_unknown_alias(Symbol const* entry) {
+    if (!(entry->flags & SYMBOL_ALIAS) || !entry->alias || entry->alias->state != ALIAS_DONE || !entry->alias->target) return nullptr;
+    Symbol const* target = entry->alias->target;
+    if (target->is_placeholder) return nullptr;
+    SymbolTable const* exports = target->is_module && target->module && target->module->resolved_exports ?
+        target->module->resolved_exports : symbol_members(target)->exports;
+    for (u32 i = 0; exports && i < exports->count; i++) {
+        Symbol const* exported = exports->entries[i].symbol;
+        if (symbol_alias_of_unknown(exported)) return exported;
+    }
+    return nullptr;
+}
+
+u32 scope_unknown_alias_chain(Scope const* me, Symbol const* out[2]) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
         SymbolTable const* tables[2] = { scope_locals(scope), nullptr };
         if (scope->kind == SCOPE_NAMESPACE && scope->container) tables[1] = symbol_members(scope->container)->exports;
@@ -5702,11 +5717,25 @@ Symbol const* scope_unknown_alias(Scope const* me) {
         for (u32 t = 0; t < 2; t++) {
             for (u32 i = 0; tables[t] && i < tables[t]->count; i++) {
                 Symbol const* entry = tables[t]->entries[i].symbol;
-                if (symbol_alias_of_unknown(entry)) return entry;
+                if (symbol_alias_of_unknown(entry)) {
+                    out[0] = entry;
+                    return 1;
+                }
+                Symbol const* exported = exported_unknown_alias(entry);
+                if (exported) {
+                    out[0] = entry;
+                    out[1] = exported;
+                    return 2;
+                }
             }
         }
     }
-    return nullptr;
+    return 0;
+}
+
+Symbol const* scope_unknown_alias(Scope const* me) {
+    Symbol const* chain[2];
+    return scope_unknown_alias_chain(me, chain) ? chain[0] : nullptr;
 }
 
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {

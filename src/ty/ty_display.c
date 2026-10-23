@@ -2171,9 +2171,14 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             out_symbol_name(me, reused_if(d, false), target, SYMBOL_TYPE);
             display_node_args(me, d, &identifier->generic_params);
         } else if (reuse == IDENTIFIER_RENAMED_UNKNOWN) {
-            Symbol const* alias = scope_unknown_alias(d.enclosing);
-            if (d.tracker) d.tracker->track_symbol(d.tracker, alias, SYMBOL_TYPE);
-            out(reused_if(d, false), alias->name);
+            Symbol const* chain[2];
+            u32 count = scope_unknown_alias_chain(d.enclosing, chain);
+            if (d.tracker) d.tracker->track_symbol(d.tracker, chain[0], count == 2 ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
+            out(reused_if(d, false), chain[0]->name);
+            if (count == 2) {
+                out_lit(reused_if(d, false), ".");
+                out(reused_if(d, false), chain[1]->name);
+            }
             display_node_args(me, d, &identifier->generic_params);
         } else {
             display_node_fallback(me, d, node);
@@ -2327,11 +2332,16 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
         // names by its first import that resolves to nothing too, painting it, as identifier_reuse() says of a type
         // reference: better-auth's `typeof BASE_ERROR_CODES` printed `typeof BetterAuthClientOptions` elsewhere)
         Symbol const* unknown = leftmost == node->typeof_->expr ? leftmost->identifier.symbol : nullptr;
-        Symbol const* alias = unknown && symbol_alias_of_unknown(unknown) && d.enclosing ? scope_unknown_alias(d.enclosing) : nullptr;
-        if (alias) {
-            if (d.tracker) d.tracker->track_symbol(d.tracker, alias, SYMBOL_VALUE);
+        Symbol const* chain[2];
+        u32 count = unknown && symbol_alias_of_unknown(unknown) && d.enclosing ? scope_unknown_alias_chain(d.enclosing, chain) : 0;
+        if (count) {
+            if (d.tracker) d.tracker->track_symbol(d.tracker, chain[0], count == 2 ? SYMBOL_NAMESPACE : SYMBOL_VALUE);
             out_lit(d, "typeof ");
-            out(reused_if(d, false), alias->name);
+            out(reused_if(d, false), chain[0]->name);
+            if (count == 2) {
+                out_lit(reused_if(d, false), ".");
+                out(reused_if(d, false), chain[1]->name);
+            }
             return;
         }
         display_node_fallback(me, d, node);

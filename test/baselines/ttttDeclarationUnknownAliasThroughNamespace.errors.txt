@@ -1,0 +1,22 @@
+rules/arrayRules.ts(1,25): error TS2307: Cannot find module 'missing-utils' or its corresponding type declarations.
+rules/builder.ts(1,32): error TS2307: Cannot find module 'missing-utils' or its corresponding type declarations.
+
+
+==== rules/arrayRules.ts (1 errors) ====
+    import { isEmpty } from 'missing-utils';
+                            ~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-utils' or its corresponding type declarations.
+    export function equals(value: unknown[], other: unknown[]): boolean { return value === other; }
+    export { isEmpty };
+==== rules/builder.ts (1 errors) ====
+    import type { DropFirst } from 'missing-utils';
+                                   ~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'missing-utils' or its corresponding type declarations.
+    export declare function build<R extends Record<string, (...args: any[]) => any>>(r: R): {
+      [K in keyof R]: (...args: DropFirst<Parameters<R[K]>>) => number;
+    };
+==== lazy.ts (0 errors) ====
+    import * as arrayRules from './rules/arrayRules';
+    import { build } from './rules/builder';
+    export const e = build({ equals: arrayRules.equals });
+    

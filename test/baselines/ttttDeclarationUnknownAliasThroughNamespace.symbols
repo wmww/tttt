@@ -1,0 +1,53 @@
+//// [test/cases/ttttDeclarationUnknownAliasThroughNamespace.ts] ////
+
+=== rules/arrayRules.ts ===
+import { isEmpty } from 'missing-utils';
+>isEmpty : Symbol(isEmpty, Decl(arrayRules.ts, 0, 8))
+
+export function equals(value: unknown[], other: unknown[]): boolean { return value === other; }
+>equals : Symbol(equals, Decl(arrayRules.ts, 0, 40))
+>value : Symbol(value, Decl(arrayRules.ts, 1, 23))
+>other : Symbol(other, Decl(arrayRules.ts, 1, 40))
+>value : Symbol(value, Decl(arrayRules.ts, 1, 23))
+>other : Symbol(other, Decl(arrayRules.ts, 1, 40))
+
+export { isEmpty };
+>isEmpty : Symbol(isEmpty, Decl(arrayRules.ts, 2, 8))
+
+=== rules/builder.ts ===
+import type { DropFirst } from 'missing-utils';
+>DropFirst : Symbol(DropFirst, Decl(builder.ts, 0, 13))
+
+export declare function build<R extends Record<string, (...args: any[]) => any>>(r: R): {
+>build : Symbol(build, Decl(builder.ts, 0, 47))
+>R : Symbol(R, Decl(builder.ts, 1, 30))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>args : Symbol(args, Decl(builder.ts, 1, 56))
+>r : Symbol(r, Decl(builder.ts, 1, 81))
+>R : Symbol(R, Decl(builder.ts, 1, 30))
+
+  [K in keyof R]: (...args: DropFirst<Parameters<R[K]>>) => number;
+>K : Symbol(K, Decl(builder.ts, 2, 3))
+>R : Symbol(R, Decl(builder.ts, 1, 30))
+>args : Symbol(args, Decl(builder.ts, 2, 19))
+>DropFirst : Symbol(DropFirst, Decl(builder.ts, 0, 13))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(builder.ts, 1, 30))
+>K : Symbol(K, Decl(builder.ts, 2, 3))
+
+};
+=== lazy.ts ===
+import * as arrayRules from './rules/arrayRules';
+>arrayRules : Symbol(arrayRules, Decl(lazy.ts, 0, 6))
+
+import { build } from './rules/builder';
+>build : Symbol(build, Decl(lazy.ts, 1, 8))
+
+export const e = build({ equals: arrayRules.equals });
+>e : Symbol(e, Decl(lazy.ts, 2, 12))
+>build : Symbol(build, Decl(lazy.ts, 1, 8))
+>equals : Symbol(equals, Decl(lazy.ts, 2, 24))
+>arrayRules.equals : Symbol(arrayRules.equals, Decl(arrayRules.ts, 0, 40))
+>arrayRules : Symbol(arrayRules, Decl(lazy.ts, 0, 6))
+>equals : Symbol(arrayRules.equals, Decl(arrayRules.ts, 0, 40))
+

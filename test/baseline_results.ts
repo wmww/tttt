@@ -993,6 +993,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationUnknownAliasThroughNamespace': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationUnknownImportRenamed': {
         errors: true,
         symbols: true,

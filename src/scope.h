@@ -1028,6 +1028,9 @@ bool symbol_alias_of_unknown(Symbol const* symbol);
 // first alias of it in the innermost symbol table that has one (a namespace's table is its exports; the globals last),
 // else null
 Symbol const* scope_unknown_alias(Scope const* me);
+// The same, also through the exports of an alias of something with exports (`ns.x`, x an alias of nothing): the chain
+// (1 or 2 symbols, the first the one in scope), 0 if there's none
+u32 scope_unknown_alias_chain(Scope const* me, Symbol const* out[2]);
 // A value `name` used here, which resolved to `found` (maybe null), passes an instance field on the way whose
 // constructor declares a value of that name (TS2301): that field, else null
 struct ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, Symbol const* found);

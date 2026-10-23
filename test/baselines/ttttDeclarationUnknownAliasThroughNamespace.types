@@ -1,0 +1,47 @@
+//// [test/cases/ttttDeclarationUnknownAliasThroughNamespace.ts] ////
+
+=== rules/arrayRules.ts ===
+import { isEmpty } from 'missing-utils';
+>isEmpty : any
+
+export function equals(value: unknown[], other: unknown[]): boolean { return value === other; }
+>equals : (value: unknown[], other: unknown[]) => boolean
+>value : unknown[]
+>other : unknown[]
+>value === other : boolean
+>value : unknown[]
+>other : unknown[]
+
+export { isEmpty };
+>isEmpty : any
+
+=== rules/builder.ts ===
+import type { DropFirst } from 'missing-utils';
+>DropFirst : any
+
+export declare function build<R extends Record<string, (...args: any[]) => any>>(r: R): {
+>build : <R extends Record<string, (...args: any[]) => any>>(r: R) => { [K in keyof R]: (...args: DropFirst<Parameters<R[K]>>) => number; }
+>args : any[]
+>r : R
+
+  [K in keyof R]: (...args: DropFirst<Parameters<R[K]>>) => number;
+>args : DropFirst<Parameters<R[K]>>
+
+};
+=== lazy.ts ===
+import * as arrayRules from './rules/arrayRules';
+>arrayRules : typeof arrayRules
+
+import { build } from './rules/builder';
+>build : <R extends Record<string, (...args: any[]) => any>>(r: R) => { [K in keyof R]: (...args: arrayRules.isEmpty<Parameters<R[K]>>) => number; }
+
+export const e = build({ equals: arrayRules.equals });
+>e : { equals: (...args: arrayRules.isEmpty<Parameters<(value: unknown[], other: unknown[]) => boolean>>) => number; }
+>build({ equals: arrayRules.equals }) : { equals: (...args: arrayRules.isEmpty<Parameters<(value: unknown[], other: unknown[]) => boolean>>) => number; }
+>build : <R extends Record<string, (...args: any[]) => any>>(r: R) => { [K in keyof R]: (...args: arrayRules.isEmpty<Parameters<R[K]>>) => number; }
+>{ equals: arrayRules.equals } : { equals: (value: unknown[], other: unknown[]) => boolean; }
+>equals : (value: unknown[], other: unknown[]) => boolean
+>arrayRules.equals : (value: unknown[], other: unknown[]) => boolean
+>arrayRules : typeof arrayRules
+>equals : (value: unknown[], other: unknown[]) => boolean
+
