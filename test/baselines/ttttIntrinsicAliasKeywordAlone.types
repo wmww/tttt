@@ -1,0 +1,24 @@
+//// [test/cases/ttttIntrinsicAliasKeywordAlone.ts] ////
+
+=== ttttIntrinsicAliasKeywordAlone.ts ===
+// A type alias whose body starts with `intrinsic` not before a `.` has the keyword alone as its type (tsc's
+// parseTypeAliasDeclaration): what follows is TS1005 ';' expected, the keyword TS2795 outside lib. Babel's
+// types/intrinsic-keyword-error fixture
+type Foo = intrinsic["foo"];
+>Foo : intrinsic
+>["foo"] : string[]
+>"foo" : "foo"
+
+type Bar = intrinsic | string;
+>Bar : intrinsic
+>| string : number
+> : any
+>string : any
+
+declare namespace intrinsic { type x = number }
+>x : number
+
+type Baz = intrinsic.x;
+>Baz : number
+>intrinsic : any
+

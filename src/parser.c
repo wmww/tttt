@@ -6215,11 +6215,29 @@ static bool parse_type_decl(Parser* parent, bool after_declare, TypeDecl* ret) {
     }
     hop_whitespace(&p);
 
-    // (tsc's parseTypeAliasDeclaration: parseExpected('='), then a type whatever)
+    // (tsc's parseTypeAliasDeclaration: parseExpected('='), then a type whatever, but `intrinsic` not before a `.` is
+    // the keyword alone: `type T = intrinsic["x"]` is TS1005 ';' expected at the `[`, and TS2795)
     TypeNode type;
     expect_char(&p, '=');
     hop_whitespace(&p);
-    expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
+    Parser intrinsic_p = parser(&p);
+    Anchor intrinsic_a = anchor(&intrinsic_p);
+    bool intrinsic = false;
+    if (*p.pos == 'i' && hop_start_if_ends_on_word_break(&intrinsic_p, "intrinsic")) {
+        const char* end = intrinsic_p.pos;
+        hop_whitespace(&intrinsic_p);
+        intrinsic = *intrinsic_p.pos != '.';
+        intrinsic_p.pos = end;
+    }
+    if (intrinsic) {
+        type = type_identifier(ast_new(IdentifierType, { .name = span_from(intrinsic_a) }));
+        type.parsed = true;
+        if (intrinsic_p.shared->text) type.pos = type_pos(&intrinsic_p, intrinsic_a.start);
+        parse_success(&intrinsic_p);
+    } else {
+        parse_fail(&intrinsic_p);
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
+    }
 
     *ret = (TypeDecl) {
         .name = name,

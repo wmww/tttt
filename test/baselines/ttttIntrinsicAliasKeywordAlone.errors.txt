@@ -1,0 +1,26 @@
+ttttIntrinsicAliasKeywordAlone.ts(4,12): error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+ttttIntrinsicAliasKeywordAlone.ts(4,21): error TS1005: ';' expected.
+ttttIntrinsicAliasKeywordAlone.ts(5,12): error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+ttttIntrinsicAliasKeywordAlone.ts(5,22): error TS1005: ';' expected.
+ttttIntrinsicAliasKeywordAlone.ts(5,24): error TS2693: 'string' only refers to a type, but is being used as a value here.
+
+
+==== ttttIntrinsicAliasKeywordAlone.ts (5 errors) ====
+    // A type alias whose body starts with `intrinsic` not before a `.` has the keyword alone as its type (tsc's
+    // parseTypeAliasDeclaration): what follows is TS1005 ';' expected, the keyword TS2795 outside lib. Babel's
+    // types/intrinsic-keyword-error fixture
+    type Foo = intrinsic["foo"];
+               ~~~~~~~~~
+!!! error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+                        ~
+!!! error TS1005: ';' expected.
+    type Bar = intrinsic | string;
+               ~~~~~~~~~
+!!! error TS2795: The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.
+                         ~
+!!! error TS1005: ';' expected.
+                           ~~~~~~
+!!! error TS2693: 'string' only refers to a type, but is being used as a value here.
+    declare namespace intrinsic { type x = number }
+    type Baz = intrinsic.x;
+    
