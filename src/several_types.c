@@ -917,7 +917,9 @@ void typeof_type_drop(TypeofType* me) {
 void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs) {
     bool saved = scope_flow(names)->in_type_query;
     scope_flow(names)->in_type_query = true;
+    scope_flow(names)->unmarked_assignments++;
     expr_lookup_names(my expr, names, errs);
+    scope_flow(names)->unmarked_assignments--;
     scope_flow(names)->in_type_query = saved;
     Expr* name = my expr;
     if (name->tag == EXPR_GENERIC_PARAMS) name = &name->generic_params->expr;

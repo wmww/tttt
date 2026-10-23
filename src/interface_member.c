@@ -133,7 +133,9 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
                 scope_rare_mut(key_names)->computed_name_of = &scope_rare(names)->this_ref.interface->generic;
             }
             // (A mapped type's member elsewhere, `[K in T]`: resolved silently, TS7061 said it all)
+            scope_flow(names)->unmarked_assignments++; // (In a type node or an interface: tsc's markNodeAssignments skips both)
             expr_lookup_names(my key.expr, key_names, interface_member_is_misplaced_mapped(me) ? nullptr : errs);
+            scope_flow(names)->unmarked_assignments--;
         }   break;
 
         case INTERFACE_KEY_MAPPED:

@@ -1,0 +1,61 @@
+//// [test/cases/ttttClosureNarrowingUnwalkedAssignments.ts] ////
+
+=== ttttClosureNarrowingUnwalkedAssignments.ts ===
+// Assignments where tsc's markNodeAssignments doesn't walk (an enum, a type node: a heritage clause's expression, an
+// instantiation expression, a type literal's computed key) don't end the narrowing a closure sees; a call's callee with
+// type arguments isn't a type node (bun's 21-C23, 32-C14a-d)
+function f1(x: string | number) { if (typeof x === "string") () => x.length; enum E { A = (x = 1) } }
+>f1 : Symbol(f1, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 0, 0))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 3, 12))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 3, 12))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 3, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>E : Symbol(E, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 3, 76))
+>A : Symbol(E.A, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 3, 85))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 3, 12))
+
+function f2(x: string | number) { if (typeof x === "string") { () => x.length; class D extends (x = 1, Object) {} } }
+>f2 : Symbol(f2, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 3, 101))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 12))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 12))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>D : Symbol(D, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 78))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 12))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+
+declare function gf<T>(): T;
+>gf : Symbol(gf, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 117))
+>T : Symbol(T, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 5, 20))
+>T : Symbol(T, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 5, 20))
+
+function f3(x: string | number) { if (typeof x === "string") { () => x.length; (x = 1, gf)<number>; } }
+>f3 : Symbol(f3, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 5, 28))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 6, 12))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 6, 12))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 6, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 6, 12))
+>gf : Symbol(gf, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 117))
+
+function f5(x: string | number) { if (typeof x === "string") { () => x.length; (x = 1, gf)<number>(); } }
+>f5 : Symbol(f5, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 6, 103))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 7, 12))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 7, 12))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 7, 12))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 7, 12))
+>gf : Symbol(gf, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 117))
+
+function f6(x: string | number) { if (typeof x === "string") { () => x.length; gf<typeof x>(); } }
+>f6 : Symbol(f6, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 7, 105))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 8, 12))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 8, 12))
+>x.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 8, 12))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>gf : Symbol(gf, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 4, 117))
+>x : Symbol(x, Decl(ttttClosureNarrowingUnwalkedAssignments.ts, 8, 12))
+

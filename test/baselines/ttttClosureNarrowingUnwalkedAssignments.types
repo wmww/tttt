@@ -1,0 +1,99 @@
+//// [test/cases/ttttClosureNarrowingUnwalkedAssignments.ts] ////
+
+=== ttttClosureNarrowingUnwalkedAssignments.ts ===
+// Assignments where tsc's markNodeAssignments doesn't walk (an enum, a type node: a heritage clause's expression, an
+// instantiation expression, a type literal's computed key) don't end the narrowing a closure sees; a call's callee with
+// type arguments isn't a type node (bun's 21-C23, 32-C14a-d)
+function f1(x: string | number) { if (typeof x === "string") () => x.length; enum E { A = (x = 1) } }
+>f1 : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>() => x.length : () => number
+>x.length : number
+>x : string
+>length : number
+>E : E
+>A : E.A
+>(x = 1) : 1
+>x = 1 : 1
+>x : string | number
+>1 : 1
+
+function f2(x: string | number) { if (typeof x === "string") { () => x.length; class D extends (x = 1, Object) {} } }
+>f2 : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>() => x.length : () => number
+>x.length : number
+>x : string
+>length : number
+>D : D
+>(x = 1, Object) : Object
+>x = 1, Object : ObjectConstructor
+>x = 1 : 1
+>x : string | number
+>1 : 1
+>Object : ObjectConstructor
+
+declare function gf<T>(): T;
+>gf : <T>() => T
+
+function f3(x: string | number) { if (typeof x === "string") { () => x.length; (x = 1, gf)<number>; } }
+>f3 : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>() => x.length : () => number
+>x.length : number
+>x : string
+>length : number
+>(x = 1, gf)<number> : () => number
+>(x = 1, gf) : <T>() => T
+>x = 1, gf : <T>() => T
+>x = 1 : 1
+>x : string | number
+>1 : 1
+>gf : <T>() => T
+
+function f5(x: string | number) { if (typeof x === "string") { () => x.length; (x = 1, gf)<number>(); } }
+>f5 : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>() => x.length : () => any
+>x.length : any
+>x : string | number
+>length : any
+>(x = 1, gf)<number>() : number
+>(x = 1, gf) : <T>() => T
+>x = 1, gf : <T>() => T
+>x = 1 : 1
+>x : string | number
+>1 : 1
+>gf : <T>() => T
+
+function f6(x: string | number) { if (typeof x === "string") { () => x.length; gf<typeof x>(); } }
+>f6 : (x: string | number) => void
+>x : string | number
+>typeof x === "string" : boolean
+>typeof x : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x : string | number
+>"string" : "string"
+>() => x.length : () => number
+>x.length : number
+>x : string
+>length : number
+>gf<typeof x>() : string
+>gf : <T>() => T
+>x : string
+

@@ -139,6 +139,11 @@ typedef struct FlowStatementFrame {
 // block, namespace body, source file). Lives on the stack of whoever walks the container, reached through Scope.flow
 
 typedef struct FlowBuilder {
+    // Inside what tsc's markNodeAssignments doesn't walk (an enum, a type node: a class's `extends` expression, an
+    // instantiation expression `f<T>`, a type literal's computed key, a type query): assignments there don't count for
+    // narrowing in closures (identifier_mark_assigned())
+    u32 unmarked_assignments;
+    bool callee_of_call; // The expression walked next is a call's callee (whose type arguments are the call's)
     Arena* arena;
     u32* next_id;
     u32 id_counter; // What next_id points at in the builder of a file

@@ -1448,6 +1448,10 @@ void expr_link_assignment_declaration(Expr* me, Binder* binder) {
 static void identifier_mark_assigned(IdentifierExpr const* me, Scope const* names) {
     Symbol* symbol = (Symbol*)my target; // Local: this file's walk owns it
     if (!symbol || !symbol->is_local || !(symbol->flags & SYMBOL_VARIABLE)) return;
+    if (scope_flow(names)->unmarked_assignments) return;
+    for (Scope const* i = names; i && !scope_declares_symbol(i, symbol); i = i->parent) {
+        if (i->kind == SCOPE_ENUM) return;
+    }
     symbol->is_assigned = true;
     if (my assignment_target == FLOW_TARGET_DEFINITE) symbol->is_definitely_assigned = true;
     char const* anywhere = (char const*)UINTPTR_MAX;
@@ -1519,6 +1523,7 @@ static void expr_lookup_names_chain(
     flow->true_target = pre_chain ? pre_chain : true_target;
     flow->false_target = false_target;
     flow->chain_continues = !is_root;
+    flow->callee_of_call = my tag == EXPR_CALL;
     expr_lookup_names(object, names, errs);
     if (is_root) {
         // (When the object is a chain of its own it has added the same already: so does tsc)
@@ -1842,6 +1847,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     flow->read_target = false;
     bool nullish_condition = flow->nullish_condition;
     flow->nullish_condition = false;
+    bool callee_of_call = flow->callee_of_call;
+    flow->callee_of_call = false;
     flow->true_target = nullptr;
     flow->false_target = nullptr;
     flow->chain_continues = false;
@@ -2124,7 +2131,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             flow->true_target = true_target;
             flow->false_target = false_target;
             flow->chain_continues = chain_continues;
+            // (An instantiation expression is a type node to tsc, ExpressionWithTypeArguments, unlike a call's callee)
+            if (!callee_of_call) flow->unmarked_assignments++;
+            flow->callee_of_call = callee_of_call;
             expr_lookup_names(&my generic_params->expr, names, errs);
+            if (!callee_of_call) flow->unmarked_assignments--;
             // (`super<T>` is TS2754, its type arguments never checked: tsc says nothing about what they name)
             bool super_args = my generic_params->expr.tag == EXPR_IDENTIFIER &&
                 my generic_params->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
@@ -2217,6 +2228,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 function_impl_rare_mut(callee->function)->iife_arg_count = (u32)vec_expr_size(&my call->args);
                 function_impl_rare_mut(callee->function)->iife_call = my call;
                 flow_call_argument_targets(my call);
+                flow->callee_of_call = true;
                 expr_lookup_names(&my call->callable, names, errs);
                 flow->next_function_is_iife = false;
                 break;
@@ -2238,6 +2250,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 // checkSuperExpression, isCallExpression)
                 callee->identifier.super_member = true;
             }
+            flow->callee_of_call = true;
             expr_lookup_names(&my call->callable, names, errs);
             for_each (i, vec_expr, &my call->args) {
                 expr_lookup_names(i, names, errs);

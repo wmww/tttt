@@ -792,6 +792,7 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
     Expr* head = base;
     while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT) head = &head->property->expr;
     if (head->tag == EXPR_IDENTIFIER && !head->identifier.keyword) head->identifier.extends_entity_ = base;
+    scope_flow(names)->unmarked_assignments++; // (A heritage clause's ExpressionWithTypeArguments is a type node)
     if (!generic_empty(&my generic) && base->tag != EXPR_IMPLICIT_ANY) {
         // The base class expression can't see the class's type parameters, its type arguments can
         ScopePendingMark pending_mark = scope_pending_mark(names->binder);
@@ -808,6 +809,7 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
     } else {
         expr_lookup_names(&my extends, names, errs);
     }
+    scope_flow(names)->unmarked_assignments--;
     for_each (i, vec_spanned_type, &my implements) {
         type_lookup_names(&i->type, names, errs);
     }
