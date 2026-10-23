@@ -86,9 +86,14 @@ measured wins first; land fast and gate in batches.
   until its fixed (workers getting confused and such)"). bun 92-R16b showed that with work stealing an order-dependent
   diagnostic (a circularity on mutually recursive mapped types; also TS5115/TS2589, sequelize's TS7022) is a
   run-to-run flake when its two files split across checkers (16-19 of 60 runs at K4), while tsgo's static
-  association is stable per K (though itself K-dependent: sequelize). Worker corH prototypes a deterministic deal (a
-  file's checker a pure function of program and K) with a perf study at the defaults before it lands; the
-  order-independence of the diagnostics themselves (reentrancy.md stages C-E) remains the real fix. Written up in
+  association is stable per K (though itself K-dependent: sequelize). A deterministic deal was prototyped and
+  withdrawn the same evening (corH, agents/notes/deterministic_deal.md): no stealing costs +7..+21% wall at the
+  defaults, fixed round-robin sequences +15..+48%, fresh-checker blocks +26% and +25% RSS; user time is unchanged,
+  the loss is the idle tail, and bytes don't predict a file's cost. What is done instead: when a parallel run reports
+  a history-sensitive diagnostic (an instantiation limit: TS2589/TS5114/TS5115/TS2590), the program is rechecked in
+  one checker in program order and that output is used (det3): K-stable and identical to tsgo at K1, paid only by
+  projects that already fail. The order-independence of the diagnostics themselves (reentrancy.md stages C-E) remains
+  the real fix. Written up in
   bugs/tsgo_divergences.md.
 - **Land fast, gate in batches** (2026-10-23, the human): a fix lands on `scripts/quickgate.sh` (the suite against
   the main it started from, three corpora, instructions against its base: `--vs-main`) through `scripts/land.sh`;
