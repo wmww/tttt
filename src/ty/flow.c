@@ -3539,6 +3539,9 @@ static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl 
     // getFlowTypeOfReference without a flow container, so any function expression's start goes on outside)
     if (q->pattern || q->parameters_of) return true;
     Expr const* reference = skip_reference_wrappers(q->reference);
+    // A qualified name of a `typeof a.b` type is no property access for tsc's getTypeAtFlowNode: its walk always goes
+    // on outside (narrowed like the code around the function expression it's in)
+    if (reference->tag == EXPR_PROPERTY && reference->property->qualified_name) return true;
     if (reference->tag != EXPR_IDENTIFIER) return false;
     if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return function_impl_is_arrow(function);
     // An async or generator IIFE has a start of its own, but tsc's getControlFlowContainer skips it

@@ -1,0 +1,112 @@
+//// [test/cases/ttttTypeQueryQualifiedNameFlowOutside.ts] ////
+
+=== ttttTypeQueryQualifiedNameFlowOutside.ts ===
+// A qualified name in `typeof a.b.c` is narrowed by the code around the function expression it's in: tsc's flow walk
+// stops at a function's start only for property and element access expressions, which a qualified name isn't
+declare const params: { replyOptions?: { onTyping?: (x: number) => void } };
+>params : Symbol(params, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 13))
+>replyOptions : Symbol(replyOptions, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 23))
+>onTyping : Symbol(onTyping, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 40))
+>x : Symbol(x, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 53))
+
+const f = params.replyOptions?.onTyping
+>f : Symbol(f, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 3, 5))
+>params.replyOptions?.onTyping : Symbol(onTyping, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 40))
+>params.replyOptions : Symbol(replyOptions, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 23))
+>params : Symbol(params, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 13))
+>replyOptions : Symbol(replyOptions, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 23))
+>onTyping : Symbol(onTyping, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 40))
+
+  ? (t: Parameters<NonNullable<typeof params.replyOptions.onTyping>>[0]) => t
+>t : Symbol(t, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 4, 5))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>NonNullable : Symbol(NonNullable, Decl(lib.es5.d.ts, --, --))
+>params.replyOptions.onTyping : Symbol(onTyping, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 40))
+>params.replyOptions : Symbol(replyOptions, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 23))
+>params : Symbol(params, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 13))
+>replyOptions : Symbol(replyOptions, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 23))
+>onTyping : Symbol(onTyping, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 2, 40))
+>t : Symbol(t, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 4, 5))
+
+  : undefined;
+>undefined : Symbol(undefined)
+
+function g(p: { o?: { a: string } }) {
+>g : Symbol(g, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 5, 14))
+>p : Symbol(p, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 11))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+
+  if (p.o) {
+>p.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>p : Symbol(p, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 11))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+
+    const h = function (x: typeof p.o.a) { return x; };
+>h : Symbol(h, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 9, 9))
+>x : Symbol(x, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 9, 24))
+>p.o.a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+>p.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>p : Symbol(p, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 11))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+>x : Symbol(x, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 9, 24))
+
+    const o = { m(y: typeof p.o.a): typeof p.o.a { return y; } };
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 10, 9))
+>m : Symbol(m, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 10, 15))
+>y : Symbol(y, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 10, 18))
+>p.o.a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+>p.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>p : Symbol(p, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 11))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+>p.o.a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+>p.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>p : Symbol(p, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 11))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+>y : Symbol(y, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 10, 18))
+
+    let z: typeof p.o.a = "";
+>z : Symbol(z, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 11, 7))
+>p.o.a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+>p.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>p : Symbol(p, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 11))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 15))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 7, 21))
+  }
+}
+
+let v: { o?: { a: number } } = {};
+>v : Symbol(v, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 3))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 8))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 14))
+
+if (v.o) {
+>v.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 8))
+>v : Symbol(v, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 3))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 8))
+
+  const k = () => {
+>k : Symbol(k, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 17, 7))
+
+    // The expression is a property access: not narrowed in the arrow
+    v.o.a;
+>v.o.a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 14))
+>v.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 8))
+>v : Symbol(v, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 3))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 8))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 14))
+
+    let w: typeof v.o.a = 1;
+>w : Symbol(w, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 20, 7))
+>v.o.a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 14))
+>v.o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 8))
+>v : Symbol(v, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 3))
+>o : Symbol(o, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 8))
+>a : Symbol(a, Decl(ttttTypeQueryQualifiedNameFlowOutside.ts, 15, 14))
+
+  };
+}
+

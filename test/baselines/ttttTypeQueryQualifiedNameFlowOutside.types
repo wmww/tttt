@@ -1,0 +1,118 @@
+//// [test/cases/ttttTypeQueryQualifiedNameFlowOutside.ts] ////
+
+=== ttttTypeQueryQualifiedNameFlowOutside.ts ===
+// A qualified name in `typeof a.b.c` is narrowed by the code around the function expression it's in: tsc's flow walk
+// stops at a function's start only for property and element access expressions, which a qualified name isn't
+declare const params: { replyOptions?: { onTyping?: (x: number) => void } };
+>params : { replyOptions?: { onTyping?: (x: number) => void; }; }
+>replyOptions : { onTyping?: (x: number) => void; } | undefined
+>onTyping : ((x: number) => void) | undefined
+>x : number
+
+const f = params.replyOptions?.onTyping
+>f : ((t: Parameters<NonNullable<typeof params.replyOptions.onTyping>>[0]) => number) | undefined
+>params.replyOptions?.onTyping  ? (t: Parameters<NonNullable<typeof params.replyOptions.onTyping>>[0]) => t  : undefined : ((t: Parameters<NonNullable<typeof params.replyOptions.onTyping>>[0]) => number) | undefined
+>params.replyOptions?.onTyping : ((x: number) => void) | undefined
+>params.replyOptions : { onTyping?: (x: number) => void; } | undefined
+>params : { replyOptions?: { onTyping?: (x: number) => void; }; }
+>replyOptions : { onTyping?: (x: number) => void; } | undefined
+>onTyping : ((x: number) => void) | undefined
+
+  ? (t: Parameters<NonNullable<typeof params.replyOptions.onTyping>>[0]) => t
+>(t: Parameters<NonNullable<typeof params.replyOptions.onTyping>>[0]) => t : (t: Parameters<NonNullable<typeof params.replyOptions.onTyping>>[0]) => number
+>t : number
+>params.replyOptions.onTyping : (x: number) => void
+>params.replyOptions : { onTyping?: (x: number) => void; }
+>params : { replyOptions?: { onTyping?: (x: number) => void; }; }
+>replyOptions : { onTyping?: (x: number) => void; }
+>onTyping : (x: number) => void
+>t : number
+
+  : undefined;
+>undefined : undefined
+
+function g(p: { o?: { a: string } }) {
+>g : (p: { o?: { a: string; }; }) => void
+>p : { o?: { a: string; }; }
+>o : { a: string; } | undefined
+>a : string
+
+  if (p.o) {
+>p.o : { a: string; } | undefined
+>p : { o?: { a: string; }; }
+>o : { a: string; } | undefined
+
+    const h = function (x: typeof p.o.a) { return x; };
+>h : (x: typeof p.o.a) => string
+>function (x: typeof p.o.a) { return x; } : (x: typeof p.o.a) => string
+>x : string
+>p.o.a : string
+>p.o : { a: string; }
+>p : { o?: { a: string; }; }
+>o : { a: string; }
+>a : string
+>x : string
+
+    const o = { m(y: typeof p.o.a): typeof p.o.a { return y; } };
+>o : { m(y: typeof p.o.a): typeof p.o.a; }
+>{ m(y: typeof p.o.a): typeof p.o.a { return y; } } : { m(y: typeof p.o.a): typeof p.o.a; }
+>m : (y: typeof p.o.a) => typeof p.o.a
+>y : string
+>p.o.a : string
+>p.o : { a: string; }
+>p : { o?: { a: string; }; }
+>o : { a: string; }
+>a : string
+>p.o.a : string
+>p.o : { a: string; }
+>p : { o?: { a: string; }; }
+>o : { a: string; }
+>a : string
+>y : string
+
+    let z: typeof p.o.a = "";
+>z : string
+>p.o.a : string
+>p.o : { a: string; }
+>p : { o?: { a: string; }; }
+>o : { a: string; }
+>a : string
+>"" : ""
+  }
+}
+
+let v: { o?: { a: number } } = {};
+>v : { o?: { a: number; }; }
+>o : { a: number; } | undefined
+>a : number
+>{} : {}
+
+if (v.o) {
+>v.o : { a: number; } | undefined
+>v : { o?: { a: number; }; }
+>o : { a: number; } | undefined
+
+  const k = () => {
+>k : () => void
+>() => {    // The expression is a property access: not narrowed in the arrow    v.o.a;    let w: typeof v.o.a = 1;  } : () => void
+
+    // The expression is a property access: not narrowed in the arrow
+    v.o.a;
+>v.o.a : number
+>v.o : { a: number; } | undefined
+>v : { o?: { a: number; }; }
+>o : { a: number; } | undefined
+>a : number
+
+    let w: typeof v.o.a = 1;
+>w : number
+>v.o.a : number
+>v.o : { a: number; }
+>v : { o?: { a: number; }; }
+>o : { a: number; }
+>a : number
+>1 : 1
+
+  };
+}
+
