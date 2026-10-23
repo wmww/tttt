@@ -1,0 +1,19 @@
+a.ts(4,34): error TS2694: Namespace '"m".it' has no exported member 'missing'.
+
+
+==== m.ts (0 errors) ====
+    type Chain<F extends (...args: any) => any> = F & { fn: F };
+    interface Ext { runIf(c: boolean): (name: string) => void; skipIf: (c: any) => number }
+    type TestAPI<X = object> = Chain<(name: string) => void> & Ext & { each: { deep: number } };
+    declare const it: TestAPI;
+    export { it };
+==== a.ts (1 errors) ====
+    type A = ReturnType<typeof import("./m").it.runIf>;
+    type B = typeof import("./m").it.each.deep;
+    type C = typeof import("./m").it.skipIf;
+    type D = typeof import("./m").it.missing;
+                                     ~~~~~~~
+!!! error TS2694: Namespace '"m".it' has no exported member 'missing'.
+    export const a: A = (name: string) => {};
+    export const b: B = 1;
+    

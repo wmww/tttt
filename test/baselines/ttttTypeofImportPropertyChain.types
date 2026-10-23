@@ -1,0 +1,58 @@
+//// [test/cases/ttttTypeofImportPropertyChain.ts] ////
+
+=== m.ts ===
+type Chain<F extends (...args: any) => any> = F & { fn: F };
+>Chain : Chain<F>
+>args : any
+>fn : F
+
+interface Ext { runIf(c: boolean): (name: string) => void; skipIf: (c: any) => number }
+>runIf : (c: boolean) => (name: string) => void
+>c : boolean
+>name : string
+>skipIf : (c: any) => number
+>c : any
+
+type TestAPI<X = object> = Chain<(name: string) => void> & Ext & { each: { deep: number } };
+>TestAPI : TestAPI<X>
+>name : string
+>each : { deep: number; }
+>deep : number
+
+declare const it: TestAPI;
+>it : TestAPI<object>
+
+export { it };
+>it : TestAPI<object>
+
+=== a.ts ===
+type A = ReturnType<typeof import("./m").it.runIf>;
+>A : (name: string) => void
+>it : any
+>runIf : any
+
+type B = typeof import("./m").it.each.deep;
+>B : number
+>it : any
+>each : any
+>deep : any
+
+type C = typeof import("./m").it.skipIf;
+>C : (c: any) => number
+>it : any
+>skipIf : any
+
+type D = typeof import("./m").it.missing;
+>D : any
+>it : any
+>missing : any
+
+export const a: A = (name: string) => {};
+>a : (name: string) => void
+>(name: string) => {} : (name: string) => void
+>name : string
+
+export const b: B = 1;
+>b : number
+>1 : 1
+

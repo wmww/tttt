@@ -1200,22 +1200,28 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             // getTypeFromImportTypeNode; the checker reads it the same way, lower.c)
             int prop_start = my identifier->rare ? my identifier->rare->import_prop_start : -1;
             if (!unresolved_import && identifier_type_import_typeof(my identifier) && prop_start > 0 &&
-                prop_start == identifier_type_namespace_count(my identifier)
+                prop_start <= identifier_type_namespace_count(my identifier)
             ) {
+                // (Each name from there on, `it.each.deep`, a property of the one before: tsc's getPropertyOfType)
                 Checker* checker = current_checker;
                 Ty const* type = ty_type_of_symbol(checker, my identifier->target);
-                Atom const* name = checker_atom(checker, span_sv(my identifier->name));
-                if ((type->flags & TYF_OBJECT) && ty_get_prop(checker, type, name)) {
+                isize count = identifier_type_namespace_count(my identifier) + 1;
+                for (isize i = prop_start; i < count; i++) {
+                    Span span = i == count - 1 ? my identifier->name : *ast_spans_at(identifier_type_namespaces(my identifier), i);
+                    Atom const* name = checker_atom(checker, span_sv(span));
+                    Prop const* prop = ty_property_of_type(checker, type, name);
+                    if (!prop) break;
                     PropSymbolInfo info = { .declarations = vec_span_init() };
-                    collect_prop_symbol(checker, type, name, &info, 0);
+                    collect_prop_symbol(checker, ty_apparent_type(checker, type), name, &info, 0);
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = info.declarations,
                         .allow_declaration_empty = true,
-                        .span = my identifier->name,
-                        .text = prop_text(&info, ctx, my identifier->name),
+                        .span = span,
+                        .text = prop_text(&info, ctx, span),
                     });
-                    unresolved_import = true; // (shown above)
+                    type = prop_type(checker, prop);
                 }
+                unresolved_import = true; // (shown above)
             }
             if (!(heritage && !shown) && !unresolved_import) baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_from_n(identifier_type_namespaces(my identifier)->data, identifier_type_namespaces(my identifier)->size),

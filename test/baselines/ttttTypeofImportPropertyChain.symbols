@@ -1,0 +1,66 @@
+//// [test/cases/ttttTypeofImportPropertyChain.ts] ////
+
+=== m.ts ===
+type Chain<F extends (...args: any) => any> = F & { fn: F };
+>Chain : Symbol(Chain, Decl(m.ts, 0, 0))
+>F : Symbol(F, Decl(m.ts, 0, 11))
+>args : Symbol(args, Decl(m.ts, 0, 22))
+>F : Symbol(F, Decl(m.ts, 0, 11))
+>fn : Symbol(fn, Decl(m.ts, 0, 51))
+>F : Symbol(F, Decl(m.ts, 0, 11))
+
+interface Ext { runIf(c: boolean): (name: string) => void; skipIf: (c: any) => number }
+>Ext : Symbol(Ext, Decl(m.ts, 0, 60))
+>runIf : Symbol(Ext.runIf, Decl(m.ts, 1, 15))
+>c : Symbol(c, Decl(m.ts, 1, 22))
+>name : Symbol(name, Decl(m.ts, 1, 36))
+>skipIf : Symbol(Ext.skipIf, Decl(m.ts, 1, 58))
+>c : Symbol(c, Decl(m.ts, 1, 68))
+
+type TestAPI<X = object> = Chain<(name: string) => void> & Ext & { each: { deep: number } };
+>TestAPI : Symbol(TestAPI, Decl(m.ts, 1, 87))
+>X : Symbol(X, Decl(m.ts, 2, 13))
+>Chain : Symbol(Chain, Decl(m.ts, 0, 0))
+>name : Symbol(name, Decl(m.ts, 2, 34))
+>Ext : Symbol(Ext, Decl(m.ts, 0, 60))
+>each : Symbol(each, Decl(m.ts, 2, 66))
+>deep : Symbol(deep, Decl(m.ts, 2, 74))
+
+declare const it: TestAPI;
+>it : Symbol(it, Decl(m.ts, 3, 13))
+>TestAPI : Symbol(TestAPI, Decl(m.ts, 1, 87))
+
+export { it };
+>it : Symbol(it, Decl(m.ts, 4, 8))
+
+=== a.ts ===
+type A = ReturnType<typeof import("./m").it.runIf>;
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>it : Symbol(it, Decl(m.ts, 4, 8))
+>runIf : Symbol(Ext.runIf, Decl(m.ts, 1, 15))
+
+type B = typeof import("./m").it.each.deep;
+>B : Symbol(B, Decl(a.ts, 0, 51))
+>it : Symbol(it, Decl(m.ts, 4, 8))
+>each : Symbol(each, Decl(m.ts, 2, 66))
+>deep : Symbol(deep, Decl(m.ts, 2, 74))
+
+type C = typeof import("./m").it.skipIf;
+>C : Symbol(C, Decl(a.ts, 1, 43))
+>it : Symbol(it, Decl(m.ts, 4, 8))
+>skipIf : Symbol(Ext.skipIf, Decl(m.ts, 1, 58))
+
+type D = typeof import("./m").it.missing;
+>D : Symbol(D, Decl(a.ts, 2, 40))
+>it : Symbol(it, Decl(m.ts, 4, 8))
+
+export const a: A = (name: string) => {};
+>a : Symbol(a, Decl(a.ts, 4, 12))
+>A : Symbol(A, Decl(a.ts, 0, 0))
+>name : Symbol(name, Decl(a.ts, 4, 21))
+
+export const b: B = 1;
+>b : Symbol(b, Decl(a.ts, 5, 12))
+>B : Symbol(B, Decl(a.ts, 0, 51))
+

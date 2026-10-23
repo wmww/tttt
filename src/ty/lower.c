@@ -713,14 +713,19 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             Prop const* previous = nullptr;
             for (isize i = identifier->rare->import_prop_start; i >= 0 && i < count; i++) {
                 Span name = i == count - 1 ? identifier->name : *ast_spans_at(identifier_type_namespaces(identifier), i);
-                Prop const* prop = ty_get_prop(me, ret, checker_atom(me, span_sv(name)));
+                // (tsc's getPropertyOfType: an intersection's or a union's too, vitest's `typeof import("vitest").it.runIf`)
+                Prop const* prop = ty_property_of_type(me, ret, checker_atom(me, span_sv(name)));
                 if (!prop) {
                     // A property of what `module.exports =` assigns or of a value, like the names before it (tsc's
                     // getTypeFromImportTypeNode reports it as a missing export of what the previous name resolved
                     // to: getFullyQualifiedName of that symbol, a property's with its parent's)
                     cstr container_name = cstr_null;
                     if (!previous) {
-                        container_name = symbol_fully_qualified_name(decl);
+                        // (The export as found, an `export { it }` specifier's alias in the module: tsc's currentNamespace)
+                        isize at = identifier->rare->import_prop_start - 1;
+                        Symbol const* found = at >= 0 && at < ast_symbols_size(identifier_type_namespace_symbols(identifier)) ?
+                            *ast_symbols_at(identifier_type_namespace_symbols(identifier), at) : nullptr;
+                        container_name = symbol_fully_qualified_name(found ? found : decl);
                     } else if (previous->parent) {
                         container_name = symbol_fully_qualified_name(previous->parent);
                         cstr_append_d(&container_name, DEFAULT_DISPLAY, ".", atom_sv(previous->name));
