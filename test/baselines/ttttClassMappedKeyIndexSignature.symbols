@@ -1,0 +1,62 @@
+//// [test/cases/ttttClassMappedKeyIndexSignature.ts] ////
+
+=== ttttClassMappedKeyIndexSignature.ts ===
+// `[K in T]` as a class member's name is TS7061 at the first member, an index signature too; with an index signature
+// of its staticness tsc checks the key expression after all (checkIndexConstraints' getTypeOfExpression), errors
+// and uses included, else quietly (bun's 88-R05b crashed on `this` and `super` in such a key)
+export {};
+function f1() {
+>f1 : Symbol(f1, Decl(ttttClassMappedKeyIndexSignature.ts, 3, 10))
+
+    const kk = "x"; const oo = {};
+>kk : Symbol(kk, Decl(ttttClassMappedKeyIndexSignature.ts, 5, 9))
+>oo : Symbol(oo, Decl(ttttClassMappedKeyIndexSignature.ts, 5, 25))
+
+    class D1 { [k: string]: any; [kk in oo]: number = 1 }
+>D1 : Symbol(D1, Decl(ttttClassMappedKeyIndexSignature.ts, 5, 34))
+>k : Symbol(k, Decl(ttttClassMappedKeyIndexSignature.ts, 6, 16))
+>[kk in oo] : Symbol(D1[kk in oo], Decl(ttttClassMappedKeyIndexSignature.ts, 6, 32))
+>kk : Symbol(kk, Decl(ttttClassMappedKeyIndexSignature.ts, 5, 9))
+>oo : Symbol(oo, Decl(ttttClassMappedKeyIndexSignature.ts, 5, 25))
+
+    return D1;
+>D1 : Symbol(D1, Decl(ttttClassMappedKeyIndexSignature.ts, 5, 34))
+}
+function f2() {
+>f2 : Symbol(f2, Decl(ttttClassMappedKeyIndexSignature.ts, 8, 1))
+
+    const kk = "x"; const oo = {};
+>kk : Symbol(kk, Decl(ttttClassMappedKeyIndexSignature.ts, 10, 9))
+>oo : Symbol(oo, Decl(ttttClassMappedKeyIndexSignature.ts, 10, 25))
+
+    class D2 { [kk in oo]: number = 1 }
+>D2 : Symbol(D2, Decl(ttttClassMappedKeyIndexSignature.ts, 10, 34))
+>[kk in oo] : Symbol(D2[kk in oo], Decl(ttttClassMappedKeyIndexSignature.ts, 11, 14))
+>kk : Symbol(kk, Decl(ttttClassMappedKeyIndexSignature.ts, 10, 9))
+>oo : Symbol(oo, Decl(ttttClassMappedKeyIndexSignature.ts, 10, 25))
+
+    return D2;
+>D2 : Symbol(D2, Decl(ttttClassMappedKeyIndexSignature.ts, 10, 34))
+}
+f1; f2;
+>f1 : Symbol(f1, Decl(ttttClassMappedKeyIndexSignature.ts, 3, 10))
+>f2 : Symbol(f2, Decl(ttttClassMappedKeyIndexSignature.ts, 8, 1))
+
+export class D4 { [k: string]: any; [missing1.a.b in missing2()]: number = 1 }
+>D4 : Symbol(D4, Decl(ttttClassMappedKeyIndexSignature.ts, 14, 7))
+>k : Symbol(k, Decl(ttttClassMappedKeyIndexSignature.ts, 15, 19))
+>[missing1.a.b in missing2()] : Symbol(D4[missing1.a.b in missing2()], Decl(ttttClassMappedKeyIndexSignature.ts, 15, 35))
+
+export class D6 { [k: string]: any; [this.x in super.y]: number = 1 }
+>D6 : Symbol(D6, Decl(ttttClassMappedKeyIndexSignature.ts, 15, 78))
+>k : Symbol(k, Decl(ttttClassMappedKeyIndexSignature.ts, 16, 19))
+>[this.x in super.y] : Symbol(D6[this.x in super.y], Decl(ttttClassMappedKeyIndexSignature.ts, 16, 35))
+>this.x : Symbol(D6.__index, Decl(ttttClassMappedKeyIndexSignature.ts, 16, 17))
+>this : Symbol(D6, Decl(ttttClassMappedKeyIndexSignature.ts, 15, 78))
+>x : Symbol(D6.__index, Decl(ttttClassMappedKeyIndexSignature.ts, 16, 17))
+
+export class D7 { static [k: string]: any; [missing3 in missing4]: number = 1 }
+>D7 : Symbol(D7, Decl(ttttClassMappedKeyIndexSignature.ts, 16, 69))
+>k : Symbol(k, Decl(ttttClassMappedKeyIndexSignature.ts, 17, 26))
+>[missing3 in missing4] : Symbol(D7[missing3 in missing4], Decl(ttttClassMappedKeyIndexSignature.ts, 17, 42))
+

@@ -1,0 +1,88 @@
+//// [test/cases/ttttClassMappedKeyIndexSignature.ts] ////
+
+=== ttttClassMappedKeyIndexSignature.ts ===
+// `[K in T]` as a class member's name is TS7061 at the first member, an index signature too; with an index signature
+// of its staticness tsc checks the key expression after all (checkIndexConstraints' getTypeOfExpression), errors
+// and uses included, else quietly (bun's 88-R05b crashed on `this` and `super` in such a key)
+export {};
+function f1() {
+>f1 : () => typeof D1
+
+    const kk = "x"; const oo = {};
+>kk : "x"
+>"x" : "x"
+>oo : {}
+>{} : {}
+
+    class D1 { [k: string]: any; [kk in oo]: number = 1 }
+>D1 : D1
+>k : string
+>[kk in oo] : number
+>kk in oo : boolean
+>kk : "x"
+>oo : {}
+>1 : 1
+
+    return D1;
+>D1 : typeof D1
+}
+function f2() {
+>f2 : () => typeof D2
+
+    const kk = "x"; const oo = {};
+>kk : "x"
+>"x" : "x"
+>oo : {}
+>{} : {}
+
+    class D2 { [kk in oo]: number = 1 }
+>D2 : D2
+>[kk in oo] : number
+>kk in oo : boolean
+>kk : "x"
+>oo : {}
+>1 : 1
+
+    return D2;
+>D2 : typeof D2
+}
+f1; f2;
+>f1 : () => typeof D1
+>f2 : () => typeof D2
+
+export class D4 { [k: string]: any; [missing1.a.b in missing2()]: number = 1 }
+>D4 : D4
+>k : string
+>[missing1.a.b in missing2()] : number
+>missing1.a.b in missing2() : boolean
+>missing1.a.b : any
+>missing1.a : any
+>missing1 : any
+>a : any
+>b : any
+>missing2() : any
+>missing2 : any
+>1 : 1
+
+export class D6 { [k: string]: any; [this.x in super.y]: number = 1 }
+>D6 : D6
+>k : string
+>[this.x in super.y] : number
+>this.x in super.y : boolean
+>this.x : any
+>this : this
+>x : any
+>super.y : any
+>super : any
+>y : any
+>1 : 1
+
+export class D7 { static [k: string]: any; [missing3 in missing4]: number = 1 }
+>D7 : D7
+>k : string
+>[missing3 in missing4] : number
+>missing3 in missing4 : boolean
+>missing3 : any
+>missing4 : any
+>1 : 1
+

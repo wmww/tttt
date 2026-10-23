@@ -236,6 +236,21 @@ static bool class_item_key_is_misplaced_mapped(ClassItem const* item) {
     return key && key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key);
 }
 
+// Such a key is checked after all, errors and all, when the class has an index signature of the member's staticness:
+// tsc's checkIndexConstraints takes getTypeOfExpression of every member name that isn't bindable. (Only the class's
+// own index signatures: one inherited from a base class counts to tsc too)
+static bool class_item_key_is_quiet(ClassDecl const* class_decl, ClassItem* item) {
+    if (!class_item_key_is_misplaced_mapped(item)) return false;
+    bool is_static = class_item_is_static(item);
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag == CLASS_ITEM_INTERFACE_MEMBER && i->interface_member_static == is_static &&
+            i->interface_memeber.key.tag == INTERFACE_KEY_INDEX) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void lookup_names_without_super(
     Expr* expr, Scope* names, NoSuper why, bool own_container, FunctionImpl const* member, ErrorCtx* errs
 ) {
@@ -305,8 +320,12 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
                 scope_flow(names)->type_only_alias_ok = my method.is_abstract;
                 bool method_name = scope_flow(names)->method_name;
                 scope_flow(names)->method_name = true;
+                // (A quiet key's names aren't uses either: tsc never checks it, `kk` of `[kk in oo]` is unused)
+                bool quiet = class_item_key_is_quiet(class_decl, me);
+                unused_marking_suppressed += quiet;
                 lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, &my method.func,
-                    class_item_key_is_misplaced_mapped(me) ? nullptr : errs);
+                    quiet ? nullptr : errs);
+                unused_marking_suppressed -= quiet;
                 scope_flow(names)->method_name = method_name;
                 scope_flow(names)->type_only_alias_ok = false;
             }
@@ -325,8 +344,11 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         case CLASS_ITEM_FIELD:
             if (my field.computed_key) {
                 scope_flow(names)->type_only_alias_ok = my field.is_abstract || my field.is_declare;
+                bool quiet = class_item_key_is_quiet(class_decl, me);
+                unused_marking_suppressed += quiet;
                 lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, my field.value.tag != EXPR_IMPLICIT_ANY,
-                    nullptr, class_item_key_is_misplaced_mapped(me) ? nullptr : errs);
+                    nullptr, quiet ? nullptr : errs);
+                unused_marking_suppressed -= quiet;
                 scope_flow(names)->type_only_alias_ok = false;
             }
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
@@ -805,21 +827,34 @@ static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, b
     bool field = item->tag == CLASS_ITEM_FIELD;
     Expr* key = field ? item->field.computed_key : item->method.computed_key;
     bool misplaced_mapped = class_item_key_is_misplaced_mapped(item);
-    // (Typed all the same, quietly: tsc's errorType for it is any to the members)
-    expr_typecheck(key, misplaced_mapped ? nullptr : errs);
+    // (Typed all the same, quietly but for an index signature's check: tsc's errorType for it is any to the members.
+    // The expression checks assume somewhere to report, so a quiet one reports into scratch)
+    ErrorCtx quiet = error_ctx_scratch(errs);
+    expr_typecheck(key, class_item_key_is_quiet(me, item) ? &quiet : errs);
+    error_ctx_drop(&quiet);
     bool accessor = !field && item->method.accessor;
     if (!misplaced_mapped) {
         ty_check_computed_name(current_checker, key, field ? item->field.name_span : item->method.name_span, !accessor, errs);
     }
     // tsc's checkGrammarProperty: `[K in T]: X` is a mapped type's member written in a class, reported at the class's
-    // first member (a property, method or constructor: at its name)
+    // first member (a property, method or constructor: at its name; an index signature)
     if (field && key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key) &&
         vec_class_item_size(&my items)
     ) {
         ClassItem const* first = vec_class_item_at(&my items, 0);
         Span span = first->tag == CLASS_ITEM_FIELD ? first->field.name_span :
             first->tag == CLASS_ITEM_METHOD ? first->method.name_span :
-            first->tag == CLASS_ITEM_CONSTRUCTOR ? first->constructor.name_span : span_null;
+            first->tag == CLASS_ITEM_CONSTRUCTOR ? first->constructor.name_span :
+            // (An index signature: the whole of it, tsc's error span of a node without a name)
+            first->tag == CLASS_ITEM_INTERFACE_MEMBER ? first->span : span_null;
+        if (span_valid(span) && first->tag == CLASS_ITEM_INTERFACE_MEMBER) {
+            // (The node goes on to its `;`, which the item's span leaves out)
+            char const* end = span.buf + span.size;
+            char const* limit = cstr_str(&span_source(span)->contents) + cstr_size(&span_source(span)->contents);
+            char const* at = end;
+            while (at < limit && (*at == ' ' || *at == '\t')) at++;
+            if (at < limit && *at == ';') span = span_make(span_source(span), span.buf, at + 1);
+        }
         if (span_valid(span)) {
             error_ctx_grammar_error_d(errs, span, 7061, "A mapped type may not declare properties or methods.");
             return;

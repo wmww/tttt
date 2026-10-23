@@ -1,0 +1,55 @@
+ttttClassMappedKeyIndexSignature.ts(7,16): error TS7061: A mapped type may not declare properties or methods.
+ttttClassMappedKeyIndexSignature.ts(11,11): error TS6133: 'kk' is declared but its value is never read.
+ttttClassMappedKeyIndexSignature.ts(11,27): error TS6133: 'oo' is declared but its value is never read.
+ttttClassMappedKeyIndexSignature.ts(12,16): error TS7061: A mapped type may not declare properties or methods.
+ttttClassMappedKeyIndexSignature.ts(16,19): error TS7061: A mapped type may not declare properties or methods.
+ttttClassMappedKeyIndexSignature.ts(16,38): error TS2304: Cannot find name 'missing1'.
+ttttClassMappedKeyIndexSignature.ts(16,54): error TS2304: Cannot find name 'missing2'.
+ttttClassMappedKeyIndexSignature.ts(17,19): error TS7061: A mapped type may not declare properties or methods.
+ttttClassMappedKeyIndexSignature.ts(17,38): error TS2465: 'this' cannot be referenced in a computed property name.
+ttttClassMappedKeyIndexSignature.ts(17,48): error TS2466: 'super' cannot be referenced in a computed property name.
+ttttClassMappedKeyIndexSignature.ts(18,19): error TS7061: A mapped type may not declare properties or methods.
+
+
+==== ttttClassMappedKeyIndexSignature.ts (11 errors) ====
+    // `[K in T]` as a class member's name is TS7061 at the first member, an index signature too; with an index signature
+    // of its staticness tsc checks the key expression after all (checkIndexConstraints' getTypeOfExpression), errors
+    // and uses included, else quietly (bun's 88-R05b crashed on `this` and `super` in such a key)
+    export {};
+    function f1() {
+        const kk = "x"; const oo = {};
+        class D1 { [k: string]: any; [kk in oo]: number = 1 }
+                   ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+        return D1;
+    }
+    function f2() {
+        const kk = "x"; const oo = {};
+              ~~
+!!! error TS6133: 'kk' is declared but its value is never read.
+                              ~~
+!!! error TS6133: 'oo' is declared but its value is never read.
+        class D2 { [kk in oo]: number = 1 }
+                   ~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+        return D2;
+    }
+    f1; f2;
+    export class D4 { [k: string]: any; [missing1.a.b in missing2()]: number = 1 }
+                      ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                         ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing1'.
+                                                         ~~~~~~~~
+!!! error TS2304: Cannot find name 'missing2'.
+    export class D6 { [k: string]: any; [this.x in super.y]: number = 1 }
+                      ~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+                                         ~~~~
+!!! error TS2465: 'this' cannot be referenced in a computed property name.
+                                                   ~~~~~
+!!! error TS2466: 'super' cannot be referenced in a computed property name.
+    export class D7 { static [k: string]: any; [missing3 in missing4]: number = 1 }
+                      ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS7061: A mapped type may not declare properties or methods.
+    
