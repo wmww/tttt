@@ -1178,9 +1178,9 @@ bool ty_relate_explaining_at(
     bool* overflowed
 ) {
     u32 limit_hits = my instantiation_limit_hits;
-    CurrentNode saved = ty_enter_node(me, span);
+    my relation_error_span = span;
     bool fits = relate_explaining(me, TY_RELATION_ASSIGNABLE, source, target, head_code, lines, errs);
-    ty_leave_node(me, saved);
+    my relation_error_span = span_null;
     *overflowed = !fits && my instantiation_limit_hits != limit_hits;
     if (*overflowed) vec_ty_report_line_drop(lines);
     return fits;

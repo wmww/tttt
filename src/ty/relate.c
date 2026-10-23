@@ -8262,6 +8262,9 @@ static inline bool error_related(Ty const* source, Ty const* target, TyRelation 
 static bool check_related(
     Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* report_into, unsigned head_code
 ) {
+    // (The error node is this relation's only: one related on the way is reported at the current node)
+    Span error_span = my relation_error_span;
+    my relation_error_span = span_null;
     if (error_related(source, target, relation)) return true;
     Ty const* fresh_union = source->kind == TY_UNION && (source->flags & TYF_FRESH_LITERAL) ? source : nullptr;
     source = ty_regular(me, source);
@@ -8351,8 +8354,10 @@ static bool check_related(
         }
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
-        ty_error_at_current_node_d(me, complexity ? 2859 : 2321, complexity ? "Excessive complexity" : "Excessive stack depth",
-            " comparing types '", source_str, "' and '", target_str, "'.");
+        cstr message = cstr_d(complexity ? "Excessive complexity" : "Excessive stack depth", " comparing types '", source_str,
+            "' and '", target_str, "'.");
+        if (span_valid(error_span)) ty_error_at(me, error_span, complexity ? 2859 : 2321, message);
+        else ty_error_at_current_node(me, complexity ? 2859 : 2321, message);
         c_drop(cstr, &source_str, &target_str);
         // (A limit like the instantiation ones: what it cut short says nothing more)
         my instantiation_limit_hits++;

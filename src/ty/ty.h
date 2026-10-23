@@ -1292,6 +1292,9 @@ struct Checker {
     u32 active_mapper_count, active_mapper_cap;
     struct JsxElement const* jsx_element; // The JSX element being checked (relation errors about its attributes)
     CurrentNode current_node; // See ty_enter_node()
+    // The error node of the next top-level relation (tsc's checkTypeRelatedTo's errorNode), where it reports running
+    // out of budget or stack, else at the current node: see ty_relate_explaining_at()
+    Span relation_error_span;
     // What is being resolved, innermost last (tsc's resolutionTargets): see ty_resolving_push()
     struct Resolving* resolving;
     u32 resolving_len;
