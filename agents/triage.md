@@ -119,3 +119,7 @@ intersection's property symbol to bugs/type_core.md.
 - (cor6, 2026-10-22) `./debug/tttt -p thirdparty/sources/emailthing/apps/api --noEmit` aborts with `free(): invalid
   pointer` at the default threads (every run; HEAD 8a20b3d3c's relate.c too), not at `--threads 1`; release builds don't.
   A debug-only heap misuse on some thread path: run it under valgrind/ASan.
+
+- mcp-linker (source sweep refresh 5) makes 1.73x tsgo's types (139k against 81k; perfsweep at a5252a764, the new worst
+  types ratio, lit tsserver-plugin's 1.40 next): unexamined (a missing cache or a runaway; `scripts/perfsweep.py -f
+  mcp-linker`, then `TTTT_FILE_TIMES=1` for the file).
