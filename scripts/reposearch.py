@@ -24,11 +24,19 @@ root package.json, a root lockfile and a root tsconfig.json (local `extends` fol
       the main language with >= 5 MB of it (~150k lines), a root package.json, any root lockfile and no deno.json,
       not in repos.txt nor the corpora; N of them, in shuffled order. Verify the lines after cloning. (The languages
       API is the unauthenticated core limit, 60 an hour: it sleeps when it runs out)
+  scripts/reposearch.py genericapp TOPIC,TOPIC... PER [PAGES]  # application monorepos on heavy generic libraries
+      (refresh 7): stars 50..5000, pushed since 2026-06-01, any root lockfile, no deno.json; the root package.json
+      and its workspaces' (package.json `workspaces`, pnpm-workspace.yaml) depend on at least two of the GENERIC
+      families; an application (an apps/ directory, or a private root package with workspaces, or a private root
+      package depending on an app framework); some tsconfig*.json of the tree says `"strict": true`. Lists the tree
+      with a blobless shallow clone into a temporary directory (no API quota); prints the families matched, the
+      workspace packages, the TypeScript files (not .d.ts) and the tsconfig*.json files (refresh 7 preferred large ones;
+      REPOSEARCH_MIN_TS=N skips trees with fewer TypeScript files)
 
 Prints `topic owner/name stars default-branch`; pin each with `git ls-remote URL HEAD` and append it to repos.txt
 under a comment saying the rule (refresh 2, 2026-10-18, is the example). Files are read from raw.githubusercontent.com.
 """
-import json, os, posixpath, re, sys, time, urllib.request, urllib.error
+import fnmatch, json, os, posixpath, re, shutil, subprocess, sys, tempfile, time, urllib.request, urllib.error
 existing = set()
 for l in open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'test/sourcesweep/repos.txt')):
     l = l.strip().lstrip('#')
@@ -63,6 +71,61 @@ def config_text(full, path, depth=0):
         if not p.endswith('.json'): p += '.json'
         t += '\n' + config_text(full, p, depth + 1)
     return t
+GENERIC = {'effect': r'^(effect|@effect/.*)$', 'zod': r'^zod$', 'drizzle': r'^drizzle-orm$', 'kysely': r'^kysely$',
+           'hono': r'^hono$', 'trpc': r'^@trpc/.*$', 'tanstack': r'^@tanstack/.*$', 'arktype': r'^arktype$',
+           'valibot': r'^valibot$', 'ts-pattern': r'^ts-pattern$', 'mikro-orm': r'^@mikro-orm/.*$',
+           'typebox': r'^(typebox|@sinclair/typebox)$'}
+FRAMEWORKS = r'^(next|react|react-dom|vite|solid-js|svelte|@sveltejs/kit|nuxt|astro|expo|react-native|electron|express|' \
+             r'fastify|hono|@remix-run/.*|@tanstack/react-start|@tanstack/solid-start|vue|@nestjs/core|elysia)$'
+def tree_paths(full, branch):
+    d = tempfile.mkdtemp(prefix='reposearch-')
+    try:
+        subprocess.run(['git', 'clone', '-q', '--depth', '1', '--filter=blob:none', '--no-checkout', '-b', branch,
+                        f'https://github.com/{full}.git', d], check=True, capture_output=True, timeout=300)
+        out = subprocess.run(['git', '-C', d, 'ls-tree', '-r', '--name-only', 'HEAD'], capture_output=True, text=True,
+                             check=True).stdout
+        return out.split('\n')
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return None
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+def deps_of(pj):
+    try: j = json.loads(pj)
+    except ValueError: return {}, set()
+    names = set()
+    for k in ('dependencies', 'devDependencies', 'peerDependencies'):
+        if isinstance(j.get(k), dict): names |= set(j[k])
+    return j, names
+def genericapp(full, branch, pj):
+    root, names = deps_of(pj)
+    globs = root.get('workspaces', [])
+    if isinstance(globs, dict): globs = globs.get('packages', [])
+    pw = raw(full, 'pnpm-workspace.yaml')
+    if pw:
+        m = re.search(r'(?ms)^packages:\s*\n((?:\s*-.*\n?)+)', pw)
+        if m: globs = list(globs) + [x.strip().lstrip('-').strip().strip('\'"') for x in m.group(1).splitlines() if x.strip()]
+    paths = tree_paths(full, branch)
+    if paths is None: return None
+    ts = sum(1 for p in paths if re.search(r'\.(ts|tsx|mts|cts)$', p) and not p.endswith('.d.ts') and '/node_modules/' not in p)
+    if ts < int(os.environ.get('REPOSEARCH_MIN_TS', 0)): return None
+    pjs = [p for p in paths if p.endswith('/package.json') and '/node_modules/' not in p and
+           any(fnmatch.fnmatch(p[:-len('/package.json')], g.rstrip('/')) for g in globs if not g.startswith('!'))]
+    private = bool(root.get('private'))
+    framework = any(re.match(FRAMEWORKS, n) for n in names)
+    for p in pjs[:60]:
+        t = raw(full, p)
+        if t is None: continue
+        _, n = deps_of(t)
+        names |= n
+        framework = framework or any(re.match(FRAMEWORKS, x) for x in n)
+    fams = [f for f, rx in GENERIC.items() if any(re.match(rx, n) for n in names)]
+    if len(fams) < 2: return None
+    app = any(p.startswith('apps/') for p in paths) or (private and pjs and framework) or (private and framework)
+    if not app: return None
+    configs = [p for p in paths if re.search(r'(^|/)[^/]*tsconfig[^/]*\.json$', p) and '/node_modules/' not in p]
+    if not any(re.search(r'"strict"\s*:\s*true', raw(full, c) or '') for c in sorted(configs, key=len)[:25]):
+        return None
+    return fams + [f'{len(pjs)}ws', f'{ts}tsfiles', f'{len(configs)}tsconfigs']
 mode = sys.argv[1]  # dts | checkjs | build | decorators
 if mode == 'large':
     import random
@@ -106,6 +169,7 @@ for topic in topics:
     q = f'topic:{topic}+language:{lang}+stars:300..3000+pushed:>2025-06-01+size:<200000'
     if mode in ('app', 'appbun'): q = f'topic:{topic}+language:TypeScript+stars:40..400+pushed:>2025-10-22+size:<200000'
     if mode == 'ts7': q = f'topic:{topic}+language:TypeScript+stars:20..5000+pushed:>2026-07-01+size:<200000'
+    if mode == 'genericapp': q = f'topic:{topic}+language:TypeScript+stars:50..5000+pushed:>2026-06-01+size:<200000'
     items = []
     for page in range(1, (int(sys.argv[4]) if len(sys.argv) > 4 else 1) + 1):
         res = get(f'https://api.github.com/search/repositories?q={q}&sort=stars&order=desc&per_page=100&page={page}')
@@ -118,16 +182,25 @@ for topic in topics:
         if full.lower() in existing or r['fork'] or r['archived']: continue
         pj = raw(full, 'package.json')
         if pj is None: continue
+        if mode in ('ts7', 'genericapp') and (raw(full, 'deno.json') is not None or raw(full, 'deno.jsonc') is not None):
+            continue
         if mode == 'ts7':
             if not re.search(r'"@typescript/native-preview"\s*:|"typescript"\s*:\s*"[\^~>=]*7\.', pj): continue
-            if raw(full, 'deno.json') is not None or raw(full, 'deno.jsonc') is not None: continue
         other = any(raw(full, f) is not None for f in ('pnpm-lock.yaml', 'yarn.lock', 'package-lock.json'))
-        if mode == 'ts7':
+        if mode in ('ts7', 'genericapp'):
             if not other and raw(full, 'bun.lock') is None and raw(full, 'bun.lockb') is None: continue
         elif mode == 'appbun':
             if other or (raw(full, 'bun.lockb') is None and raw(full, 'bun.lock') is None): continue
         elif not other: continue
         if mode in ('app', 'appbun') and (raw(full, 'deno.json') is not None or raw(full, 'deno.jsonc') is not None): continue
+        if mode == 'genericapp':
+            feats = genericapp(full, r['default_branch'], pj)
+            if not feats: continue
+            existing.add(full.lower())
+            print(topic, full, r['stargazers_count'], r['default_branch'], *feats, flush=True)
+            n += 1
+            if n >= per: break
+            continue
         c = strip(config_text(full, 'tsconfig.json'))
         if not c: continue
         if mode == 'dts':
