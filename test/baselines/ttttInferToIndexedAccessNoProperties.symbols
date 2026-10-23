@@ -1,0 +1,126 @@
+//// [test/cases/ttttInferToIndexedAccessNoProperties.ts] ////
+
+=== ttttInferToIndexedAccessNoProperties.ts ===
+// Inference to an indexed access `(typeof R)[Key]` goes to its apparent type's signatures and index signatures, not
+// its properties (tsc's inferFromProperties takes getPropertiesOfObjectType, none for an indexed access): Key is
+// inferred from `key` alone, not "a" from R[key]'s first member Spec<"a"> (openclaw's dreaming.ts)
+type K = "a" | "b" | "c";
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+
+type Payloads = { a: { x: number }; b: { y: string }; c: { z: boolean } };
+>Payloads : Symbol(Payloads, Decl(ttttInferToIndexedAccessNoProperties.ts, 3, 25))
+>a : Symbol(a, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 17))
+>x : Symbol(x, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 22))
+>b : Symbol(b, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 35))
+>y : Symbol(y, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 40))
+>c : Symbol(c, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 53))
+>z : Symbol(z, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 58))
+
+type Spec<Key extends K> = { method: string; apply: (payload: Payloads[Key]) => void };
+>Spec : Symbol(Spec, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 74))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 5, 10))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+>method : Symbol(method, Decl(ttttInferToIndexedAccessNoProperties.ts, 5, 28))
+>apply : Symbol(apply, Decl(ttttInferToIndexedAccessNoProperties.ts, 5, 44))
+>payload : Symbol(payload, Decl(ttttInferToIndexedAccessNoProperties.ts, 5, 53))
+>Payloads : Symbol(Payloads, Decl(ttttInferToIndexedAccessNoProperties.ts, 3, 25))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 5, 10))
+
+declare const R: { [Key in K]: Spec<Key> };
+>R : Symbol(R, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 13))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 20))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+>Spec : Symbol(Spec, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 74))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 20))
+
+declare function loadSpec<Key extends K>(key: Key, spec: (typeof R)[Key]): Key;
+>loadSpec : Symbol(loadSpec, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 43))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 26))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+>key : Symbol(key, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 41))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 26))
+>spec : Symbol(spec, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 50))
+>R : Symbol(R, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 13))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 26))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 26))
+
+declare function loadSpec2<Key extends K>(spec: (typeof R)[Key]): Key;
+>loadSpec2 : Symbol(loadSpec2, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 79))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 8, 27))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+>spec : Symbol(spec, Decl(ttttInferToIndexedAccessNoProperties.ts, 8, 42))
+>R : Symbol(R, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 13))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 8, 27))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 8, 27))
+
+declare function loadSpec3<Key extends K>(spec: Spec<Key>): Key;
+>loadSpec3 : Symbol(loadSpec3, Decl(ttttInferToIndexedAccessNoProperties.ts, 8, 70))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 9, 27))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+>spec : Symbol(spec, Decl(ttttInferToIndexedAccessNoProperties.ts, 9, 42))
+>Spec : Symbol(Spec, Decl(ttttInferToIndexedAccessNoProperties.ts, 4, 74))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 9, 27))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 9, 27))
+
+type Fns = { [P in K]: (x: Payloads[P]) => P };
+>Fns : Symbol(Fns, Decl(ttttInferToIndexedAccessNoProperties.ts, 9, 64))
+>P : Symbol(P, Decl(ttttInferToIndexedAccessNoProperties.ts, 10, 14))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+>x : Symbol(x, Decl(ttttInferToIndexedAccessNoProperties.ts, 10, 24))
+>Payloads : Symbol(Payloads, Decl(ttttInferToIndexedAccessNoProperties.ts, 3, 25))
+>P : Symbol(P, Decl(ttttInferToIndexedAccessNoProperties.ts, 10, 14))
+>P : Symbol(P, Decl(ttttInferToIndexedAccessNoProperties.ts, 10, 14))
+
+declare const fns: Fns;
+>fns : Symbol(fns, Decl(ttttInferToIndexedAccessNoProperties.ts, 11, 13))
+>Fns : Symbol(Fns, Decl(ttttInferToIndexedAccessNoProperties.ts, 9, 64))
+
+declare function pick<Key extends K>(f: Fns[Key]): Key;
+>pick : Symbol(pick, Decl(ttttInferToIndexedAccessNoProperties.ts, 11, 23))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 12, 22))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+>f : Symbol(f, Decl(ttttInferToIndexedAccessNoProperties.ts, 12, 37))
+>Fns : Symbol(Fns, Decl(ttttInferToIndexedAccessNoProperties.ts, 9, 64))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 12, 22))
+>Key : Symbol(Key, Decl(ttttInferToIndexedAccessNoProperties.ts, 12, 22))
+
+export function load(key: K) {
+>load : Symbol(load, Decl(ttttInferToIndexedAccessNoProperties.ts, 12, 55))
+>key : Symbol(key, Decl(ttttInferToIndexedAccessNoProperties.ts, 13, 21))
+>K : Symbol(K, Decl(ttttInferToIndexedAccessNoProperties.ts, 0, 0))
+
+    const r1 = loadSpec(key, R[key]);
+>r1 : Symbol(r1, Decl(ttttInferToIndexedAccessNoProperties.ts, 14, 9))
+>loadSpec : Symbol(loadSpec, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 43))
+>key : Symbol(key, Decl(ttttInferToIndexedAccessNoProperties.ts, 13, 21))
+>R : Symbol(R, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 13))
+>key : Symbol(key, Decl(ttttInferToIndexedAccessNoProperties.ts, 13, 21))
+
+    const r2 = loadSpec2(R[key]);
+>r2 : Symbol(r2, Decl(ttttInferToIndexedAccessNoProperties.ts, 15, 9))
+>loadSpec2 : Symbol(loadSpec2, Decl(ttttInferToIndexedAccessNoProperties.ts, 7, 79))
+>R : Symbol(R, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 13))
+>key : Symbol(key, Decl(ttttInferToIndexedAccessNoProperties.ts, 13, 21))
+
+    const r3 = loadSpec3(R.a);
+>r3 : Symbol(r3, Decl(ttttInferToIndexedAccessNoProperties.ts, 16, 9))
+>loadSpec3 : Symbol(loadSpec3, Decl(ttttInferToIndexedAccessNoProperties.ts, 8, 70))
+>R.a : Symbol(a)
+>R : Symbol(R, Decl(ttttInferToIndexedAccessNoProperties.ts, 6, 13))
+>a : Symbol(a)
+
+    const r4 = pick(fns.b);
+>r4 : Symbol(r4, Decl(ttttInferToIndexedAccessNoProperties.ts, 17, 9))
+>pick : Symbol(pick, Decl(ttttInferToIndexedAccessNoProperties.ts, 11, 23))
+>fns.b : Symbol(b)
+>fns : Symbol(fns, Decl(ttttInferToIndexedAccessNoProperties.ts, 11, 13))
+>b : Symbol(b)
+
+    const r5 = pick((x: { y: string }) => "b" as const);
+>r5 : Symbol(r5, Decl(ttttInferToIndexedAccessNoProperties.ts, 18, 9))
+>pick : Symbol(pick, Decl(ttttInferToIndexedAccessNoProperties.ts, 11, 23))
+>x : Symbol(x, Decl(ttttInferToIndexedAccessNoProperties.ts, 18, 21))
+>y : Symbol(y, Decl(ttttInferToIndexedAccessNoProperties.ts, 18, 25))
+>const : Symbol(const)
+}
+

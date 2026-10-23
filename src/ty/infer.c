@@ -1204,6 +1204,8 @@ static void infer_from_type_args(Checker* me, Inference* inf, Ty const* source, 
     }
 }
 
+static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty const* source, Members const* target_members);
+
 static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if ((ty_is_tuple(source) || is_empty_tuple(source) || ty_is_array(me, source)) && ty_is_tuple(target)) {
         if ((ty_is_tuple(source) || is_empty_tuple(source)) && tuples_definitely_unrelated(me, source, target)) return;
@@ -1282,6 +1284,11 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         Ty const* target_type = ty_remove_missing(me, prop_type(me, target_prop), target_prop->flags & PROP_OPTIONAL);
         infer_from(me, inf, source_type, target_type);
     }
+    infer_from_signatures_and_indexes(me, inf, source, target_members);
+}
+
+// The signatures and index signatures of infer_from_objects() (tsc's inferFromSignatures and inferFromIndexTypes)
+static void infer_from_signatures_and_indexes(Checker* me, Inference* inf, Ty const* source, Members const* target_members) {
     Members const* source_members = ty_members(me, source);
     // (An intersection's are its members', see resolve_intersection_members())
     infer_from_signature_lists(
@@ -1885,13 +1892,18 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             infer_from(me, inf, source->indexed.object, target->indexed.object);
             infer_from(me, inf, source->indexed.index, target->indexed.index);
         } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
-            // An object infers to its properties and signatures, which are those of its apparent type (tsc's
+            // An object infers to its signatures and index signatures, which are those of its apparent type (tsc's
             // inferFromTypes falls through to inferFromObjectTypes): `{ [P in keyof M]: (x: M[P]) => P }[T]` is
-            // `(x: M[T]) => T` there, so a function returning "A" infers T = "A". (Only an object type that isn't a
-            // reference or mapped type: tsc's own reference and mapped cases don't apply to an indexed access)
+            // `(x: M[T]) => T` there, so a function returning "A" infers T = "A". Not to its properties: tsc's
+            // inferFromProperties takes getPropertiesOfObjectType, none for an indexed access. `{ [K in Keys]:
+            // Spec<K> }[Key]`'s apparent Spec<Key> infers nothing for Key from a Spec<"a"> (openclaw's dreaming.ts).
+            // (Only an object type that isn't a reference or mapped type: tsc's own reference and mapped cases don't
+            // apply to an indexed access)
             Ty const* apparent = ty_apparent_type(me, target);
-            if (apparent != target && apparent->kind == TY_ANONYMOUS && !ty_members(me, apparent)->mapped) {
-                infer_from(me, inf, source, apparent);
+            if (apparent != target && apparent->kind == TY_ANONYMOUS && !ty_members(me, apparent)->mapped &&
+                !types_definitely_unrelated(me, source, apparent)
+            ) {
+                infer_from_signatures_and_indexes(me, inf, source, ty_members(me, apparent));
             }
         }
     } else if (source->kind == TY_STRING_MAPPING && target->kind == TY_STRING_MAPPING) {

@@ -1,0 +1,101 @@
+//// [test/cases/ttttInferToIndexedAccessNoProperties.ts] ////
+
+=== ttttInferToIndexedAccessNoProperties.ts ===
+// Inference to an indexed access `(typeof R)[Key]` goes to its apparent type's signatures and index signatures, not
+// its properties (tsc's inferFromProperties takes getPropertiesOfObjectType, none for an indexed access): Key is
+// inferred from `key` alone, not "a" from R[key]'s first member Spec<"a"> (openclaw's dreaming.ts)
+type K = "a" | "b" | "c";
+>K : K
+
+type Payloads = { a: { x: number }; b: { y: string }; c: { z: boolean } };
+>Payloads : Payloads
+>a : { x: number; }
+>x : number
+>b : { y: string; }
+>y : string
+>c : { z: boolean; }
+>z : boolean
+
+type Spec<Key extends K> = { method: string; apply: (payload: Payloads[Key]) => void };
+>Spec : Spec<Key>
+>method : string
+>apply : (payload: Payloads[Key]) => void
+>payload : Payloads[Key]
+
+declare const R: { [Key in K]: Spec<Key> };
+>R : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }
+
+declare function loadSpec<Key extends K>(key: Key, spec: (typeof R)[Key]): Key;
+>loadSpec : <Key extends K>(key: Key, spec: (typeof R)[Key]) => Key
+>key : Key
+>spec : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }[Key]
+>R : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }
+
+declare function loadSpec2<Key extends K>(spec: (typeof R)[Key]): Key;
+>loadSpec2 : <Key extends K>(spec: (typeof R)[Key]) => Key
+>spec : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }[Key]
+>R : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }
+
+declare function loadSpec3<Key extends K>(spec: Spec<Key>): Key;
+>loadSpec3 : <Key extends K>(spec: Spec<Key>) => Key
+>spec : Spec<Key>
+
+type Fns = { [P in K]: (x: Payloads[P]) => P };
+>Fns : Fns
+>x : Payloads[P]
+
+declare const fns: Fns;
+>fns : Fns
+
+declare function pick<Key extends K>(f: Fns[Key]): Key;
+>pick : <Key extends K>(f: Fns[Key]) => Key
+>f : Fns[Key]
+
+export function load(key: K) {
+>load : (key: K) => void
+>key : K
+
+    const r1 = loadSpec(key, R[key]);
+>r1 : K
+>loadSpec(key, R[key]) : K
+>loadSpec : <Key extends K>(key: Key, spec: (typeof R)[Key]) => Key
+>key : K
+>R[key] : Spec<"a"> | Spec<"b"> | Spec<"c">
+>R : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }
+>key : K
+
+    const r2 = loadSpec2(R[key]);
+>r2 : K
+>loadSpec2(R[key]) : K
+>loadSpec2 : <Key extends K>(spec: (typeof R)[Key]) => Key
+>R[key] : Spec<"a"> | Spec<"b"> | Spec<"c">
+>R : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }
+>key : K
+
+    const r3 = loadSpec3(R.a);
+>r3 : "a"
+>loadSpec3(R.a) : "a"
+>loadSpec3 : <Key extends K>(spec: Spec<Key>) => Key
+>R.a : Spec<"a">
+>R : { a: Spec<"a">; b: Spec<"b">; c: Spec<"c">; }
+>a : Spec<"a">
+
+    const r4 = pick(fns.b);
+>r4 : "b"
+>pick(fns.b) : "b"
+>pick : <Key extends K>(f: Fns[Key]) => Key
+>fns.b : (x: { y: string; }) => "b"
+>fns : Fns
+>b : (x: { y: string; }) => "b"
+
+    const r5 = pick((x: { y: string }) => "b" as const);
+>r5 : "b"
+>pick((x: { y: string }) => "b" as const) : "b"
+>pick : <Key extends K>(f: Fns[Key]) => Key
+>(x: { y: string }) => "b" as const : (x: { y: string; }) => "b"
+>x : { y: string; }
+>y : string
+>"b" as const : "b"
+>"b" : "b"
+}
+
