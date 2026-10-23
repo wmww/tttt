@@ -14,6 +14,9 @@ typedef struct Arena {
     // Its first chunk may take a huge page too (an arena that is known to grow big: a checker's). Others take one from
     // their second chunk on: most arenas are small, and a huge page is 2 MB zeroed at the first touch
     bool huge_first;
+#ifdef TTTT_SURVIVORS
+    struct SurvivorRec* rec; // ty/survivors.c: its allocations, recorded (a checker's arena only)
+#endif
 } Arena;
 enum { ARENA_AST_DIRECT = 1, ARENA_AST_CHUNKED = 2 };
 
@@ -59,6 +62,12 @@ void arena_sites_print(void);
 void survivors_record(Arena* arena, void* ptr, size_t size, void* site);
 void survivors_unrecord(Arena* arena, void* ptr);
 void survivors_reset(Arena* arena);
+void survivors_free(Arena* arena);
+// The file whose results allocations are being made for (the checker's sequence number of its check, 0: none, the
+// warm-up), see survivors_file_census()
+extern thread_local u32 survivors_owner;
+// A later look at a memo or intern entry (0: an intern block, 1: a node link key, 2: a LazyMemo)
+void survivors_hit(void const* what, u32 kind);
 #endif
 #define arena_new(arena, T) ((T*)arena_alloc(arena, sizeof(T)))
 #define arena_new_n(arena, T, n) ((T*)arena_alloc(arena, sizeof(T) * (size_t)(n)))

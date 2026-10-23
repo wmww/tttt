@@ -178,6 +178,9 @@ void arena_reset(Arena* me) {
 }
 
 void arena_drop(Arena* me) {
+#ifdef TTTT_SURVIVORS
+    survivors_free(me);
+#endif
     bool ast_backed = my ast_backed;
     // (The materialization's memory: dropped with it)
     if (ast_backed) my head = nullptr;
@@ -298,7 +301,13 @@ static void const** intern_put(Checker* me, InternTable* table, InternEntry* ent
 
 // A private entry hit. (--shared-graph: a memo kind's entry whose computation was tainted is this worker's own, and
 // reading it is a taint event, plan 86 stage 4f; `taint` is set once the checker has one, graph.c)
+#ifdef TTTT_SURVIVORS
+void survivors_hit(void const* what, u32 kind);
+#endif
 static inline void const** intern_hit(InternTable const* table, void const** block) {
+#ifdef TTTT_SURVIVORS
+    survivors_hit(block, 0);
+#endif
     if (__builtin_expect(table->taint != nullptr, 0)) graph_memo_hit_cold(table->taint, block);
     return block;
 }
@@ -568,6 +577,9 @@ void const* ty_link_get(Checker const* me, u32 kind, void const* subject) {
     u64 key = link_key(kind, subject);
     for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
         LinkEntry const* entry = &table->entries[i];
+#ifdef TTTT_SURVIVORS
+        if (entry->key == key) survivors_hit((void const*)key, 1);
+#endif
         if (entry->key == key) return entry->value;
         if (!entry->key) return my graph ? graph_link_get(my graph, kind, subject) : nullptr;
     }
@@ -601,6 +613,9 @@ void ty_link_set(Checker* me, u32 kind, void const* subject, void const* value) 
     if (__builtin_expect(my graph_memo_on, 0)) link_memo_publish(me, kind, subject, value);
 }
 
+#ifdef TTTT_SURVIVORS
+void survivors_link_set(LinkTable const* table, u64 key);
+#endif
 static inline void link_set(LinkTable* table, u32 kind, void const* subject, void const* value) {
     // (At most 5/8 full: most lookups miss, and a miss probes to an empty slot, ~3.4 probes at 5/8 against ~8.5 at 3/4)
     if ((table->len + 1) * 8 > table->cap * 5) {
@@ -618,6 +633,9 @@ static inline void link_set(LinkTable* table, u32 kind, void const* subject, voi
         *table = bigger;
     }
     u64 key = link_key(kind, subject);
+#ifdef TTTT_SURVIVORS
+    survivors_link_set(table, key);
+#endif
     for (u32 i = link_index(key, table->cap);; i = table_next(i, table->cap)) {
         LinkEntry* entry = &table->entries[i];
         if (entry->key == key) {

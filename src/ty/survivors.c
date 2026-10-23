@@ -7,34 +7,163 @@
 #include "ty/ty_internal.h"
 #include "scope.h"
 
-Arena* survivors_arena;
-
 typedef struct SurvivorAlloc {
     uintptr_t at;
     u32 size;
     u32 site; // Return address relative to arena_alloc()
+    u32 owner; // survivors_owner when it was made
+    u32 unused;
 } SurvivorAlloc;
 
+// One checker arena's allocations (Arena.rec), and the file census' bookkeeping
+typedef struct SurvivorRec {
+    SurvivorAlloc* allocs;
+    u32 count, cap;
+    u32 id; // In creation order
+    u32 seq; // Files checked (survivors_file_start())
+    u32* at_owner; // Index among the checked files -> its sequence number
+    u32 at_cap;
+    // Node link keys -> survivors_owner of their last write (open addressing, 0: empty)
+    u64* link_keys;
+    u32* link_owner;
+    u32 link_cap, link_len;
+    // Looks at memos and intern entries (survivors_hit()), deduplicated by a direct-mapped cache
+    struct SurvivorHit* hits;
+    u64 hit_count, hit_cap;
+} SurvivorRec;
+
+typedef struct SurvivorHit {
+    uintptr_t what;
+    u32 owner;
+    u32 kind;
+} SurvivorHit;
+static thread_local SurvivorHit hit_cache[1 << 16];
+
+thread_local u32 survivors_owner;
+
 static SurvivorAlloc* allocs;
-static u32 alloc_count, alloc_cap;
+static u32 alloc_count;
 
 void survivors_record(Arena* arena, void* ptr, size_t size, void* site) {
-    if (arena != survivors_arena) return;
-    if (alloc_count == alloc_cap) {
-        alloc_cap = alloc_cap ? alloc_cap * 2 : 1 << 20;
-        allocs = realloc(allocs, sizeof(SurvivorAlloc) * alloc_cap);
+    SurvivorRec* rec = arena->rec;
+    if (!rec) return;
+    if (rec->count == rec->cap) {
+        rec->cap = rec->cap ? rec->cap * 2 : 1 << 16;
+        rec->allocs = realloc(rec->allocs, sizeof(SurvivorAlloc) * rec->cap);
+        panic_if(!rec->allocs, "out of memory");
     }
-    allocs[alloc_count++] = (SurvivorAlloc){ (uintptr_t)ptr, (u32)size, (u32)((uintptr_t)site - (uintptr_t)&arena_alloc) };
+    rec->allocs[rec->count++] = (SurvivorAlloc){ (uintptr_t)ptr, (u32)size, (u32)((uintptr_t)site - (uintptr_t)&arena_alloc), survivors_owner, 0 };
 }
 
 void survivors_unrecord(Arena* arena, void* ptr) {
-    if (arena != survivors_arena || !alloc_count || allocs[alloc_count - 1].at != (uintptr_t)ptr) return;
-    alloc_count--;
+    SurvivorRec* rec = arena->rec;
+    if (!rec || !rec->count || rec->allocs[rec->count - 1].at != (uintptr_t)ptr) return;
+    rec->count--;
+}
+
+void survivors_free(Arena* arena) {
+    SurvivorRec* rec = arena->rec;
+    if (!rec) return;
+    free(rec->allocs);
+    free(rec->at_owner);
+    free(rec->link_keys);
+    free(rec->link_owner);
+    free(rec->hits);
+    free(rec);
+    arena->rec = nullptr;
 }
 
 void survivors_reset(Arena* arena) {
-    survivors_arena = arena;
-    alloc_count = 0;
+    static _Atomic u32 next_id;
+    survivors_free(arena);
+    arena->rec = calloc(1, sizeof(SurvivorRec));
+    arena->rec->id = next_id++;
+}
+
+u32 survivors_file_start(Checker const* me, u32 at) {
+    SurvivorRec* rec = my arena.rec;
+    if (!rec) return 0;
+    u32 seq = ++rec->seq;
+    if (at == UINT32_MAX) return seq;
+    if (at >= rec->at_cap) {
+        u32 cap = rec->at_cap ? rec->at_cap : 1024;
+        while (cap <= at) cap *= 2;
+        rec->at_owner = realloc(rec->at_owner, sizeof(u32) * cap);
+        memset(rec->at_owner + rec->at_cap, 0, sizeof(u32) * (cap - rec->at_cap));
+        rec->at_cap = cap;
+    }
+    rec->at_owner[at] = seq;
+    return seq;
+}
+
+u32 survivors_owner_of(Checker const* me, u32 at) {
+    SurvivorRec* rec = my arena.rec;
+    return rec && at < rec->at_cap ? rec->at_owner[at] : 0;
+}
+
+static u32 link_slot(SurvivorRec const* rec, u64 key) {
+    u32 i = (u32)((key * 0x9e3779b97f4a7c15ull) >> 40) & (rec->link_cap - 1);
+    while (rec->link_keys[i] && rec->link_keys[i] != key) i = (i + 1) & (rec->link_cap - 1);
+    return i;
+}
+
+void survivors_link_set(LinkTable const* table, u64 key) {
+    Checker* me = current_checker;
+    if (!me || table != &my node_links || !my arena.rec) return;
+    SurvivorRec* rec = my arena.rec;
+    if ((rec->link_len + 1) * 2 > rec->link_cap) {
+        SurvivorRec bigger = { .link_cap = rec->link_cap ? rec->link_cap * 2 : 1 << 12 };
+        bigger.link_keys = calloc(bigger.link_cap, sizeof(u64));
+        bigger.link_owner = calloc(bigger.link_cap, sizeof(u32));
+        for (u32 i = 0; i < rec->link_cap; i++) {
+            if (!rec->link_keys[i]) continue;
+            u32 j = link_slot(&bigger, rec->link_keys[i]);
+            bigger.link_keys[j] = rec->link_keys[i];
+            bigger.link_owner[j] = rec->link_owner[i];
+        }
+        free(rec->link_keys);
+        free(rec->link_owner);
+        rec->link_keys = bigger.link_keys;
+        rec->link_owner = bigger.link_owner;
+        rec->link_cap = bigger.link_cap;
+    }
+    u32 i = link_slot(rec, key);
+    if (!rec->link_keys[i]) {
+        rec->link_keys[i] = key;
+        rec->link_len++;
+    }
+    rec->link_owner[i] = survivors_owner;
+}
+
+void survivors_hit(void const* what, u32 kind) {
+    u32 owner = survivors_owner;
+    Checker* me = current_checker;
+    if (!owner || !me || !my arena.rec) return;
+    SurvivorRec* rec = my arena.rec;
+    u32 h = (u32)((((uintptr_t)what ^ kind) * 0x9e3779b97f4a7c15ull) >> 48);
+    SurvivorHit* c = &hit_cache[h];
+    if (c->what == (uintptr_t)what && c->owner == owner && c->kind == kind) return;
+    *c = (SurvivorHit){ (uintptr_t)what, owner, kind };
+    if (rec->hit_count == rec->hit_cap) {
+        rec->hit_cap = rec->hit_cap ? rec->hit_cap * 2 : 1 << 16;
+        rec->hits = realloc(rec->hits, sizeof(SurvivorHit) * rec->hit_cap);
+        panic_if(!rec->hits, "out of memory");
+    }
+    rec->hits[rec->hit_count++] = *c;
+}
+
+static int hit_cmp(void const* a, void const* b) {
+    SurvivorHit const* x = a;
+    SurvivorHit const* y = b;
+    if (x->what != y->what) return x->what < y->what ? -1 : 1;
+    if (x->kind != y->kind) return x->kind < y->kind ? -1 : 1;
+    return x->owner < y->owner ? -1 : x->owner > y->owner;
+}
+
+static u32 link_owner_of(SurvivorRec const* rec, u64 key) {
+    if (!rec->link_cap) return 0;
+    u32 i = link_slot(rec, key);
+    return rec->link_keys[i] ? rec->link_owner[i] : 0;
 }
 
 // How a key kind's entries fare at a copy
@@ -194,6 +323,8 @@ static void table_pend(InternTable const* table, bool atoms, u32 forced_kind) {
 }
 
 void survivors_report(Checker const* me) {
+    allocs = my arena.rec ? my arena.rec->allocs : nullptr;
+    alloc_count = my arena.rec ? my arena.rec->count : 0;
     qsort(allocs, alloc_count, sizeof(SurvivorAlloc), alloc_cmp);
     marks = calloc(alloc_count ? alloc_count : 1, 1);
     work = malloc(sizeof(u32) * (alloc_count ? alloc_count : 1));
@@ -327,6 +458,332 @@ void survivors_report(Checker const* me) {
     free(is_block);
     free(marks);
     free(work);
+}
+
+// The file census (TTTT_FILE_CENSUS=1, a -DTTTT_SURVIVORS build): which of the checker's results could have been
+// dropped when the file they were made for was done. Every allocation, node link entry and LazyType memo has an owner:
+// the checker's sequence number of the file whose check (or after-check pass) made it, 0 for the warm-up. An allocation
+// is needed after its file when a declaration-level root reaches it (the checker's fields, the warm-up's allocations,
+// FATE_ROOT entries, declarations' memos) or when anything made for a *later* file points to it (that file obtained it,
+// from an intern table or a memo, after its own file was done), and then so is what it reaches; intern identities are
+// kept while their value is, caches while their key and value are. The rest of a file's allocations could go at its end
+static pthread_mutex_t census_lock = PTHREAD_MUTEX_INITIALIZER;
+static u32* owners; // Of allocs, by index
+static uint8_t* skip; // Lazy memo pages and directories: not scanned as words (they hold ids)
+static uint8_t* referenced; // Something other than itself points to it
+
+static void census_seed(i64 j) {
+    if (j < 0 || marks[j]) return;
+    marks[j] = 1;
+    work[work_len++] = (u32)j;
+}
+
+// `from` (owner `owner`, 0: a root) points at word `w`
+static void census_ref(u32 owner, uintptr_t w, i64 self) {
+    i64 j = alloc_find(w);
+    if (j < 0 || j == self || skip[j]) return;
+    referenced[j] = 1;
+    if (!owner || (owners[j] && owner > owners[j])) census_seed(j);
+}
+
+static void census_drain(void) {
+    while (work_len) {
+        u32 i = work[--work_len];
+        if (skip[i]) continue;
+        SurvivorAlloc const* a = &allocs[i];
+        uintptr_t const* words = (uintptr_t const*)a->at;
+        for (u32 w = 0; w < a->size / 8; w++) {
+            i64 j = alloc_find(words[w]);
+            if (j >= 0 && !skip[j]) census_seed(j);
+        }
+    }
+}
+
+static i64 census_type(Checker const* me, u32 id) {
+    if (!id) return -1;
+    if (!my lazy.types[id >> LAZY_TYPE_CHUNK_BITS]) return -1;
+    Ty const* ty = lazy_slots_type(&my lazy, id);
+    return ty ? alloc_find((uintptr_t)ty) : -1;
+}
+
+enum { CAT_TYPE, CAT_KEY_IDENTITY, CAT_KEY_CACHE, CAT_KEY_MEMO, CAT_KEY_ROOT, CAT_LAZY, CAT_IPROPS, CAT_OTHER, CAT_COUNT };
+static char const* const cat_names[] = { "type", "key-identity", "key-cache", "key-memo", "key-root", "lazy-pages", "iprops", "other" };
+// warm, kept, dropped (referenced), dropped (nothing points to it)
+enum { ST_WARM, ST_KEPT, ST_DROP, ST_GARBAGE, ST_COUNT };
+
+void survivors_file_census(Checker const* me, char const* when) {
+    SurvivorRec* rec = my arena.rec;
+    if (!rec) return;
+    pthread_mutex_lock(&census_lock);
+    allocs = rec->allocs;
+    alloc_count = rec->count;
+    qsort(allocs, alloc_count, sizeof(SurvivorAlloc), alloc_cmp);
+    u32 n = alloc_count ? alloc_count : 1;
+    marks = calloc(n, 1);
+    skip = calloc(n, 1);
+    referenced = calloc(n, 1);
+    owners = malloc(sizeof(u32) * n);
+    work = malloc(sizeof(u32) * n);
+    work_len = 0;
+    pending_len = 0;
+    uint8_t* cat = calloc(n, 1);
+    for (u32 i = 0; i < alloc_count; i++) {
+        owners[i] = allocs[i].owner;
+        cat[i] = CAT_OTHER;
+    }
+    // Memo pages and directories
+    u64 memo_count[8][3] = {0}; // by census tag: warm, file-made, of which with a type
+    for (size_t t = 0; t < c_arraylen(my lazy.top); t++) {
+        if (!my lazy.top[t]) continue;
+        i64 d = alloc_find((uintptr_t)my lazy.top[t]);
+        if (d >= 0) { skip[d] = 1; cat[d] = CAT_LAZY; }
+        for (size_t p = 0; p < (1 << LAZY_DIR_BITS); p++) {
+            LazyMemo const* page = my lazy.top[t][p];
+            if (!page) continue;
+            i64 a = alloc_find((uintptr_t)page);
+            if (a >= 0) { skip[a] = 1; cat[a] = CAT_LAZY; }
+        }
+    }
+    // The types (by the directory)
+    uint8_t* is_type = calloc(n, 1);
+    for (u32 b = 0; b < my lazy.own_len; b++) {
+        u32 chunk = my lazy.own[b];
+        Ty const** types = my lazy.types[chunk];
+        if (!types) continue;
+        for (u32 k = 0; k < (1u << LAZY_TYPE_CHUNK_BITS); k++) {
+            Ty const* ty = types[k];
+            i64 a = ty ? alloc_find((uintptr_t)ty) : -1;
+            if (a >= 0 && (uintptr_t)ty == allocs[a].at) { is_type[a] = 1; cat[a] = CAT_TYPE; }
+        }
+    }
+    // Roots: the checker's fields and the warm-up's allocations
+    mark_words(me, sizeof(Checker));
+    for (u32 i = 0; i < alloc_count; i++) if (!owners[i] && !skip[i]) census_seed(i);
+    // Every allocation as a referrer
+    for (u32 i = 0; i < alloc_count; i++) {
+        if (skip[i]) continue;
+        uintptr_t const* words = (uintptr_t const*)allocs[i].at;
+        for (u32 w = 0; w < allocs[i].size / 8; w++) census_ref(owners[i] ? owners[i] : 0, words[w], i);
+    }
+    // Memos as referrers (declarations' are roots)
+    for (size_t t = 0; t < c_arraylen(my lazy.top); t++) {
+        if (!my lazy.top[t]) continue;
+        for (size_t p = 0; p < (1 << LAZY_DIR_BITS); p++) {
+            LazyMemo const* page = my lazy.top[t][p];
+            if (!page) continue;
+            for (size_t k = 0; k < (1 << LAZY_PAGE_BITS); k++) {
+                LazyMemo const* m = &page[k];
+                if (!m->census_tag) continue;
+                u32 tag = m->census_tag < 8 ? m->census_tag : 7;
+                memo_count[tag][m->census_owner ? 1 : 0]++;
+                if (m->evaluated) memo_count[tag][2]++;
+                bool root = !m->census_owner || tag == LAZY_CENSUS_DECL || tag == LAZY_CENSUS_FIELD || tag == LAZY_CENSUS_OTHER;
+                u32 ids[2] = { m->evaluated, m->context };
+                for (u32 x = 0; x < 2; x++) {
+                    i64 j = census_type(me, ids[x]);
+                    if (j < 0) continue;
+                    referenced[j] = 1;
+                    if (root || (owners[j] && m->census_owner > owners[j])) census_seed(j);
+                }
+            }
+        }
+    }
+    // Intern tables and node links: entries to decide on
+    table_pend(&my types, false, 0);
+    table_pend(&my links, false, 0);
+    u32 iprops_from = pending_len;
+    table_pend(&my intersection_props, false, KEY_INTERSECTION_PROPS);
+    u32 links_from = pending_len;
+    u64 link_kind[256][2] = {0}; // node link entries by kind: kept, dropped
+    uint8_t* block_kind = calloc(n, 1);
+    for (u32 i = 0; i < my node_links.cap; i++) {
+        LinkEntry const* entry = &my node_links.entries[i];
+        if (!entry->key) continue;
+        pend((Pending){ .value = (uintptr_t)entry->value, .subject = entry->key & ((1ull << 56) - 1),
+            .kind = (u32)(entry->key >> 56) - 1, .key_len = link_owner_of(rec, entry->key) });
+    }
+    for (u32 i = 0; i < pending_len; i++) {
+        Pending* p = &pending[i];
+        i64 b = p->block ? alloc_find(p->block) : -1;
+        Fate fate = p->kind == 255 ? FATE_IDENTITY : kind_fate(p->kind);
+        if (b >= 0 && (uintptr_t)allocs[b].at == p->block) block_kind[b] = (uint8_t)(p->kind & 255);
+        if (b >= 0 && !is_type[b] && (uintptr_t)allocs[b].at == p->block) {
+            cat[b] = i >= iprops_from ? CAT_IPROPS : fate == FATE_ROOT ? CAT_KEY_ROOT : fate == FATE_IDENTITY ? CAT_KEY_IDENTITY :
+                fate == FATE_CACHE ? CAT_KEY_CACHE : CAT_KEY_MEMO;
+        }
+        if (fate != FATE_ROOT) continue;
+        uintptr_t subject = i >= links_from ? p->subject : p->key && p->key_len ? p->key[0] : 0;
+        if (symbol_keyed(p->kind) && subject && ((Symbol const*)subject)->function) continue;
+        p->kept = true;
+        census_seed(b);
+        if (i >= links_from) {
+            census_seed(alloc_find(p->value));
+            census_seed(alloc_find(p->subject));
+        }
+    }
+    // Node links as referrers (an entry's owner is in key_len)
+    for (u32 i = links_from; i < pending_len; i++) {
+        Pending* p = &pending[i];
+        if (p->kept) continue;
+        census_ref(p->key_len, p->value, -1);
+        census_ref(p->key_len, p->subject, -1);
+    }
+    census_drain();
+    // Identities, to a fixpoint (a node link identity keeps its subject too)
+    for (bool changed = true; changed;) {
+        changed = false;
+        for (u32 i = 0; i < pending_len; i++) {
+            Pending* p = &pending[i];
+            if (p->kept || !(p->kind == 255 || kind_fate(p->kind) == FATE_IDENTITY)) continue;
+            i64 v = alloc_find(p->value);
+            bool keep;
+            if (v >= 0) keep = marks[v];
+            else if (i < links_from) keep = true; // (A value outside the arena: kept)
+            else {
+                i64 s2 = alloc_find(p->subject);
+                keep = s2 < 0 || marks[s2] || !owners[s2];
+            }
+            if (!keep) continue;
+            p->kept = true;
+            changed = true;
+            census_seed(p->block ? alloc_find(p->block) : -1);
+            if (i >= links_from) census_seed(alloc_find(p->subject));
+        }
+        census_drain();
+    }
+    // Caches whose parts are kept stay (their own blocks are counted kept)
+    for (u32 i = 0; i < pending_len; i++) {
+        Pending* p = &pending[i];
+        if (p->kept || p->kind == 255 || kind_fate(p->kind) != FATE_CACHE) continue;
+        if (i < links_from && p->key && !key_survives(me, p->key, p->key_len)) continue;
+        if (i >= links_from && alloc_find(p->subject) >= 0 && !marks[alloc_find(p->subject)]) continue;
+        if (p->value && alloc_find(p->value) >= 0 && !marks[alloc_find(p->value)]) continue;
+        p->kept = true;
+        census_seed(p->block ? alloc_find(p->block) : -1);
+    }
+    census_drain();
+    // Node link entries: kept if decided so, or made in the warm-up, or keyed and valued by what is kept
+    u64 links_kept = 0, links_dropped = 0;
+    for (u32 i = links_from; i < pending_len; i++) {
+        Pending* p = &pending[i];
+        bool kept = p->kept || !p->key_len;
+        if (!kept) {
+            i64 v = alloc_find(p->value), s2 = alloc_find(p->subject);
+            Fate fate = kind_fate(p->kind);
+            // (A memo of a file's expression goes with its file; anything else stays while its parts do)
+            kept = fate != FATE_EXPR && (v < 0 || marks[v] || !owners[v]) && (s2 < 0 || marks[s2] || !owners[s2]);
+        }
+        link_kind[p->kind & 255][kept ? 0 : 1]++;
+        if (!kept && rec->link_cap) {
+            u64 key = (u64)(p->kind + 1) << 56 | p->subject;
+            u32 slot = link_slot(rec, key);
+            if (rec->link_keys[slot]) rec->link_owner[slot] |= 1u << 31;
+        }
+        if (kept) links_kept++; else links_dropped++;
+    }
+    // Tally
+    u64 st_bytes[ST_COUNT] = {0}, st_count[ST_COUNT] = {0}, cat_bytes[CAT_COUNT][ST_COUNT] = {0};
+    u64 kind_bytes[32][ST_COUNT] = {0};
+    typedef struct { u32 site; u64 bytes[ST_COUNT]; } SiteBytes;
+    SiteBytes* sites = calloc(8192, sizeof(SiteBytes));
+    u64 total = 0;
+    for (u32 i = 0; i < alloc_count; i++) {
+        u32 st = !owners[i] ? ST_WARM : marks[i] ? ST_KEPT : referenced[i] ? ST_DROP : ST_GARBAGE;
+        u64 size = allocs[i].size;
+        if (cat[i] == CAT_LAZY) size = size * 12 / sizeof(LazyMemo); // (Without the census' own fields)
+        total += size;
+        st_bytes[st] += size;
+        st_count[st]++;
+        cat_bytes[cat[i]][st] += size;
+        if (is_type[i]) {
+            u32 k = ((Ty const*)allocs[i].at)->kind;
+            kind_bytes[k < 32 ? k : 31][st] += size;
+        }
+        if (cat[i] != CAT_OTHER) continue;
+        u32 h = (allocs[i].site * 2654435761u) & 8191;
+        while (sites[h].site && sites[h].site != allocs[i].site) h = (h + 1) & 8191;
+        sites[h].site = allocs[i].site;
+        sites[h].bytes[st] += size;
+    }
+    // Relation cache entries naming a type that goes
+    u64 rel_len = 0, rel_cap_bytes = 0, rel_dropped = 0, rel_unknown = 0;
+    for (u32 r = 0; r < TY_RELATION_COUNT; r++) {
+        RelationCache const* cache = &my relations[r];
+        rel_len += cache->len;
+        rel_cap_bytes += (u64)cache->cap * 9;
+        for (u32 i = 0; i < cache->cap; i++) {
+            u64 key = cache->keys[i];
+            if (!key) continue;
+            u32 a = (u32)(key >> 32) & 0x3fffffff, b = (u32)key;
+            i64 x = census_type(me, a), y = census_type(me, b);
+            if (x < 0 || y < 0) { rel_unknown++; continue; }
+            if ((owners[x] && !marks[x]) || (owners[y] && !marks[y])) rel_dropped++;
+        }
+    }
+    // Later files' looks at what goes at its file's end: what they would compute again
+    u64 reuse[3][256] = {0}, looks[3] = {0};
+    qsort(rec->hits, rec->hit_count, sizeof(SurvivorHit), hit_cmp);
+    for (u64 i = 0; i < rec->hit_count; i++) {
+        SurvivorHit const* h = &rec->hits[i];
+        if (i && h->what == h[-1].what && h->kind == h[-1].kind && h->owner == h[-1].owner) continue;
+        looks[h->kind]++;
+        if (h->kind == 0) {
+            i64 b = alloc_find(h->what);
+            if (b >= 0 && owners[b] && owners[b] < h->owner && !marks[b]) reuse[0][block_kind[b]]++;
+        } else if (h->kind == 1) {
+            if (!rec->link_cap) continue;
+            u32 slot = link_slot(rec, h->what);
+            u32 o = rec->link_owner[slot];
+            if (rec->link_keys[slot] && (o >> 31) && (o & 0x7fffffff) && (o & 0x7fffffff) < h->owner) reuse[1][(h->what >> 56) - 1]++;
+        } else {
+            LazyMemo const* m = (LazyMemo const*)h->what;
+            if (m->census_owner && m->census_owner < h->owner) reuse[2][m->census_tag]++;
+        }
+    }
+    u32 id = rec->id;
+    for (u32 k = 0; k < 3; k++) {
+        eprintln("fcensus-looks ", (i64)id, " ", (i64)k, " ", (i64)looks[k]);
+        for (u32 j = 0; j < 256; j++) if (reuse[k][j]) eprintln("fcensus-reuse ", (i64)id, " ", (i64)k, " ", (i64)j, " ", (i64)reuse[k][j]);
+    }
+    eprintln("fcensus-total ", (i64)id, " ", when, " arena ", (i64)total, " allocs ", (i64)alloc_count, " memory ",
+        (i64)checker_memory(me), " files ", (i64)rec->seq, " types ", (i64)checker_type_count(me));
+    for (u32 st = 0; st < ST_COUNT; st++) eprintln("fcensus-state ", (i64)id, " ", (i64)st, " ", (i64)st_bytes[st], " ", (i64)st_count[st]);
+    for (u32 c = 0; c < CAT_COUNT; c++) {
+        eprintln("fcensus-cat ", (i64)id, " ", cat_names[c], " ", (i64)cat_bytes[c][0], " ", (i64)cat_bytes[c][1], " ",
+            (i64)cat_bytes[c][2], " ", (i64)cat_bytes[c][3]);
+    }
+    for (u32 k = 0; k < 32; k++) {
+        u64 sum = kind_bytes[k][0] + kind_bytes[k][1] + kind_bytes[k][2] + kind_bytes[k][3];
+        if (sum) eprintln("fcensus-tykind ", (i64)id, " ", (i64)k, " ", (i64)kind_bytes[k][0], " ", (i64)kind_bytes[k][1], " ",
+            (i64)kind_bytes[k][2], " ", (i64)kind_bytes[k][3]);
+    }
+    for (u32 t = 1; t < 8; t++) {
+        if (memo_count[t][0] + memo_count[t][1]) eprintln("fcensus-memo ", (i64)id, " ", (i64)t, " ", (i64)memo_count[t][0], " ",
+            (i64)memo_count[t][1], " ", (i64)memo_count[t][2]);
+    }
+    for (u32 k = 0; k < 256; k++) {
+        if (link_kind[k][0] + link_kind[k][1]) eprintln("fcensus-link ", (i64)id, " ", (i64)k, " ", (i64)link_kind[k][0], " ", (i64)link_kind[k][1]);
+    }
+    eprintln("fcensus-tables ", (i64)id, " types ", (i64)my types.len, " ", (i64)my types.cap, " links ", (i64)my links.len, " ",
+        (i64)my links.cap, " iprops ", (i64)my intersection_props.len, " ", (i64)my intersection_props.cap);
+    eprintln("fcensus-nodelinks ", (i64)id, " ", (i64)my node_links.len, " ", (i64)my node_links.cap, " kept ", (i64)links_kept,
+        " dropped ", (i64)links_dropped);
+    eprintln("fcensus-relations ", (i64)id, " ", (i64)rel_len, " ", (i64)rel_cap_bytes, " dropped ", (i64)rel_dropped,
+        " unknown ", (i64)rel_unknown, " type_chunks ", (i64)my lazy.own_len);
+    for (u32 h = 0; h < 8192; h++) {
+        if (sites[h].site) eprintln("fcensus-site ", (i64)id, " ", (i64)sites[h].site, " ", (i64)sites[h].bytes[0], " ",
+            (i64)sites[h].bytes[1], " ", (i64)sites[h].bytes[2], " ", (i64)sites[h].bytes[3]);
+    }
+    free(sites);
+    free(block_kind);
+    free(cat);
+    free(is_type);
+    free(owners);
+    free(skip);
+    free(referenced);
+    free(marks);
+    free(work);
+    pthread_mutex_unlock(&census_lock);
 }
 
 #else

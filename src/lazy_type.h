@@ -26,7 +26,15 @@ typedef struct LazyMemo {
     // Expressions: re-entrant evaluations so far. (In-flight state, but an expression's memo is the checker's own,
     // never shared: a declaration's in-flight state is its RESOLVING_DECLARATION record, lazy_type_evaluate_inner())
     unsigned char hits;
+#ifdef TTTT_SURVIVORS
+    // ty/survivors.c's file census: what the memo is of (LAZY_CENSUS_*) and the file it was first touched for
+    unsigned char census_tag;
+    u32 census_owner;
+#endif
 } LazyMemo;
+#ifdef TTTT_SURVIVORS
+enum { LAZY_CENSUS_EXPR = 1, LAZY_CENSUS_LOCAL, LAZY_CENSUS_DECL, LAZY_CENSUS_LOOP, LAZY_CENSUS_FIELD, LAZY_CENSUS_OTHER };
+#endif
 
 typedef struct LazyType {
     enum {

@@ -50,7 +50,31 @@ static LazyMemo* lazy_type_state(LazyType* me) {
     if (!*page) {
         *page = lazy_slots_table(current_lazy_slots, sizeof(LazyMemo) << LAZY_PAGE_BITS);
     }
+#ifdef TTTT_SURVIVORS
+    LazyMemo* memo = &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];
+    if (!memo->census_tag) {
+        memo->census_owner = survivors_owner;
+        unsigned char tag = LAZY_CENSUS_OTHER;
+        switch (my tag) {
+            case LAZY_TYPE_EXPR: tag = LAZY_CENSUS_EXPR; break;
+            case LAZY_TYPE_FOR_EACH_LOOP_VAR: tag = LAZY_CENSUS_LOOP; break;
+            case LAZY_TYPE_CLASS_ITEM_FIELD: case LAZY_TYPE_CLASS_ITEM_ACCESSOR: tag = LAZY_CENSUS_FIELD; break;
+            case LAZY_TYPE_INITIALIZED_BINDING: {
+                Binding const* binding = &c_container_of(me, InitializedBinding, lazy_type)->binding;
+                bool local = binding->is_parameter ||
+                    (binding->tag == BINDING_IDENTIFIER && binding->symbol && binding->symbol->function);
+                tag = local ? LAZY_CENSUS_LOCAL : LAZY_CENSUS_DECL;
+            }   break;
+            default: break;
+        }
+        memo->census_tag = tag;
+    } else if (memo->census_owner != survivors_owner && memo->census_tag != LAZY_CENSUS_DECL && memo->census_tag != LAZY_CENSUS_FIELD) {
+        survivors_hit(memo, 2);
+    }
+    return memo;
+#else
     return &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];
+#endif
 }
 
 LazyMemo* lazy_type_memo(LazyType* me) {

@@ -5314,6 +5314,13 @@ static void print_file_time(char const* what, struct timespec start, SourceFile 
     fprintf(stderr, "file time: %10.1f ms %s (checker %u%s) %s\n", ms, what, c, more, cstr_str(&source->canonical_path));
 }
 
+#ifdef TTTT_SURVIVORS
+// The file census (TTTT_FILE_CENSUS=1): see ty/survivors.c
+void survivors_file_census(Checker const* me, char const* when);
+u32 survivors_file_start(Checker const* me, u32 at);
+u32 survivors_owner_of(Checker const* me, u32 at);
+#endif
+
 // Whether a diagnostic a checker reported is sure to be reported: nothing program_typecheck() filters afterwards can
 // drop it (no comment directive or content mapper in its file, a checked file, not once per program)
 static bool error_surely_reported(Error const* error) {
@@ -5340,10 +5347,16 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const*
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         checker->observing_file = source;
+#ifdef TTTT_SURVIVORS
+        survivors_owner = survivors_owner_of(checker, segment[i]);
+#endif
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
         if (my declaration_errs && !source->is_stdlib && !declaration_walk_moot(me)) {
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
         }
+#ifdef TTTT_SURVIVORS
+        survivors_owner = 0;
+#endif
         checker->observing_file = nullptr;
         if (debug_env.file_times) print_file_time("unused and declaration", file_start, source, c, "");
     }
@@ -5360,7 +5373,8 @@ void survivors_report(Checker const* me);
 
 static Checker* checker_recycled(Program* me, Checker* old, u32 c) {
 #ifdef TTTT_SURVIVORS
-    survivors_report(old);
+    if (getenv("TTTT_FILE_CENSUS")) survivors_file_census(old, "recycle");
+    else survivors_report(old);
 #endif
     if (debug_env.dup_census) dup_census_add(old, c);
     Checker* checker = checker_new(me);
@@ -5411,6 +5425,9 @@ static Checker* graph_fresh_worker(Program* me, Checker* checker) {
 // A file's check by `checker`
 static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at) {
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
+#ifdef TTTT_SURVIVORS
+    survivors_owner = survivors_file_start(checker, at);
+#endif
     checker->flow_analysis_disabled = false;
     deferred_bodies_acquire(me, source, nullptr);
     if (checker->graph) graph_memo_file_start(checker);
@@ -5428,6 +5445,9 @@ static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at
     checker->defer_checks = false;
     checker->checking_file = nullptr;
     checker->observing_file = nullptr;
+#ifdef TTTT_SURVIVORS
+    survivors_owner = 0;
+#endif
     if (checker->graph_memo_on) graph_memo_flush(checker);
 }
 
@@ -5844,10 +5864,19 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (index++ % count != c) continue;
         if (my declaration_errs && !declaration_walk_moot(me)) {
             checker->observing_file = source;
+#ifdef TTTT_SURVIVORS
+            survivors_owner = survivors_file_start(checker, UINT32_MAX);
+#endif
             declaration_diagnostics_check(source, &my declaration_errs[c], my emit_declarations);
+#ifdef TTTT_SURVIVORS
+            survivors_owner = 0;
+#endif
             checker->observing_file = nullptr;
         }
     }
+#ifdef TTTT_SURVIVORS
+    if (getenv("TTTT_FILE_CENSUS")) survivors_file_census(checker, "end");
+#endif
     // (--shared-graph: what it computed goes to the checkers after it, if there are any)
     if (checker->graph && getenv("TTTT_DEBUG_UNSHARED")) graph_check_unshared(checker->graph, checker);
     if (checker->graph) graph_memo_flush(checker);
