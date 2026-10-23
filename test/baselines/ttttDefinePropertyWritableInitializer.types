@@ -1,0 +1,58 @@
+//// [test/cases/ttttDefinePropertyWritableInitializer.ts] ////
+
+=== importer.js ===
+const mod = require("./mod1");
+>mod : typeof mod
+>require("./mod1") : typeof mod
+>require : any
+>"./mod1" : "./mod1"
+
+mod.thing = 0;
+>mod.thing = 0 : 0
+>mod.thing : any
+>mod : typeof mod
+>thing : any
+>0 : 0
+
+mod.other = 0;
+>mod.other = 0 : 0
+>mod.other : number
+>mod : typeof mod
+>other : number
+>0 : 0
+
+=== mod1.js ===
+const ro = { value: 42, writable: false };
+>ro : { value: number; writable: boolean; }
+>{ value: 42, writable: false } : { value: number; writable: boolean; }
+>value : number
+>42 : 42
+>writable : boolean
+>false : false
+
+Object.defineProperty(exports, "thing", ro);
+>Object.defineProperty(exports, "thing", ro) : typeof import("./mod1")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./mod1")
+>"thing" : "thing"
+>ro : { value: number; writable: boolean; }
+
+const rw = { value: 42, writable: true };
+>rw : { value: number; writable: boolean; }
+>{ value: 42, writable: true } : { value: number; writable: boolean; }
+>value : number
+>42 : 42
+>writable : boolean
+>true : true
+
+Object.defineProperty(exports, "other", rw);
+>Object.defineProperty(exports, "other", rw) : typeof import("./mod1")
+>Object.defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>Object : ObjectConstructor
+>defineProperty : <T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>) => T
+>exports : typeof import("./mod1")
+>"other" : "other"
+>rw : { value: number; writable: boolean; }
+

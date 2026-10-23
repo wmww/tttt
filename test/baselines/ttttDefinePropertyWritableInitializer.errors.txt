@@ -1,0 +1,15 @@
+importer.js(2,5): error TS2540: Cannot assign to 'thing' because it is a read-only property.
+
+
+==== importer.js (1 errors) ====
+    const mod = require("./mod1");
+    mod.thing = 0;
+        ~~~~~
+!!! error TS2540: Cannot assign to 'thing' because it is a read-only property.
+    mod.other = 0;
+    
+==== mod1.js (0 errors) ====
+    const ro = { value: 42, writable: false };
+    Object.defineProperty(exports, "thing", ro);
+    const rw = { value: 42, writable: true };
+    Object.defineProperty(exports, "other", rw);

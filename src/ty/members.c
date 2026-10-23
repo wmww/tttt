@@ -20,7 +20,13 @@ static bool define_property_readonly(Checker* me, Expr const* call) {
     Prop const* writable = ty_get_prop(me, type, checker_atom(me, c_sv("writable")));
     if (!writable) return true;
     Ty const* flag = prop_type(me, writable);
-    return (flag->flags & TYF_BOOLEAN_LITERAL) && !flag->literal.value.boolean;
+    if ((flag->flags & TYF_BOOLEAN_LITERAL) && !flag->literal.value.boolean) return true;
+    // (Widened to boolean, `const d = { value: 1, writable: false }`: the property assignment's initializer still says
+    // false, tsc's checkExpression(writableProp.valueDeclaration.initializer))
+    ObjectExprItem const* item = writable->decl ? writable->decl->item : nullptr;
+    if (!item || item->tag != OBJECT_ITEM_PROPERTY) return false;
+    Ty const* initial = ty_expr_type(me, &item->value);
+    return (initial->flags & TYF_BOOLEAN_LITERAL) && !initial->literal.value.boolean;
 }
 
 

@@ -1,0 +1,45 @@
+//// [test/cases/ttttDefinePropertyWritableInitializer.ts] ////
+
+=== importer.js ===
+const mod = require("./mod1");
+>mod : Symbol(mod, Decl(importer.js, 0, 5))
+>require : Symbol(require)
+>"./mod1" : Symbol(mod, Decl(mod1.js, 0, 0))
+
+mod.thing = 0;
+>mod.thing : Symbol(mod["thing"], Decl(mod1.js, 0, 42))
+>mod : Symbol(mod, Decl(importer.js, 0, 5))
+>thing : Symbol(mod["thing"], Decl(mod1.js, 0, 42))
+
+mod.other = 0;
+>mod.other : Symbol(mod["other"], Decl(mod1.js, 2, 41))
+>mod : Symbol(mod, Decl(importer.js, 0, 5))
+>other : Symbol(mod["other"], Decl(mod1.js, 2, 41))
+
+=== mod1.js ===
+const ro = { value: 42, writable: false };
+>ro : Symbol(ro, Decl(mod1.js, 0, 5))
+>value : Symbol(value, Decl(mod1.js, 0, 12))
+>writable : Symbol(writable, Decl(mod1.js, 0, 23))
+
+Object.defineProperty(exports, "thing", ro);
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(mod1.js, 0, 0))
+>"thing" : Symbol("thing", Decl(mod1.js, 0, 42))
+>ro : Symbol(ro, Decl(mod1.js, 0, 5))
+
+const rw = { value: 42, writable: true };
+>rw : Symbol(rw, Decl(mod1.js, 2, 5))
+>value : Symbol(value, Decl(mod1.js, 2, 12))
+>writable : Symbol(writable, Decl(mod1.js, 2, 23))
+
+Object.defineProperty(exports, "other", rw);
+>Object.defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>defineProperty : Symbol(ObjectConstructor.defineProperty, Decl(lib.es5.d.ts, --, --))
+>exports : Symbol(exports, Decl(mod1.js, 0, 0))
+>"other" : Symbol("other", Decl(mod1.js, 2, 41))
+>rw : Symbol(rw, Decl(mod1.js, 2, 5))
+
