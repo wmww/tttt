@@ -1,0 +1,32 @@
+//// [test/cases/ttttJsxRuntimeInScript.tsx] ////
+
+=== node_modules/solid-js/types/jsx.d.ts ===
+export namespace JSX {
+  interface EventHandler<T, E extends Event> {
+    (e: E & {}): void;
+>e : E & {}
+  }
+  interface BoundEventHandler<T, E extends Event, EHandler extends EventHandler<T, any> = EventHandler<T, E>> {
+  }
+  type EventHandlerUnion<T, E extends Event, EHandler extends EventHandler<T, any> = EventHandler<T, E>> =
+>EventHandlerUnion : EventHandlerUnion<T, E, EHandler>
+
+    EHandler | BoundEventHandler<T, E, EHandler>;
+  interface HTMLAttributes<T> {
+    onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
+>onClick : EventHandlerUnion<T, MouseEvent, EventHandler<T, MouseEvent>> | undefined
+  }
+  interface IntrinsicElements {
+    span: HTMLAttributes<HTMLSpanElement>;
+>span : HTMLAttributes<HTMLSpanElement>
+  }
+}
+=== a.tsx ===
+const c = <span onClick={(e) => {}} />;
+>c : error
+><span onClick={(e) => {}} /> : error
+>span : any
+>onClick : (e: MouseEvent) => void
+>(e) => {} : (e: MouseEvent) => void
+>e : MouseEvent
+

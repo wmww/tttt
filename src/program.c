@@ -2297,8 +2297,7 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         memmove(source_file->module_refs + first + 1, source_file->module_refs + first,
             sizeof(ModuleRef*) * (source_file->module_ref_count - first - 1));
         source_file->module_refs[first] = ref;
-        ref->ambient_only = !source_file->is_js && (source_file->is_declaration ||
-            !(source_file->is_module || my options.isolated_modules || my options.verbatim_module_syntax));
+        // (Resolved and loaded for a script too: tsgo's fileloader adds it to every .tsx file's module names)
         source_file->jsx_runtime_ref = ref;
     } else {
         cstr_drop(&jsx_runtime);

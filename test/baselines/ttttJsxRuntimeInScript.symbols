@@ -1,0 +1,73 @@
+//// [test/cases/ttttJsxRuntimeInScript.tsx] ////
+
+=== node_modules/solid-js/types/jsx.d.ts ===
+export namespace JSX {
+>JSX : Symbol(JSX, Decl(jsx.d.ts, 0, 0))
+
+  interface EventHandler<T, E extends Event> {
+>EventHandler : Symbol(EventHandler, Decl(jsx.d.ts, 0, 22))
+>T : Symbol(T, Decl(jsx.d.ts, 1, 25))
+>E : Symbol(E, Decl(jsx.d.ts, 1, 27))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+    (e: E & {}): void;
+>e : Symbol(e, Decl(jsx.d.ts, 2, 5))
+>E : Symbol(E, Decl(jsx.d.ts, 1, 27))
+  }
+  interface BoundEventHandler<T, E extends Event, EHandler extends EventHandler<T, any> = EventHandler<T, E>> {
+>BoundEventHandler : Symbol(BoundEventHandler, Decl(jsx.d.ts, 3, 3))
+>T : Symbol(T, Decl(jsx.d.ts, 4, 30))
+>E : Symbol(E, Decl(jsx.d.ts, 4, 32))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>EHandler : Symbol(EHandler, Decl(jsx.d.ts, 4, 49))
+>EventHandler : Symbol(EventHandler, Decl(jsx.d.ts, 0, 22))
+>T : Symbol(T, Decl(jsx.d.ts, 4, 30))
+>EventHandler : Symbol(EventHandler, Decl(jsx.d.ts, 0, 22))
+>T : Symbol(T, Decl(jsx.d.ts, 4, 30))
+>E : Symbol(E, Decl(jsx.d.ts, 4, 32))
+  }
+  type EventHandlerUnion<T, E extends Event, EHandler extends EventHandler<T, any> = EventHandler<T, E>> =
+>EventHandlerUnion : Symbol(EventHandlerUnion, Decl(jsx.d.ts, 5, 3))
+>T : Symbol(T, Decl(jsx.d.ts, 6, 25))
+>E : Symbol(E, Decl(jsx.d.ts, 6, 27))
+>Event : Symbol(Event, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>EHandler : Symbol(EHandler, Decl(jsx.d.ts, 6, 44))
+>EventHandler : Symbol(EventHandler, Decl(jsx.d.ts, 0, 22))
+>T : Symbol(T, Decl(jsx.d.ts, 6, 25))
+>EventHandler : Symbol(EventHandler, Decl(jsx.d.ts, 0, 22))
+>T : Symbol(T, Decl(jsx.d.ts, 6, 25))
+>E : Symbol(E, Decl(jsx.d.ts, 6, 27))
+
+    EHandler | BoundEventHandler<T, E, EHandler>;
+>EHandler : Symbol(EHandler, Decl(jsx.d.ts, 6, 44))
+>BoundEventHandler : Symbol(BoundEventHandler, Decl(jsx.d.ts, 3, 3))
+>T : Symbol(T, Decl(jsx.d.ts, 6, 25))
+>E : Symbol(E, Decl(jsx.d.ts, 6, 27))
+>EHandler : Symbol(EHandler, Decl(jsx.d.ts, 6, 44))
+
+  interface HTMLAttributes<T> {
+>HTMLAttributes : Symbol(HTMLAttributes, Decl(jsx.d.ts, 7, 49))
+>T : Symbol(T, Decl(jsx.d.ts, 8, 27))
+
+    onClick?: EventHandlerUnion<T, MouseEvent> | undefined;
+>onClick : Symbol(HTMLAttributes.onClick, Decl(jsx.d.ts, 8, 31))
+>EventHandlerUnion : Symbol(EventHandlerUnion, Decl(jsx.d.ts, 5, 3))
+>T : Symbol(T, Decl(jsx.d.ts, 8, 27))
+>MouseEvent : Symbol(MouseEvent, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+  }
+  interface IntrinsicElements {
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(jsx.d.ts, 10, 3))
+
+    span: HTMLAttributes<HTMLSpanElement>;
+>span : Symbol(IntrinsicElements.span, Decl(jsx.d.ts, 11, 31))
+>HTMLAttributes : Symbol(HTMLAttributes, Decl(jsx.d.ts, 7, 49))
+>HTMLSpanElement : Symbol(HTMLSpanElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+  }
+}
+=== a.tsx ===
+const c = <span onClick={(e) => {}} />;
+>c : Symbol(c, Decl(a.tsx, 0, 5))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(jsx.d.ts, 11, 31))
+>onClick : Symbol(onClick, Decl(a.tsx, 0, 15))
+>e : Symbol(e, Decl(a.tsx, 0, 26))
+
