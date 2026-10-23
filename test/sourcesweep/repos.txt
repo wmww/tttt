@@ -436,3 +436,6 @@ node-pg-migrate https://github.com/salsita/node-pg-migrate.git 99697e97d5a2238ce
 faast https://github.com/faastjs/faast.js.git a39b694600aadc9fda9c36ce931b42b4dd0b55a1
 ovis https://github.com/devswha/ovis.git 464fda5724f553dfe965bf3cedff71d94f902ec6
 smocker https://github.com/smocker-dev/smocker.git fccc714464e219abc56fde388312779307040d49
+# osis: the human's own project (its TypeScript project is ts/; its tsconfig lists build/test.ts, which ts/test.sh
+# generates with extra/collectTests.js, so without that step both sides report TS6053 for it)
+osis https://codeberg.org/sphi/osis.git 99d3b589c6aa53ca20a09a9465e0f716afb3de92
