@@ -977,6 +977,21 @@ static void program_load_module_ref_inner(Program* me, SourceFile* source, Modul
         canonical_hint.canonical = canonical;
     }
     program_learn_symlink(me, &resolved);
+    // A referenced project's .tsx/.jsx source when this program has no --jsx: tsc's resolveExternalModule has the
+    // resolution diagnostic (TS6142's) first and then finds the project reference, so the import is TS6305 for the
+    // source's output, built or not, and resolves to nothing
+    if (program_options_of(me, source)->jsx == JSX_NONE && (resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_JS) &&
+        (csview_ends_with(cstr_sv(&resolved.path), ".tsx") || csview_ends_with(cstr_sv(&resolved.path), ".jsx"))
+    ) {
+        csview output = program_output_of_source(me, cstr_sv(&resolved.path));
+        if (output.size) {
+            ref->failure = MODULE_REF_NOT_BUILT;
+            cstr_take(&module_ref_rare_mut(ref)->unbuilt_output, cstr_from_sv(output));
+            cstr_take(&module_ref_rare_mut(ref)->resolved_path, cstr_clone(resolved.path));
+            if (owned) resolved_module_drop(&resolved);
+            return;
+        }
+    }
     csview unbuilt = program_output_of_resolved(me, &resolved);
     if (unbuilt.size && resolved.kind == RESOLVED_JS) {
         // (A referenced project's JavaScript source: tsc's resolveExternalModule says TS7016 for any resolution to
