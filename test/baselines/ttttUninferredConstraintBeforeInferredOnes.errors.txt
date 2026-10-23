@@ -1,0 +1,24 @@
+helpers.ts(1,34): error TS2307: Cannot find module 'nonexistent-module' or its corresponding type declarations.
+
+
+==== helpers.ts (1 errors) ====
+    import type { SchemaTypes } from 'nonexistent-module';
+                                     ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2307: Cannot find module 'nonexistent-module' or its corresponding type declarations.
+    interface Builder<T> { b: T }
+    export declare function pick<Types extends SchemaTypes, K extends keyof Types['P'], Model = Types['P'][K]>(b: Builder<Types>, key: K): K;
+    interface Ref<T, M> { t: T; m: M }
+    interface ModelTypes { Select: unknown; Shape: unknown }
+    export declare function helpers<
+      Types extends SchemaTypes,
+      R extends Ref<Types, ModelTypes> | keyof Types['P'],
+      Select extends Model['Select'] & {},
+      Model extends ModelTypes = R extends Ref<Types, infer X> ? ModelTypes & X : ModelTypes & Types['P'][R & keyof Types['P']],
+    >(b: Builder<Types>, r: R): R;
+    
+==== use.ts (0 errors) ====
+    import { pick, helpers } from './helpers';
+    declare const builder: any;
+    const a = pick(builder, 'Comment');
+    const b = helpers(builder, 'Comment');
+    

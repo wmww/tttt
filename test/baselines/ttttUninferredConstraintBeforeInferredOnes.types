@@ -1,0 +1,55 @@
+//// [test/cases/ttttUninferredConstraintBeforeInferredOnes.ts] ////
+
+=== helpers.ts ===
+import type { SchemaTypes } from 'nonexistent-module';
+>SchemaTypes : any
+
+interface Builder<T> { b: T }
+>b : T
+
+export declare function pick<Types extends SchemaTypes, K extends keyof Types['P'], Model = Types['P'][K]>(b: Builder<Types>, key: K): K;
+>pick : <Types extends SchemaTypes, K extends keyof Types['P'], Model = Types["P"][K]>(b: Builder<Types>, key: K) => K
+>b : Builder<Types>
+>key : K
+
+interface Ref<T, M> { t: T; m: M }
+>t : T
+>m : M
+
+interface ModelTypes { Select: unknown; Shape: unknown }
+>Select : unknown
+>Shape : unknown
+
+export declare function helpers<
+>helpers : <Types extends SchemaTypes, R extends Ref<Types, ModelTypes> | keyof Types['P'], Select extends Model['Select'] & {}, Model extends ModelTypes = R extends Ref<Types, infer X> ? ModelTypes & X : ModelTypes & Types["P"][R & keyof Types["P"]]>(b: Builder<Types>, r: R) => R
+
+  Types extends SchemaTypes,
+  R extends Ref<Types, ModelTypes> | keyof Types['P'],
+  Select extends Model['Select'] & {},
+  Model extends ModelTypes = R extends Ref<Types, infer X> ? ModelTypes & X : ModelTypes & Types['P'][R & keyof Types['P']],
+>(b: Builder<Types>, r: R): R;
+>b : Builder<Types>
+>r : R
+
+=== use.ts ===
+import { pick, helpers } from './helpers';
+>pick : <Types extends SchemaTypes, K extends keyof Types['P'], Model = Types["P"][K]>(b: Builder<Types>, key: K) => K
+>helpers : <Types extends SchemaTypes, R extends Ref<Types, ModelTypes> | keyof Types['P'], Select extends Model['Select'] & {}, Model extends ModelTypes = R extends Ref<Types, infer X> ? ModelTypes & X : ModelTypes & Types["P"][R & keyof Types["P"]]>(b: Builder<Types>, r: R) => R
+
+declare const builder: any;
+>builder : any
+
+const a = pick(builder, 'Comment');
+>a : "Comment"
+>pick(builder, 'Comment') : "Comment"
+>pick : <Types extends SchemaTypes, K extends keyof Types['P'], Model = Types["P"][K]>(b: Builder<Types>, key: K) => K
+>builder : any
+>'Comment' : "Comment"
+
+const b = helpers(builder, 'Comment');
+>b : "Comment"
+>helpers(builder, 'Comment') : "Comment"
+>helpers : <Types extends SchemaTypes, R extends Ref<Types, ModelTypes> | keyof Types['P'], Select extends Model['Select'] & {}, Model extends ModelTypes = R extends Ref<Types, infer X> ? ModelTypes & X : ModelTypes & Types["P"][R & keyof Types["P"]]>(b: Builder<Types>, r: R) => R
+>builder : any
+>'Comment' : "Comment"
+

@@ -2456,6 +2456,28 @@ static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, 
             // getInferredType of it, which the default's back-reference mapper asks for):
             // `<C extends Component, S = C["state"]>` without inferences for C is S = Component["state"]
             bool changed = false;
+            for (u32 j = 0; j < i; j++) {
+                if (inferred[j] || results[j] != nothing) continue;
+                Ty const* constraint = ty_param_constraint(me, params.data[j]);
+                if (!constraint || constraint == params.data[j]) continue;
+                // (Whether or not nothing would satisfy it: tsc's getInferredType takes the constraint when there's
+                // no inferred type at all, `<R extends AnyAction, T = R["payload"]>` with AnyAction unresolved)
+                // (Not one that mentions this type parameter or a later one: tsc's getInferredType of that one asks
+                // for the earlier one again, whose inferred type is unknown by then: `<N extends P, P = N>` is unknown)
+                if ((constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+                    ty_mentions_any(me, constraint, params.data + i, params.len - i)
+                ) {
+                    continue;
+                }
+                Ty const* instantiated = ty_instantiate(me, constraint, mapper);
+                if (instantiated == nothing) continue;
+                results[j] = instantiated;
+                changed = true;
+            }
+            // (First: an inferred one's constraint sees them as their constraints already, `<T extends Unresolved, K
+            // extends keyof T['P'], M = T['P'][K]>` without inferences for T keeps K's)
+            if (changed) mapper = inference_mapper_of(me, inf, params, results);
+            changed = false;
             // So is an earlier inference that doesn't satisfy its constraint (getInferredType through the default's
             // non-fixing mapper): `<P extends "a" | "b", R = Cfg[P]>` called with "c" is R = Cfg["a" | "b"]
             for (u32 j = 0; j < i; j++) {
@@ -2474,24 +2496,6 @@ static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, 
                 bool fits = inf->within_relation ? ty_is_related_within(me, results[j], ty_with_this_arg(me, instantiated, results[j])) :
                     ty_is_related(me, results[j], ty_with_this_arg(me, instantiated, results[j]), TY_RELATION_ASSIGNABLE);
                 if (fits) continue;
-                results[j] = instantiated;
-                changed = true;
-            }
-            for (u32 j = 0; j < i; j++) {
-                if (inferred[j] || results[j] != nothing) continue;
-                Ty const* constraint = ty_param_constraint(me, params.data[j]);
-                if (!constraint || constraint == params.data[j]) continue;
-                // (Whether or not nothing would satisfy it: tsc's getInferredType takes the constraint when there's
-                // no inferred type at all, `<R extends AnyAction, T = R["payload"]>` with AnyAction unresolved)
-                // (Not one that mentions this type parameter or a later one: tsc's getInferredType of that one asks
-                // for the earlier one again, whose inferred type is unknown by then: `<N extends P, P = N>` is unknown)
-                if ((constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
-                    ty_mentions_any(me, constraint, params.data + i, params.len - i)
-                ) {
-                    continue;
-                }
-                Ty const* instantiated = ty_instantiate(me, constraint, mapper);
-                if (instantiated == nothing) continue;
                 results[j] = instantiated;
                 changed = true;
             }

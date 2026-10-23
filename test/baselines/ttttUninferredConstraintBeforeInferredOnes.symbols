@@ -1,0 +1,100 @@
+//// [test/cases/ttttUninferredConstraintBeforeInferredOnes.ts] ////
+
+=== helpers.ts ===
+import type { SchemaTypes } from 'nonexistent-module';
+>SchemaTypes : Symbol(SchemaTypes, Decl(helpers.ts, 0, 13))
+
+interface Builder<T> { b: T }
+>Builder : Symbol(Builder, Decl(helpers.ts, 0, 54))
+>T : Symbol(T, Decl(helpers.ts, 1, 18))
+>b : Symbol(Builder.b, Decl(helpers.ts, 1, 22))
+>T : Symbol(T, Decl(helpers.ts, 1, 18))
+
+export declare function pick<Types extends SchemaTypes, K extends keyof Types['P'], Model = Types['P'][K]>(b: Builder<Types>, key: K): K;
+>pick : Symbol(pick, Decl(helpers.ts, 1, 29))
+>Types : Symbol(Types, Decl(helpers.ts, 2, 29))
+>SchemaTypes : Symbol(SchemaTypes, Decl(helpers.ts, 0, 13))
+>K : Symbol(K, Decl(helpers.ts, 2, 55))
+>Types : Symbol(Types, Decl(helpers.ts, 2, 29))
+>Model : Symbol(Model, Decl(helpers.ts, 2, 83))
+>Types : Symbol(Types, Decl(helpers.ts, 2, 29))
+>K : Symbol(K, Decl(helpers.ts, 2, 55))
+>b : Symbol(b, Decl(helpers.ts, 2, 107))
+>Builder : Symbol(Builder, Decl(helpers.ts, 0, 54))
+>Types : Symbol(Types, Decl(helpers.ts, 2, 29))
+>key : Symbol(key, Decl(helpers.ts, 2, 125))
+>K : Symbol(K, Decl(helpers.ts, 2, 55))
+>K : Symbol(K, Decl(helpers.ts, 2, 55))
+
+interface Ref<T, M> { t: T; m: M }
+>Ref : Symbol(Ref, Decl(helpers.ts, 2, 137))
+>T : Symbol(T, Decl(helpers.ts, 3, 14))
+>M : Symbol(M, Decl(helpers.ts, 3, 16))
+>t : Symbol(Ref.t, Decl(helpers.ts, 3, 21))
+>T : Symbol(T, Decl(helpers.ts, 3, 14))
+>m : Symbol(Ref.m, Decl(helpers.ts, 3, 27))
+>M : Symbol(M, Decl(helpers.ts, 3, 16))
+
+interface ModelTypes { Select: unknown; Shape: unknown }
+>ModelTypes : Symbol(ModelTypes, Decl(helpers.ts, 3, 34))
+>Select : Symbol(ModelTypes.Select, Decl(helpers.ts, 4, 22))
+>Shape : Symbol(ModelTypes.Shape, Decl(helpers.ts, 4, 39))
+
+export declare function helpers<
+>helpers : Symbol(helpers, Decl(helpers.ts, 4, 56))
+
+  Types extends SchemaTypes,
+>Types : Symbol(Types, Decl(helpers.ts, 5, 32))
+>SchemaTypes : Symbol(SchemaTypes, Decl(helpers.ts, 0, 13))
+
+  R extends Ref<Types, ModelTypes> | keyof Types['P'],
+>R : Symbol(R, Decl(helpers.ts, 6, 28))
+>Ref : Symbol(Ref, Decl(helpers.ts, 2, 137))
+>Types : Symbol(Types, Decl(helpers.ts, 5, 32))
+>ModelTypes : Symbol(ModelTypes, Decl(helpers.ts, 3, 34))
+>Types : Symbol(Types, Decl(helpers.ts, 5, 32))
+
+  Select extends Model['Select'] & {},
+>Select : Symbol(Select, Decl(helpers.ts, 7, 54))
+>Model : Symbol(Model, Decl(helpers.ts, 8, 38))
+
+  Model extends ModelTypes = R extends Ref<Types, infer X> ? ModelTypes & X : ModelTypes & Types['P'][R & keyof Types['P']],
+>Model : Symbol(Model, Decl(helpers.ts, 8, 38))
+>ModelTypes : Symbol(ModelTypes, Decl(helpers.ts, 3, 34))
+>R : Symbol(R, Decl(helpers.ts, 6, 28))
+>Ref : Symbol(Ref, Decl(helpers.ts, 2, 137))
+>Types : Symbol(Types, Decl(helpers.ts, 5, 32))
+>X : Symbol(X, Decl(helpers.ts, 9, 55))
+>ModelTypes : Symbol(ModelTypes, Decl(helpers.ts, 3, 34))
+>X : Symbol(X, Decl(helpers.ts, 9, 55))
+>ModelTypes : Symbol(ModelTypes, Decl(helpers.ts, 3, 34))
+>Types : Symbol(Types, Decl(helpers.ts, 5, 32))
+>R : Symbol(R, Decl(helpers.ts, 6, 28))
+>Types : Symbol(Types, Decl(helpers.ts, 5, 32))
+
+>(b: Builder<Types>, r: R): R;
+>b : Symbol(b, Decl(helpers.ts, 10, 2))
+>Builder : Symbol(Builder, Decl(helpers.ts, 0, 54))
+>Types : Symbol(Types, Decl(helpers.ts, 5, 32))
+>r : Symbol(r, Decl(helpers.ts, 10, 20))
+>R : Symbol(R, Decl(helpers.ts, 6, 28))
+>R : Symbol(R, Decl(helpers.ts, 6, 28))
+
+=== use.ts ===
+import { pick, helpers } from './helpers';
+>pick : Symbol(pick, Decl(use.ts, 0, 8))
+>helpers : Symbol(helpers, Decl(use.ts, 0, 14))
+
+declare const builder: any;
+>builder : Symbol(builder, Decl(use.ts, 1, 13))
+
+const a = pick(builder, 'Comment');
+>a : Symbol(a, Decl(use.ts, 2, 5))
+>pick : Symbol(pick, Decl(use.ts, 0, 8))
+>builder : Symbol(builder, Decl(use.ts, 1, 13))
+
+const b = helpers(builder, 'Comment');
+>b : Symbol(b, Decl(use.ts, 3, 5))
+>helpers : Symbol(helpers, Decl(use.ts, 0, 14))
+>builder : Symbol(builder, Decl(use.ts, 1, 13))
+
