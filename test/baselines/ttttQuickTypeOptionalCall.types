@@ -1,0 +1,152 @@
+//// [test/cases/ttttQuickTypeOptionalCall.ts] ////
+
+=== ttttQuickTypeOptionalCall.ts ===
+// The quick type of `f?.(x)` with a callee that isn't nullish and has one non-generic signature is its return type,
+// the arguments unchecked (tsc's getQuickTypeOfExpression: getReturnTypeOfSingleNonGenericSignatureOfCallChain).
+// Otherwise `y` needs `el` in the loop, whose back edge narrows by `element !== el`, whose type needs `target`, whose
+// initializer checks `y` (openscience's create-auto-scroll.tsx: three spurious TS7022)
+declare const store: { contentRef?: HTMLElement };
+>store : { contentRef?: HTMLElement; }
+>contentRef : HTMLElement | undefined
+
+declare const doc: { at?(x: number, y: number): Element | null; pick(x: number, y: number): Element | null };
+>doc : { at?(x: number, y: number): Element | null; pick(x: number, y: number): Element | null; }
+>at : ((x: number, y: number) => Element | null) | undefined
+>x : number
+>y : number
+>pick : (x: number, y: number) => Element | null
+>x : number
+>y : number
+
+export function f(el: HTMLElement | undefined, bounds: DOMRect, x: number) {
+>f : (el: HTMLElement | undefined, bounds: DOMRect, x: number) => void
+>el : HTMLElement | undefined
+>bounds : DOMRect
+>x : number
+
+  if (!el) return;
+>!el : boolean
+>el : HTMLElement | undefined
+
+  for (const offset of [1, 2]) {
+>offset : number
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+
+    const y = bounds.top + Math.min(offset, el.clientHeight / 2);
+>y : number
+>bounds.top + Math.min(offset, el.clientHeight / 2) : number
+>bounds.top : number
+>bounds : DOMRect
+>top : number
+>Math.min(offset, el.clientHeight / 2) : number
+>Math.min : (...values: number[]) => number
+>Math : Math
+>min : (...values: number[]) => number
+>offset : number
+>el.clientHeight / 2 : number
+>el.clientHeight : number
+>el : HTMLElement
+>clientHeight : number
+>2 : 2
+
+    const target = doc.pick?.(x, y);
+>target : Element | null
+>doc.pick?.(x, y) : Element | null
+>doc.pick : (x: number, y: number) => Element | null
+>doc : { at?(x: number, y: number): Element | null; pick(x: number, y: number): Element | null; }
+>pick : (x: number, y: number) => Element | null
+>x : number
+>y : number
+
+    const element = target?.closest("p") ?? target;
+>element : Element | null
+>target?.closest("p") ?? target : Element | null
+>target?.closest("p") : HTMLParagraphElement | null | undefined
+>target?.closest : { <K extends keyof HTMLElementTagNameMap>(selector: K): HTMLElementTagNameMap[K] | null; <K extends keyof SVGElementTagNameMap>(selector: K): SVGElementTagNameMap[K] | null; <K extends keyof MathMLElementTagNameMap>(selector: K): MathMLElementTagNameMap[K] | null; <E extends Element = Element>(selectors: string): E | null; } | undefined
+>target : Element | null
+>closest : { <K extends keyof HTMLElementTagNameMap>(selector: K): HTMLElementTagNameMap[K] | null; <K extends keyof SVGElementTagNameMap>(selector: K): SVGElementTagNameMap[K] | null; <K extends keyof MathMLElementTagNameMap>(selector: K): MathMLElementTagNameMap[K] | null; <E extends Element = Element>(selectors: string): E | null; } | undefined
+>"p" : "p"
+>target : Element | null
+
+    if (element !== el && store.contentRef?.contains(element)) {
+>element !== el && store.contentRef?.contains(element) : boolean | undefined
+>element !== el : boolean
+>element : Element | null
+>el : HTMLElement
+>store.contentRef?.contains(element) : boolean | undefined
+>store.contentRef?.contains : ((other: Node | null) => boolean) | undefined
+>store.contentRef : HTMLElement | undefined
+>store : { contentRef?: HTMLElement; }
+>contentRef : HTMLElement | undefined
+>contains : ((other: Node | null) => boolean) | undefined
+>element : Element | null
+    }
+  }
+}
+// A nullish callee has no quick type: that one is circular in tsc too
+export function g(el: HTMLElement | undefined, bounds: DOMRect, x: number) {
+>g : (el: HTMLElement | undefined, bounds: DOMRect, x: number) => void
+>el : HTMLElement | undefined
+>bounds : DOMRect
+>x : number
+
+  if (!el) return;
+>!el : boolean
+>el : HTMLElement | undefined
+
+  for (const offset of [1, 2]) {
+>offset : number
+>[1, 2] : number[]
+>1 : 1
+>2 : 2
+
+    const y = bounds.top + Math.min(offset, el.clientHeight / 2);
+>y : any
+>bounds.top + Math.min(offset, el.clientHeight / 2) : number
+>bounds.top : number
+>bounds : DOMRect
+>top : number
+>Math.min(offset, el.clientHeight / 2) : number
+>Math.min : (...values: number[]) => number
+>Math : Math
+>min : (...values: number[]) => number
+>offset : number
+>el.clientHeight / 2 : number
+>el.clientHeight : number
+>el : HTMLElement
+>clientHeight : number
+>2 : 2
+
+    const target = doc.at?.(x, y);
+>target : any
+>doc.at?.(x, y) : Element | null | undefined
+>doc.at : ((x: number, y: number) => Element | null) | undefined
+>doc : { at?(x: number, y: number): Element | null; pick(x: number, y: number): Element | null; }
+>at : ((x: number, y: number) => Element | null) | undefined
+>x : number
+>y : any
+
+    const element = target ?? undefined;
+>element : any
+>target ?? undefined : any
+>target : any
+>undefined : undefined
+
+    if (element !== el && store.contentRef?.contains(element)) {
+>element !== el && store.contentRef?.contains(element) : boolean | undefined
+>element !== el : boolean
+>element : any
+>el : HTMLElement
+>store.contentRef?.contains(element) : boolean | undefined
+>store.contentRef?.contains : ((other: Node | null) => boolean) | undefined
+>store.contentRef : HTMLElement | undefined
+>store : { contentRef?: HTMLElement; }
+>contentRef : HTMLElement | undefined
+>contains : ((other: Node | null) => boolean) | undefined
+>element : any
+    }
+  }
+}
+

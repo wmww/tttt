@@ -939,7 +939,11 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     }
     if (expr->tag != EXPR_CALL) return nullptr;
     CallExpr const* call = expr->call;
-    if (call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) return nullptr;
+    if (call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS) return nullptr;
+    // A chain is one only as `f?.(x)` of a callee that isn't nullish (tsc's getReturnTypeOfSingleNonGenericSignatureOfCallChain
+    // asks the callee's own type, of which a nullish part has no signature; then nothing short-circuits):
+    // `document.elementFromPoint?.(x, y)` (openscience's create-auto-scroll.tsx, a loop's TS7022 otherwise)
+    if (in_optional_chain(expr) && (!call->optional_chain || in_optional_chain(&call->callable))) return nullptr;
     // (tsc's isSymbolOrSymbolForCall and isRequireCall: `Symbol()`, `Symbol.for()` and `require()`)
     Expr const* name_expr = &call->callable;
     if (name_expr->tag == EXPR_PROPERTY && span_equals(property_key_inner_span(name_expr->property), "for")) {

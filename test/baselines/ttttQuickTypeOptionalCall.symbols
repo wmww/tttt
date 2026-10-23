@@ -1,0 +1,131 @@
+//// [test/cases/ttttQuickTypeOptionalCall.ts] ////
+
+=== ttttQuickTypeOptionalCall.ts ===
+// The quick type of `f?.(x)` with a callee that isn't nullish and has one non-generic signature is its return type,
+// the arguments unchecked (tsc's getQuickTypeOfExpression: getReturnTypeOfSingleNonGenericSignatureOfCallChain).
+// Otherwise `y` needs `el` in the loop, whose back edge narrows by `element !== el`, whose type needs `target`, whose
+// initializer checks `y` (openscience's create-auto-scroll.tsx: three spurious TS7022)
+declare const store: { contentRef?: HTMLElement };
+>store : Symbol(store, Decl(ttttQuickTypeOptionalCall.ts, 4, 13))
+>contentRef : Symbol(contentRef, Decl(ttttQuickTypeOptionalCall.ts, 4, 22))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+declare const doc: { at?(x: number, y: number): Element | null; pick(x: number, y: number): Element | null };
+>doc : Symbol(doc, Decl(ttttQuickTypeOptionalCall.ts, 5, 13))
+>at : Symbol(at, Decl(ttttQuickTypeOptionalCall.ts, 5, 20))
+>x : Symbol(x, Decl(ttttQuickTypeOptionalCall.ts, 5, 25))
+>y : Symbol(y, Decl(ttttQuickTypeOptionalCall.ts, 5, 35))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>pick : Symbol(pick, Decl(ttttQuickTypeOptionalCall.ts, 5, 63))
+>x : Symbol(x, Decl(ttttQuickTypeOptionalCall.ts, 5, 69))
+>y : Symbol(y, Decl(ttttQuickTypeOptionalCall.ts, 5, 79))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+export function f(el: HTMLElement | undefined, bounds: DOMRect, x: number) {
+>f : Symbol(f, Decl(ttttQuickTypeOptionalCall.ts, 5, 109))
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 6, 18))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>bounds : Symbol(bounds, Decl(ttttQuickTypeOptionalCall.ts, 6, 46))
+>DOMRect : Symbol(DOMRect, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>x : Symbol(x, Decl(ttttQuickTypeOptionalCall.ts, 6, 63))
+
+  if (!el) return;
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 6, 18))
+
+  for (const offset of [1, 2]) {
+>offset : Symbol(offset, Decl(ttttQuickTypeOptionalCall.ts, 8, 12))
+
+    const y = bounds.top + Math.min(offset, el.clientHeight / 2);
+>y : Symbol(y, Decl(ttttQuickTypeOptionalCall.ts, 9, 9))
+>bounds.top : Symbol(DOMRectReadOnly.top, Decl(lib.dom.d.ts, --, --))
+>bounds : Symbol(bounds, Decl(ttttQuickTypeOptionalCall.ts, 6, 46))
+>top : Symbol(DOMRectReadOnly.top, Decl(lib.dom.d.ts, --, --))
+>Math.min : Symbol(Math.min, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>min : Symbol(Math.min, Decl(lib.es5.d.ts, --, --))
+>offset : Symbol(offset, Decl(ttttQuickTypeOptionalCall.ts, 8, 12))
+>el.clientHeight : Symbol(Element.clientHeight, Decl(lib.dom.d.ts, --, --))
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 6, 18))
+>clientHeight : Symbol(Element.clientHeight, Decl(lib.dom.d.ts, --, --))
+
+    const target = doc.pick?.(x, y);
+>target : Symbol(target, Decl(ttttQuickTypeOptionalCall.ts, 10, 9))
+>doc.pick : Symbol(pick, Decl(ttttQuickTypeOptionalCall.ts, 5, 63))
+>doc : Symbol(doc, Decl(ttttQuickTypeOptionalCall.ts, 5, 13))
+>pick : Symbol(pick, Decl(ttttQuickTypeOptionalCall.ts, 5, 63))
+>x : Symbol(x, Decl(ttttQuickTypeOptionalCall.ts, 6, 63))
+>y : Symbol(y, Decl(ttttQuickTypeOptionalCall.ts, 9, 9))
+
+    const element = target?.closest("p") ?? target;
+>element : Symbol(element, Decl(ttttQuickTypeOptionalCall.ts, 11, 9))
+>target?.closest : Symbol(Element.closest, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>target : Symbol(target, Decl(ttttQuickTypeOptionalCall.ts, 10, 9))
+>closest : Symbol(Element.closest, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>target : Symbol(target, Decl(ttttQuickTypeOptionalCall.ts, 10, 9))
+
+    if (element !== el && store.contentRef?.contains(element)) {
+>element : Symbol(element, Decl(ttttQuickTypeOptionalCall.ts, 11, 9))
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 6, 18))
+>store.contentRef?.contains : Symbol(Node.contains, Decl(lib.dom.d.ts, --, --))
+>store.contentRef : Symbol(contentRef, Decl(ttttQuickTypeOptionalCall.ts, 4, 22))
+>store : Symbol(store, Decl(ttttQuickTypeOptionalCall.ts, 4, 13))
+>contentRef : Symbol(contentRef, Decl(ttttQuickTypeOptionalCall.ts, 4, 22))
+>contains : Symbol(Node.contains, Decl(lib.dom.d.ts, --, --))
+>element : Symbol(element, Decl(ttttQuickTypeOptionalCall.ts, 11, 9))
+    }
+  }
+}
+// A nullish callee has no quick type: that one is circular in tsc too
+export function g(el: HTMLElement | undefined, bounds: DOMRect, x: number) {
+>g : Symbol(g, Decl(ttttQuickTypeOptionalCall.ts, 15, 1))
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 17, 18))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>bounds : Symbol(bounds, Decl(ttttQuickTypeOptionalCall.ts, 17, 46))
+>DOMRect : Symbol(DOMRect, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>x : Symbol(x, Decl(ttttQuickTypeOptionalCall.ts, 17, 63))
+
+  if (!el) return;
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 17, 18))
+
+  for (const offset of [1, 2]) {
+>offset : Symbol(offset, Decl(ttttQuickTypeOptionalCall.ts, 19, 12))
+
+    const y = bounds.top + Math.min(offset, el.clientHeight / 2);
+>y : Symbol(y, Decl(ttttQuickTypeOptionalCall.ts, 20, 9))
+>bounds.top : Symbol(DOMRectReadOnly.top, Decl(lib.dom.d.ts, --, --))
+>bounds : Symbol(bounds, Decl(ttttQuickTypeOptionalCall.ts, 17, 46))
+>top : Symbol(DOMRectReadOnly.top, Decl(lib.dom.d.ts, --, --))
+>Math.min : Symbol(Math.min, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>min : Symbol(Math.min, Decl(lib.es5.d.ts, --, --))
+>offset : Symbol(offset, Decl(ttttQuickTypeOptionalCall.ts, 19, 12))
+>el.clientHeight : Symbol(Element.clientHeight, Decl(lib.dom.d.ts, --, --))
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 17, 18))
+>clientHeight : Symbol(Element.clientHeight, Decl(lib.dom.d.ts, --, --))
+
+    const target = doc.at?.(x, y);
+>target : Symbol(target, Decl(ttttQuickTypeOptionalCall.ts, 21, 9))
+>doc.at : Symbol(at, Decl(ttttQuickTypeOptionalCall.ts, 5, 20))
+>doc : Symbol(doc, Decl(ttttQuickTypeOptionalCall.ts, 5, 13))
+>at : Symbol(at, Decl(ttttQuickTypeOptionalCall.ts, 5, 20))
+>x : Symbol(x, Decl(ttttQuickTypeOptionalCall.ts, 17, 63))
+>y : Symbol(y, Decl(ttttQuickTypeOptionalCall.ts, 20, 9))
+
+    const element = target ?? undefined;
+>element : Symbol(element, Decl(ttttQuickTypeOptionalCall.ts, 22, 9))
+>target : Symbol(target, Decl(ttttQuickTypeOptionalCall.ts, 21, 9))
+>undefined : Symbol(undefined)
+
+    if (element !== el && store.contentRef?.contains(element)) {
+>element : Symbol(element, Decl(ttttQuickTypeOptionalCall.ts, 22, 9))
+>el : Symbol(el, Decl(ttttQuickTypeOptionalCall.ts, 17, 18))
+>store.contentRef?.contains : Symbol(Node.contains, Decl(lib.dom.d.ts, --, --))
+>store.contentRef : Symbol(contentRef, Decl(ttttQuickTypeOptionalCall.ts, 4, 22))
+>store : Symbol(store, Decl(ttttQuickTypeOptionalCall.ts, 4, 13))
+>contentRef : Symbol(contentRef, Decl(ttttQuickTypeOptionalCall.ts, 4, 22))
+>contains : Symbol(Node.contains, Decl(lib.dom.d.ts, --, --))
+>element : Symbol(element, Decl(ttttQuickTypeOptionalCall.ts, 22, 9))
+    }
+  }
+}
+
