@@ -1,0 +1,45 @@
+ttttHeritageShiftTypeArguments.ts(5,2): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+ttttHeritageShiftTypeArguments.ts(5,17): error TS1005: ',' expected.
+ttttHeritageShiftTypeArguments.ts(5,19): error TS2304: Cannot find name 'T'.
+ttttHeritageShiftTypeArguments.ts(5,22): error TS2304: Cannot find name 'v'.
+ttttHeritageShiftTypeArguments.ts(5,23): error TS1005: ')' expected.
+ttttHeritageShiftTypeArguments.ts(5,25): error TS1434: Unexpected keyword or identifier.
+ttttHeritageShiftTypeArguments.ts(5,25): error TS2304: Cannot find name 'T'.
+ttttHeritageShiftTypeArguments.ts(5,26): error TS1128: Declaration or statement expected.
+ttttHeritageShiftTypeArguments.ts(5,28): error TS1128: Declaration or statement expected.
+ttttHeritageShiftTypeArguments.ts(5,31): error TS2532: Object is possibly 'undefined'.
+ttttHeritageShiftTypeArguments.ts(5,35): error TS1109: Expression expected.
+ttttHeritageShiftTypeArguments.ts(5,39): error TS1005: ';' expected.
+
+
+==== ttttHeritageShiftTypeArguments.ts (12 errors) ====
+    // A heritage element's type arguments want a `<` token (tsc's parseExpressionWithTypeArguments, tryParseTypeArguments):
+    // `extends f<<T>(v: T) => void>` has a `<<`, which only an expression's parseTypeArgumentsInExpression rescans, so the
+    // clause is `f` and the rest is recovery. Babel's type-arguments-bit-shift-left-like/class-heritage fixture
+    declare const f: new () => {};
+    (class extends f<<T>(v: T) => void> {});
+     ~~~~~
+!!! error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+                    ~~
+!!! error TS1005: ',' expected.
+                      ~
+!!! error TS2304: Cannot find name 'T'.
+                         ~
+!!! error TS2304: Cannot find name 'v'.
+                          ~
+!!! error TS1005: ')' expected.
+                            ~
+!!! error TS1434: Unexpected keyword or identifier.
+                            ~
+!!! error TS2304: Cannot find name 'T'.
+                             ~
+!!! error TS1128: Declaration or statement expected.
+                               ~~
+!!! error TS1128: Declaration or statement expected.
+                                  ~~~~
+!!! error TS2532: Object is possibly 'undefined'.
+                                      ~
+!!! error TS1109: Expression expected.
+                                          ~
+!!! error TS1005: ';' expected.
+    

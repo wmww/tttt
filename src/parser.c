@@ -144,6 +144,9 @@ typedef struct ParserShared {
     // tsc's DisallowConditionalTypes context: parsing a conditional type's extends type or an `infer X extends C`
     // constraint, where a type operator's operands can't be conditional types (a primary type's insides can)
     bool disallow_conditional;
+    // The next identifier type is a heritage element's (tsc's parseExpressionWithTypeArguments, tryParseTypeArguments):
+    // its type arguments want a `<` token, not a `<<`. Cleared by the identifier type that reads it
+    bool heritage_type_args;
     // The `{` of the innermost Block (statement block, function body) being parsed, for TernaryType.enclosing_block
     const char* block_open;
     ModifiedParent statement_parent;
@@ -3331,7 +3334,9 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
         hop_whitespace(&p);
     }
 
-    if (p.whitespace != WHITESPACE_NEWLINE) {
+    bool heritage_shift = p.shared->heritage_type_args && p.pos[0] == '<' && p.pos[1] == '<';
+    p.shared->heritage_type_args = false;
+    if (p.whitespace != WHITESPACE_NEWLINE && !heritage_shift) {
         if (parse_generic_params(&p, false, &generic_params)) {
             end = p.pos;
         } else {
@@ -6405,7 +6410,10 @@ static void parse_heritage_element(Parser* p, HeritageClauses* h, bool is_extend
         parse_fail(&ep);
         Parser tp = parser(p);
         TypeNode t;
-        if (parse_type(&tp, TYPE_PRECEDENCE_OPERATOR, &t)) {
+        tp.shared->heritage_type_args = true;
+        bool typed = parse_type(&tp, TYPE_PRECEDENCE_OPERATOR, &t);
+        tp.shared->heritage_type_args = false;
+        if (typed) {
             if (tp.pos == end) {
                 Span span = span_make(p->shared->source, start, end);
                 parse_success(&tp);
@@ -10730,8 +10738,11 @@ binary_rest:
     // a `typeof` type's are a type's (a JSDoc `{typeof f<T>}`), on its line: tsc's parseTypeQuery
     bool outer_import_type_args = p.shared->import_type_args;
     p.shared->import_type_args = left_and_ret->tag == EXPR_IDENTIFIER && left_and_ret->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT;
-    bool type_args = c == '<' && (!p.shared->source->is_js || ctx.entity_name) && !(ctx.entity_name && hit_newline) &&
-        parse_generic_params(&generic_p, true, &parsed.generic_params);
+    // (A heritage element's are tsc's tryParseTypeArguments, which wants a `<` token: `extends f<<T>() => T>` has a `<<`,
+    // which only an expression's parseTypeArgumentsInExpression rescans)
+    bool heritage_shift = ctx.reject_operators && !ctx.decorator && !ctx.entity_name && c == '<' && p.pos[1] == '<';
+    bool type_args = c == '<' && !heritage_shift && (!p.shared->source->is_js || ctx.entity_name) &&
+        !(ctx.entity_name && hit_newline) && parse_generic_params(&generic_p, true, &parsed.generic_params);
     p.shared->import_type_args = outer_import_type_args;
     if (type_args) {
         bool success = false;
