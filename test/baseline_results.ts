@@ -1123,6 +1123,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDestructuredReducedNeverSilent': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDisplayDepthTruncation': {
         errors: true,
         symbols: true,
@@ -1209,6 +1214,11 @@ const baselines = {
         types: true,
     },
     'ttttEscapedTypeInSpecifier': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttEsmNamespaceOfCjsDefaultBundler': {
         errors: true,
         symbols: true,
         types: true,
