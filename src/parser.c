@@ -2920,13 +2920,14 @@ static bool parse_ternary_type(Parser* parent, char const* left_start, TypeNode*
     expect_char(&p, '?');
     hop_whitespace(&p);
 
-    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &if_true);
+    // (A missing branch is TS1110: tsc's parseType)
+    expect_type(&p, TYPE_PRECEDENCE_TERNARY, &if_true);
     hop_whitespace(&p);
 
     expect_char(&p, ':');
     hop_whitespace(&p);
 
-    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &if_false);
+    expect_type(&p, TYPE_PRECEDENCE_TERNARY, &if_false);
 
     *left_and_ret = type_ternary(ast_new(TernaryType, {
         .maybe_sub = *left_and_ret,
