@@ -1,0 +1,126 @@
+//// [test/cases/ttttLiteralPropertyAndAccessorOneSymbol.ts] ////
+
+=== ttttLiteralPropertyAndAccessorOneSymbol.ts ===
+// A property assignment and accessors of one name (TS1119) are one symbol, a property: typed by its first declaration,
+// written as that type (tsc's getWriteTypeOfSymbol of a SymbolFlags.Property)
+const o1 = { a: 2, get a(): number { return 1 }, set a(v: string | number) {} };
+>o1 : Symbol(o1, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>v : Symbol(v, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 55))
+
+o1.a = "s";
+>o1.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>o1 : Symbol(o1, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+
+const o2 = { get a(): number { return 1 }, a: 2, set a(v: string | number) {} };
+>o2 : Symbol(o2, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 48))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 48))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 48))
+>v : Symbol(v, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 55))
+
+o2.a = "s";
+>o2.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 48))
+>o2 : Symbol(o2, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 48))
+
+const o3 = { get a(): number { return 1 }, set a(v: string | number) {}, a: 2 };
+>o3 : Symbol(o3, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 72))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 72))
+>v : Symbol(v, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 49))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 72))
+
+o3.a = "s";
+>o3.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 72))
+>o3 : Symbol(o3, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 42), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 72))
+
+const o4 = { get a(): number { return 1 }, set a(v: string | number) {} };
+>o4 : Symbol(o4, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 42))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 42))
+>v : Symbol(v, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 49))
+
+o4.a = "s";
+>o4.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 42))
+>o4 : Symbol(o4, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 42))
+
+const p1: boolean = o1;
+>p1 : Symbol(p1, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 10, 5))
+>o1 : Symbol(o1, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 5))
+
+const p2: boolean = o2;
+>p2 : Symbol(p2, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 11, 5))
+>o2 : Symbol(o2, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 4, 5))
+
+const p3: boolean = o3;
+>p3 : Symbol(p3, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 12, 5))
+>o3 : Symbol(o3, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 6, 5))
+
+const p4: boolean = o4;
+>p4 : Symbol(p4, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 13, 5))
+>o4 : Symbol(o4, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 8, 5))
+
+const k = "a";
+>k : Symbol(k, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 14, 5))
+
+const o5 = { [k]: 2, get a(): number { return 1 }, set a(v: string | number) {} };
+>o5 : Symbol(o5, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 5))
+>[k] : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 20), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 50), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 12))
+>k : Symbol(k, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 14, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 20), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 50), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 12))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 20), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 50), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 12))
+>v : Symbol(v, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 57))
+
+o5.a = "s";
+>o5.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 20), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 50), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 12))
+>o5 : Symbol(o5, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 20), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 50), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 12))
+
+const p5: boolean = o5;
+>p5 : Symbol(p5, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 17, 5))
+>o5 : Symbol(o5, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 15, 5))
+
+const o6 = { a: 2, get [k](): number { return 1 }, set [k](v: string | number) {} };
+>o6 : Symbol(o6, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 50))
+>[k] : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 50))
+>k : Symbol(k, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 14, 5))
+>[k] : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 50))
+>k : Symbol(k, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 14, 5))
+>v : Symbol(v, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 59))
+
+o6.a = "s";
+>o6.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 50))
+>o6 : Symbol(o6, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 50))
+
+const p6: boolean = o6;
+>p6 : Symbol(p6, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 20, 5))
+>o6 : Symbol(o6, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 18, 5))
+
+({ a: o1.a } = { a: "s" });
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 21, 2))
+>o1.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>o1 : Symbol(o1, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 21, 16))
+
+for (o1.a of ["s"]) {}
+>o1.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>o1 : Symbol(o1, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+
+o1.a += "s";
+>o1.a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+>o1 : Symbol(o1, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 5))
+>a : Symbol(a, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 12), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 18), Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 2, 48))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttLiteralPropertyAndAccessorOneSymbol.ts, 24, 5))
+

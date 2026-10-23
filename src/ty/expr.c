@@ -3778,6 +3778,15 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
 // already as readonly as the spread makes it, a set-only one undefined
 // The new property has no value declaration, so it gets no excess property check: `const o: Options = { ...defaults, get extra() { return 1; } }` is fine
 static ObjectLiteralProp spread_accessor(Checker* me, ObjectLiteralProp prop, bool readonly) {
+    // (A property merged with a getter, `{ s: 1, get s() {...} }`, is as readonly as the getter: a fresh symbol once
+    // the spread changes that)
+    if (!prop.accessor && prop.own && !readonly && (prop.flags & PROP_READONLY) && !prop.reuse) {
+        prop.own_merged = true;
+        prop.own = false;
+        prop.flags = (prop.flags & ~(u32)PROP_READONLY) | PROP_NO_VALUE_DECLARATION;
+        prop.parent = nullptr;
+        return prop;
+    }
     if (!prop.accessor || prop.type) return prop;
     bool setonly = (prop.flags & PROP_SETTER) && !(prop.flags & PROP_GETTER);
     if (!setonly && readonly == !!(prop.flags & PROP_READONLY)) return prop;
@@ -4882,6 +4891,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             accessor = getter_fn ? getter_fn : setter_fn;
             setter = getter_fn ? setter_fn : nullptr;
             flags |= getter_fn ? PROP_GETTER : PROP_SETTER;
+            // (One symbol with a property assignment too, `{ a: 2, get a() {...}, set a(v) {} }` (TS1119: the binder
+            // merges them), is a property: typed by its accessors (getTypeOfAccessors), and written as that type,
+            // getWriteTypeOfSymbol of a SymbolFlags.Property)
+            if (symbol && (symbol->flags & LIT_SYM_PROPERTY)) {
+                type = ty_object_literal_accessor_type(me, accessor, getter_fn != nullptr);
+                flags &= ~(u32)(PROP_GETTER | PROP_SETTER);
+                accessor = setter = nullptr;
+            }
         }
         if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD | (i->optional_method ? PROP_OPTIONAL : 0);
         // (tsgo's isReadonlySymbol: a getter without a setter)

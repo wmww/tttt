@@ -300,8 +300,14 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   instantiateReverseMappedType. Inference priorities lack SpeculativeTuple (AlwaysStrict is `Inference.always_strict`,
   which also stands in for NoConstraints).
 - `context_is_tuple_like()` misses call spreads (tsc's intra-expression sites through spreads). Probed 2026-10-23, matches tsgo (`f(...[1, "a"] as const)` against a tuple rest, a spread tuple holding a callback, an array spread).
-- `const` type parameters: nested array literals found syntactically (`add_nested_array_literals`) plus
-  `Inference.array_literals`, because interned tuples can't carry ObjectFlags.ArrayLiteral.
+- Array literal candidates (`Inference.array_literals`, filled by `add_nested_array_literals` in call.c): tsc marks
+  each array literal's type ObjectFlags.ArrayLiteral, so literal-ness belongs to the candidate an inference site
+  pushes (`unionObjectAndArrayLiteralCandidates`, `const` type parameters). tttt's array and tuple types are interned
+  and can't carry the flag, so the inference records the argument's nested array literal types and treats any
+  candidate equal to one as a literal. Since 13-P4a only the literals under parts of the parameter that mention a
+  type variable are recorded (`c: [1]` against `c: unknown` no longer makes `xs: number[]` a literal), but two sites
+  reaching type variables with identical types (a literal `[1]` and a declared `number[]`) still can't be told apart.
+  Correct: a literal bit per candidate, set where the walk infers from a literal's type.
 - `ty_union_signatures` (relate.c) isn't cached. `resolve_call` falls back per member for `super`, `new` of a callable
   union and JSX when a member has no signatures; tsc uses the union signatures (`super`) or its own JSX rule.
 - `tagged_template_call()`: a stand-in CallExpr with a shallow copy of the tag (`CallInfo.tagged_template`). Correct: an
