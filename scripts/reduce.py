@@ -35,7 +35,7 @@ Safety (a reducer once followed a symlink and destroyed 690 shared files): every
 to contain no symlink before anything runs (and --from takes only /tmp/reduce-* directories); the compilers can't write
 outside it. The copy stays for inspection and --from: remove it with `rm -r /tmp/reduce-XXXX` (the path is printed).
 """
-import argparse, concurrent.futures, fnmatch, json, os, re, shutil, subprocess, sys, tempfile
+import argparse, collections, concurrent.futures, fnmatch, json, os, re, shutil, subprocess, sys, tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tscformat
@@ -214,13 +214,14 @@ class Probe:
         only_tsgo, only_tttt, tsgo, tttt = self.differing()
         if 'TIMEOUT' in (tsgo, tttt):
             return False
-        # (--tsgo-clean: a cut that makes tsgo report more than the copy did at first, an unresolved name the cut
-        # left, is no repro)
+        # (--tsgo-clean: a cut that makes tsgo report anything the copy didn't at first, an unresolved name the cut
+        # left, is no repro: by (file, code, message), lines move as cuts go. A count let a cut that removed tsgo's
+        # own errors trade them for unresolved names: veto-party/baum)
         if self.args.tsgo_clean:
-            count = len(diags(tsgo))
+            seen = collections.Counter((f, c, m) for f, _l, _c2, c, m in tscformat.parse(tsgo))
             if self.tsgo_baseline is None:
-                self.tsgo_baseline = count
-            if count > self.tsgo_baseline:
+                self.tsgo_baseline = seen
+            if seen - self.tsgo_baseline:
                 return False
         lines = (only_tsgo if self.args.mode != 'tttt' else []) + (only_tttt if self.args.mode != 'tsgo' else [])
         return any(re.search(self.args.keep, l) for l in lines)
@@ -370,7 +371,7 @@ def main():
     ap.add_argument('--tttt-args', default='', help='extra tttt flags, e.g. "--checkers 1"')
     ap.add_argument('--no-reduce', action='store_true', help='copy and check the predicate only')
     ap.add_argument('--tsgo-clean', action='store_true',
-                    help='tsgo must report no more than the copy did at first (for a spurious tttt error: no cut leaves broken code)')
+                    help='tsgo may report nothing the copy did not at first (by file, code, message: for a spurious tttt error, no cut leaves broken code)')
     args = ap.parse_args()
     args.mode = args.mode or 'either'
     if bool(args.project) == bool(args.from_copy):
