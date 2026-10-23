@@ -2099,6 +2099,40 @@ static Ty const* module_type_clone(Checker* me, Ty const* type, ObjectLiteralKin
     return ty_object_literal(me, props, members->prop_count, members->index, members->index_count, OBJECT_SYNTHETIC | kind);
 }
 
+// tsc's getTypeWithSyntheticDefaultImportType caches its answer on the module type (type.syntheticType), decided by the
+// first import that asks with its own usage: a static `import * as m` of a CommonJS module in a CommonJS file says no,
+// and a later `await import()` of it, which would say yes on its own, gets the module without a synthetic default
+// (bun's 08-C7a/b). Per importing file here, not per checker like tsc's: which files share a checker (and so which
+// import asks first) depends on the checker count, tsgo's assignment being another one (opencode/packages/core's
+// output differed between 1 and 4 checkers with a per-checker cache)
+static bool synthetic_default_first(Checker* me, Ty const* type, SourceFile const* importer, bool decision) {
+    static char const yes = 1, no = 0;
+    u64 key[3] = { KEY_SYNTHETIC_DEFAULT, (u64)(uintptr_t)type, (u64)(uintptr_t)importer };
+    void const* known = intern_get(&my links, key, 3);
+    if (known) return known == &yes;
+    intern_set(me, &my links, intern_slot(me, &my links, key, 3), decision ? &yes : &no);
+    return decision;
+}
+
+static bool dynamic_import_has_synthetic_default(Checker* me, Symbol* module, SourceFile const* importer);
+
+// tsc's resolveExportByName: of a module with `export =`, a property of what it assigns
+static bool module_has_export(Checker* me, Symbol* module, csview name);
+
+// tsc's canHaveSyntheticDefault for a static import in `importer`: an ES module's import goes like an import call's,
+// a CommonJS file's doesn't have Node.js's CommonJS-into-ESM rule (getEmitSyntaxForUsageLocation: CommonJS)
+static bool static_import_has_synthetic_default(Checker* me, Symbol* module, SourceFile const* importer) {
+    ModuleKind usage = importer ? source_file_emit_module_kind(importer) : MODULE_KIND_NONE;
+    bool esm_syntax = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
+    if (esm_syntax) return dynamic_import_has_synthetic_default(me, module, importer);
+    SourceFile const* target = module->module ? module->module->file : nullptr;
+    if (!target || target->is_declaration) {
+        return !symbol_get_export(module, c_sv("default")) && !module_has_export(me, module, c_sv("__esModule"));
+    }
+    if (!target->is_js) return module_export_equals(module) != module;
+    return !span_valid(target->module_indicator) && !module_has_export(me, module, c_sv("__esModule"));
+}
+
 // `import * as ns` of a module with `export =` (tsc's resolveESModuleSymbol): what it assigns, with a synthetic
 // `default` under esModuleInterop when that is something to import by default; an ES module's import of a JSON
 // module has nothing but the default (isOnlyImportableAsDefault). Null if it is the assigned value as it is
@@ -2155,7 +2189,7 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     // A module that says it's an ES module has no synthetic default (tsc's canHaveSyntheticDefault), nor does a
     // declaration file whose `export =` value has a `default` that a module declares (`export default`: resolveExportByName
     // finds the property, isSyntacticDefault)
-    bool synthetic = !symbol_get_export(module, c_sv("__esModule"));
+    bool synthetic = !module_has_export(me, module, c_sv("__esModule"));
     if (synthetic && has_default && (!target || target->is_declaration)) {
         Prop const* found = ty_get_prop(me, apparent, my atoms.default_);
         while (found && found->target) found = found->target;
@@ -2176,12 +2210,35 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     }
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
     if (!structured) return with_synthetic_default(me, type, false, OBJECT_MODULE_CLONE);
+    synthetic = synthetic_default_first(me, type, importer, synthetic);
     // A union's clone has no properties: tsc's cloneTypeAsModuleType takes resolveStructuredTypeMembers' members, which a
     // union (also as the spread with its synthetic default, getSpreadType mapping over it) doesn't have: `{}`
     if (type->kind == TY_UNION && !(type->flags & TYF_BOOLEAN)) {
         return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_MODULE_CLONE);
     }
     return synthetic ? with_synthetic_default(me, type, true, OBJECT_MODULE_CLONE) : nullptr;
+}
+
+// tsc's checkImportBinding resolves a namespace import's alias when it checks the declaration
+// (resolveESModuleSymbol), which is where a module type's synthetic default is first decided (synthetic_default_first())
+void ty_check_namespace_import(Checker* me, Symbol const* alias) {
+    if (!alias || !(alias->flags & SYMBOL_ALIAS) || !alias->alias || !alias->alias->item) return;
+    PortItem const* item = alias->alias->item;
+    if (item->tag != PORT_IMPORT_GATHER || item->is_require || !item->module_ref) return;
+    Symbol* module = binder_module_of_ref(alias->binder, item->module_ref);
+    if (!module) return;
+    if (module_export_equals(module) != module) {
+        namespace_import_type(me, alias);
+        return;
+    }
+    // A module without `export =`: its type asks when it has a `default` (or the import is ESM-of-CJS)
+    SourceFile const* importer = span_source(item->decl_name);
+    SourceFile const* target = item->module_ref->file;
+    ModuleKind usage = importer ? source_file_emit_module_kind(importer) : MODULE_KIND_NONE;
+    bool esm_syntax = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
+    bool esm_cjs = esm_syntax && target && source_file_implied_format_for_emit(target) == MODULE_KIND_COMMONJS;
+    if (!esm_cjs && !symbol_get_export(module, c_sv("default"))) return;
+    synthetic_default_first(me, ty_type_of_symbol(me, module), importer, static_import_has_synthetic_default(me, module, importer));
 }
 
 Ty const* ty_namespace_import_original(Checker* me, Symbol const* alias) {
@@ -2392,7 +2449,14 @@ int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const*
 
 // tsc's canHaveSyntheticDefault for `import()` from `importer` (whose usage mode is ESM under node16-nodenext and
 // preserve, else the importer's module format's)
-static bool dynamic_import_has_synthetic_default(Symbol* module, SourceFile const* importer) {
+static bool module_has_export(Checker* me, Symbol* module, csview name) {
+    Symbol* assigned = module_export_equals(module);
+    if (assigned == module || !assigned || assigned->is_placeholder) return symbol_get_export(module, name) != nullptr;
+    Ty const* type = ty_apparent_type(me, ty_type_of_symbol(me, assigned));
+    return (type->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_get_prop(me, type, checker_atom(me, name));
+}
+
+static bool dynamic_import_has_synthetic_default(Checker* me, Symbol* module, SourceFile const* importer) {
     CompilerOptions const* options = compiler_options();
     SourceFile const* target = module->module ? module->module->file : nullptr;
     bool node = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
@@ -2412,11 +2476,11 @@ static bool dynamic_import_has_synthetic_default(Symbol* module, SourceFile cons
     }
     if (!target || target->is_declaration) {
         // (Not with a default export of its own, or an `__esModule` marker)
-        return !symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("__esModule"));
+        return !symbol_get_export(module, c_sv("default")) && !module_has_export(me, module, c_sv("__esModule"));
     }
     // A TypeScript file only with `export =`; a JavaScript file without ES module syntax or an `__esModule` marker
     if (!target->is_js) return module_export_equals(module) != module;
-    return !span_valid(target->module_indicator) && !symbol_get_export(module, c_sv("__esModule"));
+    return !span_valid(target->module_indicator) && !module_has_export(me, module, c_sv("__esModule"));
 }
 
 // What `import("m")` resolves to (tsc's checkImportCallExpression): the module (or what its `export =` assigns),
@@ -2432,7 +2496,7 @@ Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, SourceFile 
     if (node && target && target->is_json) {
         return with_synthetic_default(me, type, false, OBJECT_EMPTY_SYMBOL);
     }
-    if (!dynamic_import_has_synthetic_default(module, importer)) return type;
+    if (!synthetic_default_first(me, type, importer, dynamic_import_has_synthetic_default(me, module, importer))) return type;
     // (tsc's isValidSpreadType: an object spreads, anything else is only the default; any spread is any)
     if (type->flags & TYF_ANY) return type;
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);

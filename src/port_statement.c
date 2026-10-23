@@ -527,6 +527,14 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         port_item_add_type_only_related(error, alias_type_only, port_item_name(alias_type_only->decl_name));
     }
     port_statement_check_json_import(me, errs);
+    // (A namespace import's module type is resolved here, as tsc's checkImportBinding does: what it decides about a
+    // synthetic default holds for the module's later imports, see ty_check_namespace_import())
+    if (!my jsdoc && !my wrong_context && my main.tag == PORT_IMPORT_GATHER && my main.symbol) {
+        ty_check_namespace_import(current_checker, my main.symbol);
+    }
+    for_each (i, vec_port_item, &my items) {
+        if (i->tag == PORT_IMPORT_GATHER && i->symbol && !my jsdoc && !my wrong_context) ty_check_namespace_import(current_checker, i->symbol);
+    }
     // (tsc's checkImportEqualsDeclaration)
     if (compiler_options()->erasable_syntax_only && !ambient && !my jsdoc && !my wrong_context && (my main.tag == PORT_IMPORT_ALIAS || my is_import_require)) {
         error_ctx_error_d(errs, span_with_semicolon(span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");

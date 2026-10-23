@@ -1,0 +1,25 @@
+a.cts(5,13): error TS2339: Property 'a' does not exist on type '5'.
+a.cts(7,5): error TS2339: Property 'default' does not exist on type 'typeof f'.
+
+
+==== cjs.cts (0 errors) ====
+    export const a = 1;
+    export default 5;
+==== fn.d.cts (0 errors) ====
+    declare function f(): void;
+    declare namespace f { const __esModule: true; const x: number }
+    export = f;
+==== a.cts (2 errors) ====
+    import * as cns from "./cjs.cjs";
+    import * as fns from "./fn.cjs";
+    async function dyn() {
+      const c = await import("./cjs.cjs");
+      c.default.a;
+                ~
+!!! error TS2339: Property 'a' does not exist on type '5'.
+      const d = await import("./fn.cjs");
+      d.default();
+        ~~~~~~~
+!!! error TS2339: Property 'default' does not exist on type 'typeof f'.
+    }
+    

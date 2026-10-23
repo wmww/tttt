@@ -2253,6 +2253,7 @@ Ty const* ty_pattern_unclone(Checker* me, Ty const* ty); // A clone of such a cl
 // tsc's originatingImport: what `import * as ns` of an `export =` module imports when ns's type is a module type made
 // from it (a synthetic default under esModuleInterop), else null
 Ty const* ty_namespace_import_original(Checker* me, Symbol const* alias);
+void ty_check_namespace_import(Checker* me, Symbol const* alias); // lower.c: at the import declaration, tsc's checkImportBinding
 bool ty_is_array(Checker* me, Ty const* ty); // A reference to Array<T> (not ReadonlyArray, not a tuple)
 // A class as written inside itself: `C<T, U>` with its own type parameters as the arguments
 Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol);
