@@ -194,6 +194,7 @@ class Probe:
     def __init__(self, args, cwd, config_rel):
         self.args, self.cwd, self.config = args, cwd, config_rel
         self.runs = 0
+        self.tsgo_baseline = None
 
     def outputs(self):
         cfg = os.path.join(self.cwd, self.config)
@@ -213,6 +214,14 @@ class Probe:
         only_tsgo, only_tttt, tsgo, tttt = self.differing()
         if 'TIMEOUT' in (tsgo, tttt):
             return False
+        # (--tsgo-clean: a cut that makes tsgo report more than the copy did at first, an unresolved name the cut
+        # left, is no repro)
+        if self.args.tsgo_clean:
+            count = len(diags(tsgo))
+            if self.tsgo_baseline is None:
+                self.tsgo_baseline = count
+            if count > self.tsgo_baseline:
+                return False
         lines = (only_tsgo if self.args.mode != 'tttt' else []) + (only_tttt if self.args.mode != 'tsgo' else [])
         return any(re.search(self.args.keep, l) for l in lines)
 
@@ -360,6 +369,8 @@ def main():
     ap.add_argument('--repo', help='the root the copy mirrors (default: the git toplevel of --project)')
     ap.add_argument('--tttt-args', default='', help='extra tttt flags, e.g. "--checkers 1"')
     ap.add_argument('--no-reduce', action='store_true', help='copy and check the predicate only')
+    ap.add_argument('--tsgo-clean', action='store_true',
+                    help='tsgo must report no more than the copy did at first (for a spurious tttt error: no cut leaves broken code)')
     args = ap.parse_args()
     args.mode = args.mode or 'either'
     if bool(args.project) == bool(args.from_copy):
