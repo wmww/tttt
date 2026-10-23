@@ -60,4 +60,4 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   destructuring assignment. tsgo's control flow takes the assigned type from the rest element (getAssignedType of a
   rest property), tttt reports TS7034 at the declaration and TS7005 at the use. The array rest form `[first,
   ...others] = [1, 2, 3]` works. Guess: tttt's flow assignment for object-pattern targets skips the spread/rest
-  element. [open]
+  element. (claimed: cor10) [open]
