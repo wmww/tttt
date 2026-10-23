@@ -1,5 +1,5 @@
 # A deterministic deal: the checker a file is checked in, and what it checked before, fixed by (program, K)
-corH, 2026-10-23. Status: design; two variants to prototype behind flags and measure (block size a parameter).
+corH, 2026-10-23. Status: measured 2026-10-23, neither variant is cheap enough (below); the deal stays dynamic.
 
 ## Why
 tttt promises output independent of a checker's history (`kdiff -k 1 -m 0`), and keeps it where it can, but tsgo's own
@@ -49,3 +49,22 @@ runs per checker plus stealing, so the prototype is a parameter: the runs per ch
 Each block repeats a checker's warm-up (the library types it touches): 8K blocks are 8K warm-ups on top of K. abbench at
 the defaults on vscode, effect, drizzle, excalidraw and zod and the perfsweep `--defaults` sample against main's
 fast/tttt (wall, user, peak RSS), instrcount (K1 unchanged). Over ~2% wall on vscode at the defaults is for the human.
+
+## Measured (2026-10-23, 16-core box at load 5-13, abbench n=7 at the defaults, K8, release builds)
+Wall against today's stealing deal (user time about the same in every row: the loss is the idle tail):
+| | drizzle | zod | effect | excalidraw |
+|---|---|---|---|---|
+| TTTT_NO_STEAL=1 (today's 2 runs per checker) | +7% | +21% | +19% | +13% |
+| variant 2, 8 runs per checker, no stealing | +15% | +24% | +20% | +19% |
+| variant 2, 64 runs | +34% | +48% | +22% | +36% |
+| variant 2, 256 runs | +35% | +46% | +34% | +24% |
+| variant 1, 256 KB blocks | (crash) | (crash) | (crash) | +26%, RSS +25% |
+Finer round robin balances bytes but not cost (zod at 64 runs: checkers finish between 72 and 222 ms against 132-159
+with stealing; test files' cost per byte varies by 3x and more), and it costs locality (drizzle RSS +19-25%). Variant 1
+(prototype kept as a patch, not in the tree) crashed with heap corruption under threads at 64 KB and 8 KB blocks on
+drizzle and effect (not at --threads 1, not under valgrind or ASAN: unexplained; a block's checker starting mid-share is
+a new situation for the deferred bodies and the after-check pass), and where it ran its fresh checkers cost +26% wall.
+The knob for variant 2 stays: `TTTT_DEAL_RUNS=N` (runs per checker in deal_files()), with `TTTT_NO_STEAL=1`.
+What would make a static deal competitive is a cost estimate better than bytes (bun's identifier count, a declaration
+count, the import fan-in), which is a scheduling study of its own. Until then the run-to-run flakes are the K>1 face of
+tsgo's own order dependences, and the oracles and the human measure at K1, where tttt matches.

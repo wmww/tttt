@@ -6125,7 +6125,9 @@ static void deal_files(Program* me) {
     free(my file_checkers);
     my file_checkers = c_new_n(_Atomic u32, total ? total : 1);
     for (u32 at = 0; at < total; at++) atomic_init(&my file_checkers[at], UINT32_MAX);
-    u64 runs = (u64)my checker_count * RUNS_PER_CHECKER;
+    // (TTTT_DEAL_RUNS=N: N runs per checker instead, notes/deterministic_deal.md's second variant, with TTTT_NO_STEAL=1)
+    char const* runs_env = getenv("TTTT_DEAL_RUNS");
+    u64 runs = (u64)my checker_count * (runs_env && atoi(runs_env) > 0 ? (u64)atoi(runs_env) : RUNS_PER_CHECKER);
     u32 index = 0;
     u32 libs = 0;
     u64 before = 0;
