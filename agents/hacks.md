@@ -106,6 +106,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
     `defer: restarts` on the sweeps (0 on the corpora, 0 on the source sweep since 2026-10-18; `defer: collided` names
     the body).
 
+- **The CLI's address-space teardown runs in a detached reaper** (main.c exit_detached(): a CLONE_VM child that drops
+  its descriptors, waits on a pidfd for the process to be gone and exits holding the last mm reference). The caller
+  gets the status and the pipes' end before the kernel frees the pages (7-66 ms: nest to vscode), but that sys time
+  is nobody's: `/usr/bin/time`, wait4's rusage and perfsweep undercount sys by it, and a caller acting as a child
+  subreaper sees an extra child. `TTTT_SYNC_EXIT=1` (or TTTT_TEARDOWN, valgrind, sanitizers, debug builds) exits in
+  the process. Correct for measuring: set it when comparing sys or kernel cycles across builds.
+
 ## Parser
 - **A program with a syntax error is loaded twice when it has deferred bodies** (`program_deferred_bodies_parse()`,
   `check_files()`, plan 78): a gated program (syntactic diagnostics only) must report the syntax errors of every function

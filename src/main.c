@@ -37,6 +37,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <sched.h>
+#include <poll.h>
+#include <sys/syscall.h>
 
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 // --checker-memory's default: a quarter of the memory, at most DEFAULT_CHECKER_MEMORY_MAX_MB and at least
@@ -1903,6 +1905,40 @@ static void raise_stack_limit(void) {
     setrlimit(RLIMIT_STACK, &limit);
 }
 
+// The kernel's teardown of a big address space (every page and page table freed: ~25 ms on drizzle, 5% of its wall at
+// the defaults on a 4 KB-page machine) runs in exit_group() before the parent's wait4() returns and before the
+// output pipes see their end. A child sharing the address space (CLONE_VM, its own process) takes it over: it drops
+// its copy of the descriptors, waits for this process to be gone and exits holding the last reference, so the
+// teardown runs after the caller has the status and the output. (Its CPU time is then nobody's: TTTT_SYNC_EXIT=1
+// tears down in the process, for measuring sys. Not under valgrind, sanitizers or a debug build, nor with leak checks)
+static int exit_reaper(void* arg) {
+    int pidfd = (int)(intptr_t)arg;
+    syscall(SYS_close_range, 0, (unsigned)pidfd - 1, 0);
+    syscall(SYS_close_range, (unsigned)pidfd + 1, ~0u, 0);
+    struct pollfd wait = { .fd = pidfd, .events = POLLIN };
+    while (syscall(SYS_poll, &wait, 1, -1) < 0) {}
+    syscall(SYS_exit, 0);
+    return 0;
+}
+
+static void exit_detached(void) {
+#if defined DEBUG_BUILD || defined __SANITIZE_THREAD__ || defined __SANITIZE_ADDRESS__
+    return;
+#endif
+#if defined __has_feature
+#if __has_feature(thread_sanitizer) || __has_feature(address_sanitizer)
+    return;
+#endif
+#endif
+    char const* preload = getenv("LD_PRELOAD");
+    if ((preload && strstr(preload, "vgpreload")) || getenv("TTTT_SYNC_EXIT") || getenv("TTTT_TEARDOWN")) return;
+    int pidfd = (int)syscall(SYS_pidfd_open, getpid(), 0);
+    if (pidfd < 0) return;
+    size_t const stack_size = 64 << 10;
+    char* stack = mmap(nullptr, stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (stack == MAP_FAILED || clone(exit_reaper, stack + stack_size, CLONE_VM, (void*)(intptr_t)pidfd) < 0) close(pidfd);
+}
+
 int main(int argc, const char** argv) {
     // (Tools that compare with tsgo's own harness run its test content mappers through this, plan 56)
     content_mapper_set_launcher(getenv("TTTT_CONTENT_MAPPER_LAUNCHER"));
@@ -1921,5 +1957,6 @@ int main(int argc, const char** argv) {
     mallopt(M_TRIM_THRESHOLD, 1 << 30);
     int ret = run(argc, argv);
     ast_stats_print();
+    exit_detached();
     return ret;
 }
