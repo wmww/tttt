@@ -412,6 +412,9 @@ struct Ty {
             // ordinary instance again, as tsc's couldContainTypeVariables lets any mapper through to it
             bool alias_body_twin : 1;
             bool free_params_unknown : 1;
+            // An object literal that mentions no type parameter but has some declared around it: instantiated anyway
+            // (ty_instantiate(), its instances keyed by those, tsc's getObjectTypeInstantiation)
+            bool outer_instantiable : 1;
             // Uninstantiated only: the node mentions no type parameter, its free_params are the ones around the Block
             // it is in (tsc's isTypeParameterPossiblyReferenced): instantiated for identity's sake, its members the same
             bool block_params_only : 1;
@@ -2187,6 +2190,7 @@ static inline Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const
     if (!mapper || !mapper->len) return ty;
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         if (ty->kind == TY_ANONYMOUS && ty->anonymous.alias_body_twin) return ty_alias_body_twin_instance(me, ty);
+        if (ty->kind == TY_ANONYMOUS && ty->anonymous.outer_instantiable) return ty_instantiate_mapped(me, ty, mapper, tail);
         return ty;
     }
     return ty_instantiate_mapped(me, ty, mapper, tail);

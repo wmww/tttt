@@ -1,0 +1,646 @@
+drizzle-orm/src/mysql-core/db.ts(5,28): error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+drizzle-orm/src/mysql-core/db.ts(7,18): error TS2304: Cannot find name 'TablesRelationalConfig'.
+drizzle-orm/src/mysql-core/db.ts(7,43): error TS2304: Cannot find name 'ExtractTablesWithRelations'.
+drizzle-orm/src/mysql-core/db.ts(9,2): error TS2391: Function implementation is missing or not immediately following the declaration.
+drizzle-orm/src/mysql-core/db.ts(9,28): error TS2304: Cannot find name 'SelectedFields'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(11,21): error TS2304: Cannot find name 'SelectedFields'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(12,28): error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+drizzle-orm/src/mysql-core/query-builders/select.ts(15,21): error TS2304: Cannot find name 'MySqlTable'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(15,34): error TS2304: Cannot find name 'Subquery'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(15,45): error TS2304: Cannot find name 'MySqlViewBase'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(15,61): error TS2304: Cannot find name 'SQL'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(17,5): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+drizzle-orm/src/mysql-core/query-builders/select.ts(20,34): error TS2304: Cannot find name 'GetSelectTableSelection'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(27,15): error TS2552: Cannot find name 'MySqlSelectHKTBase'. Did you mean 'MySqlSelectHKT'?
+drizzle-orm/src/mysql-core/query-builders/select.ts(29,28): error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+drizzle-orm/src/mysql-core/query-builders/select.ts(30,41): error TS2304: Cannot find name 'JoinNullability'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(34,11): error TS2304: Cannot find name 'TypedQueryBuilder'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(34,29): error TS2304: Cannot find name 'TSelectedFields'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(34,46): error TS2304: Cannot find name 'TResult'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(35,20): error TS4112: This member cannot have an 'override' modifier because its containing class 'MySqlSelectQueryBuilderBase<THKT, TTableName, TPreparedQueryHKT, TNullabilityMap, TDynamic, TExcludedMethods>' does not extend another class.
+drizzle-orm/src/mysql-core/query-builders/select.ts(40,10): error TS2391: Function implementation is missing or not immediately following the declaration.
+drizzle-orm/src/mysql-core/query-builders/select.ts(40,20): error TS1098: Type parameter list cannot be empty.
+drizzle-orm/src/mysql-core/query-builders/select.ts(42,21): error TS2304: Cannot find name 'TJoinType'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(42,33): error TS2304: Cannot find name 'MySqlCrossJoinFn'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(42,66): error TS2304: Cannot find name 'TIsLateral'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(43,5): error TS2304: Cannot find name 'MySqlJoinFn'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(43,33): error TS2304: Cannot find name 'TJoinType'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(43,44): error TS2304: Cannot find name 'TIsLateral'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(46,2): error TS2391: Function implementation is missing or not immediately following the declaration.
+drizzle-orm/src/mysql-core/query-builders/select.ts(46,23): error TS2304: Cannot find name 'MySqlColumn'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(46,37): error TS2304: Cannot find name 'SQL'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(46,43): error TS2503: Cannot find namespace 'SQL'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(48,18): error TS2428: All declarations of 'MySqlSelectBase' must have identical type parameters.
+drizzle-orm/src/mysql-core/query-builders/select.ts(50,21): error TS2304: Cannot find name 'ColumnsSelection'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(51,22): error TS2552: Cannot find name 'SelectMode'. Did you mean 'TSelectMode'?
+drizzle-orm/src/mysql-core/query-builders/select.ts(52,28): error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+drizzle-orm/src/mysql-core/query-builders/select.ts(53,41): error TS2304: Cannot find name 'JoinNullability'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(57,26): error TS2304: Cannot find name 'SelectResult'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(58,26): error TS2304: Cannot find name 'ColumnsSelection'.
+drizzle-orm/src/mysql-core/query-builders/select.ts(66,3): error TS1009: Trailing comma not allowed.
+drizzle-orm/src/mysql-core/query-builders/select.ts(68,14): error TS2428: All declarations of 'MySqlSelectBase' must have identical type parameters.
+drizzle-orm/src/mysql-core/query-builders/select.ts(68,29): error TS1098: Type parameter list cannot be empty.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(1,15): error TS2305: Module '"./select.ts"' has no exported member 'IndexConfig'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(2,44): error TS2304: Cannot find name 'MySqlTable'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(2,57): error TS2304: Cannot find name 'View'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(2,103): error TS2552: Cannot find name 'Table'. Did you mean 'TTable'?
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(3,4): error TS2304: Cannot find name 'MySqlTableWithColumns'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(3,25): error TS1099: Type argument list cannot be empty.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(7,5): error TS2304: Cannot find name 'T'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(7,21): error TS2314: Generic type 'MySqlSelectWithout' requires 3 type argument(s).
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(12,5): error TS1098: Type parameter list cannot be empty.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(14,6): error TS2315: Type 'MySqlJoin' is not generic.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(14,16): error TS2304: Cannot find name 'T'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(14,19): error TS2304: Cannot find name 'TDynamic'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(14,38): error TS2304: Cannot find name 'TJoinedTable'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(14,52): error TS2304: Cannot find name 'TJoinedName'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(21,22): error TS2552: Cannot find name 'SelectMode'. Did you mean 'TSelectMode'?
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(22,28): error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(23,41): error TS2304: Cannot find name 'JoinNullability'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(26,5): error TS2536: Type '"_type"' cannot be used to index type 'T & { tableName: TTableName; excludedMethods: TExcludedMethods; }'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(33,3): error TS2304: Cannot find name 'Assume'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(33,10): error TS2536: Type '"selection"' cannot be used to index type 'this'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(33,29): error TS2304: Cannot find name 'ColumnsSelection'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(34,3): error TS2536: Type '"selectMode"' cannot be used to index type 'this'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(35,3): error TS2304: Cannot find name 'Assume'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(35,10): error TS2536: Type '"selectedFields"' cannot be used to index type 'this'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(35,34): error TS2304: Cannot find name 'ColumnsSelection'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(39,12): error TS2552: Cannot find name 'AnyMySqlSelectQueryBuilder'. Did you mean 'MySqlSelectQueryBuilderBase'?
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(50,3): error TS2344: Type 'TDynamic' does not satisfy the constraint 'string'.
+  Type 'TDynamic' is not assignable to type 'string'.
+    Type 'boolean' is not assignable to type 'string'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(50,11): error TS1009: Trailing comma not allowed.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(52,2): error TS2304: Cannot find name 'TResetExcluded'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(57,21): error TS2304: Cannot find name 'ColumnsSelection'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(58,22): error TS2552: Cannot find name 'SelectMode'. Did you mean 'TSelectMode'?
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(59,28): error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(61,32): error TS2552: Cannot find name 'MySqlSelectQueryBuilderHKT'. Did you mean 'MySqlSelectQueryBuilderBase'?
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(63,21): error TS2304: Cannot find name 'TTableName'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(63,33): error TS2304: Cannot find name 'TSelection'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(63,45): error TS2304: Cannot find name 'TSelectMode'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(63,58): error TS2304: Cannot find name 'PreparedQueryHKTBase'.
+drizzle-orm/src/mysql-core/query-builders/select.types.ts(63,80): error TS2304: Cannot find name 'TNullabilityMap'.
+drizzle-orm/src/mysql-proxy/driver.ts(4,25): error TS2304: Cannot find name 'MySqlRemoteQueryResultHKT'.
+drizzle-orm/src/mysql-proxy/driver.ts(4,52): error TS2304: Cannot find name 'MySqlRemotePreparedQueryHKT'.
+drizzle-orm/src/mysql-proxy/migrator.ts(6,31): error TS2349: This expression is not callable.
+  Type 'typeof sql' has no call signatures.
+drizzle-orm/src/mysql-proxy/migrator.ts(8,29): error TS2532: Object is possibly 'undefined'.
+drizzle-orm/src/mysql-proxy/migrator.ts(8,29): error TS2722: Cannot invoke an object which is possibly 'undefined'.
+drizzle-orm/src/mysql-proxy/migrator.ts(9,25): error TS2304: Cannot find name 'migrationsTable'.
+drizzle-orm/src/mysql-proxy/migrator.ts(10,4): error TS4111: Property 'limit' comes from an index signature, so it must be accessed with ['limit'].
+drizzle-orm/src/query-builders/select.types.ts(2,54): error TS2552: Cannot find name 'Column'. Did you mean 'TColumn'?
+drizzle-orm/src/query-builders/select.types.ts(2,83): error TS2552: Cannot find name 'JoinNullability'. Did you mean 'TNullability'?
+drizzle-orm/src/query-builders/select.types.ts(4,5): error TS2552: Cannot find name 'Column'. Did you mean 'TColumn'?
+drizzle-orm/src/query-builders/select.types.ts(4,11): error TS1099: Type argument list cannot be empty.
+drizzle-orm/src/query-builders/select.types.ts(7,5): error TS2304: Cannot find name 'TOldSelectMode'.
+drizzle-orm/src/query-builders/select.types.ts(7,40): error TS2304: Cannot find name 'TResult'.
+drizzle-orm/src/query-builders/select.types.ts(8,4): error TS2304: Cannot find name 'TResult'.
+drizzle-orm/src/query-builders/select.types.ts(8,15): error TS2304: Cannot find name 'TJoinedName'.
+drizzle-orm/src/query-builders/select.types.ts(8,51): error TS2304: Cannot find name 'TJoinedName'.
+drizzle-orm/src/query-builders/select.types.ts(8,64): error TS2304: Cannot find name 'TSelectedFields'.
+drizzle-orm/src/query-builders/select.types.ts(8,83): error TS2304: Cannot find name 'TSelectedFields'.
+drizzle-orm/src/query-builders/select.types.ts(10,21): error TS2304: Cannot find name 'ColumnsSelection'.
+drizzle-orm/src/query-builders/select.types.ts(11,38): error TS2552: Cannot find name 'JoinNullability'. Did you mean 'TNullability'?
+drizzle-orm/src/query-builders/select.types.ts(16,5): error TS2304: Cannot find name 'TJoinedName'.
+drizzle-orm/src/query-builders/select.types.ts(16,49): error TS2304: Cannot find name 'TJoinType'.
+drizzle-orm/src/query-builders/select.types.ts(16,61): error TS2304: Cannot find name 'TJoinsNotNull'.
+drizzle-orm/src/query-builders/select.types.ts(16,88): error TS2304: Cannot find name 'TJoinedName'.
+drizzle-orm/src/query-builders/select.types.ts(18,4): error TS2304: Cannot find name 'TJoinsNotNull'.
+drizzle-orm/src/query-builders/select.types.ts(19,47): error TS2304: Cannot find name 'TableLike'.
+drizzle-orm/src/query-builders/select.types.ts(20,19): error TS2304: Cannot find name 'SQL'.
+drizzle-orm/src/sql/sql.ts(1,42): error TS2304: Cannot find name 'SQLWrapper'.
+drizzle-orm/src/sql/sql.ts(2,9): error TS1098: Type parameter list cannot be empty.
+drizzle-orm/src/sql/sql.ts(3,13): error TS2304: Cannot find name 'TDecoder'.
+drizzle-orm/src/sql/sql.ts(3,24): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+drizzle-orm/src/sql/sql.ts(3,45): error TS2304: Cannot find name 'TDecoder'.
+drizzle-orm/src/sql/sql.ts(6,45): error TS2304: Cannot find name 'Column'.
+drizzle-orm/src/sql/sql.ts(6,54): error TS2536: Type '"_"' cannot be used to index type 'T'.
+drizzle-orm/src/sql/sql.ts(6,54): error TS2536: Type '"data"' cannot be used to index type 'T["_"]'.
+drizzle-orm/src/sql/sql.ts(7,4): error TS2304: Cannot find name 'DriverValueDecoder'.
+drizzle-orm/src/sql/sql.ts(9,30): error TS2304: Cannot find name 'SQLWrapper'.
+drizzle-orm/src/sql/sql.ts(10,12): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+drizzle-orm/src/sql/sql.ts(16,45): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+drizzle-orm/src/sql/sql.ts(19,27): error TS1098: Type parameter list cannot be empty.
+drizzle-orm/src/sql/sql.ts(20,14): error TS2304: Cannot find name 'SQLWrapper'.
+drizzle-orm/src/sql/sql.ts(21,33): error TS2304: Cannot find name 'InferSelectViewModel'.
+drizzle-orm/src/sql/sql.ts(21,54): error TS2315: Type 'View' is not generic.
+drizzle-orm/src/sql/sql.ts(21,59): error TS2304: Cannot find name 'Assume'.
+drizzle-orm/src/sql/sql.ts(21,66): error TS2552: Cannot find name 'TName'. Did you mean 'Name'?
+drizzle-orm/src/sql/sql.ts(21,82): error TS2304: Cannot find name 'TExisting'.
+drizzle-orm/src/sql/sql.ts(21,93): error TS2304: Cannot find name 'TSelection'.
+drizzle-orm/src/table.ts(2,11): error TS2304: Cannot find name 'SQLWrapper'.
+drizzle-orm/src/table.ts(3,3): error TS2304: Cannot find name 'ExtraConfigBuilder'.
+drizzle-orm/src/table.ts(3,91): error TS1246: An interface property cannot have an initializer.
+
+
+==== drizzle-orm/tsconfig.json (0 errors) ====
+    {"compilerOptions": {"allowJs": true, "allowImportingTsExtensions": true, "allowUnreachableCode": false, "allowUnusedLabels": false, "checkJs": true, "exactOptionalPropertyTypes": false, "forceConsistentCasingInFileNames": true, "isolatedModules": true, "lib": ["es2022", "es2020", "es2018", "es2017", "es7", "es6", "es5"], "module": "esnext", "moduleResolution": "bundler", "noFallthroughCasesInSwitch": true, "noImplicitAny": false, "noImplicitThis": false, "noImplicitReturns": true, "noPropertyAccessFromIndexSignature": true, "noUncheckedIndexedAccess": true, "noImplicitOverride": true, "preserveConstEnums": true, "skipLibCheck": true, "strict": false, "strictBindCallApply": false, "strictBuiltinIteratorReturn": false, "strictFunctionTypes": false, "strictNullChecks": false, "strictPropertyInitialization": false, "stripInternal": true, "target": "esnext", "useUnknownInCatchVariables": false, "allowSyntheticDefaultImports": true, "alwaysStrict": true, "esModuleInterop": true, "paths": {"~/*": ["./src/*"]}, "noEmit": true}, "files": ["src/mysql-proxy/migrator.ts"]}
+==== drizzle-orm/src/mysql-proxy/migrator.ts (5 errors) ====
+    import { sql } from '~/sql/sql.ts';
+    import type { MySqlRemoteDatabase } from './driver.ts';
+    export async function migrate<TSchema extends Record<string, unknown>>(
+    	db: MySqlRemoteDatabase<TSchema>,
+    ) {
+    	const migrationTableCreate = sql`
+    	                             ~~~
+!!! error TS2349: This expression is not callable.
+!!! error TS2349:   Type 'typeof sql' has no call signatures.
+    	`;
+    	const dbMigrations = await db.select({
+    	                           ~~~~~~~~~~~
+    	                           ~~~~~~~~~~~
+    	}).from(sql.identifier(migrationsTable).getSQL()).orderBy(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    	                       ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'migrationsTable'.
+    	).limit(1);
+    ~~~~~~~~
+!!! error TS2532: Object is possibly 'undefined'.
+    ~~~~~~~~
+!!! error TS2722: Cannot invoke an object which is possibly 'undefined'.
+    	  ~~~~~
+!!! error TS4111: Property 'limit' comes from an index signature, so it must be accessed with ['limit'].
+    }
+==== drizzle-orm/package.json (0 errors) ====
+    {"name": "drizzle-orm", "version": "0.45.3", "type": "module", "main": "./index.cjs", "module": "./index.js", "types": "./index.d.ts"}
+==== package.json (0 errors) ====
+    {"name": "drizzle-root"}
+==== drizzle-orm/src/mysql-core/db.ts (5 errors) ====
+    import {
+    	MySqlSelectBuilder,
+    } from './query-builders/index.ts';
+    export class MySqlDatabase<
+    	TPreparedQueryHKT extends PreparedQueryHKTBase,
+    	                          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+    	TFullSchema extends Record<string, unknown> = {},
+    	TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+    	                ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TablesRelationalConfig'.
+    	                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ExtractTablesWithRelations'.
+    > {
+    	select<TSelection extends SelectedFields>(fields: TSelection): MySqlSelectBuilder<TSelection, TPreparedQueryHKT>;
+    	~~~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+    	                          ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SelectedFields'.
+    	/**
+    	 */
+    };
+==== drizzle-orm/src/mysql-core/query-builders/index.ts (0 errors) ====
+    export * from './select.ts';
+==== drizzle-orm/src/mysql-core/query-builders/select.ts (37 errors) ====
+    import type {
+    	BuildSubquerySelection,
+    	GetSelectTableName,
+    } from '~/query-builders/select.types.ts';
+    import type {
+    	CreateMySqlSelectFromBuilderMode,
+    	MySqlSelectHKT,
+    	MySqlSelectWithout,
+    } from './select.types.ts';
+    export class MySqlSelectBuilder<
+    	TSelection extends SelectedFields | undefined,
+    	                   ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SelectedFields'.
+    	TPreparedQueryHKT extends PreparedQueryHKTBase,
+    	                          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+    	TBuilderMode extends 'db' | 'qb' = 'db',
+    > {
+    	from<TFrom extends MySqlTable | Subquery | MySqlViewBase | SQL>(
+    	                   ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlTable'.
+    	                                ~~~~~~~~
+!!! error TS2304: Cannot find name 'Subquery'.
+    	                                           ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlViewBase'.
+    	                                                           ~~~
+!!! error TS2304: Cannot find name 'SQL'.
+    		source: TFrom,
+    	): CreateMySqlSelectFromBuilderMode<
+    	   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    		TBuilderMode,
+    ~~~~~~~~~~~~~~~
+    		GetSelectTableName<TFrom>,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    		TSelection extends undefined ? GetSelectTableSelection<TFrom> : TSelection,
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    		                               ~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'GetSelectTableSelection'.
+    		TSelection extends undefined ? 'single' : 'partial',
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    		TPreparedQueryHKT
+    ~~~~~~~~~~~~~~~~~~~
+    	> {
+    ~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    	}
+    }
+    export abstract class MySqlSelectQueryBuilderBase<
+    	THKT extends MySqlSelectHKTBase,
+    	             ~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'MySqlSelectHKTBase'. Did you mean 'MySqlSelectHKT'?
+    	TTableName extends string | undefined,
+    	TPreparedQueryHKT extends PreparedQueryHKTBase,
+    	                          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+    	TNullabilityMap extends Record<string, JoinNullability> = TTableName extends string ? Record<TTableName, 'not-null'>
+    	                                       ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'JoinNullability'.
+    		: {},
+    	TDynamic extends boolean = false,
+    	TExcludedMethods extends string = never,
+    > extends TypedQueryBuilder<TSelectedFields, TResult> {
+              ~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TypedQueryBuilder'.
+                                ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TSelectedFields'.
+                                                 ~~~~~~~
+!!! error TS2304: Cannot find name 'TResult'.
+    	override readonly _: {
+    	                  ~
+!!! error TS4112: This member cannot have an 'override' modifier because its containing class 'MySqlSelectQueryBuilderBase<THKT, TTableName, TPreparedQueryHKT, TNullabilityMap, TDynamic, TExcludedMethods>' does not extend another class.
+    		readonly hkt: THKT;
+    		readonly tableName: TTableName;
+    		readonly excludedMethods: TExcludedMethods;
+    	};
+    	private createJoin<
+    	        ~~~~~~~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+    	                  ~
+    	>(
+    ~~
+!!! error TS1098: Type parameter list cannot be empty.
+    	): 'cross' extends TJoinType ? MySqlCrossJoinFn<this, TDynamic, TIsLateral>
+    	                   ~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinType'.
+    	                               ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlCrossJoinFn'.
+    	                                                                ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TIsLateral'.
+    		: MySqlJoinFn<this, TDynamic, TJoinType, TIsLateral>
+    		  ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlJoinFn'.
+    		                              ~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinType'.
+    		                                         ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TIsLateral'.
+    	/**
+    	 */
+    	orderBy(...columns: (MySqlColumn | SQL | SQL.Aliased)[]): MySqlSelectWithout<this, TDynamic, 'orderBy'>;
+    	~~~~~~~
+!!! error TS2391: Function implementation is missing or not immediately following the declaration.
+    	                     ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlColumn'.
+    	                                   ~~~
+!!! error TS2304: Cannot find name 'SQL'.
+    	                                         ~~~
+!!! error TS2503: Cannot find namespace 'SQL'.
+    }
+    export interface MySqlSelectBase<
+                     ~~~~~~~~~~~~~~~
+!!! error TS2428: All declarations of 'MySqlSelectBase' must have identical type parameters.
+    	TTableName extends string | undefined,
+    	TSelection extends ColumnsSelection,
+    	                   ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ColumnsSelection'.
+    	TSelectMode extends SelectMode,
+    	                    ~~~~~~~~~~
+!!! error TS2552: Cannot find name 'SelectMode'. Did you mean 'TSelectMode'?
+    	TPreparedQueryHKT extends PreparedQueryHKTBase,
+    	                          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+    	TNullabilityMap extends Record<string, JoinNullability> = TTableName extends string ? Record<TTableName, 'not-null'>
+    	                                       ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'JoinNullability'.
+    		: {},
+    	TDynamic extends boolean = false,
+    	TExcludedMethods extends string = never,
+    	TResult extends any[] = SelectResult<TSelection, TSelectMode, TNullabilityMap>[],
+    	                        ~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SelectResult'.
+    	TSelectedFields extends ColumnsSelection = BuildSubquerySelection<TSelection, TNullabilityMap>,
+    	                        ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ColumnsSelection'.
+    > extends
+    	MySqlSelectQueryBuilderBase<
+    		MySqlSelectHKT,
+    		TTableName,
+    		TSelection,
+    		TSelectMode,
+    		TSelectedFields
+    	>,
+    	 ~
+!!! error TS1009: Trailing comma not allowed.
+    {}
+    export class MySqlSelectBase<
+                 ~~~~~~~~~~~~~~~
+!!! error TS2428: All declarations of 'MySqlSelectBase' must have identical type parameters.
+                                ~
+    > {
+    ~
+!!! error TS1098: Type parameter list cannot be empty.
+    }
+==== drizzle-orm/src/mysql-core/query-builders/select.types.ts (38 errors) ====
+    import type { IndexConfig, MySqlSelectBase, MySqlSelectQueryBuilderBase } from './select.ts';
+                  ~~~~~~~~~~~
+!!! error TS2305: Module '"./select.ts"' has no exported member 'IndexConfig'.
+    export type BuildAliasTable<TTable extends MySqlTable | View, TAlias extends string> = TTable extends Table
+                                               ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlTable'.
+                                                            ~~~~
+!!! error TS2304: Cannot find name 'View'.
+                                                                                                          ~~~~~
+!!! error TS2552: Cannot find name 'Table'. Did you mean 'TTable'?
+    	? MySqlTableWithColumns<
+    	  ~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlTableWithColumns'.
+    	                       ~
+    	>
+    ~~
+!!! error TS1099: Type argument list cannot be empty.
+    	: never;
+    export type MySqlJoin<
+    > = T extends any ? MySqlSelectWithout<
+        ~
+!!! error TS2304: Cannot find name 'T'.
+                        ~~~~~~~~~~~~~~~~~~~
+    		any
+    ~~~~~
+    	>
+    ~~
+!!! error TS2314: Generic type 'MySqlSelectWithout' requires 3 type argument(s).
+    	: never;
+    export type MySqlJoinFn<
+    > = <
+        ~
+    >(
+    ~
+!!! error TS1098: Type parameter list cannot be empty.
+    ) => MySqlJoin<T, TDynamic, 'cross', TJoinedTable, TJoinedName>;
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2315: Type 'MySqlJoin' is not generic.
+                   ~
+!!! error TS2304: Cannot find name 'T'.
+                      ~~~~~~~~
+!!! error TS2304: Cannot find name 'TDynamic'.
+                                         ~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinedTable'.
+                                                       ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinedName'.
+    export interface MySqlSelectHKTBase {
+    	tableName: string | undefined;
+    }
+    export type MySqlSelectKind<
+    	T extends MySqlSelectHKTBase,
+    	TTableName extends string | undefined,
+    	TSelectMode extends SelectMode,
+    	                    ~~~~~~~~~~
+!!! error TS2552: Cannot find name 'SelectMode'. Did you mean 'TSelectMode'?
+    	TPreparedQueryHKT extends PreparedQueryHKTBase,
+    	                          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+    	TNullabilityMap extends Record<string, JoinNullability>,
+    	                                       ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'JoinNullability'.
+    	TDynamic extends boolean,
+    	TExcludedMethods extends string,
+    > = (T & {
+        ~~~~~~
+    	tableName: TTableName;
+    ~~~~~~~~~~~~~~~~~~~~~~~
+    	excludedMethods: TExcludedMethods;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    })['_type'];
+    ~~~~~~~~~~~
+!!! error TS2536: Type '"_type"' cannot be used to index type 'T & { tableName: TTableName; excludedMethods: TExcludedMethods; }'.
+    export interface MySqlSelectHKT extends MySqlSelectHKTBase {
+    	_type: MySqlSelectBase<
+    		this['tableName'],
+    		Assume<this['selection'], ColumnsSelection>,
+    		~~~~~~
+!!! error TS2304: Cannot find name 'Assume'.
+    		       ~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type '"selection"' cannot be used to index type 'this'.
+    		                          ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ColumnsSelection'.
+    		this['selectMode'],
+    		~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type '"selectMode"' cannot be used to index type 'this'.
+    		Assume<this['selectedFields'], ColumnsSelection>
+    		~~~~~~
+!!! error TS2304: Cannot find name 'Assume'.
+    		       ~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type '"selectedFields"' cannot be used to index type 'this'.
+    		                               ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ColumnsSelection'.
+    	>;
+    }
+    export type MySqlSelectWithout<
+    	T extends AnyMySqlSelectQueryBuilder,
+    	          ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'AnyMySqlSelectQueryBuilder'. Did you mean 'MySqlSelectQueryBuilderBase'?
+    	TDynamic extends boolean,
+    	K extends keyof T & string,
+    > = TDynamic extends true ? T : Omit<
+    	MySqlSelectKind<
+    		T['_']['hkt'],
+    		T['_']['tableName'],
+    		T['_']['selection'],
+    		T['_']['selectMode'],
+    		T['_']['preparedQueryHKT'],
+    		T['_']['nullabilityMap'],
+    		TDynamic,
+    		~~~~~~~~
+!!! error TS2344: Type 'TDynamic' does not satisfy the constraint 'string'.
+!!! error TS2344:   Type 'TDynamic' is not assignable to type 'string'.
+!!! error TS2344:     Type 'boolean' is not assignable to type 'string'.
+    		        ~
+!!! error TS1009: Trailing comma not allowed.
+    	>,
+    	TResetExcluded extends true ? K : T['_']['excludedMethods'] | K
+    	~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TResetExcluded'.
+    >;
+    export type CreateMySqlSelectFromBuilderMode<
+    	TBuilderMode extends 'db' | 'qb',
+    	TTableName extends string | undefined,
+    	TSelection extends ColumnsSelection,
+    	                   ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ColumnsSelection'.
+    	TSelectMode extends SelectMode,
+    	                    ~~~~~~~~~~
+!!! error TS2552: Cannot find name 'SelectMode'. Did you mean 'TSelectMode'?
+    	TPreparedQueryHKT extends PreparedQueryHKTBase,
+    	                          ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'PreparedQueryHKTBase'. Did you mean 'TPreparedQueryHKT'?
+    > = TBuilderMode extends 'db' ? MySqlSelectBase<TTableName, TSelection, TSelectMode, TPreparedQueryHKT>
+    	: MySqlSelectQueryBuilderBase<MySqlSelectQueryBuilderHKT, TTableName, TSelection, TSelectMode, TPreparedQueryHKT>;
+    	                              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'MySqlSelectQueryBuilderHKT'. Did you mean 'MySqlSelectQueryBuilderBase'?
+    export type MySqlSelect<
+    > = MySqlSelectBase<TTableName, TSelection, TSelectMode, PreparedQueryHKTBase, TNullabilityMap, true, never>;
+                        ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TTableName'.
+                                    ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TSelection'.
+                                                ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TSelectMode'.
+                                                             ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'PreparedQueryHKTBase'.
+                                                                                   ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TNullabilityMap'.
+==== drizzle-orm/src/mysql-proxy/driver.ts (2 errors) ====
+    import { MySqlDatabase } from '~/mysql-core/db.ts';
+    export class MySqlRemoteDatabase<
+    	TSchema extends Record<string, unknown> = Record<string, never>,
+    > extends MySqlDatabase<MySqlRemoteQueryResultHKT, MySqlRemotePreparedQueryHKT, TSchema> {
+                            ~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlRemoteQueryResultHKT'.
+                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'MySqlRemotePreparedQueryHKT'.
+    }
+==== drizzle-orm/src/query-builders/select.types.ts (20 errors) ====
+    import type { Table } from '~/table.ts';
+    export type ApplyNullabilityToColumn<TColumn extends Column, TNullability extends JoinNullability> =
+                                                         ~~~~~~
+!!! error TS2552: Cannot find name 'Column'. Did you mean 'TColumn'?
+                                                                                      ~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'JoinNullability'. Did you mean 'TNullability'?
+    	TNullability extends 'not-null' ? TColumn
+    		: Column<
+    		  ~~~~~~
+!!! error TS2552: Cannot find name 'Column'. Did you mean 'TColumn'?
+    		        ~
+    		>;
+    ~~~
+!!! error TS1099: Type argument list cannot be empty.
+    export type AddAliasToSelection<
+    > = TOldSelectMode extends 'partial' ? TResult
+        ~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TOldSelectMode'.
+                                           ~~~~~~~
+!!! error TS2304: Cannot find name 'TResult'.
+    	: TResult & (TJoinedName extends string ? Record<TJoinedName, TSelectedFields> : TSelectedFields);
+    	  ~~~~~~~
+!!! error TS2304: Cannot find name 'TResult'.
+    	             ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinedName'.
+    	                                                 ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinedName'.
+    	                                                              ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TSelectedFields'.
+    	                                                                                 ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TSelectedFields'.
+    export type BuildSubquerySelection<
+    	TSelection extends ColumnsSelection,
+    	                   ~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ColumnsSelection'.
+    	TNullability extends Record<string, JoinNullability>,
+    	                                    ~~~~~~~~~~~~~~~
+!!! error TS2552: Cannot find name 'JoinNullability'. Did you mean 'TNullability'?
+    > = TSelection extends never ? any
+    	:
+    		& {};
+    export type AppendToNullabilityMap<
+    > = TJoinedName extends string ? 'left' extends TJoinType ? TJoinsNotNull & { [name in TJoinedName]: 'nullable' }
+        ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinedName'.
+                                                    ~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinType'.
+                                                                ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinsNotNull'.
+                                                                                           ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinedName'.
+    	: never
+    	: TJoinsNotNull;
+    	  ~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TJoinsNotNull'.
+    export type GetSelectTableName<TTable extends TableLike> = TTable extends Table ? TTable['_']['name']
+                                                  ~~~~~~~~~
+!!! error TS2304: Cannot find name 'TableLike'.
+    	: TTable extends SQL ? undefined
+    	                 ~~~
+!!! error TS2304: Cannot find name 'SQL'.
+    	: never;
+==== drizzle-orm/src/sql/sql.ts (20 errors) ====
+    export class SQL<T = unknown> implements SQLWrapper {
+                                             ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SQLWrapper'.
+    	mapWith<
+    	       ~
+    	>(decoder: TDecoder): SQL<GetDecoderResult<TDecoder>> {
+    ~~
+!!! error TS1098: Type parameter list cannot be empty.
+    	           ~~~~~~~~
+!!! error TS2304: Cannot find name 'TDecoder'.
+    	                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    	                                           ~~~~~~~~
+!!! error TS2304: Cannot find name 'TDecoder'.
+    	}
+    }
+    export type GetDecoderResult<T> = T extends Column ? T['_']['data'] : T extends
+                                                ~~~~~~
+!!! error TS2304: Cannot find name 'Column'.
+                                                         ~~~~~~
+!!! error TS2536: Type '"_"' cannot be used to index type 'T'.
+                                                         ~~~~~~~~~~~~~~
+!!! error TS2536: Type '"data"' cannot be used to index type 'T["_"]'.
+    	| DriverValueDecoder<infer TData, any>['mapFromDriverValue'] ? TData
+    	  ~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'DriverValueDecoder'.
+    : never;
+    export class Name implements SQLWrapper {
+                                 ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SQLWrapper'.
+    	getSQL(): SQL<unknown> {
+    	          ~~~~~~~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    	}
+    }
+    export namespace sql {
+    	/**
+    	 */
+    	export function identifier(value: string): Name {
+    	                                           ~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    	}
+    }
+    export abstract class View<
+                              ~
+    > implements SQLWrapper {
+    ~
+!!! error TS1098: Type parameter list cannot be empty.
+                 ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SQLWrapper'.
+    	declare readonly $inferSelect: InferSelectViewModel<View<Assume<TName, string>, TExisting, TSelection>>;
+    	                               ~~~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'InferSelectViewModel'.
+    	                                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2315: Type 'View' is not generic.
+    	                                                         ~~~~~~
+!!! error TS2304: Cannot find name 'Assume'.
+    	                                                                ~~~~~
+!!! error TS2552: Cannot find name 'TName'. Did you mean 'Name'?
+!!! related TS2728 drizzle-orm/src/sql/sql.ts:9:14: 'Name' is declared here.
+    	                                                                                ~~~~~~~~~
+!!! error TS2304: Cannot find name 'TExisting'.
+    	                                                                                           ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'TSelection'.
+    }
+==== drizzle-orm/src/table.ts (3 errors) ====
+    export interface Table<
+    > extends SQLWrapper {
+              ~~~~~~~~~~
+!!! error TS2304: Cannot find name 'SQLWrapper'.
+    	[ExtraConfigBuilder]: ((self: any) => Record<string, unknown> | unknown[]) | undefined = undefined;
+    	 ~~~~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ExtraConfigBuilder'.
+    	                                                                                         ~~~~~~~~~
+!!! error TS1246: An interface property cannot have an initializer.
+    }
+    

@@ -6551,13 +6551,12 @@ Ty const* ty_object_literal_alternative(
             flags |= (index[i].key->flags | index[i].value->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
             builder_push(&builder, index, index[i]);
         }
-        // (A literal inside a generic function or class could contain every type parameter declared around it: tsc's
-        // couldContainTypeVariables of an object literal's type, instantiated by all of them, see
-        // object_literal_type_mentions())
+        // (A literal inside a generic function or class is instantiated by every type parameter declared around it,
+        // whatever its members mention: tsc's getObjectTypeInstantiation, see object_literal_type_mentions(). Not by
+        // TYF_COULD_CONTAIN_TYPE_VARIABLES, which tttt also reads as "generic": anonymous.outer_instantiable)
         Expr const* literal_node = kind != OBJECT_SYNTHETIC ? (Expr const*)expr : nullptr;
-        if (literal_node && ty_literal_has_outer_type_params(literal_node)) {
-            flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
-        }
+        bool outer_instantiable = literal_node && !no_symbol && !(flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+            ty_literal_has_outer_type_params(literal_node);
         // (A type without a symbol is never instantiated nor inferred to: tsc's couldContainTypeVariables of an
         // anonymous type asks its symbol's declarations. A binding pattern's `{ a?: T }` stays that in an instance)
         if (no_symbol) flags &= ~(u32)TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -6578,6 +6577,7 @@ Ty const* ty_object_literal_alternative(
         Expr const* literal = kind != OBJECT_SYNTHETIC ? expr : nullptr;
         fresh->anonymous.free_params_unknown = !(literal && literal->tag == EXPR_OBJECT && literal->no_enclosing_type_params);
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
+        fresh->anonymous.outer_instantiable = outer_instantiable;
         fresh->anonymous.no_inferable_index = no_inferable_index;
         fresh->anonymous.contains_spread = contains_spread;
         fresh->anonymous.no_symbol = no_symbol;

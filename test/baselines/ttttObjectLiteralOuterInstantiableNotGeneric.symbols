@@ -1,0 +1,684 @@
+//// [test/cases/ttttObjectLiteralOuterInstantiableNotGeneric.ts] ////
+
+=== drizzle-orm/src/mysql-proxy/migrator.ts ===
+import { sql } from '~/sql/sql.ts';
+>sql : Symbol(sql, Decl(migrator.ts, 0, 8))
+
+import type { MySqlRemoteDatabase } from './driver.ts';
+>MySqlRemoteDatabase : Symbol(MySqlRemoteDatabase, Decl(migrator.ts, 1, 13))
+
+export async function migrate<TSchema extends Record<string, unknown>>(
+>migrate : Symbol(migrate, Decl(migrator.ts, 1, 55))
+>TSchema : Symbol(TSchema, Decl(migrator.ts, 2, 30))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+	db: MySqlRemoteDatabase<TSchema>,
+>db : Symbol(db, Decl(migrator.ts, 2, 71))
+>MySqlRemoteDatabase : Symbol(MySqlRemoteDatabase, Decl(migrator.ts, 1, 13))
+>TSchema : Symbol(TSchema, Decl(migrator.ts, 2, 30))
+
+) {
+	const migrationTableCreate = sql`
+>migrationTableCreate : Symbol(migrationTableCreate, Decl(migrator.ts, 5, 6))
+>sql : Symbol(sql, Decl(migrator.ts, 0, 8))
+
+	`;
+	const dbMigrations = await db.select({
+>dbMigrations : Symbol(dbMigrations, Decl(migrator.ts, 7, 6))
+>db.select({	}).from(sql.identifier(migrationsTable).getSQL()).orderBy : Symbol(MySqlSelectQueryBuilderBase.orderBy, Decl(select.ts, 42, 54))
+>db.select({	}).from : Symbol(MySqlSelectBuilder.from, Decl(select.ts, 13, 3))
+>db.select : Symbol(MySqlDatabase.select, Decl(db.ts, 7, 3))
+>db : Symbol(db, Decl(migrator.ts, 2, 71))
+>select : Symbol(MySqlDatabase.select, Decl(db.ts, 7, 3))
+
+	}).from(sql.identifier(migrationsTable).getSQL()).orderBy(
+>from : Symbol(MySqlSelectBuilder.from, Decl(select.ts, 13, 3))
+>sql.identifier(migrationsTable).getSQL : Symbol(Name.getSQL, Decl(sql.ts, 8, 41))
+>sql.identifier : Symbol(sql.identifier, Decl(sql.ts, 12, 22))
+>sql : Symbol(sql, Decl(migrator.ts, 0, 8))
+>identifier : Symbol(sql.identifier, Decl(sql.ts, 12, 22))
+>getSQL : Symbol(Name.getSQL, Decl(sql.ts, 8, 41))
+>orderBy : Symbol(MySqlSelectQueryBuilderBase.orderBy, Decl(select.ts, 42, 54))
+
+	).limit(1);
+}
+=== drizzle-orm/src/mysql-core/db.ts ===
+import {
+	MySqlSelectBuilder,
+>MySqlSelectBuilder : Symbol(MySqlSelectBuilder, Decl(db.ts, 0, 8))
+
+} from './query-builders/index.ts';
+export class MySqlDatabase<
+>MySqlDatabase : Symbol(MySqlDatabase, Decl(db.ts, 2, 35))
+
+	TPreparedQueryHKT extends PreparedQueryHKTBase,
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(db.ts, 3, 27))
+>PreparedQueryHKTBase : Symbol(PreparedQueryHKTBase)
+
+	TFullSchema extends Record<string, unknown> = {},
+>TFullSchema : Symbol(TFullSchema, Decl(db.ts, 4, 48))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+	TSchema extends TablesRelationalConfig = ExtractTablesWithRelations<TFullSchema>,
+>TSchema : Symbol(TSchema, Decl(db.ts, 5, 50))
+>TablesRelationalConfig : Symbol(TablesRelationalConfig)
+>ExtractTablesWithRelations : Symbol(ExtractTablesWithRelations)
+>TFullSchema : Symbol(TFullSchema, Decl(db.ts, 4, 48))
+
+> {
+	select<TSelection extends SelectedFields>(fields: TSelection): MySqlSelectBuilder<TSelection, TPreparedQueryHKT>;
+>select : Symbol(MySqlDatabase.select, Decl(db.ts, 7, 3))
+>TSelection : Symbol(TSelection, Decl(db.ts, 8, 8))
+>SelectedFields : Symbol(SelectedFields)
+>fields : Symbol(fields, Decl(db.ts, 8, 43))
+>TSelection : Symbol(TSelection, Decl(db.ts, 8, 8))
+>MySqlSelectBuilder : Symbol(MySqlSelectBuilder, Decl(db.ts, 0, 8))
+>TSelection : Symbol(TSelection, Decl(db.ts, 8, 8))
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(db.ts, 3, 27))
+
+	/**
+	 */
+};
+=== drizzle-orm/src/mysql-core/query-builders/index.ts ===
+
+export * from './select.ts';
+=== drizzle-orm/src/mysql-core/query-builders/select.ts ===
+import type {
+	BuildSubquerySelection,
+>BuildSubquerySelection : Symbol(BuildSubquerySelection, Decl(select.ts, 0, 13))
+
+	GetSelectTableName,
+>GetSelectTableName : Symbol(GetSelectTableName, Decl(select.ts, 1, 24))
+
+} from '~/query-builders/select.types.ts';
+import type {
+	CreateMySqlSelectFromBuilderMode,
+>CreateMySqlSelectFromBuilderMode : Symbol(CreateMySqlSelectFromBuilderMode, Decl(select.ts, 4, 13))
+
+	MySqlSelectHKT,
+>MySqlSelectHKT : Symbol(MySqlSelectHKT, Decl(select.ts, 5, 34))
+
+	MySqlSelectWithout,
+>MySqlSelectWithout : Symbol(MySqlSelectWithout, Decl(select.ts, 6, 16))
+
+} from './select.types.ts';
+export class MySqlSelectBuilder<
+>MySqlSelectBuilder : Symbol(MySqlSelectBuilder, Decl(select.ts, 8, 27))
+
+	TSelection extends SelectedFields | undefined,
+>TSelection : Symbol(TSelection, Decl(select.ts, 9, 32))
+>SelectedFields : Symbol(SelectedFields)
+
+	TPreparedQueryHKT extends PreparedQueryHKTBase,
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.ts, 10, 47))
+>PreparedQueryHKTBase : Symbol(PreparedQueryHKTBase)
+
+	TBuilderMode extends 'db' | 'qb' = 'db',
+>TBuilderMode : Symbol(TBuilderMode, Decl(select.ts, 11, 48))
+
+> {
+	from<TFrom extends MySqlTable | Subquery | MySqlViewBase | SQL>(
+>from : Symbol(MySqlSelectBuilder.from, Decl(select.ts, 13, 3))
+>TFrom : Symbol(TFrom, Decl(select.ts, 14, 6))
+>MySqlTable : Symbol(MySqlTable)
+>Subquery : Symbol(Subquery)
+>MySqlViewBase : Symbol(MySqlViewBase)
+>SQL : Symbol(SQL)
+
+		source: TFrom,
+>source : Symbol(source, Decl(select.ts, 14, 65))
+>TFrom : Symbol(TFrom, Decl(select.ts, 14, 6))
+
+	): CreateMySqlSelectFromBuilderMode<
+>CreateMySqlSelectFromBuilderMode : Symbol(CreateMySqlSelectFromBuilderMode, Decl(select.ts, 4, 13))
+
+		TBuilderMode,
+>TBuilderMode : Symbol(TBuilderMode, Decl(select.ts, 11, 48))
+
+		GetSelectTableName<TFrom>,
+>GetSelectTableName : Symbol(GetSelectTableName, Decl(select.ts, 1, 24))
+>TFrom : Symbol(TFrom, Decl(select.ts, 14, 6))
+
+		TSelection extends undefined ? GetSelectTableSelection<TFrom> : TSelection,
+>TSelection : Symbol(TSelection, Decl(select.ts, 9, 32))
+>GetSelectTableSelection : Symbol(GetSelectTableSelection)
+>TFrom : Symbol(TFrom, Decl(select.ts, 14, 6))
+>TSelection : Symbol(TSelection, Decl(select.ts, 9, 32))
+
+		TSelection extends undefined ? 'single' : 'partial',
+>TSelection : Symbol(TSelection, Decl(select.ts, 9, 32))
+
+		TPreparedQueryHKT
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.ts, 10, 47))
+
+	> {
+	}
+}
+export abstract class MySqlSelectQueryBuilderBase<
+>MySqlSelectQueryBuilderBase : Symbol(MySqlSelectQueryBuilderBase, Decl(select.ts, 24, 1))
+
+	THKT extends MySqlSelectHKTBase,
+>THKT : Symbol(THKT, Decl(select.ts, 25, 50))
+>MySqlSelectHKTBase : Symbol(MySqlSelectHKTBase)
+
+	TTableName extends string | undefined,
+>TTableName : Symbol(TTableName, Decl(select.ts, 26, 33))
+
+	TPreparedQueryHKT extends PreparedQueryHKTBase,
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.ts, 27, 39))
+>PreparedQueryHKTBase : Symbol(PreparedQueryHKTBase)
+
+	TNullabilityMap extends Record<string, JoinNullability> = TTableName extends string ? Record<TTableName, 'not-null'>
+>TNullabilityMap : Symbol(TNullabilityMap, Decl(select.ts, 28, 48))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>JoinNullability : Symbol(JoinNullability)
+>TTableName : Symbol(TTableName, Decl(select.ts, 26, 33))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TTableName : Symbol(TTableName, Decl(select.ts, 26, 33))
+
+		: {},
+	TDynamic extends boolean = false,
+>TDynamic : Symbol(TDynamic, Decl(select.ts, 30, 7))
+
+	TExcludedMethods extends string = never,
+>TExcludedMethods : Symbol(TExcludedMethods, Decl(select.ts, 31, 34))
+
+> extends TypedQueryBuilder<TSelectedFields, TResult> {
+>TSelectedFields : Symbol(TSelectedFields)
+>TResult : Symbol(TResult)
+
+	override readonly _: {
+>_ : Symbol(MySqlSelectQueryBuilderBase._, Decl(select.ts, 33, 55))
+
+		readonly hkt: THKT;
+>hkt : Symbol(hkt, Decl(select.ts, 34, 23))
+>THKT : Symbol(THKT, Decl(select.ts, 25, 50))
+
+		readonly tableName: TTableName;
+>tableName : Symbol(tableName, Decl(select.ts, 35, 21))
+>TTableName : Symbol(TTableName, Decl(select.ts, 26, 33))
+
+		readonly excludedMethods: TExcludedMethods;
+>excludedMethods : Symbol(excludedMethods, Decl(select.ts, 36, 33))
+>TExcludedMethods : Symbol(TExcludedMethods, Decl(select.ts, 31, 34))
+
+	};
+	private createJoin<
+>createJoin : Symbol(MySqlSelectQueryBuilderBase.createJoin, Decl(select.ts, 38, 3))
+
+	>(
+	): 'cross' extends TJoinType ? MySqlCrossJoinFn<this, TDynamic, TIsLateral>
+>TJoinType : Symbol(TJoinType)
+>MySqlCrossJoinFn : Symbol(MySqlCrossJoinFn)
+>TDynamic : Symbol(TDynamic, Decl(select.ts, 30, 7))
+>TIsLateral : Symbol(TIsLateral)
+
+		: MySqlJoinFn<this, TDynamic, TJoinType, TIsLateral>
+>MySqlJoinFn : Symbol(MySqlJoinFn)
+>TDynamic : Symbol(TDynamic, Decl(select.ts, 30, 7))
+>TJoinType : Symbol(TJoinType)
+>TIsLateral : Symbol(TIsLateral)
+
+	/**
+	 */
+	orderBy(...columns: (MySqlColumn | SQL | SQL.Aliased)[]): MySqlSelectWithout<this, TDynamic, 'orderBy'>;
+>orderBy : Symbol(MySqlSelectQueryBuilderBase.orderBy, Decl(select.ts, 42, 54))
+>columns : Symbol(columns, Decl(select.ts, 45, 9))
+>MySqlColumn : Symbol(MySqlColumn)
+>SQL : Symbol(SQL)
+>SQL : Symbol(SQL)
+>Aliased : Symbol(SQL.Aliased)
+>MySqlSelectWithout : Symbol(MySqlSelectWithout, Decl(select.ts, 6, 16))
+>TDynamic : Symbol(TDynamic, Decl(select.ts, 30, 7))
+}
+export interface MySqlSelectBase<
+>MySqlSelectBase : Symbol(MySqlSelectBase, Decl(select.ts, 46, 1), Decl(select.ts, 66, 2))
+
+	TTableName extends string | undefined,
+>TTableName : Symbol(TTableName, Decl(select.ts, 47, 33))
+
+	TSelection extends ColumnsSelection,
+>TSelection : Symbol(TSelection, Decl(select.ts, 48, 39))
+>ColumnsSelection : Symbol(ColumnsSelection)
+
+	TSelectMode extends SelectMode,
+>TSelectMode : Symbol(TSelectMode, Decl(select.ts, 49, 37))
+>SelectMode : Symbol(SelectMode)
+
+	TPreparedQueryHKT extends PreparedQueryHKTBase,
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.ts, 50, 32))
+>PreparedQueryHKTBase : Symbol(PreparedQueryHKTBase)
+
+	TNullabilityMap extends Record<string, JoinNullability> = TTableName extends string ? Record<TTableName, 'not-null'>
+>TNullabilityMap : Symbol(TNullabilityMap, Decl(select.ts, 51, 48))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>JoinNullability : Symbol(JoinNullability)
+>TTableName : Symbol(TTableName, Decl(select.ts, 47, 33))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TTableName : Symbol(TTableName, Decl(select.ts, 47, 33))
+
+		: {},
+	TDynamic extends boolean = false,
+>TDynamic : Symbol(TDynamic, Decl(select.ts, 53, 7))
+
+	TExcludedMethods extends string = never,
+>TExcludedMethods : Symbol(TExcludedMethods, Decl(select.ts, 54, 34))
+
+	TResult extends any[] = SelectResult<TSelection, TSelectMode, TNullabilityMap>[],
+>TResult : Symbol(TResult, Decl(select.ts, 55, 41))
+>SelectResult : Symbol(SelectResult)
+>TSelection : Symbol(TSelection, Decl(select.ts, 48, 39))
+>TSelectMode : Symbol(TSelectMode, Decl(select.ts, 49, 37))
+>TNullabilityMap : Symbol(TNullabilityMap, Decl(select.ts, 51, 48))
+
+	TSelectedFields extends ColumnsSelection = BuildSubquerySelection<TSelection, TNullabilityMap>,
+>TSelectedFields : Symbol(TSelectedFields, Decl(select.ts, 56, 82))
+>ColumnsSelection : Symbol(ColumnsSelection)
+>BuildSubquerySelection : Symbol(BuildSubquerySelection, Decl(select.ts, 0, 13))
+>TSelection : Symbol(TSelection, Decl(select.ts, 48, 39))
+>TNullabilityMap : Symbol(TNullabilityMap, Decl(select.ts, 51, 48))
+
+> extends
+	MySqlSelectQueryBuilderBase<
+>MySqlSelectQueryBuilderBase : Symbol(MySqlSelectQueryBuilderBase, Decl(select.ts, 24, 1))
+
+		MySqlSelectHKT,
+>MySqlSelectHKT : Symbol(MySqlSelectHKT, Decl(select.ts, 5, 34))
+
+		TTableName,
+>TTableName : Symbol(TTableName, Decl(select.ts, 47, 33))
+
+		TSelection,
+>TSelection : Symbol(TSelection, Decl(select.ts, 48, 39))
+
+		TSelectMode,
+>TSelectMode : Symbol(TSelectMode, Decl(select.ts, 49, 37))
+
+		TSelectedFields
+>TSelectedFields : Symbol(TSelectedFields, Decl(select.ts, 56, 82))
+
+	>,
+{}
+export class MySqlSelectBase<
+>MySqlSelectBase : Symbol(MySqlSelectBase, Decl(select.ts, 46, 1), Decl(select.ts, 66, 2))
+
+> {
+}
+=== drizzle-orm/src/mysql-core/query-builders/select.types.ts ===
+import type { IndexConfig, MySqlSelectBase, MySqlSelectQueryBuilderBase } from './select.ts';
+>IndexConfig : Symbol(IndexConfig, Decl(select.types.ts, 0, 13))
+>MySqlSelectBase : Symbol(MySqlSelectBase, Decl(select.types.ts, 0, 26))
+>MySqlSelectQueryBuilderBase : Symbol(MySqlSelectQueryBuilderBase, Decl(select.types.ts, 0, 43))
+
+export type BuildAliasTable<TTable extends MySqlTable | View, TAlias extends string> = TTable extends Table
+>BuildAliasTable : Symbol(BuildAliasTable, Decl(select.types.ts, 0, 93))
+>TTable : Symbol(TTable, Decl(select.types.ts, 1, 28))
+>MySqlTable : Symbol(MySqlTable)
+>View : Symbol(View)
+>TAlias : Symbol(TAlias, Decl(select.types.ts, 1, 61))
+>TTable : Symbol(TTable, Decl(select.types.ts, 1, 28))
+>Table : Symbol(Table)
+
+	? MySqlTableWithColumns<
+>MySqlTableWithColumns : Symbol(MySqlTableWithColumns)
+
+	>
+	: never;
+export type MySqlJoin<
+>MySqlJoin : Symbol(MySqlJoin, Decl(select.types.ts, 4, 9))
+
+> = T extends any ? MySqlSelectWithout<
+>T : Symbol(T)
+>MySqlSelectWithout : Symbol(MySqlSelectWithout, Decl(select.types.ts, 36, 1))
+
+		any
+	>
+	: never;
+export type MySqlJoinFn<
+>MySqlJoinFn : Symbol(MySqlJoinFn, Decl(select.types.ts, 9, 9))
+
+> = <
+>(
+) => MySqlJoin<T, TDynamic, 'cross', TJoinedTable, TJoinedName>;
+>MySqlJoin : Symbol(MySqlJoin, Decl(select.types.ts, 4, 9))
+>T : Symbol(T)
+>TDynamic : Symbol(TDynamic)
+>TJoinedTable : Symbol(TJoinedTable)
+>TJoinedName : Symbol(TJoinedName)
+
+export interface MySqlSelectHKTBase {
+>MySqlSelectHKTBase : Symbol(MySqlSelectHKTBase, Decl(select.types.ts, 13, 64))
+
+	tableName: string | undefined;
+>tableName : Symbol(MySqlSelectHKTBase.tableName, Decl(select.types.ts, 14, 37))
+}
+export type MySqlSelectKind<
+>MySqlSelectKind : Symbol(MySqlSelectKind, Decl(select.types.ts, 16, 1))
+
+	T extends MySqlSelectHKTBase,
+>T : Symbol(T, Decl(select.types.ts, 17, 28))
+>MySqlSelectHKTBase : Symbol(MySqlSelectHKTBase, Decl(select.types.ts, 13, 64))
+
+	TTableName extends string | undefined,
+>TTableName : Symbol(TTableName, Decl(select.types.ts, 18, 30))
+
+	TSelectMode extends SelectMode,
+>TSelectMode : Symbol(TSelectMode, Decl(select.types.ts, 19, 39))
+>SelectMode : Symbol(SelectMode)
+
+	TPreparedQueryHKT extends PreparedQueryHKTBase,
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.types.ts, 20, 32))
+>PreparedQueryHKTBase : Symbol(PreparedQueryHKTBase)
+
+	TNullabilityMap extends Record<string, JoinNullability>,
+>TNullabilityMap : Symbol(TNullabilityMap, Decl(select.types.ts, 21, 48))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>JoinNullability : Symbol(JoinNullability)
+
+	TDynamic extends boolean,
+>TDynamic : Symbol(TDynamic, Decl(select.types.ts, 22, 57))
+
+	TExcludedMethods extends string,
+>TExcludedMethods : Symbol(TExcludedMethods, Decl(select.types.ts, 23, 26))
+
+> = (T & {
+>T : Symbol(T, Decl(select.types.ts, 17, 28))
+
+	tableName: TTableName;
+>tableName : Symbol(tableName, Decl(select.types.ts, 25, 10))
+>TTableName : Symbol(TTableName, Decl(select.types.ts, 18, 30))
+
+	excludedMethods: TExcludedMethods;
+>excludedMethods : Symbol(excludedMethods, Decl(select.types.ts, 26, 23))
+>TExcludedMethods : Symbol(TExcludedMethods, Decl(select.types.ts, 23, 26))
+
+})['_type'];
+export interface MySqlSelectHKT extends MySqlSelectHKTBase {
+>MySqlSelectHKT : Symbol(MySqlSelectHKT, Decl(select.types.ts, 28, 12))
+>MySqlSelectHKTBase : Symbol(MySqlSelectHKTBase, Decl(select.types.ts, 13, 64))
+
+	_type: MySqlSelectBase<
+>_type : Symbol(MySqlSelectHKT._type, Decl(select.types.ts, 29, 60))
+>MySqlSelectBase : Symbol(MySqlSelectBase, Decl(select.types.ts, 0, 26))
+
+		this['tableName'],
+		Assume<this['selection'], ColumnsSelection>,
+>Assume : Symbol(Assume)
+>ColumnsSelection : Symbol(ColumnsSelection)
+
+		this['selectMode'],
+		Assume<this['selectedFields'], ColumnsSelection>
+>Assume : Symbol(Assume)
+>ColumnsSelection : Symbol(ColumnsSelection)
+
+	>;
+}
+export type MySqlSelectWithout<
+>MySqlSelectWithout : Symbol(MySqlSelectWithout, Decl(select.types.ts, 36, 1))
+
+	T extends AnyMySqlSelectQueryBuilder,
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+>AnyMySqlSelectQueryBuilder : Symbol(AnyMySqlSelectQueryBuilder)
+
+	TDynamic extends boolean,
+>TDynamic : Symbol(TDynamic, Decl(select.types.ts, 38, 38))
+
+	K extends keyof T & string,
+>K : Symbol(K, Decl(select.types.ts, 39, 26))
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+
+> = TDynamic extends true ? T : Omit<
+>TDynamic : Symbol(TDynamic, Decl(select.types.ts, 38, 38))
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+
+	MySqlSelectKind<
+>MySqlSelectKind : Symbol(MySqlSelectKind, Decl(select.types.ts, 16, 1))
+
+		T['_']['hkt'],
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+
+		T['_']['tableName'],
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+
+		T['_']['selection'],
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+
+		T['_']['selectMode'],
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+
+		T['_']['preparedQueryHKT'],
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+
+		T['_']['nullabilityMap'],
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+
+		TDynamic,
+>TDynamic : Symbol(TDynamic, Decl(select.types.ts, 38, 38))
+
+	>,
+	TResetExcluded extends true ? K : T['_']['excludedMethods'] | K
+>TResetExcluded : Symbol(TResetExcluded)
+>K : Symbol(K, Decl(select.types.ts, 39, 26))
+>T : Symbol(T, Decl(select.types.ts, 37, 31))
+>K : Symbol(K, Decl(select.types.ts, 39, 26))
+
+>;
+export type CreateMySqlSelectFromBuilderMode<
+>CreateMySqlSelectFromBuilderMode : Symbol(CreateMySqlSelectFromBuilderMode, Decl(select.types.ts, 52, 2))
+
+	TBuilderMode extends 'db' | 'qb',
+>TBuilderMode : Symbol(TBuilderMode, Decl(select.types.ts, 53, 45))
+
+	TTableName extends string | undefined,
+>TTableName : Symbol(TTableName, Decl(select.types.ts, 54, 34))
+
+	TSelection extends ColumnsSelection,
+>TSelection : Symbol(TSelection, Decl(select.types.ts, 55, 39))
+>ColumnsSelection : Symbol(ColumnsSelection)
+
+	TSelectMode extends SelectMode,
+>TSelectMode : Symbol(TSelectMode, Decl(select.types.ts, 56, 37))
+>SelectMode : Symbol(SelectMode)
+
+	TPreparedQueryHKT extends PreparedQueryHKTBase,
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.types.ts, 57, 32))
+>PreparedQueryHKTBase : Symbol(PreparedQueryHKTBase)
+
+> = TBuilderMode extends 'db' ? MySqlSelectBase<TTableName, TSelection, TSelectMode, TPreparedQueryHKT>
+>TBuilderMode : Symbol(TBuilderMode, Decl(select.types.ts, 53, 45))
+>MySqlSelectBase : Symbol(MySqlSelectBase, Decl(select.types.ts, 0, 26))
+>TTableName : Symbol(TTableName, Decl(select.types.ts, 54, 34))
+>TSelection : Symbol(TSelection, Decl(select.types.ts, 55, 39))
+>TSelectMode : Symbol(TSelectMode, Decl(select.types.ts, 56, 37))
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.types.ts, 57, 32))
+
+	: MySqlSelectQueryBuilderBase<MySqlSelectQueryBuilderHKT, TTableName, TSelection, TSelectMode, TPreparedQueryHKT>;
+>MySqlSelectQueryBuilderBase : Symbol(MySqlSelectQueryBuilderBase, Decl(select.types.ts, 0, 43))
+>MySqlSelectQueryBuilderHKT : Symbol(MySqlSelectQueryBuilderHKT)
+>TTableName : Symbol(TTableName, Decl(select.types.ts, 54, 34))
+>TSelection : Symbol(TSelection, Decl(select.types.ts, 55, 39))
+>TSelectMode : Symbol(TSelectMode, Decl(select.types.ts, 56, 37))
+>TPreparedQueryHKT : Symbol(TPreparedQueryHKT, Decl(select.types.ts, 57, 32))
+
+export type MySqlSelect<
+>MySqlSelect : Symbol(MySqlSelect, Decl(select.types.ts, 60, 115))
+
+> = MySqlSelectBase<TTableName, TSelection, TSelectMode, PreparedQueryHKTBase, TNullabilityMap, true, never>;
+>MySqlSelectBase : Symbol(MySqlSelectBase, Decl(select.types.ts, 0, 26))
+>TTableName : Symbol(TTableName)
+>TSelection : Symbol(TSelection)
+>TSelectMode : Symbol(TSelectMode)
+>PreparedQueryHKTBase : Symbol(PreparedQueryHKTBase)
+>TNullabilityMap : Symbol(TNullabilityMap)
+
+=== drizzle-orm/src/mysql-proxy/driver.ts ===
+import { MySqlDatabase } from '~/mysql-core/db.ts';
+>MySqlDatabase : Symbol(MySqlDatabase, Decl(driver.ts, 0, 8))
+
+export class MySqlRemoteDatabase<
+>MySqlRemoteDatabase : Symbol(MySqlRemoteDatabase, Decl(driver.ts, 0, 51))
+
+	TSchema extends Record<string, unknown> = Record<string, never>,
+>TSchema : Symbol(TSchema, Decl(driver.ts, 1, 33))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+> extends MySqlDatabase<MySqlRemoteQueryResultHKT, MySqlRemotePreparedQueryHKT, TSchema> {
+>MySqlDatabase : Symbol(MySqlDatabase, Decl(driver.ts, 0, 8))
+>MySqlRemoteQueryResultHKT : Symbol(MySqlRemoteQueryResultHKT)
+>MySqlRemotePreparedQueryHKT : Symbol(MySqlRemotePreparedQueryHKT)
+>TSchema : Symbol(TSchema, Decl(driver.ts, 1, 33))
+}
+=== drizzle-orm/src/query-builders/select.types.ts ===
+import type { Table } from '~/table.ts';
+>Table : Symbol(Table, Decl(select.types.ts, 0, 13))
+
+export type ApplyNullabilityToColumn<TColumn extends Column, TNullability extends JoinNullability> =
+>ApplyNullabilityToColumn : Symbol(ApplyNullabilityToColumn, Decl(select.types.ts, 0, 40))
+>TColumn : Symbol(TColumn, Decl(select.types.ts, 1, 37))
+>Column : Symbol(Column)
+>TNullability : Symbol(TNullability, Decl(select.types.ts, 1, 60))
+>JoinNullability : Symbol(JoinNullability)
+
+	TNullability extends 'not-null' ? TColumn
+>TNullability : Symbol(TNullability, Decl(select.types.ts, 1, 60))
+>TColumn : Symbol(TColumn, Decl(select.types.ts, 1, 37))
+
+		: Column<
+>Column : Symbol(Column)
+
+		>;
+export type AddAliasToSelection<
+>AddAliasToSelection : Symbol(AddAliasToSelection, Decl(select.types.ts, 4, 4))
+
+> = TOldSelectMode extends 'partial' ? TResult
+>TOldSelectMode : Symbol(TOldSelectMode)
+>TResult : Symbol(TResult)
+
+	: TResult & (TJoinedName extends string ? Record<TJoinedName, TSelectedFields> : TSelectedFields);
+>TResult : Symbol(TResult)
+>TJoinedName : Symbol(TJoinedName)
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TJoinedName : Symbol(TJoinedName)
+>TSelectedFields : Symbol(TSelectedFields)
+>TSelectedFields : Symbol(TSelectedFields)
+
+export type BuildSubquerySelection<
+>BuildSubquerySelection : Symbol(BuildSubquerySelection, Decl(select.types.ts, 7, 99))
+
+	TSelection extends ColumnsSelection,
+>TSelection : Symbol(TSelection, Decl(select.types.ts, 8, 35))
+>ColumnsSelection : Symbol(ColumnsSelection)
+
+	TNullability extends Record<string, JoinNullability>,
+>TNullability : Symbol(TNullability, Decl(select.types.ts, 9, 37))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>JoinNullability : Symbol(JoinNullability)
+
+> = TSelection extends never ? any
+>TSelection : Symbol(TSelection, Decl(select.types.ts, 8, 35))
+
+	:
+		& {};
+export type AppendToNullabilityMap<
+>AppendToNullabilityMap : Symbol(AppendToNullabilityMap, Decl(select.types.ts, 13, 7))
+
+> = TJoinedName extends string ? 'left' extends TJoinType ? TJoinsNotNull & { [name in TJoinedName]: 'nullable' }
+>TJoinedName : Symbol(TJoinedName)
+>TJoinType : Symbol(TJoinType)
+>TJoinsNotNull : Symbol(TJoinsNotNull)
+>name : Symbol(name, Decl(select.types.ts, 15, 79))
+>TJoinedName : Symbol(TJoinedName)
+
+	: never
+	: TJoinsNotNull;
+>TJoinsNotNull : Symbol(TJoinsNotNull)
+
+export type GetSelectTableName<TTable extends TableLike> = TTable extends Table ? TTable['_']['name']
+>GetSelectTableName : Symbol(GetSelectTableName, Decl(select.types.ts, 17, 17))
+>TTable : Symbol(TTable, Decl(select.types.ts, 18, 31))
+>TableLike : Symbol(TableLike)
+>TTable : Symbol(TTable, Decl(select.types.ts, 18, 31))
+>Table : Symbol(Table, Decl(select.types.ts, 0, 13))
+>TTable : Symbol(TTable, Decl(select.types.ts, 18, 31))
+
+	: TTable extends SQL ? undefined
+>TTable : Symbol(TTable, Decl(select.types.ts, 18, 31))
+>SQL : Symbol(SQL)
+
+	: never;
+=== drizzle-orm/src/sql/sql.ts ===
+export class SQL<T = unknown> implements SQLWrapper {
+>SQL : Symbol(SQL, Decl(sql.ts, 0, 0))
+>T : Symbol(T, Decl(sql.ts, 0, 17))
+
+	mapWith<
+>mapWith : Symbol(SQL.mapWith, Decl(sql.ts, 0, 53))
+
+	>(decoder: TDecoder): SQL<GetDecoderResult<TDecoder>> {
+>decoder : Symbol(decoder, Decl(sql.ts, 2, 3))
+>TDecoder : Symbol(TDecoder)
+>SQL : Symbol(SQL, Decl(sql.ts, 0, 0))
+>GetDecoderResult : Symbol(GetDecoderResult, Decl(sql.ts, 4, 1))
+>TDecoder : Symbol(TDecoder)
+	}
+}
+export type GetDecoderResult<T> = T extends Column ? T['_']['data'] : T extends
+>GetDecoderResult : Symbol(GetDecoderResult, Decl(sql.ts, 4, 1))
+>T : Symbol(T, Decl(sql.ts, 5, 29))
+>T : Symbol(T, Decl(sql.ts, 5, 29))
+>Column : Symbol(Column)
+>T : Symbol(T, Decl(sql.ts, 5, 29))
+>T : Symbol(T, Decl(sql.ts, 5, 29))
+
+	| DriverValueDecoder<infer TData, any>['mapFromDriverValue'] ? TData
+>DriverValueDecoder : Symbol(DriverValueDecoder)
+>TData : Symbol(TData, Decl(sql.ts, 6, 27))
+>TData : Symbol(TData, Decl(sql.ts, 6, 27))
+
+: never;
+export class Name implements SQLWrapper {
+>Name : Symbol(Name, Decl(sql.ts, 7, 8))
+
+	getSQL(): SQL<unknown> {
+>getSQL : Symbol(Name.getSQL, Decl(sql.ts, 8, 41))
+>SQL : Symbol(SQL, Decl(sql.ts, 0, 0))
+	}
+}
+export namespace sql {
+>sql : Symbol(sql, Decl(sql.ts, 11, 1))
+
+	/**
+	 */
+	export function identifier(value: string): Name {
+>identifier : Symbol(identifier, Decl(sql.ts, 12, 22))
+>value : Symbol(value, Decl(sql.ts, 15, 28))
+>Name : Symbol(Name, Decl(sql.ts, 7, 8))
+	}
+}
+export abstract class View<
+>View : Symbol(View, Decl(sql.ts, 17, 1))
+
+> implements SQLWrapper {
+	declare readonly $inferSelect: InferSelectViewModel<View<Assume<TName, string>, TExisting, TSelection>>;
+>$inferSelect : Symbol(View.$inferSelect, Decl(sql.ts, 19, 25))
+>InferSelectViewModel : Symbol(InferSelectViewModel)
+>View : Symbol(View, Decl(sql.ts, 17, 1))
+>Assume : Symbol(Assume)
+>TName : Symbol(TName)
+>TExisting : Symbol(TExisting)
+>TSelection : Symbol(TSelection)
+}
+=== drizzle-orm/src/table.ts ===
+export interface Table<
+>Table : Symbol(Table, Decl(table.ts, 0, 0))
+
+> extends SQLWrapper {
+	[ExtraConfigBuilder]: ((self: any) => Record<string, unknown> | unknown[]) | undefined = undefined;
+>[ExtraConfigBuilder] : Symbol(Table[ExtraConfigBuilder], Decl(table.ts, 1, 22))
+>self : Symbol(self, Decl(table.ts, 2, 25))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>undefined : Symbol(undefined)
+}
+
