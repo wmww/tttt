@@ -414,3 +414,22 @@ never-const (harness writes no errors baseline).
   that message was later replaced by the outer chain but the node wasn't restored. tttt models the moved node only when
   the excess-property message itself is reported.
 - **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs.
+
+## Mutation seed 2311 leftovers (2026-10-23, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2311 --tests multi,js`: 51 -> 37 / 4010)
+The multi-file and JS mix found far more than the single-file one (51 against 10). Ten causes were fixed. Of the 37
+left, 22 are text, render, position or elaboration buckets. Code-level singletons, not investigated past a look:
+- missing TS2339 on `module.exports.funky = ...` after `module.exports = donkey` with `donkey: never`
+  (commonJSAliasedExport never-const; moduleExportAlias5 likewise).
+- missing TS2775 only when the asserting call also has an arity error (assertionTypePredicates2 add-arg: with the right
+  argument count neither side reports it).
+- spurious TS2303 around an unresolved UMD `export = Thing` + `export as namespace Foo` (umd7 delete-stmt): tsgo's
+  report depends on whether another file uses `Foo` first (with no use it reports TS2303 'Foo' at (2,1), tttt at
+  (2,21)).
+- spurious TS2451 in crashDeclareGlobalTypeofExport delete-stmt: tsgo reports nothing at all there, not even for the
+  unresolved `export = root`.
+- missing TS2322 in moduleResolutionWithSymlinks_notInNodeModules never-const: the same file under two symlinked paths.
+- missing TS1005/TS2306 for a JSDoc `@import f from "./foo.js"` with its `as` dropped (importTag14, 2 mutants),
+  missing TS2858/TS2305 and spurious TS2307 with import attributes (importSource8, importAttributesDeclarationEmit),
+  spurious TS1291 (verbatimModuleSyntaxNoElisionCJS), TS1361 (resolutionModeCache), TS1003
+  (arbitraryModuleNamespaceIdentifiers_syntax), missing TS2307 (nodeNextModuleResolution1).
+- Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt.

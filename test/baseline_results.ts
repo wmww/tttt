@@ -62,6 +62,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAnnotatedExpandoObjectWidened': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAnyIntersectionDisjointDomains': {
         errors: true,
         symbols: true,
@@ -295,6 +300,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttConstMergedWithImportAssumedInitialized': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttConstRestLiteralsRegular': {
         errors: true,
@@ -1072,6 +1082,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDefinePropertyWritableInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeleteUnionIndexSignatureMember(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
@@ -1703,12 +1718,37 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsNamespaceConstInitializerChecked': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttJsThisAssignedMethod': {
         errors: true,
         symbols: true,
         types: true,
     },
     'ttttJsThisPropertyCircularThroughNarrowing': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsThisPropertySelfReadAny': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsTypedefNoNameDropsGrammarErrors': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocExtendsErrorBaseNoMatchCheck': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttJsdocTypedModuleExportsChecked': {
         errors: true,
         symbols: true,
         types: true,
@@ -2046,6 +2086,11 @@ const baselines = {
         types: true,
     },
     'ttttObjectToGenericMappedRecord': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttOptionDiagnosticFirstProperty': {
         errors: true,
         symbols: true,
         types: true,
