@@ -20,7 +20,7 @@ Keep notes for future agents in `agents/`, including:
 - `agents/measurements.md` - the latest numbers of each kind, with the command, the box, the date and the commit.
 - `agents/hacks.md` - contains a comprehensive list of hacks, workarounds and other suboptimal-but-working aspects of the code. Prefer function names over line numbers for stability. Add when writing a hack, or when discovering code that seems sus. Hacks don't need to be immediately addressed, they're meant for discovering and fixing antipatterns.
 - `agents/triage.md` - a dumping ground for uninvestigated bugs, potential long-term problems, papercuts, ideas, and anything else an agent doesn't want to deal with at the moment, but a future agent should sort out.
-- `agents/bugs/*.md` - reports of known issues, by area.
+- `agents/bugs/*.md` - reports of known issues, by area; every bullet ends with a status tag (`[open]`, `[design]`, `[text]`, `[tsgo]`, `[fixed COMMIT]`...: `agents/bugs/README.md`), and a fix flips its entry to `[fixed COMMIT]`.
 
 `agents/` should be committed to git just like code. Create, edit and delete files in `agents/` freely. Remove files that are no longer relevant (eg solved bugs, finished notes) and clean up confusing and unimportant references to previous state. "plan N" in code comments and scripts is a historical tag: `git show af936072c:agents/plans/` lists the plans, which were deleted on 2026-10-22.
 

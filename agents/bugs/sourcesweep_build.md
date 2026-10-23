@@ -35,7 +35,7 @@ an unrelated c: tsgo reports TS2307 for `./x.js` inside a's emitted index.d.ts).
 the GitHub API): no commit touches tsc/internal/vfs/cachedvfs since the beta, the two in execute/build (#64898 no-op
 builds, #64837 LSP content mappers) are unrelated, no issue or PR found: worth filing. When a fix ships, regenerate
 the -b cache (`sourcesweep.py --build --tsc`) and drop atproto from KNOWN_BUILD. An emulation (simulated builders,
-recorded failed probes) was written and reverted on the human's rule that tsgo bugs aren't emulated.
+recorded failed probes) was written and reverted on the human's rule that tsgo bugs aren't emulated. [tsgo]
 
 Left (2026-10-20, by project; + spurious, - missing):
 - better-auth: -TS2345 2 (lynx-store.ts:65, react-store.ts:67, a `-p` bug too): `listenKeys(store as any, keys,
@@ -53,7 +53,7 @@ Left (2026-10-20, by project; + spurious, - missing):
   below a variance measurement, `alias_reenters()`).
   Re-entrancy (notes/reentrancy.md, 2026-10-20) has the model and a census: this RETINFLIGHT -> REENTER 3 -> NESTEDSIG chain is the one
   re-entry real code does at volume (6% of projects), tttt never takes it (eager return contexts) and still matches
-  everywhere else; fixing it is stages B-D (pulled return contexts), deferred.
+  everywhere else; fixing it is stages B-D (pulled return contexts), deferred. [design]
 - hono (tsconfig.build.json): +TS2769 2 (request.ts:214, a `-p` bug): `parseBody(this, options)` with `this` against
   `HonoRequest | Request`. The plain check fails in tsgo too (HonoRequest's variances [independent, bivariant],
   `I extends Input['out']` isn't `{}`); tsgo then relates getEffectiveConstraintOfIntersection's `HonoRequest<P, I> &
@@ -61,10 +61,10 @@ Left (2026-10-20, by project; + spurious, - missing):
   and its identity instantiation through `this`'s apparent type, which tsgo doesn't intern into one), so
   signaturesRelatedTo takes the N x M path with erasure and passes. tttt gets one signature and compares unerased:
   matching needs tsgo's non-interned identity instantiations. Reduced tree: request.ts with only parseBody
-  (overloads), valid (overload returning InputToDataByTarget<I, T>) and a getter.
+  (overloads), valid (overload returning InputToDataByTarget<I, T>) and a getter. [dup]
 - hono (runtime-tests/bun): -TS7026 10, -TS7016 1: tsgo's builder resolves `hono/jsx/jsx-runtime` to the freshly
   emitted dist/types/jsx/jsx-runtime.js and finds no declaration; after the same build, `tsc -p` of that config reports
-  nothing, like tttt. A tsgo builder quirk (tttt emits no JavaScript): verdict, not modelled.
+  nothing, like tttt. A tsgo builder quirk (tttt emits no JavaScript): verdict, not modelled. [tsgo]
 - sunmao-ui: -TS2590 (chakra Button.tsx:85, Dialog.tsx:160, editor's AddTraitButton.tsx:59; `-p` too). Verdict
   (2026-10-20, instrumented tsgo): inferring JSX.LibraryManagedAttributes' conditional types from chakra's
   `ComponentWithAs` props, getReducedType -> somePropertyReducesToNever makes the intersection's `as` property, and
@@ -77,13 +77,13 @@ Left (2026-10-20, by project; + spurious, - missing):
   intersection of the two twin unions isn't tsc's shape. That is the next step. Repro: a probe with a node_modules
   symlink to sunmao's, `import type { ComponentWithAs, HTMLChakraProps } from '@chakra-ui/react'; interface P extends
   HTMLChakraProps<"button"> {} declare const B: ComponentWithAs<'button', P>; <B />` (the alias `type P =
-  HTMLChakraProps<"button">` doesn't).
+  HTMLChakraProps<"button">` doesn't). [open]
 
 **The builder window is a race in tsgo** (b4run, known): its 4 builders take projects in schedule order and wait only
 on references, so whether an unreferenced project's `dist` exists is timing. tttt counts a project 4 or more places
 earlier in schedule order as built (hacks.md); b4run's core is 2 places after permissions and sees it in tsgo only
 because permissions is quick. tsgo's real per-project finish times can be read from the `.tsbuildinfo` mtimes of a
-`tsc -b --force` in a kept bwrap overlay.
+`tsc -b --force` in a kept bwrap overlay. [tsgo]
 
 Perf: jest's `__tests__` builds (every package gated by TS5108) are declaration-walked only
 (`program_set_declarations_only()`). Sharing parsed declaration files across a build's programs (todo.md) is

@@ -15,34 +15,34 @@ merge_into_umd_globals()), an alias a merge went through (SymbolRare.merge_detac
   declared type gets a lower id in tttt, likely because resolving the import's value half
   (ty_export_equals_property_missing() -> BigConstructor's members) lowers signature return types eagerly where tsc's
   are lazy. Probe: test/cases/ttttCombinedImportNamedByAlias.ts plus `export function u(c: boolean) { return c ?
-  arr[0] : new Big(0); }`.
+  arr[0] : new Big(0); }`. [text]
 
 ## Bigint property names
 - Done 2026-10-14 by syntax: span_is_bigint_name() (span.h) is what the member builders, duplicate checks and symbol
   merges skip; the members keep their number text as name_string (a JS name lookup of `"1"` won't find them either,
-  since nothing declares them). A computed `[1n]` is TS2464, unchanged.
+  since nothing declares them). A computed `[1n]` is TS2464, unchanged. [fixed 935b154bb]
 
 ## Multi-file/JS mutation run, seed 16 (`MUTATE_DIR=/tmp/wt-b-mutate scripts/mutate.py --tests multi,js -n 3000 --seed 16`)
 22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers went to the JS stage-2 work (since retired; bugs/js.md). TypeScript ones (mut0806 and mut2320 rechecked as probes 2026-10-09: still differ):
 - mut0806 (typeGuardNarrowsIndexedAccessOfKnownProperty8, `export const key: never = "a"`): spurious TS2564 for
   `[a.key]: string` that the constructor assigns as `this[a.key]`. tsc's tryGetNameFromEntityNameExpression falls back
   to the initializer's type when the annotation gives no name, so the access is named "a" and matches; tttt goes by
-  the declared type. Flow reference matching (isMatchingReference / getAccessedPropertyName).
+  the declared type. Flow reference matching (isMatchingReference / getAccessedPropertyName). [dup]
 - mut2320 (expandoFunctionSymbolPropertyJs, `const symb: never = Symbol()`): `readonly [symb]: boolean` in an interface
   with a `never` key makes index signatures in tsc (TS2322 "Index signature for type 'number' is missing" on
-  returning a plain function); tttt adds nothing for it. Members from computed names (relations area).
+  returning a plain function); tttt adds nothing for it. Members from computed names (relations area). [open]
 - mut1254 (moduleResolutionWithSymlinks_notInNodeModules): tsc writes no errors baseline at all; tttt writes one with
-  only the tsconfig.json section and no diagnostics. Harness, symlinked files.
+  only the tsconfig.json section and no diagnostics. Harness, symlinked files. [harness]
 ## UMD globals merged from scripts (`merge_into_umd_globals()`)
 Declarations merged into a UMD global (`export as namespace X` plus a script declaring `X`) move into its module
 whatever the file order; tsc drops the UMD global when a script declared the name first. A conflicting target is
-skipped silently, where tsc reports it against the resolved target. (Moved from hacks.md, 2026-10-08.)
+skipped silently, where tsc reports it against the resolved target. (Moved from hacks.md, 2026-10-08.) [open]
 
 ## TS 7.1 retarget leftovers (2026-10-09)
 - TS expandos follow tsgo's binder, but the binder still adds 6.0's SYMBOL_DECL_EXPANDO to the host (filtered in
   symbol_declaration_spans(), ignored by is_nested_expando_function()): the checker's expando rules want that namespace
   meaning. A real port of bindDeferredExpandoAssignment would drop it. Class statics aren't in host->exports at bind
-  time, so `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1's symbols, which this broke, pass since: recheck whether it still happens).
+  time, so `Point.origin = v` over a `declare class Point { static origin }` still declares (targetTypeTest1's symbols, which this broke, pass since: recheck whether it still happens). [open]
 
 ## Escaped identifiers: what's left
 Names with unicode escapes (`\u0061`, `a\u{62}`) resolve by their cooked value (2026-09-29): `name_cooked()`
@@ -56,8 +56,8 @@ the source as written.
 
 Left:
 - Comparisons of names against literals (`span_equals(name, "constructor")`, `"prototype"`, `"__proto__"`...) are by
-  raw text: `constructor` isn't a constructor. tsc compares escapedText there. No test needs it.
-- Computed keys compare by source text, JSX attribute names stay raw (TS17021 there anyway).
+  raw text: `constructor` isn't a constructor. tsc compares escapedText there. No test needs it. [open]
+- Computed keys compare by source text, JSX attribute names stay raw (TS17021 there anyway). [open]
 
 ## Global ambient modules are merged after the global types: an augmented global interface's base can't see them
 DT sweep's last mismatch, types/ember/v2 (-TS2306 at test/function-ext.ts:1, -TS2339 x4). function-ext.ts is a module
@@ -73,7 +73,7 @@ Function augmentation gets no base and `function() {}.property()` is TS2339. ttt
 module known. Mirroring it: for interfaces of those global names declared in a global augmentation, resolve the first
 identifier of each dotted `extends` name; if it's an import alias of a bare specifier that only a script's ambient
 module declares (not a module file, not a pattern), resolve it as a file (TS2306/TS2307 at the import) and make the
-alias unknown program-wide. Not done (one DT package).
+alias unknown program-wide. Not done (one DT package). [fixed 2ac9f2f52]
 
 ## TS 7.1.0-beta re-pin leftovers (2026-10-23)
 - **Content mapper `outputExtensions`** (new in the beta: tsoptions/contentmappers.go, outputpaths.go, the checker's
@@ -82,11 +82,11 @@ alias unknown program-wide. Not done (one DT package).
   file names (`Card.d.ts`, `Widget.d.mts`), `import("./Card.js")` specifiers in `.d.ts` output, TS5056 output
   collisions, TS2876/TS2877 unsafe rewrites of mapped extensions, TS2807 `__rewriteRelativeImportExtension` with 4
   parameters under importHelpers, manifest validation diagnostics. tttt's content_mapper.c has none of it: the 12
-  `contentMapperOutputExtensions*` configurations fail (errors, types or dts). A feature of its own (todo.md).
+  `contentMapperOutputExtensions*` configurations fail (errors, types or dts). A feature of its own (todo.md). [design]
 - **TS5116 network paths**: tttt reports it for `/// <reference path>` and `paths` substitutions
   (path_is_network()); tsgo also checks rooted path options (tsconfigparsing.go:423), `extends` (:495), `files`
   (:1255), references (:1449), include specs (:1534) and the command line (commandlineparser.go:308). No test or corpus
-  has one.
+  has one. [open]
 - ambientModuleImportingItselfNotResolved's symbols: tsgo names the module specifier `"foo"` inside `declare module
   "foo" { import _foo from "foo"; }` as `Symbol(_foo, ...)` (the module's symbol printed through the default import's
-  alias of itself), tttt `Symbol("foo", ...)`. Errors and types pass (#64491 is implemented).
+  alias of itself), tttt `Symbol("foo", ...)`. Errors and types pass (#64491 is implemented). [text]

@@ -8,55 +8,59 @@ here fails on the tsgo 7.1 suite (pruned 2026-10-09; harness-only causes are in 
 ## Known missing checks
 - **JS**: TS2565 for a property declared by a JS expression statement (`/** @type {F} */ C.prototype.m;`) read in the
   same flow container (tsc's getFlowTypeOfAccessExpression with assumeUninitialized); TS7032 for a setter whose type
-  comes from `@type` (probe plan19/webpack/jsdoc_accessor_type.ts).
+  comes from `@type` (probe plan19/webpack/jsdoc_accessor_type.ts). [open]
 - **Decorators**: TS2449 for a class used in the decorators of its own methods' parameters (tsc counts them; tttt's
   check only knows class and member decorators). In tsgo it comes from the emit resolver only (`m(@dec(C.s) x)`: the
-  suite's TS-1 pre/post-emit count note), so it shows in baselines, not on the CLI.
-- **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md).
+  suite's TS-1 pre/post-emit count note), so it shows in baselines, not on the CLI. [tsgo]
+- **Classes**: TS2687 skips statics and method/accessor pairs (hacks.md). [open]
 - **Accessibility**: `this.x = v` in the constructor of a class merged with an interface declaring `readonly x` (tttt
-  exempts any property whose parent is the class). Private names: TS18015.
-- **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc.
+  exempts any property whose parent is the class). Private names: TS18015. [open]
+- **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc. [open]
 - **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests the tsc mechanism ports named for them
-  pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types.
+  pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types. [open]
 - **Target-gated**: TS2705 comes only from an inferred return type's demand (tsc's createPromiseReturnType), and tttt
-  infers more eagerly than tsc, so the two can disagree.
+  infers more eagerly than tsc, so the two can disagree. [open]
 - **Iteration**: TS2489 (iterator without `next`), TS2763-2765 (iterator next-type mismatches);
-  generator next types aren't inferred from `yield` uses (tsc's `nextTypes`).
+  generator next types aren't inferred from `yield` uses (tsc's `nextTypes`). [open]
 - **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
   require }` isn't type-only for TS2441; a nested
-  `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace).
+  `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace). [open]
 - **Variance annotations**: `type B<in T, in T> = { a: T }` misses tsgo's TS2636 at the second `in T` (the two are
-  one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test.
+  one type parameter symbol; why only the second check fails in tsgo wasn't looked at). Probe only, no test. [open]
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
-  resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
-- `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block).
+  resolveExternalModule diagnostics (TS7016 for a JavaScript runtime). [open]
+- `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block). [open]
+- Known-failing tests of hacks.md's audit (2026-10-23; each hack's entry there has the mechanism):
+  - ttttHackJsdocUniqueSymbolLet: a JSDoc `@type {unique symbol}` on a `let` misses TS1332. [open]
+  - ttttHackAugmentationAliasConflict: `export { x as y }` in a module augmentation misses TS2323/TS2484. [open]
+  - ttttHackJsdocLinkShadowed: a JSDoc `{@link}` to a shadowed name keeps the import used (TS6133 missing). [open]
 
 ## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed 2`: 32 -> 13)
 Each one mutant:
-- arrayFrom return-void: "Binding elements read before the contextual assignment" (seeds 61/62 below).
+- arrayFrom return-void: "Binding elements read before the contextual assignment" (seeds 61/62 below). [dup]
 - interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
   resolved as a type reference (TS2702 'Object' only refers to a type...; TS2503/TS2694 for others): tsc's
   getTypeReferenceName takes the optional chain as an entity name (isEntityNameExpression ignores `?.`). tttt keeps
-  it as an invalid expression (HeritageClauses.invalid) without a TypeNode, so nothing resolves it.
+  it as an invalid expression (HeritageClauses.invalid) without a TypeNode, so nothing resolves it. [open]
 - twiceNestedKeyofIndexInference add-optional: an overload's signature in TS2769 prints
   `Required<Pick<State, "d">>` in full in tsc, `Required<...>` in tttt (the elision budget of a signature in an
-  overload list).
+  overload list). [text]
 - multipleInferenceContexts delete-stmt (`& ThisType<Instance<Data>>` deleted): `this` in an object literal method
   is `ComponentOptionsProperties<{ msg: string; }>` in tsc (the inferred instantiation of the contextual type) where
-  tttt prints `ComponentOptionsProperties<Data>`.
+  tttt prints `ComponentOptionsProperties<Data>`. [open]
 
 ## Triage drain 2026-10-07: checker items re-checked, not fixed
 - Diagnostic order at one position (TS2741 before TS2454 at `[d1, d2]` against `Base[]`,
-  derivedTypeDoesNotRequireExtendsClause with `extends Object`): tsc's check order; not looked into further.
+  derivedTypeDoesNotRequireExtendsClause with `extends Object`): tsc's check order; not looked into further. [open]
 - webpack flagflip leftovers (unused imports only in a JSDoc `{T=}`; TS2488 once per union in nuia, also excalidraw):
   order-dependent laziness in tsc, see the TS 6.0 retarget notes in triage. (vue's loop-flow TS2538/TS4111 are fixed:
   d218d7336 reports a loop's partial evaluations.) The TS7022 `labels` note (class extending any, `const old = this.labels; this.labels = []; this.labels =
   old;` in two methods: tsc TS7022 on the first `old` and on `labels`, tttt on both `old`s) is the same family:
-  which declaration's resolution meets the cycle first.
+  which declaration's resolution meets the cycle first. [open]
 
 ## Mutation seed 17 leftovers (2026-10-07, `scripts/mutate.py --seed 17 -n 4000`: 13 -> 7)
 - Known families: arrayFrom null-arg (binding elements read before the contextual assignment, seeds 61/62),
-  derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position).
+  derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position). [dup]
 
 ## Mutation seed 18 leftovers (2026-10-08, `MUTATE_DIR=... scripts/mutate.py -n 2000 --seed 18`: 11 -> 5)
 Both are check-order effects of tsc's checker reporting during type computation, which tttt's separate
@@ -65,20 +69,20 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   `var z` makes `z = 10` in `with (obj) { ... }` unresolvable). tsc never checks the body (checkWithStatement), but
   the flow walk of a later reference `x` passes the assignment `z = 10` and isMatchingReference calls
   getResolvedSymbol(z), which reports "Cannot find name 'z'". tttt's with-body scope (`Scope.with_body`) reports
-  nothing. Reproducing it means reporting a with-body name's TS2304 when a flow query visits its assignment.
+  nothing. Reproducing it means reporting a with-body name's TS2304 when a flow query visits its assignment. [open]
 - **text TS2345, an inferred object literal printed without its computed-name syntax** (mut1928, symbolProperty22:
   `[Symbol.unscopablesX]`, an error-typed computed name): tsc prints the argument as `{ [x: number]: (s: any) => any;
   }` (the any-named key is a number index signature, and the instantiated type has no node to reuse the name from);
-  tttt prints `{ [Symbol.unscopablesX]: ... }`. Printing only (the .types baseline reuses the syntax on both sides).
+  tttt prints `{ [Symbol.unscopablesX]: ... }`. Printing only (the .types baseline reuses the syntax on both sides). [text]
 
 ## Circularity tsc finds and tttt doesn't (the resolution stack's leftovers)
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
   ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
   checked, default type arguments instantiated during base type resolution. None of the corpora show these shapes
-  (circularConstraintYieldsAppropriateError, its suite test, passes since 2026-10-14).
+  (circularConstraintYieldsAppropriateError, its suite test, passes since 2026-10-14). [design]
 - A parameter's default reaching the parameter through a call's return type (`(n: number | undefined = [1].map(() =>
-  n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`).
+  n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`). [open]
 - recursiveMappedTypes against tsgo's CLI (the suite baseline is JS-emit order: tsgo_divergences.md): (1) no TS2502
   on ListWidget's `"each": Child<ListWidget>` (and its type stays `Child<ListWidget>`, tsc's `any`): tsgo's
   instantiateMappedType instantiates the non-homomorphic Child's constraint `NonOptionalKeys<ListWidget>` eagerly while
@@ -91,14 +95,14 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   several, so tttt's 4-ary recursion goes ~100 levels deep and runs into the 5M count (tsgo: 28k instantiations).
   Make the frames per level match (which of tsgo's instantiateType calls tttt skips). (3) TS2751 related info of the
   declared-key TS2313 (Recurse2's `K` at currentNode `Recurse2` in Recurse1's `keyof Recurse2`): tttt reports
-  declared-key circularity at the member's check, never where it was found.
+  declared-key circularity at the member's check, never where it was found. [open]
 ## Limits
 - TS2589 by instantiation *count* (valibot under sloppy/nosnc flagflip cells, ~60 diagnostics; investigated
   2026-10-06 against tsc 6, judged plan-sized, not attempted): tsc's hits are the 5M count limit, from cache hits it
   counts anyway (getObjectTypeInstantiation maps type arguments before its cache lookup, composite/merged mappers
   re-instantiate per getMappedType: ~25M calls in valibot's required.test-d.ts, no new types). Reproducing it means
   mirroring tsc's mapper representation and cache misses, which only reproduces tsc's own blowup and costs perf.
-  Accepted divergence; revisit only if real projects show tsc's TS2589 hiding errors tttt reports.
+  Accepted divergence; revisit only if real projects show tsc's TS2589 hiding errors tttt reports. [tsgo]
 
 ## Relations and type core (more in `type_core.md`)
 - reactReduxLikeDeferredInferenceAllowsAssignment and
@@ -124,18 +128,18 @@ type/typecheck walks don't reproduce; none has a cheap rule.
   tttt's target stack holds `undefined` (a member of the target union) three times, pushed at each conditional source
   level, where tsgo relates each conditional's constraints to the whole union (RecursionFlags.Source) and only pushes
   the member inside unionOrIntersectionRelatedTo's attempts (popped after). Find which tttt path pushes the target
-  member again inside an attempt (relate.c's conditional-source handling vs `some_related`).
+  member again inside an attempt (relate.c's conditional-source handling vs `some_related`). [text]
 - Seed-5 mutation leftovers (triage 2026-10-07, `MUTATE_DIR=/tmp/tb-mutate scripts/mutate.py -n 8000 --seed 5`; 25 left):
   `[...x = a] = a` never checks a rest element's initializer
   (TS1186 only), tttt resolves `a` at bind time (TS2304), `export default v` in a block likewise; `interface C1 extends
   Object?.Bar` (TS2499) still resolves the name in tsc (TS2702 too); `({ key }) => {}` under a `[testD()]` computed key with testD unresolved is TS7031 in tsc
   (reason not found); `Object<Initable> & Initable` constraint (TS2315) then a mixin: tsc says TS2507 on `{...} & K`;
-  missing TS2313 (mut4105/mut3177); 9 text/elaboration ones.
+  missing TS2313 (mut4105/mut3177); 9 text/elaboration ones. [open]
 - Seed-4 mutation leftovers (rerun 2026-10-16, `scripts/mutate.py -n 8000 --seed 4`: 12 differ, the suite's passing set
   has moved so the mutants aren't the original 21's): missing TS2589 x2 (esNextWeakRefs_IterableWeakMap member-typo),
   missing TS2430 (jsonRawJSON2: harness only, see seed 2026102101), spurious TS2693 (reachabilityChecksNoCrash1 never-const), missing TS2698
   (nestedSpreadsAndWidening), text TS2322 (templateLiteralTypeSurrogatePairConcatenation), and known families
-  (TS2310, TS2590, TS7022, localTypeParameterInferencePriority, signatureCombiningRestParameters1). Not looked at.
+  (TS2310, TS2590, TS7022, localTypeParameterInferencePriority, signatureCombiningRestParameters1). Not looked at. [open]
 ### This-instantiated members (design, not built; hono request.ts TS2769, 2026-10-22)
 Repro: `test/cases/ttttThisInstantiatedMethodErased.ts` (failing, 15 lines). tsgo: a class (and a non-thisless
 interface) is its own type reference, and resolveTypeReferenceMembers pads its type arguments with the type itself for
@@ -155,7 +159,7 @@ declared type gives a qualifying method (tsgo's possibly-referenced rule for `th
 declared type`, while `this`'s apparent type keeps the raw members; same_signature_origin then works unchanged. Not the
 relation-only patch (treating a raw method type as an instance of itself): the relation can't tell a declared-type read
 from a `this` read, and tsc compares the latter unerased. Owner: whoever owns members resolution (hot path; an extra
-instance per qualifying method).
+instance per qualifying method). [design]
 
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols
@@ -164,52 +168,52 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 ## Parser recovery (each its own mechanism; `scripts/syntaxstats.py` ranks them)
 - A NUL byte inside the file is an invalid character (at_eof() in parser.c, 2026-10-14) in the token scanner and the
   list loops; other `*p.pos` stops (keyword lookahead, JSON values) still take it as an end, harmlessly as far as
-  probed (they see no token, the list skips it).
-- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109.
+  probed (they see no token, the list skips it). [fixed 2026-10-14]
+- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109. [open]
 - Object literal grammar errors in destructuring assignment targets (TS1255 `!`, TS1042 modifiers, TS1162 `?`): tsc
   reports checkGrammarObjectLiteralExpression's errors for a target exactly when checkObjectLiteral runs on it, i.e.
   when the right side asks for its contextual type: `({ a!: a } = { a: 1 })` reports, `= x` and `for ({ a!: a } of
   ...)` don't, nested targets of a reporting assignment do. tttt reports TS1255/TS1042 in the parser always (silent
   in for-of) and TS1162 (`object_check_grammar`) never in targets. Fix: move them to the checker's grammar check, run
-  for a target only when the right side is contextually sensitive. Low value.
+  for a target only when the right side is contextually sensitive. Low value. [open]
 - Older parser leftovers (2026-09-29; see documentation.md "Error recovery") are history now; `scripts/syntaxstats.py --list A` (B..E, M)
-  shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery".
+  shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery". [note]
 
 ## JSX
-- TS6229 isn't checked for union tag types or inside an overload chain.
+- TS6229 isn't checked for union tag types or inside an overload chain. [open]
 
 ## Messages: elaboration and printing (`scripts/errtextdiff.py`)
 - Union sources: for `Snap<...>` (a union alias) not assignable to `number`, tsc adds a line for the union's first
-  member; tttt omits it.
+  member; tttt omits it. [text]
 - xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
-  `@ts-expect-error`). Not reduced.
+  `@ts-expect-error`). Not reduced. [text]
 - Lesson (from the error-text work, errtextdiff): a message change can crash on real code the suite doesn't have (`ty_prop_written_name` on a
-  mapped property, caught by type-fest only): run the corpora after printer/elaboration changes.
+  mapped property, caught by type-fest only): run the corpora after printer/elaboration changes. [note]
 - **Node reuse in error messages**: tsc's typeToString reuses syntactic nodes even without an enclosing declaration
   (a single `return x as T` prints `() => T` as written; done only for a T that names nothing,
   `type_node_names_nothing()`). tttt reuses nodes only for the types baseline
-  (`d.underline && d.enclosing`); error display would need the reuse path without name-accessibility checks.
+  (`d.underline && d.enclosing`); error display would need the reuse path without name-accessibility checks. [text]
 ## Declaration emit (`ty/declaration_diagnostics.c`; approximations in hacks.md "Declaration diagnostics")
 - TS5088/TS7056 from the printer: conditional branches' unions printed inside themselves (display_branch(), tsgo's
   typeToTypeNodeOrCircularityElision) and anonymous/conditional types elided eleven deep (anonymous_elided(),
   conditional_elided(): visitAndTransformType's symbolDepth) report to the declaration tracker. Not ported: the
   general visitedTypes cycle check of every object type (tttt checks anonymous types only), type references by
   their node (a deferred reference's symbolDepth identity). Reverse mapped types print without placeholders in
-  declaration emit (cycles TS5088, and the display depth limit stands for TS7056 there: hacks.md).
+  declaration emit (cycles TS5088, and the display depth limit stands for TS7056 there: hacks.md). [open]
 - TS9039 "Type containing private name '{0}' can't be used with --isolatedDeclarations" (tsc's
-  trackExistingEntityName, when the builder reuses a written type naming an inaccessible symbol) isn't reported.
+  trackExistingEntityName, when the builder reuses a written type naming an inaccessible symbol) isn't reported. [open]
 
 ## From the 2026-10-08 hacks audit (parser, flow)
 - The parser drops index signature parameter initializers (`parse_index_signature()` has no `FunctionArg` list: TS2304
-  in `[a: string = b]` lost).
+  in `[a: string = b]` lost). [tsgo]
 - `let o: { x?: number } | number = 1; ({ ...o } = { x: 1 });`: tsc reports TS2698 at the rest target `o` (narrowed
   to number), tttt nothing. Mechanism: the right side asks for its contextual type, which is getTypeOfExpression of
   the left pattern, i.e. checkObjectLiteral with its spread check (no TS2698 when the right asks for none: `= v as T`).
   tttt computes the assignment's context eagerly (`assignment_value_context`) and `expr_typecheck` skips the spread
   check for `assignment_pattern`, so a faithful fix needs "does this right side ask for its context" (a lazy context,
-  or the list of expression kinds that ask).
+  or the list of expression kinds that ask). [open]
 - A declaration file in an export context (`declare function f(): void; export function f(x: number): void;`): tsc
-  reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing.
+  reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing. [open]
 
 ## Flagflip after the distributed type parameters (2026-10-09, every cell but vscode: 453 -> 141 missing)
 The 141 are almost all the corpora's own default-flag misses repeated in every cell:
@@ -222,17 +226,17 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   instead and no TS7006. Repro: /tmp-style project with postcss-selector-parser.d.ts and `selector.each(n => { if
   (n.type === 'pseudo') n.nodes[0].each(ss => ss) })`. Emulating the poisoning means modelling which of tsgo's caches
   its deepest round fills: not planned. (vue's sloppy/nosnc flagflip cells match since 2026-10-15: a nullable
-  related to a union asks for its key property first, and a function declaration's return type after its body.)
+  related to a union asks for its key property first, and a function declaration's return type after its body.) [dup]
 - Other diagnostics tsc reports from an evaluation order tttt doesn't have (mutation testing seed 1021, 2026-10-21,
   not attempted):
-  - destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" (seeds 61/62).
+  - destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" (seeds 61/62). [dup]
   - recursiveTypeInference with `def?:` (zod getters, #64192): tsc's TS2345 prints `$ZodNullable<$ZodType<...>>` where
-    tttt has `any` in the object's shape: the re-entrant getter inference of re-entrancy stage D (notes/reentrancy.md).
+    tttt has `any` in the object's shape: the re-entrant getter inference of re-entrancy stage D (notes/reentrancy.md). [design]
   - destructuringWithGenericParameter with its `genericObject` declaration deleted: tsc's harness reports that the
-    emit resolver added a TS2339 (its "pre-emit / post-emit diagnostic counts" TS-1 line); a baseline-harness artifact.
+    emit resolver added a TS2339 (its "pre-emit / post-emit diagnostic counts" TS-1 line); a baseline-harness artifact. [tsgo]
   - xstate/sloppy and nosnc +TS5115: gone since flagflip.py runs tttt at --checkers 1 like its --singleThreaded tsc
     cache (2026-10-20: tsgo's own TS5115 places change with --checkers). webpack/nuia UmdLibraryPlugin.js (triage.md), the -TS7006 in vue's
-    pluginScoped.ts (above).
+    pluginScoped.ts (above). [tsgo]
 
 ## TS 7.1 retarget leftovers (2026-10-09)
 - **Suggestion diagnostics** (harness only, `@captureSuggestions`): TS6807 overshifts and TS6385 'x' is deprecated for
@@ -240,7 +244,7 @@ The 141 are almost all the corpora's own default-flag misses repeated in every c
   noUnused* off (unused_enabled() is false then; plain JS too), TS6385 for property accesses, imports and JSX, TS6387 for
   deprecated signatures (a function's reference is decided by the call's signature in tsc: isUncalledFunctionReference),
   `@deprecated` on a declaration whose statement isn't right after the comment (declaration_deprecated() goes back over
-  keywords only: the second declarator of `const a = 1, b = 2`). The CLI never prints suggestions.
+  keywords only: the second declarator of `const a = 1, b = 2`). The CLI never prints suggestions. [open]
 
 ## Mutation seed 81 leftovers (2026-10-16, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 6000 --seed 81`)
 16 -> 7 differing (fixed: indexed access type's missing key resolving the object's members, never's property the
@@ -273,81 +277,81 @@ constraint, TS2208 for a mapped key). Left, each looked at:
   typed. A fix needs "inference-visited but never context-checked" for a function argument of a failed call
   (which candidates ran inference, where each failed, F's argument index) plus "elements its own body reads":
   a reconstruction of tsc's deferred-check order, declined 2026-10-22 (two mutants, no real-code sighting). Do it
-  when a real project shows it.
+  when a real project shows it. [tsgo]
 - **TS2589 through a constraint check** (infiniteConstraints2 extends-object: `T extends Object[]` instead of
   `unknown[]` in Prepend): tsgo reports instantiation depth at `Prepend<T, Conv<...>>` (line 13), tttt nothing. The
   constraint check of `Conv<ExactExtract<U, T>, {a: number}>` against `Object[]` expands Conv recursively in tsgo;
-  `unknown[]` (and `any[]`) short-circuit. Not looked into further: which relation path recurses in tsgo.
+  `unknown[]` (and `any[]`) short-circuit. Not looked into further: which relation path recurses in tsgo. [open]
 - **TS2310/TS2506 from a class expression base checked during base resolution** (recursiveClassBaseType
   return-void): `class Derived1 extends class extends Base1 { root() { return; } } {}` with `abstract root():
   Derived1` in Base1: tsgo's checkClassExpression checks the expression's members (root's `void` against
   `Derived1`, which needs Derived1's structure) while Derived1's base types resolve: circular. `return undefined as
   any` relates to anything without resolving Derived1. tttt checks the class expression later, outside the
-  resolution. Architectural (eager checks inside type resolution).
+  resolution. Architectural (eager checks inside type resolution). [design]
 - **Instantiated type parameter constraint printed through its declaration node** (text TS2322,
   contextualTypesNegatedTypeLikeConstraintInGenericMappedType2 never-const): `const matcher: never = typeTags<Value>()`
   prints P's constraint as `{ readonly [Tag in Tags<"_tag", Value> & string]: (_: Extract<Value, ...>) => any; }` in
   tsgo (the written node reused with I mapped to Value), resolved members in tttt. Printer node reuse, the type-display work
-  territory (displaydiff's buckets).
+  territory (displaydiff's buckets). [text]
 - **Spurious TS2208 for `null extends T ? K | null : K`** (render, conditionalContextualReturnSubstitutionCache
   drop-as): `function g<T, K>(value: T): null extends T ? K | null : K { return value; }`: tsgo gives no "This type
   parameter might need an `extends ...` constraint", tttt does. `string extends T ? K | null : K` and `null extends T ?
   K : K` have it in both, so tsgo's hasNonCircularBaseConstraint of the synthetic parameter must find a circularity
   only with a null check type and null in the true branch. Not found where (getConditionalType's `null extends T'`
-  with T' unconstrained while its constraint is assigned?).
+  with T' unconstrained while its constraint is assigned?). [open]
 
 ## Mutation seeds 61/62 leftovers (2026-10-14: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 61|62`)
 Seed 61: 11 -> 5 differing, seed 62: 11 -> 8 (both before the last fixes' rechecks of each other). Left, each looked at:
 - **Spurious circularity on getters** (seed 62, not the satisfies one, which is fixed): TS7022/TS7023/TS2502 in
   recursiveTypeInference add-optional (`_zod?:` on line 28, `$ZodString`'s), TS2339 in
   noCircularitySelfReferentialGetter2 drop-as. Not looked into; not the expression-memo bail (unchanged with
-  b2c2a214c's fix, 2026-10-22).
-- seed 61 destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" above.
-- seed 61 restElementWithInitializer2 delete-stmt (x2): the seeds 41/42 "Lazy name resolution" entry below.
+  b2c2a214c's fix, 2026-10-22). [open]
+- seed 61 destructuringWithGenericParameter null-arg: "Binding elements read before the contextual assignment" above. [dup]
+- seed 61 restElementWithInitializer2 delete-stmt (x2): the seeds 41/42 "Lazy name resolution" entry below. [dup]
 - seed 62 contextualTypesNegatedTypeLikeConstraintInGenericMappedType1 undefined-init (missing TS7034): the seeds 41/42
-  `typeof x` implicit-any entry.
+  `typeof x` implicit-any entry. [dup]
 - seed 62 conditionalContextualReturnSubstitutionCache drop-as (render): tttt adds the related TS2208 "This type
   parameter might need an `extends C` constraint" for `T` against `null extends T ? K | null : K`; tsgo doesn't when a
   branch mentions another type parameter (K, constrained or not), but does for `null extends T ? string : number`.
   hasNonCircularBaseConstraint must find the synthetic parameter's constraint circular through K somehow; not found.
-  relate.c report_missing_constraint().
+  relate.c report_missing_constraint(). [dup]
 - seed 62 localTypeParameterInferencePriority delete-stmt and extends-object (spurious TS2322): without the
   `__schema!: S` property, `typeof ColumnSelectViewImp` to `new <S>() => Table<UnrollOnHover<S>>` fails in tttt
   (S' inferred as Schema, the generic `getRows<C extends keyof S>` the only mention of S); tsgo infers through it.
-  Inference, not reduced further.
+  Inference, not reduced further. [open]
 - seed 62 recursiveTypeInference drop-prop (TS2741 text): the source object literal prints `posts: []` in tsgo,
-  `posts: never[]` in tttt (an empty array literal against a circular `any[]` target); not looked into.
+  `posts: never[]` in tttt (an empty array literal against a circular `any[]` target); not looked into. [text]
 
 ## Mutation seeds 41/42 leftovers (2026-10-12: `MUTATE_DIR=/tmp/X scripts/mutate.py -n 4000 --seed 41|42`)
 Seed 41: 10 -> 7 differing, seed 42: 13 -> 5. Left, each looked at:
 - **TS7034/TS7005 for an auto-typed `let x = undefined` read through `typeof x` in type parameter positions**:
   fixed for a function's (signature's) type parameters by seed 81 (they're in its flow container); a type alias's
-  `<X extends typeof a>` and `<X = typeof a>` say nothing in tsgo nor tttt (2026-10-16 probe).
+  `<X extends typeof a>` and `<X = typeof a>` say nothing in tsgo nor tttt (2026-10-16 probe). [fixed 2026-10-16]
 - **Lazy name resolution** (seed 41 restElementWithInitializer2 delete-stmt): `[...x = a] = a` with x undeclared: tsgo
   only reports TS2304 for x when something resolves it (it's TS1186 and unchecked; the post-emit pass or a later flow
   walk through the assignment reports it); tttt reports every unresolved name at bind time. Suppressing it at the
   rest element makes `[...x = a] = a; [...a = y] = a;` wrong instead (tsgo reports x there, reached by the flow walk
-  of the second statement). Order-dependent in tsgo.
+  of the second statement). Order-dependent in tsgo. [open]
 - **TS2590 where an intersection is first normalized** (seed 41 normalizedIntersectionTooComplex ann-string-number):
   tttt also reports it at the call (36,14), tsgo only at the callback parameter. Which node is current when the
-  too-complex intersection is first built; tttt may build it twice.
+  too-complex intersection is first built; tttt may build it twice. [open]
 - seed 41 noCircularitySelfReferentialGetter2 str-to-num: a getter's circular type prints `any` in tttt's message,
-  `ZodOptional<ZodType>` in tsgo (circularity resolution order).
+  `ZodOptional<ZodType>` in tsgo (circularity resolution order). [text]
 - **Missing circularity errors** (seed 42): TS4109 "Type arguments for 'Array' circularly reference themselves" when a
   conditional `P extends Object` (was `void`) relates `ReducerAction[]` while ReducerAction's alias is being resolved
   (recursiveArrayNotCircular extends-object); TS7022/TS7024 when a reduce callback returns the variable it
-  initializes (unknownSymbolOffContextualType1 swap-stmts). See "Circularity tsc finds and tttt doesn't".
+  initializes (unknownSymbolOffContextualType1 swap-stmts). See "Circularity tsc finds and tttt doesn't". [open]
 - seed 42 objectRestNegative undefined-init (strictNullChecks off): `let o = undefined; var { ...m, a } = o` is TS2700
   in tsgo when the pattern has another element (the initializer isn't widened to any under the pattern's contextual
-  type), not with the rest alone; tttt reports neither and then TS2322 instead of TS2741 for `({ b, ...na } = o)`.
+  type), not with the rest alone; tttt reports neither and then TS2322 instead of TS2741 for `({ b, ...na } = o)`. [open]
 - seed 42 signatureCombiningRestParameters1 add-optional: a union of signatures one of which has a rest parameter of
   type `[string] | undefined` (TS2370): tsgo's combined signature reports a spread argument as TS2556, tttt combines
-  the rest parameter to never and says TS2345.
+  the rest parameter to never and says TS2345. [open]
 
 ## Mutation seed 2026102001 (2026-10-20, -n 3000: 5 / 1552 differ)
 Fixed: a computed key naming no property against a generic mapped contextual type, recursive-return skip with type
 arguments / through exported variables. Left:
-- arrayFrom return-void (the binding-element entry above).
+- arrayFrom return-void (the binding-element entry above). [dup]
 
 ## Mutation seed 2026102101 (2026-10-20, -n 8000: 10 / 4102 differ)
 Fixed: a property symbol an accessor joins (merged interfaces/classes, an auto accessor after an interface property)
@@ -356,14 +360,14 @@ accessor as the first declaration); a known-key object with a generic property n
 type through the member fallback (`{ type: T }` to `Partial<X>`, `Partial<C<T>>` of a deferred conditional). Left:
 - declarationEmitNestedAnonymousMappedType extends-object: `M[k] extends Object ? M[k] : never` related to `string |
   number | symbol` by the deep-nesting cut-off of `conditional_source_related()`'s default constraint step (hacks.md:
-  removing it costs react +82% instructions and gives largeTupleTypes a spurious TS2799).
+  removing it costs react +82% instructions and gives largeTupleTypes a spurious TS2799). [open]
 - complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound add-optional: the TS2322 now comes, at the `return` where
   tsgo puts it at the shorthand `type` of the returned literal (tsgo's hasExcessProperties moves r.errorNode to the
-  excess property during a reporting pass, then a later failure reports there; not reproduced).
+  excess property during a reporting pass, then a later failure reports there; not reproduced). [dup]
 - jsonRawJSON2 ann-string-number (also seed 4's missing TS2430): harness only, the shared lib program's declaration
-  order (harness.md "Shared lib programs"); the CLI reports it.
+  order (harness.md "Shared lib programs"); the CLI reports it. [dup]
 - Known families: unknownSymbolOffContextualType1 (TS7022 circularity), conditionalContextualReturnSubstitutionCache
-  (TS2208 render), restElementWithInitializer2 (lazy TS2304).
+  (TS2208 render), restElementWithInitializer2 (lazy TS2304). [dup]
 
 ## Mutation seed 2026102102 (2026-10-20, -n 8000: 10 -> 8 / 4003 differ)
 Fixed: TS2678/TS2352 heads name the normalized pair like TS2322's (`1` against `string | undefined` is `number` to
@@ -374,17 +378,17 @@ is declared here" for `(string[] | number[]).splice`). Left, each looked at:
   `this[Foo.key] = ...`): tsgo's tryGetNameFromEntityNameExpression falls back to the initializer's type (a unique
   symbol) when the annotation (never) isn't usable as a name, so `this[Foo.key]` still matches the member for
   TS2564's flow check and `both[sym]` reads the `[sym]` property. tttt goes by the declared type only
-  (field_initialized_in_constructor()). Only with a wrong annotation; not done.
+  (field_initialized_in_constructor()). Only with a wrong annotation; not done. [open]
 - generatorTypeCheck46 member-typo: TS2488 twice in tsgo, once for the yield* operand typed in the context-sensitive
   pass (`{ [x: number]: {} }`, the method skipped) and once final; tttt reports the final one (the "errors of an early
-  pass stay" family).
+  pass stay" family). [open]
 - escapedIdentifiers member-typo: tsgo prints `argX\u0031` (escaped) in TS2551 only when another escaped identifier with
   the same unescaped text appears earlier in the file (`arg\u0031 = 1` in a method); alone it prints `argX1` like tttt.
-  A tsgo text quirk, not mirrored.
+  A tsgo text quirk, not mirrored. [tsgo]
 - unicodeLineSeparatorInMultilineComment never-const: tsgo's CLI reports the TS2322 like tttt; its test harness writes
-  no errors baseline for that file. Not a tttt bug.
+  no errors baseline for that file. Not a tttt bug. [tsgo]
 - Known: conditionalContextualReturnSubstitutionCache
-  (TS2208), complicatedIndexedAccess... (position, seed 2026102101).
+  (TS2208), complicatedIndexedAccess... (position, seed 2026102101). [dup]
 
 ## Mutation seed 1022 (2026-10-21, cor2, -n 8000: 8 -> 6 / 4185 differ)
 Fixed: misplaced imports/exports' alias errors (TS2305/TS2307) reported when a spelling suggestion resolves them
@@ -402,43 +406,43 @@ never-const (harness writes no errors baseline).
   unknown fallback gives `{ a: any }`, which is what both print. The non-generic `n(v, ({ d }) => d)` has no error in
   tsgo (no inference pass, so the call is queued first). Cut down: `declare const v: void; declare function k<T>(x:
   ArrayLike<T>, g: (t: T) => void): void; k(v, ({ d }) => d);`. Matching it means modelling tsgo's deferred order.
-  It's an extra error on an already-failing call.
+  It's an extra error on an already-failing call. [dup]
 - **missing TS2536 from declaration emit** (arrayFakeFlatNoCrashInferenceDeclarations str-to-num, `@declaration`):
   tsgo reports two TS2536 at the alias's type literals (positions inside `BadFlatArray`) while serializing `foo`'s
-  inferred type, in place of the original TS5088.
+  inferred type, in place of the original TS5088. [open]
 - **position TS5115** (recursiveConditionalCrash3 extends-object): the "infinitely circular" error is one line off
-  (where the runaway is first met).
+  (where the runaway is first met). [open]
 - **position TS2322 from a sticky errorNode** (complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound add-optional):
   tsc reports the whole-object message at the `type` shorthand property. An excess-property check on a member of the
   target intersection (`type` is excess for `Partial<Omit<..., "id" | "type">>`) moved the relater's errorNode there;
   that message was later replaced by the outer chain but the node wasn't restored. tttt models the moved node only when
-  the excess-property message itself is reported.
-- **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs.
+  the excess-property message itself is reported. [open]
+- **elaboration TS2344** (distributiveConditionalBaseConstraint drop-optional): the chain differs. [text]
 
 ## Mutation seeds 2311/2312 leftovers (2026-10-23, `MUTATE_DIR=/tmp/X scripts/mutate.py -n 8000 --seed 2311|2312 --tests multi,js`)
 The multi-file and JS mix finds far more than the single-file one (51 and 37 against 10). Seed 2311: 51 -> 37 -> 30
 after the second batch, seed 2312: 37 -> 28. What is left is mostly text, render, position and elaboration buckets.
 Diagnostics-class leftovers, not fixed:
 - missing TS2339 on `module.exports.funky = ...` after `module.exports = donkey` with `donkey: never`
-  (commonJSAliasedExport never-const; moduleExportAlias5 likewise).
-- missing TS2775 only when the asserting call also has an arity error (assertionTypePredicates2 add-arg).
+  (commonJSAliasedExport never-const; moduleExportAlias5 likewise). [open]
+- missing TS2775 only when the asserting call also has an arity error (assertionTypePredicates2 add-arg). [open]
 - TS2303 around an unresolved UMD `export = Thing` + `export as namespace Foo` (umd7): whether tsc sees the cycle
   depends on check order (the spelling suggestion for Thing resolves Foo, in flight, only if no file used Foo first);
-  tttt resolves aliases eagerly at link and always reports it. Its position is fixed.
+  tttt resolves aliases eagerly at link and always reports it. Its position is fixed. [open]
 - spurious TS2451 in crashDeclareGlobalTypeofExport delete-stmt (tsgo reports nothing at all there, not even for the
-  unresolved `export = root`); TS2502 -> TS2451 in umdNamespaceMergedWithGlobalAugmentationIsNotCircular delete-stmt.
-- missing TS2322 in moduleResolutionWithSymlinks_notInNodeModules never-const: the same file under two symlinked paths.
+  unresolved `export = root`); TS2502 -> TS2451 in umdNamespaceMergedWithGlobalAugmentationIsNotCircular delete-stmt. [open]
+- missing TS2322 in moduleResolutionWithSymlinks_notInNodeModules never-const: the same file under two symlinked paths. [open]
 - missing TS1005/TS2306 for a broken JSDoc `@import * from "./foo" with` (importTag14 drop-as): tttt's pre-scan of the
-  tag (jsdoc_import_statement, parser.c) bails out at the first error where tsgo's parser recovers and resolves.
+  tag (jsdoc_import_statement, parser.c) bails out at the first error where tsgo's parser recovers and resolves. [open]
 - missing TS1005 at the same position as a TS1124 (parser.numericSeparators.decmialNegative): tsgo's dedupe compares
-  with the last error, which depends on emission order.
-- spurious TS2354 position (importHelpersES6 delete-stmt): which syntax asks first for the missing tslib.
+  with the last error, which depends on emission order. [open]
+- spurious TS2354 position (importHelpersES6 delete-stmt): which syntax asks first for the missing tslib. [open]
 - missing TS2719 when a declaration has both a TS annotation and a JSDoc @type (typeTagNoErasure never-const): tsgo
-  still contextually types the initializer by the @type.
+  still contextually types the initializer by the @type. [dup]
 - With a non-string import attribute value, tsc resolves (and reports) the bindings only when something uses them;
-  tttt approximates by a text scan for the binding names (hacks.md).
-- Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt.
+  tttt approximates by a text scan for the binding names (hacks.md). [open]
+- Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt. [open]
 - Seed 2313 (multi/js, 40 / 3977): the stop seed, two new diagnostics-class divergences. The harness's TS5024 location
   in an extended config is fixed. Not fixed: tsgo's doubled TS2304 next to its TS2552 for `export { StringHash }` of a
   missing name under `@declaration` (declarationsForIndirectTypeAliasReference delete-stmt), most likely the
-  declaration emitter resolving the name again without a suggestion (dts_emit.md's area).
+  declaration emitter resolving the name again without a suggestion (dts_emit.md's area). [open]

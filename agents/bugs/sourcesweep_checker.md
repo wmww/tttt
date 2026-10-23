@@ -8,7 +8,7 @@ dokploy, chatbox, angular-components, react-navigation, telegraf, commitlint, as
 2026-10-16 against a full sweep: 7 projects left: pixijs, better-auth, es-toolkit, knip, arktype, monkeytype, redux-toolkit.)
 
 ## Older leftovers (2026-10-08..09), still mismatching
-- tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's.
+- tsc's TS2322 message truncation (`PromiseLike<...>` elision in long union-of-signature types) differs from tttt's. [text]
 
 ## Source sweep 2026-10-12 leftovers (A)
 The list A (config, module resolution, references, parser, perf) at the end of that pass; everything else of it
@@ -17,17 +17,17 @@ was fixed (lexical, apollo-server, karakeep, postiz-app, astro, hyper, commitlin
   (`get<EN extends keyof Defs>(n: EN): Res<Defs[EN] & { type: "query" }> | undefined` printed `Res<ED & { type:
   "query"; }> | undefined` by tsc, `Res<never> | undefined` by tttt) is printing only: tsc's printer reduces every type
   (getReducedType in typeToTypeNode), so the `ED & ...` it prints probably comes from reusing the annotation's syntax (only
-  with the `| undefined`, only for a generic method) rather than from a different type (not confirmed). Not pursued.
+  with the `| undefined`, only for a generic method) rather than from a different type (not confirmed). Not pursued. [text]
 - **Content mappers with --runExternalCode**: tttt validates `contentMappers` and reports TS18068 without the flag
-  (like tsgo), but with it tsgo resolves each mapper package (TS18075) and runs it; tttt does neither.
+  (like tsgo), but with it tsgo resolves each mapper package (TS18075) and runs it; tttt does neither. [open]
 
 ## Source sweep 2026-10-14 leftovers (A, relations list)
 Fixed that round: vencord (TS2589 at the template, intersection any-before-unions, never-reduction against generic
 references), svelte x2 (JS default type arguments, hoisted constraint against a union), react-window (peer
 dependencies in package ids, landed 2026-10-12). Left:
-- (2026-10-16) monkeytype: see the 2026-10-16 section at the end (arktype and redux-toolkit match since).
+- (2026-10-16) monkeytype: see the 2026-10-16 section at the end (arktype and redux-toolkit match since). [dup]
 - Display `(A | L1 | P1) & V` with `V extends A | L1 | L2`: fixed 2026-10-18 (a union whose intersection
-  members put a known object next to a type variable is now marked as possibly reducing, TYX_CONTAINS_INTERSECTIONS).
+  members put a known object next to a type variable is now marked as possibly reducing, TYX_CONTAINS_INTERSECTIONS). [fixed 2026-10-18]
 
 ## Source sweep 2026-10-12 leftovers (B)
 Fixed that round: mikro-orm 1/24 -> 23/24 (NoInfer inference through a union target's leftover, reverse comparable
@@ -37,7 +37,7 @@ msw/discord.js (`...([] | [A])` spread), apollo QueryManager (SkipGenericFunctio
 - better-auth +TS2339 `signUpEmail`: fixed 2026-10-18 : `betterAuth(config)` with `config` typed by an
   unresolved import inferred `Options` from the named error type through `Options & {}`; tsc remakes the source as an
   intersection there, which is the plain error type (`Auth<any>`). lynx-store.ts:65 -TS2345 x2: the recursive
-  resolveCall quirk below.
+  resolveCall quirk below. [fixed 364284218]
 
 ## Source sweep 2026-10-12 leftovers (D)
 Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted here).
@@ -45,17 +45,17 @@ Probes are under /tmp/d-probes (gone after a reboot; the reductions are quoted h
   mapped type) as `{ [K_1 in keyof Vals<K>]: ... }`, tttt as `Vals<K> extends infer T ? {...} : never`; the vitepress
   TS2345 elaboration prints `Partial<T>[K] & null` where tsc normalizes to `T[K] & null`; isolatedDeclarations on
   `k(c = new Set<string>()) { return c }` (TS9011 + TS9039) matches since (rechecked 2026-10-21, methods, functions,
-  object literal methods).
+  object literal methods). [text]
 - stripInternal on interface/type-literal members, enum members, parameter properties and trailing `// @internal`:
   matches tsgo's CLI byte for byte (rechecked 2026-10-21; tsgo keeps a parameter property's
-  `/** @internal */` parameter and drops only its field, as tttt does).
+  `/** @internal */` parameter and drops only its field, as tttt does). [fixed 2026-10-21]
 
 ## Source sweep 2026-10-12 leftovers (C)
 Fixed this round: arktype's ark/docs (indexed-access `T & P` reduction, union base classes), react-hook-form's
 `__typetest__`, rxjs (TS2314 typeof import, `[...Mapped]`), nuxt/pinia (TS2310), openapi-typescript (cross-file
 default exports), inbox-zero (namespace suggestions), tiptap `this.parent`, the perf fix for react. Left:
 - **pixijs** `@webgpu/types` against lib.dom: fixed 2026-10-20, the binder's cross-file merge unit is the
-  file's symbol now (`declare_file_conflict()`).
+  file's symbol now (`declare_file_conflict()`). [fixed a75a9bb49]
 
 ## Source sweep round 2026-10-12 (B, second task)
 Fixed: vitest configs (starlight, feathers, react-scan, react-window: augmentations of a deduplicated package copy),
@@ -72,7 +72,7 @@ Its mikro-orm/trpc +TS2698, react-navigation TS2349, discord.js and redux-toolki
   default type argument is left out (`E<EO>` for `E<EO, Cfg<EO>>`), and `PayloadAction<..., never>` prints a defaulted
   `never` argument tsc leaves out. (2026-10-21: a guessed reduction of each, `interface Box<O> { get<EO = O>(x: EO):
   EO }` on `Box<any>`, `make<EO = O>(): E2<EO>` with `E2<A, B = Cfg<A>>`, RTK's PayloadAction shape, matches tsgo's
-  types baseline: the original shapes are lost, nothing in the sweep shows it.)
+  types baseline: the original shapes are lost, nothing in the sweep shows it.) [fixed probe 2026-10-21]
 
 ## A missing-diagnostic quirk from the source sweep (ss-d round 2)
 (The other one, property access on a union of `E & null`-like members, fixed 2026-10-18.)
@@ -101,7 +101,7 @@ export function f(zip: JSZip) {
 ```
 Fixing it means a second declared type for the same declarations, keyed by the import (tttt keys declared types by
 symbol): plan-sized for one repo; only worth it if more show up. (2026-10-16: docmost itself matches now, the probe
-above still differs.)
+above still differs.) [design]
 
 ## Spelling suggestions counted in check order: the deferred bodies are done, lazy type resolution isn't
 tsc gives at most 10 "Did you mean" suggestions per checker (`suggestionCount` / `maximumSuggestionCount` in
@@ -126,7 +126,7 @@ its return type on the spot). Contextual is a syntactic guess; arguments of a ca
 contextual. Still off: jest-reporters' GitHubActionsReporter.test.ts, where tsc's order mixes nested `describe`
 bodies in an order this model doesn't produce. (2026-10-16: angular-components and jest both match the sweep now; the
 model's gaps above remain.) `/tmp/ss-d-tsc` had a tsc copy logging `COUNT n name file:line` at
-the suggestion site in resolveNameHelper: the quickest way to see tsc's real order.
+the suggestion site in resolveNameHelper: the quickest way to see tsc's real order. [note]
 
 ## Source sweep 2026-10-14 (B)
 Fixed: adonis (`this.x = v` context keeps an optional property's undefined), docmost (forceTuple reaches nested
@@ -154,17 +154,17 @@ subtype pass). Left:
   constraint checks (single generic candidate) and keep that pass's errors. Not done (2 diagnostics, one repo).
   (2026-10-18: still reproduces with the reduction above. tttt has neither tsc's callResolutionStack nor
   InferenceFlagsNoConstraintChecks, and the re-entry itself happens only because checkExpressionCached hides the
-  arrow's in-flight return type (resolutionStart); tttt's lazies answer in flight instead. Plan-sized for 2 diagnostics.)
+  arrow's in-flight return type (resolutionStart); tttt's lazies answer in flight instead. Plan-sized for 2 diagnostics.) [dup]
 - mermaid create-types-from-json-schema.mts:129 +TS2345 (ajv's `UncheckedPropertiesSchema<T>` measuring 8 in tttt, 9 in
   tsgo: `scripts/variancetrace.py --block UncheckedPropertiesSchema`) is gone from the sweep (2026-10-16); the
-  variance difference itself wasn't rechecked (variance_accuracy.md).
+  variance difference itself wasn't rechecked (variance_accuracy.md). [fixed 2026-10-16]
 - **es-toolkit/tests/types `compat.spec-d.ts:34` -TS2344** (flattenDeep vs lodash's, `Flat<T>` against es-toolkit's
   inline conditional): tsc's own order artifact. tsc reports it only with the whole spec file checked; the same line
-  alone, or with the flatMap lines before it, is clean in tsc and tttt alike.
+  alone, or with the flatMap lines before it, is clean in tsc and tttt alike. [tsgo]
 - tsc's TS2694 `Namespace '_default' has no exported member 'Config'` for `import('dompurify').Config`: fixed
   2026-10-21 (ttttImportTypeExportEqualsOtherExports): an import type looked a name up in the module's
   own exports next to any `export =`; tsgo does that only for a JavaScript `module.exports =` (its typedefs), and only
-  when the assigned value has none of the name.
+  when the assigned value has none of the name. [fixed 2026-10-21]
 
 ## History dependences recycling exposes (2026-10-15)
 `scripts/kdiff.py -k 1 -m 0` (a fresh checker per file against one that never recycles; `scripts/oracles.py`'s
@@ -175,7 +175,7 @@ matches tsc's cached (`--checkers 1`) output. The default budget (256 MB) doesn'
   (2026-10-23) tsgo keys the cache by the widening context's property, which tttt copies (no choice, no recheck).
   The base differed in 10 lines between `--checkers 1`, 16 and `-m 0`; now none, and vscode's 4 recordings `.d.ts`
   match at the default budget. tsgo's output for inbox-zero is the same at 1 and 16 checkers (its split keeps the
-  files together); where tsgo's own history shows (dts_emit.md "Member order") tttt now gives one answer whatever the split.
+  files together); where tsgo's own history shows (dts_emit.md "Member order") tttt now gives one answer whatever the split. [fixed 2026-10-21]
 - **sequelize, sequelize/packages/core**: TS7022 on `models` (sequelize-typescript.ts:335, `readonly models = new
   ModelSetView<Dialect>(this, this.#models)`) appears with a fresh checker per file (and then TS2322 :1053 / TS2488
   :1080 go, models being any). **tsgo does the same**: `tsc -p packages/core --checkers 4` (or 16, 64, 256) prints
@@ -184,9 +184,9 @@ matches tsc's cached (`--checkers 1`) output. The default budget (256 MB) doesn'
   type, whose definitely-assignable check measures some variance, which relates SequelizeTypeScript structurally and
   reads `models` while its initializer is being typed. A checker that measured those variances in an earlier file
   never gets there. tsgo-history-dependent: accepted, no fix wanted (matching it would mean matching which files each
-  of tsgo's checkers sees first). TTTT_DEBUG_CYCLE doesn't print class property cycles (it follows LazyTypes only).
+  of tsgo's checkers sees first). TTTT_DEBUG_CYCLE doesn't print class property cycles (it follows LazyTypes only). [tsgo]
 - lucide: matched in the 2026-10-16 `-k 1 -m 0` run (5 / 3363: inbox-zero, the two sequelize, and dokploy / folo
-  TIMEOUT on a loaded machine, a fresh checker per file being slower).
+  TIMEOUT on a loaded machine, a fresh checker per file being slower). [fixed 2026-10-16]
 
 ## Source sweep 2026-10-15 (D, checker diagnostics on real code)
 Fixed: DT's last mismatch (ember/v2: imports resolved by tsc's global-type initialization before the ambient modules
@@ -215,10 +215,10 @@ read types). Left:
   (instantiateTypeWithAlias, `c.instantiationStack`) shows tsc's side in seconds.
   Re-entrancy (notes/reentrancy.md, 2026-10-20): tsc re-resolves one type's members 33 deep on `r1.ts` (`scripts/reentrytrace.py`'s MEMBERS
   event); members re-entry happens in 45 of a quarter of the source sweep's projects and on zod/webpack/vue, harmless
-  except where the depth limit is reached. Verdict there: won't fix without tsc's member resolution order (stage E).
+  except where the depth limit is reached. Verdict there: won't fix without tsc's member resolution order (stage E). [tsgo]
 - better-auth,
   es-toolkit, knip, pixijs: unchanged, not looked at again (see
-  the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above).
+  the entries above). svelte-query's +TS2554 matched in this round's runs (order-dependent, entry above). [note]
 
 ## Source sweep 2026-10-16 (A)
 Fixed: arktype type.test.ts and fn.test.ts, tanstack-table, nextra, base-ui, and tiptap/demos' +TS2345 x9 along the way (see git log). 7 projects left in the
@@ -231,13 +231,13 @@ full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (en
   SearchableAutoSetting's imports made absolute (@monkeytype/schemas -> packages/schemas/src).
   Verdict (2026-10-18, a tsgo printing depth and count at the limit): tsc stops on the *count*, 5M
   instantiations in that one statement at depth 5-7 (`NonNullable<NonNullable<...>>` chains of DeepKeysAndValues), not
-  on depth. Matching that means matching tsc's instantiation count to the unit on an exponential type: won't fix.
+  on depth. Matching that means matching tsc's instantiation count to the unit on an exponential type: won't fix. [tsgo]
 - **redux-toolkit module.ts:656 / react/module.ts:216**: no progress. Seen on the way: with
   `interface Api<Defs extends Record<string, QD | MD>> { util: { get<EN extends keyof Defs>(n: EN): Res<Defs[EN] &
   { type: "query" }> | undefined } }` (QD/MD discriminated by a string enum), tsc prints `c.util.get`'s return as
   `Res<ED & { type: "query"; }> | undefined` for `c: Api<Record<string, ED>>` where tttt prints `Res<never>`; without
   the `util` wrapper and the `| undefined`, both print `Res<never>`. Possibly the same eager never-reduction the
-  entry above suspects.
+  entry above suspects. [fixed oracle 2026-10-23]
 
 ## Fresh-repositories leftovers (2026-10-17)
 - **An import of a missing `export =` property used as a namespace (+TS2503)**: `import type { nope } from "m"` where
@@ -248,7 +248,7 @@ full sweep: pixijs (binder merge unit), better-auth (lynx-store), es-toolkit (en
   later). Only in programs that already have an error at the import. Repro: test/cases/ttttImportExportEqualsPropertyUmdNamespace.ts
   with the `{ dbg: ... }` intersection dropped and the import renamed. (2026-10-18: the TS2503 comes from
   the scope pass's not-found report (scope_report_not_found / its deferred event); fixing it needs a diagnostic the
-  checker confirms later, "only if the property exists", which nothing in tttt does yet. Left.)
+  checker confirms later, "only if the property exists", which nothing in tttt does yet. Left.) [open]
 
 ## clidiff `diagnostics` verdicts, 2026-10-18 
 Fixed: rocket (+TS7031: a callback parameter asked for before its call statement is checked, through a JS
@@ -265,7 +265,7 @@ The `-p` sweep now also checks every non-`tsconfig.json` config no other config 
 include walk's config-directory-first order (ethereumjs TS6307), imported-class narrowing (angular-cli; classes only,
 hacks.md), no TS5097 for a side-effect import (angular-cli), an empty string option not overriding an extended one
 (qwik TS5051), include-processor diagnostics in plain JS (mermaid TS6059). Left in this list's repos:
-- monkeytype/frontend (+TS2578/+TS2322 SearchableAutoSetting.tsx): the 2026-10-16 entry above.
+- monkeytype/frontend (+TS2578/+TS2322 SearchableAutoSetting.tsx): the 2026-10-16 entry above. [dup]
 
 ## Every-tsconfig sweep, A's and B's repos (2026-10-19)
 Fixed: TS2308 between two `export *`s of unresolved imports (atproto's six tsconfig.build.json and lex-schema, with
@@ -274,13 +274,13 @@ the TS2322/TS2339 that followed), skip-context-sensitive through `&&` (atproto o
 - **better-auth e2e/smoke/.../cloudflare tsconfig.skip-lib-check-false.json**: fixed 2026-10-20 : the TS2430s
   were the cross-file merge unit, the TS2610 `extends globalThis.Event` (a class is no globalThis property). Its TS5115
   (zod schemas.d.cts:790, tsc's too) is also reported at miniflare index.d.ts:550 at `--threads` > 1: which checker
-  first instantiates the type decides the site (the sweep runs `--threads 1`): a kdiff-style item, not looked into.
+  first instantiates the type decides the site (the sweep runs `--threads 1`): a kdiff-style item, not looked into. [fixed 2026-10-20]
 - babel tsconfig.tstyche.json TS6307 (index-browser.ts vs package.ts) and astro packages/astro/tsconfig.test.json
   (+TS6305/-TS7016) fixed 2026-10-20 : import calls/types load after a file's declarations (tsc's order of
-  file.imports); an unbuilt reference's `.js` source is TS7016.
+  file.imports); an unbuilt reference's `.js` source is TS7016. [fixed 2026-10-20]
 - **discordx** (two @types/node versions in one program): 9 TS2344 left in @types/node 25 http2.d.ts:2398ff (tsc finds
   v25's Http2ServerRequest unrelated to v26's through `addListener`'s return type, tttt relates them; the TS2300 cluster
-  is fixed). Garbage-in program, not pursued.
+  is fixed). Garbage-in program, not pursued. [tsgo]
 
 
 ## Every-tsconfig sweep, round 2 (2026-10-20)
@@ -332,12 +332,12 @@ rest element; a spread instantiated to `undefined`). Left:
   - How it was found: tsgo built with an overlay (agents/notes/instrumenting_tsgo.md) printing getConditionalType's
     permissive/restrictive results for check types containing "TExtends" and every recursiveTypeRelatedTo result
     (source/target stack lengths, expandingFlags) while that restrictive check runs. Build with a private GOCACHE: the
-    shared one was being trimmed by another worker's `--env` mid-build.
+    shared one was being trimmed by another worker's `--env` mid-build. [fixed f38a8b493]
 - **bekuto3d (+TS2304 MaybeRefOrGetter x2, +TS7006)**: unplugin-auto-import's auto-imports.d.ts declares Vue's types
   globally with `declare global { export type { MaybeRefOrGetter, ... } from 'vue' }`. tsc binds the re-export inside
   the global augmentation as global names (TS2666 at the export, silenced there by `// @ts-nocheck`); tttt doesn't
   declare them: TS2304 at every use. Binder/declare territory (fe3). Repro:
-  test/cases/ttttGlobalAugmentationReExport.ts (known failing).
+  test/cases/ttttGlobalAugmentationReExport.ts (known failing). [fixed 4a482aba3]
 
 ## Fresh repositories, fourth rule: bun lockfiles (2026-10-22, cor6)
 - **Eager parameter types (was kebo/apps/mobile's +TS7022/TS7024/TS2502, fixed 2026-10-23 corF)**: kebo's cycle was
@@ -356,15 +356,15 @@ rest element; a spread instantiated to `undefined`). Left:
   asked. The full design (the remaining kebo cause, if it is this): SigParam.type as a lazily typed slot per parameter
   (getTypeOfSymbol on the parameter, its own cycle detection through ty_binding_type's resolving stack), the record's
   shape (count, min_args, optional, rest, this) derived from the node up front, so signature_resolve never types a
-  parameter nobody asked for. Every reader of `params[i].type` would go through an accessor; measure first.
+  parameter nobody asked for. Every reader of `params[i].type` would go through an accessor; measure first. [design]
 - **hono/tsconfig.build.json, hono/tsconfig.spec.json (+TS2769 at src/request.ts:214)**: in the full sweep on this
-  branch and with main's release binary too (not from the refresh), not in the `--sample 4` quarter. Uninvestigated.
+  branch and with main's release binary too (not from the refresh), not in the `--sample 4` quarter. Uninvestigated. [dup]
 - **better-drizzle (+TS2502 'transaction' at src/types/plugins.ts:742,2, default checkers only)**: after c0a04350a, tsc's
   TS2502 at 467 is right at every checker count, but the default (K>1) run also reports the second `transaction`
   (742, `PluginInterceptContext`-like context) where `--checkers 1` doesn't: which cycle is entered first depends on
   the files a checker saw (scripts/kdiff.py territory, plan 62). Fixed by acb8dfe7f (an any/unknown target property
   no longer asks for the source property's type, tsc's isPropertySymbolTypeRelated): the same at K1-K16. Remaining: TS2578 at
-  tests/types/order-by-relations.ts:24,26 (uninvestigated).
+  tests/types/order-by-relations.ts:24,26 (uninvestigated). [open]
 
 ## Refresh 6 leftovers (2026-10-23, corG: tanstack-ai, node-pg-migrate, portabase)
 - **tanstack-ai/packages/ai-harness -TS2615** (`Type of property 'agents' circularly references itself in mapped type
@@ -378,14 +378,14 @@ rest element; a spread instantiated to `undefined`). Left:
   `HarnessAgentsOf<THarness>`) while that same `agents` symbol's type is on the resolution stack (stack: sym agents,
   TAgent, HarnessAgentsOf<THarness>, sym agents), 180+ relater frames deep. tttt's relation takes another path and
   never re-enters. Not pursued: matching it means matching tsgo's relation order and caching frame by frame on a 10k
-  line project for a diagnostic tsgo itself doesn't report consistently.
+  line project for a diagnostic tsgo itself doesn't report consistently. [tsgo]
 - **portabase -TS2322** (components/ui/form.tsx:227, not in corG's brief): tsgo says `useForm<TypeOf<Z>>({...})`
   returns `UseFormReturn<output<Z>, any, TFieldValues>`, react-hook-form's third type parameter defaulting to
   `TFieldValues` left uninstantiated (the default of a partially given type argument list); tttt instantiates it.
-  Not investigated further.
+  Not investigated further. [open]
 - **node-pg-migrate docs TS2741 text**: `import * as typescript from 'typescript'` in a .d.mts of a CommonJS .d.cts
   is a clone module type that tsgo prints `typeof import("<path>/lib/version")`; tttt prints the namespace symbol's
-  name, `typeof typescript` (also under node16-nodenext: make_gather_target's synthetic-default namespace symbol).
+  name, `typeof typescript` (also under node16-nodenext: make_gather_target's synthetic-default namespace symbol). [text]
 
 ## pothos's TS7023: the variance measurement re-entering an own return type (2026-10-23, corF)
 -TS7023 at pothos/packages/plugin-smart-subscriptions/src/cache-node.ts:41 (`managerForField`), only in
@@ -398,9 +398,9 @@ CacheNode's members. managerForField's return type is then asked for below the v
 assignment narrowing re-resolves the call (nested). One more level down, the return type is pushed again above the
 barrier and the cycle is found: TS7023, `() => any`. tttt resolves the call once (`NESTEDCALL 1`), never re-enters
 the return type below the variance barrier, and gets FSM<Types>. Small details flip tsgo's outcome:
-- `x!: Types` as CacheNode's first property: no TS7023.
-- Explicit `new FSM<Types>(this)`: none.
-- In the multi-file form, the order of the files decides it.
+- `x!: Types` as CacheNode's first property: no TS7023. [note]
+- Explicit `new FSM<Types>(this)`: none. [note]
+- In the multi-file form, the order of the files decides it. [note]
 That makes this the "Outstanding stages" C/D model of agents/notes/reentrancy.md (nested call results superseding,
 return contexts pulled), plus return types re-entering below the variance barrier, not a local fix. Left for that
-rework. While reducing it I found and fixed scripts/reentrytrace.py's tsgo overlay: `Symbol.Name` is a method now.
+rework. While reducing it I found and fixed scripts/reentrytrace.py's tsgo overlay: `Symbol.Name` is a method now. [design]
