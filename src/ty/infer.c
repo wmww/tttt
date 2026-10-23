@@ -423,6 +423,26 @@ static void infer_from_params(
     }
 }
 
+// tsc's couldContainTypeVariables where tttt's flag knows the type has none: an anonymous type of a function, type
+// literal or object literal (an object rest type too), or a union or intersection with one, unless it's a non-generic
+// alias's (isNonGenericTopLevelType)
+static bool tsc_could_contain_type_variables(Ty const* ty) {
+    if (ty->alias && !ty->alias_args.len) return false;
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        if (ty->flags & TYF_ENUM_LITERAL) return false;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (tsc_could_contain_type_variables(ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    if (ty->kind != TY_ANONYMOUS) return false;
+    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    return root->anonymous.node || root->anonymous.function || root->anonymous.object_literal || root->anonymous.mapped ||
+        ty->anonymous.rest_of_binding;
+}
+
+static void force_source_parts(Checker* me, Ty const* source, Ty const* target, u32 depth);
+
 // From the return type (or type predicate) of `source` to that of `target` (tsc's applyToReturnTypes)
 static void infer_from_returns(
     Checker* me, Inference* inf, InferStep step, Signature const* source, Signature const* target, TyMapper const* mapper
@@ -439,7 +459,13 @@ static void infer_from_returns(
     }
     // (Only a target that could mention what's inferred asks for the source's, which may still be being inferred)
     Ty const* target_return = signature_return_type(me, target);
-    if (!(target_return->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+    if (!(target_return->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        // tsc's couldContainTypeVariables says yes to an object literal's, type literal's or function's type (not
+        // knowing better): the source's return type is asked for even so, which finds it in flight, `function g()
+        // { return f(g); }` against `(x: T) => typeof obj` (TS7023). Nothing is inferred from it
+        if (tsc_could_contain_type_variables(target_return)) force_source_parts(me, signature_return_type(me, source), target_return, 4);
+        return;
+    }
     infer_step(me, inf, step, ty_instantiate(me, signature_return_type(me, source), mapper), target_return);
 }
 
@@ -1703,8 +1729,69 @@ static void record_circular(Inference* inf, Ty const* source, Ty const* target) 
     inf->circular[inf->circular_len++] = visited_key(inf, source, target);
 }
 
+static bool tsc_could_contain_type_variables(Ty const* ty);
+
+// What tsc's inferFromTypes asks of the source when the target has no type variables that tttt's flag knows of but tsc's
+// couldContainTypeVariables doesn't know it (tsc_could_contain_type_variables()): nothing is inferred, but the source's
+// property types and signatures' return types matching the target's are evaluated, which may find a declaration in
+// flight (TS7022/TS7023: `function g2() { return f2({ a: 1, cb: g2 }); }` against `cb: () => typeof obj`)
+static void force_source_parts(Checker* me, Ty const* source, Ty const* target, u32 depth) {
+    if (!depth || source == target) return;
+    if (source->kind == TY_UNION) {
+        for (u32 i = 0; i < source->composite.types.len; i++) force_source_parts(me, source->composite.types.data[i], target, depth - 1);
+        return;
+    }
+    if (target->kind == TY_UNION || target->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < target->composite.types.len; i++) force_source_parts(me, source, target->composite.types.data[i], depth - 1);
+        return;
+    }
+    if (!tsc_could_contain_type_variables(target)) return;
+    if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) source = ty_apparent_type(me, source); // (`this`)
+    if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
+    Members const* targets = ty_members(me, target);
+    if (!targets->prop_count && !targets->call_count && !targets->construct_count && !targets->index_count) return;
+    Members const* sources = ty_members(me, source);
+    // An index signature takes an inferable index of every property (tsc's inferFromIndexTypes, getImplicitIndexInfo)
+    if (targets->index_count && inferable_index(me, source, 0)) {
+        for (u32 i = 0; i < sources->prop_count; i++) (void)ty_prop_type_of(me, source, sources->props[i]->name);
+    }
+    for (u32 i = 0; i < targets->prop_count; i++) {
+        Prop const* prop = targets->props[i];
+        if (!ty_get_prop(me, source, prop->name)) continue;
+        Ty const* part = ty_prop_type_of(me, source, prop->name);
+        if (part) force_source_parts(me, part, ty_prop_type_of(me, target, prop->name), depth - 1);
+    }
+    for (int construct = 0; construct < 2; construct++) {
+        u32 source_count = construct ? sources->construct_count : sources->call_count;
+        u32 target_count = construct ? targets->construct_count : targets->call_count;
+        Signature* const* source_sigs = construct ? sources->construct : sources->call;
+        Signature* const* target_sigs = construct ? targets->construct : targets->call;
+        u32 count = source_count < target_count ? source_count : target_count;
+        for (u32 i = 0; i < count; i++) {
+            Signature const* source_sig = source_sigs[source_count - count + i];
+            Signature const* target_sig = target_sigs[target_count - count + i];
+            signature_resolve(me, source_sig);
+            signature_resolve(me, target_sig);
+            if (sig_res(me, source_sig)->type_params.len) continue;
+            // (Only a return type that could have type variables asks for the source's: tsc's applyToReturnTypes)
+            Ty const* target_return = signature_return_type(me, target_sig);
+            if (!tsc_could_contain_type_variables(target_return)) continue;
+            force_source_parts(me, signature_return_type(me, source_sig), target_return, depth - 1);
+        }
+    }
+}
+
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
-    if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || ty_is_no_infer(target)) return;
+    if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        // (The kinds first: most targets are neither, and this is hot)
+        if (__builtin_expect(target->kind == TY_ANONYMOUS || target->kind == TY_UNION || target->kind == TY_INTERSECTION, 0) &&
+            tsc_could_contain_type_variables(target)
+        ) {
+            force_source_parts(me, source, target, 4);
+        }
+        return;
+    }
+    if (ty_is_no_infer(target)) return;
     if (source->alias && source->alias == target->alias) {
         // Two instantiations of one type alias: by type argument, with the alias's variances (tsc). Without type
         // arguments the two are the same type, with nothing to infer
