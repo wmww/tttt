@@ -319,15 +319,11 @@ static void drop_source_files(Program* me) {
     for_each (i, hmap_box_source_file, &my source_files_map) drops.files[drops.count++] = i->second.get;
     if (threads > drops.count / 16) threads = drops.count / 16;
     // (Dropping recurses per nesting level like the checker does: its stack size)
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, worker_stack_size());
     pthread_t* workers = c_new_n(pthread_t, threads + 1);
     u32 started = 0;
-    while (started + 1 < threads && !pthread_create(&workers[started], &attr, drop_source_files_thread, &drops)) started++;
-    pthread_attr_destroy(&attr);
+    while (started + 1 < threads && !worker_thread_create(&workers[started], drop_source_files_thread, &drops)) started++;
     drop_source_files_thread(&drops);
-    for (u32 t = 0; t < started; t++) pthread_join(workers[t], nullptr);
+    for (u32 t = 0; t < started; t++) worker_thread_join(workers[t]);
     free(workers);
     free(drops.files);
 }
@@ -344,7 +340,7 @@ static void program_free_preresolved(Program* me) {
 
 void program_join_releases(Program* me) {
     if (!my release_started) return;
-    pthread_join(my release_thread, nullptr);
+    worker_thread_join(my release_thread);
     my release_started = false;
 }
 
@@ -4139,21 +4135,17 @@ static void resolve_lane_threads(Program* me, ResolveLane* lane, u32 threads) {
         resolve_lane_run(lane, 0);
     } else {
         // Workers get the main thread's stack size: the walk recurses
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_attr_setstacksize(&attr, worker_stack_size());
         pthread_t* workers = c_new_n(pthread_t, threads - 1);
         ResolveThread* args = c_new_n(ResolveThread, threads - 1);
         for (u32 t = 1; t < threads; t++) binder_thread_arena(my binder, t);
         for (u32 t = 0; t < threads - 1; t++) {
             args[t] = (ResolveThread){ lane, t + 1 };
-            panic_if(pthread_create(&workers[t], &attr, resolve_lane_thread, &args[t]), "couldn't start a resolve thread");
+            panic_if(worker_thread_create(&workers[t], resolve_lane_thread, &args[t]), "couldn't start a resolve thread");
         }
         resolve_lane_run(lane, 0);
-        for (u32 t = 0; t < threads - 1; t++) pthread_join(workers[t], nullptr);
+        for (u32 t = 0; t < threads - 1; t++) worker_thread_join(workers[t]);
         free(workers);
         free(args);
-        pthread_attr_destroy(&attr);
     }
     my errs->frozen = false;
 }
@@ -4448,9 +4440,9 @@ static void program_link_module_refs(Program* me) {
     pthread_mutex_init(&lane.deferred_lock, nullptr);
     pthread_t* workers = threads > 1 ? c_new_n(pthread_t, threads - 1) : nullptr;
     u32 started = 0;
-    while (started + 1 < threads && !pthread_create(&workers[started], nullptr, module_refs_lane_run, &lane)) started++;
+    while (started + 1 < threads && !worker_thread_create(&workers[started], module_refs_lane_run, &lane)) started++;
     module_refs_lane_run(&lane);
-    for (u32 t = 0; t < started; t++) pthread_join(workers[t], nullptr);
+    for (u32 t = 0; t < started; t++) worker_thread_join(workers[t]);
     free(workers);
     // What meets a pattern augmentation, in program order: the first to find one sets its exports' parent, as when
     // every ref went in order (refs before a deferred one in its file are done: they set nothing)
@@ -4580,7 +4572,7 @@ void program_resolve_names(Program* me) {
     resolve_step_done("comment directives", &last);
 
     // (Nothing resolves module names any more: what loading kept goes, on a thread of its own)
-    my release_started = !pthread_create(&my release_thread, nullptr, program_release_run, me);
+    my release_started = !worker_thread_create(&my release_thread, program_release_run, me);
     if (!my release_started) program_release_run(me);
     resolve_step_done("releases started", &last);
     clear_compiler_options();
@@ -6356,13 +6348,9 @@ void program_typecheck(Program* me) {
         ahead_limit = limit ? strtoull(limit, nullptr, 10) << 10 : (u64)AHEAD_LIMIT_KB << 10;
         ahead_resume = ahead_limit / 8;
         helper_threads = c_new_n(pthread_t, helpers);
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_attr_setstacksize(&attr, worker_stack_size());
         for (u32 t = 0; t < helpers; t++) {
-            panic_if(pthread_create(&helper_threads[t], &attr, materialize_ahead_thread, me), "couldn't start a materialize thread");
+            panic_if(worker_thread_create(&helper_threads[t], materialize_ahead_thread, me), "couldn't start a materialize thread");
         }
-        pthread_attr_destroy(&attr);
     }
     if (threads > count) threads = count;
     if (my graph && getenv("TTTT_GRAPH_SEED")) {
@@ -6374,17 +6362,13 @@ void program_typecheck(Program* me) {
         check_shares_run(&shares);
     } else {
         // The main thread works too. Workers get the main thread's stack size: the checker recurses per nesting level
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_attr_setstacksize(&attr, worker_stack_size());
         pthread_t* workers = c_new_n(pthread_t, threads - 1);
         for (u32 t = 0; t < threads - 1; t++) {
-            panic_if(pthread_create(&workers[t], &attr, check_shares_thread, &shares), "couldn't start a checker thread");
+            panic_if(worker_thread_create(&workers[t], check_shares_thread, &shares), "couldn't start a checker thread");
         }
         check_shares_run(&shares);
-        for (u32 t = 0; t < threads - 1; t++) pthread_join(workers[t], nullptr);
+        for (u32 t = 0; t < threads - 1; t++) worker_thread_join(workers[t]);
         free(workers);
-        pthread_attr_destroy(&attr);
     }
     if (helpers) {
         // (The checkers are done: what's left of the helpers' files no checker needs)
@@ -6392,7 +6376,7 @@ void program_typecheck(Program* me) {
         pthread_mutex_lock(&ahead_lock);
         pthread_cond_broadcast(&ahead_taken);
         pthread_mutex_unlock(&ahead_lock);
-        for (u32 t = 0; t < helpers; t++) pthread_join(helper_threads[t], nullptr);
+        for (u32 t = 0; t < helpers; t++) worker_thread_join(helper_threads[t]);
         free(helper_threads);
         // (What they hold that no checker took, when checking stopped early, stays to the end: its reports are still to
         // be made, program_finish_deferred_bodies())

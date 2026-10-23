@@ -1,6 +1,7 @@
 #pragma once
 
 #include "prelude.h"
+#include <pthread.h>
 
 typedef struct SourceFile SourceFile;
 typedef struct ErrorCtx ErrorCtx;
@@ -48,3 +49,11 @@ ParseHelpers const* load_pool_helpers(LoadPool* me);
 // The stack size for worker threads: the main thread's (at least 8 MB, at most 256): parsing and checking recurse per
 // nesting level
 size_t worker_stack_size(void);
+
+// pthread_create() and pthread_join() for every worker thread of every phase (worker_stack_size()), on stacks from a
+// pool kept until exit: glibc gives a thread's own stack back with a madvise() at its exit and a munmap() at its join
+// (64 MB stacks are past its stack cache), each a TLB shootdown on every CPU running another thread of the process
+// (~130 of a run's ~300 shootdown-causing calls, plan: agents/notes/kernel_time.md). A stack the caller gives is
+// neither. Returns pthread_create()'s result
+int worker_thread_create(pthread_t* thread, void* (*fn)(void*), void* arg);
+void worker_thread_join(pthread_t thread);

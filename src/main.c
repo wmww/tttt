@@ -792,7 +792,7 @@ static void root_stream_start(RootStream* me, bool threaded) {
     pthread_cond_init(&my more, nullptr);
     // (Set before the thread starts: it reads it)
     my threaded = threaded;
-    if (my threaded && pthread_create(&my thread, nullptr, root_stream_run, me)) my threaded = false;
+    if (my threaded && worker_thread_create(&my thread, root_stream_run, me)) my threaded = false;
     if (!my threaded) root_stream_walk(me);
 }
 
@@ -809,7 +809,7 @@ static bool root_stream_at(RootStream* me, isize i, cstr* path) {
 
 // Waits for the walk's end (every early return of check_files() after root_stream_start() calls this)
 static void root_stream_finish(RootStream* me) {
-    if (my threaded) pthread_join(my thread, nullptr);
+    if (my threaded) worker_thread_join(my thread);
     my threaded = false;
 }
 
@@ -1424,14 +1424,10 @@ static_failable build(Options const* opts, returns int) {
     if (jobs > 1) {
         pthread_mutex_init(&b.lock, nullptr);
         pthread_cond_init(&b.done, nullptr);
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        pthread_attr_setstacksize(&attr, worker_stack_size());
         threads = c_new_n(pthread_t, jobs);
         for (u32 t = 0; t < jobs; t++) {
-            panic_if(pthread_create(&threads[t], &attr, build_thread, &b), "couldn't start a build thread");
+            panic_if(worker_thread_create(&threads[t], build_thread, &b), "couldn't start a build thread");
         }
-        pthread_attr_destroy(&attr);
     }
 
     CheckCounts counts = {0};
@@ -1467,7 +1463,7 @@ static_failable build(Options const* opts, returns int) {
         }
     }
     if (threads) {
-        for (u32 t = 0; t < jobs; t++) pthread_join(threads[t], nullptr);
+        for (u32 t = 0; t < jobs; t++) worker_thread_join(threads[t]);
         free(threads);
         pthread_cond_destroy(&b.done);
         pthread_mutex_destroy(&b.lock);

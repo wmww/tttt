@@ -1,8 +1,12 @@
+// pthread_attr_setstack(), MAP_STACK, which strict -std=c2x hides
+#define _GNU_SOURCE
 #include "load_pool.h"
 #include "parser.h"
 #include "error.h"
 #include <pthread.h>
 #include <sys/resource.h>
+#include <sys/mman.h>
+#include <errno.h>
 #include <time.h>
 
 typedef enum LoadState {
@@ -142,6 +146,76 @@ size_t worker_stack_size(void) {
     if (!getrlimit(RLIMIT_STACK, &limit) && limit.rlim_cur != RLIM_INFINITY && limit.rlim_cur > stack) stack = limit.rlim_cur;
     if (stack > (256u << 20)) stack = 256u << 20;
     return stack;
+}
+
+// (A guard page below each stack, as glibc's own)
+enum { STACK_GUARD = 64 << 10 };
+static struct {
+    pthread_mutex_t lock;
+    char** free; // Stack bases (above the guard)
+    u32 free_count, free_cap;
+    struct { pthread_t thread; char* stack; }* used;
+    u32 used_count, used_cap;
+    size_t size;
+} stacks = { .lock = PTHREAD_MUTEX_INITIALIZER };
+
+int worker_thread_create(pthread_t* thread, void* (*fn)(void*), void* arg) {
+    pthread_mutex_lock(&stacks.lock);
+    if (!stacks.size) stacks.size = worker_stack_size();
+    char* stack;
+    if (stacks.free_count) {
+        stack = stacks.free[--stacks.free_count];
+    } else {
+        char* raw = mmap(nullptr, stacks.size + STACK_GUARD, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_STACK, -1, 0);
+        if (raw == MAP_FAILED) {
+            pthread_mutex_unlock(&stacks.lock);
+            return EAGAIN;
+        }
+        // (Nothing is mapped in yet: no flush)
+        mprotect(raw, STACK_GUARD, PROT_NONE);
+        stack = raw + STACK_GUARD;
+    }
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstack(&attr, stack, stacks.size);
+    int ret = pthread_create(thread, &attr, fn, arg);
+    pthread_attr_destroy(&attr);
+    if (ret) {
+        if (stacks.free_count == stacks.free_cap) {
+            stacks.free_cap = stacks.free_cap ? stacks.free_cap * 2 : 32;
+            stacks.free = realloc(stacks.free, sizeof(char*) * stacks.free_cap);
+            check(stacks.free);
+        }
+        stacks.free[stacks.free_count++] = stack;
+    } else {
+        if (stacks.used_count == stacks.used_cap) {
+            stacks.used_cap = stacks.used_cap ? stacks.used_cap * 2 : 32;
+            stacks.used = realloc(stacks.used, sizeof(*stacks.used) * stacks.used_cap);
+            check(stacks.used);
+        }
+        stacks.used[stacks.used_count].thread = *thread;
+        stacks.used[stacks.used_count++].stack = stack;
+    }
+    pthread_mutex_unlock(&stacks.lock);
+    return ret;
+}
+
+void worker_thread_join(pthread_t thread) {
+    pthread_join(thread, nullptr);
+    // (Joined, the thread is gone: its stack, TLS and descriptor included, glibc's at the stack's top)
+    pthread_mutex_lock(&stacks.lock);
+    u32 i = 0;
+    while (i < stacks.used_count && !pthread_equal(stacks.used[i].thread, thread)) i++;
+    check(i < stacks.used_count);
+    char* stack = stacks.used[i].stack;
+    stacks.used[i] = stacks.used[--stacks.used_count];
+    if (stacks.free_count == stacks.free_cap) {
+        stacks.free_cap = stacks.free_cap ? stacks.free_cap * 2 : 32;
+        stacks.free = realloc(stacks.free, sizeof(char*) * stacks.free_cap);
+        check(stacks.free);
+    }
+    stacks.free[stacks.free_count++] = stack;
+    pthread_mutex_unlock(&stacks.lock);
 }
 
 // Unsized paths a worker stats at once
@@ -369,9 +443,6 @@ LoadPool* load_pool_new(
     pthread_mutex_init(&my lock, nullptr);
     pthread_cond_init(&my work, nullptr);
     pthread_cond_init(&my done, nullptr);
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, worker_stack_size());
     my threads = c_new_n(pthread_t, threads);
     struct timespec now;
     timespec_get(&now, TIME_UTC);
@@ -379,9 +450,8 @@ LoadPool* load_pool_new(
     my stats = getenv("TTTT_LOAD_POOL_STATS");
     my loader_cpu_at = my stats ? thread_cpu_ms() : 0;
     for (u32 t = 0; t < threads; t++) {
-        panic_if(pthread_create(&my threads[t], &attr, load_pool_worker, me), "couldn't start a loader thread");
+        panic_if(worker_thread_create(&my threads[t], load_pool_worker, me), "couldn't start a loader thread");
     }
-    pthread_attr_destroy(&attr);
     return me;
 }
 
@@ -527,7 +597,7 @@ void load_pool_destroy(LoadPool* me) {
     my stop = true;
     pthread_cond_broadcast(&my work);
     pthread_mutex_unlock(&my lock);
-    for (u32 t = 0; t < my thread_count; t++) pthread_join(my threads[t], nullptr);
+    for (u32 t = 0; t < my thread_count; t++) worker_thread_join(my threads[t]);
     free(my threads);
     isize wasted = 0, never = 0;
     for_each (i, vec_load_entry_ptr, &my entries) {
