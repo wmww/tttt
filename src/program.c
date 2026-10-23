@@ -2310,7 +2310,9 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         // does a name that finds no file
         if (ref->is_declaration && !source_file->is_module && !ref->nested_in_ambient_module) continue;
         if (ref->ambient_only) continue;
-        if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
+        // (Under the file's own options: a referenced project's output declaration file loads what it imports with its
+        // project's, tsgo's resolveImportsAndModuleAugmentations)
+        if (program_options_of(me, source_file)->no_resolve) continue; // program_resolve_names(), once every root is loaded
         program_load_module_ref(me, source_file, ref);
     }
     // A content mapper's supplemental outputs, after what the file imports (tsgo's parse subtasks)
@@ -4585,6 +4587,7 @@ void program_resolve_names(Program* me) {
     if (my options.no_resolve) {
         for_each (i, vec_source_file_ptr, &my source_files_ordered) {
             SourceFile* source = *i;
+            if (!program_options_of(me, source)->no_resolve) continue; // (Loaded as it was added, program_add_made_source())
             for (u32 j = 0; j < source->module_ref_count; j++) {
                 ModuleRef* ref = source->module_refs[j];
                 if ((!ref->is_declaration || source->is_module || ref->nested_in_ambient_module) && !ref->ambient_only) program_load_module_ref(me, source, ref);
