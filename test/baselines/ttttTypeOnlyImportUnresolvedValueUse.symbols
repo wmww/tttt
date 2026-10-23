@@ -1,0 +1,44 @@
+//// [test/cases/ttttTypeOnlyImportUnresolvedValueUse.ts] ////
+
+=== /a.ts ===
+export const v = 1;
+>v : Symbol(v, Decl(a.ts, 0, 12))
+
+=== /index.ts ===
+import type missing from "./nope";
+>missing : Symbol(missing, Decl(index.ts, 0, 6))
+
+import { type named } from "./nope2";
+>named : Symbol(named, Decl(index.ts, 1, 8))
+
+import type { v } from "./a";
+>v : Symbol(v, Decl(index.ts, 2, 13))
+
+missing;
+>missing : Symbol(missing, Decl(index.ts, 0, 6))
+
+v;
+>v : Symbol(v, Decl(index.ts, 2, 13))
+
+named;
+>named : Symbol(named, Decl(index.ts, 1, 8))
+
+=== /b.ts ===
+export { B as C } from './a';
+>C : Symbol(C, Decl(b.ts, 0, 8))
+
+=== /c.ts ===
+import type { C } from './b';
+>C : Symbol(C, Decl(c.ts, 0, 13))
+
+export { C as D };
+>C : Symbol(C, Decl(c.ts, 0, 13))
+>D : Symbol(D, Decl(c.ts, 1, 8))
+
+=== /d.ts ===
+import { D } from './c';
+>D : Symbol(D, Decl(d.ts, 0, 8))
+
+new D();
+>D : Symbol(D, Decl(d.ts, 0, 8))
+

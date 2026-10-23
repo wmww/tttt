@@ -1,0 +1,41 @@
+/b.ts(1,10): error TS2305: Module '"./a"' has no exported member 'B'.
+/d.ts(2,5): error TS1361: 'D' cannot be used as a value because it was imported using 'import type'.
+/index.ts(1,26): error TS2307: Cannot find module './nope' or its corresponding type declarations.
+/index.ts(2,28): error TS2307: Cannot find module './nope2' or its corresponding type declarations.
+/index.ts(5,1): error TS1361: 'v' cannot be used as a value because it was imported using 'import type'.
+/index.ts(6,1): error TS1361: 'named' cannot be used as a value because it was imported using 'import type'.
+
+
+==== /a.ts (0 errors) ====
+    export const v = 1;
+==== /index.ts (4 errors) ====
+    import type missing from "./nope";
+                             ~~~~~~~~
+!!! error TS2307: Cannot find module './nope' or its corresponding type declarations.
+    import { type named } from "./nope2";
+                               ~~~~~~~~~
+!!! error TS2307: Cannot find module './nope2' or its corresponding type declarations.
+    import type { v } from "./a";
+    missing;
+    v;
+    ~
+!!! error TS1361: 'v' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 /index.ts:3:15: 'v' was imported here.
+    named;
+    ~~~~~
+!!! error TS1361: 'named' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 /index.ts:2:10: 'named' was imported here.
+==== /b.ts (1 errors) ====
+    export { B as C } from './a';
+             ~
+!!! error TS2305: Module '"./a"' has no exported member 'B'.
+==== /c.ts (0 errors) ====
+    import type { C } from './b';
+    export { C as D };
+==== /d.ts (1 errors) ====
+    import { D } from './c';
+    new D();
+        ~
+!!! error TS1361: 'D' cannot be used as a value because it was imported using 'import type'.
+!!! related TS1376 /c.ts:1:15: 'D' was imported here.
+    

@@ -449,6 +449,17 @@ static void check_type_only_value_at(Symbol const* found, Span at, csview name, 
     // (what the type-only declaration names has to be a value: a merge further down the chain may be what is)
     if (!named) named = found;
     if (!item || !(symbol_resolved_flags(named) & SYMBOL_VALUE)) return;
+    // (A type-only default import whose own module isn't found (TS2307): tsc's getTargetOfImportClause, or
+    // getTargetOfImportSpecifier for `{ default as x }`, returns before markSymbolOfAliasDeclarationIfTypeOnly, so
+    // nothing is type-only. Named and namespace imports are marked whatever their module, as is a chain that ends in
+    // a missing member further down)
+    bool default_import = item->tag == PORT_IMPORT_DEFAULT ||
+        (item->tag == PORT_IMPORT_SPECIFIC && csview_equals(port_item_name(item->source_name), "default"));
+    if (default_import && item->module_ref && !item->module_ref->file && item->symbol &&
+        !binder_module_of_ref(item->symbol->binder, item->module_ref)
+    ) {
+        return;
+    }
     bool exported = port_item_is_export(item);
     Error* error = error_ctx_error_d(errs, at, exported ? 1362 : 1361, "'", name, "' cannot be used as a value "
         "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");

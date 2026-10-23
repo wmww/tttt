@@ -1,0 +1,47 @@
+//// [test/cases/ttttTypeOnlyImportUnresolvedValueUse.ts] ////
+
+=== /a.ts ===
+export const v = 1;
+>v : 1
+>1 : 1
+
+=== /index.ts ===
+import type missing from "./nope";
+>missing : any
+
+import { type named } from "./nope2";
+>named : any
+
+import type { v } from "./a";
+>v : any
+
+missing;
+>missing : any
+
+v;
+>v : 1
+
+named;
+>named : any
+
+=== /b.ts ===
+export { B as C } from './a';
+>B : any
+>C : any
+
+=== /c.ts ===
+import type { C } from './b';
+>C : any
+
+export { C as D };
+>C : any
+>D : any
+
+=== /d.ts ===
+import { D } from './c';
+>D : any
+
+new D();
+>new D() : any
+>D : any
+
