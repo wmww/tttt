@@ -83,6 +83,17 @@ argued here instead. Nothing a user sees differs in any of them.
   flagflip spurious count flickers 8 / 9 between identical runs). The oracles run tsgo single-threaded and tttt's
   kdiff/recycle oracles use default flags, which never hit the limit. Accepted: a program-wide "reported" set would
   still depend on which checker gets there first. Read flagflip's TS5115/TS2589 deltas as noise. [tsgo]
+  appflare (det3, 2026-10-23; 10 configs, `packages/schema` the smallest: zod 4's `IsOptionalIn`/`$ZodTypeInternals`/
+  `$InferZodRecordInput`): tsgo's CLI at `--checkers K` gives config-patch.ts(124,28) at K1/3/4, +artifact.ts(172,42)
+  at K2, +wrangler-config-inline.ts(174,9) at K5/6, +artifact.ts(144,30) at K7/10, all three at 8/12/16; tttt K1 =
+  tsgo K1, and each file alone (`TTTT_CHECK_ONLY=`) trips at tsgo's site for it. tttt K2 gives config-patch(131,12)
+  only, K16 five sites. One more divergence: **tsgo keeps only the diagnostics a file's own checker reports in it**
+  (getBindAndCheckDiagnosticsForFile -> fileChecker.GetDiagnostics -> GetDiagnosticsForFile), while tttt merges every
+  checker's. At K16, 12 of the 16 trips are at a node in a file the tripping checker doesn't check
+  (config-patch.ts:131 while checking another file). At K2 both are, and config-patch's own checker never reports
+  124,28 because it had already tripped while checking its share_first, catalog.test.ts. A K-stable, tsgo-K1-identical
+  answer needs a K1 history: either a recheck in one checker, in program order and without recycling, whenever a limit
+  trips at K>1, or nothing (the deterministic deal gives run-to-run stability only). [tsgo]
 - sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff); tttt's K16 shows it
   since costliest-first (2026-10-20: kdiff 2 -> 4, sequelize and sequelize/packages/core; `TTTT_NO_COSTLIEST_FIRST=1`
   hides it again). The defaults match tsc. Rechecked 2026-10-21 with the pinned tsgo (`tsc -p packages/core --noEmit
