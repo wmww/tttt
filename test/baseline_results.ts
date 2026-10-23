@@ -11550,6 +11550,66 @@ const baselines = {
         symbols: false,
         types: true,
     },
+    'npm_My-first-stencil-project-001_TS2320': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'npm__markw65_prettier-plugin-monkeyc_TS7034': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__nirholas_crypto-news_TS2345': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'npm__overture-stack_sqon_TS2345': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'npm__tamagui_codemod-flat-values_TS2339': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'npm__uzm_katex-woff2_TS2577': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__veto-party_baum__package_manager__npm_TS2339': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'npm__vobs_theme_TS1003': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__vobs_theme_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_firelab_TS2538': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_react-smooth-scroll-hook_TS7016': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'rw_foldkit_TS6133': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAccessorJoinsPropertySymbol': {
         errors: true,
         symbols: true,
@@ -11751,6 +11811,11 @@ const baselines = {
         types: true,
     },
     'ttttBestMatchIndexKeys': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBestMatchNumericIndexKeys': {
         errors: true,
         symbols: true,
         types: true,
@@ -11976,6 +12041,11 @@ const baselines = {
         types: true,
     },
     'ttttConfigNullOptionMerge': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttConfigUnknownOptionNull': {
         errors: true,
         symbols: true,
         types: true,
@@ -13786,6 +13856,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttJsxTemplateLiteralTag': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
     'ttttKeyofConstraintChainNotDeeplyNested': {
         errors: true,
         symbols: true,
@@ -14043,6 +14118,11 @@ const baselines = {
         types: true,
     },
     'ttttMutuallyRecursiveArrayTypesOverlap': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttNakedTypeParamFallThrough': {
         errors: true,
         symbols: true,
         types: true,
@@ -14966,6 +15046,11 @@ const baselines = {
         types: true,
     },
     'ttttUntypedCallArgumentsCircular': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnusedPrivateReadLaterFile': {
         errors: true,
         symbols: true,
         types: true,
