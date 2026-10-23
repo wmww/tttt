@@ -208,6 +208,7 @@ typedef struct Program {
     bool declarations_only; // program_set_declarations_only()
     bool defer_bodies; // program_set_defer_bodies()
     _Atomic bool defer_failed; // program_defer_failed()
+    _Atomic bool limit_reported; // program_note_limit()
     atomic_uint ahead_next; // Materialize-ahead (plan 78, program_typecheck()): the next file of check_files a helper takes
     csview explaining_lib, explaining_lib_path; // program_load_stdlib()'s lib while it loads its libReplacement (program_explain_root())
     VecError lib_replacement_errors; // What loading libReplacement files reported, program_take_lib_replacement_errors()
@@ -4919,6 +4920,21 @@ bool program_deferred_bodies_parse(Program* me) {
 
 bool program_defer_failed(Program const* me) {
     return atomic_load(&my defer_failed);
+}
+
+void program_note_limit(Program* me) {
+    if (!atomic_load_explicit(&my limit_reported, memory_order_relaxed)) atomic_store(&my limit_reported, true);
+}
+
+bool program_recycled(Program const* me) {
+    for (u32 c = 0; c < my checker_count; c++) {
+        if (my checkers[c]->recycles) return true;
+    }
+    return false;
+}
+
+bool program_limit_history_dependent(Program const* me) {
+    return atomic_load(&my limit_reported) && (my checker_count > 1 || program_recycled(me));
 }
 
 Binder const* program_get_binder(Program const* me) {

@@ -1142,7 +1142,8 @@ static BaselineTestCase run_baseline_test_case_with(
     csview config,
     bool noisy,
     bool show_logs,
-    bool defer_bodies
+    bool defer_bodies,
+    bool single
 );
 
 BaselineTestCase run_baseline_test_case(
@@ -1152,12 +1153,19 @@ BaselineTestCase run_baseline_test_case(
     bool noisy,
     bool show_logs
 ) {
-    BaselineTestCase ret = run_baseline_test_case_with(cache, source_path, config, noisy, show_logs, baseline_test_defer_bodies);
+    bool defer = baseline_test_defer_bodies;
+    BaselineTestCase ret = run_baseline_test_case_with(cache, source_path, config, noisy, show_logs, defer, false);
     // (A deferred body's materialization that tells it from the eager parse and walk: again without, like the CLI)
-    if (baseline_test_defer_bodies && ret.program && program_defer_failed(ret.program)) {
+    if (defer && ret.program && program_defer_failed(ret.program)) {
         baseline_test_case_drop(&ret);
         defer_stat_add(DEFER_STAT_RESTARTS, 1);
-        ret = run_baseline_test_case_with(cache, source_path, config, noisy, show_logs, false);
+        defer = false;
+        ret = run_baseline_test_case_with(cache, source_path, config, noisy, show_logs, false, false);
+    }
+    // (An instantiation limit reported by several checkers or recycled ones: again in one, like the CLI's check_files())
+    if (ret.program && program_limit_history_dependent(ret.program)) {
+        baseline_test_case_drop(&ret);
+        ret = run_baseline_test_case_with(cache, source_path, config, noisy, show_logs, defer, true);
     }
     return ret;
 }
@@ -1168,7 +1176,8 @@ static BaselineTestCase run_baseline_test_case_with(
     csview config,
     bool noisy,
     bool show_logs,
-    bool defer_bodies
+    bool defer_bodies,
+    bool single
 ) {
     // A quiet test case shouldn't print the log_error()s the checker emits for constructs it can't handle yet
     LogLevel prev_threshold = logger_config.threshold;
@@ -1180,10 +1189,10 @@ static BaselineTestCase run_baseline_test_case_with(
     MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, mock_fs_get_fs(fs));
     program_set_realpath(program, mock_fs_realpath, fs);
-    program_set_checkers(program, baseline_test_checkers);
+    program_set_checkers(program, single ? 1 : baseline_test_checkers);
     program_set_threads(program, baseline_test_threads);
     program_set_defer_bodies(program, defer_bodies);
-    if (baseline_test_checker_memory >= 0) program_set_checker_memory(program, (u64)baseline_test_checker_memory << 20);
+    if (baseline_test_checker_memory >= 0 && !single) program_set_checker_memory(program, (u64)baseline_test_checker_memory << 20);
 
     BaselineTestCase ret = {
         .source_path = source_path,
@@ -1342,7 +1351,7 @@ static BaselineTestCase run_baseline_test_case_with(
     if (getenv("TTTT_DECLARATIONS_ONLY")) program_set_declarations_only(program, true);
     if (!program_options(program)->new_line) program_options(program)->new_line = 1; // (the harness's default)
     program_typecheck(program);
-    if (program_defer_failed(program)) {
+    if (program_defer_failed(program) || (!single && program_limit_history_dependent(program))) {
         logger_config.threshold = prev_threshold;
         return ret;
     }

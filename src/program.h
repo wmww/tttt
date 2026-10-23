@@ -216,6 +216,16 @@ void program_offer_listing(void* program, csview dir, csview const* names, signe
 // After program_typecheck(): a deferred body's materialization could be told from the eager parse and walk (a syntax
 // error in a body, a signature that would have seen the body's names): the output is wrong, run again without deferral
 bool program_defer_failed(Program const* me);
+// A checker reported an instantiation or relation limit (TS2589, TS5114, TS5115, TS2590, TS2321, TS2859; any thread).
+// Where a limit trips, and what the error type it caches silences afterwards, depends on what the checker saw before
+// (tsc's too), so after program_typecheck() with several checkers or recycled ones the output is only a single
+// checker's in program order when it is rerun so (main.c's check_files(): program_limit_history_dependent())
+void program_note_limit(Program* me);
+// After program_typecheck(): a limit was reported by a run whose history isn't one checker's in program order (more
+// than one checker, or a checker recycled)
+bool program_limit_history_dependent(Program const* me);
+// After program_typecheck(): whether any of its checkers was recycled
+bool program_recycled(Program const* me);
 // Whether every deferred body that isn't materialized parses as the eager parse would have parsed it: a run that reports
 // the syntax errors without checking (gated by syntactic or options diagnostics) has them all then, the bodies' others
 // being semantic. Parsed and dropped. False: some body has one, run again without deferral

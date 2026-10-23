@@ -192,3 +192,9 @@ intersection's property symbol to bugs/type_core.md.
   reports "tsgo: none" on composite projects (opencode's packages/core). Running the instrumented tsc by hand with
   `--noEmit` checks, but it writes the config's tsBuildInfoFile (node_modules/.ts-dist/*.tsbuildinfo) into the
   checkout even with `--tsBuildInfoFile` elsewhere: delete it after. [tooling]
+- Spurious, K-dependent TS2615 on a circular mapped alias (det3, 2026-10-23): `export type Loop<T> = { [K in "a"]:
+  Loop<[T]> }["a"];` in lib.ts, with `const x: Loop<1> = null!` in a.ts and in b.ts. tsgo, at any K, reports TS2456
+  lib.ts(1,13) plus TS2315 at lib.ts(1,37), a.ts(2,17) and b.ts(2,17). tttt reports the same, plus a TS2615 "Type of
+  property 'a' circularly references itself" at lib.ts(1,37) at K1, and at a.ts(2,17) and lib.ts(1,37) at K2. Two
+  bugs: the TS2615 shouldn't be there once the alias is circular (tsgo resolves it as the error type first), and its
+  site depends on the checker. [open]

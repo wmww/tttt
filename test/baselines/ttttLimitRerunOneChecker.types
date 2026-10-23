@@ -1,0 +1,37 @@
+//// [test/cases/ttttLimitRerunOneChecker.ts] ////
+
+=== lib.ts ===
+// An instantiation limit trips in whichever checker gets there first, and the error type it caches silences the
+// rest (tsc's rule): in one checker, lib.ts's indexed access trips first and a.ts's call is silent; a checker that
+// starts with a.ts trips at the call. With several checkers (baseline_tests --checkers 2) a limit report reruns the
+// program in one checker, so the output is this one at any checker count (main.c's check_files())
+interface Box<T> { inner: Unwrap<T> }
+>inner : Unwrap<T>
+
+export type Unwrap<T> = T extends string ? "s" : T extends number ? "n" : Box<[T]>["inner"];
+>Unwrap : Unwrap<T>
+
+export declare function f<T>(x: T): Unwrap<T>;
+>f : <T>(x: T) => Unwrap<T>
+>x : T
+
+=== a.ts ===
+import { f } from "./lib";
+>f : <T>(x: T) => import("./lib").Unwrap<T>
+
+export const x = f(true);
+>x : any
+>f(true) : any
+>f : <T>(x: T) => import("./lib").Unwrap<T>
+>true : true
+
+=== b.ts ===
+import { f } from "./lib";
+>f : <T>(x: T) => import("./lib").Unwrap<T>
+
+export const y = f(true);
+>y : any
+>f(true) : any
+>f : <T>(x: T) => import("./lib").Unwrap<T>
+>true : true
+

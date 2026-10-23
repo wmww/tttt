@@ -1,0 +1,46 @@
+//// [test/cases/ttttLimitRerunOneChecker.ts] ////
+
+=== lib.ts ===
+// An instantiation limit trips in whichever checker gets there first, and the error type it caches silences the
+// rest (tsc's rule): in one checker, lib.ts's indexed access trips first and a.ts's call is silent; a checker that
+// starts with a.ts trips at the call. With several checkers (baseline_tests --checkers 2) a limit report reruns the
+// program in one checker, so the output is this one at any checker count (main.c's check_files())
+interface Box<T> { inner: Unwrap<T> }
+>Box : Symbol(Box, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 4, 14))
+>inner : Symbol(Box.inner, Decl(lib.ts, 4, 18))
+>Unwrap : Symbol(Unwrap, Decl(lib.ts, 4, 37))
+>T : Symbol(T, Decl(lib.ts, 4, 14))
+
+export type Unwrap<T> = T extends string ? "s" : T extends number ? "n" : Box<[T]>["inner"];
+>Unwrap : Symbol(Unwrap, Decl(lib.ts, 4, 37))
+>T : Symbol(T, Decl(lib.ts, 5, 19))
+>T : Symbol(T, Decl(lib.ts, 5, 19))
+>T : Symbol(T, Decl(lib.ts, 5, 19))
+>Box : Symbol(Box, Decl(lib.ts, 0, 0))
+>T : Symbol(T, Decl(lib.ts, 5, 19))
+
+export declare function f<T>(x: T): Unwrap<T>;
+>f : Symbol(f, Decl(lib.ts, 5, 92))
+>T : Symbol(T, Decl(lib.ts, 6, 26))
+>x : Symbol(x, Decl(lib.ts, 6, 29))
+>T : Symbol(T, Decl(lib.ts, 6, 26))
+>Unwrap : Symbol(Unwrap, Decl(lib.ts, 4, 37))
+>T : Symbol(T, Decl(lib.ts, 6, 26))
+
+=== a.ts ===
+import { f } from "./lib";
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+export const x = f(true);
+>x : Symbol(x, Decl(a.ts, 1, 12))
+>f : Symbol(f, Decl(a.ts, 0, 8))
+
+=== b.ts ===
+import { f } from "./lib";
+>f : Symbol(f, Decl(b.ts, 0, 8))
+
+export const y = f(true);
+>y : Symbol(y, Decl(b.ts, 1, 12))
+>f : Symbol(f, Decl(b.ts, 0, 8))
+

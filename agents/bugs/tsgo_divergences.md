@@ -93,7 +93,9 @@ argued here instead. Nothing a user sees differs in any of them.
   (config-patch.ts:131 while checking another file). At K2 both are, and config-patch's own checker never reports
   124,28 because it had already tripped while checking its share_first, catalog.test.ts. A K-stable, tsgo-K1-identical
   answer needs a K1 history: either a recheck in one checker, in program order and without recycling, whenever a limit
-  trips at K>1, or nothing (the deterministic deal gives run-to-run stability only). [tsgo]
+  trips at K>1, or nothing (the deterministic deal gives run-to-run stability only). [tsgo] Since det3's rerun
+  (main.c check_files(): a limit reported by several or recycled checkers reruns the program in one checker),
+  tttt's output is tsgo K1's at every K on appflare's 10 configs. [fixed det3]
 - **The owner rule** (det3, 2026-10-23): tsgo keeps only the diagnostics a file's own checker reports in it
   (getBindAndCheckDiagnosticsForFile -> fileChecker.GetDiagnostics -> collection.GetDiagnosticsForFile). A diagnostic
   that checker A leaves at a node of file F, which checker B checks, is dropped. tttt merges every checker's errors
