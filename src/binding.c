@@ -673,6 +673,13 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     // (tsgo's checkVariableLikeDeclaration)
                     error_ctx_grammar_error_d(errs, i->source_span, 18064, "Private identifiers cannot be used in destructuring patterns.");
                 }
+                // (A renaming in a signature without a body is only TS2842, nothing about the property: tsc's
+                // checkVariableLikeDeclaration returns there, `type H = ({ x: a }: {}) => void`)
+                if (bodiless && i->target.tag == BINDING_IDENTIFIER && !i->target.rest &&
+                    (i->computed_key || !span_eq(i->source_span, i->target.content_span))
+                ) {
+                    continue;
+                }
                 if (parent && !i->computed_key && !i->private_name && !i->target.rest && !(i->target.default_value &&
                     parent->kind == TY_ANONYMOUS && parent->anonymous.object_literal)
                 ) {

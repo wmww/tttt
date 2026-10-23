@@ -1,0 +1,30 @@
+ttttBodilessParameterPatterns.ts(4,16): error TS2842: 'a' is an unused renaming of 'x'. Did you intend to use it as a type annotation?
+ttttBodilessParameterPatterns.ts(5,22): error TS2339: Property 'y' does not exist on type '{}'.
+ttttBodilessParameterPatterns.ts(7,14): error TS2339: Property 'a' does not exist on type '{ a: 1; } | undefined'.
+ttttBodilessParameterPatterns.ts(8,19): error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+ttttBodilessParameterPatterns.ts(8,25): error TS1183: An implementation cannot be declared in ambient contexts.
+ttttBodilessParameterPatterns.ts(8,29): error TS1036: Statements are not allowed in ambient contexts.
+
+
+==== ttttBodilessParameterPatterns.ts (6 errors) ====
+    // A parameter pattern of a signature without a body: a renaming is only TS2842 (tsc's checkVariableLikeDeclaration
+    // returns there), and in an ambient context, a `declare const`'s annotation too, null and undefined are taken out of
+    // the parent type (getBindingElementTypeFromParentType) (bun's 34-C14a, 09-C10)
+    type H = ({ x: a }: {}) => void;
+                   ~
+!!! error TS2842: 'a' is an unused renaming of 'x'. Did you intend to use it as a type annotation?
+    declare function g({ y }: {}): void;
+                         ~
+!!! error TS2339: Property 'y' does not exist on type '{}'.
+    declare const f1: ({ a }: { a: 1 } | undefined) => void;
+    type F4 = ({ a }: { a: 1 } | undefined) => void;
+                 ~
+!!! error TS2339: Property 'a' does not exist on type '{ a: 1; } | undefined'.
+    declare const c = () => { { 1; } };
+                      ~~~~~~~~~~~~~~~~
+!!! error TS1254: A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.
+                            ~
+!!! error TS1183: An implementation cannot be declared in ambient contexts.
+                                ~
+!!! error TS1036: Statements are not allowed in ambient contexts.
+    

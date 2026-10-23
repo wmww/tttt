@@ -1,0 +1,27 @@
+//// [test/cases/ttttBodilessParameterPatterns.ts] ////
+
+=== ttttBodilessParameterPatterns.ts ===
+// A parameter pattern of a signature without a body: a renaming is only TS2842 (tsc's checkVariableLikeDeclaration
+// returns there), and in an ambient context, a `declare const`'s annotation too, null and undefined are taken out of
+// the parent type (getBindingElementTypeFromParentType) (bun's 34-C14a, 09-C10)
+type H = ({ x: a }: {}) => void;
+>H : Symbol(H, Decl(ttttBodilessParameterPatterns.ts, 0, 0))
+>a : Symbol(a, Decl(ttttBodilessParameterPatterns.ts, 3, 11))
+
+declare function g({ y }: {}): void;
+>g : Symbol(g, Decl(ttttBodilessParameterPatterns.ts, 3, 32))
+>y : Symbol(y, Decl(ttttBodilessParameterPatterns.ts, 4, 20))
+
+declare const f1: ({ a }: { a: 1 } | undefined) => void;
+>f1 : Symbol(f1, Decl(ttttBodilessParameterPatterns.ts, 5, 13))
+>a : Symbol(a, Decl(ttttBodilessParameterPatterns.ts, 5, 20))
+>a : Symbol(a, Decl(ttttBodilessParameterPatterns.ts, 5, 27))
+
+type F4 = ({ a }: { a: 1 } | undefined) => void;
+>F4 : Symbol(F4, Decl(ttttBodilessParameterPatterns.ts, 5, 56))
+>a : Symbol(a, Decl(ttttBodilessParameterPatterns.ts, 6, 12))
+>a : Symbol(a, Decl(ttttBodilessParameterPatterns.ts, 6, 19))
+
+declare const c = () => { { 1; } };
+>c : Symbol(c, Decl(ttttBodilessParameterPatterns.ts, 7, 13))
+

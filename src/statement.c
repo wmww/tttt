@@ -1894,6 +1894,15 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_DECL_VARIABLE:
+            if (my decl.props.declared && !names->ambient) {
+                // (`declare const f: ({ a }: T | undefined) => void`: the annotation is in an ambient context, where a
+                // parameter's pattern doesn't mind null and undefined, tsc's getBindingElementTypeFromParentType)
+                Scope* ambient = scope_new(names, SCOPE_BLOCK);
+                ambient->ambient = true;
+                ambient->binder_transparent = true;
+                variable_statement_resolve_names(&my decl.variable, ambient, errs);
+                break;
+            }
             variable_statement_resolve_names(&my decl.variable, names, errs);
             break;
 
