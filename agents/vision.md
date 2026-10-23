@@ -42,7 +42,7 @@ under tsc are the second.
   memory). Single-threaded tttt is fastest everywhere (vscode 9.6 s against bun's 12.9). Where the human's private
   projects still lose to bun, tttt uses less total CPU on every one: the losses are critical path (idle cores), not
   duplication (notes/bun_breadth.md, the breadth sweep not yet run).
-- **The exit tail** (wt-ktime2's 35130c775, landing with the merger's last batch: `git log main --grep reaper`):
+- **The exit tail** (6d7cc707e; the measuring scripts count the teardown again with 29c1119ef):
   `exit_detached()` (main.c) hands the address space to a detached CLONE_VM reaper so the caller sees the exit
   before the kernel frees 1-5 GB of pages: the 7-66 ms tail (3-6% of wall) goes to ~0 (drizzle 0.290 -> 0.278,
   vscode 1.93 -> 1.81 on this box). Its sys time is then nobody's: `TTTT_SYNC_EXIT=1` for honest sys (hacks.md).

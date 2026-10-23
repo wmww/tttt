@@ -75,8 +75,8 @@ vscode 5.5 GB at the defaults against bun's 2.2 (K1 4.3); the kernel round added
 - **The recycle-budget default** from the laptop's sweep (For the human, d): a fixed cap rather than a quarter of RAM
   if 2-3 GB costs little wall.
 - **Per-file release**: drop what a checker made for one file at that file's end, as bun frees its per-task results
-  (most of its 2.2 GB on vscode). wt-memc's census (a4347f2e7: `scripts/filecensus.sh`, a `-DTTTT_SURVIVORS` build,
-  `TTTT_FILE_CENSUS=1`; method, partial table and design sketch in agents/notes/memory.md, landing with the merger):
+  (most of its 2.2 GB on vscode). wt-memc's census (a6af311ed: `scripts/filecensus.sh`, a `-DTTTT_SURVIVORS` build,
+  `TTTT_FILE_CENSUS=1`; method, partial table and design sketch in agents/notes/memory.md):
   **zod at K1, 82% of a checker's 275 MB arena is droppable at file end** (11% dead, 71% still referenced by later
   files' results but not needed), mostly instantiated type structure (instantiate_members ~73 MB, builder_finish ~18,
   mapped expansion ~13), not expression memos (4.5 MB); dropping it re-derives ~4% of types. The catch: a memo- and
