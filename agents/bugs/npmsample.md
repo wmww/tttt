@@ -91,7 +91,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   test/cases/npm_My-first-stencil-project-001_TS2320.ts (inner/outer/aug, 30 lines). Errors fixed: the
   declaration's heritage is checked as the first clone (aug_one_level, hacks.md); the repro's SYM/TYP still differ (which
   clone a name means: tsc's getMergedSymbol applied once, twice or more depending on the path). (claimed: corB) [flip]
-  [fixed PENDING]
+  [fixed cf4ba416a]
 - Seed 20261029, nirholas/free-crypto-news: spurious TS2345 on unified's `.use(rehypeHighlight.default, { detect:
   true, ignoreMissing: true })` (`use<P extends unknown[]>(plugin: Plugin<P, Input, Output>, ...parameters: P |
   [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
