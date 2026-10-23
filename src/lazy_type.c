@@ -10,6 +10,7 @@
 #include "scope.h"
 #include "ty/ty.h"
 #include "ty/graph.h"
+#include "source_file.h"
 
 thread_local LazySlots* current_lazy_slots;
 
@@ -223,11 +224,11 @@ static void cycle_trace_print(LazyType* lazy) {
     switch (lazy->tag) {
         case LAZY_TYPE_EXPR: {
             Span span = expr_outer_span(c_container_of(lazy, Expr, lazy_type));
-            log_warn("  expression, line ", span_line_index(span) + 1, ": ", span);
+            log_warn("  expression, ", span_source(span)->canonical_path, " line ", span_line_index(span) + 1, ": ", span);
         }   break;
         case LAZY_TYPE_INITIALIZED_BINDING: {
             Span span = c_container_of(lazy, InitializedBinding, lazy_type)->binding.content_span;
-            log_warn("  binding, line ", span_line_index(span) + 1, ": ", span);
+            log_warn("  binding, ", span_source(span)->canonical_path, " line ", span_line_index(span) + 1, ": ", span);
         }   break;
         default:
             log_warn("  LazyType tag ", (i32)lazy->tag);
