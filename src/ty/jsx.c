@@ -458,7 +458,6 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
     JsxElement const* element = expr->jsx;
     // (tsc's checkJsxPreconditions has a TS2602 for a missing JSX.Element that can't happen: getJsxType() gives the
     // error type, not undefined)
-    check_children(me, element, errs);
     if (element->fragment) {
         // A fragment resolves like a call of what the fragment factory names, its children the attributes
         // (resolveJsxOpeningLikeElement with getJSXFragmentType)
@@ -498,6 +497,9 @@ void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
     JsxElement const* outer = my jsx_element;
     my jsx_element = expr->jsx;
     check_jsx_element(me, expr, errs);
+    // (After the attributes: a spread's type is the one their check gave it with its contextual type, tsc's
+    // createJsxAttributesTypeFromAttributesProperty. Typed first, `{...(x && { onClick: (e) => {} })}` fixed `e`)
+    check_children(me, expr->jsx, errs);
     my jsx_element = outer;
 }
 

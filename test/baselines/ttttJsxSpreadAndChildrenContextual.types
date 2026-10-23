@@ -1,0 +1,60 @@
+//// [test/cases/ttttJsxSpreadAndChildrenContextual.tsx] ////
+
+=== ttttJsxSpreadAndChildrenContextual.tsx ===
+// A JSX spread attribute's `&&` (not context sensitive) next to children: its arrow gets the attributes' contextual
+// type, the children check (TS2710) reading the spread's type only after the attributes are checked (papra's Solid tag)
+declare namespace JSX {
+    interface Element {}
+    interface ElementChildrenAttribute { children: {} }
+>children : {}
+
+    interface IntrinsicElements { span: { onClick?: (e: MouseEvent) => void; children?: string } }
+>span : { onClick?: (e: MouseEvent) => void; children?: string; }
+>onClick : ((e: MouseEvent) => void) | undefined
+>e : MouseEvent
+>children : string | undefined
+}
+declare const x: boolean, y: string;
+>x : boolean
+>y : string
+
+const a = <span {...(x && { onClick: (e) => {} })}>{y}</span>;
+>a : JSX.Element
+><span {...(x && { onClick: (e) => {} })}>{y}</span> : JSX.Element
+>span : any
+>(x && { onClick: (e) => {} }) : false | { onClick: (e: MouseEvent) => void; }
+>x && { onClick: (e) => {} } : false | { onClick: (e: MouseEvent) => void; }
+>x : boolean
+>{ onClick: (e) => {} } : { onClick: (e: MouseEvent) => void; }
+>onClick : (e: MouseEvent) => void
+>(e) => {} : (e: MouseEvent) => void
+>e : MouseEvent
+>y : string
+>span : any
+
+const b = <span {...(x ? { onClick: (e) => {} } : {})}>{y}</span>;
+>b : JSX.Element
+><span {...(x ? { onClick: (e) => {} } : {})}>{y}</span> : JSX.Element
+>span : any
+>(x ? { onClick: (e) => {} } : {}) : { onClick: (e: MouseEvent) => void; } | {}
+>x ? { onClick: (e) => {} } : {} : { onClick: (e: MouseEvent) => void; } | {}
+>x : boolean
+>{ onClick: (e) => {} } : { onClick: (e: MouseEvent) => void; }
+>onClick : (e: MouseEvent) => void
+>(e) => {} : (e: MouseEvent) => void
+>e : MouseEvent
+>{} : {}
+>y : string
+>span : any
+
+const c = <span {...{ onClick: (e) => {} }}>{y}</span>;
+>c : JSX.Element
+><span {...{ onClick: (e) => {} }}>{y}</span> : JSX.Element
+>span : any
+>{ onClick: (e) => {} } : { onClick: (e: MouseEvent) => void; }
+>onClick : (e: MouseEvent) => void
+>(e) => {} : (e: MouseEvent) => void
+>e : MouseEvent
+>y : string
+>span : any
+

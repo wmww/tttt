@@ -1,0 +1,53 @@
+//// [test/cases/ttttJsxSpreadAndChildrenContextual.tsx] ////
+
+=== ttttJsxSpreadAndChildrenContextual.tsx ===
+// A JSX spread attribute's `&&` (not context sensitive) next to children: its arrow gets the attributes' contextual
+// type, the children check (TS2710) reading the spread's type only after the attributes are checked (papra's Solid tag)
+declare namespace JSX {
+>JSX : Symbol(JSX, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 0, 0))
+
+    interface Element {}
+>Element : Symbol(Element, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 2, 23))
+
+    interface ElementChildrenAttribute { children: {} }
+>ElementChildrenAttribute : Symbol(ElementChildrenAttribute, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 3, 24))
+>children : Symbol(ElementChildrenAttribute.children, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 4, 40))
+
+    interface IntrinsicElements { span: { onClick?: (e: MouseEvent) => void; children?: string } }
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 4, 55))
+>span : Symbol(IntrinsicElements.span, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 33))
+>onClick : Symbol(onClick, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 41))
+>e : Symbol(e, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 53))
+>MouseEvent : Symbol(MouseEvent, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>children : Symbol(children, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 76))
+}
+declare const x: boolean, y: string;
+>x : Symbol(x, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 7, 13))
+>y : Symbol(y, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 7, 25))
+
+const a = <span {...(x && { onClick: (e) => {} })}>{y}</span>;
+>a : Symbol(a, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 8, 5))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 33))
+>x : Symbol(x, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 7, 13))
+>onClick : Symbol(onClick, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 8, 27))
+>e : Symbol(e, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 8, 38))
+>y : Symbol(y, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 7, 25))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 33))
+
+const b = <span {...(x ? { onClick: (e) => {} } : {})}>{y}</span>;
+>b : Symbol(b, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 9, 5))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 33))
+>x : Symbol(x, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 7, 13))
+>onClick : Symbol(onClick, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 9, 26))
+>e : Symbol(e, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 9, 37))
+>y : Symbol(y, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 7, 25))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 33))
+
+const c = <span {...{ onClick: (e) => {} }}>{y}</span>;
+>c : Symbol(c, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 10, 5))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 33))
+>onClick : Symbol(onClick, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 10, 21))
+>e : Symbol(e, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 10, 32))
+>y : Symbol(y, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 7, 25))
+>span : Symbol(JSX.IntrinsicElements.span, Decl(ttttJsxSpreadAndChildrenContextual.tsx, 5, 33))
+
