@@ -10423,7 +10423,7 @@ static bool parse_regex(Parser* parent) {
     bool in_escape = false;
     while (true) {
         char c = *p.pos;
-        if (!c || c == '\n' || c == '\r' || unicode_whitespace_size(p.pos) < 0) {
+        if (at_eof(&p, p.pos) || c == '\n' || c == '\r' || unicode_whitespace_size(p.pos) < 0) {
             p.pos = unterminated_regex_end(start + 1, p.pos);
             parse_error(&p, span_make(p.shared->source, start, p.pos), 1161, "Unterminated regular expression literal.");
             return parse_success(&p);

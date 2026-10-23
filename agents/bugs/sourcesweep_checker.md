@@ -469,7 +469,8 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   (41,...), and since the program then has syntax errors, every semantic diagnostic is suppressed (0sec/packages/cli
   and 0sec/packages/core: ~4000 missing, -TS2307 880, -TS2591 2141...; abacusai-bot/apps/host has the same TS1127/TS1161
   plus 354 -TS6305 behind it). parse_regex (src/parser.c) tests `!c` for the end of text; tsc's scanner only stops at
-  the real end (a NUL is an ordinary character in a regex body). cor10 is fixing it. [open]
+  the real end (a NUL is an ordinary character in a regex body). Fixed: parse_regex asks at_eof; 0sec 12 / 12 and
+  abacusai-bot/apps/host match (repro test/cases/ttttRegexNulByte.ts). [fixed 2026-10-23]
 - **appflare: +TS5115 moves with the checker count** (to det3): tsgo (singleThreaded) reports one TS5115 ("Instantiations
   of the following types appear infinitely circular: 'IsOptionalIn', '$ZodTypeInternals', '$InferZodRecordInput'", zod
   4) at packages/schema/src/config-patch.ts(124,28). `release/tttt --noEmit --pretty false -p appflare/packages/schema`:
