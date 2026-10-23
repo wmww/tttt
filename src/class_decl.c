@@ -215,10 +215,12 @@ void class_decl_drop(ClassDecl* me) {
     vec_class_item_drop(&my items);
     vec_expr_cptr_drop(&my computed_this_assignments_);
     drop_namesakes(me);
-    if (my jsdoc_augments) {
-        type_drop(my jsdoc_augments);
-        ast_delete(my jsdoc_augments);
+    for (u32 i = 0; i < my jsdoc_augments_count; i++) {
+        if (!my jsdoc_augments[i].type) continue;
+        type_drop(my jsdoc_augments[i].type);
+        ast_delete(my jsdoc_augments[i].type);
     }
+    free(my jsdoc_augments);
 }
 
 // A computed member name or a decorator. `own_container`: the name of a method, an accessor or a field with an
@@ -784,7 +786,9 @@ static void class_decl_lookup_names_in_owner(ClassDecl* me, Scope* names, ErrorC
     for_each (i, vec_spanned_type, &my implements) {
         type_lookup_names(&i->type, names, errs);
     }
-    if (my jsdoc_augments) type_lookup_names(my jsdoc_augments, names, errs);
+    for (u32 i = 0; i < my jsdoc_augments_count; i++) {
+        if (my jsdoc_augments[i].type) type_lookup_names(my jsdoc_augments[i].type, names, errs);
+    }
     for_each (i, vec_expr, &my unchecked_extends) expr_lookup_names(i, names, nullptr);
     for_each (i, vec_type, &my unchecked_implements) type_lookup_names(i, names, nullptr);
     for_each (i, vec_expr, &my invalid_implements) expr_lookup_names(i, names, nullptr);
@@ -2614,19 +2618,32 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
             "A class can only implement an identifier/qualified-name with optional type arguments.");
     }
     class_check_base_arity(me, errs);
-    if (span_valid(my jsdoc_augments_name)) {
-        // (tsgo's checkJSDocAugmentsTagMatchesExtends: the tag's type is the base type, else TS8023)
-        bool identical = false;
-        if (my jsdoc_augments) {
-            type_typecheck(my jsdoc_augments, errs);
-            Ty const* tag = ty_of_node(my jsdoc_augments);
+    for (u32 i = 0; i < my jsdoc_augments_count; i++) {
+        // (tsgo's checkJSDocAugmentsTagMatchesExtends: the tag's type is the base type, else TS8023; of a clause that
+        // isn't an entity name, the base type is assignable to it)
+        JsDocAugments const* augments = &my jsdoc_augments[i];
+        bool matches = false;
+        if (augments->type) {
+            // (The supplier's own reference is the clause's, whose arity is checked there)
+            if (!augments->args_from_base) type_typecheck(augments->type, errs);
+            Ty const* tag = ty_of_node(augments->type);
+            if (augments->args_from_base && tag && tag->kind == TY_REFERENCE && my extends.tag == EXPR_GENERIC_PARAMS) {
+                VecSpannedType const* params = &my extends.generic_params->params;
+                TyBuf args = {0};
+                for_each (p, vec_spanned_type, params) ty_buf_push(&args, ty_of_node((TypeNode*)&p->type));
+                if (args.len == ty_reference_args(current_checker, tag).len) {
+                    tag = ty_reference(current_checker, tag->reference.target, (TyList){ .data = args.data, .len = args.len });
+                }
+                ty_buf_drop(&args);
+            }
             Ty const* base = ty_class_base_instance(current_checker, me);
             if (!base) base = ty_intrinsic(current_checker, TY_ERROR);
-            identical = tag == base || ty_is_related(current_checker, tag, base, TY_RELATION_IDENTITY);
+            matches = tag == base || (my jsdoc_extends_expression ? ty_is_related(current_checker, base, tag, TY_RELATION_ASSIGNABLE) :
+                ty_is_related(current_checker, tag, base, TY_RELATION_IDENTITY));
         }
-        if (!identical) {
-            error_ctx_error_d(errs, my jsdoc_augments_name, 8023, "JSDoc '@", my jsdoc_augments_tag, " ",
-                my jsdoc_augments_name, "' does not match the 'extends ", my jsdoc_extends_name, "' clause.");
+        if (!matches) {
+            error_ctx_error_d(errs, augments->name, 8023, "JSDoc '@", augments->tag, " ",
+                augments->name, "' does not match the 'extends ", my jsdoc_extends_name, "' clause.");
         }
     }
 }

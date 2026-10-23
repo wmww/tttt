@@ -150,6 +150,16 @@ typedef enum ClassNamedEvaluation {
     CLASS_NAMED_BY_COMPUTED_KEY, // `{ [k]: class {} }`, `[k] = class {}` in a class: named with __propKey
 } ClassNamedEvaluation;
 
+// A JavaScript class's `@augments`/`@extends` tag that TS8023 checks
+typedef struct JsDocAugments {
+    TypeNode* type; // Owned, null for a missing name
+    Span name;
+    Span tag; // Its tag name
+    // The tag whose type arguments a clause that isn't an entity name took (moved out of `type`): its type is the
+    // reference with those (class_check)
+    bool args_from_base;
+} JsDocAugments;
+
 typedef struct ClassDecl {
     Span full_span;
     Span name;
@@ -168,12 +178,14 @@ typedef struct ClassDecl {
     // JavaScript: the type of an `@augments`/`@extends` tag naming the class `extends` names, whose type arguments the
     // clause takes when it has none (tsgo's reparser): where the tag's own reference is checked
     Span jsdoc_extends;
-    // JavaScript: an `@augments`/`@extends` tag naming another class than the clause (or nothing): its type (owned,
-    // null for a missing name), checked against the base type (TS8023, tsgo's checkJSDocAugmentsTagMatchesExtends)
-    TypeNode* jsdoc_augments;
-    Span jsdoc_augments_name; // Valid with such a tag
-    Span jsdoc_augments_tag; // Its tag name
-    Span jsdoc_extends_name; // The clause's rightmost name
+    // JavaScript: the `@augments`/`@extends` tags checked against the base type (TS8023, tsgo's
+    // checkJSDocAugmentsTagMatchesExtends): every tag but the one whose type arguments an entity name clause took
+    struct JsDocAugments* jsdoc_augments;
+    u32 jsdoc_augments_count;
+    // What TS8023 calls the clause: its rightmost name, or the whole expression when it isn't an entity name (whose
+    // tags are then checked for assignability, not identity)
+    Span jsdoc_extends_name;
+    bool jsdoc_extends_expression;
     VecSpannedType implements; // The first `implements` clause's entity names (`A.B<T>`)
     // Heritage tsc parses but doesn't check (the parser reports checkGrammarClassDeclarationHeritageClauses' TS1172-
     // TS1175 about it): the elements after the base (`extends A, B`, a second `extends` clause) and those of later

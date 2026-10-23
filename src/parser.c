@@ -4631,15 +4631,19 @@ static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, 
         parent->shared->jsdoc_unchecked = true;
         parse_jsdoc_comment(parent, range, &earlier);
         parent->shared->jsdoc_unchecked = outer_unchecked;
-        if (!csview_contains(csview_from_range(range.start, range.end), "@overload")) {
+        csview text = csview_from_range(range.start, range.end);
+        bool overloads = csview_contains(text, "@overload");
+        if (!overloads && !csview_contains(text, "@extends") && !csview_contains(text, "@augments")) {
             vec_jsdoc_tag_drop(&earlier);
             continue;
         }
+        // (And its `@extends`/`@augments`, which only TS8023 checks: tsgo's checkJSDocAugmentsTagMatchesExtends reads
+        // every comment)
         bool in_overload = false;
         for_each (t, vec_jsdoc_tag, &earlier) {
             if (t->kind == JSDOC_TAG_OVERLOAD) in_overload = true;
             else if (!t->nested) in_overload = false;
-            if (in_overload || t->kind == JSDOC_TAG_TEMPLATE) {
+            if ((overloads && (in_overload || t->kind == JSDOC_TAG_TEMPLATE)) || (t->kind == JSDOC_TAG_EXTENDS && !t->nested)) {
                 t->earlier = true;
                 vec_jsdoc_tag_push(tags, *t);
                 *t = (JsDocTag){0};
@@ -5102,19 +5106,40 @@ static Span jsdoc_entity_name_last(Expr const* expr) {
 
 static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_decl) {
     jsdoc_apply_template(p, tags, &class_decl->generic, true);
-    // `@augments A` on `class C extends B` (tsgo's checkJSDocAugmentsTagMatchesExtends: the tag's type isn't the base's)
-    JsDocTag* augments = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     Span extends_name = jsdoc_entity_name_last(&class_decl->extends);
-    if (augments && augments->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
-        !name_equals(span_sv(augments->type.identifier->name), span_sv(extends_name))
-    ) {
-        class_decl->jsdoc_augments_name = augments->type.identifier->name;
-        class_decl->jsdoc_augments_tag = augments->tag_name;
-        class_decl->jsdoc_extends_name = extends_name;
-        if (augments->type.identifier->name.size) {
-            class_decl->jsdoc_augments = ast_new(TypeNode, jsdoc_take_type(augments, nullptr));
-            // (Its arity is checked, not its constraints: getTypeFromTypeNode, not checkSourceElement)
-            class_decl->jsdoc_augments->identifier->jsdoc_unchecked = true;
+    bool has_base = class_decl->extends.tag != EXPR_IMPLICIT_ANY;
+    bool null_base = class_decl->extends.tag == EXPR_LITERAL && class_decl->extends.literal.tag == VALUE_NULL;
+    // The tag whose type arguments the clause takes when it has none (tsgo's reparser): the first naming the clause's
+    // class, and since tsgo 7.1.0-beta the first at all when the clause isn't an entity name (`extends A.extend()`),
+    // but not `null`
+    JsDocTag* supplier = nullptr;
+    if (has_base && !null_base && class_decl->extends.tag != EXPR_GENERIC_PARAMS) {
+        for_each (i, vec_jsdoc_tag, tags) {
+            if (i->kind != JSDOC_TAG_EXTENDS || !i->has_type || i->nested || i->earlier || i->type.tag != TYPE_IDENTIFIER) continue;
+            if (span_valid(extends_name) && !name_equals(span_sv(i->type.identifier->name), span_sv(extends_name))) continue;
+            supplier = i;
+            break;
+        }
+    }
+    // Every other tag is checked against the base type (tsgo's checkJSDocAugmentsTagMatchesExtends): identical to it
+    // for an entity name clause, assignable from it otherwise, TS8023 if not
+    if (has_base && !null_base) {
+        class_decl->jsdoc_extends_expression = !span_valid(extends_name);
+        class_decl->jsdoc_extends_name = span_valid(extends_name) ? extends_name : expr_outer_span(&class_decl->extends);
+        for_each (i, vec_jsdoc_tag, tags) {
+            if (i->kind != JSDOC_TAG_EXTENDS || !i->has_type || i->nested || i->type.tag != TYPE_IDENTIFIER) continue;
+            if (i == supplier && span_valid(extends_name)) continue;
+            JsDocAugments augments = { .name = i->type.identifier->name, .tag = i->tag_name, .args_from_base = i == supplier };
+            if (i->type.identifier->name.size) {
+                // (The supplier's type arguments go to the clause below, out of this node: its type is the reference
+                // with the clause's, JsDocAugments.args_from_base)
+                augments.type = ast_new(TypeNode, jsdoc_take_type(i, nullptr));
+                // (Its arity is checked, not its constraints: getTypeFromTypeNode, not checkSourceElement)
+                augments.type->identifier->jsdoc_unchecked = true;
+            }
+            class_decl->jsdoc_augments = realloc(class_decl->jsdoc_augments, sizeof(JsDocAugments) * (class_decl->jsdoc_augments_count + 1));
+            panic_if(!class_decl->jsdoc_augments, "out of memory");
+            class_decl->jsdoc_augments[class_decl->jsdoc_augments_count++] = augments;
         }
     }
     // `@implements {I}` (tsc's getEffectiveImplementsTypeNodes: in JavaScript the tags, not the clause)
@@ -5124,14 +5149,8 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
         TypeNode type = jsdoc_take_type(i, &span);
         list_push(vec_spanned_type, &class_decl->implements, spanned_type(span, type));
     }
-    if (class_decl->extends.tag == EXPR_IMPLICIT_ANY || class_decl->extends.tag == EXPR_GENERIC_PARAMS) return;
-    JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
-    // (Only a tag naming the clause's class gives it its type arguments: tsgo's reparser, HasSamePropertyAccessName)
-    if (!tag || tag->type.tag != TYPE_IDENTIFIER || !span_valid(extends_name) ||
-        !name_equals(span_sv(tag->type.identifier->name), span_sv(extends_name))
-    ) {
-        return;
-    }
+    if (!supplier) return;
+    JsDocTag* tag = supplier;
     class_decl->jsdoc_extends = tag->type_span;
     if (!vec_spanned_type_size(&tag->type.identifier->generic_params)) return;
     VecSpannedType params = tag->type.identifier->generic_params;
