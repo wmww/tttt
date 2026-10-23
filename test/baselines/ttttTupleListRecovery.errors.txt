@@ -1,0 +1,21 @@
+ttttTupleListRecovery.ts(6,15): error TS1005: ',' expected.
+ttttTupleListRecovery.ts(7,14): error TS1005: ',' expected.
+ttttTupleListRecovery.ts(7,14): error TS2304: Cannot find name 'B'.
+
+
+==== ttttTupleListRecovery.ts (3 errors) ====
+    // A tuple's elements are a delimited list (tsc's parseDelimitedList(TupleElementTypes)): a missing `,` is reported and
+    // the list goes on, a token that can't start a type is skipped (its error at the same position as the `,` one isn't
+    // reported again). Babel's parser fixtures `[x.y: A]` and `[x?.y: A]`
+    type A = string;
+    declare namespace x { type y = number }
+    type T1 = [x.y: A];
+                  ~
+!!! error TS1005: ',' expected.
+    type T2 = [A B];
+                 ~
+!!! error TS1005: ',' expected.
+                 ~
+!!! error TS2304: Cannot find name 'B'.
+    type T3 = [A, (((A))), (A)[]];
+    

@@ -2074,6 +2074,7 @@ typedef enum ParsingContext {
     PARSING_ARRAY_BINDING_ELEMENTS,
     PARSING_IMPORT_OR_EXPORT_SPECIFIERS,
     PARSING_OBJECT_BINDING_ELEMENTS,
+    PARSING_TUPLE_ELEMENT_TYPES,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
 
@@ -2096,6 +2097,18 @@ static bool tok_is_start_of_parameter_type(Tok t) {
 static bool tok_is_start_of_parameter(Tok t) {
     return tok_is(t, "...") || tok_is(t, "{") || tok_is(t, "[") || tok_is(t, "@") || tok_is_modifier(t) ||
         (*t.start == '#' && tok_is_word(t)) || tok_is_identifier(t) || tok_is_start_of_parameter_type(t);
+}
+
+// tsc's isStartOfType(inStartOfParameter = false). (`(` only before what can start a parenthesized or function type,
+// nextIsParenthesizedOrFunctionType)
+static bool tok_is_start_of_type(Parser* p, Tok t) {
+    if (tok_is_start_of_parameter_type(t) || tok_is(t, "function")) return true;
+    if (tok_is(t, "-")) return tok_is_number(tok_next(p, t));
+    if (tok_is(t, "(")) {
+        Tok next = tok_next(p, t);
+        return tok_is(next, ")") || tok_is_start_of_parameter(next) || tok_is_start_of_type(p, next);
+    }
+    return false;
 }
 
 // tsc's isListElement(HeritageClauseElement): an expression, but `{}` only if it can't be the body, and not the keyword
@@ -2158,6 +2171,8 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
             // (`{ a, from "m"`: the list stops before the `from`)
             if (tok_is(t, "from") && tok_is_string(tok_next(p, t))) return false;
             return tok_is_string(t) || tok_is_word(t);
+        case PARSING_TUPLE_ELEMENT_TYPES:
+            return tok_is(t, ",") || tok_is_start_of_type(p, t);
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -2192,6 +2207,7 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
         case PARSING_HERITAGE_CLAUSE_ELEMENT:
             return tok_is(t, "{") || tok_is(t, "extends") || tok_is(t, "implements");
         case PARSING_ARRAY_BINDING_ELEMENTS:
+        case PARSING_TUPLE_ELEMENT_TYPES:
             return tok_is(t, "]");
         case PARSING_OBJECT_BINDING_ELEMENTS:
             return tok_is(t, "}");
@@ -2272,6 +2288,9 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             } else {
                 parse_error(p, span, 1003, "Identifier expected.");
             }
+            break;
+        case PARSING_TUPLE_ELEMENT_TYPES:
+            parse_error(p, span, 1110, "Type expected.");
             break;
         case PARSING_CONTEXT_COUNT: impossible;
     }
@@ -2823,8 +2842,15 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
+    u32 saved_context = list_enter(&p, PARSING_TUPLE_ELEMENT_TYPES);
 
     while (!at_eof(&p, p.pos) && *p.pos != ']') {
+        // (tsc's parseDelimitedList: what can't start an element is skipped, or ends the list where another list being
+        // parsed wants it)
+        if (!list_is_element(&p, PARSING_TUPLE_ELEMENT_TYPES, tok_peek(&p))) {
+            if (list_abort_or_skip(&p, PARSING_TUPLE_ELEMENT_TYPES)) break;
+            continue;
+        }
         TupleElement elem = {0};
         char const* element_start = p.pos;
 
@@ -2912,11 +2938,18 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
 
         vec_tuple_element_push(ret, elem);
 
-        if (*p.pos != ']' && !expect_char(&p, ',')) {
-            return parse_success(&p);
+        // (A missing `,` is reported and the list goes on: tsc's parseDelimitedList)
+        if (*p.pos != ']' && !hop_char(&p, ',')) {
+            if (list_is_terminator(PARSING_TUPLE_ELEMENT_TYPES, tok_peek(&p))) break;
+            expect_char(&p, ',');
+            if (p.pos == element_start) {
+                Tok t = tok_peek(&p);
+                p.pos = t.end;
+            }
         }
         hop_whitespace(&p);
     }
+    list_leave(&p, saved_context);
     expect_char(&p, ']');
 
     return parse_success(&p);

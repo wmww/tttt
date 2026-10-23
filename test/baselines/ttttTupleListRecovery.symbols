@@ -1,0 +1,30 @@
+//// [test/cases/ttttTupleListRecovery.ts] ////
+
+=== ttttTupleListRecovery.ts ===
+// A tuple's elements are a delimited list (tsc's parseDelimitedList(TupleElementTypes)): a missing `,` is reported and
+// the list goes on, a token that can't start a type is skipped (its error at the same position as the `,` one isn't
+// reported again). Babel's parser fixtures `[x.y: A]` and `[x?.y: A]`
+type A = string;
+>A : Symbol(A, Decl(ttttTupleListRecovery.ts, 0, 0))
+
+declare namespace x { type y = number }
+>x : Symbol(x, Decl(ttttTupleListRecovery.ts, 3, 16))
+>y : Symbol(y, Decl(ttttTupleListRecovery.ts, 4, 21))
+
+type T1 = [x.y: A];
+>T1 : Symbol(T1, Decl(ttttTupleListRecovery.ts, 4, 39))
+>x : Symbol(x, Decl(ttttTupleListRecovery.ts, 3, 16))
+>y : Symbol(x.y, Decl(ttttTupleListRecovery.ts, 4, 21))
+>A : Symbol(A, Decl(ttttTupleListRecovery.ts, 0, 0))
+
+type T2 = [A B];
+>T2 : Symbol(T2, Decl(ttttTupleListRecovery.ts, 5, 19))
+>A : Symbol(A, Decl(ttttTupleListRecovery.ts, 0, 0))
+>B : Symbol(B)
+
+type T3 = [A, (((A))), (A)[]];
+>T3 : Symbol(T3, Decl(ttttTupleListRecovery.ts, 6, 16))
+>A : Symbol(A, Decl(ttttTupleListRecovery.ts, 0, 0))
+>A : Symbol(A, Decl(ttttTupleListRecovery.ts, 0, 0))
+>A : Symbol(A, Decl(ttttTupleListRecovery.ts, 0, 0))
+
