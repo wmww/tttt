@@ -235,6 +235,10 @@ typedef struct InferParam {
     // Of a rest parameter's type parameter, how many arguments it gets plus one (0: not known, a spread among them):
     // tsc's InferenceInfo.impliedArity, which splits a source tuple against `[...T, ...U]`
     u32 implied_arity_plus_one;
+    // Bit j: covariant candidate j is a tuple array literal argument itself, reached without taking it apart (tsc's
+    // ObjectFlags.ArrayLiteral on the argument's type object; tttt's tuples are interned, a slice of one that is the
+    // whole of it is the same pointer but no literal in tsc)
+    u64 co_literals;
 } InferParam;
 
 // Flags like tsc's InferencePriority: a nested inference ORs its own in, and a higher number is a worse priority
@@ -292,6 +296,8 @@ typedef struct Inference {
     // them ObjectFlags.ArrayLiteral; tttt's array types are interned without that). Malloc'd
     Ty const** array_literals;
     u32 array_literal_count;
+    // The tuple array literal argument being inferred from, while the walk hasn't taken it apart (see co_literals)
+    Ty const* arg_tuple_literal;
     bool contravariant;
     // Inside the parameters of a method (tsc's bivariant): contravariant positions there give covariant candidates, and
     // that holds for the callbacks nested in them too

@@ -1734,6 +1734,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             if (param->co_len || param->contra_len) inf->replaced++;
             param->co_len = 0;
             param->contra_len = 0;
+            param->co_literals = 0;
             param->top_level = true;
             param->priority = inf->priority;
             param->has_priority = true;
@@ -1742,7 +1743,9 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             if (inf->contravariant && !inf->bivariant) {
                 candidates_push(&param->contra, &param->contra_len, source);
             } else {
+                u32 before = param->co_len;
                 candidates_push(&param->co, &param->co_len, source);
+                if (param->co_len > before && source == inf->arg_tuple_literal && before < 64) param->co_literals |= (u64)1 << before;
             }
             if (!(inf->priority & INFER_PRIORITY_RETURN_TYPE) && param->top_level && inf->original_target &&
                 !is_param_at_top_level(me, inf->original_target, target)
@@ -1995,7 +1998,11 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 inf->object_sources[inf->object_depth] = source;
                 inf->object_targets[inf->object_depth] = target;
                 inf->object_depth++;
+                // (What it is taken apart into is no array literal, a slice of a tuple that is all of it included)
+                Ty const* saved_literal = inf->arg_tuple_literal;
+                inf->arg_tuple_literal = nullptr;
                 infer_from_objects(me, inf, source, target);
+                inf->arg_tuple_literal = saved_literal;
                 inf->object_depth--;
             } else {
                 inf->circularity = true;
@@ -2177,8 +2184,9 @@ static Ty const* common_subtype(Checker* me, Ty const* const* types, u32 len) {
 // tsc's isObjectOrArrayLiteralType
 // (Not a widened object literal: tsc's getWidenedTypeOfObjectLiteral drops ObjectFlags.ObjectLiteral, so a `new
 // Map([["a", { a: 1 }]])`'s value type is a candidate like any other)
-static bool is_literal_candidate(Inference const* inf, Ty const* candidate) {
+static bool is_literal_candidate(Inference const* inf, InferParam const* param, u32 index, Ty const* candidate) {
     if (ty_is_unwidened_object_literal(candidate)) return true;
+    if (index < 64 && (param->co_literals >> index) & 1) return true;
     for (u32 i = 0; i < inf->array_literal_count; i++) {
         if (inf->array_literals[i] == candidate) return true;
     }
@@ -2247,14 +2255,14 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
             Ty const** literals = len <= c_arraylen(literals_small) ? literals_small : malloc(sizeof(Ty const*) * len);
             u32 literal_count = 0;
             for (u32 j = 0; j < len; j++) {
-                if (is_literal_candidate(inf, candidates[j])) literals[literal_count++] = candidates[j];
+                if (is_literal_candidate(inf, param, j, candidates[j])) literals[literal_count++] = candidates[j];
             }
             if (literal_count) {
                 // (Last, like tsc: which decides ties, and which of a literal and a type with more properties wins)
                 Ty const* merged = literal_count > 1 ? ty_union_subtype_reduced(me, literals, literal_count) : literals[0];
                 u32 kept = 0;
                 for (u32 j = 0; j < len; j++) {
-                    if (!is_literal_candidate(inf, candidates[j])) candidates[kept++] = candidates[j];
+                    if (!is_literal_candidate(inf, param, j, candidates[j])) candidates[kept++] = candidates[j];
                 }
                 candidates[kept++] = merged;
                 len = kept;

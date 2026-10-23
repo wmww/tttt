@@ -802,11 +802,13 @@ static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* e
 static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape, Args const* args, u32 i) {
     Ty const* param_type = shape_type_at(shape, i);
     Arg const* arg = &args->data[i];
-    if (arg->type && !arg->spread && !arg->part_of_spread && arg->expr->tag == EXPR_ARRAY && ty_is_array(me, arg->type)) {
-        add_array_literal(inf, arg->type);
-    }
+    bool literal = arg->type && !arg->spread && !arg->part_of_spread && arg->expr->tag == EXPR_ARRAY;
+    if (literal && ty_is_array(me, arg->type)) add_array_literal(inf, arg->type);
     if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, arg->expr, arg->type, 0);
+    // (A tuple one is a literal candidate where it is inferred from as it is, see co_literals)
+    inf->arg_tuple_literal = literal && ty_is_tuple(arg->type) ? arg->type : nullptr;
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);
+    inf->arg_tuple_literal = nullptr;
 }
 
 // Whether assigning contextual signature `sig` to `function` asks for a type that mentions type parameter `param`: the

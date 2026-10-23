@@ -1,0 +1,41 @@
+//// [test/cases/ttttConstTupleLiteralCandidateLast.ts] ////
+
+=== ttttConstTupleLiteralCandidateLast.ts ===
+// A tuple array literal argument (here a const type parameter's) is a literal candidate like an array one: tsc's
+// unionObjectAndArrayLiteralCandidates moves it after the others, so the common supertype of `U` and `readonly [1]`
+// is U, and the argument then fails it. One taken apart into a slice that is all of it (`[...T]`) is not literal
+// (tanstack-ai's ai-angular inject-web-mcp-tools test)
+declare function f<const T extends readonly unknown[]>(a: T, b: T): T
+>f : Symbol(f, Decl(ttttConstTupleLiteralCandidateLast.ts, 0, 0))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 4, 19))
+>a : Symbol(a, Decl(ttttConstTupleLiteralCandidateLast.ts, 4, 55))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 4, 19))
+>b : Symbol(b, Decl(ttttConstTupleLiteralCandidateLast.ts, 4, 60))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 4, 19))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 4, 19))
+
+function g<U extends readonly unknown[]>(u: U) {
+>g : Symbol(g, Decl(ttttConstTupleLiteralCandidateLast.ts, 4, 69))
+>U : Symbol(U, Decl(ttttConstTupleLiteralCandidateLast.ts, 5, 11))
+>u : Symbol(u, Decl(ttttConstTupleLiteralCandidateLast.ts, 5, 41))
+>U : Symbol(U, Decl(ttttConstTupleLiteralCandidateLast.ts, 5, 11))
+
+    return f([1], u)
+>f : Symbol(f, Decl(ttttConstTupleLiteralCandidateLast.ts, 0, 0))
+>u : Symbol(u, Decl(ttttConstTupleLiteralCandidateLast.ts, 5, 41))
+}
+declare function ft<T extends unknown[]>(t1: [...T], t2: [...T, number?]): T;
+>ft : Symbol(ft, Decl(ttttConstTupleLiteralCandidateLast.ts, 7, 1))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 8, 20))
+>t1 : Symbol(t1, Decl(ttttConstTupleLiteralCandidateLast.ts, 8, 41))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 8, 20))
+>t2 : Symbol(t2, Decl(ttttConstTupleLiteralCandidateLast.ts, 8, 52))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 8, 20))
+>T : Symbol(T, Decl(ttttConstTupleLiteralCandidateLast.ts, 8, 20))
+
+ft([1, 2, 3], [1, 2, 3]);
+>ft : Symbol(ft, Decl(ttttConstTupleLiteralCandidateLast.ts, 7, 1))
+
+ft(['a', 'b'], ['c', 'd'])
+>ft : Symbol(ft, Decl(ttttConstTupleLiteralCandidateLast.ts, 7, 1))
+
