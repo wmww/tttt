@@ -62,12 +62,8 @@ start (main thread, workers parked or gone) and vscode's 7-11 frees of tables pa
   big tables got about two thirds of its fault cut on drizzle for no RSS. The rest is other malloc (AST helpers,
   scopes, flow), the next lever if faults still matter.
 
-## For the laptop to confirm
-At `--threads 12 --checkers 12` on drizzle, zod, effect, vue, main against wt-ktime's merge:
-- `perf stat -e cycles:u,cycles:k,page-faults` (kernel cycles share of user: was 15-24%);
-- `/proc/interrupts` TLB line delta per run (sum over CPUs), and the "Function call interrupts" line;
-- `perf c2c record` on drizzle: the kernel share of HITMs (was 77-90%, should_flush_tlb / llist_reverse_order /
-  flush_tlb_func) and the flush_tlb_func + native_flush_tlb_* share of IBS ops (was ~10%);
-- peak RSS (expect +2-6% from the mallopt commit).
-If kernel HITMs stay high with the syscalls gone, the shootdowns are fault-induced (zero-page COW, THP split or
-khugepaged collapse): `perf record -e tlb:tlb_flush -g` names the reason.
+## Confirmed on the laptop (2026-10-22, measurements.md "The 12-core box at 3a77c827: kernel time")
+At the defaults, f903d2e0e against 3a77c827: kernel cycles 21-28% of user -> 6-9% (drizzle, zod, effect, vue, vscode),
+TLB shootdowns per run -95 to -99% (drizzle 428k -> 8.8k), faults -79 to -96%, walls -13 to -23%; perf c2c on drizzle:
+the shootdown HITMs 217 -> 2 in 10 runs, no hot user line. **Peak RSS rose more than expected: +4 to +15%** (nest +44 MB,
+drizzle +116, vscode +190), not split by commit yet.

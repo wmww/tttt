@@ -31,6 +31,100 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## The 12-core box at 3a77c827: kernel time (before f903d2e0e vs after) (2026-10-22)
+Run by an agent on the human's laptop (Ryzen AI 9 HX 370, 24 threads; kernel 7.2.11-zen1, perf 7.2.11, THP `always`):
+AC, `balanced`, 98% idle before, but Firefox, a qemu VM, a Java process and `odm` open (load ~1 settled; ~9 right
+after the builds, so part 1 started on a load still decaying). No code change. Two builds by `scripts/fastbuild.sh`
+(PGO + BOLT): **before** = f903d2e0e (a worktree in /tmp), **after** = 3a77c827 (the repo): the kernel-time batch
+(stack pool, glibc M_MMAP_THRESHOLD 32 MB / M_TRIM_THRESHOLD 1 GB, source texts kept mapped, huge-page big tables;
+notes/kernel_time.md). Idle background: TLB shootdown interrupts ~55 per 10 s, function-call interrupts ~2.2k per 10 s.
+
+**1. perf stat at the defaults** (`--noEmit --pretty false -p P`, 24 threads; `perf stat -e
+cycles:u,cycles:k,instructions:u,page-faults`, one run per call, 5 per binary, the binaries alternating (ABBA...) after
+one warm-up each; medians but the wall's best / median; peak RSS from wait4; TLB and CAL = the `/proc/interrupts`
+lines summed over CPUs, delta across each run, median (min-max)):
+
+| corpus | | kernel / user cycles | cycles:u G | cycles:k G | instr:u G | faults | wall s best / median | peak MB | TLB per run | CAL per run |
+|---|---|---|---|---|---|---|---|---|---|---|
+| drizzle | before | 27.1% | 6.35 | 1.71 | 7.94 | 88.7k | 0.276 / 0.288 | 1062 | 427,650 (423k-442k) | 330,649 |
+| | after | **8.5%** | 5.94 | 0.50 | 8.13 | **6.7k** | **0.227 / 0.231** | 1178 (+11%) | **8,816** (8.7k-9.0k) | 11,187 |
+| zod | before | 26.7% | 4.11 | 1.10 | 4.95 | 57.9k | 0.186 / 0.190 | 829 | 264,048 (249k-279k) | 207,498 |
+| | after | **9.1%** | 3.86 | 0.36 | 4.91 | **9.6k** | **0.158 / 0.161** | 897 (+8%) | **9,498** (7.0k-9.8k) | 10,917 |
+| effect | before | 21.6% | 6.79 | 1.47 | 7.56 | 76.1k | 0.276 / 0.278 | 913 | 378,956 (357k-395k) | 312,938 |
+| | after | **6.8%** | 6.50 | 0.44 | 7.57 | **6.7k** | **0.225 / 0.228** | 978 (+7%) | **11,279** (10.3k-12.4k) | 13,646 |
+| vue | before | 22.4% | 4.01 | 0.90 | 5.56 | 43.4k | 0.143 / 0.149 | 536 | 199,514 (198k-204k) | 165,112 |
+| | after | **7.8%** | 3.79 | 0.30 | 5.55 | **5.6k** | **0.123 / 0.129** | 579 (+8%) | **10,345** (5.7k-13.4k) | 11,775 |
+| react | before | 28.3% | 1.71 | 0.47 | 2.04 | 20.6k | 0.114 / 0.122 | 424 | 52,786 (46k-55k) | 45,652 |
+| | after | **17.4%** | 1.77 | 0.31 | 2.04 | **4.4k** | **0.098 / 0.102** | 475 (+12%) | **2,647** (2.2k-3.3k) | 4,686 |
+| nest | before | 30.0% | 1.06 | 0.32 | 0.99 | 5.5k | 0.055 / 0.055 | 295 | 6,801 (6.5k-7.7k) | 8,360 |
+| | after | 27.5% | 1.09 | 0.30 | 0.99 | 2.6k | 0.052 / 0.055 | 339 (+15%) | 758 (655-1232) | 3,263 |
+| vscode | before | 20.5% | 82.81 | 17.01 | 69.78 | 520.4k | 1.981 / 2.203 | 5325 | 4,433,402 (4.12M-4.86M) | 3,140,450 |
+| | after | **6.4%** | 80.58 | 5.16 | 69.80 | **20.7k** | **1.666 / 1.704** | 5515 (+4%) | **53,484** (34k-66k) | 65,507 |
+
+- **Confirmed: kernel cycles 21-28% of user -> 6.4-9.1%** on drizzle, zod, effect, vue and vscode (cycles:k -67 to -71%),
+  TLB shootdowns per run **-95 to -99%** (nest -89%; drizzle 428k -> 8.8k, vscode 4.4M -> 53k), function-call IPIs likewise.
+  User cycles also drop 3-7% on those five (fewer flushed TLBs to refill). **Walls -13 to -23%** (drizzle 0.288 -> 0.231 median,
+  zod 0.190 -> 0.161, effect 0.278 -> 0.228, vue 0.149 -> 0.129, vscode 2.20 -> 1.70), react -16%, nest level (it is
+  start-up bound: its kernel share stays 27.5%, faults 5.5k -> 2.6k).
+- **Faults -79 to -96%** (nest -53%), far more than the worker's box measured (-8 to -27%): with THP `always` and an idle laptop the
+  huge-page tables and the retained glibc heaps fault once per 2 MB.
+- **Peak RSS +4 to +15%, above the expected +2-5%**: drizzle +116 MB, zod +68, effect +65, vue +43, react +51, nest +44,
+  vscode +190. The small projects pay most in relative terms (the big tables' 2 MB pages kept per class, heaps no
+  longer trimmed). Not investigated: the four commits have no switches, so splitting the rise needs a build per commit.
+- drizzle's instructions:u +2.4% (7.94 -> 8.13 G) at the defaults, the others level (+-0.3%); the worker's callgrind K1
+  was flat, so likely the defaults' scheduling (who recycles, what is re-derived), not checked.
+
+**2. perf c2c on drizzle at the defaults** (`perf c2c record -- sh -c '10 runs'`, before then after; HITMs attributed
+by the sub-rows' code addresses in `perf c2c report --stdio -N`'s Pareto table; parser in the run's scratchpad, not kept):
+
+| | records | HITMs (local + remote) | kernel code | TLB-shootdown code (llist_reverse_order, should_flush_tlb, smp_call_function_many_cond, flush_tlb_func) | perf's own (merge_sched_in, event_sched_in, perf_event_update_userpage) | user code |
+|---|---|---|---|---|---|---|
+| before | 121.5k | 556 (374 + 182) | 65% | **217 (39%)**: llist_reverse_order+19 105, should_flush_tlb+27 73, smp_call_function_many_cond 30 | 34 | 193 (35%) |
+| after | 100.4k | 330 (272 + 58) | 48% | **2 (0.6%)** | 33 | 170 (52%) |
+
+- **The shootdown lines are gone.** The before kernel share here is 65%, not the 77-90% of the 48cd9835 section: that
+  was `--threads 12 --checkers 12`, this the defaults (24 threads), and HITMs are few (~55 per run), so read the
+  shares loosely. After, the kernel HITMs left are scheduling, futex (futex_wait, futex_unqueue, __x64_sys_futex:
+  ~19), FPU restore and perf's own.
+- **No hot user line**: in 10 runs no user cache line has more than one HITM, before or after. By function (after):
+  instantiate_structured 8, ty_instantiate_mapped 7, ty_prop_key_literal 6, distribute_conditional 4,
+  instantiate_anonymous 4, instantiate_conditional 4, heap_pop 4, ty_mapper_new 4 (before: instantiate_anonymous 15,
+  ty_instantiate_mapped 8, instantiate_conditional 8, instantiate_members 8, ty_realias 5): checker type creation on
+  freshly reused memory, spread over hundreds of lines, so no false sharing to fix.
+
+**3. Bench** (`scripts/bench.sh --runs 3 --checkers 12 --bun ...` on main, after part 2; fast/tttt). bun: the newest
+canary on the box (`--revision` 1.4.4-canary.1+fec4a8850, GitHub canary build of 2026-10-22; bbe37c5f's was
++6bb5dc195). Best wall s / CPU s (median run) / peak MB; bbe37c5f's in the column after each, bun's bbe37c5f best wall in
+parentheses:
+
+| corpus | default | bbe37c5f | K12 | bbe37c5f | single | bbe37c5f | bun | bun single | tsgo | tsgo single |
+|---|---|---|---|---|---|---|---|---|---|---|
+| TypeScript6 | 0.22 / 0.83 / 459 (K4) | 0.24 / 1.21 / 494 | 0.19 / 1.07 / 518 | 0.23 / 1.27 / 489 | 0.43 / 0.43 / 244 | 0.45 / 0.47 / 233 | 0.26 / 1.60 / 283 (0.33) | 0.95 / 0.95 / 153 (0.85) | 0.60 / 3.11 / 497 | 1.09 / 1.94 / 418 |
+| type-fest | 0.28 / 0.99 / 906 (K4) | 0.25 / 1.56 / 940 | 0.18 / 1.35 / 1052 | 0.20 / 1.42 / 948 | 0.65 / 0.65 / 604 | 0.68 / 0.68 / 586 | 0.94 / 6.14 / 969 (1.05) | 2.97 / 3.00 / 798 (3.30) | 3.98 / 18.1 / 5667 | 5.90 / 13.0 / 4313 |
+| valibot | 0.10 / 1.03 / 568 | 0.12 / 1.17 / 518 | 0.09 / 1.00 / 561 | 0.14 / 1.33 / 511 | 0.33 / 0.33 / 272 | 0.36 / 0.37 / 261 | 0.16 / 2.66 / 264 (0.18) | 0.77 / 0.95 / 148 (1.22) | 0.73 / 5.21 / 836 | 1.53 / 2.98 / 623 |
+| bulletproof-react | 0.10 / 0.63 / 470 (K11) | 0.11 / 0.66 / 438 | 0.09 / 0.65 / 492 | 0.11 / 0.72 / 443 | 0.18 / 0.17 / 176 | 0.17 / 0.17 / 174 | 0.18 / 1.07 / 238 (0.17) | 0.43 / 0.51 / 150 (0.43) | 0.43 / 2.59 / 449 | 0.57 / 1.06 / 289 |
+| nestjs-boilerplate | 0.05 / 0.41 / 340 | 0.05 / 0.39 / 321 | 0.05 / 0.43 / 336 | 0.05 / 0.42 / 312 | 0.12 / 0.12 / 141 | 0.12 / 0.13 / 146 | 0.06 / 0.58 / 198 (0.07) | 0.23 / 0.25 / 120 (0.26) | 0.15 / 1.46 / 253 | 0.29 / 0.56 / 207 |
+| webpack | 0.24 / 2.39 / 899 | 0.26 / 2.76 / 869 | 0.25 / 2.48 / 896 | 0.27 / 2.71 / 877 | 0.97 / 0.96 / 549 | 0.96 / 0.97 / 539 | 0.48 / 5.45 / 508 (0.47) | 1.52 / 1.52 / 331 (1.57) | 1.31 / 8.07 / 1159 | 2.66 / 4.53 / 965 |
+| zod | 0.16 / 1.65 / 906 | 0.17 / 1.60 / 848 | 0.16 / 1.66 / 899 | 0.19 / 1.85 / 852 | 0.52 / 0.53 / 456 | 0.50 / 0.50 / 446 | 0.23 / 3.56 / 373 (0.24) | 1.39 / 1.40 / 205 (1.25) | 1.12 / 8.57 / 1303 | 2.12 / 4.28 / 947 |
+| xstate | 0.09 / 0.79 / 532 | 0.12 / 1.08 / 491 | 0.11 / 0.89 / 525 | 0.12 / 1.06 / 482 | 0.27 / 0.32 / 205 | 0.29 / 0.29 / 200 | 0.16 / 1.63 / 234 (0.13) | 0.51 / 0.80 / 107 (0.49) | 0.43 / 2.90 / 469 | 0.84 / 1.52 / 363 |
+| drizzle | **0.24** / 2.45 / 1146 | 0.31 / 3.02 / 1121 | 0.25 / 2.52 / 1140 | 0.28 / 2.82 / 1098 | 0.63 / 0.63 / 485 | 0.63 / 0.65 / 471 | 0.31 / 5.05 / 428 (0.33) | 1.28 / 1.36 / 261 (1.44) | 1.53 / 10.9 / 1603 | 2.22 / 4.21 / 933 |
+| vue | 0.15 / 1.54 / 593 | 0.14 / 1.49 / 557 | 0.14 / 1.58 / 588 | 0.16 / 1.59 / 562 | 0.56 / 0.56 / 319 | 0.56 / 0.55 / 313 | 0.27 / 3.04 / 321 (0.26) | 1.06 / 1.52 / 181 (0.95) | 0.94 / 5.57 / 743 | 1.89 / 3.30 / 667 |
+| effect | 0.24 / 2.65 / 985 | 0.28 / 2.93 / 918 | 0.24 / 2.76 / 968 | 0.26 / 2.90 / 924 | 1.02 / 1.03 / 669 | 1.03 / 1.02 / 621 | 0.58 / 7.51 / 509 (0.62) | 2.52 / 2.70 / 326 (2.41) | 1.49 / 11.7 / 1509 | 3.44 / 5.39 / 1305 |
+| vscode | **1.75** / 33.1 / 5525 | 1.97 / 35.7 / 5354 | 1.77 / 21.0 / 5178 | 2.13 / 23.1 / 4992 | 9.62 / 9.82 / 4293 | 9.15 / 9.35 / 4090 | 1.93 / 41.1 / 2231 (1.98) | 12.85 / 12.9 / 1668 (14.83) | 8.64 / 56.5 / 7925 | 22.28 / 32.5 / 6612 |
+| excalidraw | 0.18 / 1.83 / 762 | 0.20 / 1.91 / 720 | 0.19 / 1.91 / 769 | 0.21 / 2.14 / 740 | 0.66 / 0.66 / 391 | 0.63 / 0.63 / 378 | 0.30 / 3.47 / 383 (0.24) | 1.29 / 1.54 / 253 (1.25) | 1.44 / 10.6 / 1781 | 2.19 / 3.56 / 911 |
+| tanstack-router | 0.14 / 1.00 / 606 (K8) | 0.18 / 1.59 / 593 | 0.16 / 1.32 / 631 | 0.16 / 1.47 / 588 | 0.49 / 0.48 / 323 | 0.48 / 0.47 / 320 | 0.23 / 2.86 / 375 (0.22) | 1.32 / 1.33 / 184 (0.96) | 1.21 / 6.53 / 888 | 2.09 / 3.86 / 691 |
+| TS6 -b | 0.49 / 2.62 / 560 | 0.48 / 2.72 / 518 | - | - | - | - | - | - | 1.31 / 6.96 / 548 | 2.52 / 4.02 / 526 |
+
+- **tttt beats the newest bun canary's wall at the defaults on every corpus**, vscode included (1.75 against 1.93;
+  bbe37c5f's bench tied it at 1.97 / 1.98), at 81% of bun's CPU there but 2.5x its peak (5525 against 2231 MB).
+  Single-threaded bun still leads on no corpus (vscode 12.85 against tttt's 9.62).
+- Multi-threaded walls -10 to -25% where the kernel share was (drizzle 0.31 -> 0.24, vscode 1.97 -> 1.75, xstate 0.12 ->
+  0.09, tanstack 0.18 -> 0.14); peaks +2-10% (part 1's RSS note). Single-threaded unchanged within this sitting's drift
+  (vscode 9.15 -> 9.62, but tsgo single moved 19.82 -> 22.28 in the same run: the box, not tttt).
+- The default checker policy now picks fewer checkers on some corpora than at bbe37c5f (in parentheses after the
+  default: TypeScript6 4, type-fest 4, tanstack 8, react 11): CPU down 0.4-0.6 s there; type-fest's default 0.28 is
+  now behind its K12's 0.18.
+
 ## The 12-core box at 48cd9835: shared graph A/B, nest libs sys (2026-10-22)
 Run by an agent on the human's laptop (Ryzen AI 9 HX 370, the hybrid of the 2989c0f0 section): AC, `balanced`, but
 **Firefox open and a qemu VM idling** (load ~1.7 before, 96% idle). No code change. perf 7.2.11, paranoid -1.
