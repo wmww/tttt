@@ -31,6 +31,111 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## The 12-core box at 48cd9835: shared graph A/B, nest libs sys (2026-10-22)
+Run by an agent on the human's laptop (Ryzen AI 9 HX 370, the hybrid of the 2989c0f0 section): AC, `balanced`, but
+**Firefox open and a qemu VM idling** (load ~1.7 before, 96% idle). No code change. perf 7.2.11, paranoid -1.
+
+**A. Shared graph A/B.** Two plain release builds (`-O3`, not PGO): `rel/` and `relpacked/` (`-DTTTT_SHARD_PACKED`,
+today's shard layout: the slots pointer beside the lock). Every run `--threads 12 --checkers 12 --checker-memory off
+--noEmit -p P` (paths.sh's). Configurations: **1** plain `rel`; **2** `TTTT_SHARED_GRAPH=1` `relpacked` (today's
+flag); **3** 2 + `TTTT_FIRST_TOUCH_STAMPS=0 TTTT_NESTING_ORDER=content`; **4** 3's env on `rel` (the layout fix); **5**
+4 + `TTTT_GRAPH_BATCH=1`. `perf stat -r 7` (8 events multiplexed at 71%; run-to-run +-0.2-1.7%). `LLC-load-misses` is
+`<not supported>` on this CPU: the fills are demand data fills by source, `ls_dmnd_fills_from_sys.local_ccx` (L3 or
+another L2 in the same CCX), `.near_cache` (the other CCX's cache) and `.dram_io_all`. Wall: best / median of 7,
+python `perf_counter`, the five configurations interleaved round-robin (the perf stat walls agree at 10 ms resolution).
+Changes against 1:
+
+| corpus | cfg | user instr | user cycles | IPC | kernel cycles | L1d misses | L3/L2 same CCX | other CCX | DRAM | wall best / median ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| drizzle | 1 | 10.08 G | 7.20 G | **1.40** | 1.71 G | 183 M | 15.1 M | 1.79 M | 17.6 M | 286 / 299 |
+| | 2 | 6.96 G -31% | 6.18 G -14% | 1.13 | 1.29 G | 149 M -19% | 16.9 M +11% | 2.98 M +67% | 15.4 M | 252 / 264 (-12%) |
+| | 3 | 7.33 G -27% | 6.33 G -12% | 1.16 | 1.25 G | 154 M -16% | 17.6 M +16% | 3.23 M +81% | 15.6 M | 256 / 268 (-10%) |
+| | 4 | 7.30 G -28% | 5.91 G -18% | **1.24** | 1.23 G | 152 M -17% | 16.6 M +10% | 2.43 M +36% | 15.3 M | **246** / 260 (-14%) |
+| | 5 | 7.86 G -22% | 6.54 G -9% | 1.20 | 1.30 G | 156 M -15% | 16.5 M +9% | 2.35 M +32% | 16.9 M | 262 / 269 (-8%) |
+| zod | 1 | 6.08 G | 4.62 G | **1.32** | 1.11 G | 118 M | 11.1 M | 1.18 M | 12.1 M | 183 / 188 |
+| | 2 | 5.58 G -8% | 4.76 G +3% | 1.17 | 0.96 G | 122 M +4% | 14.5 M +31% | 2.21 M +87% | 12.8 M | 195 / 199 (+7%) |
+| | 3 | 5.63 G -7% | 4.71 G +2% | 1.20 | 0.92 G | 121 M +2% | 14.1 M +28% | 2.18 M +84% | 12.5 M | 194 / 199 (+6%) |
+| | 4 | 5.58 G -8% | 4.53 G -2% | **1.23** | 0.93 G | 120 M +2% | 13.7 M +24% | 1.65 M +39% | 12.0 M | 187 / 189 (+2%) |
+| | 5 | 5.93 G -2% | 4.82 G +4% | 1.23 | 0.93 G | 122 M +3% | 13.9 M +26% | 1.63 M +38% | 12.7 M | 194 / 196 (+6%) |
+| effect | 1 | 9.23 G | 7.45 G | **1.24** | 1.38 G | 181 M | 17.2 M | 1.56 M | 17.6 M | 273 / 295 |
+| | 2 | 9.54 G +3% | 8.30 G +11% | 1.15 | 1.47 G | 207 M +14% | 23.6 M +37% | 3.15 M +102% | 20.4 M | 312 / 315 (+14%) |
+| | 3 | 9.54 G +3% | 8.25 G +11% | 1.16 | 1.38 G | 203 M +12% | 23.1 M +35% | 3.04 M +95% | 20.2 M | 309 / 311 (+13%) |
+| | 4 | 9.54 G +3% | 8.04 G +8% | **1.19** | 1.36 G | 204 M +13% | 22.7 M +32% | 2.20 M +41% | 20.0 M | 302 / 311 (+11%) |
+| | 5 | 9.82 G +6% | 8.35 G +12% | 1.18 | 1.39 G | 207 M +14% | 23.1 M +34% | 2.29 M +47% | 20.4 M | 301 / 310 (+10%) |
+| vue | 1 | 6.60 G | 4.32 G | **1.53** | 0.83 G | 116 M | 8.9 M | 1.04 M | 8.3 M | 156 / 157 |
+| | 2 | 6.65 G +1% | 4.91 G +13% | 1.36 | 0.79 G | 129 M +11% | 11.9 M +34% | 1.85 M +78% | 10.0 M | **198** / 203 (+27%) |
+| | 3 | 6.67 G +1% | 4.87 G +13% | 1.37 | 0.76 G | 127 M +10% | 11.7 M +32% | 1.76 M +69% | 9.8 M | 190 / 198 (+22%) |
+| | 4 | 6.63 G +0% | 4.77 G +10% | **1.39** | 0.76 G | 127 M +9% | 11.6 M +31% | 1.34 M +29% | 9.8 M | **195** / 199 (+25%) |
+| | 5 | 7.29 G +11% | 5.13 G +19% | 1.42 | 0.79 G | 135 M +17% | 11.6 M +31% | 1.33 M +28% | 10.1 M | 200 / 215 (+28%) |
+
+- **Decision numbers. IPC gap 1 -> 4: drizzle 1.40 -> 1.24 (-11%), zod 1.32 -> 1.23 (-7%), effect 1.24 -> 1.19 (-4%),
+  vue 1.53 -> 1.39 (-9%).** Today's flag (2) is 1.13 / 1.17 / 1.15 / 1.36: the layout fix (3 -> 4) closes about a
+  third of the gap on drizzle and zod, less on vue and effect. **vue's wall: 2 = 198 / 203 ms, 4 = 195 / 199 ms**,
+  against plain's 156 / 157: under the flag vue is +25%, not 2x (the 2x isn't reproduced here), and the layout fix
+  doesn't change it (-2%, noise). vue's flag runs do the same instructions as plain (+0-1%): the graph saves vue
+  nothing and its sharing costs 10-13% cycles.
+- The layout fix's mechanism is visible: fills from **the other CCX's cache** fall from +67-102% over plain (2, 3) to
+  +29-41% (4) on every corpus, user cycles -2 to -7% at equal instructions (3 -> 4). Fills within the CCX stay
+  +10-32% (true sharing of published data, not the shard header).
+- Only drizzle wins on wall with the flag (-14% at 4); zod is level (+2% at 4), effect +11%, vue +25%. drizzle's
+  win is instructions (-28%); every other corpus saves <= 8% instructions and loses more in IPC.
+- Content nesting order (2 -> 3) costs +5% instructions on drizzle, nothing elsewhere. Batched publication (5) is
+  worse everywhere: +6-10% instructions over 4 (vue +10%: more re-derivation while results are held to a file's end),
+  wall +1 to +8%.
+- **perf c2c on drizzle** (`perf c2c record -c 2000`, AMD IBS, one run each, ~330k samples): HITM loads 473 (2) / 506
+  (4). **Kernel lines dominate both: 90% (2) and 77% (4) of HITMs** are the TLB-shootdown IPI path
+  (`should_flush_tlb` 35% / 32%, `llist_reverse_order` 34% / 29%, `smp_call_function_many_cond`, `flush_tlb_func`:
+  per-CPU lines written by remote CPUs during munmap/madvise shootdowns; flush_tlb_func + native_flush_tlb_* +
+  should_flush_tlb are ~10% of all IBS op samples in both). User-space HITMs are 47 (2) and 114 (4):
+  `pthread_mutex_lock` 14 -> 44 (in 4 spread over lines 0x400-0x1000 apart, the separated shard locks most likely, plus the load pool's
+  mutex beside `load_pool_worker` 7 and libc's unresolved 0x94e81 15), `shared_table_insert` 11 / 10,
+  `structured_related_members` 3 / -, `scope_new` - / 4. No single user line above 1% of HITMs in either. Who
+  issues the shootdowns (arena madvise/munmap at the end of phases, AST drops) wasn't checked; with HITM samples this
+  small the user-space split is indicative only.
+- **Determinism**: configuration 4 on drizzle, 5 runs: byte-identical to each other, **but not to configuration 1**
+  (which equals K1 plain and, paths aside, tsc's cached text). `TTTT_NESTING_ORDER=content` alone at K1 (no graph)
+  gives configuration 4's output: 3 elaboration chains (mysql2, planetscale, singlestore `with(...).update(...)`)
+  print `'with(...).update(...).set(...).where(...).$dynamic()'` / `MySqlUpdateDynamic<...>` where tsc and plain
+  print `'with(...).update(...).set(...)'` / `MySqlUpdateBase<...>`. So content order is deterministic but moves
+  drizzle's text away from tsc's. Separately, today's flag on `rel` (stamps on) differed from K1 in 2 of 6 drizzle runs
+  (the `mysql-core` `execute` chain, a `Two different types with this name exist` elaboration); `relpacked` 1 of 1 the same.
+
+**B. nest libs-phase system time** (fast/tttt rebuilt at 48cd9835, 10 runs each, interleaved; median [min-max]).
+**`TTTT_AST_SMALL_KB=0` is the default, not off** (ast_alloc.c `populate()`: 0 means AST_SMALL_PAGES), so the
+requested pair is an A/A; `=1` (huge pages from the second 2 MB step, the nearest to off) added:
+
+| | default | SMALL_KB=0 | SMALL_KB=1 |
+|---|---|---|---|
+| libs wall / sys ms | 0.2 / 1.2 [0-4.1] | 0.2 / 1.4 [0-2.0] | 0.2 / 0.7 [0.2-1.7] |
+| load+parse files wall / sys ms | 22.5 / 63.7 [33-76] | 22.5 / 58.8 [42-68] | 21.8 / 58.9 [42-75] |
+| config + libs + files sys ms | 68.7 | 64.1 | 64.0 |
+| total wall ms | 62.2 [59.8-65.8] | 63.0 [59.3-67.8] | 63.1 [58.9-66.8] |
+| peak RSS MB | 303 [293-314] | 300 [286-309] | 304 [295-312] |
+
+- **The libs phase is gone**: 0.2 ms wall since b6f8a465 (the loader no longer waits for a library a worker is
+  parsing), its work now inside load+parse files. Compare the front end's sys as a whole.
+- Default vs `=1`: sys +4.7 ms median in load+parse files, but the A/A pair (default vs `=0`, the same code) differs by
+  4.9 ms and the spread is 35 ms: **no difference measurable** at 10 runs. Peak RSS isn't lower by default either
+  (303 vs 304): nest's peak is the typecheck's (~295 MB resident there against ~150 after parse), so the AST's last
+  huge pages don't reach it on this box. Total wall equal.
+
+**C. react's form.tsx** (single-threaded, 9 runs, median [min-max]). tttt: `TTTT_FILE_TIMES=1 fast/tttt --checkers 1
+--threads 1`: **`src/components/ui/form/form.tsx` 36.6 ms [36.1-40.3] of a 93.8 ms typecheck** (39%; the next file is
+dropdown.tsx at 5.6). tsgo prints no per-file time, so a differential on both sides: a scratch tsconfig extending
+`tsconfig.corpus.json` with only form.tsx in `files`, minus one with only `form/label.tsx` (which form.tsx imports;
+`typeRoots` set absolute), tsgo `--singleThreaded --extendedDiagnostics` check time:
+
+| | form.tsx alone | label.tsx alone | difference | whole project |
+|---|---|---|---|---|
+| tsgo check ms | 305 [201-413] | 109 [69-125] | **~196** | 363 [351-414] |
+| tsgo types | 105334 | 7052 | 98282 (74% of the project's) | 133385 |
+| tttt typecheck ms | 42.1 [40.9-54.8] | 3.1 [2.8-5.0] | **~39** | 93.8 [90.4-96.1] |
+| tttt types | 66951 | 2298 | 64653 (72%) | 89481 |
+
+- **tsc pays the same**: form.tsx (react-hook-form's generics with zodResolver) is about half of tsgo's check time
+  and three quarters of its types, as it is ~40% of tttt's time and 72% of its types. tttt does it 5x faster. tsgo's
+  form-alone times are noisy (GC); the type counts are exact.
+
 ## Fresh repositories, fourth rule: bun lockfiles (2026-10-22)
 Refresh 5 (cor6, repos.txt "Refresh 5"): the application-code rule of refresh 4 for repos whose only lockfile is bun's,
 installed with a pinned bun 1.4.3 (ensure-sources.sh): refresh 4's 16 skipped hits (12 pass its tsconfig criteria) plus
