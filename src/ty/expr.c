@@ -6324,6 +6324,8 @@ static bool reads_string_index_only(Checker* me, Ty const* object, Ty const* key
 static Ty const* generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
     key = ty_regular(me, key);
     if (!ty_is_generic_index(key)) return nullptr;
+    // (An unknown object was TS18046/TS2571 and is the error type then, whatever the key: tsc's checkNonNullExpression)
+    if ((object->flags & TYF_UNKNOWN) && compiler_options()->strict_null_checks) return ty_intrinsic(me, TY_ERROR);
     if (object->flags & (TYF_ANY | TYF_UNKNOWN)) return object;
     // (Of the non-nullable object: tsc's checkNonNullExpression has reported null and undefined, TS18048, and removed
     // them; `obj[key]` with `obj: T extends R | undefined` is `R[K]`)

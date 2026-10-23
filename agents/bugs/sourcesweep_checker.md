@@ -493,7 +493,10 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   variable whose initializer calls a generic GraphQL helper; which declarations are in a circularity depends on the
   resolution order. [open]
 - **mulmoclaude: +TS2345 `unknown` to `string`** at server/utils/validateEntryList.ts:40 (configs mulmoclaude/server,
-  mulmoclaude/test). Guess: a narrowing (typeof / type guard over an `unknown` element) tsgo applies. [open]
+  mulmoclaude/test): `hasStringProp` is unresolved there (its package isn't built: TS2305 on both sides), so `item:
+  unknown` isn't narrowed and `item[spec.echoProp]` (a generic key) was TS18046 and then `unknown`; tsc's
+  checkNonNullExpression makes it the error type whatever the key. Fixed in generic_element_access (src/ty/expr.c),
+  repro test/cases/ttttUnknownGenericElementAccess.ts. [fixed 2026-10-23]
 - **deepmonkey-studio/apps/web: +TS2339 on `never`** at src/delivery/r3StateFrame.ts:211 (`clip.axis`, `clip.inverted`)
   after `if (clip.kind !== "axis") fail(...)` inside a switch case in a for loop, `fail(): never`, `let clip:
   ClipState`. Not K-dependent (K1 and `TTTT_CHECK_ONLY=r3StateFrame.ts` show it). Flow: an assertion-style `never` call

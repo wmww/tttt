@@ -1,0 +1,81 @@
+//// [test/cases/ttttUnknownGenericElementAccess.ts] ////
+
+=== ttttUnknownGenericElementAccess.ts ===
+// An element access on an unknown object with a generic key is TS18046 and then the error type, like any other key
+// (tsc's checkNonNullExpression comes first): no TS2345 for passing it on, no TS2571 for calling it (mulmoclaude)
+declare function take(s: string): void;
+>take : (s: string) => void
+>s : string
+
+export function f<K extends string>(item: unknown, k: K, o: { item: unknown }) {
+>f : <K extends string>(item: unknown, k: K, o: { item: unknown; }) => void
+>item : unknown
+>k : K
+>o : { item: unknown; }
+>item : unknown
+
+    take(item[k]);
+>take(item[k]) : void
+>take : (s: string) => void
+>item[k] : any
+>item : unknown
+>k : K
+
+    take(item["x"]);
+>take(item["x"]) : void
+>take : (s: string) => void
+>item["x"] : any
+>item : unknown
+>"x" : "x"
+
+    take(item.x);
+>take(item.x) : void
+>take : (s: string) => void
+>item.x : any
+>item : unknown
+>x : any
+
+    take(o.item[k]);
+>take(o.item[k]) : void
+>take : (s: string) => void
+>o.item[k] : any
+>o.item : unknown
+>o : { item: unknown; }
+>item : unknown
+>k : K
+
+    take(o.item.y);
+>take(o.item.y) : void
+>take : (s: string) => void
+>o.item.y : any
+>o.item : unknown
+>o : { item: unknown; }
+>item : unknown
+>y : any
+
+    const e = item[k];
+>e : any
+>item[k] : any
+>item : unknown
+>k : K
+
+    take(e);
+>take(e) : void
+>take : (s: string) => void
+>e : any
+
+    item[k]();
+>item[k]() : any
+>item[k] : any
+>item : unknown
+>k : K
+
+    item();
+>item() : any
+>item : unknown
+
+    new item();
+>new item() : any
+>item : unknown
+}
+

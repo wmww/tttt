@@ -1,0 +1,46 @@
+ttttUnknownGenericElementAccess.ts(5,10): error TS18046: 'item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(6,10): error TS18046: 'item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(7,10): error TS18046: 'item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(8,10): error TS18046: 'o.item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(9,10): error TS18046: 'o.item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(10,15): error TS18046: 'item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(12,5): error TS18046: 'item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(13,5): error TS18046: 'item' is of type 'unknown'.
+ttttUnknownGenericElementAccess.ts(14,9): error TS18046: 'item' is of type 'unknown'.
+
+
+==== ttttUnknownGenericElementAccess.ts (9 errors) ====
+    // An element access on an unknown object with a generic key is TS18046 and then the error type, like any other key
+    // (tsc's checkNonNullExpression comes first): no TS2345 for passing it on, no TS2571 for calling it (mulmoclaude)
+    declare function take(s: string): void;
+    export function f<K extends string>(item: unknown, k: K, o: { item: unknown }) {
+        take(item[k]);
+             ~~~~
+!!! error TS18046: 'item' is of type 'unknown'.
+        take(item["x"]);
+             ~~~~
+!!! error TS18046: 'item' is of type 'unknown'.
+        take(item.x);
+             ~~~~
+!!! error TS18046: 'item' is of type 'unknown'.
+        take(o.item[k]);
+             ~~~~~~
+!!! error TS18046: 'o.item' is of type 'unknown'.
+        take(o.item.y);
+             ~~~~~~
+!!! error TS18046: 'o.item' is of type 'unknown'.
+        const e = item[k];
+                  ~~~~
+!!! error TS18046: 'item' is of type 'unknown'.
+        take(e);
+        item[k]();
+        ~~~~
+!!! error TS18046: 'item' is of type 'unknown'.
+        item();
+        ~~~~
+!!! error TS18046: 'item' is of type 'unknown'.
+        new item();
+            ~~~~
+!!! error TS18046: 'item' is of type 'unknown'.
+    }
+    
