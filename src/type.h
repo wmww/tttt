@@ -344,6 +344,8 @@ void type_flow_restore(TypeFlow const* saved);
 // A type literal with index signatures whose members type_typecheck() checks against them (TS2411/TS2413)
 bool type_literal_has_index_constraints(TypeNode const* me);
 void type_typecheck(TypeNode const* me, ErrorCtx* errs);
+// A reference node (TYPE_IDENTIFIER): args_checked when its type arguments were checked already
+void type_identifier_typecheck(TypeNode const* me, bool args_checked, ErrorCtx* errs);
 #define g_class_key TypeNode, type
 #define g_no_clone
 #define g_declared

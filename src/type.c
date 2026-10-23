@@ -520,6 +520,23 @@ static void jsdoc_type_typecheck(TypeNode const* me, ErrorCtx* errs) {
     cstr_drop(&text);
 }
 
+void type_identifier_typecheck(TypeNode const* me, bool args_checked, ErrorCtx* errs) {
+    // Its type arguments first (tsc's checkTypeReferenceNode), then the reference itself: tsc's
+    // checkTypeReferenceOrImport resolves it (getTypeFromTypeReference): a generic alias's instantiation runs into its
+    // limits here, at the reference (TS2589, TS2799), and when that made it the error type its type arguments'
+    // constraints aren't checked
+    if (!args_checked) identifier_type_typecheck_args(my identifier, errs);
+    bool resolved_error = false;
+    if (my identifier->target && (my identifier->target->flags & SYMBOL_TYPE_ALIAS) &&
+        vec_spanned_type_size(&my identifier->generic_params)
+    ) {
+        CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my identifier));
+        resolved_error = (ty_of_node(me)->flags & TYF_ERROR) != 0;
+        ty_leave_node(current_checker, saved);
+    }
+    identifier_type_typecheck(my identifier, resolved_error, true, errs);
+}
+
 void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
@@ -539,20 +556,7 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             type_typecheck(&my inferred->extends, errs);
             ty_check_infer_constraints(current_checker, my inferred, errs);
             break;
-        case TYPE_IDENTIFIER: {
-            // tsc's checkTypeReferenceNode resolves the reference (getTypeFromTypeReference): a generic alias's
-            // instantiation runs into its limits here, at the reference (TS2589, TS2799), and when that made it the
-            // error type its type arguments' constraints aren't checked (checkTypeReferenceOrImport)
-            bool resolved_error = false;
-            if (my identifier->target && (my identifier->target->flags & SYMBOL_TYPE_ALIAS) &&
-                vec_spanned_type_size(&my identifier->generic_params)
-            ) {
-                CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my identifier));
-                resolved_error = (ty_of_node(me)->flags & TYF_ERROR) != 0;
-                ty_leave_node(current_checker, saved);
-            }
-            identifier_type_typecheck(my identifier, resolved_error, errs);
-        }   break;
+        case TYPE_IDENTIFIER: type_identifier_typecheck(me, false, errs); break;
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
         case TYPE_INTERFACE:
             // A type literal (an interface's body is checked by interface_decl_typecheck())

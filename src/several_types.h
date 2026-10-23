@@ -133,7 +133,9 @@ typedef struct TypeParamDefaultScope {
 } TypeParamDefaultScope;
 extern _Thread_local TypeParamDefaultScope identifier_type_default_scope;
 // resolved_error: the reference resolved to the error type (no constraint check, tsc's checkTypeReferenceOrImport)
-void identifier_type_typecheck(IdentifierType const* me, bool resolved_error, ErrorCtx* errs);
+// args_checked: identifier_type_typecheck_args() ran already (before the reference was resolved, tsc's order)
+void identifier_type_typecheck(IdentifierType const* me, bool resolved_error, bool args_checked, ErrorCtx* errs);
+void identifier_type_typecheck_args(IdentifierType const* me, ErrorCtx* errs);
 // tsc's getTypeFromClassOrInterfaceReference arity check of a reference to `symbol` with arg_count type arguments
 // (TS2314/TS2707, TS2315 for a type that isn't generic). Whether it reported
 bool identifier_type_is_jsdoc_function(IdentifierType const* me);

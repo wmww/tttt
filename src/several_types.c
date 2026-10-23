@@ -722,12 +722,21 @@ bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, b
     return true;
 }
 
-static void identifier_type_typecheck_inner(IdentifierType const* me, bool resolved_error, ErrorCtx* errs);
+static void identifier_type_typecheck_inner(IdentifierType const* me, bool resolved_error, bool args_checked, ErrorCtx* errs);
 
-void identifier_type_typecheck(IdentifierType const* me, bool resolved_error, ErrorCtx* errs) {
+// tsc's checkTypeReferenceNode checks the type arguments first (checkSourceElements), and only then resolves the
+// reference: `type IQux = InferEntity<typeof Qux>` evaluates Qux before the alias is asked for (mikro-orm's
+// defineEntity.test.ts, where the other order meets the alias again inside Qux's call)
+void identifier_type_typecheck_args(IdentifierType const* me, ErrorCtx* errs) {
+    // (tsc's checkImportType doesn't check an import type's type arguments, only their constraints)
+    if (identifier_type_import_ref(me)) return;
+    for_each (i, vec_spanned_type, &my generic_params) type_typecheck(&i->type, errs);
+}
+
+void identifier_type_typecheck(IdentifierType const* me, bool resolved_error, bool args_checked, ErrorCtx* errs) {
     // tsc's checkSourceElement of a TypeReference: where its instantiation errors go
     CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(me));
-    identifier_type_typecheck_inner(me, resolved_error, errs);
+    identifier_type_typecheck_inner(me, resolved_error, args_checked, errs);
     ty_leave_node(current_checker, saved);
     // (tsgo's checkImportType ends with checkImportAttributes: the attributes against the global ImportAttributes,
     // and nothing more for an import type)
@@ -737,7 +746,7 @@ void identifier_type_typecheck(IdentifierType const* me, bool resolved_error, Er
     }
 }
 
-static void identifier_type_typecheck_inner(IdentifierType const* me, bool resolved_error, ErrorCtx* errs) {
+static void identifier_type_typecheck_inner(IdentifierType const* me, bool resolved_error, bool args_checked, ErrorCtx* errs) {
     IdentifierTypeRare const* rare = my rare;
     if (rare && rare->import_attributes) { // tsc's checkImportType
         // (tsgo's checkGrammarImportAttributeValues: only a string literal, not a template)
@@ -749,10 +758,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, bool resol
         // (`assert` is the parser's TS2880)
         import_attributes_resolution_mode(rare->import_attributes, errs);
     }
-    // (tsc's checkImportType doesn't check an import type's type arguments, only their constraints)
-    if (!identifier_type_import_ref(me)) {
-        for_each (i, vec_spanned_type, &my generic_params) type_typecheck(&i->type, errs);
-    }
+    if (!args_checked) identifier_type_typecheck_args(me, errs);
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE) {
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }

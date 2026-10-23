@@ -263,7 +263,11 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     ty_check_variance_annotations(current_checker, my symbol, &my generic, true, errs);
     // tsc's checkTypeReferenceNode resolves every reference it walks. When the reference is the body, that is the alias's
     // own type, which lowers it in the alias's context (a deferred reference, the alias name)
+    bool args_checked = false;
     if (my symbol && my type.tag == TYPE_IDENTIFIER) {
+        // (Its type arguments before it, like any reference: tsc's checkTypeReferenceNode)
+        identifier_type_typecheck_args(my type.identifier, errs);
+        args_checked = true;
         CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my type.identifier));
         ty_declared_type_of(current_checker, my symbol);
         ty_leave_node(current_checker, saved);
@@ -304,7 +308,8 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
                 "The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.");
         }
     }
-    type_typecheck(&my type, errs);
+    if (args_checked) type_identifier_typecheck(&my type, true, errs);
+    else type_typecheck(&my type, errs);
 }
 
 // Namespace declaration
