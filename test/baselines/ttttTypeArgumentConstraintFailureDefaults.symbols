@@ -1,0 +1,73 @@
+//// [test/cases/ttttTypeArgumentConstraintFailureDefaults.ts] ////
+
+=== ttttTypeArgumentConstraintFailureDefaults.ts ===
+// A call whose explicit type arguments fail their constraints (TS2344) returns what tsc's getTypeArgumentsFromNodes
+// gives: a missing type argument is its default as written, not instantiated (portabase's react-hook-form useForm:
+// UseFormReturn<output<Z>, any, TFieldValues>, TS2322 against the annotation)
+type FieldValues = Record<string, any>;
+>FieldValues : Symbol(FieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 0, 0))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+type output<T> = T extends {} ? T extends { _zod: { output: infer O } } ? O : unknown : unknown;
+>output : Symbol(output, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 3, 39))
+>T : Symbol(T, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 12))
+>T : Symbol(T, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 12))
+>T : Symbol(T, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 12))
+>_zod : Symbol(_zod, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 43))
+>output : Symbol(output, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 51))
+>O : Symbol(O, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 65))
+>O : Symbol(O, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 65))
+
+type UseFormHandleSubmit<TFieldValues extends FieldValues, TTransformedValues = TFieldValues> = (onValid: (data: TTransformedValues) => void, onInvalid?: (e: TFieldValues) => void) => void;
+>UseFormHandleSubmit : Symbol(UseFormHandleSubmit, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 96))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 25))
+>FieldValues : Symbol(FieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 0, 0))
+>TTransformedValues : Symbol(TTransformedValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 58))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 25))
+>onValid : Symbol(onValid, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 97))
+>data : Symbol(data, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 107))
+>TTransformedValues : Symbol(TTransformedValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 58))
+>onInvalid : Symbol(onInvalid, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 141))
+>e : Symbol(e, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 155))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 25))
+
+type UseFormReturn<TFieldValues extends FieldValues = FieldValues, TContext = any, TTransformedValues = TFieldValues> = {
+>UseFormReturn : Symbol(UseFormReturn, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 189))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 6, 19))
+>FieldValues : Symbol(FieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 0, 0))
+>FieldValues : Symbol(FieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 0, 0))
+>TContext : Symbol(TContext, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 6, 66))
+>TTransformedValues : Symbol(TTransformedValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 6, 82))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 6, 19))
+
+    handleSubmit: UseFormHandleSubmit<TFieldValues, TTransformedValues>;
+>handleSubmit : Symbol(handleSubmit, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 6, 121))
+>UseFormHandleSubmit : Symbol(UseFormHandleSubmit, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 4, 96))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 6, 19))
+>TTransformedValues : Symbol(TTransformedValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 6, 82))
+
+};
+declare function useForm<TFieldValues extends FieldValues = FieldValues, TContext = any, TTransformedValues = TFieldValues>(props?: {}): UseFormReturn<TFieldValues, TContext, TTransformedValues>;
+>useForm : Symbol(useForm, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 8, 2))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 25))
+>FieldValues : Symbol(FieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 0, 0))
+>FieldValues : Symbol(FieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 0, 0))
+>TContext : Symbol(TContext, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 72))
+>TTransformedValues : Symbol(TTransformedValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 88))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 25))
+>props : Symbol(props, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 124))
+>UseFormReturn : Symbol(UseFormReturn, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 189))
+>TFieldValues : Symbol(TFieldValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 25))
+>TContext : Symbol(TContext, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 72))
+>TTransformedValues : Symbol(TTransformedValues, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 9, 88))
+
+const useZodForm = <Z extends object>(): UseFormReturn<output<Z>> => useForm<output<Z>>({});
+>useZodForm : Symbol(useZodForm, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 10, 5))
+>Z : Symbol(Z, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 10, 20))
+>UseFormReturn : Symbol(UseFormReturn, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 5, 189))
+>output : Symbol(output, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 3, 39))
+>Z : Symbol(Z, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 10, 20))
+>useForm : Symbol(useForm, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 8, 2))
+>output : Symbol(output, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 3, 39))
+>Z : Symbol(Z, Decl(ttttTypeArgumentConstraintFailureDefaults.ts, 10, 20))
+

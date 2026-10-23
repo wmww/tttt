@@ -2758,7 +2758,7 @@ static Resolution resolve_with_signatures_inner(
                 if (i == 0 || params > most) most = params, best = i;
             }
             Signature const* sig = signatures[best];
-            Candidate candidate = info->type_arg_nodes ? (Candidate){ .sig = sig, .mapper = explicit_type_arguments(me, sig, info) } :
+            Candidate candidate = info->type_arg_nodes ? (Candidate){ .sig = sig, .mapper = failure_type_arguments(me, sig, info) } :
                 sig_res(me, sig)->type_params.len ? make_candidate(me, sig, args, info, true, true) : (Candidate){ .sig = sig };
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
