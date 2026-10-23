@@ -143,6 +143,14 @@ typedef struct FlowQuery {
     bool substitutes_constraints; // See Checker.flow_substitutes_constraints
 } FlowQuery;
 
+// An incomplete never (narrowed away while a loop is still at a partial type, or a label's union of such) is the
+// silent never, which reports nothing when operators are applied to it: control could get here once the loop's type
+// is complete (tsc's newFlowType; a guard in an `if` whose other branch calls a `never` function joins it at the label)
+static FlowType new_flow_type(FlowQuery* q, Ty const* type, bool incomplete) {
+    if (incomplete && (type->flags & TYF_NEVER)) type = ty_intrinsic(q->me, TY_SILENT_NEVER);
+    return (FlowType){ type, incomplete };
+}
+
 static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow);
 static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool nullish);
 static bool is_type_subset_of(Ty const* source, Ty const* target);
@@ -281,7 +289,7 @@ static bool type_at_array_mutation(FlowQuery* q, FlowNode const* flow, FlowType*
             evolved = add_evolving_element(me, evolved, &node->binary_op->right);
         }
     }
-    *out = (FlowType){ evolved, before.incomplete };
+    *out = new_flow_type(q, evolved, before.incomplete);
     return true;
 }
 
@@ -1403,7 +1411,7 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
         }
         if (assign_is_compound(assign)) {
             FlowType before = type_at_flow_node(q, flow->antecedent);
-            *out = (FlowType){ base_type_of_literal(me, before.type), before.incomplete };
+            *out = new_flow_type(q, base_type_of_literal(me, before.type), before.incomplete);
             return true;
         }
         Ty const* declared = q->declared;
@@ -1457,7 +1465,7 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
             FlowType before = type_at_flow_node(q, flow->antecedent);
             Ty const* type = final_array_type(me, before.type);
             type = ty_non_nullable_if_needed(me, type);
-            *out = (FlowType){ type, before.incomplete };
+            *out = new_flow_type(q, type, before.incomplete);
             return true;
         }
     }
@@ -3375,7 +3383,7 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
         else if (access.name) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
     }
     if (type == final_array_type(me, before.type)) return before;
-    return (FlowType){ type, before.incomplete };
+    return new_flow_type(q, type, before.incomplete);
 }
 
 // tsc's isExhaustiveSwitchStatement(): the cases cover everything the needle can be
@@ -3447,10 +3455,8 @@ static FlowType type_at_flow_condition(FlowQuery* q, FlowNode const* flow) {
     Ty const* non_evolving = final_array_type(q->me, before.type);
     Ty const* narrowed = narrow_type(q, non_evolving, flow->node, assume_true, (flow->flags & FLOW_NULLISH) != 0);
     if (narrowed == non_evolving) return before;
-    // A guard that leaves nothing of an incomplete type says control could get here once the type is complete: the
-    // silent never doesn't report errors when operators are applied to it
-    if (before.incomplete && (narrowed->flags & TYF_NEVER)) narrowed = ty_intrinsic(q->me, TY_SILENT_NEVER);
-    return (FlowType){ narrowed, before.incomplete };
+    // (A guard that leaves nothing of an incomplete type is the silent never: new_flow_type())
+    return new_flow_type(q, narrowed, before.incomplete);
 }
 
 // Labels
@@ -3550,7 +3556,7 @@ static FlowType type_at_branch_label(FlowQuery* q, FlowList const* antecedents) 
             seen_incomplete |= branch.incomplete;
         }
     }
-    ret = (FlowType){ union_at_label(q, &types, subtype_reduction), seen_incomplete };
+    ret = new_flow_type(q, union_at_label(q, &types, subtype_reduction), seen_incomplete);
     ty_buf_drop(&types);
     return ret;
 }
@@ -3580,7 +3586,7 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
             my flow_incomplete_seen++;
             Ty const* so_far = is_auto(me, q->declared) ? union_or_evolving(me, entry->types->data, entry->types->len, false) :
                 recombine_unknown(me, ty_union(me, entry->types->data, entry->types->len, nullptr, (TyList){0}));
-            return (FlowType){ so_far, true };
+            return new_flow_type(q, so_far, true);
         }
     }
     TyBuf types = {0};
@@ -3611,7 +3617,7 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
     }
     Ty const* result = union_at_label(q, &types, subtype_reduction);
     ty_buf_drop(&types);
-    if (first.incomplete) return (FlowType){ result, true };
+    if (first.incomplete) return new_flow_type(q, result, true);
     *intern_slot(me, &my links, cache_key, 3) = result;
     return (FlowType){ result, false };
 }
@@ -3675,7 +3681,7 @@ static bool type_at_flow_call(FlowQuery* q, FlowNode const* flow, FlowType* out)
         } else if (!predicate->is_this && predicate->param_index >= 0 && predicate->param_index < vec_expr_size(&expr->call->args)) {
             narrowed = narrow_by_assertion(q, type, vec_expr_at(&expr->call->args, predicate->param_index));
         }
-        *out = narrowed == type ? before : (FlowType){ narrowed, before.incomplete };
+        *out = narrowed == type ? before : new_flow_type(q, narrowed, before.incomplete);
         return true;
     }
     if (effects.returns_never) {
@@ -3733,7 +3739,7 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
             for (u32 i = q->shared_start; i < my flow_shared_count; i++) {
                 if (my flow_shared[i].flow == flow) {
                     q->depth--;
-                    return (FlowType){ my flow_shared[i].type, my flow_shared[i].incomplete };
+                    return new_flow_type(q, my flow_shared[i].type, my flow_shared[i].incomplete);
                 }
             }
             shared = flow;

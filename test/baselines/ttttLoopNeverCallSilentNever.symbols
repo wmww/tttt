@@ -1,0 +1,60 @@
+//// [test/cases/ttttLoopNeverCallSilentNever.ts] ////
+
+=== ttttLoopNeverCallSilentNever.ts ===
+// A reference narrowed to never while its loop is still at a partial type is the silent never at every flow node
+// (tsc's newFlowType), not only at the condition: here the label after `if (...) fail()` joins the unreachable call
+// with the narrowed branch, and `clip.axis` in the assignment the loop evaluates for its back edge reported TS2339 on
+// never (deepmonkey-studio)
+type ClipState = { readonly kind: "off" } | { readonly kind: "axis"; readonly axis: string };
+>ClipState : Symbol(ClipState, Decl(ttttLoopNeverCallSilentNever.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttLoopNeverCallSilentNever.ts, 4, 18))
+>kind : Symbol(kind, Decl(ttttLoopNeverCallSilentNever.ts, 4, 45))
+>axis : Symbol(axis, Decl(ttttLoopNeverCallSilentNever.ts, 4, 68))
+
+declare function fail(): never;
+>fail : Symbol(fail, Decl(ttttLoopNeverCallSilentNever.ts, 4, 93))
+
+declare const ops: number[];
+>ops : Symbol(ops, Decl(ttttLoopNeverCallSilentNever.ts, 6, 13))
+
+export function frame(): ClipState {
+>frame : Symbol(frame, Decl(ttttLoopNeverCallSilentNever.ts, 6, 28))
+>ClipState : Symbol(ClipState, Decl(ttttLoopNeverCallSilentNever.ts, 0, 0))
+
+  let clip: ClipState = { kind: "off" };
+>clip : Symbol(clip, Decl(ttttLoopNeverCallSilentNever.ts, 8, 5))
+>ClipState : Symbol(ClipState, Decl(ttttLoopNeverCallSilentNever.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttLoopNeverCallSilentNever.ts, 8, 25))
+
+  for (const op of ops) {
+>op : Symbol(op, Decl(ttttLoopNeverCallSilentNever.ts, 9, 12))
+>ops : Symbol(ops, Decl(ttttLoopNeverCallSilentNever.ts, 6, 13))
+
+    if (op === 1) {
+>op : Symbol(op, Decl(ttttLoopNeverCallSilentNever.ts, 9, 12))
+
+      clip = { kind: "axis", axis: "a" };
+>clip : Symbol(clip, Decl(ttttLoopNeverCallSilentNever.ts, 8, 5))
+>kind : Symbol(kind, Decl(ttttLoopNeverCallSilentNever.ts, 11, 14))
+>axis : Symbol(axis, Decl(ttttLoopNeverCallSilentNever.ts, 11, 28))
+
+    } else {
+      if (clip.kind !== "axis") fail();
+>clip.kind : Symbol(kind, Decl(ttttLoopNeverCallSilentNever.ts, 4, 18), Decl(ttttLoopNeverCallSilentNever.ts, 4, 45))
+>clip : Symbol(clip, Decl(ttttLoopNeverCallSilentNever.ts, 8, 5))
+>kind : Symbol(kind, Decl(ttttLoopNeverCallSilentNever.ts, 4, 18), Decl(ttttLoopNeverCallSilentNever.ts, 4, 45))
+>fail : Symbol(fail, Decl(ttttLoopNeverCallSilentNever.ts, 4, 93))
+
+      clip = { kind: "axis", axis: clip.axis };
+>clip : Symbol(clip, Decl(ttttLoopNeverCallSilentNever.ts, 8, 5))
+>kind : Symbol(kind, Decl(ttttLoopNeverCallSilentNever.ts, 14, 14))
+>axis : Symbol(axis, Decl(ttttLoopNeverCallSilentNever.ts, 14, 28))
+>clip.axis : Symbol(axis, Decl(ttttLoopNeverCallSilentNever.ts, 4, 68))
+>clip : Symbol(clip, Decl(ttttLoopNeverCallSilentNever.ts, 8, 5))
+>axis : Symbol(axis, Decl(ttttLoopNeverCallSilentNever.ts, 4, 68))
+    }
+  }
+  return clip;
+>clip : Symbol(clip, Decl(ttttLoopNeverCallSilentNever.ts, 8, 5))
+}
+

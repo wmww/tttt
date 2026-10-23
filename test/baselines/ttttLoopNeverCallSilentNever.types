@@ -1,0 +1,72 @@
+//// [test/cases/ttttLoopNeverCallSilentNever.ts] ////
+
+=== ttttLoopNeverCallSilentNever.ts ===
+// A reference narrowed to never while its loop is still at a partial type is the silent never at every flow node
+// (tsc's newFlowType), not only at the condition: here the label after `if (...) fail()` joins the unreachable call
+// with the narrowed branch, and `clip.axis` in the assignment the loop evaluates for its back edge reported TS2339 on
+// never (deepmonkey-studio)
+type ClipState = { readonly kind: "off" } | { readonly kind: "axis"; readonly axis: string };
+>ClipState : ClipState
+>kind : "off"
+>kind : "axis"
+>axis : string
+
+declare function fail(): never;
+>fail : () => never
+
+declare const ops: number[];
+>ops : number[]
+
+export function frame(): ClipState {
+>frame : () => ClipState
+
+  let clip: ClipState = { kind: "off" };
+>clip : ClipState
+>{ kind: "off" } : { kind: "off"; }
+>kind : "off"
+>"off" : "off"
+
+  for (const op of ops) {
+>op : number
+>ops : number[]
+
+    if (op === 1) {
+>op === 1 : boolean
+>op : number
+>1 : 1
+
+      clip = { kind: "axis", axis: "a" };
+>clip = { kind: "axis", axis: "a" } : { kind: "axis"; axis: string; }
+>clip : ClipState
+>{ kind: "axis", axis: "a" } : { kind: "axis"; axis: string; }
+>kind : "axis"
+>"axis" : "axis"
+>axis : string
+>"a" : "a"
+
+    } else {
+      if (clip.kind !== "axis") fail();
+>clip.kind !== "axis" : boolean
+>clip.kind : "axis" | "off"
+>clip : ClipState
+>kind : "axis" | "off"
+>"axis" : "axis"
+>fail() : never
+>fail : () => never
+
+      clip = { kind: "axis", axis: clip.axis };
+>clip = { kind: "axis", axis: clip.axis } : { kind: "axis"; axis: string; }
+>clip : ClipState
+>{ kind: "axis", axis: clip.axis } : { kind: "axis"; axis: string; }
+>kind : "axis"
+>"axis" : "axis"
+>axis : string
+>clip.axis : string
+>clip : { readonly kind: "axis"; readonly axis: string; }
+>axis : string
+    }
+  }
+  return clip;
+>clip : ClipState
+}
+

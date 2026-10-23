@@ -499,8 +499,11 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   repro test/cases/ttttUnknownGenericElementAccess.ts. [fixed 2026-10-23]
 - **deepmonkey-studio/apps/web: +TS2339 on `never`** at src/delivery/r3StateFrame.ts:211 (`clip.axis`, `clip.inverted`)
   after `if (clip.kind !== "axis") fail(...)` inside a switch case in a for loop, `fail(): never`, `let clip:
-  ClipState`. Not K-dependent (K1 and `TTTT_CHECK_ONLY=r3StateFrame.ts` show it). Flow: an assertion-style `never` call
-  narrowing a reassigned `let` in a loop. [open]
+  ClipState`. The assignment's right side, evaluated for the loop's back edge while the loop is at its partial type
+  ({kind: "off"}), narrowed clip to never; tttt made an incomplete never silent only at the condition, and the label
+  after the `if` (joining the unreachable `fail()` with it) turned it back into a real never. tsc's newFlowType makes
+  every incomplete never the silent never: new_flow_type (src/ty/flow.c), repro
+  test/cases/ttttLoopNeverCallSilentNever.ts. [fixed 2026-10-23]
 - **ark (packages/solid, templates/solid-start): +TS2322** at packages/solid/src/components/factory.tsx:32 (`Type 'string'
   is not assignable to type 'keyof { [P in keyof HTMLArkProps<T> as Exclude<P, "asChild">]: HTMLArkProps<T>[P]; }'`).
   Guess: keyof of a generic mapped type with an `as` clause (its constraint) against a string. [open]
