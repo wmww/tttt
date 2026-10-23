@@ -2028,11 +2028,10 @@ static void check_access(
     u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     if (index->kind == TY_UNION || (index->kind == TY_INTERSECTION && !(ty_key_flags(index) & key_like))) {
         // A generic member makes the whole index generic: the access is deferred and only checked against the
-        // object's keys (TS2536), not member by member (tsc's getIndexedAccessTypeOrUndefined: isGenericIndexType)
-        if (index->kind == TY_UNION) {
-            for (u32 i = 0; i < index->composite.types.len; i++) {
-                if (ty_is_generic_index(index->composite.types.data[i])) return;
-            }
+        // object's keys (TS2536), not member by member (tsc's getIndexedAccessTypeOrUndefined: isGenericIndexType).
+        // An intersection's too: `T[K] & {}`, what truthiness narrows a generic key to (`if (cap && caps[cap])`)
+        for (u32 i = 0; i < index->composite.types.len; i++) {
+            if (ty_is_generic_index(index->composite.types.data[i])) return;
         }
         for (u32 i = 0; i < index->composite.types.len; i++) {
             check_access(
