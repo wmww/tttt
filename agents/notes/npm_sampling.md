@@ -73,3 +73,9 @@ You'll need tsgo 7.1-beta (`npm i typescript@7.1.0-beta`), the tttt binary, Type
   and TS5114 are checker errors in source files and don't stop tsgo.
 - First 122 candidates of seed 20261023: ~20% clone failures (private/deleted repos), ~25% no tsconfig, a few gone
   `repository.directory`s and dead git dependencies; most of the rest pass the trial.
+- **Sandboxed since 2026-10-23** (agents/notes/install_security.md: two berry repos had run their own yarn bundle and
+  plugins under the first runs). Every clone, install and tool run goes through scripts/installsandbox.py; the
+  package manager is ours, pinned by major. A `.yarnrc.yml` strip (yarnPath, plugins, hooks) is an edit of our clone,
+  logged in the setup record's `install.changes`; a pnpm-workspace.yaml with hooks/pnpmfile/configDependencies is
+  refused (a skip reason). Nothing from node_modules ever runs: only tsc 6 (installed by us into .cache/ts6), tsgo and
+  tttt, all in bwrap without the network.

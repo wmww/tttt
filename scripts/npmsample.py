@@ -19,14 +19,17 @@ the end of a batch unless --keep) except the diverging ones, kept until their re
 `clean --all`). tsgo's output is cached per batch in thirdparty/npmsample/S/tsc.jsonl, the last comparison in
 thirdparty/npmsample/S/compare.json (--last, -k).
 
-Installs run under thirdparty/node's pinned node 24 (corepack for pnpm and yarn) and bun, scripts off, caches in
-thirdparty/npmsample/.cache (the pnpm store is deleted after each setup run), nothing shared with thirdparty/sources.
-tsgo runs through tttt-oracle (never writes build info), tttt through tttt_run.py in a read-only bwrap sandbox.
+Everything that touches a clone runs in scripts/installsandbox.py's bwrap sandbox (agents/notes/install_security.md):
+git, the install (our pinned package manager, no scripts, no pnpmfile, no yarnPath/plugins: those are stripped from
+the clone's .yarnrc.yml and logged in the setup record), tsc 6's --showConfig, tsgo and tttt (read-only, no network).
+Nothing from node_modules is ever run. Caches in thirdparty/npmsample/.cache/pm (the package managers' deleted after
+each setup run).
 """
 import argparse, collections, concurrent.futures, json, os, random, re, shutil, subprocess, sys, tarfile, threading, time
 import urllib.error, urllib.parse, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import installsandbox as sb  # noqa: E402
 import tscformat  # noqa: E402
 import tttt_run  # noqa: E402
 
@@ -34,12 +37,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NS = os.path.realpath(os.path.join(ROOT, 'thirdparty/npmsample'))  # (tsgo prints real paths)
 CACHE = os.path.join(NS, '.cache')
 TESTDIR = os.path.join(ROOT, 'test/npmsample')
-NODE_BIN = os.path.join(ROOT, 'thirdparty/node/node-v24.21.0-linux-x64/bin')
-BUN = os.path.join(ROOT, 'thirdparty/node/bun-1.4.3/package/bin/bun')
+NODE_BIN = sb.NODE_BIN
+BUN = sb.BUN
 TS6_VERSION = '6.0.3'
-TS6 = os.path.join(CACHE, 'ts6/node_modules/typescript/bin/tsc')
-TSGO = os.path.join(ROOT, 'thirdparty/typescript/built/tsc')
-ORACLE = os.path.join(ROOT, 'thirdparty/typescript/built/tttt-oracle')
+TS6_DIR = os.path.join(CACHE, 'ts6')
+TS6 = os.path.join(TS6_DIR, 'node_modules/typescript/bin/tsc')
+BUILT = os.path.realpath(os.path.join(ROOT, 'thirdparty/typescript/built'))
+TSGO = os.path.join(BUILT, 'tsc')
+ORACLE = os.path.join(BUILT, 'tttt-oracle')
+PM_CACHE = os.path.join(CACHE, 'pm')
 TTTT = os.path.join(ROOT, 'release/tttt')
 REGISTRY = 'https://registry.npmjs.org/'
 LOCKFILES = ('pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb', 'package-lock.json', 'npm-shrinkwrap.json')
@@ -223,110 +229,11 @@ def cmd_sample(seed, n):
 # ----------------------------------------------------------------------------------------------------------- setup
 
 def git_env():
-    env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GIT_ASKPASS': '/bin/false', 'GIT_CONFIG_COUNT': '3',
+    env = {**sb.clean_env(), 'GIT_TERMINAL_PROMPT': '0', 'GIT_ASKPASS': '/bin/false', 'GIT_CONFIG_COUNT': '3',
            'GIT_CONFIG_KEY_0': 'url.https://github.com/.insteadOf', 'GIT_CONFIG_VALUE_0': 'git://github.com/',
            'GIT_CONFIG_KEY_1': 'url.https://github.com/.insteadOf', 'GIT_CONFIG_VALUE_1': 'ssh://git@github.com/',
            'GIT_CONFIG_KEY_2': 'url.https://github.com/.insteadOf', 'GIT_CONFIG_VALUE_2': 'git@github.com:'}
     return env
-
-
-def install_env(d):
-    shims = os.path.join(CACHE, 'shims')
-    if not os.path.exists(os.path.join(shims, 'yarn')):
-        os.makedirs(shims, exist_ok=True)
-        with open(os.path.join(shims, 'yarn'), 'w') as f:
-            f.write('#!/bin/sh\nexec corepack yarn "$@"\n')
-        os.chmod(os.path.join(shims, 'yarn'), 0o755)
-    env = {**git_env(), 'PATH': NODE_BIN + ':' + shims + ':' + os.environ['PATH'],
-           'COREPACK_ENABLE_DOWNLOAD_PROMPT': '0', 'COREPACK_ENABLE_STRICT': '0', 'COREPACK_HOME': f'{CACHE}/corepack',
-           'CI': '1', 'YARN_NODE_LINKER': 'node-modules', 'YARN_ENABLE_SCRIPTS': 'false', 'YARN_ENABLE_GLOBAL_CACHE': 'true',
-           'YARN_GLOBAL_FOLDER': f'{CACHE}/berry', 'YARN_ENABLE_TELEMETRY': '0', 'HUSKY': '0',
-           'PUPPETEER_SKIP_DOWNLOAD': '1', 'ELECTRON_SKIP_BINARY_DOWNLOAD': '1', 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD': '1',
-           'CYPRESS_INSTALL_BINARY': '0', 'npm_config_ignore_scripts': 'true', 'npm_config_engine_strict': 'false',
-           'NPM_TOKEN': os.environ.get('NPM_TOKEN', '')}
-    # (A project .npmrc's ${VAR}s fail the install when unset: empty)
-    for rc in (os.path.join(d, '.npmrc'), os.path.join(d, '.yarnrc.yml')):
-        if os.path.exists(rc):
-            for var in re.findall(r'\$\{(\w+)', open(rc, errors='replace').read()):
-                env.setdefault(var, '')
-    return env
-
-
-def install_commands(d):
-    """The install commands to try in order (the lockfile's, then its non-frozen fallback), or [] without package.json"""
-    if not os.path.exists(os.path.join(d, 'package.json')):
-        return []
-    try:
-        pj = json.load(open(os.path.join(d, 'package.json')))
-    except (ValueError, UnicodeDecodeError):
-        pj = {}
-    pm = pj.get('packageManager', '') if isinstance(pj.get('packageManager'), str) else ''
-    has = lambda f: os.path.exists(os.path.join(d, f))  # noqa: E731
-    npm = [os.path.join(NODE_BIN, 'npm'), '--ignore-scripts', '--legacy-peer-deps', '--no-audit', '--no-fund',
-           '--engine-strict=false', f'--cache={CACHE}/npm']
-    if pm.startswith('pnpm') or (not pm and has('pnpm-lock.yaml')):
-        if not pm:
-            engine = ((pj.get('engines') or {}) if isinstance(pj.get('engines'), dict) else {}).get('pnpm', '')
-            lock = open(os.path.join(d, 'pnpm-lock.yaml')).readline() if has('pnpm-lock.yaml') else ''
-            pm = (f'pnpm@{engine}' if isinstance(engine, str) and engine[:1].isdigit() else
-                  'pnpm@8' if "'6." in lock else 'pnpm@7' if lock.startswith('lockfileVersion: 5') else 'pnpm@10')
-        base = ['corepack', pm.split('+')[0], 'install', '--ignore-scripts', f'--store-dir={CACHE}/pnpm-store',
-                '--config.engine-strict=false']
-        return [base + ['--frozen-lockfile'], base + ['--no-frozen-lockfile']]
-    if pm.startswith('yarn') or (not pm and has('yarn.lock')):
-        if not pm and has('yarn.lock') and '__metadata:' in open(os.path.join(d, 'yarn.lock'), errors='replace').read(4096):
-            pm = 'yarn@4'
-        if not pm or pm.startswith('yarn@1'):
-            base = ['corepack', pm.split('+')[0] if pm else 'yarn@1', 'install', '--ignore-scripts', '--ignore-engines',
-                    '--non-interactive', f'--cache-folder={CACHE}/yarn1']
-            return [base + ['--frozen-lockfile'], base]
-        return [['corepack', 'yarn', 'install', '--mode=skip-build'],
-                ['env', 'YARN_ENABLE_IMMUTABLE_INSTALLS=false', 'corepack', 'yarn', 'install', '--mode=skip-build']]
-    if pm.startswith('bun') or (not has('package-lock.json') and (has('bun.lock') or has('bun.lockb'))):
-        base = [BUN, 'install', '--ignore-scripts', f'--cache-dir={CACHE}/bun']
-        return [base + ['--frozen-lockfile'], base]
-    if has('package-lock.json') or has('npm-shrinkwrap.json'):
-        return [npm[:1] + ['ci'] + npm[1:], npm[:1] + ['install'] + npm[1:], npm[:1] + ['install', '--force'] + npm[1:]]
-    return [npm[:1] + ['install'] + npm[1:], npm[:1] + ['install', '--force'] + npm[1:]]
-
-
-def install_dir(repo, pkg):
-    """Where to install: the nearest directory from pkg up to the repo root with a lockfile, else the root when it
-    declares workspaces, else pkg"""
-    d = pkg
-    while True:
-        if any(os.path.exists(os.path.join(d, f)) for f in LOCKFILES):
-            return d
-        if d == repo:
-            break
-        d = os.path.dirname(d)
-    try:
-        if 'workspaces' in json.load(open(os.path.join(repo, 'package.json'))):
-            return repo
-    except (OSError, ValueError, UnicodeDecodeError):
-        pass
-    return pkg if os.path.exists(os.path.join(pkg, 'package.json')) else repo
-
-
-def install(repo, pkg):
-    """(package manager command shown, None) on success, else (shown, failure tail)"""
-    d = install_dir(repo, pkg)
-    cmds = install_commands(d)
-    if not cmds:
-        return 'none', None
-    env = install_env(d)
-    tail = ''
-    for cmd in cmds:
-        shown = ' '.join(os.path.basename(a) if i == 0 else a for i, a in enumerate(cmd[:3]))
-        try:
-            p = subprocess.run(cmd, cwd=d, env=env, capture_output=True, text=True, timeout=1200,
-                               stdin=subprocess.DEVNULL)
-            if p.returncode == 0:
-                return f'{shown} ({os.path.relpath(d, repo)})', None
-            tail = (p.stdout + p.stderr)[-600:]
-        except subprocess.TimeoutExpired:
-            tail = 'timeout'
-    return shown, tail
 
 
 def prune(d):
@@ -432,8 +339,8 @@ def remove_key(text, key):
 
 def show_config(config):
     """(TypeScript 6's --showConfig JSON or None, its error text)"""
-    p = subprocess.run([os.path.join(NODE_BIN, 'node'), TS6, '-p', os.path.basename(config), '--showConfig'],
-                       cwd=os.path.dirname(config), capture_output=True, text=True, timeout=120)
+    p = sb.run([os.path.join(NODE_BIN, 'node'), TS6, '-p', os.path.basename(config), '--showConfig'],
+               os.path.dirname(config), ro=[REPO_OF(config), TS6_DIR, sb.NODE_DIR], timeout=120)
     try:
         return json.loads(p.stdout), ''
     except ValueError:
@@ -513,8 +420,8 @@ def bench_overrides(config, opts):
 def tsgo_run(project, cwd, timeout=900):
     """(output text, exit status) of tsc -p PROJECT --noEmit --pretty false as tttt-oracle runs it"""
     try:
-        p = subprocess.run([ORACLE, '--text'], input=project + '\n', cwd=cwd, capture_output=True, text=True,
-                           timeout=timeout)
+        p = subprocess.run(sb.sandbox_argv(ro=[REPO_OF(cwd), BUILT], cwd=cwd) + [ORACLE, '--text'],
+                           input=project + '\n', env=sb.clean_env(), capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
         return '', 'timeout'
     line = p.stdout.splitlines()[0] if p.stdout.strip() else ''
@@ -578,6 +485,7 @@ def make_bench(config, repo):
                 changes.append(f'{m.group(1)} -> null (TS{code})')
                 fixed = True
             elif m and code == 5023:
+                overrides.pop(m.group(1), None)
                 for c in own_config_chain(config, repo):
                     t2 = remove_key(open(c, encoding='utf-8-sig').read(), m.group(1))
                     if t2 is not None:
@@ -598,10 +506,18 @@ def count_ts(d):
 
 
 def own_files(bench, repo):
-    p = subprocess.run([TSGO, '-p', os.path.basename(bench), '--listFilesOnly'], cwd=os.path.dirname(bench),
-                       capture_output=True, text=True, timeout=600)
+    p = sb.run([TSGO, '-p', os.path.basename(bench), '--listFilesOnly'], os.path.dirname(bench), ro=[repo, BUILT],
+               timeout=600)
     return sum(1 for line in p.stdout.splitlines()
                if line.startswith(repo + '/') and '/node_modules/' not in line)
+
+
+def REPO_OF(path):  # noqa: N802
+    """The clone a path is in (thirdparty/npmsample/SEED/NNNN-owner-repo): what a sandboxed tool may read"""
+    rel = os.path.relpath(os.path.realpath(path), NS).split(os.sep)
+    if len(rel) < 2 or rel[0].startswith('..'):
+        raise ValueError(f'{path} is not in a clone')
+    return os.path.join(NS, rel[0], rel[1])
 
 
 def repo_dirname(c):
@@ -620,9 +536,13 @@ SPARSE_EXCLUDE = ('woff', 'woff2', 'ttf', 'otf', 'eot', 'png', 'jpg', 'jpeg', 'g
 
 def clone(url, repo):
     env = git_env()
-    run = lambda *a, **kw: subprocess.run(['git', *a], env=env, capture_output=True, text=True, timeout=900,  # noqa: E731
-                                          stdin=subprocess.DEVNULL, **kw)
-    p = run('clone', '-q', '--depth', '1', '--single-branch', '--filter=blob:none', '--no-checkout', url, repo)
+    # (Clone, sparse checkout and checkout in the sandbox: the clone's directory writable, the network on)
+    run = lambda *a: sb.run(['git', *a], repo, rw=[repo], network=True,  # noqa: E731
+                            env={k: v for k, v in env.items() if k.startswith('GIT_')}, timeout=900)
+    parent = os.path.dirname(repo)
+    p = sb.run(['git', 'clone', '-q', '--depth', '1', '--single-branch', '--filter=blob:none', '--no-checkout', url,
+                repo], parent, rw=[parent], network=True, env={k: v for k, v in env.items() if k.startswith('GIT_')},
+               timeout=900)
     if p.returncode == 0:
         p = run('-C', repo, 'sparse-checkout', 'set', '--no-cone', '/*', *[f'!*.{e}' for e in SPARSE_EXCLUDE])
     if p.returncode == 0:
@@ -641,7 +561,7 @@ def setup_one(seed, c):
         if p.returncode != 0:
             shutil.rmtree(repo, ignore_errors=True)
             return {**rec, 'status': 'skip', 'reason': 'clone: ' + (p.stderr.strip().splitlines() or [''])[-1][:200]}
-    rec['commit'] = subprocess.run(['git', '-C', repo, 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
+    rec['commit'] = sb.run(['git', '-C', repo, 'rev-parse', 'HEAD'], repo, ro=[repo]).stdout.strip()
     pkg = os.path.normpath(os.path.join(repo, c['directory'])) if c['directory'] else repo
     if not os.path.isdir(pkg) or not pkg.startswith(repo):
         return {**rec, 'status': 'skip', 'reason': 'repository.directory gone'}
@@ -652,13 +572,16 @@ def setup_one(seed, c):
     if count_ts(pkg) < 3:
         return {**rec, 'status': 'skip', 'reason': 'fewer than 3 .ts files'}
     if not os.path.exists(marker):
-        pm, fail = install(repo, pkg)
-        if fail is not None:
-            return {**rec, 'status': 'skip', 'pm': pm, 'reason': 'install: ' + ' '.join(fail.split())[-300:]}
+        r = sb.install(repo, pkg, PM_CACHE)
+        rec['install'] = {k: r[k] for k in ('pm', 'dir', 'notes', 'changes', 'commands')}
+        if r['refused']:
+            return {**rec, 'status': 'skip', 'pm': r['pm'], 'reason': 'install refused: ' + r['refused']}
+        if not r['ok']:
+            return {**rec, 'status': 'skip', 'pm': r['pm'], 'reason': 'install: ' + r['tail'][-300:]}
         prune(repo)
         with open(marker, 'w') as f:
-            f.write(pm + '\n')
-    rec['pm'] = open(marker).read().strip()
+            f.write(json.dumps(rec['install']) + '\n')
+    rec['pm'] = json.loads(open(marker).read())['pm'] if open(marker).read().startswith('{') else open(marker).read().strip()
     bench, changes = make_bench(config, repo)
     rec['changes'] = changes
     if bench is None:
@@ -685,9 +608,12 @@ def ensure_ts6():
     if not os.path.exists(TS6):
         d = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(TS6))))
         os.makedirs(d, exist_ok=True)
-        subprocess.run([os.path.join(NODE_BIN, 'npm'), 'install', '--ignore-scripts', '--no-audit', '--no-fund',
-                        f'--cache={CACHE}/npm', f'typescript@{TS6_VERSION}'], cwd=d, check=True,
-                       env={**os.environ, 'PATH': NODE_BIN + ':' + os.environ['PATH']}, stdout=subprocess.DEVNULL)
+        os.makedirs(PM_CACHE, exist_ok=True)
+        p = sb.run([os.path.join(NODE_BIN, 'npm'), 'install', '--ignore-scripts', '--no-audit', '--no-fund',
+                    f'--registry={sb.REGISTRY}', f'--cache={PM_CACHE}/npm', f'typescript@{TS6_VERSION}'], d,
+                   rw=[d, PM_CACHE], ro=[sb.NODE_DIR], network=True)
+        if p.returncode:
+            sys.exit(f'typescript@{TS6_VERSION} install failed:\n{p.stdout[-1000:]}{p.stderr[-1000:]}')
 
 
 def write_tsv(seed, n):
@@ -752,7 +678,7 @@ def cmd_setup(seed, n, jobs):
                     break
     # (The package managers' caches only matter while installing: the installed files are copies or hardlinks)
     for d in ('pnpm-store', 'npm', 'yarn1', 'bun', 'berry'):
-        shutil.rmtree(os.path.join(CACHE, d), ignore_errors=True)
+        shutil.rmtree(os.path.join(PM_CACHE, d), ignore_errors=True)
     acc = write_tsv(seed, n)
     print(f'setup: {len(acc)}/{n} accepted -> {os.path.relpath(files(seed, "tsv"), ROOT)}')
     return len(acc) >= n
@@ -767,15 +693,13 @@ def normalize(text):
     return sorted(LIBPATH.sub(r'LIB/\1', line) for line in text.replace('\r', '').split('\n') if line.strip())
 
 
-def sandbox():
-    return ['bwrap', '--ro-bind', '/', '/', '--bind', '/tmp', '/tmp', '--dev', '/dev', '--proc', '/proc',
-            '--die-with-parent', '--'] if shutil.which('bwrap') else []
-
-
 def tttt_check(bench, threads=None):
     extra = ['--threads', str(threads)] if threads else []
-    r = tttt_run.run([*sandbox(), TTTT, '-p', os.path.basename(bench), '--noEmit', '--pretty', 'false', *extra],
-                     os.path.dirname(bench), timeout=900, mem_gb=16, threads=threads, stderr=subprocess.PIPE)
+    binary = tttt_run.frozen(TTTT)
+    # (The standard library: the source tree's thirdparty/lib, compiled into the binary)
+    argv = sb.sandbox_argv(ro=[REPO_OF(bench), binary, os.path.join(ROOT, 'thirdparty/lib')], cwd=os.path.dirname(bench))
+    r = tttt_run.run([*argv, binary, '-p', os.path.basename(bench), '--noEmit', '--pretty', 'false', *extra],
+                     None, timeout=900, mem_gb=16, threads=threads, env=sb.clean_env(), stderr=subprocess.PIPE)
     return re.sub(r'\x1b\[[0-9;]*m', '', r.text()), r.code, r.status
 
 
