@@ -975,8 +975,12 @@ typedef struct FreeParams {
     u32 in_extends;
     // The true branches (TypeNode.flow) whose extends types were walked already (the extends types' own nodes are in
     // the outer true branches, so a single "last chain" memo would thrash between them)
+    // (The first ones inline, the rest in the arena: a long chain of conditionals has a true branch each, opencode's
+    // @solid-primitives event maps a chain of 60)
     struct TernaryType const* flow_done[32];
     u32 flow_done_len;
+    struct TernaryType const** flow_more;
+    u32 flow_more_len, flow_more_cap;
     // The type parameter lists around the Block the nodes are in (TypeFlow.block), which tsc's
     // isTypeParameterPossiblyReferenced takes to be referenced whatever the nodes mention: free_params_add_block()
     struct OuterGenerics const* block;
@@ -1111,13 +1115,20 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             if (!flow->ternary) continue;
             bool done = false;
             for (u32 i = 0; i < out->flow_done_len && !done; i++) done = out->flow_done[i] == flow->ternary;
+            for (u32 i = 0; i < out->flow_more_len && !done; i++) done = out->flow_more[i] == flow->ternary;
             if (done) continue;
-            // (Too many to remember: unknown, rather than walking them again and again, exponentially)
-            if (out->flow_done_len == c_arraylen(out->flow_done)) {
-                out->unknown = true;
-                return;
+            if (out->flow_done_len < c_arraylen(out->flow_done)) {
+                out->flow_done[out->flow_done_len++] = flow->ternary;
+            } else {
+                if (out->flow_more_len == out->flow_more_cap) {
+                    u32 cap = out->flow_more_cap ? out->flow_more_cap * 2 : 32;
+                    struct TernaryType const** more = arena_alloc(&my arena, sizeof(*more) * cap);
+                    if (out->flow_more_len) memcpy(more, out->flow_more, sizeof(*more) * out->flow_more_len);
+                    out->flow_more = more;
+                    out->flow_more_cap = cap;
+                }
+                out->flow_more[out->flow_more_len++] = flow->ternary;
             }
-            out->flow_done[out->flow_done_len++] = flow->ternary;
             collect_free_params(me, &flow->ternary->maybe_super, out);
         }
         out->in_extends = saved_extends;

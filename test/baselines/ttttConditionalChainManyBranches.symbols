@@ -1,0 +1,418 @@
+//// [test/cases/ttttConditionalChainManyBranches.ts] ////
+
+=== ttttConditionalChainManyBranches.ts ===
+// A chain of more than 32 conditional types (opencode: @solid-primitives/event-listener's event maps): the walk
+// collecting the type parameters it mentions remembers every true branch it has walked, however many
+interface T0 { kT0: 1 }
+>T0 : Symbol(T0, Decl(ttttConditionalChainManyBranches.ts, 0, 0))
+>kT0 : Symbol(T0.kT0, Decl(ttttConditionalChainManyBranches.ts, 2, 14))
+
+interface T1 { kT1: 1 }
+>T1 : Symbol(T1, Decl(ttttConditionalChainManyBranches.ts, 2, 23))
+>kT1 : Symbol(T1.kT1, Decl(ttttConditionalChainManyBranches.ts, 3, 14))
+
+interface T2 { kT2: 1 }
+>T2 : Symbol(T2, Decl(ttttConditionalChainManyBranches.ts, 3, 23))
+>kT2 : Symbol(T2.kT2, Decl(ttttConditionalChainManyBranches.ts, 4, 14))
+
+interface T3 { kT3: 1 }
+>T3 : Symbol(T3, Decl(ttttConditionalChainManyBranches.ts, 4, 23))
+>kT3 : Symbol(T3.kT3, Decl(ttttConditionalChainManyBranches.ts, 5, 14))
+
+interface T4 { kT4: 1 }
+>T4 : Symbol(T4, Decl(ttttConditionalChainManyBranches.ts, 5, 23))
+>kT4 : Symbol(T4.kT4, Decl(ttttConditionalChainManyBranches.ts, 6, 14))
+
+interface T5 { kT5: 1 }
+>T5 : Symbol(T5, Decl(ttttConditionalChainManyBranches.ts, 6, 23))
+>kT5 : Symbol(T5.kT5, Decl(ttttConditionalChainManyBranches.ts, 7, 14))
+
+interface T6 { kT6: 1 }
+>T6 : Symbol(T6, Decl(ttttConditionalChainManyBranches.ts, 7, 23))
+>kT6 : Symbol(T6.kT6, Decl(ttttConditionalChainManyBranches.ts, 8, 14))
+
+interface T7 { kT7: 1 }
+>T7 : Symbol(T7, Decl(ttttConditionalChainManyBranches.ts, 8, 23))
+>kT7 : Symbol(T7.kT7, Decl(ttttConditionalChainManyBranches.ts, 9, 14))
+
+interface T8 { kT8: 1 }
+>T8 : Symbol(T8, Decl(ttttConditionalChainManyBranches.ts, 9, 23))
+>kT8 : Symbol(T8.kT8, Decl(ttttConditionalChainManyBranches.ts, 10, 14))
+
+interface T9 { kT9: 1 }
+>T9 : Symbol(T9, Decl(ttttConditionalChainManyBranches.ts, 10, 23))
+>kT9 : Symbol(T9.kT9, Decl(ttttConditionalChainManyBranches.ts, 11, 14))
+
+interface T10 { kT10: 1 }
+>T10 : Symbol(T10, Decl(ttttConditionalChainManyBranches.ts, 11, 23))
+>kT10 : Symbol(T10.kT10, Decl(ttttConditionalChainManyBranches.ts, 12, 15))
+
+interface T11 { kT11: 1 }
+>T11 : Symbol(T11, Decl(ttttConditionalChainManyBranches.ts, 12, 25))
+>kT11 : Symbol(T11.kT11, Decl(ttttConditionalChainManyBranches.ts, 13, 15))
+
+interface T12 { kT12: 1 }
+>T12 : Symbol(T12, Decl(ttttConditionalChainManyBranches.ts, 13, 25))
+>kT12 : Symbol(T12.kT12, Decl(ttttConditionalChainManyBranches.ts, 14, 15))
+
+interface T13 { kT13: 1 }
+>T13 : Symbol(T13, Decl(ttttConditionalChainManyBranches.ts, 14, 25))
+>kT13 : Symbol(T13.kT13, Decl(ttttConditionalChainManyBranches.ts, 15, 15))
+
+interface T14 { kT14: 1 }
+>T14 : Symbol(T14, Decl(ttttConditionalChainManyBranches.ts, 15, 25))
+>kT14 : Symbol(T14.kT14, Decl(ttttConditionalChainManyBranches.ts, 16, 15))
+
+interface T15 { kT15: 1 }
+>T15 : Symbol(T15, Decl(ttttConditionalChainManyBranches.ts, 16, 25))
+>kT15 : Symbol(T15.kT15, Decl(ttttConditionalChainManyBranches.ts, 17, 15))
+
+interface T16 { kT16: 1 }
+>T16 : Symbol(T16, Decl(ttttConditionalChainManyBranches.ts, 17, 25))
+>kT16 : Symbol(T16.kT16, Decl(ttttConditionalChainManyBranches.ts, 18, 15))
+
+interface T17 { kT17: 1 }
+>T17 : Symbol(T17, Decl(ttttConditionalChainManyBranches.ts, 18, 25))
+>kT17 : Symbol(T17.kT17, Decl(ttttConditionalChainManyBranches.ts, 19, 15))
+
+interface T18 { kT18: 1 }
+>T18 : Symbol(T18, Decl(ttttConditionalChainManyBranches.ts, 19, 25))
+>kT18 : Symbol(T18.kT18, Decl(ttttConditionalChainManyBranches.ts, 20, 15))
+
+interface T19 { kT19: 1 }
+>T19 : Symbol(T19, Decl(ttttConditionalChainManyBranches.ts, 20, 25))
+>kT19 : Symbol(T19.kT19, Decl(ttttConditionalChainManyBranches.ts, 21, 15))
+
+interface T20 { kT20: 1 }
+>T20 : Symbol(T20, Decl(ttttConditionalChainManyBranches.ts, 21, 25))
+>kT20 : Symbol(T20.kT20, Decl(ttttConditionalChainManyBranches.ts, 22, 15))
+
+interface T21 { kT21: 1 }
+>T21 : Symbol(T21, Decl(ttttConditionalChainManyBranches.ts, 22, 25))
+>kT21 : Symbol(T21.kT21, Decl(ttttConditionalChainManyBranches.ts, 23, 15))
+
+interface T22 { kT22: 1 }
+>T22 : Symbol(T22, Decl(ttttConditionalChainManyBranches.ts, 23, 25))
+>kT22 : Symbol(T22.kT22, Decl(ttttConditionalChainManyBranches.ts, 24, 15))
+
+interface T23 { kT23: 1 }
+>T23 : Symbol(T23, Decl(ttttConditionalChainManyBranches.ts, 24, 25))
+>kT23 : Symbol(T23.kT23, Decl(ttttConditionalChainManyBranches.ts, 25, 15))
+
+interface T24 { kT24: 1 }
+>T24 : Symbol(T24, Decl(ttttConditionalChainManyBranches.ts, 25, 25))
+>kT24 : Symbol(T24.kT24, Decl(ttttConditionalChainManyBranches.ts, 26, 15))
+
+interface T25 { kT25: 1 }
+>T25 : Symbol(T25, Decl(ttttConditionalChainManyBranches.ts, 26, 25))
+>kT25 : Symbol(T25.kT25, Decl(ttttConditionalChainManyBranches.ts, 27, 15))
+
+interface T26 { kT26: 1 }
+>T26 : Symbol(T26, Decl(ttttConditionalChainManyBranches.ts, 27, 25))
+>kT26 : Symbol(T26.kT26, Decl(ttttConditionalChainManyBranches.ts, 28, 15))
+
+interface T27 { kT27: 1 }
+>T27 : Symbol(T27, Decl(ttttConditionalChainManyBranches.ts, 28, 25))
+>kT27 : Symbol(T27.kT27, Decl(ttttConditionalChainManyBranches.ts, 29, 15))
+
+interface T28 { kT28: 1 }
+>T28 : Symbol(T28, Decl(ttttConditionalChainManyBranches.ts, 29, 25))
+>kT28 : Symbol(T28.kT28, Decl(ttttConditionalChainManyBranches.ts, 30, 15))
+
+interface T29 { kT29: 1 }
+>T29 : Symbol(T29, Decl(ttttConditionalChainManyBranches.ts, 30, 25))
+>kT29 : Symbol(T29.kT29, Decl(ttttConditionalChainManyBranches.ts, 31, 15))
+
+interface T30 { kT30: 1 }
+>T30 : Symbol(T30, Decl(ttttConditionalChainManyBranches.ts, 31, 25))
+>kT30 : Symbol(T30.kT30, Decl(ttttConditionalChainManyBranches.ts, 32, 15))
+
+interface T31 { kT31: 1 }
+>T31 : Symbol(T31, Decl(ttttConditionalChainManyBranches.ts, 32, 25))
+>kT31 : Symbol(T31.kT31, Decl(ttttConditionalChainManyBranches.ts, 33, 15))
+
+interface T32 { kT32: 1 }
+>T32 : Symbol(T32, Decl(ttttConditionalChainManyBranches.ts, 33, 25))
+>kT32 : Symbol(T32.kT32, Decl(ttttConditionalChainManyBranches.ts, 34, 15))
+
+interface T33 { kT33: 1 }
+>T33 : Symbol(T33, Decl(ttttConditionalChainManyBranches.ts, 34, 25))
+>kT33 : Symbol(T33.kT33, Decl(ttttConditionalChainManyBranches.ts, 35, 15))
+
+interface T34 { kT34: 1 }
+>T34 : Symbol(T34, Decl(ttttConditionalChainManyBranches.ts, 35, 25))
+>kT34 : Symbol(T34.kT34, Decl(ttttConditionalChainManyBranches.ts, 36, 15))
+
+interface T35 { kT35: 1 }
+>T35 : Symbol(T35, Decl(ttttConditionalChainManyBranches.ts, 36, 25))
+>kT35 : Symbol(T35.kT35, Decl(ttttConditionalChainManyBranches.ts, 37, 15))
+
+interface T36 { kT36: 1 }
+>T36 : Symbol(T36, Decl(ttttConditionalChainManyBranches.ts, 37, 25))
+>kT36 : Symbol(T36.kT36, Decl(ttttConditionalChainManyBranches.ts, 38, 15))
+
+interface T37 { kT37: 1 }
+>T37 : Symbol(T37, Decl(ttttConditionalChainManyBranches.ts, 38, 25))
+>kT37 : Symbol(T37.kT37, Decl(ttttConditionalChainManyBranches.ts, 39, 15))
+
+interface T38 { kT38: 1 }
+>T38 : Symbol(T38, Decl(ttttConditionalChainManyBranches.ts, 39, 25))
+>kT38 : Symbol(T38.kT38, Decl(ttttConditionalChainManyBranches.ts, 40, 15))
+
+interface T39 { kT39: 1 }
+>T39 : Symbol(T39, Decl(ttttConditionalChainManyBranches.ts, 40, 25))
+>kT39 : Symbol(T39.kT39, Decl(ttttConditionalChainManyBranches.ts, 41, 15))
+
+type Target = T0 | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | T9 | T10 | T11 | T12 | T13 | T14 | T15 | T16 | T17 | T18 | T19 | T20 | T21 | T22 | T23 | T24 | T25 | T26 | T27 | T28 | T29 | T30 | T31 | T32 | T33 | T34 | T35 | T36 | T37 | T38 | T39;
+>Target : Symbol(Target, Decl(ttttConditionalChainManyBranches.ts, 41, 25))
+>T0 : Symbol(T0, Decl(ttttConditionalChainManyBranches.ts, 0, 0))
+>T1 : Symbol(T1, Decl(ttttConditionalChainManyBranches.ts, 2, 23))
+>T2 : Symbol(T2, Decl(ttttConditionalChainManyBranches.ts, 3, 23))
+>T3 : Symbol(T3, Decl(ttttConditionalChainManyBranches.ts, 4, 23))
+>T4 : Symbol(T4, Decl(ttttConditionalChainManyBranches.ts, 5, 23))
+>T5 : Symbol(T5, Decl(ttttConditionalChainManyBranches.ts, 6, 23))
+>T6 : Symbol(T6, Decl(ttttConditionalChainManyBranches.ts, 7, 23))
+>T7 : Symbol(T7, Decl(ttttConditionalChainManyBranches.ts, 8, 23))
+>T8 : Symbol(T8, Decl(ttttConditionalChainManyBranches.ts, 9, 23))
+>T9 : Symbol(T9, Decl(ttttConditionalChainManyBranches.ts, 10, 23))
+>T10 : Symbol(T10, Decl(ttttConditionalChainManyBranches.ts, 11, 23))
+>T11 : Symbol(T11, Decl(ttttConditionalChainManyBranches.ts, 12, 25))
+>T12 : Symbol(T12, Decl(ttttConditionalChainManyBranches.ts, 13, 25))
+>T13 : Symbol(T13, Decl(ttttConditionalChainManyBranches.ts, 14, 25))
+>T14 : Symbol(T14, Decl(ttttConditionalChainManyBranches.ts, 15, 25))
+>T15 : Symbol(T15, Decl(ttttConditionalChainManyBranches.ts, 16, 25))
+>T16 : Symbol(T16, Decl(ttttConditionalChainManyBranches.ts, 17, 25))
+>T17 : Symbol(T17, Decl(ttttConditionalChainManyBranches.ts, 18, 25))
+>T18 : Symbol(T18, Decl(ttttConditionalChainManyBranches.ts, 19, 25))
+>T19 : Symbol(T19, Decl(ttttConditionalChainManyBranches.ts, 20, 25))
+>T20 : Symbol(T20, Decl(ttttConditionalChainManyBranches.ts, 21, 25))
+>T21 : Symbol(T21, Decl(ttttConditionalChainManyBranches.ts, 22, 25))
+>T22 : Symbol(T22, Decl(ttttConditionalChainManyBranches.ts, 23, 25))
+>T23 : Symbol(T23, Decl(ttttConditionalChainManyBranches.ts, 24, 25))
+>T24 : Symbol(T24, Decl(ttttConditionalChainManyBranches.ts, 25, 25))
+>T25 : Symbol(T25, Decl(ttttConditionalChainManyBranches.ts, 26, 25))
+>T26 : Symbol(T26, Decl(ttttConditionalChainManyBranches.ts, 27, 25))
+>T27 : Symbol(T27, Decl(ttttConditionalChainManyBranches.ts, 28, 25))
+>T28 : Symbol(T28, Decl(ttttConditionalChainManyBranches.ts, 29, 25))
+>T29 : Symbol(T29, Decl(ttttConditionalChainManyBranches.ts, 30, 25))
+>T30 : Symbol(T30, Decl(ttttConditionalChainManyBranches.ts, 31, 25))
+>T31 : Symbol(T31, Decl(ttttConditionalChainManyBranches.ts, 32, 25))
+>T32 : Symbol(T32, Decl(ttttConditionalChainManyBranches.ts, 33, 25))
+>T33 : Symbol(T33, Decl(ttttConditionalChainManyBranches.ts, 34, 25))
+>T34 : Symbol(T34, Decl(ttttConditionalChainManyBranches.ts, 35, 25))
+>T35 : Symbol(T35, Decl(ttttConditionalChainManyBranches.ts, 36, 25))
+>T36 : Symbol(T36, Decl(ttttConditionalChainManyBranches.ts, 37, 25))
+>T37 : Symbol(T37, Decl(ttttConditionalChainManyBranches.ts, 38, 25))
+>T38 : Symbol(T38, Decl(ttttConditionalChainManyBranches.ts, 39, 25))
+>T39 : Symbol(T39, Decl(ttttConditionalChainManyBranches.ts, 40, 25))
+
+type MapOf<X> = X extends T0 ? { ev: T0 } : X extends T1 ? { ev: T1 } : X extends T2 ? { ev: T2 } : X extends T3 ? { ev: T3 } : X extends T4 ? { ev: T4 } : X extends T5 ? { ev: T5 } : X extends T6 ? { ev: T6 } : X extends T7 ? { ev: T7 } : X extends T8 ? { ev: T8 } : X extends T9 ? { ev: T9 } : X extends T10 ? { ev: T10 } : X extends T11 ? { ev: T11 } : X extends T12 ? { ev: T12 } : X extends T13 ? { ev: T13 } : X extends T14 ? { ev: T14 } : X extends T15 ? { ev: T15 } : X extends T16 ? { ev: T16 } : X extends T17 ? { ev: T17 } : X extends T18 ? { ev: T18 } : X extends T19 ? { ev: T19 } : X extends T20 ? { ev: T20 } : X extends T21 ? { ev: T21 } : X extends T22 ? { ev: T22 } : X extends T23 ? { ev: T23 } : X extends T24 ? { ev: T24 } : X extends T25 ? { ev: T25 } : X extends T26 ? { ev: T26 } : X extends T27 ? { ev: T27 } : X extends T28 ? { ev: T28 } : X extends T29 ? { ev: T29 } : X extends T30 ? { ev: T30 } : X extends T31 ? { ev: T31 } : X extends T32 ? { ev: T32 } : X extends T33 ? { ev: T33 } : X extends T34 ? { ev: T34 } : X extends T35 ? { ev: T35 } : X extends T36 ? { ev: T36 } : X extends T37 ? { ev: T37 } : X extends T38 ? { ev: T38 } : X extends T39 ? { ev: T39 } : never;
+>MapOf : Symbol(MapOf, Decl(ttttConditionalChainManyBranches.ts, 42, 242))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T0 : Symbol(T0, Decl(ttttConditionalChainManyBranches.ts, 0, 0))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 32))
+>T0 : Symbol(T0, Decl(ttttConditionalChainManyBranches.ts, 0, 0))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T1 : Symbol(T1, Decl(ttttConditionalChainManyBranches.ts, 2, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 60))
+>T1 : Symbol(T1, Decl(ttttConditionalChainManyBranches.ts, 2, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T2 : Symbol(T2, Decl(ttttConditionalChainManyBranches.ts, 3, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 88))
+>T2 : Symbol(T2, Decl(ttttConditionalChainManyBranches.ts, 3, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T3 : Symbol(T3, Decl(ttttConditionalChainManyBranches.ts, 4, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 116))
+>T3 : Symbol(T3, Decl(ttttConditionalChainManyBranches.ts, 4, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T4 : Symbol(T4, Decl(ttttConditionalChainManyBranches.ts, 5, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 144))
+>T4 : Symbol(T4, Decl(ttttConditionalChainManyBranches.ts, 5, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T5 : Symbol(T5, Decl(ttttConditionalChainManyBranches.ts, 6, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 172))
+>T5 : Symbol(T5, Decl(ttttConditionalChainManyBranches.ts, 6, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T6 : Symbol(T6, Decl(ttttConditionalChainManyBranches.ts, 7, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 200))
+>T6 : Symbol(T6, Decl(ttttConditionalChainManyBranches.ts, 7, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T7 : Symbol(T7, Decl(ttttConditionalChainManyBranches.ts, 8, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 228))
+>T7 : Symbol(T7, Decl(ttttConditionalChainManyBranches.ts, 8, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T8 : Symbol(T8, Decl(ttttConditionalChainManyBranches.ts, 9, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 256))
+>T8 : Symbol(T8, Decl(ttttConditionalChainManyBranches.ts, 9, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T9 : Symbol(T9, Decl(ttttConditionalChainManyBranches.ts, 10, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 284))
+>T9 : Symbol(T9, Decl(ttttConditionalChainManyBranches.ts, 10, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T10 : Symbol(T10, Decl(ttttConditionalChainManyBranches.ts, 11, 23))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 313))
+>T10 : Symbol(T10, Decl(ttttConditionalChainManyBranches.ts, 11, 23))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T11 : Symbol(T11, Decl(ttttConditionalChainManyBranches.ts, 12, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 343))
+>T11 : Symbol(T11, Decl(ttttConditionalChainManyBranches.ts, 12, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T12 : Symbol(T12, Decl(ttttConditionalChainManyBranches.ts, 13, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 373))
+>T12 : Symbol(T12, Decl(ttttConditionalChainManyBranches.ts, 13, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T13 : Symbol(T13, Decl(ttttConditionalChainManyBranches.ts, 14, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 403))
+>T13 : Symbol(T13, Decl(ttttConditionalChainManyBranches.ts, 14, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T14 : Symbol(T14, Decl(ttttConditionalChainManyBranches.ts, 15, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 433))
+>T14 : Symbol(T14, Decl(ttttConditionalChainManyBranches.ts, 15, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T15 : Symbol(T15, Decl(ttttConditionalChainManyBranches.ts, 16, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 463))
+>T15 : Symbol(T15, Decl(ttttConditionalChainManyBranches.ts, 16, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T16 : Symbol(T16, Decl(ttttConditionalChainManyBranches.ts, 17, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 493))
+>T16 : Symbol(T16, Decl(ttttConditionalChainManyBranches.ts, 17, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T17 : Symbol(T17, Decl(ttttConditionalChainManyBranches.ts, 18, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 523))
+>T17 : Symbol(T17, Decl(ttttConditionalChainManyBranches.ts, 18, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T18 : Symbol(T18, Decl(ttttConditionalChainManyBranches.ts, 19, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 553))
+>T18 : Symbol(T18, Decl(ttttConditionalChainManyBranches.ts, 19, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T19 : Symbol(T19, Decl(ttttConditionalChainManyBranches.ts, 20, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 583))
+>T19 : Symbol(T19, Decl(ttttConditionalChainManyBranches.ts, 20, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T20 : Symbol(T20, Decl(ttttConditionalChainManyBranches.ts, 21, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 613))
+>T20 : Symbol(T20, Decl(ttttConditionalChainManyBranches.ts, 21, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T21 : Symbol(T21, Decl(ttttConditionalChainManyBranches.ts, 22, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 643))
+>T21 : Symbol(T21, Decl(ttttConditionalChainManyBranches.ts, 22, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T22 : Symbol(T22, Decl(ttttConditionalChainManyBranches.ts, 23, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 673))
+>T22 : Symbol(T22, Decl(ttttConditionalChainManyBranches.ts, 23, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T23 : Symbol(T23, Decl(ttttConditionalChainManyBranches.ts, 24, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 703))
+>T23 : Symbol(T23, Decl(ttttConditionalChainManyBranches.ts, 24, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T24 : Symbol(T24, Decl(ttttConditionalChainManyBranches.ts, 25, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 733))
+>T24 : Symbol(T24, Decl(ttttConditionalChainManyBranches.ts, 25, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T25 : Symbol(T25, Decl(ttttConditionalChainManyBranches.ts, 26, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 763))
+>T25 : Symbol(T25, Decl(ttttConditionalChainManyBranches.ts, 26, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T26 : Symbol(T26, Decl(ttttConditionalChainManyBranches.ts, 27, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 793))
+>T26 : Symbol(T26, Decl(ttttConditionalChainManyBranches.ts, 27, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T27 : Symbol(T27, Decl(ttttConditionalChainManyBranches.ts, 28, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 823))
+>T27 : Symbol(T27, Decl(ttttConditionalChainManyBranches.ts, 28, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T28 : Symbol(T28, Decl(ttttConditionalChainManyBranches.ts, 29, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 853))
+>T28 : Symbol(T28, Decl(ttttConditionalChainManyBranches.ts, 29, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T29 : Symbol(T29, Decl(ttttConditionalChainManyBranches.ts, 30, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 883))
+>T29 : Symbol(T29, Decl(ttttConditionalChainManyBranches.ts, 30, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T30 : Symbol(T30, Decl(ttttConditionalChainManyBranches.ts, 31, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 913))
+>T30 : Symbol(T30, Decl(ttttConditionalChainManyBranches.ts, 31, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T31 : Symbol(T31, Decl(ttttConditionalChainManyBranches.ts, 32, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 943))
+>T31 : Symbol(T31, Decl(ttttConditionalChainManyBranches.ts, 32, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T32 : Symbol(T32, Decl(ttttConditionalChainManyBranches.ts, 33, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 973))
+>T32 : Symbol(T32, Decl(ttttConditionalChainManyBranches.ts, 33, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T33 : Symbol(T33, Decl(ttttConditionalChainManyBranches.ts, 34, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 1003))
+>T33 : Symbol(T33, Decl(ttttConditionalChainManyBranches.ts, 34, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T34 : Symbol(T34, Decl(ttttConditionalChainManyBranches.ts, 35, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 1033))
+>T34 : Symbol(T34, Decl(ttttConditionalChainManyBranches.ts, 35, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T35 : Symbol(T35, Decl(ttttConditionalChainManyBranches.ts, 36, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 1063))
+>T35 : Symbol(T35, Decl(ttttConditionalChainManyBranches.ts, 36, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T36 : Symbol(T36, Decl(ttttConditionalChainManyBranches.ts, 37, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 1093))
+>T36 : Symbol(T36, Decl(ttttConditionalChainManyBranches.ts, 37, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T37 : Symbol(T37, Decl(ttttConditionalChainManyBranches.ts, 38, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 1123))
+>T37 : Symbol(T37, Decl(ttttConditionalChainManyBranches.ts, 38, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T38 : Symbol(T38, Decl(ttttConditionalChainManyBranches.ts, 39, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 1153))
+>T38 : Symbol(T38, Decl(ttttConditionalChainManyBranches.ts, 39, 25))
+>X : Symbol(X, Decl(ttttConditionalChainManyBranches.ts, 43, 11))
+>T39 : Symbol(T39, Decl(ttttConditionalChainManyBranches.ts, 40, 25))
+>ev : Symbol(ev, Decl(ttttConditionalChainManyBranches.ts, 43, 1183))
+>T39 : Symbol(T39, Decl(ttttConditionalChainManyBranches.ts, 40, 25))
+
+declare function mk<T extends Target, M extends MapOf<T>, K extends keyof M>(t: T, k: K, h: (e: M[K]) => void): void;
+>mk : Symbol(mk, Decl(ttttConditionalChainManyBranches.ts, 43, 1202))
+>T : Symbol(T, Decl(ttttConditionalChainManyBranches.ts, 44, 20))
+>Target : Symbol(Target, Decl(ttttConditionalChainManyBranches.ts, 41, 25))
+>M : Symbol(M, Decl(ttttConditionalChainManyBranches.ts, 44, 37))
+>MapOf : Symbol(MapOf, Decl(ttttConditionalChainManyBranches.ts, 42, 242))
+>T : Symbol(T, Decl(ttttConditionalChainManyBranches.ts, 44, 20))
+>K : Symbol(K, Decl(ttttConditionalChainManyBranches.ts, 44, 57))
+>M : Symbol(M, Decl(ttttConditionalChainManyBranches.ts, 44, 37))
+>t : Symbol(t, Decl(ttttConditionalChainManyBranches.ts, 44, 77))
+>T : Symbol(T, Decl(ttttConditionalChainManyBranches.ts, 44, 20))
+>k : Symbol(k, Decl(ttttConditionalChainManyBranches.ts, 44, 82))
+>K : Symbol(K, Decl(ttttConditionalChainManyBranches.ts, 44, 57))
+>h : Symbol(h, Decl(ttttConditionalChainManyBranches.ts, 44, 88))
+>e : Symbol(e, Decl(ttttConditionalChainManyBranches.ts, 44, 93))
+>M : Symbol(M, Decl(ttttConditionalChainManyBranches.ts, 44, 37))
+>K : Symbol(K, Decl(ttttConditionalChainManyBranches.ts, 44, 57))
+
+declare const t0: T0;
+>t0 : Symbol(t0, Decl(ttttConditionalChainManyBranches.ts, 45, 13))
+>T0 : Symbol(T0, Decl(ttttConditionalChainManyBranches.ts, 0, 0))
+
+mk(t0, "ev", (e) => { e.kT0; });
+>mk : Symbol(mk, Decl(ttttConditionalChainManyBranches.ts, 43, 1202))
+>t0 : Symbol(t0, Decl(ttttConditionalChainManyBranches.ts, 45, 13))
+>e : Symbol(e, Decl(ttttConditionalChainManyBranches.ts, 46, 14))
+>e.kT0 : Symbol(T0.kT0, Decl(ttttConditionalChainManyBranches.ts, 2, 14))
+>e : Symbol(e, Decl(ttttConditionalChainManyBranches.ts, 46, 14))
+>kT0 : Symbol(T0.kT0, Decl(ttttConditionalChainManyBranches.ts, 2, 14))
+
+declare function mk2<T extends Target, M extends MapOf<T>>(t: T): M;
+>mk2 : Symbol(mk2, Decl(ttttConditionalChainManyBranches.ts, 46, 32))
+>T : Symbol(T, Decl(ttttConditionalChainManyBranches.ts, 47, 21))
+>Target : Symbol(Target, Decl(ttttConditionalChainManyBranches.ts, 41, 25))
+>M : Symbol(M, Decl(ttttConditionalChainManyBranches.ts, 47, 38))
+>MapOf : Symbol(MapOf, Decl(ttttConditionalChainManyBranches.ts, 42, 242))
+>T : Symbol(T, Decl(ttttConditionalChainManyBranches.ts, 47, 21))
+>t : Symbol(t, Decl(ttttConditionalChainManyBranches.ts, 47, 59))
+>T : Symbol(T, Decl(ttttConditionalChainManyBranches.ts, 47, 21))
+>M : Symbol(M, Decl(ttttConditionalChainManyBranches.ts, 47, 38))
+
+const m = mk2(t0);
+>m : Symbol(m, Decl(ttttConditionalChainManyBranches.ts, 48, 5))
+>mk2 : Symbol(mk2, Decl(ttttConditionalChainManyBranches.ts, 46, 32))
+>t0 : Symbol(t0, Decl(ttttConditionalChainManyBranches.ts, 45, 13))
+

@@ -186,3 +186,10 @@ intersection's property symbol to bugs/type_core.md.
   oracles.py should check free space and write failures before comparing dumps. Also: the suite's K1/K16 kdiff runs
   at `--threads 1`, where checker 0 apparently takes every other checker's unstarted share (deal_files / check_share), so it
   compares little; `--threads 16` would deal for real. [open]
+- `collect_free_params` (src/ty/lower.c) gives up (`FreeParams.unknown`) past MAX_FREE_PARAMS (32) outer type parameters
+  or MAX_BOUND_PARAMS (64) `infer`s, and a conditional type whose outer parameters are unknown takes
+  instantiate_conditional's uncached path (the composed mapper). That path got inference wrong: with the limit of 32
+  true branches remembered (lifted on 2026-10-23, ttttConditionalChainManyBranches), `mk<T, M extends MapOf<T>, K
+  extends keyof M>(t, "ev", h)` over a 33-branch MapOf had K's constraint `keyof M` come out never (TS2345), though
+  `<T, M extends MapOf<T>>(t: T): M` inferred M right. So the unknown fallback is not just conservative: a chain of 65
+  `infer`s or 33 outer type parameters still takes it. [open]
