@@ -10545,10 +10545,8 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
 
     Span prop_name;
     if (parse_dot_prop(&p, &parsed.optional_chain, &prop_name)) {
-        if (left_and_ret->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(left_and_ret) &&
-            !parsed.optional_chain
-        ) {
-            // `f<T>.x` (tsc's parsePropertyAccessExpressionRest): over the type arguments, `<` to `>`
+        if (left_and_ret->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(left_and_ret)) {
+            // `f<T>.x`, `f<T>?.x` too (tsc's parsePropertyAccessExpressionRest): over the type arguments, `<` to `>`
             const char* open = span_end_ptr(expr_outer_span(&left_and_ret->generic_params->expr));
             while (*open && *open != '<') open++;
             parse_error(&p, span_make(p.shared->source, open, span_end_ptr(expr_outer_span(left_and_ret))), 1477,

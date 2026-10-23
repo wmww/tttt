@@ -1,0 +1,45 @@
+//// [test/cases/ttttInstantiationOptionalPropertyAccess.ts] ////
+
+=== ttttInstantiationOptionalPropertyAccess.ts ===
+// An instantiation expression followed by a property access is TS1477 through an optional chain too (tsc's
+// parsePropertyAccessExpressionRest checks the expression, not the `?.`). Babel's
+// type-arguments/instantiation-expression-property-access fixture
+declare const a: { c: number; <T>(x: T): T };
+>a : { <T>(x: T): T; c: number; }
+>c : number
+>x : T
+
+type b = string;
+>b : string
+
+a<b>.c;
+>a<b>.c : number
+>a<b> : { (x: string): string; c: number; }
+>a : { <T>(x: T): T; c: number; }
+>c : number
+
+a<b>?.c;
+>a<b>?.c : number
+>a<b> : { (x: string): string; c: number; }
+>a : { <T>(x: T): T; c: number; }
+>c : number
+
+a<b>?.["c"];
+>a<b>?.["c"] : number
+>a<b> : { (x: string): string; c: number; }
+>a : { <T>(x: T): T; c: number; }
+>"c" : "c"
+
+a<b>?.("x");
+>a<b>?.("x") : string
+>a<b> : { (x: string): string; c: number; }
+>a : { <T>(x: T): T; c: number; }
+>"x" : "x"
+
+(a<b>)?.c;
+>(a<b>)?.c : number
+>(a<b>) : { (x: string): string; c: number; }
+>a<b> : { (x: string): string; c: number; }
+>a : { <T>(x: T): T; c: number; }
+>c : number
+

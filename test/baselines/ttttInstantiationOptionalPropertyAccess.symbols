@@ -1,0 +1,44 @@
+//// [test/cases/ttttInstantiationOptionalPropertyAccess.ts] ////
+
+=== ttttInstantiationOptionalPropertyAccess.ts ===
+// An instantiation expression followed by a property access is TS1477 through an optional chain too (tsc's
+// parsePropertyAccessExpressionRest checks the expression, not the `?.`). Babel's
+// type-arguments/instantiation-expression-property-access fixture
+declare const a: { c: number; <T>(x: T): T };
+>a : Symbol(a, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 13))
+>c : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+>T : Symbol(T, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 31))
+>x : Symbol(x, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 34))
+>T : Symbol(T, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 31))
+>T : Symbol(T, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 31))
+
+type b = string;
+>b : Symbol(b, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 45))
+
+a<b>.c;
+>a<b>.c : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+>a : Symbol(a, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 13))
+>b : Symbol(b, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 45))
+>c : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+
+a<b>?.c;
+>a<b>?.c : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+>a : Symbol(a, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 13))
+>b : Symbol(b, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 45))
+>c : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+
+a<b>?.["c"];
+>a : Symbol(a, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 13))
+>b : Symbol(b, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 45))
+>"c" : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+
+a<b>?.("x");
+>a : Symbol(a, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 13))
+>b : Symbol(b, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 45))
+
+(a<b>)?.c;
+>(a<b>)?.c : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+>a : Symbol(a, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 13))
+>b : Symbol(b, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 45))
+>c : Symbol(c, Decl(ttttInstantiationOptionalPropertyAccess.ts, 3, 18))
+
