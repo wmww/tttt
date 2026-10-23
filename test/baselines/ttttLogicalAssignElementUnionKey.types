@@ -1,0 +1,63 @@
+//// [test/cases/ttttLogicalAssignElementUnionKey.ts] ////
+
+=== ttttLogicalAssignElementUnionKey.ts ===
+// A logical assignment to an element access writes it (tsc's checkElementAccessExpression takes AccessFlags.Writing for
+// any assignment target): a union key is the intersection of the properties' types, never here (babel, vite, renovate's
+// `o[key] ??= v` under @ts-expect-error), unlike a property access, which reads its read type there
+declare const o: { a: string; b: number };
+>o : { a: string; b: number; }
+>a : string
+>b : number
+
+declare const k: 'a' | 'b';
+>k : "a" | "b"
+
+o[k] ??= 1;
+>o[k] ??= 1 : never
+>o[k] : never
+>o : { a: string; b: number; }
+>k : "a" | "b"
+>1 : 1
+
+o[k] ||= "s";
+>o[k] ||= "s" : never
+>o[k] : never
+>o : { a: string; b: number; }
+>k : "a" | "b"
+>"s" : "s"
+
+o[k] &&= 2;
+>o[k] &&= 2 : never
+>o[k] : never
+>o : { a: string; b: number; }
+>k : "a" | "b"
+>2 : 2
+
+declare const p: { a?: string; b?: number };
+>p : { a?: string; b?: number; }
+>a : string | undefined
+>b : number | undefined
+
+p[k] ??= 1;
+>p[k] ??= 1 : 1
+>p[k] : undefined
+>p : { a?: string; b?: number; }
+>k : "a" | "b"
+>1 : 1
+
+o["a"] ??= 1;
+>o["a"] ??= 1 : string
+>o["a"] : string
+>o : { a: string; b: number; }
+>"a" : "a"
+>1 : 1
+
+const r = (p[k] ??= 1);
+>r : 1
+>(p[k] ??= 1) : 1
+>p[k] ??= 1 : 1
+>p[k] : undefined
+>p : { a?: string; b?: number; }
+>k : "a" | "b"
+>1 : 1
+

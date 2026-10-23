@@ -646,6 +646,7 @@ typedef struct PropertyExpr {
     bool non_null_operand : 1; // The operand of `a.b!` (unparenthesized), like IdentifierExpr.non_null_operand
     // A target that is read too (`a.b ??= v`, `[...a.b] = v`, `a.b! = v`): a private member it names is referenced
     bool read_target : 1;
+    bool nested_read_target : 1; // See FlowBuilder.nested_read_target
     // `this.x` of `this.x.push(v)`, `this.x.unshift(v)` or `this.x.length`: an evolving array operation target (tsc's
     // isEvolvingArrayOperationTarget), like IdentifierExpr.evolving_op's EVOLVING_OP_ACCESS. Set by the flow builder
     bool evolving_access : 1;

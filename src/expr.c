@@ -1847,6 +1847,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     flow->compound_like_target = false;
     bool read_target = flow->read_target;
     flow->read_target = false;
+    bool nested_read_target = flow->nested_read_target;
+    flow->nested_read_target = false;
     bool nullish_condition = flow->nullish_condition;
     flow->nullish_condition = false;
     bool callee_of_call = flow->callee_of_call;
@@ -2014,6 +2016,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     } else {
                         flow->assignment_target = assignment_target; // `x! = 1`
                         flow->read_target = true;
+                        flow->nested_read_target = assignment_target != FLOW_TARGET_NONE;
                         expr_lookup_names(operand, names, errs);
                         // `x!` says x was assigned, whatever control flow thinks
                         if (operand->tag == EXPR_IDENTIFIER) {
@@ -2072,6 +2075,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             flow_length_access(me);
             my property->assignment_target = assignment_target;
             my property->read_target = read_target;
+            my property->nested_read_target = nested_read_target;
             my property->compound_like_target = compound_like_target;
             {
                 PropertyContext context = { .enclosing_class = scope_enclosing_class(names) };
@@ -2395,6 +2399,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         case EXPR_SPREAD:
             flow->assignment_target = assignment_target;
             flow->read_target = true;
+            flow->nested_read_target = assignment_target != FLOW_TARGET_NONE;
             expr_lookup_names(my spread, names, errs);
             break;
 
@@ -2571,7 +2576,11 @@ static void assignment_target_typecheck_of(
             if (ty_is_import_meta(target)) break; // A meta-property is no reference (TS2364)
             if (!source) return;
             Ty const* target_type = ty_expr_type(checker, target);
-            if (target->property->assignment_target == FLOW_TARGET_COMPOUND) {
+            // (A compound or logical assignment's direct target is checked against the setter's type: tsc's
+            // checkAssignmentOperator, `a.r ??= v`; not one through a `!` or a spread, `a.r! = v`)
+            if (target->property->assignment_target == FLOW_TARGET_COMPOUND ||
+                (target->property->read_target && !target->property->nested_read_target)
+            ) {
                 target_type = ty_compound_assignee_type(checker, target, target_type);
             }
             ty_check_assignable_to_access(checker, source, target_type, report_at, source_expr, target, errs);

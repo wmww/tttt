@@ -1,0 +1,60 @@
+//// [test/cases/ttttAssignedThroughNonNullReadType.ts] ////
+
+=== ttttAssignedThroughNonNullReadType.ts ===
+// A property assigned through a `!` or a spread is read with its read type (tsc's isWriteOnlyAccess is false there);
+// a direct target, compound ones too, takes the setter's
+class A { get r(): string { return "" } set r(v: string | number) { } get p(): string[] { return [] } set p(v: number[] | string[]) { } }
+>A : Symbol(A, Decl(ttttAssignedThroughNonNullReadType.ts, 0, 0))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>v : Symbol(v, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 46))
+>p : Symbol(A.p, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 69), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 101))
+>p : Symbol(A.p, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 69), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 101))
+>v : Symbol(v, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 108))
+
+declare const a: A;
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>A : Symbol(A, Decl(ttttAssignedThroughNonNullReadType.ts, 0, 0))
+
+a.r! = 1;
+>a.r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+
+(a.r) = 1;
+>a.r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+
+a.r = 1;
+>a.r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+
+[...a.p] = [1, 2];
+>a.p : Symbol(A.p, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 69), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 101))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>p : Symbol(A.p, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 69), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 101))
+
+[a.r] = [1];
+>a.r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+
+({ x: a.r } = { x: 1 });
+>x : Symbol(x, Decl(ttttAssignedThroughNonNullReadType.ts, 9, 2))
+>a.r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>x : Symbol(x, Decl(ttttAssignedThroughNonNullReadType.ts, 9, 15))
+
+a.r ??= 1;
+>a.r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+
+a.r ||= 1;
+>a.r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+>a : Symbol(a, Decl(ttttAssignedThroughNonNullReadType.ts, 3, 13))
+>r : Symbol(A.r, Decl(ttttAssignedThroughNonNullReadType.ts, 2, 9), Decl(ttttAssignedThroughNonNullReadType.ts, 2, 39))
+

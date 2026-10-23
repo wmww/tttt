@@ -6507,7 +6507,14 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             if (ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
-                Ty const* write = key->kind == TY_UNION ? union_key_write_type(me, object, key) : ty_access_write_type(me, object, key);
+                // (Not the write type where a property access is read too, `a.r ??= v`, `a.r! = v`, `[...a.r] = v`:
+                // tsc's isWriteOnlyAccess is false there. The assignment checks a logical one against the setter's type,
+                // see assignment_target_typecheck_of(). An element access is written wherever it's an assignment target,
+                // `o[k] ??= v` with a union key is the intersection: tsc's checkElementAccessExpression takes
+                // AccessFlags.Writing for isAssignmentTarget)
+                bool read_too = expr->property->read_target && expr->property->form == PROPERTY_EXPR_DOT;
+                Ty const* write = read_too ? nullptr : key->kind == TY_UNION ? union_key_write_type(me, object, key) :
+                    ty_access_write_type(me, object, key);
                 if (write) ret = write;
                 ret = ty_remove_missing(me, ret, written_prop_is_optional(me, object, key)); // (tsc's getFlowTypeOfAccessExpression)
             }

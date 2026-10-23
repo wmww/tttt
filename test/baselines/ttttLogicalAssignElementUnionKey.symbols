@@ -1,0 +1,44 @@
+//// [test/cases/ttttLogicalAssignElementUnionKey.ts] ////
+
+=== ttttLogicalAssignElementUnionKey.ts ===
+// A logical assignment to an element access writes it (tsc's checkElementAccessExpression takes AccessFlags.Writing for
+// any assignment target): a union key is the intersection of the properties' types, never here (babel, vite, renovate's
+// `o[key] ??= v` under @ts-expect-error), unlike a property access, which reads its read type there
+declare const o: { a: string; b: number };
+>o : Symbol(o, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 13))
+>a : Symbol(a, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 18))
+>b : Symbol(b, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 29))
+
+declare const k: 'a' | 'b';
+>k : Symbol(k, Decl(ttttLogicalAssignElementUnionKey.ts, 4, 13))
+
+o[k] ??= 1;
+>o : Symbol(o, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 13))
+>k : Symbol(k, Decl(ttttLogicalAssignElementUnionKey.ts, 4, 13))
+
+o[k] ||= "s";
+>o : Symbol(o, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 13))
+>k : Symbol(k, Decl(ttttLogicalAssignElementUnionKey.ts, 4, 13))
+
+o[k] &&= 2;
+>o : Symbol(o, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 13))
+>k : Symbol(k, Decl(ttttLogicalAssignElementUnionKey.ts, 4, 13))
+
+declare const p: { a?: string; b?: number };
+>p : Symbol(p, Decl(ttttLogicalAssignElementUnionKey.ts, 8, 13))
+>a : Symbol(a, Decl(ttttLogicalAssignElementUnionKey.ts, 8, 18))
+>b : Symbol(b, Decl(ttttLogicalAssignElementUnionKey.ts, 8, 30))
+
+p[k] ??= 1;
+>p : Symbol(p, Decl(ttttLogicalAssignElementUnionKey.ts, 8, 13))
+>k : Symbol(k, Decl(ttttLogicalAssignElementUnionKey.ts, 4, 13))
+
+o["a"] ??= 1;
+>o : Symbol(o, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 13))
+>"a" : Symbol(a, Decl(ttttLogicalAssignElementUnionKey.ts, 3, 18))
+
+const r = (p[k] ??= 1);
+>r : Symbol(r, Decl(ttttLogicalAssignElementUnionKey.ts, 11, 5))
+>p : Symbol(p, Decl(ttttLogicalAssignElementUnionKey.ts, 8, 13))
+>k : Symbol(k, Decl(ttttLogicalAssignElementUnionKey.ts, 4, 13))
+
