@@ -1,0 +1,27 @@
+//// [test/cases/ttttJsTypedefNoNameDropsGrammarErrors.ts] ////
+
+=== a.js ===
+var a = { x?: 1 };
+>a : { x: number; }
+>{ x?: 1 } : { x: number; }
+>x : number
+>1 : 1
+
+/**
+ * @typedef {string}
+ */
+var z = 1;
+>z : number
+>1 : 1
+
+=== b.js ===
+var b = { y?: 1 };
+>b : { y: number; }
+>{ y?: 1 } : { y: number; }
+>y : number
+>1 : 1
+
+/** @type {} */
+0;
+>0 : 0
+

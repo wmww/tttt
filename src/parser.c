@@ -15842,6 +15842,11 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         source->parse_error_starts = realloc(source->parse_error_starts, sizeof(char const*) * (source->parse_error_count + 1));
         source->parse_error_starts[source->parse_error_count++] = span_start_ptr(i->span);
     }
+    // (A JavaScript `@typedef` without a name too: tsgo's reparser reports it among the file's parse diagnostics,
+    // checkNonIdentifierName, not its jsdocDiagnostics, so the file's grammar errors are dropped like for any other)
+    for_each (i, vec_error, &shared.jsdoc_errors) {
+        if (!i->jsdoc && i->phase == ERROR_PHASE_PARSE) source->has_parse_errors = true;
+    }
     for_each (i, vec_error, &shared.errors) {
         if (source->has_parse_errors && i->grammar) {
             error_drop(i);

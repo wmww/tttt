@@ -1,0 +1,21 @@
+//// [test/cases/ttttJsTypedefNoNameDropsGrammarErrors.ts] ////
+
+=== a.js ===
+var a = { x?: 1 };
+>a : Symbol(a, Decl(a.js, 0, 3))
+>x : Symbol(x, Decl(a.js, 0, 9))
+
+/**
+ * @typedef {string}
+ */
+var z = 1;
+>z : Symbol(z, Decl(a.js, 4, 3))
+
+=== b.js ===
+var b = { y?: 1 };
+>b : Symbol(b, Decl(b.js, 0, 3))
+>y : Symbol(y, Decl(b.js, 0, 9))
+
+/** @type {} */
+0;
+
