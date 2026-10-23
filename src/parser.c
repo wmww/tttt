@@ -3850,7 +3850,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
 
     if (span_valid(readonly_span)) {
         ret->readonly_invalid = true;
-        parse_error(
+        // (tsc's checkGrammarTypeOperatorNode: the checker's, not the parser's)
+        grammar_error(
             &p,
             readonly_span,
             1354,
