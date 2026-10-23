@@ -1674,6 +1674,12 @@ bool ty_is_type_derived_from(Checker* me, Ty const* source, Ty const* target) {
     if (target == ty_global_function_type(me)) return (source->flags & TYF_OBJECT) && is_function_object(me, source);
     if (!(source->flags & TYF_OBJECT) || !(target->flags & TYF_OBJECT)) return false;
     if (ty_has_base_type(me, source, target)) return true;
+    // (A tuple's base type is the array of its elements, readonly or not: `[number] instanceof Array`. Tuples of
+    // one shape share their target, which the check above finds)
+    if (ty_is_tuple(source)) {
+        source = ty_tuple_as_array(me, source);
+        if (ty_has_base_type(me, source, target)) return true;
+    }
     // Whatever derives from ReadonlyArray is an Array as far as `instanceof Array` can tell
     Ty const* readonly_array = ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), true);
     if (!ty_is_array(me, target) || target->reference.target == readonly_array->reference.target) return false;

@@ -1,0 +1,45 @@
+//// [test/cases/ttttInstanceofArrayTuple.ts] ////
+
+=== ttttInstanceofArrayTuple.ts ===
+// A tuple derives from Array (its base type is the array of its elements, a readonly one's from ReadonlyArray, which
+// `instanceof Array` counts too), and from a tuple of its shape (bun's 20-C6, 19-C6a/b)
+function d9(x: [number, string] | string) { if (!(x instanceof Array)) { x.toUpperCase(); } }
+>d9 : Symbol(d9, Decl(ttttInstanceofArrayTuple.ts, 0, 0))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 2, 12))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 2, 12))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>x.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 2, 12))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+
+function d7(x: readonly [number] | string) { if (!(x instanceof Array)) { x.toUpperCase(); } else { x[0]; } }
+>d7 : Symbol(d7, Decl(ttttInstanceofArrayTuple.ts, 2, 93))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 3, 12))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 3, 12))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>x.toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 3, 12))
+>toUpperCase : Symbol(String.toUpperCase, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 3, 12))
+>0 : Symbol(0)
+
+declare const Ctor: new () => [number, string];
+>Ctor : Symbol(Ctor, Decl(ttttInstanceofArrayTuple.ts, 4, 13))
+
+function d6(x: [string, number] | Date) {
+>d6 : Symbol(d6, Decl(ttttInstanceofArrayTuple.ts, 4, 47))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 5, 12))
+>Date : Symbol(Date, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.scripthost.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 1 more)
+
+    if (x instanceof Ctor) return x[0];
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 5, 12))
+>Ctor : Symbol(Ctor, Decl(ttttInstanceofArrayTuple.ts, 4, 13))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 5, 12))
+>0 : Symbol(0)
+
+    return x.getTime();
+>x.getTime : Symbol(Date.getTime, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttInstanceofArrayTuple.ts, 5, 12))
+>getTime : Symbol(Date.getTime, Decl(lib.es5.d.ts, --, --))
+}
+
