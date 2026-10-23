@@ -82,6 +82,7 @@ diagnostics; clidiff_text: projects; unexplained_*: the root-cause keys of each 
 numbers are those of whichever tree last ran each oracle (bugcount.py prints which).
 - 2026-10-23 00ba060b2: 156 open (11 designs), 72 text-only, 36 tsgo excluded; symptoms: suite_tsc 53, suite_own 8, suite_bun 1352, bun 1091, dt 0, source 6, expect 0, dts 6, flagflip 20, clidiff_text 14, unexplained_sweep 0, unexplained_sourcesweep 8, unexplained_buncases 533
 - 2026-10-23 81bc6b5d4: 162 open (11 designs), 72 text-only, 36 tsgo excluded; symptoms: suite_tsc 53, suite_own 8, suite_bun 1352, bun 1072, dt 0, source 16, expect 0, dts 6, flagflip 20, clidiff_text 14, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 530
+- 2026-10-23 17c1719b2: 162 open (11 designs), 72 text-only, 36 tsgo excluded; symptoms: suite_tsc 53, suite_own 8, suite_bun 1352, bun 1072, dt 0, source 16, expect 0, dts 6, flagflip 20, clidiff_text 14, unexplained_sweep 0, unexplained_sourcesweep 0, unexplained_buncases 530
 
 ## 2 MB-aligned huge arena chunks: A/B on this box (2026-10-23, on 9894ae8e5)
 arena_alloc_chunk() (src/ty/checker.c) mapping a huge-page chunk as whole, aligned 2 MB pages (agents/notes/
