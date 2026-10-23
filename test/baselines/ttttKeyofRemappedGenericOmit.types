@@ -1,0 +1,62 @@
+//// [test/cases/ttttKeyofRemappedGenericOmit.ts] ////
+
+=== ttttKeyofRemappedGenericOmit.ts ===
+// keyof a generic mapped type with an `as` clause over `keyof X` includes the `as` type of X's apparent keys, a
+// generic mapped part of X included: `Omit<E[T], K>` has the keys every E[T] has (tsc's getApparentMappedTypeKeys over
+// getPropertiesOfType). solid-js's splitProps of what an earlier splitProps left (ark's factory)
+type SplitProps<T, K extends (readonly (keyof T)[])[]> = [
+>SplitProps : [...{ [P in keyof K]: P extends `${number}` ? Pick<T, Extract<K[P], readonly (keyof T)[]>[number]> : never; }, { [P in keyof T as Exclude<P, K[number][number]>]: T[P]; }]
+
+    ...{ [P in keyof K]: P extends `${number}` ? Pick<T, Extract<K[P], readonly (keyof T)[]>[number]> : never },
+    { [P in keyof T as Exclude<P, K[number][number]>]: T[P] }
+];
+declare function splitProps<T extends Record<any, any>, K extends [readonly (keyof T)[], ...(readonly (keyof T)[])[]]>(props: T, ...keys: K): SplitProps<T, K>;
+>splitProps : <T extends Record<any, any>, K extends [readonly (keyof T)[], ...(readonly (keyof T)[])[]]>(props: T, ...keys: K) => SplitProps<T, K>
+>props : T
+>keys : K
+
+interface Elements { div: { ref?: HTMLDivElement; id?: string }; span: { ref?: HTMLSpanElement; title?: string } }
+>div : { ref?: HTMLDivElement; id?: string; }
+>ref : HTMLDivElement | undefined
+>id : string | undefined
+>span : { ref?: HTMLSpanElement; title?: string; }
+>ref : HTMLSpanElement | undefined
+>title : string | undefined
+
+type ElementType = keyof Elements;
+>ElementType : keyof Elements
+
+type Assign<T, U> = Omit<T, keyof U> & U;
+>Assign : Assign<T, U>
+
+type Props<E extends ElementType> = Assign<Elements[E], { asChild?: () => void }>;
+>Props : Props<E>
+>asChild : (() => void) | undefined
+
+export function f<T extends ElementType>(props: Props<T>) {
+>f : <T extends ElementType>(props: Props<T>) => (Pick<Props<T>, "asChild"> | ((Props<T> extends infer T_2 ? { [P in keyof T_2 as Exclude<P, "asChild">]: T_2[P]; } : never) extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "ref">]: T_1[P]; } : never))[]
+>props : Props<T>
+
+    const [local, parent] = splitProps(props, ['asChild']);
+>local : Pick<Props<T>, "asChild">
+>parent : Props<T> extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "asChild">]: T_1[P]; } : never
+>splitProps(props, ['asChild']) : [Pick<Props<T>, "asChild">, Props<T> extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "asChild">]: T_1[P]; } : never]
+>splitProps : <T_1 extends Record<any, any>, K extends [readonly (keyof T_1)[], ...(readonly (keyof T_1)[])[]]>(props: T_1, ...keys: K) => SplitProps<T_1, K>
+>props : Props<T>
+>['asChild'] : "asChild"[]
+>'asChild' : "asChild"
+
+    const [, rest] = splitProps(parent, ['ref']);
+>rest : (Props<T> extends infer T_2 ? { [P in keyof T_2 as Exclude<P, "asChild">]: T_2[P]; } : never) extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "ref">]: T_1[P]; } : never
+>splitProps(parent, ['ref']) : [Pick<Props<T> extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "asChild">]: T_1[P]; } : never, Extract<"ref"[], readonly (keyof (Props<T> extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "asChild">]: T_1[P]; } : never))[]>[number]>, (Props<T> extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "asChild">]: T_1[P]; } : never) extends infer T_2 ? { [P in keyof T_2 as Exclude<P, "ref">]: T_2[P]; } : never]
+>splitProps : <T_1 extends Record<any, any>, K extends [readonly (keyof T_1)[], ...(readonly (keyof T_1)[])[]]>(props: T_1, ...keys: K) => SplitProps<T_1, K>
+>parent : Props<T> extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "asChild">]: T_1[P]; } : never
+>['ref'] : "ref"[]
+>'ref' : "ref"
+
+    return [local, rest];
+>[local, rest] : (Pick<Props<T>, "asChild"> | ((Props<T> extends infer T_2 ? { [P in keyof T_2 as Exclude<P, "asChild">]: T_2[P]; } : never) extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "ref">]: T_1[P]; } : never))[]
+>local : Pick<Props<T>, "asChild">
+>rest : (Props<T> extends infer T_2 ? { [P in keyof T_2 as Exclude<P, "asChild">]: T_2[P]; } : never) extends infer T_1 ? { [P in keyof T_1 as Exclude<P, "ref">]: T_1[P]; } : never
+}
+

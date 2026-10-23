@@ -4764,8 +4764,12 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
         TyDisplay inner_d = d;
         inner_d.target = &inner;
         display_mapped_body(me, inner_d, mapped, wrapper, homomorphic_lost);
-        if (homomorphic_lost) ty_display(me, d, mapped->modifiers_type);
-        else ty_display(me, d, mapped->constraint);
+        // (The check type of the conditional it prints as: parenthesized if it is one, tsc's
+        // parenthesizeCheckTypeOfConditionalType)
+        Ty const* check = homomorphic_lost ? mapped->modifiers_type : mapped->constraint;
+        display_parenthesized_if(me, d, check, !shows_alias(d, check) && (is_function_like(me, d, check) ||
+            (check->kind == TY_CONDITIONAL && !display_over(d) && !conditional_elided(d, check)) ||
+            mapped_as_conditional(me, d, check)));
         out(fresh, c_sv(" extends infer "));
         out_type_param_name(me, fresh, wrapper, false);
         if (homomorphic_lost) {
@@ -6630,7 +6634,8 @@ static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
     display_parenthesized_if(
         me, d, ty->conditional.check,
         is_function_like(me, d, ty->conditional.check) ||
-            (ty->conditional.check->kind == TY_CONDITIONAL && !shows_alias(d, ty->conditional.check))
+            (ty->conditional.check->kind == TY_CONDITIONAL && !shows_alias(d, ty->conditional.check)) ||
+            mapped_as_conditional(me, d, ty->conditional.check)
     );
     printed_range_end(d, &check_range);
     approx_add(d, 15); // (tsc's conditionalTypeToTypeNode, after the check type)
@@ -7450,7 +7455,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             Ty const* operand = ty->keyof.operand;
             bool parens = needs_parens_in_array(me, d, operand) && !shows_alias(d, operand) &&
                 (operand->kind == TY_UNION || operand->kind == TY_INTERSECTION ||
-                    (operand->kind == TY_CONDITIONAL && !display_over(d) && !conditional_elided(d, operand)) || is_function_like(me, d, operand));
+                    (operand->kind == TY_CONDITIONAL && !display_over(d) && !conditional_elided(d, operand)) || is_function_like(me, d, operand) ||
+                    mapped_as_conditional(me, d, operand));
             approx_add(d, 6);
             out_lit(d, "keyof ");
             display_parenthesized_if(me, d, operand, parens);

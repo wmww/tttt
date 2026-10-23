@@ -511,8 +511,11 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   every incomplete never the silent never: new_flow_type (src/ty/flow.c), repro
   test/cases/ttttLoopNeverCallSilentNever.ts. [fixed 2026-10-23]
 - **ark (packages/solid, templates/solid-start): +TS2322** at packages/solid/src/components/factory.tsx:32 (`Type 'string'
-  is not assignable to type 'keyof { [P in keyof HTMLArkProps<T> as Exclude<P, "asChild">]: HTMLArkProps<T>[P]; }'`).
-  Guess: keyof of a generic mapped type with an `as` clause (its constraint) against a string. [open]
+  is not assignable to type 'keyof { [P in keyof HTMLArkProps<T> as Exclude<P, "asChild">]: HTMLArkProps<T>[P]; }'`):
+  solid-js's splitProps of what an earlier splitProps left. apparent_mapped_type_keys (src/ty/relate.c) skipped a
+  generic mapped part of the modifiers type (`Omit<E[T], K>`), which has the properties of the lower bound of its keys
+  like tsc's getPropertiesOfType; plus the printer's parentheses around a mapped type printed as a conditional in a
+  check type or `keyof` operand. Repro test/cases/ttttKeyofRemappedGenericOmit.ts. [fixed 2026-10-23]
 - **papra/apps/papra-client: +TS7006** at src/modules/tags/components/tag.component.tsx:28 (`Parameter 'e' implicitly
   has an 'any' type`): a contextual type tsgo finds for a Solid JSX event handler. [open]
 - **genkit/js/testapps/dev-ui-gallery: -TS7022/-TS7024** at src/genkit.ts:78, src/main/middleware.ts:91 and :108: tsgo

@@ -4473,7 +4473,8 @@ static Ty const* apparent_mapped_type_keys(Checker* me, MappedInfo const* mapped
         Ty const* part = apparent_type(me, parts.data[p]);
         if (!(part->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, part);
-        if (members->mapped) continue;
+        // (A generic mapped part has the properties of the lower bound of its keys, `Omit<E[T], K>` those every E[T]
+        // has: tsc's getPropertiesOfType resolves its members)
         for (u32 i = 0; i < members->prop_count + members->index_count; i++) {
             Ty const* key = i < members->prop_count ? ty_prop_key_literal(me, members->props[i]) :
                 members->index[i - members->prop_count].key;
