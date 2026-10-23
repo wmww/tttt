@@ -7586,7 +7586,7 @@ const baselines = {
         types: true,
     },
     'bun40-C7c': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11725,6 +11725,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttAugmentedStarExportNotLocal': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttAutoAccessorModifiers': {
         errors: true,
         symbols: true,
@@ -11797,6 +11802,11 @@ const baselines = {
         dts: true,
     },
     'ttttBodilessParameterPatterns': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBuildInfoFileOverwrites': {
         errors: true,
         symbols: true,
         types: true,
@@ -13816,6 +13826,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLibReplacementJavaScriptDefaultLib': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLiteralGetterDuringResolution': {
         errors: true,
         symbols: true,
@@ -14288,6 +14303,11 @@ const baselines = {
     },
     'ttttReadonlyUniqueSymbolName': {
         errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttRecursiveBaseArgumentLimit': {
+        errors: false,
         symbols: true,
         types: true,
     },

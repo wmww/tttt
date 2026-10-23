@@ -74,6 +74,19 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **Random npm projects are the correctness measure; bun cases are deprioritized** (2026-10-23, the human): their
+  method (agents/notes/npm_sampling.md: sample npm names with a recorded seed, clone the repos, bench config, tsgo
+  7.1 against tttt) found 6 of 50 random projects diverging and 1 of 50 flipping clean/has-errors on that day's main,
+  while the sweep repos showed nothing. `scripts/npmsample.py` runs it (worker npm); the divergences it files get
+  fixers ahead of the remaining bun cases. Checked projects are NOT kept: a fix leaves a `test/cases` repro (or shows
+  an existing test covers it), after which the project adds nothing; a matching project is deleted at once.
+  What stays in git is the seed, the list of what was checked and the per-project counts.
+- **No deterministic file-to-checker deal for now** (2026-10-23): bun 92-R16b showed that with work stealing an
+  order-dependent diagnostic (a circularity on mutually recursive mapped types; also TS5115/TS2589, sequelize's
+  TS7022) is a run-to-run flake when the two files split across checkers (16-19 of 60 runs at K4). tsgo's static
+  association is stable per K but itself K-dependent (sequelize); at K1 tttt is stable and matches. A fixed deal is a
+  scheduling and load-balance change needing a perf study; the real fix is order-independence (reentrancy.md stages
+  C-E). Written up in bugs/tsgo_divergences.md.
 - **Land fast, gate in batches** (2026-10-23, the human): a fix lands on `scripts/quickgate.sh` (the suite against
   the main it started from, three corpora, instructions against its base: `--vs-main`) through `scripts/land.sh`;
   the full oracles (`scripts/oracles.py`, the full source sweep, kdiff) run per batch of landings in the merger's
