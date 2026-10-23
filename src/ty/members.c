@@ -4551,6 +4551,12 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         keys = member_keys;
         key_count = 1;
     }
+    // (A never constraint is one key to tsc's forEachType, never itself, whose `as` clause may still name something:
+    // `{ [K in never as "a"]: 1 }` has `a`)
+    if (!key_count && !member_keys && mapped->name_type && (constraint->flags & TYF_NEVER)) {
+        keys = &constraint;
+        key_count = 1;
+    }
     if (mapped->name_type && !generic) {
         // A mapped type whose `as` clause is generic in more than its key is generic (tsc's isGenericMappedType):
         // `{ [K in keyof M as `${K}${Suffix}`]: ... }`

@@ -1,0 +1,63 @@
+//// [test/cases/ttttMappedNeverKeyAsClause.ts] ////
+
+=== ttttMappedNeverKeyAsClause.ts ===
+// A mapped type over `never` with an `as` clause: tsc's forEachType hands never itself to the clause, which may still
+// name a property (`{ [K in never as "a"]: 1 }` has a); without one, or with a clause that maps never to never, nothing
+// (bun's 14-C10)
+type M1 = { [K in never as "a"]: 1 };
+>M1 : Symbol(M1, Decl(ttttMappedNeverKeyAsClause.ts, 0, 0))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 3, 13))
+
+declare let m1: M1;
+>m1 : Symbol(m1, Decl(ttttMappedNeverKeyAsClause.ts, 4, 11))
+>M1 : Symbol(M1, Decl(ttttMappedNeverKeyAsClause.ts, 0, 0))
+
+const m1b: string = m1.a;
+>m1b : Symbol(m1b, Decl(ttttMappedNeverKeyAsClause.ts, 5, 5))
+>m1.a : Symbol(a)
+>m1 : Symbol(m1, Decl(ttttMappedNeverKeyAsClause.ts, 4, 11))
+>a : Symbol(a)
+
+type M2 = { [K in never]: 1 };
+>M2 : Symbol(M2, Decl(ttttMappedNeverKeyAsClause.ts, 5, 25))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 6, 13))
+
+declare let m2: M2;
+>m2 : Symbol(m2, Decl(ttttMappedNeverKeyAsClause.ts, 7, 11))
+>M2 : Symbol(M2, Decl(ttttMappedNeverKeyAsClause.ts, 5, 25))
+
+m2.a;
+>m2 : Symbol(m2, Decl(ttttMappedNeverKeyAsClause.ts, 7, 11))
+
+type M3<T extends string> = { [K in T as `x${K}`]: K };
+>M3 : Symbol(M3, Decl(ttttMappedNeverKeyAsClause.ts, 8, 5))
+>T : Symbol(T, Decl(ttttMappedNeverKeyAsClause.ts, 9, 8))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 9, 31))
+>T : Symbol(T, Decl(ttttMappedNeverKeyAsClause.ts, 9, 8))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 9, 31))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 9, 31))
+
+declare let m3: M3<never>;
+>m3 : Symbol(m3, Decl(ttttMappedNeverKeyAsClause.ts, 10, 11))
+>M3 : Symbol(M3, Decl(ttttMappedNeverKeyAsClause.ts, 8, 5))
+
+const m3b: string = m3.x;
+>m3b : Symbol(m3b, Decl(ttttMappedNeverKeyAsClause.ts, 11, 5))
+>m3 : Symbol(m3, Decl(ttttMappedNeverKeyAsClause.ts, 10, 11))
+
+type M4 = { [K in never as `p${K}` | "q"]: K };
+>M4 : Symbol(M4, Decl(ttttMappedNeverKeyAsClause.ts, 11, 25))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 12, 13))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 12, 13))
+>K : Symbol(K, Decl(ttttMappedNeverKeyAsClause.ts, 12, 13))
+
+declare let m4: M4;
+>m4 : Symbol(m4, Decl(ttttMappedNeverKeyAsClause.ts, 13, 11))
+>M4 : Symbol(M4, Decl(ttttMappedNeverKeyAsClause.ts, 11, 25))
+
+const z5: never = m4.q;
+>z5 : Symbol(z5, Decl(ttttMappedNeverKeyAsClause.ts, 14, 5))
+>m4.q : Symbol(q)
+>m4 : Symbol(m4, Decl(ttttMappedNeverKeyAsClause.ts, 13, 11))
+>q : Symbol(q)
+

@@ -1,0 +1,53 @@
+//// [test/cases/ttttMappedNeverKeyAsClause.ts] ////
+
+=== ttttMappedNeverKeyAsClause.ts ===
+// A mapped type over `never` with an `as` clause: tsc's forEachType hands never itself to the clause, which may still
+// name a property (`{ [K in never as "a"]: 1 }` has a); without one, or with a clause that maps never to never, nothing
+// (bun's 14-C10)
+type M1 = { [K in never as "a"]: 1 };
+>M1 : M1
+
+declare let m1: M1;
+>m1 : M1
+
+const m1b: string = m1.a;
+>m1b : string
+>m1.a : 1
+>m1 : M1
+>a : 1
+
+type M2 = { [K in never]: 1 };
+>M2 : M2
+
+declare let m2: M2;
+>m2 : M2
+
+m2.a;
+>m2.a : any
+>m2 : M2
+>a : any
+
+type M3<T extends string> = { [K in T as `x${K}`]: K };
+>M3 : M3<T>
+
+declare let m3: M3<never>;
+>m3 : M3<never>
+
+const m3b: string = m3.x;
+>m3b : string
+>m3.x : any
+>m3 : M3<never>
+>x : any
+
+type M4 = { [K in never as `p${K}` | "q"]: K };
+>M4 : M4
+
+declare let m4: M4;
+>m4 : M4
+
+const z5: never = m4.q;
+>z5 : never
+>m4.q : never
+>m4 : M4
+>q : never
+
