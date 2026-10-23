@@ -1,0 +1,28 @@
+ttttWeakGenericMappedType.ts(4,3): error TS2559: Type '{ b: number; }' has no properties in common with type 'Partial<T>'.
+ttttWeakGenericMappedType.ts(7,47): error TS2559: Type '{ z: 1; }' has no properties in common with type 'Partial<T>'.
+ttttWeakGenericMappedType.ts(7,74): error TS2559: Type '1' has no properties in common with type 'Partial<T>'.
+ttttWeakGenericMappedType.ts(8,50): error TS2322: Type '{ b: number; }' is not assignable to type 'Partial<T>'.
+ttttWeakGenericMappedType.ts(9,73): error TS2322: Type '{ b: number; }' is not assignable to type 'Required<T>'.
+
+
+==== ttttWeakGenericMappedType.ts (5 errors) ====
+    // A generic mapped type is weak by the properties its modifiers type gives it (tsc's isWeakType over
+    // resolveStructuredTypeMembers): `Partial<T>` with `T extends { a: A }` gets TS2559
+    function f<T extends { a: string }>(x: Partial<T>, y: { b: number }) {
+      x = y;
+      ~
+!!! error TS2559: Type '{ b: number; }' has no properties in common with type 'Partial<T>'.
+    }
+    declare const oz: { z: 1 };
+    function g<T extends { a: number }>() { const x1: Partial<T> = oz; const x2: Partial<T> = 1; const x3: Partial<T> = {}; }
+                                                  ~~
+!!! error TS2559: Type '{ z: 1; }' has no properties in common with type 'Partial<T>'.
+                                                                             ~~
+!!! error TS2559: Type '1' has no properties in common with type 'Partial<T>'.
+    function h<T>(x: Partial<T>, y: { b: number }) { x = y; }
+                                                     ~
+!!! error TS2322: Type '{ b: number; }' is not assignable to type 'Partial<T>'.
+    function k<T extends { a: string }>(x: Required<T>, y: { b: number }) { x = y; }
+                                                                            ~
+!!! error TS2322: Type '{ b: number; }' is not assignable to type 'Required<T>'.
+    

@@ -1,0 +1,61 @@
+//// [test/cases/ttttWeakGenericMappedType.ts] ////
+
+=== ttttWeakGenericMappedType.ts ===
+// A generic mapped type is weak by the properties its modifiers type gives it (tsc's isWeakType over
+// resolveStructuredTypeMembers): `Partial<T>` with `T extends { a: A }` gets TS2559
+function f<T extends { a: string }>(x: Partial<T>, y: { b: number }) {
+>f : Symbol(f, Decl(ttttWeakGenericMappedType.ts, 0, 0))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 2, 11))
+>a : Symbol(a, Decl(ttttWeakGenericMappedType.ts, 2, 22))
+>x : Symbol(x, Decl(ttttWeakGenericMappedType.ts, 2, 36))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 2, 11))
+>y : Symbol(y, Decl(ttttWeakGenericMappedType.ts, 2, 50))
+>b : Symbol(b, Decl(ttttWeakGenericMappedType.ts, 2, 55))
+
+  x = y;
+>x : Symbol(x, Decl(ttttWeakGenericMappedType.ts, 2, 36))
+>y : Symbol(y, Decl(ttttWeakGenericMappedType.ts, 2, 50))
+}
+declare const oz: { z: 1 };
+>oz : Symbol(oz, Decl(ttttWeakGenericMappedType.ts, 5, 13))
+>z : Symbol(z, Decl(ttttWeakGenericMappedType.ts, 5, 19))
+
+function g<T extends { a: number }>() { const x1: Partial<T> = oz; const x2: Partial<T> = 1; const x3: Partial<T> = {}; }
+>g : Symbol(g, Decl(ttttWeakGenericMappedType.ts, 5, 27))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 6, 11))
+>a : Symbol(a, Decl(ttttWeakGenericMappedType.ts, 6, 22))
+>x1 : Symbol(x1, Decl(ttttWeakGenericMappedType.ts, 6, 45))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 6, 11))
+>oz : Symbol(oz, Decl(ttttWeakGenericMappedType.ts, 5, 13))
+>x2 : Symbol(x2, Decl(ttttWeakGenericMappedType.ts, 6, 72))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 6, 11))
+>x3 : Symbol(x3, Decl(ttttWeakGenericMappedType.ts, 6, 98))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 6, 11))
+
+function h<T>(x: Partial<T>, y: { b: number }) { x = y; }
+>h : Symbol(h, Decl(ttttWeakGenericMappedType.ts, 6, 121))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 7, 11))
+>x : Symbol(x, Decl(ttttWeakGenericMappedType.ts, 7, 14))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 7, 11))
+>y : Symbol(y, Decl(ttttWeakGenericMappedType.ts, 7, 28))
+>b : Symbol(b, Decl(ttttWeakGenericMappedType.ts, 7, 33))
+>x : Symbol(x, Decl(ttttWeakGenericMappedType.ts, 7, 14))
+>y : Symbol(y, Decl(ttttWeakGenericMappedType.ts, 7, 28))
+
+function k<T extends { a: string }>(x: Required<T>, y: { b: number }) { x = y; }
+>k : Symbol(k, Decl(ttttWeakGenericMappedType.ts, 7, 57))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 8, 11))
+>a : Symbol(a, Decl(ttttWeakGenericMappedType.ts, 8, 22))
+>x : Symbol(x, Decl(ttttWeakGenericMappedType.ts, 8, 36))
+>Required : Symbol(Required, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttWeakGenericMappedType.ts, 8, 11))
+>y : Symbol(y, Decl(ttttWeakGenericMappedType.ts, 8, 51))
+>b : Symbol(b, Decl(ttttWeakGenericMappedType.ts, 8, 56))
+>x : Symbol(x, Decl(ttttWeakGenericMappedType.ts, 8, 36))
+>y : Symbol(y, Decl(ttttWeakGenericMappedType.ts, 8, 51))
+

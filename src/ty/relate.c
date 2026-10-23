@@ -7881,7 +7881,9 @@ static bool is_weak_type(Checker* me, Ty const* ty) {
     // (A tuple's `length` is required: no need to make its members)
     if (!(ty->flags & TYF_OBJECT) || ty_tuple_shape(ty)) return false;
     Members const* members = ty_members(me, ty);
-    if (members->mapped || members->call_count || members->construct_count || members->index_count || !members->prop_count) {
+    // (A generic mapped type is weak by the properties its modifiers type gives it, `Partial<T>` with `T extends { a:
+    // A }`: tsc's isWeakType over resolveStructuredTypeMembers, expand_generic_homomorphic())
+    if (members->call_count || members->construct_count || members->index_count || !members->prop_count) {
         return false;
     }
     for (u32 i = 0; i < members->prop_count; i++) {

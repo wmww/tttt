@@ -1,0 +1,50 @@
+//// [test/cases/ttttWeakGenericMappedType.ts] ////
+
+=== ttttWeakGenericMappedType.ts ===
+// A generic mapped type is weak by the properties its modifiers type gives it (tsc's isWeakType over
+// resolveStructuredTypeMembers): `Partial<T>` with `T extends { a: A }` gets TS2559
+function f<T extends { a: string }>(x: Partial<T>, y: { b: number }) {
+>f : <T extends { a: string; }>(x: Partial<T>, y: { b: number; }) => void
+>a : string
+>x : Partial<T>
+>y : { b: number; }
+>b : number
+
+  x = y;
+>x = y : { b: number; }
+>x : Partial<T>
+>y : { b: number; }
+}
+declare const oz: { z: 1 };
+>oz : { z: 1; }
+>z : 1
+
+function g<T extends { a: number }>() { const x1: Partial<T> = oz; const x2: Partial<T> = 1; const x3: Partial<T> = {}; }
+>g : <T extends { a: number; }>() => void
+>a : number
+>x1 : Partial<T>
+>oz : { z: 1; }
+>x2 : Partial<T>
+>1 : 1
+>x3 : Partial<T>
+>{} : {}
+
+function h<T>(x: Partial<T>, y: { b: number }) { x = y; }
+>h : <T>(x: Partial<T>, y: { b: number; }) => void
+>x : Partial<T>
+>y : { b: number; }
+>b : number
+>x = y : { b: number; }
+>x : Partial<T>
+>y : { b: number; }
+
+function k<T extends { a: string }>(x: Required<T>, y: { b: number }) { x = y; }
+>k : <T extends { a: string; }>(x: Required<T>, y: { b: number; }) => void
+>a : string
+>x : Required<T>
+>y : { b: number; }
+>b : number
+>x = y : { b: number; }
+>x : Required<T>
+>y : { b: number; }
+
