@@ -39,6 +39,14 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
   `--tsBuildInfoFile`); its walls right after `oracles.py`'s other oracles are inflated: rerun alone. A project whose
   `.tsbuildinfo` is committed makes tsc skip checking (webcmd).
 
+## Known correctness bugs
+`scripts/bugcount.py --save`, one line per run (per batch): the open root causes from the tags of agents/bugs/*.md and
+triage.md (agents/bugs/README.md), then the symptom counts it read (suite_*: failing tests by origin; bun: bun cases
+mismatching; dt, source: projects mismatching; expect: $ExpectType assertions; dts: dtsdiff projects; flagflip:
+diagnostics; clidiff_text: projects; unexplained_*: the root-cause keys of each oracle no entry mentions). The oracle
+numbers are those of whichever tree last ran each oracle (bugcount.py prints which).
+- 2026-10-23 00ba060b2: 156 open (11 designs), 72 text-only, 36 tsgo excluded; symptoms: suite_tsc 53, suite_own 8, suite_bun 1352, bun 1091, dt 0, source 6, expect 0, dts 6, flagflip 20, clidiff_text 14, unexplained_sweep 0, unexplained_sourcesweep 8, unexplained_buncases 533
+
 ## 2 MB-aligned huge arena chunks: A/B on this box (2026-10-23, on 9894ae8e5)
 arena_alloc_chunk() (src/ty/checker.c) mapping a huge-page chunk as whole, aligned 2 MB pages (agents/notes/
 kernel_time.md item 5). fast/tttt before and after, `scripts/abbench.sh` (interleaved, `TTTT_SYNC_EXIT=1`, medians,
