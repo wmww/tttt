@@ -59,6 +59,12 @@ KINDS = {
     # (A deferred .tsx body: the skipper steps over its JSX, plan 78)
     'jsxbody': ('tsx', lambda n: ['declare namespace JSX { interface IntrinsicElements { div: any } interface Element {} }',
                                   'export function f(x: number) { return <div>', *[f'  <div title="{i}">{{x + {i}}} it\'s</div>' for i in range(n)], '</div>; }']),
+    # (The parameter of a call through a union of functions: an intersection of N/64 interfaces sharing 64 properties,
+    # React's props of every intrinsic element; reducing it looked every property up in every later member)
+    'callunion': ('ts', lambda n: ['interface Base {', *[f'  a{i}?: string;' for i in range(64)], '}',
+                                   *[f'interface P{i} extends Base {{ k{i}: "v{i}"; }}' for i in range(n // 64)],
+                                   'declare const f: ' + ' | '.join(f'((p: P{i}) => void)' for i in range(n // 64)) + ';',
+                                   'const x = { a0: "" };', 'f(x);']),
     'comments': ('ts', lambda n: ['export interface I {', *[f'  /** Member {i}. */\n  m{i}: number;' for i in range(n)], '}']),
     'inferfn': ('ts', lambda n: ['export function f(x: number) { return {', *[f'  k{i}: x + {i},' for i in range(n)], '}; }']),
     'jsdoc': ('js', lambda n: [f'/** @param {{number}} x @returns {{number}} */ function f{i}(x) {{ return x + {i}; }}' for i in range(n)]),

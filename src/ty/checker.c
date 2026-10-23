@@ -2087,6 +2087,111 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
     return never_reduced_generic_literal_prop(me, types, len);
 }
 
+// never_reduced_prop_known() for three known object members or more: each name's properties grouped in member order
+// first (tsc's getPropertiesOfUnionOrIntersectionType makes one property per name from its constituents'), so the cost
+// is linear in the properties. Looking every property up in each later member was members^2 x properties: the
+// parameter of a call through a union of React's intrinsic elements' signatures, an intersection of 187 prop
+// interfaces of ~290 properties each, cost 9M lookups. A name is never when two of its properties, not both optional,
+// one of them literal-like, have disjoint types; the types are deduplicated (a type intersected with itself is never
+// only when it is never). Names are tried in order of first appearance, tsc's
+typedef struct { Atom const* name; u32 first, last; } ReduceNameSlot;
+typedef struct { Prop const* prop; u32 next; } ReduceHolder;
+typedef struct { Ty const* type; bool required; } ReduceDistinct;
+
+static Atom const* never_reduced_prop_grouped(Checker* me, Ty const* const* types, u32 len, u32 total, bool* private_conflict) {
+    u32 cap = 16;
+    while (cap < total * 2) cap <<= 1;
+    ReduceNameSlot* slots = calloc(cap, sizeof(ReduceNameSlot));
+    ReduceHolder* holders = malloc(sizeof(ReduceHolder) * (total ? total : 1));
+    u32* order = malloc(sizeof(u32) * (total ? total : 1));
+    ReduceDistinct* distinct = malloc(sizeof(ReduceDistinct) * len);
+    panic_if(!slots || !holders || !order || !distinct, "out of memory");
+    u32 holder_count = 0, name_count = 0;
+    for (u32 i = 0; i < len; i++) {
+        if (!is_known_object_for_reduction(me, types[i])) continue;
+        Members const* members = ty_members(me, types[i]);
+        for (u32 p = 0; p < members->prop_count && holder_count < total; p++) {
+            Prop const* prop = members->props[p];
+            u32 s = (u32)(((uintptr_t)prop->name >> 3) * 0x9E3779B97F4A7C15ull >> 32) & (cap - 1);
+            while (slots[s].name && slots[s].name != prop->name) s = (s + 1) & (cap - 1);
+            u32 h = holder_count++;
+            holders[h] = (ReduceHolder){ .prop = prop, .next = UINT32_MAX };
+            if (!slots[s].name) {
+                slots[s] = (ReduceNameSlot){ .name = prop->name, .first = h, .last = h };
+                order[name_count++] = s;
+            } else {
+                holders[slots[s].last].next = h;
+                slots[s].last = h;
+            }
+        }
+    }
+    Atom const* found = nullptr;
+    for (u32 n = 0; n < name_count && !found; n++) {
+        ReduceNameSlot const* slot = &slots[order[n]];
+        if (slot->first == slot->last) continue;
+        bool any_required = false;
+        for (u32 h = slot->first; h != UINT32_MAX && !any_required; h = holders[h].next) {
+            any_required = !(holders[h].prop->flags & PROP_OPTIONAL);
+        }
+        // (No pair qualifies, nor are the types resolved, when every one is optional)
+        if (!any_required) continue;
+        u32 distinct_count = 0;
+        for (u32 h = slot->first; h != UINT32_MAX; h = holders[h].next) {
+            Ty const* type = prop_type(me, holders[h].prop);
+            bool required = !(holders[h].prop->flags & PROP_OPTIONAL);
+            bool seen = false, never = false, conflict = false;
+            for (u32 d = 0; d < distinct_count && !conflict; d++) {
+                Ty const* other = distinct[d].type;
+                if (other == type) {
+                    distinct[d].required |= required;
+                    seen = true;
+                    continue;
+                }
+                if (!required && !distinct[d].required) continue;
+                if (!is_literal_like(type) && !is_literal_like(other)) continue;
+                // (Not when one of them is never: tsc's isDiscriminantWithNeverType, CheckFlags.HasNeverType)
+                if ((type->flags | other->flags) & TYF_NEVER) continue;
+                Ty const* both[2] = { other, type };
+                conflict = ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER;
+            }
+            if (conflict) {
+                // (Nor when a third constituent's is never, see never_reduced_prop_known())
+                never = some_prop_is_never(me, slot->name, types, len);
+                if (!never) found = slot->name;
+                break;
+            }
+            if (!seen) distinct[distinct_count++] = (ReduceDistinct){ .type = type, .required = required };
+        }
+    }
+    *private_conflict = false;
+    for (u32 n = 0; n < name_count && !found; n++) {
+        ReduceNameSlot const* slot = &slots[order[n]];
+        if (slot->first == slot->last) continue;
+        bool any_private = false;
+        for (u32 h = slot->first; h != UINT32_MAX && !any_private; h = holders[h].next) {
+            any_private = holders[h].prop->flags & PROP_PRIVATE;
+        }
+        if (!any_private) continue;
+        for (u32 a = slot->first; a != UINT32_MAX && !found; a = holders[a].next) {
+            for (u32 b = holders[a].next; b != UINT32_MAX && !found; b = holders[b].next) {
+                Prop const* pa = holders[a].prop;
+                Prop const* pb = holders[b].prop;
+                Prop const* ra = root_declaration(pa);
+                Prop const* rb = root_declaration(pb);
+                if (((pa->flags | pb->flags) & PROP_PRIVATE) && ra != rb && span_valid(ra->decl->name_span) && span_valid(rb->decl->name_span)) {
+                    found = slot->name;
+                    *private_conflict = true;
+                }
+            }
+        }
+    }
+    free(slots);
+    free(holders);
+    free(order);
+    free(distinct);
+    return found;
+}
+
 static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
     u32 objects = 0;
     for (u32 i = 0; i < len; i++) {
@@ -2096,6 +2201,14 @@ static Atom const* never_reduced_prop_known(Checker* me, Ty const* const* types,
         *private_conflict = false;
         return never_reduced_literal_prop(me, types, len);
     }
+    if (objects > 2) {
+        u32 total = 0;
+        for (u32 i = 0; i < len; i++) {
+            if (is_known_object_for_reduction(me, types[i])) total += ty_members(me, types[i])->prop_count;
+        }
+        return never_reduced_prop_grouped(me, types, len, total, private_conflict);
+    }
+    // (Two: the first's properties looked up in the second, the grouping above without a table)
     Atom const* private_name = nullptr;
     for (u32 i = 0; i < len; i++) {
         Ty const* a = types[i];

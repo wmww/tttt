@@ -47,10 +47,16 @@ memory for nothing (the K policy stands, notes/duplication.md).
   needs a quiet box or the laptop: the load pool's workers report busy ~2-3 s but on a CPU only ~0.2-0.4 s of it, and
   the resolve walk runs at ~1-2 cores. notes/front_end.md has the vscode timeline; these projects are a different
   shape (many small `.d.ts`, little checking) and have no timeline yet. This is engineering, not a policy.
-- **(f) slow shapes**: single files tttt checks 2-8x slower than bun (base-ui's mergeProps.ts 177 against 21 ms,
-  react-intl's components, react-select's examples, NavigationHeader.tsx): React/JSX-heavy props merging. A per-file
-  cost, found by `TTTT_CHECK_ONLY=FILE TTTT_FILE_TIMES=1 --checkers 1` against `bun check --threads 1 --timing -p P
-  FILE`. Not profiled yet: the next thing to do (callgrind on mergeProps.ts alone).
+- **(f) slow shapes**: single files tttt checked 2-8x slower than bun (base-ui's mergeProps.ts 177 against 21 ms,
+  react-intl's components, react-select's examples, NavigationHeader.tsx). **One mechanism, fixed (wt-reactfile)**: a
+  call through a union of React's per-element functions (`ComponentPropsWithRef<ElementType>` getters) has an
+  intersection of ~187 prop interfaces (~290 properties each) as its parameter, and reducing it
+  (never_reduced_prop_known()) looked every property up in every later member, ~9M binary searches. Now grouped by name
+  first (never_reduced_prop_grouped()), tsc's linear getPropertiesOfUnionOrIntersectionType. K1 CPU: mergeProps.ts
+  252 -> ~0 ms (in a cut-down project: typecheck 300 -> 12 ms, tsgo's check 148 ms), CustomLoadingIndicator.tsx 236
+  -> 2.5, NavigationHeader.tsx 321 -> 41, react-intl's plural.tsx 405 -> ~7. 12 source sweep projects have the
+  187-member intersection (base-ui x2, react-select x2, formatjs/docs, folo x2, tiptap/demos, react-navigation,
+  lexical-devtools, hop-protocol, sunmao-ui). `scripts/scaleprobe.py -k callunion` is the synthetic shape.
 - **(c) warm-up in the critical path**: a file that pulls in a library's big type graph pays for it at K8 in every
   checker that meets it first (kebo 133 -> 633 ms, base-ui 7 -> 177); the costliest-first deal puts such files first,
   but any order pays it once per checker, and the file is indivisible. bun's shared store pays it about once. Only
