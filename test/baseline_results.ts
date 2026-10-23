@@ -512,6 +512,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationExportTypeEmpty': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationExportedPattern': {
         errors: true,
         symbols: true,

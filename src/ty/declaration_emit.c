@@ -5345,7 +5345,15 @@ static void emit_port(Walk* me, Statement const* statement, Container container)
             w_indent(me);
             m_span(me, statement->span, false);
             w_lit(me, "export ");
-            char const* open = span_valid(port->keyword_span) ? m_token_after(me, span_end_ptr(port->keyword_span), '{') : nullptr;
+            // (`export type {}` keeps its `type`: the printer's emitExportDeclaration)
+            if (port->main.type_only) w_lit(me, "type ");
+            char const* after = span_valid(port->keyword_span) ? span_end_ptr(port->keyword_span) : nullptr;
+            if (after && port->main.type_only && my map) {
+                char const* end = cstr_str(&my file->contents) + cstr_size(&my file->contents);
+                after = decl_map_skip_trivia(after, end);
+                if (end - after >= 4 && !memcmp(after, "type", 4)) after += 4;
+            }
+            char const* open = after ? m_token_after(me, after, '{') : nullptr;
             char const* close = open ? m_token_after(me, open + 1, '}') : nullptr;
             m(me, open);
             w_lit(me, "{}");

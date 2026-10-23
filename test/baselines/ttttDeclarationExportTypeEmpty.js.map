@@ -1,0 +1,7 @@
+//// [a.d.ts.map]
+{"version":3,"file":"a.d.ts","sources":["a.ts"],"names":[],"mappings":"AACA,YAAY,EAAE,CAAC"}
+//// https://sokra.github.io/source-map-visualization#base64,ZXhwb3J0IHR5cGUge307DQovLyMgc291cmNlTWFwcGluZ1VSTD1hLmQudHMubWFw,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiYS5kLnRzIiwic291cmNlcyI6WyJhLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUNBLFlBQVksRUFBRSxDQUFDIn0=,Ly8gYSBmaWxlIHRoYXQgaXMgYSBtb2R1bGUgb25seQpleHBvcnQgdHlwZSB7fTs=
+
+//// [b.d.ts.map]
+{"version":3,"file":"b.d.ts","sources":["b.ts"],"names":[],"mappings":"AAAA,YAAc,EAAK,CAAE"}
+//// https://sokra.github.io/source-map-visualization#base64,ZXhwb3J0IHR5cGUge307DQovLyMgc291cmNlTWFwcGluZ1VSTD1iLmQudHMubWFw,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiYi5kLnRzIiwic291cmNlcyI6WyJiLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBLFlBQWMsRUFBSyxDQUFFIn0=,ZXhwb3J0IHR5cGUgICB7ICAgfSA7CmNvbnN0IHggPSAxOwo=

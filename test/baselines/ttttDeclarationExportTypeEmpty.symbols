@@ -1,0 +1,11 @@
+//// [test/cases/ttttDeclarationExportTypeEmpty.ts] ////
+
+=== a.ts ===
+
+// a file that is a module only
+export type {};
+=== b.ts ===
+export type   {   } ;
+const x = 1;
+>x : Symbol(x, Decl(b.ts, 1, 5))
+
