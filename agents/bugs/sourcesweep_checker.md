@@ -405,10 +405,14 @@ That makes this the "Outstanding stages" C/D model of agents/notes/reentrancy.md
 return contexts pulled), plus return types re-entering below the variance barrier, not a local fix. Left for that
 rework. While reducing it I found and fixed scripts/reentrytrace.py's tsgo overlay: `Symbol.Name` is a method now. [design]
 
-## opencode leftovers (2026-10-23, corB)
-After the Event/TS5088/re-entry/explicit-type fixes, what is left in opencode differs only in the root project
-(`opencode`, about 60k lines of tsc output: React's and solid's JSX together) and in core/tsconfig.tests.json, whose
-references aren't built (TS6305 everywhere, so the core imports are any). Each has a cut-down here:
+## opencode leftovers (2026-10-23, corB and det2)
+anomalyco/opencode at 4232b8bc (repos.txt, `# perf: no opencode`). After det2's alias re-entry series (aliases
+re-enter below call barriers, type arguments before the reference, contextual return inference not on the stack)
+packages/core is clean under every mode (20 default runs identical, K1, `--checker-memory 0`, K16) and
+`scripts/sourcesweep.py -f '^opencode/'` gives 60 / 62; the earlier app/desktop/web/storybook/ai/ui
+TS2769/TS2339/TS2740/TS5088 mismatches are fixed. What is left differs only in the root project (`opencode`,
+about 60k lines of tsc output: React's and solid's JSX together) and in core/tsconfig.tests.json, whose
+references aren't built (TS6305 everywhere, so the core imports are any):
 - **The return type of a failed generic call** (-TS2322 at core/test/effect/layer-node/node-build.test.ts:49,
   tsconfig.tests.json). Both checkers fail the argument check of `layer: Implementation &
   CheckLayer<NoInfer<Implementation>>` with Implementation = Layer.Any, but they return different types afterwards.
