@@ -5983,6 +5983,12 @@ static u64 largest_checked_source_bytes(Program const* me) {
     return largest;
 }
 
+// The largest-file cap below applies only to a file this big: below it the bytes mislead (type-fest's cost is in tiny
+// type-level test files, a 1.4 KB one takes 180 ms: its largest checked file is 0.59 MB, so ceil(1.92/0.59) = K4 was
+// 0.28 s against 0.18 s at K12 on the laptop; tanstack-router's is 0.24 MB, react's 7 KB, nest's 16 KB, xstate's 0.11 MB;
+// TypeScript6's checker.ts is 3.15 MB)
+#define BIG_FILE_BYTES (1u << 20)
+
 static u32 auto_checker_count(Program const* me) {
     u64 bytes = program_checked_source_bytes(me);
     u64 count = bytes / CHECKER_BYTES;
@@ -5996,9 +6002,9 @@ static u32 auto_checker_count(Program const* me) {
     // one file (checker.ts is 2.9 MB of TypeScript6's 9.7 checked) has its critical path in that file whatever the
     // count, and every checker beyond the share only adds CPU and memory. The 12-core laptop confirms: TypeScript6 at
     // --checkers 4 199.7 ms best against 208.9 at the default 8-12, with 32% less CPU (here K4 against K8 at one
-    // thread: 5% fewer instructions, longest checker +3%). Of the other corpora only TypeScript6 is capped
+    // thread: 5% fewer instructions, longest checker +3%). Only a largest file of at least BIG_FILE_BYTES caps (type-fest, tanstack-router and react were capped by it before: K4 / K8 / K11, the laptop's type-fest 0.28 s against 0.18 s at K12). Longest checker's per-file sum at --threads 1 (this box): type-fest K4 337 ms, K8 433, K12 310 (noisy); tanstack K8 139, K12 110; react K11 59, K12 64; TypeScript6 K4 205, K8 192 (CPU total 508 against 534). Of the other corpora only TypeScript6 is capped
     u64 largest = largest_checked_source_bytes(me);
-    if (largest > 0) {
+    if (largest >= BIG_FILE_BYTES) {
         u64 share = (bytes + largest - 1) / largest;
         if (share < 1) share = 1;
         if (result > share) result = (u32)share;
