@@ -2271,6 +2271,12 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         if (commonjs_export && i == 0 && symbol->decl_count > 1 && (type->flags & TYF_UNDEFINED)) continue;
         types[count++] = type;
     }
+    // Nothing to go by (every declaration reads the property itself, `this.n = this.n + 1`): any, and no implicit any
+    // reported (tsgo's getWidenedTypeForAssignmentDeclaration: anyType, which isn't all nullable)
+    if (!count) {
+        if (types != stack) free(types);
+        return ty_intrinsic(me, TY_ANY);
+    }
     // (Object literals are widened together: the union has their properties as optional in each other. Reduced to
     // subtypes: tsc's getUnionType(types, UnionReduction.Subtype), a CommonJS export's literals only, like tsgo's)
     Ty const* ret = ty_widened_objects(me, ty_union(me, types, count, nullptr, (TyList){0}));

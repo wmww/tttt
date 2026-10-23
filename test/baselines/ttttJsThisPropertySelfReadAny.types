@@ -1,0 +1,65 @@
+//// [test/cases/ttttJsThisPropertySelfReadAny.ts] ////
+
+=== index.js ===
+export class P {
+>P : P
+
+  m() {
+>m : () => void
+
+    this.Price = Number(this.Price);
+>this.Price = Number(this.Price) : number
+>this.Price : any
+>this : this
+>Price : any
+>Number(this.Price) : number
+>Number : NumberConstructor
+>this.Price : any
+>this : this
+>Price : any
+  }
+}
+export class Q {
+>Q : Q
+
+  m() {
+>m : () => void
+
+    this.n = this.n + 1;
+>this.n = this.n + 1 : any
+>this.n : any
+>this : this
+>n : any
+>this.n + 1 : any
+>this.n : any
+>this : this
+>n : any
+>1 : 1
+  }
+}
+export class R {
+>R : R
+
+  m() {
+>m : () => void
+
+    this.s = String(this.s);
+>this.s = String(this.s) : string
+>this.s : any
+>this : this
+>s : any
+>String(this.s) : string
+>String : StringConstructor
+>this.s : any
+>this : this
+>s : any
+
+    this.s.length;
+>this.s.length : any
+>this.s : any
+>this : this
+>s : any
+>length : any
+  }
+}
+

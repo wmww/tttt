@@ -1,0 +1,56 @@
+//// [test/cases/ttttJsThisPropertySelfReadAny.ts] ////
+
+=== index.js ===
+export class P {
+>P : Symbol(P, Decl(index.js, 0, 0))
+
+  m() {
+>m : Symbol(P.m, Decl(index.js, 0, 16))
+
+    this.Price = Number(this.Price);
+>this.Price : Symbol(P.Price, Decl(index.js, 1, 7))
+>this : Symbol(P, Decl(index.js, 0, 0))
+>Price : Symbol(P.Price, Decl(index.js, 1, 7))
+>Number : Symbol(Number, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2020.number.d.ts, --, --))
+>this.Price : Symbol(P.Price, Decl(index.js, 1, 7))
+>this : Symbol(P, Decl(index.js, 0, 0))
+>Price : Symbol(P.Price, Decl(index.js, 1, 7))
+  }
+}
+export class Q {
+>Q : Symbol(Q, Decl(index.js, 4, 1))
+
+  m() {
+>m : Symbol(Q.m, Decl(index.js, 5, 16))
+
+    this.n = this.n + 1;
+>this.n : Symbol(Q.n, Decl(index.js, 6, 7))
+>this : Symbol(Q, Decl(index.js, 4, 1))
+>n : Symbol(Q.n, Decl(index.js, 6, 7))
+>this.n : Symbol(Q.n, Decl(index.js, 6, 7))
+>this : Symbol(Q, Decl(index.js, 4, 1))
+>n : Symbol(Q.n, Decl(index.js, 6, 7))
+  }
+}
+export class R {
+>R : Symbol(R, Decl(index.js, 9, 1))
+
+  m() {
+>m : Symbol(R.m, Decl(index.js, 10, 16))
+
+    this.s = String(this.s);
+>this.s : Symbol(R.s, Decl(index.js, 11, 7))
+>this : Symbol(R, Decl(index.js, 9, 1))
+>s : Symbol(R.s, Decl(index.js, 11, 7))
+>String : Symbol(String, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --) ... and 7 more)
+>this.s : Symbol(R.s, Decl(index.js, 11, 7))
+>this : Symbol(R, Decl(index.js, 9, 1))
+>s : Symbol(R.s, Decl(index.js, 11, 7))
+
+    this.s.length;
+>this.s : Symbol(R.s, Decl(index.js, 11, 7))
+>this : Symbol(R, Decl(index.js, 9, 1))
+>s : Symbol(R.s, Decl(index.js, 11, 7))
+  }
+}
+
