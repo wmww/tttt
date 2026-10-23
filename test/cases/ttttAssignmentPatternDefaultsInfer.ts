@@ -1,0 +1,15 @@
+// @strict: true
+// An assignment target's object literal is the contextual type of what is assigned even when tsc asks without binding
+// patterns (inferTypeArguments' skipBindingPatterns, every type parameter defaulted): `({ publish } = await
+// importActual("m"))` infers T from `{ publish }`. Without defaults tsgo takes the await operand's contextual type as a
+// binding pattern's (fresh object types compare unequal) and infers nothing. openclaw's nodes-camera.test.ts
+// `({ publishOutputFileAtomically } = await vi.importActual("./output-file.runtime.js"))`
+// @target: es2022
+declare function importActual<T = Record<string, unknown>>(path: string): Promise<T>;
+declare function importActual2<T>(path: string): Promise<T>;
+let publish: <T>(params: { filePath: string }) => Promise<T>;
+let other: number;
+async function f() {
+  ({ publish } = await importActual("./x"));
+  ({ publish, other } = await importActual2("./x"));
+}

@@ -82,6 +82,7 @@ enum {
     // context (see set_contextual_return())
     KEY_CONTEXT_RETURN_SELF,
     KEY_CONTEXT_IIFE_RETURN, // FunctionImpl -> the contextual type of the call that invokes it immediately
+    KEY_ASSIGNMENT_PATTERN, // Ty (a TYF_BINDING_PATTERN clone) -> itself: the pattern is an assignment target's
     KEY_CONTEXT_THIS,   // FunctionImpl -> the `this` type its contextual signature declares
     KEY_YIELD_CONTEXT,  // UnaryOpExpr of a `yield` -> the contextual type it was checked with (its generator's TNext)
     KEY_ACCESS_USES_CONTEXT, // Property access Expr -> itself, if its type has a type variable with a union constraint (narrowable_type())

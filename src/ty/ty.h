@@ -2234,6 +2234,7 @@ Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool incl
 bool ty_sig_param_adds_undefined(SigParam const* param);
 void ty_report_pattern_iterable(Checker* me, Binding const* pattern);
 Ty const* ty_pattern_clone(Checker* me, Ty const* ty); // A clone marked TYF_BINDING_PATTERN
+bool ty_is_assignment_pattern(Checker* me, Ty const* pattern); // expr.c
 Ty const* ty_pattern_unclone(Checker* me, Ty const* ty); // A clone of such a clone that is no pattern's
 // tsc's originatingImport: what `import * as ns` of an `export =` module imports when ns's type is a module type made
 // from it (a synthetic default under esModuleInterop), else null

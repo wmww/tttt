@@ -1,0 +1,49 @@
+//// [test/cases/ttttAssignmentPatternDefaultsInfer.ts] ////
+
+=== ttttAssignmentPatternDefaultsInfer.ts ===
+// An assignment target's object literal is the contextual type of what is assigned even when tsc asks without binding
+// patterns (inferTypeArguments' skipBindingPatterns, every type parameter defaulted): `({ publish } = await
+// importActual("m"))` infers T from `{ publish }`. Without defaults tsgo takes the await operand's contextual type as a
+// binding pattern's (fresh object types compare unequal) and infers nothing. openclaw's nodes-camera.test.ts
+// `({ publishOutputFileAtomically } = await vi.importActual("./output-file.runtime.js"))`
+declare function importActual<T = Record<string, unknown>>(path: string): Promise<T>;
+>importActual : <T = Record<string, unknown>>(path: string) => Promise<T>
+>path : string
+
+declare function importActual2<T>(path: string): Promise<T>;
+>importActual2 : <T>(path: string) => Promise<T>
+>path : string
+
+let publish: <T>(params: { filePath: string }) => Promise<T>;
+>publish : <T>(params: { filePath: string; }) => Promise<T>
+>params : { filePath: string; }
+>filePath : string
+
+let other: number;
+>other : number
+
+async function f() {
+>f : () => Promise<void>
+
+  ({ publish } = await importActual("./x"));
+>({ publish } = await importActual("./x")) : { publish: <T>(params: { filePath: string; }) => Promise<T>; }
+>{ publish } = await importActual("./x") : { publish: <T>(params: { filePath: string; }) => Promise<T>; }
+>{ publish } : { publish: <T>(params: { filePath: string; }) => Promise<T>; }
+>publish : <T>(params: { filePath: string; }) => Promise<T>
+>await importActual("./x") : { publish: <T>(params: { filePath: string; }) => Promise<T>; }
+>importActual("./x") : Promise<{ publish: <T>(params: { filePath: string; }) => Promise<T>; }>
+>importActual : <T = Record<string, unknown>>(path: string) => Promise<T>
+>"./x" : "./x"
+
+  ({ publish, other } = await importActual2("./x"));
+>({ publish, other } = await importActual2("./x")) : unknown
+>{ publish, other } = await importActual2("./x") : unknown
+>{ publish, other } : { publish: <T>(params: { filePath: string; }) => Promise<T>; other: number; }
+>publish : <T>(params: { filePath: string; }) => Promise<T>
+>other : number
+>await importActual2("./x") : unknown
+>importActual2("./x") : Promise<unknown>
+>importActual2 : <T>(path: string) => Promise<T>
+>"./x" : "./x"
+}
+

@@ -567,6 +567,26 @@ static Signature const* last_call_signature(Checker* me, Ty const* ty) {
     return members->call_count ? members->call[members->call_count - 1] : nullptr;
 }
 
+// What a pattern contextual type is when tsc asks for it without binding patterns (every type parameter of the call
+// has a default): nothing for a declaration's, an assignment target's as a plain type (an await operand's union of it
+// and its PromiseLike too, the PromiseLike's argument left as it is)
+static Ty const* assignment_pattern_context(Checker* me, Ty const* contextual) {
+    if (contextual->kind != TY_UNION) return ty_is_assignment_pattern(me, contextual) ? ty_pattern_unclone(me, contextual) : nullptr;
+    TyList members = contextual->composite.types;
+    Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+    panic_if(!parts, "out of memory");
+    bool assignment = false;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        bool pattern = (member->flags & TYF_BINDING_PATTERN) && ty_is_assignment_pattern(me, member);
+        assignment |= pattern;
+        parts[i] = pattern ? ty_pattern_unclone(me, member) : member;
+    }
+    Ty const* ret = assignment ? ty_union(me, parts, members.len, nullptr, (TyList){0}) : nullptr;
+    free(parts);
+    return ret;
+}
+
 static bool has_candidates_or_fixed(InferParam const* param) {
     return param->co_len || param->contra_len || param->fixed;
 }
@@ -1357,7 +1377,13 @@ static TyMapper const* infer_type_arguments(
     if (from_pattern) {
         bool all_defaults = true;
         for (u32 i = 0; i < sig_res(me, sig)->type_params.len && all_defaults; i++) all_defaults = ty_param_default(me, sig_res(me, sig)->type_params.data[i]) != nullptr;
-        if (all_defaults) contextual = nullptr;
+        // (tsc's skipBindingPatterns: the contextual type is asked without binding patterns, which leaves an
+        // assignment target's pattern a contextual type like any: `({ f } = await importActual("m"))` with
+        // `importActual<T = ...>` infers T from `{ f }`)
+        if (all_defaults) {
+            contextual = assignment_pattern_context(me, contextual);
+            from_pattern = false;
+        }
     }
     TyMapper const* return_mapper = nullptr;
     if (contextual && !(contextual->flags & TYF_ANY) && from_pattern) {

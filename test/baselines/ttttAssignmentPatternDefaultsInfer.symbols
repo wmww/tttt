@@ -1,0 +1,47 @@
+//// [test/cases/ttttAssignmentPatternDefaultsInfer.ts] ////
+
+=== ttttAssignmentPatternDefaultsInfer.ts ===
+// An assignment target's object literal is the contextual type of what is assigned even when tsc asks without binding
+// patterns (inferTypeArguments' skipBindingPatterns, every type parameter defaulted): `({ publish } = await
+// importActual("m"))` infers T from `{ publish }`. Without defaults tsgo takes the await operand's contextual type as a
+// binding pattern's (fresh object types compare unequal) and infers nothing. openclaw's nodes-camera.test.ts
+// `({ publishOutputFileAtomically } = await vi.importActual("./output-file.runtime.js"))`
+declare function importActual<T = Record<string, unknown>>(path: string): Promise<T>;
+>importActual : Symbol(importActual, Decl(ttttAssignmentPatternDefaultsInfer.ts, 0, 0))
+>T : Symbol(T, Decl(ttttAssignmentPatternDefaultsInfer.ts, 5, 30))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>path : Symbol(path, Decl(ttttAssignmentPatternDefaultsInfer.ts, 5, 59))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAssignmentPatternDefaultsInfer.ts, 5, 30))
+
+declare function importActual2<T>(path: string): Promise<T>;
+>importActual2 : Symbol(importActual2, Decl(ttttAssignmentPatternDefaultsInfer.ts, 5, 85))
+>T : Symbol(T, Decl(ttttAssignmentPatternDefaultsInfer.ts, 6, 31))
+>path : Symbol(path, Decl(ttttAssignmentPatternDefaultsInfer.ts, 6, 34))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAssignmentPatternDefaultsInfer.ts, 6, 31))
+
+let publish: <T>(params: { filePath: string }) => Promise<T>;
+>publish : Symbol(publish, Decl(ttttAssignmentPatternDefaultsInfer.ts, 7, 3))
+>T : Symbol(T, Decl(ttttAssignmentPatternDefaultsInfer.ts, 7, 14))
+>params : Symbol(params, Decl(ttttAssignmentPatternDefaultsInfer.ts, 7, 17))
+>filePath : Symbol(filePath, Decl(ttttAssignmentPatternDefaultsInfer.ts, 7, 26))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttAssignmentPatternDefaultsInfer.ts, 7, 14))
+
+let other: number;
+>other : Symbol(other, Decl(ttttAssignmentPatternDefaultsInfer.ts, 8, 3))
+
+async function f() {
+>f : Symbol(f, Decl(ttttAssignmentPatternDefaultsInfer.ts, 8, 18))
+
+  ({ publish } = await importActual("./x"));
+>publish : Symbol(publish, Decl(ttttAssignmentPatternDefaultsInfer.ts, 10, 4))
+>importActual : Symbol(importActual, Decl(ttttAssignmentPatternDefaultsInfer.ts, 0, 0))
+
+  ({ publish, other } = await importActual2("./x"));
+>publish : Symbol(publish, Decl(ttttAssignmentPatternDefaultsInfer.ts, 11, 4))
+>other : Symbol(other, Decl(ttttAssignmentPatternDefaultsInfer.ts, 11, 13))
+>importActual2 : Symbol(importActual2, Decl(ttttAssignmentPatternDefaultsInfer.ts, 5, 85))
+}
+

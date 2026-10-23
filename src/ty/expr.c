@@ -3243,9 +3243,19 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
         // assignment pattern isn't): `({ promise: this.p } = withResolvers())`
         bool open = false;
         for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || i->computed_key;
-        if (!open) assigned_context = ty_pattern_clone(me, left);
+        if (!open) {
+            assigned_context = ty_pattern_clone(me, left);
+            // (An assignment's: tsc's SkipBindingPatterns doesn't skip it, see ty_is_assignment_pattern())
+            *intern_slot(me, &my links, (u64[]){ KEY_ASSIGNMENT_PATTERN, assigned_context->id }, 2) = assigned_context;
+        }
     }
     return assigned_context;
+}
+
+// A pattern type that is an assignment target's object literal, not a declaration's binding pattern: tsc's
+// getContextualType with SkipBindingPatterns still gives it (getTypeOfExpression of the left side)
+bool ty_is_assignment_pattern(Checker* me, Ty const* pattern) {
+    return intern_get(&my links, (u64[]){ KEY_ASSIGNMENT_PATTERN, pattern->id }, 2) != nullptr;
 }
 
 Ty const* ty_assigned_value_context(Checker* me, BinaryOpExpr const* assignment) {
