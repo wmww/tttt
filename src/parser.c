@@ -10452,7 +10452,12 @@ static bool parse_literal(Parser* parent, Value* ret) {
 // An access or call continues the chain its object may be part of: a `!` is then part of it (see
 // UnaryOpExpr.continues_chain), and the access or call under it isn't the chain's end (PropertyExpr.continues_chain)
 // An instantiation expression ends a chain (`a?.b<T>.c`, tsc 6), unless its type arguments are a call's (`a?.b<T>()`)
-static void mark_chain_continues(Expr* object, bool is_call) {
+// A `?.` access (`optional`) right after a `!` starts a chain of its own: the `!` stays a plain non-null expression
+// (tsc's tryReparseOptionalChain runs only without a question dot), `o?.a!?.b`
+static void mark_chain_continues(Expr* object, bool is_call, bool optional) {
+    if (optional && !expr_is_perenthisized(object) && object->tag == EXPR_UNARY_OP && object->unary_op->op == UNARY_OP_RIGHT_BANG) {
+        return;
+    }
     while (!expr_is_perenthisized(object)) {
         if (object->tag == EXPR_UNARY_OP && object->unary_op->op == UNARY_OP_RIGHT_BANG) {
             object->unary_op->continues_chain = true;
@@ -10581,7 +10586,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
         parsed.args = (VecExpr){0};
     }
     if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && (missing_call_args || parse_call_args(&p, &parsed.args))) {
-        mark_chain_continues(left_and_ret, true);
+        mark_chain_continues(left_and_ret, true, optional_chain);
         *left_and_ret = expr_call(
             span_from(a),
             ast_new(CallExpr, {
@@ -10681,7 +10686,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
             parse_error(&p, span_make(p.shared->source, open, span_end_ptr(expr_outer_span(left_and_ret))), 1477,
                 "An instantiation expression cannot be followed by a property access.");
         }
-        mark_chain_continues(left_and_ret, false);
+        mark_chain_continues(left_and_ret, false, parsed.optional_chain);
         *left_and_ret = expr_property(
             span_from(a),
             property_dot_new(&(PropertyExpr){
@@ -10698,7 +10703,7 @@ static inline bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left
     }
 
     if (!ctx.entity_name && !(ctx.decorator && !optional_chain) && parse_bracket_prop(&p, &parsed.expr_a)) {
-        mark_chain_continues(left_and_ret, false);
+        mark_chain_continues(left_and_ret, false, optional_chain);
         *left_and_ret = expr_property(
             span_from(a),
             ast_new(PropertyExpr, {

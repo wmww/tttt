@@ -263,7 +263,9 @@ static Expr const* chain_object(Expr const* me, bool* is_root) {
             *is_root = my call->optional_chain;
             return skip_generic_params(&my call->callable);
         case EXPR_UNARY_OP:
-            if (my unary_op->op != UNARY_OP_RIGHT_BANG) return nullptr;
+            // (A `!` is part of a chain only when the chain goes on after it, `a?.b!.c` (tsc's parser reparses it as a
+            // NonNullChain): `a?.b!` and the `a?.b!` of `a?.b!?.c` are plain non-null expressions)
+            if (my unary_op->op != UNARY_OP_RIGHT_BANG || !my unary_op->continues_chain) return nullptr;
             *is_root = false;
             return &my unary_op->expr;
         default:
@@ -342,6 +344,11 @@ bool expr_is_narrowable_reference(Expr const* me) {
 static bool contains_narrowable_reference(Expr const* me) {
     while (true) {
         if (expr_is_narrowable_reference(me)) return true;
+        // (`x?.a!`, a non-null expression ending a chain, is narrowable through it: tsc's isNarrowableReference)
+        if (my tag == EXPR_UNARY_OP && my unary_op->op == UNARY_OP_RIGHT_BANG) {
+            me = &my unary_op->expr;
+            continue;
+        }
         if (!expr_is_optional_chain(me)) return false;
         bool is_root;
         me = chain_object(me, &is_root);

@@ -1,0 +1,19 @@
+// @strict: true
+// A `!` belongs to an optional chain only when the chain goes on after it (`x?.a!.b`, tsc's NonNullChain): `x?.a!`
+// and the `o?.a!` of `o?.a!?.b` are plain non-null expressions that narrow nothing as chains, nor does a parenthesized
+// chain where tsc hasn't skipped the parentheses (a predicate's argument, a for-in object); a condition, a comparison
+// operand and a switch expression skip them (bun's 20-P3, 20-P7, 20-P9, 25-C7b, 31-C2, 32-C5a)
+function b1(x?: { a: number }) { if (x?.a! === 1) { x.a; } }
+function b2(x?: { a: number }) { if (x?.a!) { x.a; } }
+function b3(x?: { a: number }) { if ((x?.a)) { x.a; } }
+function b4(x?: { a: { b: number } }) { if (x?.a!.b === 1) { x.a; } }
+declare function isN(x: unknown): x is number;
+function b5(x?: { a: number }) { if (isN((x?.a))) { x.a; } }
+function b6(x?: { a: number }) { if (isN(x?.a)) { x.a; } }
+function b7(x?: { a: object }) { for (const k in (x?.a)) { x.a; } }
+function b8(x?: { a: object }) { for (const k in x?.a) { x.a; } }
+declare const o: { a?: { b?: string } } | undefined;
+if (o?.a!?.b) o.a;
+function b9(x?: { a: number }) { if ((x?.a) === 1) { x.a; } }
+function b10(x?: { a: string }) { switch (x?.a!) { case "q": x.a; } }
+function b11(x?: { a: string }) { if (typeof x?.a! === "string") { x.a; } }

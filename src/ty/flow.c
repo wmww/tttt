@@ -849,7 +849,11 @@ static bool contains_symbol_reference(Expr const* source, Symbol const* symbol) 
 }
 
 // `a?.b.c` contains `a`: if the chain isn't undefined, a isn't nullish
-static bool optional_chain_contains_reference(Checker* me, Expr const* source, Expr const* target) {
+// (tsc's isOptionalChain of `source`. `(x?.a)` is a parenthesized expression, no chain either, where tsc hasn't skipped the
+// parentheses (getReferenceCandidate, narrowType and a switch's expression do: `parens_skipped`), which tttt keeps as
+// a flag on the node)
+static bool chain_contains_reference(Checker* me, Expr const* source, Expr const* target, bool parens_skipped) {
+    if (!parens_skipped && expr_is_perenthisized(source)) return false;
     while (expr_is_optional_chain(source)) {
         source = source->tag == EXPR_PROPERTY ? &source->property->expr :
             source->tag == EXPR_CALL ? &source->call->callable : &source->unary_op->expr;
@@ -857,6 +861,26 @@ static bool optional_chain_contains_reference(Checker* me, Expr const* source, E
         if (is_matching_reference(me, source, target)) return true;
     }
     return false;
+}
+
+static bool optional_chain_contains_reference(Checker* me, Expr const* source, Expr const* target) {
+    return chain_contains_reference(me, source, target, false);
+}
+
+// tsc's getReferenceCandidate: an assignment's target, a comma's right operand, parentheses skipped (a flag here), but
+// not the `!` and `satisfies` reference_candidate() skips too
+static Expr const* assignment_candidate(Expr const* expr) {
+    while (expr->tag == EXPR_BINARY_OP) {
+        BinaryOp op = expr->binary_op->op;
+        if (op == BINARY_OP_EQUAL || op == BINARY_OP_OR_OR_EQUAL || op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_EH_EH_EQUAL) {
+            expr = &expr->binary_op->left;
+        } else if (op == BINARY_OP_COMMA) {
+            expr = &expr->binary_op->right;
+        } else {
+            break;
+        }
+    }
+    return expr;
 }
 
 // The key of a reference for the loop caches: small ids interned from (symbol | this, property names, declared type,
@@ -2217,7 +2241,7 @@ static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* 
     if (query_matches(q, expr)) {
         return adjusted_type_with_facts(me, type, assume_true ? TF_TRUTHY : TF_FALSY);
     }
-    if (compiler_options()->strict_null_checks && assume_true && optional_chain_contains_reference(me, expr, q->reference)) {
+    if (compiler_options()->strict_null_checks && assume_true && chain_contains_reference(me, expr, q->reference, true)) {
         type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
     }
     DiscriminantAccess access = discriminant_access(q, expr, type);
@@ -2508,7 +2532,8 @@ static Ty const* narrow_by_typeof(FlowQuery* q, Ty const* type, Expr const* type
     Expr const* target = reference_candidate(&typeof_expr->unary_op->expr);
     csview name = cstr_sv(&literal->literal.string);
     if (!query_matches(q, target)) {
-        if (compiler_options()->strict_null_checks && optional_chain_contains_reference(me, target, q->reference) &&
+        if (compiler_options()->strict_null_checks &&
+            chain_contains_reference(me, assignment_candidate(&typeof_expr->unary_op->expr), q->reference, true) &&
             assume_true == !csview_equals(name, "undefined")
         ) {
             type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
@@ -2620,7 +2645,7 @@ static Ty const* narrow_by_instanceof(FlowQuery* q, Ty const* type, BinaryOpExpr
     Checker* me = q->me;
     Expr const* left = reference_candidate(&binary->left);
     if (!query_matches(q, left)) {
-        if (assume_true && compiler_options()->strict_null_checks && optional_chain_contains_reference(me, left, q->reference)) {
+        if (assume_true && compiler_options()->strict_null_checks && chain_contains_reference(me, assignment_candidate(&binary->left), q->reference, true)) {
             return adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
         }
         return type;
@@ -2804,9 +2829,9 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
             if (query_matches(q, left)) return narrow_by_equality(q, type, binary->op, right, assume_true);
             if (query_matches(q, right)) return narrow_by_equality(q, type, binary->op, left, assume_true);
             if (compiler_options()->strict_null_checks) {
-                if (optional_chain_contains_reference(me, left, q->reference)) {
+                if (chain_contains_reference(me, assignment_candidate(&binary->left), q->reference, true)) {
                     type = narrow_by_optional_chain_containment(q, type, binary->op, right, assume_true);
-                } else if (optional_chain_contains_reference(me, right, q->reference)) {
+                } else if (chain_contains_reference(me, assignment_candidate(&binary->right), q->reference, true)) {
                     type = narrow_by_optional_chain_containment(q, type, binary->op, left, assume_true);
                 }
             }
@@ -3275,7 +3300,7 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
         // `switch (typeof x?.kind)` likewise, in clauses whose cases are all something other than "undefined"
         bool contains = false, of_typeof = false;
         if (compiler_options()->strict_null_checks && clause->clause_start != clause->clause_end) {
-            contains = optional_chain_contains_reference(me, needle, q->reference);
+            contains = chain_contains_reference(me, &clause->switch_->needle, q->reference, true);
             of_typeof = !contains && is_typeof_expr(needle) &&
                 optional_chain_contains_reference(me, &needle->unary_op->expr, q->reference);
         }

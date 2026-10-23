@@ -1,0 +1,155 @@
+//// [test/cases/ttttOptionalChainEndsInNonNull.ts] ////
+
+=== ttttOptionalChainEndsInNonNull.ts ===
+// A `!` belongs to an optional chain only when the chain goes on after it (`x?.a!.b`, tsc's NonNullChain): `x?.a!`
+// and the `o?.a!` of `o?.a!?.b` are plain non-null expressions that narrow nothing as chains, nor does a parenthesized
+// chain where tsc hasn't skipped the parentheses (a predicate's argument, a for-in object); a condition, a comparison
+// operand and a switch expression skip them (bun's 20-P3, 20-P7, 20-P9, 25-C7b, 31-C2, 32-C5a)
+function b1(x?: { a: number }) { if (x?.a! === 1) { x.a; } }
+>b1 : Symbol(b1, Decl(ttttOptionalChainEndsInNonNull.ts, 0, 0))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 17))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 17))
+
+function b2(x?: { a: number }) { if (x?.a!) { x.a; } }
+>b2 : Symbol(b2, Decl(ttttOptionalChainEndsInNonNull.ts, 4, 60))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 17))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 17))
+
+function b3(x?: { a: number }) { if ((x?.a)) { x.a; } }
+>b3 : Symbol(b3, Decl(ttttOptionalChainEndsInNonNull.ts, 5, 54))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 17))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 17))
+
+function b4(x?: { a: { b: number } }) { if (x?.a!.b === 1) { x.a; } }
+>b4 : Symbol(b4, Decl(ttttOptionalChainEndsInNonNull.ts, 6, 55))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 17))
+>b : Symbol(b, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 22))
+>x?.a!.b : Symbol(b, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 22))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 17))
+>b : Symbol(b, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 22))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 17))
+
+declare function isN(x: unknown): x is number;
+>isN : Symbol(isN, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 69))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 8, 21))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 8, 21))
+
+function b5(x?: { a: number }) { if (isN((x?.a))) { x.a; } }
+>b5 : Symbol(b5, Decl(ttttOptionalChainEndsInNonNull.ts, 8, 46))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 17))
+>isN : Symbol(isN, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 69))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 17))
+
+function b6(x?: { a: number }) { if (isN(x?.a)) { x.a; } }
+>b6 : Symbol(b6, Decl(ttttOptionalChainEndsInNonNull.ts, 9, 60))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 17))
+>isN : Symbol(isN, Decl(ttttOptionalChainEndsInNonNull.ts, 7, 69))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 17))
+
+function b7(x?: { a: object }) { for (const k in (x?.a)) { x.a; } }
+>b7 : Symbol(b7, Decl(ttttOptionalChainEndsInNonNull.ts, 10, 58))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 17))
+>k : Symbol(k, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 43))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 17))
+
+function b8(x?: { a: object }) { for (const k in x?.a) { x.a; } }
+>b8 : Symbol(b8, Decl(ttttOptionalChainEndsInNonNull.ts, 11, 67))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 17))
+>k : Symbol(k, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 43))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 12, 17))
+
+declare const o: { a?: { b?: string } } | undefined;
+>o : Symbol(o, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 18))
+>b : Symbol(b, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 24))
+
+if (o?.a!?.b) o.a;
+>o?.a!?.b : Symbol(b, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 24))
+>o?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 18))
+>o : Symbol(o, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 18))
+>b : Symbol(b, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 24))
+>o.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 18))
+>o : Symbol(o, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 13, 18))
+
+function b9(x?: { a: number }) { if ((x?.a) === 1) { x.a; } }
+>b9 : Symbol(b9, Decl(ttttOptionalChainEndsInNonNull.ts, 14, 18))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 17))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 17))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 17))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 12))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 17))
+
+function b10(x?: { a: string }) { switch (x?.a!) { case "q": x.a; } }
+>b10 : Symbol(b10, Decl(ttttOptionalChainEndsInNonNull.ts, 15, 61))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 18))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 18))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 18))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 18))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 18))
+
+function b11(x?: { a: string }) { if (typeof x?.a! === "string") { x.a; } }
+>b11 : Symbol(b11, Decl(ttttOptionalChainEndsInNonNull.ts, 16, 69))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 18))
+>x?.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 18))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 18))
+>x.a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 18))
+>x : Symbol(x, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 13))
+>a : Symbol(a, Decl(ttttOptionalChainEndsInNonNull.ts, 17, 18))
+

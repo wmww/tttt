@@ -1,0 +1,176 @@
+//// [test/cases/ttttOptionalChainEndsInNonNull.ts] ////
+
+=== ttttOptionalChainEndsInNonNull.ts ===
+// A `!` belongs to an optional chain only when the chain goes on after it (`x?.a!.b`, tsc's NonNullChain): `x?.a!`
+// and the `o?.a!` of `o?.a!?.b` are plain non-null expressions that narrow nothing as chains, nor does a parenthesized
+// chain where tsc hasn't skipped the parentheses (a predicate's argument, a for-in object); a condition, a comparison
+// operand and a switch expression skip them (bun's 20-P3, 20-P7, 20-P9, 25-C7b, 31-C2, 32-C5a)
+function b1(x?: { a: number }) { if (x?.a! === 1) { x.a; } }
+>b1 : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>x?.a! === 1 : boolean
+>x?.a! : number
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>1 : 1
+>x.a : 1
+>x : { a: number; } | undefined
+>a : 1
+
+function b2(x?: { a: number }) { if (x?.a!) { x.a; } }
+>b2 : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>x?.a! : number
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>x.a : number
+>x : { a: number; }
+>a : number
+
+function b3(x?: { a: number }) { if ((x?.a)) { x.a; } }
+>b3 : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>(x?.a) : number | undefined
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>x.a : number
+>x : { a: number; }
+>a : number
+
+function b4(x?: { a: { b: number } }) { if (x?.a!.b === 1) { x.a; } }
+>b4 : (x?: { a: { b: number; }; }) => void
+>x : { a: { b: number; }; } | undefined
+>a : { b: number; }
+>b : number
+>x?.a!.b === 1 : boolean
+>x?.a!.b : number | undefined
+>x?.a! : { b: number; } | undefined
+>x?.a : { b: number; } | undefined
+>x : { a: { b: number; }; } | undefined
+>a : { b: number; } | undefined
+>b : number | undefined
+>1 : 1
+>x.a : { b: number; }
+>x : { a: { b: number; }; }
+>a : { b: number; }
+
+declare function isN(x: unknown): x is number;
+>isN : (x: unknown) => x is number
+>x : unknown
+
+function b5(x?: { a: number }) { if (isN((x?.a))) { x.a; } }
+>b5 : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>isN((x?.a)) : boolean
+>isN : (x: unknown) => x is number
+>(x?.a) : number | undefined
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>x.a : number
+>x : { a: number; } | undefined
+>a : number
+
+function b6(x?: { a: number }) { if (isN(x?.a)) { x.a; } }
+>b6 : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>isN(x?.a) : boolean
+>isN : (x: unknown) => x is number
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>x.a : number
+>x : { a: number; }
+>a : number
+
+function b7(x?: { a: object }) { for (const k in (x?.a)) { x.a; } }
+>b7 : (x?: { a: object; }) => void
+>x : { a: object; } | undefined
+>a : object
+>k : string
+>(x?.a) : object | undefined
+>x?.a : object | undefined
+>x : { a: object; } | undefined
+>a : object | undefined
+>x.a : object
+>x : { a: object; } | undefined
+>a : object
+
+function b8(x?: { a: object }) { for (const k in x?.a) { x.a; } }
+>b8 : (x?: { a: object; }) => void
+>x : { a: object; } | undefined
+>a : object
+>k : string
+>x?.a : object | undefined
+>x : { a: object; } | undefined
+>a : object | undefined
+>x.a : object
+>x : { a: object; }
+>a : object
+
+declare const o: { a?: { b?: string } } | undefined;
+>o : { a?: { b?: string; }; } | undefined
+>a : { b?: string; } | undefined
+>b : string | undefined
+
+if (o?.a!?.b) o.a;
+>o?.a!?.b : string | undefined
+>o?.a! : { b?: string; }
+>o?.a : { b?: string; } | undefined
+>o : { a?: { b?: string; }; } | undefined
+>a : { b?: string; } | undefined
+>b : string | undefined
+>o.a : { b?: string; }
+>o : { a?: { b?: string; }; } | undefined
+>a : { b?: string; }
+
+function b9(x?: { a: number }) { if ((x?.a) === 1) { x.a; } }
+>b9 : (x?: { a: number; }) => void
+>x : { a: number; } | undefined
+>a : number
+>(x?.a) === 1 : boolean
+>(x?.a) : number | undefined
+>x?.a : number | undefined
+>x : { a: number; } | undefined
+>a : number | undefined
+>1 : 1
+>x.a : 1
+>x : { a: number; }
+>a : 1
+
+function b10(x?: { a: string }) { switch (x?.a!) { case "q": x.a; } }
+>b10 : (x?: { a: string; }) => void
+>x : { a: string; } | undefined
+>a : string
+>x?.a! : string
+>x?.a : string | undefined
+>x : { a: string; } | undefined
+>a : string | undefined
+>"q" : "q"
+>x.a : "q"
+>x : { a: string; } | undefined
+>a : "q"
+
+function b11(x?: { a: string }) { if (typeof x?.a! === "string") { x.a; } }
+>b11 : (x?: { a: string; }) => void
+>x : { a: string; } | undefined
+>a : string
+>typeof x?.a! === "string" : boolean
+>typeof x?.a! : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x?.a! : string
+>x?.a : string | undefined
+>x : { a: string; } | undefined
+>a : string | undefined
+>"string" : "string"
+>x.a : string
+>x : { a: string; } | undefined
+>a : string
+
