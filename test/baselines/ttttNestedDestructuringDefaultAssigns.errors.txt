@@ -1,0 +1,30 @@
+ttttNestedDestructuringDefaultAssigns.ts(10,7): error TS2322: Type 'string | number' is not assignable to type 'never'.
+  Type 'string' is not assignable to type 'never'.
+ttttNestedDestructuringDefaultAssigns.ts(11,7): error TS2322: Type 'number' is not assignable to type 'never'.
+ttttNestedDestructuringDefaultAssigns.ts(13,74): error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+  Property 'toFixed' does not exist on type 'string'.
+
+
+==== ttttNestedDestructuringDefaultAssigns.ts (3 errors) ====
+    // A default in a pattern that isn't itself the assignment's target is a plain assignment to tsc
+    // (getAssignedTypeOfBinaryExpression's isDestructuringAssignmentTarget looks one level up): `[[b = 1]] = two` assigns
+    // b the type of 1 (bun's 21-C16a/b and 99-V4)
+    declare const one: [string | undefined];
+    declare const two: [[string | undefined]];
+    let a: string | number | boolean = true;
+    let b: string | number | boolean = true;
+    [a = 1] = one;
+    [[b = 1]] = two;
+    const probeA: never = a;
+          ~~~~~~
+!!! error TS2322: Type 'string | number' is not assignable to type 'never'.
+!!! error TS2322:   Type 'string' is not assignable to type 'never'.
+    const probeB: never = b;
+          ~~~~~~
+!!! error TS2322: Type 'number' is not assignable to type 'never'.
+    function f(x: string | number, v: { a: { b: string } }) { ({ a: { b: x = 1 } } = v); x.toFixed(); }
+    function g(x: string | number, v: { a: string }) { ({ a: x = 1 } = v); x.toFixed(); }
+                                                                             ~~~~~~~
+!!! error TS2339: Property 'toFixed' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'toFixed' does not exist on type 'string'.
+    

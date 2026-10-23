@@ -1,0 +1,84 @@
+//// [test/cases/ttttNestedDestructuringDefaultAssigns.ts] ////
+
+=== ttttNestedDestructuringDefaultAssigns.ts ===
+// A default in a pattern that isn't itself the assignment's target is a plain assignment to tsc
+// (getAssignedTypeOfBinaryExpression's isDestructuringAssignmentTarget looks one level up): `[[b = 1]] = two` assigns
+// b the type of 1 (bun's 21-C16a/b and 99-V4)
+declare const one: [string | undefined];
+>one : [string | undefined]
+
+declare const two: [[string | undefined]];
+>two : [[string | undefined]]
+
+let a: string | number | boolean = true;
+>a : string | number | boolean
+>true : true
+
+let b: string | number | boolean = true;
+>b : string | number | boolean
+>true : true
+
+[a = 1] = one;
+>[a = 1] = one : [string | undefined]
+>[a = 1] : [number]
+>a = 1 : 1
+>a : string | number | boolean
+>1 : 1
+>one : [string | undefined]
+
+[[b = 1]] = two;
+>[[b = 1]] = two : [[string | undefined]]
+>[[b = 1]] : [[number]]
+>[b = 1] : [number]
+>b = 1 : 1
+>b : string | number | boolean
+>1 : 1
+>two : [[string | undefined]]
+
+const probeA: never = a;
+>probeA : never
+>a : string | number
+
+const probeB: never = b;
+>probeB : never
+>b : number
+
+function f(x: string | number, v: { a: { b: string } }) { ({ a: { b: x = 1 } } = v); x.toFixed(); }
+>f : (x: string | number, v: { a: { b: string; }; }) => void
+>x : string | number
+>v : { a: { b: string; }; }
+>a : { b: string; }
+>b : string
+>({ a: { b: x = 1 } } = v) : { a: { b: string; }; }
+>{ a: { b: x = 1 } } = v : { a: { b: string; }; }
+>{ a: { b: x = 1 } } : { a: { b?: number; }; }
+>a : { b?: number; }
+>{ b: x = 1 } : { b?: number; }
+>b : number
+>x = 1 : 1
+>x : string | number
+>1 : 1
+>v : { a: { b: string; }; }
+>x.toFixed() : string
+>x.toFixed : (fractionDigits?: number) => string
+>x : number
+>toFixed : (fractionDigits?: number) => string
+
+function g(x: string | number, v: { a: string }) { ({ a: x = 1 } = v); x.toFixed(); }
+>g : (x: string | number, v: { a: string; }) => void
+>x : string | number
+>v : { a: string; }
+>a : string
+>({ a: x = 1 } = v) : { a: string; }
+>{ a: x = 1 } = v : { a: string; }
+>{ a: x = 1 } : { a?: number; }
+>a : number
+>x = 1 : 1
+>x : string | number
+>1 : 1
+>v : { a: string; }
+>x.toFixed() : any
+>x.toFixed : any
+>x : string | number
+>toFixed : any
+

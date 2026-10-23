@@ -1077,6 +1077,7 @@ static Ty const* for_each_element_type(Checker* me, ForEachLoopStatement const* 
 
 // The type the value at the end of a destructuring path has, null if it can't be told
 static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPatternPath const* path) {
+    if (path->plain_default) return ty_flow_expr_type(me, path->default_value);
     Ty const* object;
     if (path->parent) {
         object = pattern_path_type(me, assign, path->parent);

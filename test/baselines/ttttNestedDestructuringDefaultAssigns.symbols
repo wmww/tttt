@@ -1,0 +1,58 @@
+//// [test/cases/ttttNestedDestructuringDefaultAssigns.ts] ////
+
+=== ttttNestedDestructuringDefaultAssigns.ts ===
+// A default in a pattern that isn't itself the assignment's target is a plain assignment to tsc
+// (getAssignedTypeOfBinaryExpression's isDestructuringAssignmentTarget looks one level up): `[[b = 1]] = two` assigns
+// b the type of 1 (bun's 21-C16a/b and 99-V4)
+declare const one: [string | undefined];
+>one : Symbol(one, Decl(ttttNestedDestructuringDefaultAssigns.ts, 3, 13))
+
+declare const two: [[string | undefined]];
+>two : Symbol(two, Decl(ttttNestedDestructuringDefaultAssigns.ts, 4, 13))
+
+let a: string | number | boolean = true;
+>a : Symbol(a, Decl(ttttNestedDestructuringDefaultAssigns.ts, 5, 3))
+
+let b: string | number | boolean = true;
+>b : Symbol(b, Decl(ttttNestedDestructuringDefaultAssigns.ts, 6, 3))
+
+[a = 1] = one;
+>a : Symbol(a, Decl(ttttNestedDestructuringDefaultAssigns.ts, 5, 3))
+>one : Symbol(one, Decl(ttttNestedDestructuringDefaultAssigns.ts, 3, 13))
+
+[[b = 1]] = two;
+>b : Symbol(b, Decl(ttttNestedDestructuringDefaultAssigns.ts, 6, 3))
+>two : Symbol(two, Decl(ttttNestedDestructuringDefaultAssigns.ts, 4, 13))
+
+const probeA: never = a;
+>probeA : Symbol(probeA, Decl(ttttNestedDestructuringDefaultAssigns.ts, 9, 5))
+>a : Symbol(a, Decl(ttttNestedDestructuringDefaultAssigns.ts, 5, 3))
+
+const probeB: never = b;
+>probeB : Symbol(probeB, Decl(ttttNestedDestructuringDefaultAssigns.ts, 10, 5))
+>b : Symbol(b, Decl(ttttNestedDestructuringDefaultAssigns.ts, 6, 3))
+
+function f(x: string | number, v: { a: { b: string } }) { ({ a: { b: x = 1 } } = v); x.toFixed(); }
+>f : Symbol(f, Decl(ttttNestedDestructuringDefaultAssigns.ts, 10, 24))
+>x : Symbol(x, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 11))
+>v : Symbol(v, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 30))
+>a : Symbol(a, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 35))
+>b : Symbol(b, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 40))
+>a : Symbol(a, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 60))
+>b : Symbol(b, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 65))
+>x : Symbol(x, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 11))
+>v : Symbol(v, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 30))
+>x.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 11))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+function g(x: string | number, v: { a: string }) { ({ a: x = 1 } = v); x.toFixed(); }
+>g : Symbol(g, Decl(ttttNestedDestructuringDefaultAssigns.ts, 11, 99))
+>x : Symbol(x, Decl(ttttNestedDestructuringDefaultAssigns.ts, 12, 11))
+>v : Symbol(v, Decl(ttttNestedDestructuringDefaultAssigns.ts, 12, 30))
+>a : Symbol(a, Decl(ttttNestedDestructuringDefaultAssigns.ts, 12, 35))
+>a : Symbol(a, Decl(ttttNestedDestructuringDefaultAssigns.ts, 12, 53))
+>x : Symbol(x, Decl(ttttNestedDestructuringDefaultAssigns.ts, 12, 11))
+>v : Symbol(v, Decl(ttttNestedDestructuringDefaultAssigns.ts, 12, 30))
+>x : Symbol(x, Decl(ttttNestedDestructuringDefaultAssigns.ts, 12, 11))
+

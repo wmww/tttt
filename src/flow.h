@@ -79,6 +79,10 @@ typedef struct FlowPatternPath {
     u32 index;
     ObjectExprItem const* item;
     Expr const* default_value; // `[a = 1] = e`, `{ a = 1 } = e`: null if there is none
+    // `[[a = 1]] = e`, `{ b: { c: a = 1 } } = e`: an `a = 1` in a pattern that isn't itself the assignment's target is
+    // a plain assignment of the default to tsc (getAssignedTypeOfBinaryExpression's isDestructuringAssignmentTarget
+    // looks one level up only): `a` is assigned 1's type
+    bool plain_default;
 } FlowPatternPath;
 
 typedef enum FlowAssignKind {

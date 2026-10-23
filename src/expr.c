@@ -1378,6 +1378,7 @@ static void note_pattern_this_assignments(Scope const* names, Expr const* target
 static void flow_destructuring_target(FlowBuilder* flow, Expr const* target, FlowAssign assign, FlowPatternPath path) {
     if (target->tag == EXPR_BINARY_OP && target->binary_op->op == BINARY_OP_EQUAL) {
         path.default_value = &target->binary_op->right;
+        path.plain_default = path.parent != nullptr;
         target = &target->binary_op->left;
     }
     FlowPatternPath* node = arena_new(flow->arena, FlowPatternPath);
