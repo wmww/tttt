@@ -81,6 +81,11 @@ memory, but memory is now worth cutting where it is cheap; easy, measured wins f
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **TypeScript 7.0 compatibility is shelved** (2026-10-23, the human): a build-time 7.0.2 mode was sized at 20-30
+  worker-days for everything (75 local, 15 medium, 3 structural changes, ~8 unemulable history-dependent behaviours)
+  and a second oracle, baselines and gates to be trustworthy; on real code 7.0.2 and the beta differ on 0 / 1075 DT
+  packages and 10 / 15 corpora are identical. tttt ships 7.1 semantics; notes/ts70_compat.md has the table and the
+  cheap option if it reopens.
 - **opencode is a correctness project only** (2026-10-23, the human): github.com/anomalyco/opencode (clean under tsgo
   7.1; 8-27 varying errors under tttt at the defaults, 10 at one checker, 12 with a fresh checker per file) joins the
   source sweep for correctness and is excluded from every perf measurement, like openclaw.
