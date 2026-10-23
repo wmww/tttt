@@ -74,7 +74,6 @@ typedef struct Options {
     bool first_touch_stamps; // --first-touch-stamps
     u32 threads; // --threads
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
-    const char* node_shapes; // --node-shapes FILE: print the syntactic shapes at the positions it lists (expect_types.h)
     u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
     const char* dts_dump; // --dts-dump DIR: write each emitted declaration file to DIR + its source's absolute path
     bool list_emitted_files; // --listEmittedFiles: `TSFILE: path` for each file written, after the diagnostics
@@ -836,7 +835,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     Program* program = program_new(errs, opts->emit_view ? emit_view_fs(opts->emit_view) : fs);
     // (--listFilesOnly reports every syntax error and checks nothing: the bodies would be parsed for it before any walk
     // could list them, program_deferred_bodies_parse())
-    if (opts->list_files_only || opts->node_shapes) defer = false;
+    if (opts->list_files_only) defer = false;
     program_set_defer_bodies(program, defer);
     if (opts->emit_view) {
         program_set_realpath(program, emit_view_real_path, opts->emit_view);
@@ -1022,11 +1021,6 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         destroy_program(program, errs, false);
         defer_stat_add(DEFER_STAT_RESTARTS, 1);
         return check_files(opts, out, config, projects, project, redirects, last, counts, false, _OUTPUT_PARAM);
-    }
-    if (opts->node_shapes) {
-        program_print_node_shapes(program, opts->node_shapes);
-        destroy_program(program, errs, last);
-        return ok(0);
     }
     if (opts->list_files_only) {
         // (tsc's listFilesOnly: the options and syntactic diagnostics, nothing checked)
@@ -1637,7 +1631,6 @@ static void print_help(void) {
         "  --print-ast   print the parsed AST of the last file\n"
         "  --no-lib      don't load the standard library\n"
         "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
-        "  --node-shapes FILE  print the syntactic shapes (node kinds, no source text) at the positions FILE lists, check nothing\n"
         "  --dts-dump DIR  write each file's declaration emit to DIR + the file's absolute path (.d.ts)\n"
         "  --no-write    emit like tsc but write nothing (tools on shared checkouts: -b emits)\n"
         "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)\n"
@@ -1804,8 +1797,6 @@ static int run(int argc, const char** argv) {
             single_threaded = true;
         } else if (streq(argv[i], "--expect-types") && i + 1 < argc) {
             opts.expect_types = argv[++i];
-        } else if (streq(argv[i], "--node-shapes") && i + 1 < argc) {
-            opts.node_shapes = argv[++i];
         } else if (streq(argv[i], "--dts-dump") && i + 1 < argc) {
             opts.dts_dump = argv[++i];
         } else if (streq(argv[i], "--no-lib")) {
