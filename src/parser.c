@@ -3036,7 +3036,8 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
         }
         hop_whitespace(&p);
 
-        if (!named && hop_char(&p, '?')) {
+        // (Not after an `infer X`, which takes no postfix `?`: tsc's optional element is a JSDocNullableType)
+        if (!named && !(elem.type.tag == TYPE_INFERRED && !elem.type.parenthesized) && hop_char(&p, '?')) {
             elem.optional = true;
             hop_whitespace(&p);
         }
@@ -3250,11 +3251,15 @@ static inline bool parse_type_right_side_inner(Parser* parent, TypePrecedence mi
 
     hop_whitespace(&p);
 
-    if ((*p.pos == '!' || *p.pos == '?') && parse_jsdoc_postfix_type(&p, left_start, left_and_ret)) {
+    // An `infer X` takes no postfix (tsc's parseTypeOperatorOrHigher returns the InferType itself): `infer U[]` and
+    // `[infer U?]` leave the `[` and the `?` to what follows
+    bool postfix = !(left_and_ret->tag == TYPE_INFERRED && !left_and_ret->parenthesized);
+
+    if (postfix && (*p.pos == '!' || *p.pos == '?') && parse_jsdoc_postfix_type(&p, left_start, left_and_ret)) {
         return parse_success(&p);
     }
 
-    if (p.whitespace != WHITESPACE_NEWLINE && hop_char(&p, '[')) {
+    if (postfix && p.whitespace != WHITESPACE_NEWLINE && hop_char(&p, '[')) {
         hop_whitespace(&p);
         Anchor index_anchor = anchor(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
