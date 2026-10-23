@@ -143,9 +143,6 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   `enum_decl_typecheck` check the first character (such an enum member is declared, prints `__missing`).
 - Class accessors pair by name+staticness in `class_decl_lookup_names_in_owner()` (`class_namesakes()`; raw
   `accessor_first`/`accessor_getter` pointers into the items vec); readonly means "no setter". `{ a = 1 }` keeps `ObjectExprItem.shorthand_default`.
-- `yield`/`await` operand lookahead (`await_is_operator`, `yield_is_operator_outside_generator`,
-  `yield_await_is_keyword_here`): a character peek where tsc looks ahead a token; a comment after `yield` is taken as
-  "no operand".
 - Parsed and dropped (lost diagnostics in bugs/missing_checks.md): computed non-literal enum keys
   (`EnumCase.computed_name`, member prints `(typeof E)["[e]"]`, tsc `E`); non-string import specifiers; a `ModuleRef`
   from an abandoned attempt stays listed (`add_module_ref`); `global x` is `NamespaceDecl.is_shorthand` typed any;

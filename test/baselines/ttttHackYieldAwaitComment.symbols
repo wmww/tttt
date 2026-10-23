@@ -1,0 +1,27 @@
+//// [test/cases/ttttHackYieldAwaitComment.ts] ////
+
+=== ttttHackYieldAwaitComment.ts ===
+// `yield`/`await` outside a generator/async function are operators when an operand follows on the same line, also
+// after a comment (hacks.md: the operand lookahead peeked at characters, a comment meant "no operand")
+function f() { var x = yield /*c*/ 1; }
+>f : Symbol(f, Decl(ttttHackYieldAwaitComment.ts, 0, 0))
+>x : Symbol(x, Decl(ttttHackYieldAwaitComment.ts, 2, 18))
+
+function g() { var y = yield 1; }
+>g : Symbol(g, Decl(ttttHackYieldAwaitComment.ts, 2, 39))
+>y : Symbol(y, Decl(ttttHackYieldAwaitComment.ts, 3, 18))
+
+function h() { var z = await /*c*/ 1; }
+>h : Symbol(h, Decl(ttttHackYieldAwaitComment.ts, 3, 33))
+>z : Symbol(z, Decl(ttttHackYieldAwaitComment.ts, 4, 18))
+
+function k() { var w = await 1; }
+>k : Symbol(k, Decl(ttttHackYieldAwaitComment.ts, 4, 39))
+>w : Symbol(w, Decl(ttttHackYieldAwaitComment.ts, 5, 18))
+
+function m() { var v = yield /*
+>m : Symbol(m, Decl(ttttHackYieldAwaitComment.ts, 5, 33))
+>v : Symbol(v, Decl(ttttHackYieldAwaitComment.ts, 6, 18))
+
+*/ 1; }
+

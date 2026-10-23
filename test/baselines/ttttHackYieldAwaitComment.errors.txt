@@ -1,0 +1,32 @@
+ttttHackYieldAwaitComment.ts(3,24): error TS1163: A 'yield' expression is only allowed in a generator body.
+ttttHackYieldAwaitComment.ts(4,24): error TS1163: A 'yield' expression is only allowed in a generator body.
+ttttHackYieldAwaitComment.ts(5,24): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttHackYieldAwaitComment.ts(6,24): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+ttttHackYieldAwaitComment.ts(7,24): error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+ttttHackYieldAwaitComment.ts(7,24): error TS2304: Cannot find name 'yield'.
+
+
+==== ttttHackYieldAwaitComment.ts (6 errors) ====
+    // `yield`/`await` outside a generator/async function are operators when an operand follows on the same line, also
+    // after a comment (hacks.md: the operand lookahead peeked at characters, a comment meant "no operand")
+    function f() { var x = yield /*c*/ 1; }
+                           ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+    function g() { var y = yield 1; }
+                           ~~~~~
+!!! error TS1163: A 'yield' expression is only allowed in a generator body.
+    function h() { var z = await /*c*/ 1; }
+                           ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttHackYieldAwaitComment.ts:5:10: Did you mean to mark this function as 'async'?
+    function k() { var w = await 1; }
+                           ~~~~~
+!!! error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+!!! related TS1356 ttttHackYieldAwaitComment.ts:6:10: Did you mean to mark this function as 'async'?
+    function m() { var v = yield /*
+                           ~~~~~
+!!! error TS1212: Identifier expected. 'yield' is a reserved word in strict mode.
+                           ~~~~~
+!!! error TS2304: Cannot find name 'yield'.
+    */ 1; }
+    

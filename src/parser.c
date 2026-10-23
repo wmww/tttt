@@ -9642,10 +9642,10 @@ static bool await_is_operator(Parser* parent) {
     } else if (parent->shared->in_async || parent->shared->in_static_block) {
         return true; // (A static block is an await context: tsc's parseClassStaticBlockBody)
     }
-    const char* c = parent->pos + strlen("await");
-    while (*c == ' ' || *c == '\t') {
-        c++;
-    }
+    // (The next token, after any comments: a comment spanning lines is a line break)
+    Tok next = tok_at(parent, parent->pos + strlen("await"), false);
+    if (next.newline_before) return false;
+    const char* c = next.start;
     // (tsc's isAwaitExpression: an identifier, keyword or literal on the same line. In a module's top level every
     // `await` is an operator, see ParserShared.top_level_await)
     // (Not a template: `await \`\`` is a tagged template until a module reparses it, topLevelAwait.1)
@@ -9656,9 +9656,9 @@ static bool await_is_operator(Parser* parent) {
 // is a yield expression (TS1163 from the checker), anything else makes it an identifier
 static bool yield_is_operator_outside_generator(Parser* parent) {
     if (!starts_with_followed_by_word_break(parent, "yield")) return false;
-    const char* c = parent->pos + strlen("yield");
-    while (*c == ' ' || *c == '\t') c++;
-    if (c[0] == '/' && (c[1] == '/' || c[1] == '*')) return false; // (a comment: be conservative)
+    Tok next = tok_at(parent, parent->pos + strlen("yield"), false);
+    if (next.newline_before) return false;
+    const char* c = next.start;
     return identifier_char_size(c, true) || is_number_start_char(*c) || (unsigned char)*c >= 0x80 || *c == '"' ||
         *c == '\'' || *c == '`';
 }
