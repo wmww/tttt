@@ -1,0 +1,25 @@
+r/entry.ts(2,14): error TS2883: The inferred type of 'x' cannot be named without a reference to '"r/node_modules/foo/node_modules/nested/index"' from 'foo/node_modules/nested'. This is likely not portable. A type annotation is necessary.
+r/entry.ts(3,14): error TS2883: The inferred type of 'y' cannot be named without a reference to '"r/node_modules/foo/node_modules/nested/index"' from 'foo/node_modules/nested'. This is likely not portable. A type annotation is necessary.
+r/entry.ts(3,14): error TS2883: The inferred type of 'y' cannot be named without a reference to '"r/node_modules/foo/node_modules/nested/other"' from 'foo/node_modules/nested/other'. This is likely not portable. A type annotation is necessary.
+
+
+==== r/node_modules/foo/node_modules/nested/index.d.ts (0 errors) ====
+    declare const v: { a: 1 };
+    export default v;
+==== r/node_modules/foo/node_modules/nested/other.d.ts (0 errors) ====
+    declare const w: { b: 1 };
+    export default w;
+==== r/node_modules/foo/index.d.ts (0 errors) ====
+    export declare function load(): Promise<typeof import("nested")>;
+    export declare function loadOther(): Promise<typeof import("nested/other")>;
+==== r/entry.ts (3 errors) ====
+    import { load, loadOther } from "foo";
+    export const x = load();
+                 ~
+!!! error TS2883: The inferred type of 'x' cannot be named without a reference to '"r/node_modules/foo/node_modules/nested/index"' from 'foo/node_modules/nested'. This is likely not portable. A type annotation is necessary.
+    export const y = [load(), loadOther()];
+                 ~
+!!! error TS2883: The inferred type of 'y' cannot be named without a reference to '"r/node_modules/foo/node_modules/nested/index"' from 'foo/node_modules/nested'. This is likely not portable. A type annotation is necessary.
+                 ~
+!!! error TS2883: The inferred type of 'y' cannot be named without a reference to '"r/node_modules/foo/node_modules/nested/other"' from 'foo/node_modules/nested/other'. This is likely not portable. A type annotation is necessary.
+    

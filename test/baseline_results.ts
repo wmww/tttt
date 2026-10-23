@@ -951,6 +951,11 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationUnsafeImportModuleName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeclarationUnusedImportOfReexportedModule': {
         errors: true,
         symbols: true,

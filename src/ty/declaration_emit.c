@@ -800,8 +800,12 @@ static void track_module_file(DeclTracker* tracker, SourceFile const* target, Sy
     if (!unsafe.size) return;
     csview name;
     Span at = error_name_node(me, &name);
+    // (A module's own symbol is named like tsc's: its file's path without the extension, in double quotes)
+    cstr module_name = symbol->is_module && symbol->module && symbol->module->file ? module_name_for_error(symbol, nullptr, false) : cstr_init();
     report_once(me, at, 2883, cstr_d("The inferred type of '", name, "' cannot be named without a reference to '",
-        symbol->name, "' from '", unsafe, "'. This is likely not portable. A type annotation is necessary."));
+        cstr_size(&module_name) ? cstr_sv(&module_name) : symbol->name, "' from '", unsafe,
+        "'. This is likely not portable. A type annotation is necessary."));
+    cstr_drop(&module_name);
 }
 
 // trackComputedName: the first identifier of a late bound name as resolved from here, else as resolved where the name

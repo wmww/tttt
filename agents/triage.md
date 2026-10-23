@@ -144,3 +144,9 @@ intersection's property symbol to bugs/type_core.md.
   (the maps' `sources` are relative to a realpath'd or non-realpath'd root), not a tttt difference. Either make the
   script realpath the project root consistently, or document "run dtsdiff from the main tree" in its header; until
   then a gate worktree's oracles.py dts line is not comparable to the main tree's (2026-10-23).
+- **Types baseline: a nested package's module named by the bare specifier** (2026-10-23, corC): with
+  `r/node_modules/foo/node_modules/nested` reached only through `foo`, tsgo's types baseline prints
+  `Promise<typeof import("foo/node_modules/nested")>` for `foo`'s `load()`, tttt `typeof import("nested")` (the
+  specifier as `foo`'s declaration file writes it). Declaration emit's TS2883 already matches (it computes the specifier
+  from the entry file); the types baseline's import type printing doesn't. Repro: test/cases/ttttDeclarationUnsafeImportModuleName.ts
+  without its `@noTypesAndSymbols`.
