@@ -10909,7 +10909,12 @@ binary_rest:
     // (A left-hand side expression, a decorator or heritage element, still takes a non-null `!`: tsc's
     // parseMemberExpressionRest)
     bool non_null_only = ctx.reject_operators && !ctx.entity_name && *p.pos == '!' && p.pos[1] != '=';
-    if ((!ctx.reject_operators || non_null_only) && !hit_newline) {
+    // (Not after a `?.` missing its name: tsc's parseMemberExpressionRest stops there, the `!` starts the next
+    // statement, `a?.!b`)
+    bool after_missing_optional_name = *p.pos == '!' && left_and_ret->tag == EXPR_PROPERTY && !expr_is_perenthisized(left_and_ret) &&
+        left_and_ret->property->optional_chain && left_and_ret->property->form != PROPERTY_EXPR_BRACKET &&
+        !left_and_ret->property->name_.size;
+    if ((!ctx.reject_operators || non_null_only) && !hit_newline && !after_missing_optional_name) {
         if (parse_right_unary_op(&p, &parsed.unary) &&
             // A postfix `++`/`--` takes a left-hand side expression (tsc's parseUpdateExpression): not in the operand
             // of a prefix one, `--a--`, and not after an operator expression, `--a --`
