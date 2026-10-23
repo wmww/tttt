@@ -66,6 +66,9 @@ typedef struct ParserShared {
     isize scanner_error_first; // The errors before the token was read
     const char* scanner_error_token;
     bool using_forced; // The next variable statement starts with `using` whatever follows it (see parse_decl_statement())
+    // After modifiers `let` is a variable statement whatever follows (tsc's parseDeclarationWorker, reached without
+    // isLetDeclaration's lookahead: `declare let` then a line break and `=` is an empty list)
+    bool let_forced;
     // What kind of function the parser is currently inside, decides if `await` and `yield` are operators
     bool in_async;
     bool in_generator;
@@ -13558,6 +13561,8 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
     Parser p = parser(parent);
     bool using_forced = p.shared->using_forced;
     p.shared->using_forced = false;
+    bool let_forced = p.shared->let_forced;
+    p.shared->let_forced = false;
 
     Anchor start = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "var")) {
@@ -13621,7 +13626,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 grammar_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
-                if (ret->keyword == VAR_INIT_LET && !empty_for_of && !in_for) {
+                if (ret->keyword == VAR_INIT_LET && !empty_for_of && !in_for && !let_forced) {
                     // let can also be a variable name, fail so we then attempt to parse it as such (not in a `for`,
                     // where tsc's parseForOrForInOrForOfStatement always takes `let` for a declaration list)
                     list_leave(&p, saved_context);
@@ -14990,9 +14995,11 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     // (After decorators `using` is a variable statement whatever follows: tsc's parseDeclarationWorker, reached
     // without isUsingDeclaration's lookahead, `@dec using 1` is TS1134)
     p.shared->using_forced = !vec_expr_is_empty(&decorators);
+    p.shared->let_forced = vec_spanned_modifier_size(&modifiers.spanned) > 0;
     bool variable = decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
         parse_variable_statement(&p, expr_ctx_null, false, &parsed.variable);
     p.shared->using_forced = false;
+    p.shared->let_forced = false;
     if (variable) {
         modified.kind = MODIFIED_VARIABLE_STATEMENT;
         modified.using_kind = parsed.variable.keyword == VAR_INIT_USING ? 1 :
