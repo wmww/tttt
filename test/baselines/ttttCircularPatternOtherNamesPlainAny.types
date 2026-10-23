@@ -1,0 +1,79 @@
+//// [test/cases/ttttCircularPatternOtherNamesPlainAny.ts] ////
+
+=== ttttCircularPatternOtherNamesPlainAny.ts ===
+// A destructuring whose parent is circular through one of its names: only the names on the cycle are TS7022 (tsc's
+// reportCircularityError gives the rest plain any), not `nodes` (crowd-dev's paginating loops)
+declare function gql<T>(vars: { cursor: string | null }): Promise<T>;
+>gql : <T>(vars: { cursor: string | null; }) => Promise<T>
+>vars : { cursor: string | null; }
+>cursor : string | null
+
+interface Page { repository: { issues: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; nodes: (string | null)[] } } }
+>repository : { issues: { pageInfo: { hasNextPage: boolean; endCursor: string | null; }; nodes: (string | null)[]; }; }
+>issues : { pageInfo: { hasNextPage: boolean; endCursor: string | null; }; nodes: (string | null)[]; }
+>pageInfo : { hasNextPage: boolean; endCursor: string | null; }
+>hasNextPage : boolean
+>endCursor : string | null
+>nodes : (string | null)[]
+
+declare function budget(): boolean;
+>budget : () => boolean
+
+async function run() {
+>run : () => Promise<any>
+
+  let cursor: string | null = null;
+>cursor : string | null
+
+  while (budget()) {
+>budget() : boolean
+>budget : () => boolean
+
+    const data = await gql<Page>({ cursor });
+>data : any
+>await gql<Page>({ cursor }) : Page
+>gql<Page>({ cursor }) : Promise<Page>
+>gql : <T>(vars: { cursor: string | null; }) => Promise<T>
+>{ cursor } : { cursor: string | null; }
+>cursor : string | null
+
+    const { pageInfo, nodes } = data.repository.issues;
+>pageInfo : any
+>nodes : any
+>data.repository.issues : any
+>data.repository : any
+>data : any
+>repository : any
+>issues : any
+
+    const items = nodes.filter((n): n is string => n !== null);
+>items : any
+>nodes.filter((n): n is string => n !== null) : any
+>nodes.filter : any
+>nodes : any
+>filter : any
+>(n): n is string => n !== null : (n: any) => n is string
+>n : any
+>n !== null : boolean
+>n : any
+
+    cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
+>cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null : any
+>cursor : string | null
+>pageInfo.hasNextPage ? pageInfo.endCursor : null : any
+>pageInfo.hasNextPage : any
+>pageInfo : any
+>hasNextPage : any
+>pageInfo.endCursor : any
+>pageInfo : any
+>endCursor : any
+
+    if (!pageInfo.hasNextPage) return items;
+>!pageInfo.hasNextPage : boolean
+>pageInfo.hasNextPage : any
+>pageInfo : any
+>hasNextPage : any
+>items : any
+  }
+}
+

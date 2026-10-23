@@ -1,0 +1,63 @@
+//// [test/cases/ttttCircularPatternOtherNamesPlainAny.ts] ////
+
+=== ttttCircularPatternOtherNamesPlainAny.ts ===
+// A destructuring whose parent is circular through one of its names: only the names on the cycle are TS7022 (tsc's
+// reportCircularityError gives the rest plain any), not `nodes` (crowd-dev's paginating loops)
+declare function gql<T>(vars: { cursor: string | null }): Promise<T>;
+>gql : Symbol(gql, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 0, 0))
+>T : Symbol(T, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 2, 21))
+>vars : Symbol(vars, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 2, 24))
+>cursor : Symbol(cursor, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 2, 31))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 2, 21))
+
+interface Page { repository: { issues: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; nodes: (string | null)[] } } }
+>Page : Symbol(Page, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 2, 69))
+>repository : Symbol(Page.repository, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 16))
+>issues : Symbol(issues, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 30))
+>pageInfo : Symbol(pageInfo, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 40))
+>hasNextPage : Symbol(hasNextPage, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 52))
+>endCursor : Symbol(endCursor, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 74))
+>nodes : Symbol(nodes, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 102))
+
+declare function budget(): boolean;
+>budget : Symbol(budget, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 133))
+
+async function run() {
+>run : Symbol(run, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 4, 35))
+
+  let cursor: string | null = null;
+>cursor : Symbol(cursor, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 6, 5))
+
+  while (budget()) {
+>budget : Symbol(budget, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 3, 133))
+
+    const data = await gql<Page>({ cursor });
+>data : Symbol(data, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 8, 9))
+>gql : Symbol(gql, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 0, 0))
+>Page : Symbol(Page, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 2, 69))
+>cursor : Symbol(cursor, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 8, 34))
+
+    const { pageInfo, nodes } = data.repository.issues;
+>pageInfo : Symbol(pageInfo, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 9, 11))
+>nodes : Symbol(nodes, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 9, 21))
+>data : Symbol(data, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 8, 9))
+
+    const items = nodes.filter((n): n is string => n !== null);
+>items : Symbol(items, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 10, 9))
+>nodes : Symbol(nodes, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 9, 21))
+>n : Symbol(n, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 10, 32))
+>n : Symbol(n, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 10, 32))
+>n : Symbol(n, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 10, 32))
+
+    cursor = pageInfo.hasNextPage ? pageInfo.endCursor : null;
+>cursor : Symbol(cursor, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 6, 5))
+>pageInfo : Symbol(pageInfo, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 9, 11))
+>pageInfo : Symbol(pageInfo, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 9, 11))
+
+    if (!pageInfo.hasNextPage) return items;
+>pageInfo : Symbol(pageInfo, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 9, 11))
+>items : Symbol(items, Decl(ttttCircularPatternOtherNamesPlainAny.ts, 10, 9))
+  }
+}
+

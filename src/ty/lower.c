@@ -4116,7 +4116,10 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
             widened_null = initialized_binding_value(initialized)->tag != EXPR_IMPLICIT_ANY &&
                 (ty_expr_type(me, initialized_binding_value(initialized))->flags & TYF_NULLABLE);
         }
-        if (!widened_null) return object;
+        // (A pattern whose own type is circular gives its names plain any: tsc's reportCircularityError returns anyType,
+        // and only the declarations on the cycle, which the resolution marks, are reported. `nodes` of `const { pageInfo,
+        // nodes } = data...` with data circular through pageInfo isn't, crowd-dev)
+        if (!widened_null) return object == ty_intrinsic(me, TY_CIRCULAR) ? ty_intrinsic(me, TY_ANY) : object;
     }
     Ty const* ret = binding_element_of(me, binding, object);
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
