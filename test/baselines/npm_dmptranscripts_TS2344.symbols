@@ -1,0 +1,41 @@
+//// [test/cases/npm_dmptranscripts_TS2344.ts] ////
+
+=== guild.d.ts ===
+export interface APIUnavailableGuild { id: string; unavailable: boolean; }
+>APIUnavailableGuild : Symbol(APIUnavailableGuild, Decl(guild.d.ts, 0, 0))
+>id : Symbol(APIUnavailableGuild.id, Decl(guild.d.ts, 0, 38))
+>unavailable : Symbol(APIUnavailableGuild.unavailable, Decl(guild.d.ts, 0, 50))
+
+export interface APIPartialGuild extends Omit<APIUnavailableGuild, 'unavailable'>, Pick<APIGuild, 'welcome_screen'> {
+>APIPartialGuild : Symbol(APIPartialGuild, Decl(guild.d.ts, 0, 74))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>APIUnavailableGuild : Symbol(APIUnavailableGuild, Decl(guild.d.ts, 0, 0))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>APIGuild : Symbol(APIGuild, Decl(guild.d.ts, 4, 1))
+
+    name: string;
+>name : Symbol(APIPartialGuild.name, Decl(guild.d.ts, 1, 117))
+
+    icon: string | null;
+>icon : Symbol(APIPartialGuild.icon, Decl(guild.d.ts, 2, 17))
+}
+export interface APIGuild extends APIPartialGuild {
+>APIGuild : Symbol(APIGuild, Decl(guild.d.ts, 4, 1))
+>APIPartialGuild : Symbol(APIPartialGuild, Decl(guild.d.ts, 0, 74))
+
+    owner: boolean;
+>owner : Symbol(APIGuild.owner, Decl(guild.d.ts, 5, 51))
+
+    welcome_screen?: { description: string };
+>welcome_screen : Symbol(APIGuild.welcome_screen, Decl(guild.d.ts, 6, 19))
+>description : Symbol(description, Decl(guild.d.ts, 7, 22))
+}
+=== invite.d.ts ===
+import type { APIGuild } from './guild';
+>APIGuild : Symbol(APIGuild, Decl(invite.d.ts, 0, 13))
+
+export declare type APIInviteGuild = Pick<APIGuild, 'id' | 'name' | 'icon' | 'owner'>;
+>APIInviteGuild : Symbol(APIInviteGuild, Decl(invite.d.ts, 0, 40))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>APIGuild : Symbol(APIGuild, Decl(invite.d.ts, 0, 13))
+

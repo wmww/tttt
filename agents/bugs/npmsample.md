@@ -136,3 +136,12 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
 ## Seed 20261100 (second box)
 - npm_ciceksepeti_cui-listbox_TS7006 (@ciceksepeti/cui-listbox, cactus-ui packages/listbox): tsgo reports TS7006 on the unannotated second parameter of a generic arrow passed to a generic `forwardRef(render: (props: P, ref: Ref<T>) => ...)` when the arrow's first parameter type is erroneous (here `Poly<C, {}>` with a value used as a type, in the real project an unresolved import); tttt gives the parameter a contextual type and reports nothing. Guess: tttt contextually types a parameter of a generic function expression through an instantiated contextual signature even when the sibling parameter is erroneous, where tsgo leaves it implicit any. Not a flip (29 vs 23 errors). [open]
 - decentraland-builder-assets: text-only; tsconfig `"diagnostics": true` makes tsgo print timing stats (`Bind time: ...`), tttt ignores the option; same 6 errors and exit code. [text]
+  element. [open]
+- **npm_dmptranscripts_TS2344** (seed 20261031, dmptranscripts@1.0.0, Deneyap-Mezunlar/dmptranscripts; tsgo 16,
+  tttt 18). discord-api-types 0.33.5's payloads/v10 and v9 guild.d.ts: `interface APIPartialGuild extends
+  Omit<APIUnavailableGuild, 'unavailable'>, Pick<APIGuild, 'welcome_screen'> { name; icon; ... }` and `interface
+  APIGuild extends APIPartialGuild { ... welcome_screen?: ... }`; invite.d.ts's `Pick<APIGuild, 'id' | 'name' | 'icon'
+  | ...>` then gets TS2344 in tttt ("'icon' is not assignable to type 'keyof APIGuild'"). A base type that reads its
+  own derived interface through Pick (keyof APIGuild while APIGuild's bases resolve): tttt's keyof APIGuild lacks the
+  members inherited from APIPartialGuild, likely a member set cached while the base list was in flight. tsgo gives no
+  error at all (no TS2310 either). Cut-down: 2 files, 10 lines. [open]

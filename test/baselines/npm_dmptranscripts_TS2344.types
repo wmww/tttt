@@ -1,0 +1,29 @@
+//// [test/cases/npm_dmptranscripts_TS2344.ts] ////
+
+=== guild.d.ts ===
+export interface APIUnavailableGuild { id: string; unavailable: boolean; }
+>id : string
+>unavailable : boolean
+
+export interface APIPartialGuild extends Omit<APIUnavailableGuild, 'unavailable'>, Pick<APIGuild, 'welcome_screen'> {
+    name: string;
+>name : string
+
+    icon: string | null;
+>icon : string | null
+}
+export interface APIGuild extends APIPartialGuild {
+    owner: boolean;
+>owner : boolean
+
+    welcome_screen?: { description: string };
+>welcome_screen : { description: string; } | undefined
+>description : string
+}
+=== invite.d.ts ===
+import type { APIGuild } from './guild';
+>APIGuild : APIGuild
+
+export declare type APIInviteGuild = Pick<APIGuild, 'id' | 'name' | 'icon' | 'owner'>;
+>APIInviteGuild : APIInviteGuild
+

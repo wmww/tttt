@@ -11,3 +11,4 @@ npm__nirholas_crypto-news_TS2345	no	@nirholas/crypto-news@1.0.1	https://github.c
 npm__tamagui_codemod-flat-values_TS2339	yes	@tamagui/codemod-flat-values@3.1.3	https://github.com/tamagui/tamagui	0	2	+TS2339 +TS2349
 rw_foldkit_TS6133	yes	foldkit (sourcesweep)	https://github.com/foldkit/foldkit	0	1	+TS6133
 npm_ciceksepeti_cui-listbox_TS7006	no	@ciceksepeti/cui-listbox@1.0.0	https://github.com/ciceksepetitech/cactus-ui	29	23	-TS7006
+npm_dmptranscripts_TS2344	no	dmptranscripts@1.0.0	https://github.com/Deneyap-Mezunlar/dmptranscripts	16	18	+TS2344
