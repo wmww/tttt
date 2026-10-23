@@ -3,3 +3,4 @@ npm__overture-stack_sqon_TS2345	no	@overture-stack/sqon@1.0.0-rc.1	https://githu
 npm__uzm_katex-woff2_TS2577	yes	@uzm/katex-woff2@0.1.0	https://github.com/KaTeX/KaTeX	0	1	+TS2577
 npm_react-smooth-scroll-hook_TS7016	no	react-smooth-scroll-hook@1.3.4	https://github.com/ron0115/react-smooth-scroll-hook	5	1	-TS7016 -TS2503
 npm__veto-party_baum__package_manager__npm_TS2339	no	@veto-party/baum__package_manager__npm@0.2.0-pre-54	https://github.com/veto-party/baum	5	106	+TS2322 +TS2339 +TS2345 +TS2353 +TS2731 +TS2769 +TS7006 +TS18046
+npm__markw65_prettier-plugin-monkeyc_TS7034	no	@markw65/prettier-plugin-monkeyc@1.0.69	https://github.com/markw65/prettier-plugin-monkeyc	13	15	+TS7034 +TS7005

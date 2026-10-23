@@ -1,0 +1,46 @@
+//// [test/cases/npm__markw65_prettier-plugin-monkeyc_TS7034.ts] ////
+
+=== npm__markw65_prettier-plugin-monkeyc_TS7034.ts ===
+// origin: npm @markw65/prettier-plugin-monkeyc@1.0.69 https://github.com/markw65/prettier-plugin-monkeyc tsconfig.bench.json seed 20261031
+// flip: no
+// src/printer.ts:74: `let rest, ...; ({ print, ..., ...rest } = estree)`: an auto-typed `let` assigned by an object rest
+// element of a destructuring assignment. tsgo takes rest's type from that assignment; tttt reports TS7034 and TS7005
+// (the array rest form below works).
+declare const src: { a: number; b: string; c: boolean };
+>src : Symbol(src, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 5, 13))
+>a : Symbol(a, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 5, 20))
+>b : Symbol(b, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 5, 31))
+>c : Symbol(c, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 5, 42))
+
+function f() {
+>f : Symbol(f, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 5, 56))
+
+  let rest, b;
+>rest : Symbol(rest, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 7, 5))
+>b : Symbol(b, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 7, 11))
+
+  ({ b, ...rest } = src);
+>b : Symbol(b, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 8, 4))
+>rest : Symbol(rest, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 7, 5))
+>src : Symbol(src, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 5, 13))
+
+  return [rest, b];
+>rest : Symbol(rest, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 7, 5))
+>b : Symbol(b, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 7, 11))
+}
+function g() {
+>g : Symbol(g, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 10, 1))
+
+  let first, others;
+>first : Symbol(first, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 12, 5))
+>others : Symbol(others, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 12, 12))
+
+  [first, ...others] = [1, 2, 3];
+>first : Symbol(first, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 12, 5))
+>others : Symbol(others, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 12, 12))
+
+  return [first, others];
+>first : Symbol(first, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 12, 5))
+>others : Symbol(others, Decl(npm__markw65_prettier-plugin-monkeyc_TS7034.ts, 12, 12))
+}
+

@@ -1,0 +1,58 @@
+//// [test/cases/npm__markw65_prettier-plugin-monkeyc_TS7034.ts] ////
+
+=== npm__markw65_prettier-plugin-monkeyc_TS7034.ts ===
+// origin: npm @markw65/prettier-plugin-monkeyc@1.0.69 https://github.com/markw65/prettier-plugin-monkeyc tsconfig.bench.json seed 20261031
+// flip: no
+// src/printer.ts:74: `let rest, ...; ({ print, ..., ...rest } = estree)`: an auto-typed `let` assigned by an object rest
+// element of a destructuring assignment. tsgo takes rest's type from that assignment; tttt reports TS7034 and TS7005
+// (the array rest form below works).
+declare const src: { a: number; b: string; c: boolean };
+>src : { a: number; b: string; c: boolean; }
+>a : number
+>b : string
+>c : boolean
+
+function f() {
+>f : () => any[]
+
+  let rest, b;
+>rest : any
+>b : any
+
+  ({ b, ...rest } = src);
+>({ b, ...rest } = src) : { a: number; b: string; c: boolean; }
+>{ b, ...rest } = src : { a: number; b: string; c: boolean; }
+>{ b, ...rest } : any
+>b : any
+>rest : any
+>src : { a: number; b: string; c: boolean; }
+
+  return [rest, b];
+>[rest, b] : any[]
+>rest : error
+>b : string
+}
+function g() {
+>g : () => (number | number[])[]
+
+  let first, others;
+>first : any
+>others : any
+
+  [first, ...others] = [1, 2, 3];
+>[first, ...others] = [1, 2, 3] : [number, number, number]
+>[first, ...others] : [any, ...any[]]
+>first : any
+>...others : any
+>others : any
+>[1, 2, 3] : [number, number, number]
+>1 : 1
+>2 : 2
+>3 : 3
+
+  return [first, others];
+>[first, others] : (number | number[])[]
+>first : number
+>others : number[]
+}
+

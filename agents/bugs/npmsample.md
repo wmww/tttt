@@ -54,3 +54,10 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   methods infers `{ [x: string]: {} }` in both, so the difference needs the real chain (597-line repro, reduce.py plus
   hand fixes for the names the cut left). Every one of the 101 extra diagnostics looks downstream of this (property
   reads on `{} & { source: string }`, `unknown` entries): one root cause until a fix shows otherwise. [open]
+- **npm__markw65_prettier-plugin-monkeyc_TS7034** (seed 20261031, @markw65/prettier-plugin-monkeyc@1.0.69,
+  markw65/prettier-plugin-monkeyc; tsgo 13, tttt 15). src/printer.ts:74 `let rest, ...; ({ print: x, ..., ...rest } =
+  estree)`: an auto-typed `let` (no initializer, no annotation) whose only assignment is an object rest element of a
+  destructuring assignment. tsgo's control flow takes the assigned type from the rest element (getAssignedType of a
+  rest property), tttt reports TS7034 at the declaration and TS7005 at the use. The array rest form `[first,
+  ...others] = [1, 2, 3]` works. Guess: tttt's flow assignment for object-pattern targets skips the spread/rest
+  element. [open]
