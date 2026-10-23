@@ -176,6 +176,17 @@ tsc keeps one local symbol per block for a name's exported and local declaration
   ...)` don't, nested targets of a reporting assignment do. tttt reports TS1255/TS1042 in the parser always (silent
   in for-of) and TS1162 (`object_check_grammar`) never in targets. Fix: move them to the checker's grammar check, run
   for a target only when the right side is contextually sensitive. Low value. [open]
+- `<Component<<T>(v: T) => void> />` (babel's type-arguments-bit-shift-left-like/jsx-opening-element): a JSX opening
+  element's type arguments want a `<` token (tsgo's tryParseTypeArguments), so tsgo parses `<Component` then recovers
+  from `<<T>(v: T) => void> />` as expressions (TS1003, TS1005, TS1434, TS1128 x2, TS1109, TS1161 plus checker errors);
+  tttt takes the `<<` as type arguments. The heritage form is fixed (ParserShared.heritage_type_args); the JSX tag's
+  type arguments need the same and then tsgo's recovery of the leftover. Known-failing test
+  ttttJsxShiftTypeArguments. [open]
+- `(a.b: any)(...args)` (babel's transform-spread call-context/flow-type-cast, a Flow cast): tttt adds TS1200 "Line
+  terminator not permitted before arrow" at the end of the file to tsgo's recovery through an arrow function missing
+  its `=>`. Known-failing test ttttFlowTypeCastRecovery. [open]
+- `interface I extends f<<T>(v: T) => void> {}`: errors match tsgo since 38655f2c9, the types baseline doesn't (tsgo
+  parses the leftover `<<T>(v` as a shift with a missing left operand, tttt drops the `<<`). [open]
 - Older parser leftovers (2026-09-29; see documentation.md "Error recovery") are history now; `scripts/syntaxstats.py --list A` (B..E, M)
   shows the current state. The framework (lists, commit points, missing nodes) is documentation.md "Error recovery". [note]
 

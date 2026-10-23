@@ -1,0 +1,45 @@
+ttttJsxShiftTypeArguments.tsx(5,2): error TS2304: Cannot find name 'Component'.
+ttttJsxShiftTypeArguments.tsx(5,11): error TS1003: Identifier expected.
+ttttJsxShiftTypeArguments.tsx(5,13): error TS2304: Cannot find name 'T'.
+ttttJsxShiftTypeArguments.tsx(5,16): error TS2304: Cannot find name 'v'.
+ttttJsxShiftTypeArguments.tsx(5,17): error TS1005: ')' expected.
+ttttJsxShiftTypeArguments.tsx(5,19): error TS1434: Unexpected keyword or identifier.
+ttttJsxShiftTypeArguments.tsx(5,19): error TS2304: Cannot find name 'T'.
+ttttJsxShiftTypeArguments.tsx(5,20): error TS1128: Declaration or statement expected.
+ttttJsxShiftTypeArguments.tsx(5,22): error TS1128: Declaration or statement expected.
+ttttJsxShiftTypeArguments.tsx(5,25): error TS2532: Object is possibly 'undefined'.
+ttttJsxShiftTypeArguments.tsx(5,29): error TS1109: Expression expected.
+ttttJsxShiftTypeArguments.tsx(5,31): error TS1161: Unterminated regular expression literal.
+
+
+==== ttttJsxShiftTypeArguments.tsx (12 errors) ====
+    // A JSX opening element's type arguments want a `<` token: `<Component<<T>(v: T) => void> />` has a `<<` (tsc's
+    // parseJsxOpeningOrSelfClosingElementOrOpeningFragment, tryParseTypeArguments), which tsgo then recovers from as a shift
+    // expression. Known failing (agents/bugs/missing_checks.md, Parser recovery). Babel's
+    // type-arguments-bit-shift-left-like/jsx-opening-element fixture
+    <Component<<T>(v: T) => void> />
+     ~~~~~~~~~
+!!! error TS2304: Cannot find name 'Component'.
+              ~~
+!!! error TS1003: Identifier expected.
+                ~
+!!! error TS2304: Cannot find name 'T'.
+                   ~
+!!! error TS2304: Cannot find name 'v'.
+                    ~
+!!! error TS1005: ')' expected.
+                      ~
+!!! error TS1434: Unexpected keyword or identifier.
+                      ~
+!!! error TS2304: Cannot find name 'T'.
+                       ~
+!!! error TS1128: Declaration or statement expected.
+                         ~~
+!!! error TS1128: Declaration or statement expected.
+                            ~~~~
+!!! error TS2532: Object is possibly 'undefined'.
+                                ~
+!!! error TS1109: Expression expected.
+                                  ~~
+!!! error TS1161: Unterminated regular expression literal.
+    
