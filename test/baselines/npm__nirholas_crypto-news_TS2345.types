@@ -1,0 +1,150 @@
+//// [test/cases/npm__nirholas_crypto-news_TS2345.ts] ////
+
+=== node_modules/@testing-library/jest-dom/types/index.d.ts ===
+
+export {};
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/@types/react-dom/index.d.ts ===
+
+export {};
+=== node_modules/@types/react/index.d.ts ===
+
+export {};
+=== node_modules/rehype-highlight/index.d.ts ===
+export { default } from "./lib/index.js";
+>default : (options?: Readonly<import("./lib/index.js").Options> | null | undefined) => (tree: Root, file: VFile) => undefined
+
+=== node_modules/rehype-highlight/lib/index.d.ts ===
+/**
+ */
+export default function rehypeHighlight(options?: Readonly<Options> | null | undefined): (tree: Root, file: VFile) => undefined;
+>rehypeHighlight : (options?: Readonly<Options> | null | undefined) => (tree: Root, file: VFile) => undefined
+>options : Readonly<Options> | null | undefined
+>tree : Root
+>file : VFile
+
+/**
+ */
+export type Options = {
+>Options : Options
+
+    /**
+     */
+    detect?: boolean | null | undefined;
+>detect : boolean | null | undefined
+
+    /**
+     */
+};
+=== node_modules/unified/index.d.ts ===
+export {unified} from './lib/index.js'
+>unified : import("./lib/index.js").Processor<undefined, undefined, undefined, undefined, undefined>
+
+/**
+ */
+=== node_modules/unified/lib/callable-instance.d.ts ===
+export const CallableInstance: new <Parameters extends unknown[], Result>(property: string | symbol) => (...parameters: Parameters) => Result;
+>CallableInstance : new <Parameters extends unknown[], Result>(property: string | symbol) => (...parameters: Parameters) => Result
+>property : string | symbol
+>parameters : Parameters
+
+=== node_modules/unified/lib/index.d.ts ===
+import {CallableInstance} from './callable-instance.js'
+>CallableInstance : new <Parameters extends unknown[], Result>(property: string | symbol) => (...parameters: Parameters) => Result
+
+/**
+ */
+export class Processor<ParseTree extends import("unist").Node | undefined = undefined, HeadTree extends import("unist").Node | undefined = undefined, TailTree extends import("unist").Node | undefined = undefined, CompileTree extends import("unist").Node | undefined = undefined, CompileResult extends CompileResults | undefined = undefined> extends CallableInstance<[], Processor<ParseTree, HeadTree, TailTree, CompileTree, CompileResult>> {
+>Processor : Processor<ParseTree, HeadTree, TailTree, CompileTree, CompileResult>
+>CallableInstance : () => Processor<ParseTree, HeadTree, TailTree, CompileTree, CompileResult>
+
+    use<Parameters_1 extends unknown[] = [], Input extends string | import("unist").Node | undefined = undefined, Output = Input>(plugin: Plugin<Parameters_1, Input, Output>, ...parameters: Parameters_1 | [boolean]): UsePlugin<ParseTree, HeadTree, TailTree, CompileTree, CompileResult, Input, Output>;
+>use : <Parameters_1 extends unknown[] = [], Input extends string | import("unist").Node | undefined = undefined, Output = Input>(plugin: Plugin<Parameters_1, Input, Output>, ...parameters: Parameters_1 | [boolean]) => UsePlugin<ParseTree, HeadTree, TailTree, CompileTree, CompileResult, Input, Output>
+>plugin : Plugin<Parameters_1, Input, Output>
+>parameters : Parameters_1 | [boolean]
+}
+export const unified: Processor<undefined, undefined, undefined, undefined, undefined>;
+>unified : Processor<undefined, undefined, undefined, undefined, undefined>
+
+export type Node = import('unist').Node;
+>Node : any
+
+export type Plugin<PluginParameters extends unknown[] = [], Input extends string | import("unist").Node | undefined = import("unist").Node, Output = Input> = ((this: Processor, ...parameters: PluginParameters) => Input extends string ? Output extends Node | undefined ? undefined | void : never : Output extends CompileResults ? Input extends Node | undefined ? undefined | void : never : Transformer<Input extends Node ? Input : Node, Output extends Node ? Output : Node> | undefined | void);
+>Plugin : Plugin<PluginParameters, Input, Output>
+>this : Processor<undefined, undefined, undefined, undefined, undefined>
+>parameters : PluginParameters
+
+/**
+ */
+=== node_modules/vitest/globals.d.ts ===
+
+export {};
+=== src/lib/docs.ts ===
+/**
+ */
+  const [{ unified }, remarkParse, remarkGfm, remarkRehype, rehypeSlug, rehypeHighlight, rehypeStringify] =
+>unified : import("../../node_modules/unified/lib").Processor<undefined, undefined, undefined, undefined, undefined>
+>remarkParse : any
+>remarkGfm : any
+>remarkRehype : any
+>rehypeSlug : any
+>rehypeHighlight : typeof import("rehype-highlight")
+>rehypeStringify : undefined
+
+    await Promise.all([
+>await Promise.all([      import('unified'),      import('remark-parse'),      import('remark-gfm'),      import('remark-rehype'),      import('rehype-slug'),      import('rehype-highlight'),    ]) : [typeof import("unified"), any, any, any, any, typeof import("rehype-highlight")]
+>Promise.all([      import('unified'),      import('remark-parse'),      import('remark-gfm'),      import('remark-rehype'),      import('rehype-slug'),      import('rehype-highlight'),    ]) : Promise<[typeof import("unified"), any, any, any, any, typeof import("rehype-highlight")]>
+>Promise.all : { <T>(values: Iterable<T | PromiseLike<T>>): Promise<Awaited<T>[]>; <T extends readonly unknown[] | []>(values: T): Promise<{ -readonly [P in keyof T]: Awaited<T[P]>; }>; }
+>Promise : PromiseConstructor
+>all : { <T>(values: Iterable<T | PromiseLike<T>>): Promise<Awaited<T>[]>; <T extends readonly unknown[] | []>(values: T): Promise<{ -readonly [P in keyof T]: Awaited<T[P]>; }>; }
+>[      import('unified'),      import('remark-parse'),      import('remark-gfm'),      import('remark-rehype'),      import('rehype-slug'),      import('rehype-highlight'),    ] : [Promise<typeof import("unified")>, Promise<any>, Promise<any>, Promise<any>, Promise<any>, Promise<typeof import("rehype-highlight")>]
+
+      import('unified'),
+>import('unified') : Promise<typeof import("unified")>
+>'unified' : "unified"
+
+      import('remark-parse'),
+>import('remark-parse') : Promise<any>
+>'remark-parse' : "remark-parse"
+
+      import('remark-gfm'),
+>import('remark-gfm') : Promise<any>
+>'remark-gfm' : "remark-gfm"
+
+      import('remark-rehype'),
+>import('remark-rehype') : Promise<any>
+>'remark-rehype' : "remark-rehype"
+
+      import('rehype-slug'),
+>import('rehype-slug') : Promise<any>
+>'rehype-slug' : "rehype-slug"
+
+      import('rehype-highlight'),
+>import('rehype-highlight') : Promise<typeof import("rehype-highlight")>
+>'rehype-highlight' : "rehype-highlight"
+
+    ]);
+  const processed = await unified()
+>processed : UsePlugin<ParseTree, HeadTree, TailTree, CompileTree, CompileResult, Input, Output>
+>await unified()    .use(rehypeHighlight.default, { detect: true, ignoreMissing: true }) : UsePlugin<ParseTree, HeadTree, TailTree, CompileTree, CompileResult, Input, Output>
+>unified()    .use(rehypeHighlight.default, { detect: true, ignoreMissing: true }) : UsePlugin<ParseTree, HeadTree, TailTree, CompileTree, CompileResult, Input, Output>
+>unified()    .use : <Parameters_1 extends unknown[] = [], Input extends string | import("unist").Node | undefined = undefined, Output = Input>(plugin: import("../../node_modules/unified/lib").Plugin<Parameters_1, Input, Output>, ...parameters: Parameters_1 | [boolean]) => UsePlugin<undefined, undefined, undefined, undefined, undefined, Input, Output>
+>unified() : import("../../node_modules/unified/lib").Processor<undefined, undefined, undefined, undefined, undefined>
+>unified : import("../../node_modules/unified/lib").Processor<undefined, undefined, undefined, undefined, undefined>
+
+    .use(rehypeHighlight.default, { detect: true, ignoreMissing: true })
+>use : <Parameters_1 extends unknown[] = [], Input extends string | import("unist").Node | undefined = undefined, Output = Input>(plugin: import("../../node_modules/unified/lib").Plugin<Parameters_1, Input, Output>, ...parameters: Parameters_1 | [boolean]) => UsePlugin<undefined, undefined, undefined, undefined, undefined, Input, Output>
+>rehypeHighlight.default : (options?: Readonly<import("../../node_modules/rehype-highlight/lib").Options> | null | undefined) => (tree: Root, file: VFile) => undefined
+>rehypeHighlight : typeof import("rehype-highlight")
+>default : (options?: Readonly<import("../../node_modules/rehype-highlight/lib").Options> | null | undefined) => (tree: Root, file: VFile) => undefined
+>{ detect: true, ignoreMissing: true } : { detect: true; ignoreMissing: true; }
+>detect : true
+>true : true
+>ignoreMissing : true
+>true : true
+
+/**
+ */
+

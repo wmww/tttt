@@ -1,0 +1,50 @@
+//// [test/cases/npm_My-first-stencil-project-001_TS2320.ts] ////
+
+=== node_modules/inner/index.d.ts ===
+interface Base1 { m(a: any): void }
+>m : (a: any) => void
+>a : any
+
+interface Assertion<T = any> extends Base1 { t: T }
+>t : T
+
+export type { Assertion };
+>Assertion : import("inner").Assertion<T>
+
+=== node_modules/outer/index.d.ts ===
+import './aug';
+export { Assertion } from 'inner';
+>Assertion : any
+
+=== node_modules/outer/aug.d.ts ===
+declare module 'inner' {
+>'inner' : typeof import("inner")
+
+    interface Assertion<T> { u: T }
+>u : T
+}
+export {};
+=== a.ts ===
+interface Base2 { m(a: string): number }
+>m : (a: string) => number
+>a : string
+
+declare module 'outer' {
+>'outer' : typeof import("outer")
+
+    interface Assertion extends Base2 {}
+}
+import type { Assertion } from 'outer';
+>Assertion : Assertion<T>
+
+declare const a: Assertion<number>;
+>a : Assertion<number>
+
+export const r = a.m("x");
+>r : void
+>a.m("x") : void
+>a.m : (a: any) => void
+>a : Assertion<number>
+>m : (a: any) => void
+>"x" : "x"
+

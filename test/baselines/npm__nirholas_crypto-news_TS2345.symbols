@@ -1,0 +1,187 @@
+//// [test/cases/npm__nirholas_crypto-news_TS2345.ts] ////
+
+=== node_modules/@testing-library/jest-dom/types/index.d.ts ===
+
+export {};
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/@types/react-dom/index.d.ts ===
+
+export {};
+=== node_modules/@types/react/index.d.ts ===
+
+export {};
+=== node_modules/rehype-highlight/index.d.ts ===
+export { default } from "./lib/index.js";
+>default : Symbol(default, Decl(index.d.ts, 0, 8))
+
+=== node_modules/rehype-highlight/lib/index.d.ts ===
+/**
+ */
+export default function rehypeHighlight(options?: Readonly<Options> | null | undefined): (tree: Root, file: VFile) => undefined;
+>rehypeHighlight : Symbol(rehypeHighlight, Decl(index.d.ts, 0, 0))
+>options : Symbol(options, Decl(index.d.ts, 2, 40))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Options : Symbol(Options, Decl(index.d.ts, 2, 128))
+>tree : Symbol(tree, Decl(index.d.ts, 2, 90))
+>Root : Symbol(Root)
+>file : Symbol(file, Decl(index.d.ts, 2, 101))
+>VFile : Symbol(VFile)
+
+/**
+ */
+export type Options = {
+>Options : Symbol(Options, Decl(index.d.ts, 2, 128))
+
+    /**
+     */
+    detect?: boolean | null | undefined;
+>detect : Symbol(detect, Decl(index.d.ts, 5, 23))
+
+    /**
+     */
+};
+=== node_modules/unified/index.d.ts ===
+export {unified} from './lib/index.js'
+>unified : Symbol(unified, Decl(index.d.ts, 0, 8))
+
+/**
+ */
+=== node_modules/unified/lib/callable-instance.d.ts ===
+export const CallableInstance: new <Parameters extends unknown[], Result>(property: string | symbol) => (...parameters: Parameters) => Result;
+>CallableInstance : Symbol(CallableInstance, Decl(callable-instance.d.ts, 0, 12))
+>Parameters : Symbol(Parameters, Decl(callable-instance.d.ts, 0, 36))
+>Result : Symbol(Result, Decl(callable-instance.d.ts, 0, 65))
+>property : Symbol(property, Decl(callable-instance.d.ts, 0, 74))
+>parameters : Symbol(parameters, Decl(callable-instance.d.ts, 0, 105))
+>Parameters : Symbol(Parameters, Decl(callable-instance.d.ts, 0, 36))
+>Result : Symbol(Result, Decl(callable-instance.d.ts, 0, 65))
+
+=== node_modules/unified/lib/index.d.ts ===
+import {CallableInstance} from './callable-instance.js'
+>CallableInstance : Symbol(CallableInstance, Decl(index.d.ts, 0, 8))
+
+/**
+ */
+export class Processor<ParseTree extends import("unist").Node | undefined = undefined, HeadTree extends import("unist").Node | undefined = undefined, TailTree extends import("unist").Node | undefined = undefined, CompileTree extends import("unist").Node | undefined = undefined, CompileResult extends CompileResults | undefined = undefined> extends CallableInstance<[], Processor<ParseTree, HeadTree, TailTree, CompileTree, CompileResult>> {
+>Processor : Symbol(Processor, Decl(index.d.ts, 0, 55))
+>ParseTree : Symbol(ParseTree, Decl(index.d.ts, 3, 23))
+>HeadTree : Symbol(HeadTree, Decl(index.d.ts, 3, 86))
+>TailTree : Symbol(TailTree, Decl(index.d.ts, 3, 149))
+>CompileTree : Symbol(CompileTree, Decl(index.d.ts, 3, 212))
+>CompileResult : Symbol(CompileResult, Decl(index.d.ts, 3, 278))
+>CompileResults : Symbol(CompileResults)
+>CallableInstance : Symbol(CallableInstance, Decl(index.d.ts, 0, 8))
+>Processor : Symbol(Processor, Decl(index.d.ts, 0, 55))
+>ParseTree : Symbol(ParseTree, Decl(index.d.ts, 3, 23))
+>HeadTree : Symbol(HeadTree, Decl(index.d.ts, 3, 86))
+>TailTree : Symbol(TailTree, Decl(index.d.ts, 3, 149))
+>CompileTree : Symbol(CompileTree, Decl(index.d.ts, 3, 212))
+>CompileResult : Symbol(CompileResult, Decl(index.d.ts, 3, 278))
+
+    use<Parameters_1 extends unknown[] = [], Input extends string | import("unist").Node | undefined = undefined, Output = Input>(plugin: Plugin<Parameters_1, Input, Output>, ...parameters: Parameters_1 | [boolean]): UsePlugin<ParseTree, HeadTree, TailTree, CompileTree, CompileResult, Input, Output>;
+>use : Symbol(Processor.use, Decl(index.d.ts, 3, 441))
+>Parameters_1 : Symbol(Parameters_1, Decl(index.d.ts, 4, 8))
+>Input : Symbol(Input, Decl(index.d.ts, 4, 44))
+>Output : Symbol(Output, Decl(index.d.ts, 4, 113))
+>Input : Symbol(Input, Decl(index.d.ts, 4, 44))
+>plugin : Symbol(plugin, Decl(index.d.ts, 4, 130))
+>Plugin : Symbol(Plugin, Decl(index.d.ts, 7, 40))
+>Parameters_1 : Symbol(Parameters_1, Decl(index.d.ts, 4, 8))
+>Input : Symbol(Input, Decl(index.d.ts, 4, 44))
+>Output : Symbol(Output, Decl(index.d.ts, 4, 113))
+>parameters : Symbol(parameters, Decl(index.d.ts, 4, 174))
+>Parameters_1 : Symbol(Parameters_1, Decl(index.d.ts, 4, 8))
+>UsePlugin : Symbol(UsePlugin)
+>ParseTree : Symbol(ParseTree, Decl(index.d.ts, 3, 23))
+>HeadTree : Symbol(HeadTree, Decl(index.d.ts, 3, 86))
+>TailTree : Symbol(TailTree, Decl(index.d.ts, 3, 149))
+>CompileTree : Symbol(CompileTree, Decl(index.d.ts, 3, 212))
+>CompileResult : Symbol(CompileResult, Decl(index.d.ts, 3, 278))
+>Input : Symbol(Input, Decl(index.d.ts, 4, 44))
+>Output : Symbol(Output, Decl(index.d.ts, 4, 113))
+}
+export const unified: Processor<undefined, undefined, undefined, undefined, undefined>;
+>unified : Symbol(unified, Decl(index.d.ts, 6, 12))
+>Processor : Symbol(Processor, Decl(index.d.ts, 0, 55))
+
+export type Node = import('unist').Node;
+>Node : Symbol(Node, Decl(index.d.ts, 6, 87))
+
+export type Plugin<PluginParameters extends unknown[] = [], Input extends string | import("unist").Node | undefined = import("unist").Node, Output = Input> = ((this: Processor, ...parameters: PluginParameters) => Input extends string ? Output extends Node | undefined ? undefined | void : never : Output extends CompileResults ? Input extends Node | undefined ? undefined | void : never : Transformer<Input extends Node ? Input : Node, Output extends Node ? Output : Node> | undefined | void);
+>Plugin : Symbol(Plugin, Decl(index.d.ts, 7, 40))
+>PluginParameters : Symbol(PluginParameters, Decl(index.d.ts, 8, 19))
+>Input : Symbol(Input, Decl(index.d.ts, 8, 59))
+>Output : Symbol(Output, Decl(index.d.ts, 8, 139))
+>Input : Symbol(Input, Decl(index.d.ts, 8, 59))
+>this : Symbol(this, Decl(index.d.ts, 8, 160))
+>Processor : Symbol(Processor, Decl(index.d.ts, 0, 55))
+>parameters : Symbol(parameters, Decl(index.d.ts, 8, 176))
+>PluginParameters : Symbol(PluginParameters, Decl(index.d.ts, 8, 19))
+>Input : Symbol(Input, Decl(index.d.ts, 8, 59))
+>Output : Symbol(Output, Decl(index.d.ts, 8, 139))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 87))
+>Output : Symbol(Output, Decl(index.d.ts, 8, 139))
+>CompileResults : Symbol(CompileResults)
+>Input : Symbol(Input, Decl(index.d.ts, 8, 59))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 87))
+>Transformer : Symbol(Transformer, Decl(lib.dom.d.ts, --, --))
+>Input : Symbol(Input, Decl(index.d.ts, 8, 59))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 87))
+>Input : Symbol(Input, Decl(index.d.ts, 8, 59))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 87))
+>Output : Symbol(Output, Decl(index.d.ts, 8, 139))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 87))
+>Output : Symbol(Output, Decl(index.d.ts, 8, 139))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 87))
+
+/**
+ */
+=== node_modules/vitest/globals.d.ts ===
+
+export {};
+=== src/lib/docs.ts ===
+/**
+ */
+  const [{ unified }, remarkParse, remarkGfm, remarkRehype, rehypeSlug, rehypeHighlight, rehypeStringify] =
+>unified : Symbol(unified, Decl(docs.ts, 2, 10))
+>remarkParse : Symbol(remarkParse, Decl(docs.ts, 2, 21))
+>remarkGfm : Symbol(remarkGfm, Decl(docs.ts, 2, 34))
+>remarkRehype : Symbol(remarkRehype, Decl(docs.ts, 2, 45))
+>rehypeSlug : Symbol(rehypeSlug, Decl(docs.ts, 2, 59))
+>rehypeHighlight : Symbol(rehypeHighlight, Decl(docs.ts, 2, 71))
+>rehypeStringify : Symbol(rehypeStringify, Decl(docs.ts, 2, 88))
+
+    await Promise.all([
+>Promise.all : Symbol(PromiseConstructor.all, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>all : Symbol(PromiseConstructor.all, Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --))
+
+      import('unified'),
+>'unified' : Symbol("unified", Decl(index.d.ts, 0, 0))
+
+      import('remark-parse'),
+      import('remark-gfm'),
+      import('remark-rehype'),
+      import('rehype-slug'),
+      import('rehype-highlight'),
+>'rehype-highlight' : Symbol("rehype-highlight", Decl(index.d.ts, 0, 0))
+
+    ]);
+  const processed = await unified()
+>processed : Symbol(processed, Decl(docs.ts, 11, 7))
+>unified()    .use : Symbol(Processor.use, Decl(index.d.ts, 3, 441))
+>unified : Symbol(unified, Decl(docs.ts, 2, 10))
+
+    .use(rehypeHighlight.default, { detect: true, ignoreMissing: true })
+>use : Symbol(Processor.use, Decl(index.d.ts, 3, 441))
+>rehypeHighlight.default : Symbol(default, Decl(index.d.ts, 0, 8))
+>rehypeHighlight : Symbol(rehypeHighlight, Decl(docs.ts, 2, 71))
+>default : Symbol(default, Decl(index.d.ts, 0, 8))
+>detect : Symbol(detect, Decl(docs.ts, 12, 35))
+>ignoreMissing : Symbol(ignoreMissing, Decl(docs.ts, 12, 49))
+
+/**
+ */
+
