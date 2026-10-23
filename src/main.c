@@ -92,8 +92,6 @@ typedef struct Options {
     const char* option_names[MAX_COMPILER_OPTION_ARGS];
     const char* option_values[MAX_COMPILER_OPTION_ARGS];
     intptr_t option_count;
-    // check_files() is rerunning the program in one checker after a limit report (program_limit_history_dependent())
-    bool limit_rerun;
 } Options;
 
 // Where a program's messages go: straight to stdout and stderr, or (-b checking projects concurrently) into buffers
@@ -1112,30 +1110,6 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             destroy_program(program, errs, false);
             defer_stat_add(DEFER_STAT_RESTARTS, 1);
             return check_files(opts, out, config, projects, project, redirects, last, counts, false, _OUTPUT_PARAM);
-        }
-        if (opts->limit_rerun && typecheck && program_recycled(program)) {
-            out_eprintln(out, "tttt: the single-checker rerun after an instantiation limit recycled its checker (memory "
-                "pool): its diagnostics may differ from one checker's");
-        }
-        // An instantiation or relation limit trips where the checker that gets there first was, and silences what
-        // the error type it caches reaches afterwards (tsc's rule, tsgo's output moves with its checker count too):
-        // with several checkers or recycled ones that's the deal's history. The program is checked again in one
-        // checker, in program order, as tsgo --singleThreaded does (the oracle): the whole output is that run's.
-        // Rare (an instantiation limit is an error): 14 of the source sweep's ~1300 configs had a TS5115 in tsgo's
-        // output on 2026-10-23
-        if (!opts->limit_rerun && typecheck && program_limit_history_dependent(program)) {
-            error_ctx_drop(&names);
-            vec_error_drop(&shown);
-            destroy_program(program, errs, false);
-            Options rerun = *opts;
-            rerun.limit_rerun = true;
-            rerun.checkers = 1;
-            // (The memory pool still applies, as to any one-checker run; a given --checker-memory doesn't: a budget
-            // recycles by design, `--checker-memory 0` after every file)
-            rerun.checker_memory_given = false;
-            if (opts->checker_memory_given) rerun.checker_memory = UINT64_MAX; // (Used when the pool is unknown)
-            if (getenv("TTTT_DEBUG_LIMIT_RERUN")) out_eprintln(out, "tttt: limit rerun in one checker");
-            return check_files(&rerun, out, config, projects, project, redirects, last, counts, defer, _OUTPUT_PARAM);
         }
         if (opts->dts_dump && typecheck) dump_declarations(opts->dts_dump, program);
         // (Global diagnostics the checking itself finds, `using`'s TS2318 for a missing Disposable, hide nothing:

@@ -6440,6 +6440,32 @@ static void graph_recheck(Program* me, ErrorCtx const* checker_errs, u32 count) 
     }
 }
 
+// What program_typecheck()'s checking made, dropped for its one-checker rerun: the checkers, their diagnostics and the
+// deal's state (the AST, the binder and the program's own diagnostics are as before checking)
+static void typecheck_pass_drop(Program* me, ErrorCtx* checker_errs, u32 count) {
+    checker_make_current(nullptr);
+    for (u32 c = 0; c < count; c++) {
+        checker_drop(my checkers[c]);
+        error_ctx_drop(&checker_errs[c]);
+        if (my declaration_errs) error_ctx_drop(&my declaration_errs[c]);
+    }
+    my checker = nullptr;
+    free(checker_errs);
+    free(my declaration_errs);
+    my declaration_errs = nullptr;
+    free(my checkers);
+    my checkers = nullptr;
+    my checker_count = 0;
+    free(my share_states);
+    free(my share_left);
+    free(my pool_held);
+    free(my share_first);
+    my share_states = nullptr;
+    my share_left = nullptr;
+    my pool_held = nullptr;
+    my share_first = nullptr;
+}
+
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     struct timespec typecheck_start;
@@ -6453,6 +6479,8 @@ void program_typecheck(Program* me) {
     // Each checker reports into its own ErrorCtx; nothing may write to the program's or make symbols meanwhile (they
     // run on threads of their own)
     u32 count = my requested_checkers ? my requested_checkers : auto_checker_count(me);
+    bool limit_rerun = false;
+again:
     my checkers = c_new_n(Checker*, count);
     my checker_count = count;
     // (Split between the checkers, but at least CHECKER_MEMORY_FLOOR each when there's that much: a fresh checker's
@@ -6568,6 +6596,24 @@ void program_typecheck(Program* me) {
             list->ahead = false;
             atomic_fetch_sub(&ahead_bytes, list->source_bytes);
         }
+    }
+    // An instantiation or relation limit reported by several checkers or a recycled one: where it trips, and what the
+    // error type it caches silences, is that history's (program_note_limit()). Checked again in one fresh checker, in
+    // program order, never recycled but by the memory pool: tsgo --singleThreaded's output, at any checker count
+    if (!limit_rerun && !my graph && program_limit_history_dependent(me)) {
+        if (getenv("TTTT_DEBUG_LIMIT_RERUN")) eprintln("tttt: limit rerun in one checker");
+        typecheck_pass_drop(me, checker_errs, count);
+        my checker = checker_new(me);
+        checker_make_current(my checker);
+        atomic_store(&my limit_reported, false);
+        my checker_memory = my checker_memory_cap = UINT64_MAX;
+        count = 1;
+        limit_rerun = true;
+        goto again;
+    }
+    if (limit_rerun && program_recycled(me)) {
+        eprintln("tttt: the one-checker rerun after an instantiation limit recycled its checker (memory pool): its "
+            "diagnostics may differ from one checker's");
     }
     unused_free_retired();
     if (debug_env.dup_census) {

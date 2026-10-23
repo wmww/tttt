@@ -219,7 +219,7 @@ bool program_defer_failed(Program const* me);
 // A checker reported an instantiation or relation limit (TS2589, TS5114, TS5115, TS2590, TS2321, TS2859; any thread).
 // Where a limit trips, and what the error type it caches silences afterwards, depends on what the checker saw before
 // (tsc's too), so after program_typecheck() with several checkers or recycled ones the output is only a single
-// checker's in program order when it is rerun so (main.c's check_files(): program_limit_history_dependent())
+// checker's in program order when it is rerun so (program_typecheck(): program_limit_history_dependent())
 void program_note_limit(Program* me);
 // After program_typecheck(): a limit was reported by a run whose history isn't one checker's in program order (more
 // than one checker, or a checker recycled)
