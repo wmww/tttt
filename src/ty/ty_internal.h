@@ -109,7 +109,6 @@ enum {
     KEY_FLOW_PARTIAL_NO_PROPERTY, // PropertyExpr -> non-null once a partial evaluation reported its property missing (flow.c)
     KEY_FUNCTION_ANCHOR, // FunctionImpl -> ContextAnchor (expr.c): where its contextual type comes from, if from a call argument
     KEY_INTERSECTION_PROP_CONTEXT, // Intersection id, key type id -> what a property's contextual type is, when its type variable members distribute (expr.c's intersection_prop_context)
-    KEY_UNDEFINED_PROPERTY, // Property name atom -> the Prop the first normalized-in optional `undefined` property of the name was made of
     KEY_SYNTHETIC_PROP_PARTS, // Prop (an intersection's property made of several, Prop.synthetic) -> SyntheticParts
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any

@@ -563,8 +563,8 @@ typedef enum PropFlags {
     // symbol (getSpreadSymbol for a property whose readonly-ness changes, getAnonymousPartialType), a namespace's export
     // through an alias (`export { f }`)
     PROP_NO_VALUE_DECLARATION = 1 << 16,
-    // The `?: undefined` member a normalized union of object literals adds (tsc's getUndefinedProperty): declared where
-    // the program-wide choice of its name says (ty_undefined_prop_choice(), members.c)
+    // The `?: undefined` member a normalized union of object literals adds (tsc's getUndefinedProperty): declared by the
+    // widening context's property of its name (members.c's widen_object_literal())
     PROP_NORMALIZED_UNDEFINED = 1 << 17,
 } PropFlags;
 
@@ -1208,9 +1208,6 @@ struct Checker {
     // everything around them settled, which decides cycles and the order types are made in (union order)
     bool defer_checks;
     struct SourceFile const* checking_file; // The file whose statements are being checked (defer_checks)
-    // The file whose diagnostics or declarations are being made (its check, its after-check pass): what a print of a
-    // `?: undefined` member is recorded for (ty_undefined_prop_observed())
-    struct SourceFile const* observing_file;
     // The materializations of deferred function bodies this incarnation reads (plan 78 stage 2: program.c's
     // deferred_bodies_acquire()), released when it is dropped. A bit per SourceFile.id of theirs, and the list
     u64* held_files; // malloc'd
@@ -1838,20 +1835,6 @@ Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, 
 Signature const* ty_single_signature_non_nullable(Checker* me, Ty const* ty, bool construct, bool allow_members);
 Ty const* ty_without_undefined(Checker* me, Ty const* ty); // Removes undefined only (tsc's getTypeWithFacts(NEUndefined))
 Ty const* ty_undefined_or_missing(Checker* me); // tsc's undefinedOrMissingType
-// tsc's undefinedProperties cache, program-wide (members.c): the `?: undefined` member a normalized union of object
-// literals adds for a name is declared by the first candidate property of that name in declaration order (program file
-// order, then position), whichever checker met it. tsc's own is per checker and first-need; one checker meets the
-// candidates in about declaration order (it checks the files in program order), which is what this reproduces without
-// depending on the checker's history. Choices are made while checking, so a print can see one a later candidate
-// replaces: prints are recorded per file (Checker.observing_file), and program_typecheck() checks those files again in a
-// fresh checker once every choice is final (undefined_props_stale())
-typedef struct UndefinedProps UndefinedProps;
-UndefinedProps* undefined_props_new(void);
-void undefined_props_drop(UndefinedProps* me);
-void ty_undefined_prop_observed(Checker* me, Prop const* prop);
-// The files that printed a member whose choice changed since (`all`: every file that printed one), each once, in no
-// order (malloc'd, count in *count); their records dropped
-struct SourceFile const** undefined_props_stale(UndefinedProps* me, bool all, u32* count);
 Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional); // tsc's removeMissingType
 // tsc's containsMissingType. Relies on TY_MISSING having the lowest id of the undefined-likes: it sorts first in a union
 bool ty_contains_missing(Checker* me, Ty const* ty);

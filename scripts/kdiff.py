@@ -2,7 +2,7 @@
 """tttt's raw CLI output at --checkers 1 against --checkers K on the sweeps' projects (plan 62).
 
 tsgo's output doesn't depend on its checker count (measured 2026-10-13 at 1/4/16 on the source sweep; its one
-exception is the `x?: undefined` property order of widened object literals, the undefinedProperties cache), so any
+exception, the `x?: undefined` property order of widened object literals, went with the 7.1.0-beta), so any
 project listed here is a tttt bug: an evaluation-order dependence (another checker sees the files in another order), a
 once-per-program diagnostic emulated per checker, or a tie the stable type order breaks by type id. The suite has its
 own form (`baseline_tests --checkers K --dump DIR` against a K=1 dump) and the corpora `scripts/checkerdiff.py -k K`.

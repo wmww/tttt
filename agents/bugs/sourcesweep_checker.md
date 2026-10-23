@@ -171,9 +171,8 @@ subtype pass). Left:
 `recycle`) lists 4 / 3363 source sweep projects, where K=16 lists 1. In each, the never-recycling run is the one that
 matches tsc's cached (`--checkers 1`) output. The default budget (256 MB) doesn't recycle any of them, so the sweeps don't show them:
 - **inbox-zero/apps/web**: the `x?: undefined` member order of widened object literals (tsgo's per-checker
-  undefinedProperties cache). **Fixed 2026-10-21**: tttt's choice is program-wide and
-  history-independent (`undefined_choice()` in members.c: first in declaration order among the candidates the checks
-  meet; files that printed a choice a later candidate replaced are checked again, `recheck_stale_undefined_props()`).
+  undefinedProperties cache). **Fixed 2026-10-21** by a program-wide history-independent choice; since the 7.1.0-beta
+  (2026-10-23) tsgo keys the cache by the widening context's property, which tttt copies (no choice, no recheck).
   The base differed in 10 lines between `--checkers 1`, 16 and `-m 0`; now none, and vscode's 4 recordings `.d.ts`
   match at the default budget. tsgo's output for inbox-zero is the same at 1 and 16 checkers (its split keeps the
   files together); where tsgo's own history shows (dts_emit.md "Member order") tttt now gives one answer whatever the split.

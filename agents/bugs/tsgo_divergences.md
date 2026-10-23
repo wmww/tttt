@@ -109,7 +109,8 @@ argued here instead. Nothing a user sees differs in any of them.
   vue's node_modules; standalone shapes (`r1.ts` in sourcesweep_checker.md) give the TS5115 but no TS7006 in tsgo
   either: which cache gets poisoned depends on the whole file's check order. Matching it is modelling a runaway's
   artifact (vision.md "Decisions", re-entrancy stage E in notes/reentrancy.md, hacks.md probe_eager_bases()): won't fix.
-- inbox-zero/apps/web choose-args.security.test.ts:334 (2026-10-20): the `to?: undefined` / `content?:
+- inbox-zero/apps/web choose-args.security.test.ts:334 (2026-10-20; the 7.1.0-beta keys the cache by the context's
+  property, recheck): the `to?: undefined` / `content?:
   undefined` order of widened object literals is tsgo's undefinedProperties cache (one symbol per name per checker,
   declared by the first property it was made for; getNamedMembers sorts by declaration). At one checker both caches
   come from chat-inbox-tools.ts:725's async return union, in tsgo (`--singleThreaded --incremental false`, logged with

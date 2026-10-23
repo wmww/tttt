@@ -3,8 +3,8 @@
 
 tsgo's output doesn't depend on its checker count, so tttt's mustn't either (plan 62): any diagnostic (header, source
 excerpt, message chain) that differs is a bug: an evaluation-order dependence, a memoised report, a tie the stable type
-order breaks by type id. The one exception tsgo shares is widened object literals' `x?: undefined` property order
-(tsgo's per-checker undefinedProperties cache; no corpus shows it). Also runs K twice and checks the outputs are
+order breaks by type id. (tsgo's one exception, widened object literals' `x?: undefined` property order, went with
+the 7.1.0-beta.) Also runs K twice and checks the outputs are
 byte-identical.
 
   scripts/checkerdiff.py                   # every corpus, K=4

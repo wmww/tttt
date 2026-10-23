@@ -181,7 +181,6 @@ typedef struct Program {
     bool shared_graph; // program_set_shared_graph()
     bool first_touch_stamps; // program_set_first_touch_stamps()
     struct TyGraph* graph; // Its checkers', while they share one (ty/graph.h)
-    UndefinedProps* undefined_props; // Its checkers' `?: undefined` members' declarations (ty.h)
     // --shared-graph on threads: the graph-wide recycle (graph_epoch_arrive()). What each share's checker holds
     // (checker_memory(), after each file), the sum's budget (UINT64_MAX: never), the barrier
     _Atomic u64* graph_held;
@@ -274,7 +273,6 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     CachedFs* cached = cached_fs_new(fs);
     Program* ret = c_new(Program, {
         .errs = errs,
-        .undefined_props = undefined_props_new(),
         .fs = cached_fs_fs(cached),
         .cached_fs = cached,
         .binder = binder_new(errs),
@@ -362,7 +360,6 @@ static void program_drop(Program* me) {
     free(my checkers);
     checker_drop(my checker);
     graph_drop(my graph);
-    undefined_props_drop(my undefined_props);
     atom_table_drop(my atoms);
     type_directory_drop(my type_directory);
     drop_source_files(me);
@@ -4638,9 +4635,6 @@ TyGraph* program_graph(Program const* me) {
     return my graph;
 }
 
-UndefinedProps* program_undefined_props(Program const* me) {
-    return my undefined_props;
-}
 
 void program_set_checkers(Program* me, u32 count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
@@ -5353,7 +5347,6 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const*
         SourceFile* source = vec_source_file_ptr_at(&my check_files, segment[i])[0];
         struct timespec file_start;
         if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
-        checker->observing_file = source;
 #ifdef TTTT_SURVIVORS
         survivors_owner = survivors_owner_of(checker, segment[i]);
 #endif
@@ -5364,7 +5357,6 @@ static void check_segment_after(Program* me, Checker* checker, u32 c, u32 const*
 #ifdef TTTT_SURVIVORS
         survivors_owner = 0;
 #endif
-        checker->observing_file = nullptr;
         if (debug_env.file_times) print_file_time("unused and declaration", file_start, source, c, "");
     }
 }
@@ -5466,7 +5458,6 @@ static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at
     source_file_check_verbatim_exports(source, checker->errs);
     checker->defer_checks = true;
     checker->checking_file = source;
-    checker->observing_file = source;
     block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
     // (What a deferred check defers joins the end of the queue)
     for (u32 d = 0; d < checker->deferred_count; d++) {
@@ -5475,7 +5466,6 @@ static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at
     checker->deferred_count = 0;
     checker->defer_checks = false;
     checker->checking_file = nullptr;
-    checker->observing_file = nullptr;
 #ifdef TTTT_SURVIVORS
     survivors_owner = 0;
 #endif
@@ -5898,7 +5888,6 @@ static void check_share(Program* me, u32 c, u32 count) {
             (source->is_js && !checked && !my emit_declarations)) continue;
         if (index++ % count != c) continue;
         if (my declaration_errs && !declaration_walk_moot(me)) {
-            checker->observing_file = source;
 #ifdef TTTT_SURVIVORS
             survivors_owner = survivors_file_start(checker, UINT32_MAX);
 #endif
@@ -5906,7 +5895,6 @@ static void check_share(Program* me, u32 c, u32 count) {
 #ifdef TTTT_SURVIVORS
             survivors_owner = 0;
 #endif
-            checker->observing_file = nullptr;
         }
     }
 #ifdef TTTT_SURVIVORS
@@ -6249,90 +6237,6 @@ static void graph_recheck(Program* me, ErrorCtx const* checker_errs, u32 count) 
     }
 }
 
-// Drops what `errors` holds about the file
-static void errors_drop_file(VecError* errors, SourceFile const* file) {
-    isize kept = 0;
-    for (isize i = 0; i < vec_error_size(errors); i++) {
-        Error* error = vec_error_at_mut(errors, i);
-        if (span_source(error->span) == file) {
-            error_drop(error);
-        } else {
-            if (kept != i) errors->data[kept] = *error;
-            kept++;
-        }
-    }
-    errors->size = kept;
-}
-
-static int compare_program_order(void const* a, void const* b) {
-    u32 x = (*(SourceFile const* const*)a)->program_order, y = (*(SourceFile const* const*)b)->program_order;
-    return x < y ? -1 : x > y;
-}
-
-// The files whose diagnostics or declarations printed a `?: undefined` member before its name's choice was final
-// (ty.h's UndefinedProps: a candidate declared earlier showed later) are checked again, in a fresh checker (outside --shared-graph's graph, whose types hold the old choices) now that the choices are final: what each file
-// reports or emits is then what any history makes (the choices are, and nothing else a file reports depends on its
-// checker's history). Rarely more than a few files (none on vscode at the defaults): a checker that checks a file
-// before the files declared before it (another checker's share, a share's costliest file first). A recheck changes a
-// choice only if a fresh check meets a candidate no check met before (one a warm checker's history skipped without
-// another check having met it: not seen); then the files that printed the old choice go again, at most MAX_ROUNDS
-// rounds, after which what's left stays as printed (history-dependent again, never seen)
-static void recheck_stale_undefined_props(Program* me, ErrorCtx* checker_errs, u32 count) {
-    enum { MAX_ROUNDS = 3 };
-    for (u32 round = 0; round < MAX_ROUNDS; round++) {
-        u32 stale_count = 0;
-        // (TTTT_DEBUG_UNDEFINED_PROPS=all: every file that printed one, once, the recheck's own oracle: the output stays)
-        char const* debug = getenv("TTTT_DEBUG_UNDEFINED_PROPS");
-        bool all = !round && debug && !strcmp(debug, "all");
-        SourceFile const** stale = undefined_props_stale(my undefined_props, all, &stale_count);
-        if (!stale_count) {
-            free(stale);
-            return;
-        }
-        qsort(stale, stale_count, sizeof(SourceFile const*), compare_program_order);
-        // (One fresh checker for the round's files, in program order: what else a file reports doesn't depend on what
-        // its checker checked before, and a checker per file would warm the libraries and the imports up again for
-        // each, ~0.2 s a file on vscode)
-        Checker* fresh = checker_new_private(me);
-        fresh->errs = &checker_errs[0];
-        checker_make_current(fresh);
-        ty_init_global_types(fresh);
-        u32* checked = c_new_n(u32, stale_count);
-        u32 checked_count = 0;
-        for (u32 i = 0; i < stale_count; i++) {
-            SourceFile* source = (SourceFile*)stale[i];
-            if (getenv("TTTT_DEBUG_UNDEFINED_PROPS")) eprintln("undefined props: checking ", source->canonical_path, " again");
-            for (u32 c = 0; c < count; c++) {
-                errors_drop_file(&checker_errs[c].errors, source);
-                if (my declaration_errs) errors_drop_file(&my declaration_errs[c].errors, source);
-            }
-            u32 at = UINT32_MAX;
-            for (u32 k = 0; k < (u32)vec_source_file_ptr_size(&my check_files) && at == UINT32_MAX; k++) {
-                if (vec_source_file_ptr_at(&my check_files, k)[0] == source) at = k;
-            }
-            if (at != UINT32_MAX) {
-                check_file(me, fresh, source, at);
-                checked[checked_count++] = at;
-            }
-        }
-        // (Then the after-check pass, like a segment's; a file that isn't checked gets the declaration walk alone)
-        check_segment_after(me, fresh, 0, checked, checked_count);
-        for (u32 i = 0; i < stale_count; i++) {
-            SourceFile* source = (SourceFile*)stale[i];
-            bool was_checked = false;
-            for (u32 k = 0; k < checked_count && !was_checked; k++) was_checked = vec_source_file_ptr_at(&my check_files, checked[k])[0] == source;
-            if (was_checked || !my declaration_errs || declaration_walk_moot(me)) continue;
-            fresh->observing_file = source;
-            declaration_diagnostics_check(source, &my declaration_errs[0], my emit_declarations);
-            fresh->observing_file = nullptr;
-        }
-        free(checked);
-        checker_make_current(nullptr);
-        checker_drop(fresh);
-        free(stale);
-    }
-}
-
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     struct timespec typecheck_start;
@@ -6463,7 +6367,6 @@ void program_typecheck(Program* me) {
         }
     }
     unused_free_retired();
-    recheck_stale_undefined_props(me, checker_errs, count);
     if (debug_env.dup_census) {
         for (u32 c = 0; c < count; c++) dup_census_add(my checkers[c], c);
         dup_census_report();

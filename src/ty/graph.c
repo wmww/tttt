@@ -122,9 +122,8 @@ static GraphClass graph_kind_class_of(u32 kind) {
     // KEY_ALIAS_MARKER says which alias instances this checker's own variance measurements made (plan 86 4f: with
     // variance groups poisoned and measured privately, a shared flag told a checker that never measured the alias that
     // an instance it met was a marker, react-navigation's spurious TS2322s at K16 T1);
-    // KEY_GENERIC_RELATION numbers relations per checker; KEY_UNDEFINED_PROPERTY is each checker's link from a name to
-    // its program-wide entry (members.c's undefined_choice(), the same for every checker); the rest is per expression,
-    // per call, flow, inference, report-once
+    // KEY_GENERIC_RELATION numbers relations per checker; the rest is per expression, per call, flow, inference,
+    // report-once
     default:
         return GRAPH_SCRATCH;
     }
@@ -987,7 +986,7 @@ static char const* kind_name(u32 kind) {
     K(KEY_ALIAS_VARIANCES) K(KEY_ALIAS_MARKER) K(KEY_CHECK_MARKER) K(KEY_CHECK_MARKER_REF) K(KEY_GENERIC_RELATION)
     K(KEY_DECL_GROUP) K(KEY_DECL_GROUP_OF) K(KEY_FUNCTION) K(KEY_ITERATION_TYPES) K(KEY_UNIQUE_SYMBOL_NAME)
     K(KEY_PRIVATE_NAME) K(KEY_PRIVATE_NAME_CLASS) K(KEY_WIDENED_NULLABLE) K(KEY_INTERSECTION_PROP_CONTEXT)
-    K(KEY_UNDEFINED_PROPERTY) K(KEY_SYNTHETIC_PROP_PARTS) K(KEY_FUNCTION_RETURN) K(KEY_UNION_PAIR)
+    K(KEY_SYNTHETIC_PROP_PARTS) K(KEY_FUNCTION_RETURN) K(KEY_UNION_PAIR)
     K(KEY_INTERSECTION_OF) K(KEY_REVERSE_MAPPED) K(KEY_UNION_KEY_NAME) K(KEY_UNION_KEY_MEMBER) K(KEY_FLOW_NOT_UNIT)
     K(KEY_EVOLVING_ARRAY) K(KEY_REDUCED_UNION) K(KEY_SIGNATURE_INSTANCE) K(KEY_SIGNATURE_TYPE)
     K(KEY_FUNCTION_FREE_PARAMS) K(KEY_FUNCTION_TYPE_MENTIONS) K(KEY_ARRAY_THIS_PROPS) K(KEY_TUPLE_NAME_ORDER)

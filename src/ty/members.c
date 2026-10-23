@@ -6485,9 +6485,6 @@ typedef struct WideningCtx {
     Prop const** props; // The properties of the siblings, the last of each name, in order of first appearance
     u32 prop_count;
     bool props_done;
-    // Where the siblings' first property is declared (prop_order_pos()'s file << 32 | offset, UINT64_MAX without one):
-    // the order tsc widens contexts in, which undefined_choice() follows
-    u64 first_pos;
 } WideningCtx;
 
 static void push_members(TyBuf* out, Ty const* ty) {
@@ -6523,15 +6520,12 @@ static TyBuf const* context_siblings(Checker* me, WideningCtx* ctx) {
 static void context_props(Checker* me, WideningCtx* ctx) {
     if (ctx->props_done) return;
     ctx->props_done = true;
-    ctx->first_pos = UINT64_MAX;
     TyBuf const* siblings = context_siblings(me, ctx);
     for (u32 i = 0; i < siblings->len; i++) {
         if (!ty_is_object_literal_without_spread(me, siblings->data[i])) continue;
         Members const* members = ty_members(me, siblings->data[i]);
         for (u32 j = 0; j < members->prop_count; j++) {
             Prop const* prop = members->props[j];
-            u32 file = 0, offset = 0;
-            if (prop_order_pos(prop, &file, &offset) && ((u64)file << 32 | offset) < ctx->first_pos) ctx->first_pos = (u64)file << 32 | offset;
             u32 k = 0;
             while (k < ctx->prop_count && ctx->props[k]->name != prop->name) k++;
             if (k == ctx->prop_count) {
@@ -6542,244 +6536,6 @@ static void context_props(Checker* me, WideningCtx* ctx) {
             ctx->props[k] = prop;
         }
     }
-}
-
-// tsc's undefinedProperties (getUndefinedProperty), program-wide (ty.h's UndefinedProps). A name's entry holds its
-// current choice, replaced (never changed) when a candidate declared earlier shows; choices live as long as the
-// program (the types made with one hold its spans)
-typedef struct UndefinedChoice {
-    // Where the context it was a candidate in starts (WideningCtx.first_pos), then where it's declared (prop_order_pos()'s
-    // file << 32 | offset, UINT64_MAX without one): see undefined_choice_first()
-    u64 context_pos;
-    u64 pos;
-    // Met only outside the files' checks (declaration emit, its diagnostics walk): any candidate a check meets comes
-    // first (see undefined_choice())
-    bool after_checks;
-    // Its item where declaration emit prints the member from it (an empty object literal, `p?: {}`: the only one whose
-    // pseudo type tsgo finds equivalent and prints otherwise than `undefined`), else null. A deferred body's file is
-    // pinned for it
-    ObjectExprItem const* item;
-    bool readonly; // (tsc's createSymbolWithType keeps CheckFlags.Readonly)
-    struct UndefinedChoice* older;
-    u32 span_count;
-    Span spans[];
-} UndefinedChoice;
-
-typedef struct UndefinedEntry {
-    Atom const* name; // (The program's atoms are every checker's)
-    _Atomic(UndefinedChoice*) choice;
-} UndefinedEntry;
-
-typedef struct UndefinedObservation {
-    SourceFile const* file;
-    UndefinedEntry const* entry;
-    char const* at; // The printed member's first declaration span's start (null without one)
-} UndefinedObservation;
-
-struct UndefinedProps {
-    pthread_mutex_t lock;
-    UndefinedEntry** slots; // Open addressing by the atom's address
-    u32 cap;
-    u32 count;
-    UndefinedObservation* observations;
-    u32 observation_count;
-    u32 observation_cap;
-};
-
-UndefinedProps* undefined_props_new(void) {
-    UndefinedProps* me = calloc(1, sizeof(UndefinedProps));
-    panic_if(!me, "out of memory");
-    pthread_mutex_init(&my lock, nullptr);
-    return me;
-}
-
-void undefined_props_drop(UndefinedProps* me) {
-    if (!me) return;
-    for (u32 i = 0; i < my cap; i++) {
-        UndefinedEntry* entry = my slots[i];
-        if (!entry) continue;
-        for (UndefinedChoice* c = atomic_load(&entry->choice); c; ) {
-            UndefinedChoice* older = c->older;
-            free(c);
-            c = older;
-        }
-        free(entry);
-    }
-    free(my slots);
-    free(my observations);
-    pthread_mutex_destroy(&my lock);
-    free(me);
-}
-
-static u32 undefined_slot(UndefinedProps const* me, Atom const* name) {
-    u64 h = (u64)(uintptr_t)name * 0x9E3779B97F4A7C15ull;
-    u32 at = (u32)(h >> 32) & (my cap - 1);
-    while (my slots[at] && my slots[at]->name != name) at = (at + 1) & (my cap - 1);
-    return at;
-}
-
-// (Under the lock)
-static UndefinedEntry* undefined_entry_locked(UndefinedProps* me, Atom const* name) {
-    if (2 * (my count + 1) > my cap) {
-        u32 old_cap = my cap;
-        UndefinedEntry** old = my slots;
-        my cap = old_cap ? 2 * old_cap : 256;
-        my slots = calloc(my cap, sizeof(UndefinedEntry*));
-        panic_if(!my slots, "out of memory");
-        for (u32 i = 0; i < old_cap; i++) if (old[i]) my slots[undefined_slot(me, old[i]->name)] = old[i];
-        free(old);
-    }
-    u32 at = undefined_slot(me, name);
-    if (!my slots[at]) {
-        UndefinedEntry* entry = calloc(1, sizeof(UndefinedEntry));
-        panic_if(!entry, "out of memory");
-        entry->name = name;
-        my slots[at] = entry;
-        my count++;
-    }
-    return my slots[at];
-}
-
-// (Through the checker's links: no lock once it met the name)
-static UndefinedEntry* undefined_entry(Checker* me, Atom const* name) {
-    void const** cached = intern_slot(me, &my links, (u64[]){ KEY_UNDEFINED_PROPERTY, (u64)(uintptr_t)name }, 2);
-    if (*cached) return (UndefinedEntry*)*cached;
-    UndefinedProps* table = program_undefined_props(my program);
-    pthread_mutex_lock(&table->lock);
-    UndefinedEntry* entry = undefined_entry_locked(table, name);
-    pthread_mutex_unlock(&table->lock);
-    intern_set(me, &my links, cached, entry);
-    return entry;
-}
-
-// Keeps a deferred body's materialization (its AST) for good: the choice holds one of its items
-static void undefined_pin_body(Span at) {
-    SourceFile const* file = span_source(at);
-    DeferredBodies* list = file ? file->deferred_bodies : nullptr;
-    if (!list) return;
-    u32 offset = (u32)(at.buf - cstr_str(&file->contents));
-    bool inside = false;
-    for (DeferredBody const* body = list->first; body && !inside; body = body->next) inside = offset >= body->open && offset < body->end;
-    if (!inside) return;
-    pthread_mutex_lock(&list->lock);
-    list->pinned = true;
-    pthread_mutex_unlock(&list->lock);
-}
-
-// Whether the choice stays first before a candidate at `pos` met in a widening context starting at `context_pos`.
-// tsc's first need in one checker that checks the files in program order and then emits them: the candidates the
-// checks meet, then those only the emit does (an unchecked file's walk, a type only a declaration needs); among them
-// the one of the context declared first (tsc widens a literal's contexts in about source order), whose candidate is its
-// last sibling with the name (getPropertiesOfContext keeps the last: hoppscotch's mock-server example, where an
-// earlier context's earlier candidate would sort `grantTypeInfo?` first), then the candidate declared first. Which
-// candidates some file's check meets doesn't depend on the checker's history (what it skips another check made before
-// it, which met it: an incarnation emits only after its checks), nor do the contexts: neither does the choice
-static bool undefined_choice_first(UndefinedChoice const* choice, bool after_checks, u64 context_pos, u64 pos) {
-    if (choice->after_checks != after_checks) return after_checks;
-    if (choice->context_pos != context_pos) return choice->context_pos < context_pos;
-    return choice->pos <= pos;
-}
-
-// The choice for `prop`'s name once `prop` is a candidate
-static UndefinedChoice const* undefined_choice(Checker* me, Prop const* prop, u64 context_pos) {
-    UndefinedEntry* entry = undefined_entry(me, prop->name);
-    u32 file = 0, offset = 0;
-    u64 pos = prop_order_pos(prop, &file, &offset) ? (u64)file << 32 | offset : UINT64_MAX;
-    bool after_checks = !my checking_file;
-    UndefinedChoice* current = atomic_load_explicit(&entry->choice, memory_order_acquire);
-    if (current && undefined_choice_first(current, after_checks, context_pos, pos)) return current;
-    // (Made outside the lock: the pseudo type asks the checker)
-    u32 count = prop->decl->decl_span_count;
-    UndefinedChoice* choice = calloc(1, sizeof(UndefinedChoice) + sizeof(Span) * (count ? count : 1));
-    panic_if(!choice, "out of memory");
-    choice->context_pos = context_pos;
-    choice->pos = pos;
-    choice->after_checks = after_checks;
-    choice->readonly = (prop->flags & PROP_READONLY) != 0;
-    choice->span_count = count;
-    if (count) memcpy(choice->spans, prop->decl->decl_spans, sizeof(Span) * count);
-    ObjectExprItem const* item = prop->decl->item;
-    if (item) {
-        Pseudo const* pseudo = pseudo_of_object_member(me, item);
-        if (pseudo && pseudo->kind == PSEUDO_OBJECT && !pseudo->count) {
-            choice->item = item;
-            undefined_pin_body(item->span);
-        }
-    }
-    UndefinedProps* table = program_undefined_props(my program);
-    pthread_mutex_lock(&table->lock);
-    current = atomic_load_explicit(&entry->choice, memory_order_acquire);
-    if (current && undefined_choice_first(current, after_checks, context_pos, pos)) {
-        pthread_mutex_unlock(&table->lock);
-        free(choice);
-        return current;
-    }
-    choice->older = current;
-    atomic_store_explicit(&entry->choice, choice, memory_order_release);
-    pthread_mutex_unlock(&table->lock);
-    return choice;
-}
-
-void ty_undefined_prop_observed(Checker* me, Prop const* prop) {
-    if (!my observing_file) return;
-    UndefinedEntry* entry = undefined_entry(me, prop->name);
-    char const* at = prop->decl->decl_span_count ? prop->decl->decl_spans[0].buf : nullptr;
-    // (Recorded whether or not a later candidate replaces the choice it prints: only the end knows)
-    UndefinedProps* table = program_undefined_props(my program);
-    pthread_mutex_lock(&table->lock);
-    UndefinedObservation* last = table->observation_count ? &table->observations[table->observation_count - 1] : nullptr;
-    if (!last || last->file != my observing_file || last->entry != entry || last->at != at) {
-        if (table->observation_count == table->observation_cap) {
-            table->observation_cap = table->observation_cap ? 2 * table->observation_cap : 64;
-            table->observations = realloc(table->observations, sizeof(UndefinedObservation) * table->observation_cap);
-            panic_if(!table->observations, "out of memory");
-        }
-        table->observations[table->observation_count++] = (UndefinedObservation){ my observing_file, entry, at };
-    }
-    pthread_mutex_unlock(&table->lock);
-}
-
-SourceFile const** undefined_props_stale(UndefinedProps* me, bool all, u32* count) {
-    *count = 0;
-    SourceFile const** files = nullptr;
-    u32 cap = 0, kept = 0;
-    pthread_mutex_lock(&my lock);
-    for (u32 i = 0; i < my observation_count; i++) {
-        UndefinedObservation o = my observations[i];
-        UndefinedChoice const* current = atomic_load_explicit(&((UndefinedEntry*)o.entry)->choice, memory_order_acquire);
-        // (Stale: printed as an older choice declares it. A member printed from elsewhere (an instantiation's copy with
-        // spans of its own) is no choice's: left alone)
-        bool stale = all;
-        if (!stale && current && o.at != (current->span_count ? current->spans[0].buf : nullptr)) {
-            for (UndefinedChoice const* c = current->older; c && !stale; c = c->older) {
-                stale = o.at == (c->span_count ? c->spans[0].buf : nullptr);
-            }
-        }
-        if (!stale) {
-            my observations[kept++] = o;
-            continue;
-        }
-        bool seen = false;
-        for (u32 j = 0; j < *count && !seen; j++) seen = files[j] == o.file;
-        if (seen) continue;
-        if (*count == cap) {
-            cap = cap ? 2 * cap : 8;
-            files = realloc(files, sizeof(SourceFile const*) * cap);
-            panic_if(!files, "out of memory");
-        }
-        files[(*count)++] = o.file;
-    }
-    my observation_count = kept;
-    // (What the stale files recorded otherwise goes too: their check is made again)
-    kept = 0;
-    for (u32 i = 0; i < my observation_count; i++) {
-        bool stale = false;
-        for (u32 j = 0; j < *count && !stale; j++) stale = files[j] == my observations[i].file;
-        if (!stale) my observations[kept++] = my observations[i];
-    }
-    my observation_count = kept;
-    pthread_mutex_unlock(&my lock);
-    return files;
 }
 
 static void widening_ctx_drop(WideningCtx* ctx) {
@@ -6834,23 +6590,29 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         for (u32 j = 0; j < members->prop_count && !has; j++) has = members->props[j]->name == prop->name;
         if (has) continue;
         // (tsc's getUndefinedProperty: undefinedOrMissingType, missing under exactOptionalPropertyTypes, an absent
-        // value which getNonMissingTypeOfSymbol drops, so `x?: never` is how it prints. Declared by the program-wide
-        // choice of the name, undefined_choice(): only its declaration shows, in the member order, the symbols baseline
-        // and declaration emit)
-        UndefinedChoice const* choice = undefined_choice(me, prop, ctx->first_pos);
+        // value which getNonMissingTypeOfSymbol drops, so `x?: never` is how it prints. A copy of the context's
+        // property, the last sibling's of the name (tsgo 7.1.0-beta keys undefinedProperties by that symbol;
+        // the 2026-10-08 nightly keyed it by name, first need per checker): its declaration shows, in the
+        // member order, the symbols baseline and declaration emit. Declaration emit prints it from that declaration
+        // where that still says its type: an empty object literal, `b?: {}` next to `b: {}`, the only one whose pseudo
+        // type tsgo finds equivalent and prints otherwise than `undefined` (serializeTypeForDeclaration of the
+        // valueDeclaration))
+        ObjectExprItem const* item = prop->decl->item;
+        if (item) {
+            Pseudo const* pseudo = pseudo_of_object_member(me, item);
+            if (!pseudo || pseudo->kind != PSEUDO_OBJECT || pseudo->count) item = nullptr;
+        }
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
-            .flags = PROP_OPTIONAL | PROP_NORMALIZED_UNDEFINED | (choice->readonly ? PROP_READONLY : 0),
+            .flags = PROP_OPTIONAL | PROP_NORMALIZED_UNDEFINED | (prop->flags & PROP_READONLY),
             .type = ty_undefined_or_missing(me),
             .name_span = prop->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop_decl_rare(prop->decl)->name_type,
-            .decl_spans = choice->span_count ? choice->spans : nullptr,
-            .decl_span_count = choice->span_count,
+            .decl_spans = prop->decl->decl_spans,
+            .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
-            // (Declared by the choice's declaration, which declaration emit prints it from where that still says its
-            // type: `b?: {}` next to `b: {}`, tsgo's serializeTypeForDeclaration of the valueDeclaration)
-            .item = choice->item,
+            .item = item,
         };
     }
     IndexInfo index[8] = {0};
