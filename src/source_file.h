@@ -456,8 +456,8 @@ void source_file_drop(SourceFile* me);
 // (SourceFile.text_mapping), 0 (out untouched) if it can't be mapped or the mapping has no terminator after it
 u32 source_text_map(csview path, cstr* out);
 void source_text_unmap(u32 id);
-// Drops every mapped text's pages from the process: they stay in the page cache, reading faults them back. After
-// names, and when a checker is recycled (what it read is mostly what it won't read again)
+// Drops every mapped text's pages from the process: they stay in the page cache, reading faults them back. When a
+// checker is recycled (what it read is mostly what it won't read again)
 void source_texts_release(void);
 // Frees the mapping bookkeeping at the end of a debug run (the mappings stay: the process is exiting), so valgrind's
 // leak check doesn't see it as possibly lost

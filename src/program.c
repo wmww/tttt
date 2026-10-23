@@ -4463,7 +4463,8 @@ static void* program_release_run(void* arg) {
     program_free_preresolved(me);
     module_resolver_forget_resolutions(my resolver);
     for (u32 i = 0; i < my reference_count && my reference_resolvers; i++) module_resolver_forget_resolutions(my reference_resolvers[i]);
-    source_texts_release();
+    // (The mapped texts' pages stay: dropping them was a madvise() per segment as the checkers started, a TLB shootdown
+    // on every CPU running one, for file pages the page cache keeps anyway: vscode's peak RSS within noise)
     return nullptr;
 }
 
