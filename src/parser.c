@@ -9695,8 +9695,8 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         ((left_and_ret->tag == EXPR_UNARY_OP && left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) ||
             left_and_ret->tag == EXPR_BINARY_OP ||
             // (A JSDoc `/** @type {T} */ (x)` is tsc's ParenthesizedExpression: its type comes before the expression)
-            (left_and_ret->tag == EXPR_AS_TYPE &&
-                span_start_ptr(left_and_ret->as_type->keyword_span) > span_start_ptr(expr_outer_span(left_and_ret))))) {
+            (left_and_ret->tag == EXPR_AS_TYPE && (left_and_ret->as_type->angle_bracket_syntax ||
+                span_start_ptr(left_and_ret->as_type->keyword_span) > span_start_ptr(expr_outer_span(left_and_ret)))))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);

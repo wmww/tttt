@@ -1,0 +1,13 @@
+ttttTypeAssertionNotAssignable.ts(5,13): error TS1005: ';' expected.
+
+
+==== ttttTypeAssertionNotAssignable.ts (1 errors) ====
+    // A type assertion `<T>x` is no left-hand side expression: `<string>foo = '100'` ends before the `=` (tsc's
+    // parseAssignmentExpressionOrHigher, isLeftHandSideExpression), TS1005 ';' expected. Babel's
+    // cast/unparenthesized-type-assertion-and-assign fixture
+    declare let foo: string;
+    <string>foo = '100';
+                ~
+!!! error TS1005: ';' expected.
+    (<string>foo) = '100';
+    
