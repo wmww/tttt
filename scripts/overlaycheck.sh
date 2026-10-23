@@ -5,6 +5,7 @@
 # checkout is never written:
 #   oracle           tttt-oracle, tttt-probe.test and tttt-test-mapper (ensure-typescript.sh's OVERLAY list,
 #                    this tree's test/oracle), compiled to /dev/null
+#   probe-copy       test/oracle/probe_test.go's copy of runSingleConfigTest (its watchdog wraps it) is the original's
 #   reentrytrace     scripts/reentrytrace.py --check (patched checker.go, relater.go)
 #   variancetrace    scripts/variancetrace.py --check (patched relater.go)
 #   tsgotrace        scripts/tsgotrace.py --check (patched ast/diagnostic.go, the hooks)
@@ -34,6 +35,15 @@ one() {  # NAME COMMAND...
 one oracle bash -c "$ENV
 cd '$TSC' && go build -overlay '$LOG/oracle-overlay.json' -o /dev/null ./cmd/tttt-oracle ./cmd/tttt-test-mapper &&
     go test -overlay '$LOG/oracle-overlay.json' -c -o /dev/null ./internal/testrunner"
+# (probe_test.go runs a copy of compiler_runner.go's runSingleConfigTest, with its watchdog: the copy must match)
+one probe-copy python3 - "$TSC/internal/testrunner/compiler_runner.go" test/oracle/probe_test.go <<'PY'
+import re, sys
+up = open(sys.argv[1]).read()
+body = re.search(r'\nfunc \(r \*CompilerBaselineRunner\) runSingleConfigTest\(.*?\n\tt\.Parallel\(\)\n(.*?)\n}\n', up, re.S).group(1)
+ours = re.search(r'// copy:begin\n(.*?)\n\t// copy:end', open(sys.argv[2]).read(), re.S).group(1)
+if body.strip() != ours.strip():
+    sys.exit('test/oracle/probe_test.go: the copy of runSingleConfigTest differs from compiler_runner.go\'s:\n' + body)
+PY
 one reentrytrace scripts/reentrytrace.py --check
 one variancetrace scripts/variancetrace.py --check
 one tsgotrace scripts/tsgotrace.py --check

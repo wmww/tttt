@@ -15,7 +15,10 @@ says where each file goes) and rebuilds both tools whenever a file here is newer
 - **The probe** (`scripts/tsgoprobe.sh DIR`): tsgo's own compiler test runner on every `DIR/tests/cases/
   {compiler,conformance}/**.ts(x)`, the baselines written to `DIR/baselines/local/SUITE`, byte for byte what the
   native suite's reference baselines are (headers say `tests/cases/SUITE/...` relative to DIR). ~40 ms a file, many
-  files per process. Used by `scripts/tscbaseline.sh`, `scripts/filetest.sh`, `scripts/mutate.py` and diffapp
+  files per process. A watchdog reports a test configuration running past `TTTT_PROBE_TIMEOUT` s (default 120) and
+  exits 3 (tsgoprobe.sh sets it aside and reruns the others), and prints progress every `TTTT_PROBE_PROGRESS`
+  (default 500) configurations; it runs a copy of compiler_runner.go's runSingleConfigTest, which
+  scripts/overlaycheck.sh checks against the original. Used by `scripts/tscbaseline.sh`, `scripts/filetest.sh`, `scripts/mutate.py` and diffapp
   (`--rerun`: again after each stdin line). Validated: 184/184 baselines of 50 random suite tests identical.
 - **tttt-oracle** (`scripts/sweep.py`'s `run_tsc`, used by sweep, sourcesweep, expecttypes, expectprobe): project
   directories on stdin, a JSON line each. Diagnostics are tsgo's command line run in-process (`-p DIR --noEmit
