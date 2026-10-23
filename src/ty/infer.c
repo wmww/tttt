@@ -1377,6 +1377,9 @@ static void const* anonymous_declaration(Ty const* ty) {
     Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
     if (root->kind != TY_ANONYMOUS || root->anonymous.applies_type_args) return nullptr;
     if (root->anonymous.node) return root->anonymous.node;
+    // (An object literal's: its symbol, which every instantiation and widening keeps, a spread's result too)
+    if (ty->anonymous.object_literal && !ty->anonymous.overload_count && ty->anonymous.literal_expr) return ty->anonymous.literal_expr;
+    if (root->anonymous.object_literal && !root->anonymous.overload_count && root->anonymous.literal_expr) return root->anonymous.literal_expr;
     return root->anonymous.function;
 }
 
