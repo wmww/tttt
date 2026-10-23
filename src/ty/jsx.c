@@ -232,8 +232,31 @@ JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, JsxElement const* element, csvi
     JsxIntrinsic ret = { .elements = ty_jsx_type(me, element, c_sv("IntrinsicElements")) };
     if (!ret.elements) return ret;
     Ty const* apparent = ty_apparent_type(me, ret.elements);
+    Atom const* atom = checker_atom(me, name);
+    // A union of element maps: the union property, when every member has it (tsc's getPropertyOfType)
+    if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
+        TyList members = apparent->composite.types;
+        TyBuf types = {0};
+        Prop const* first = nullptr;
+        bool every = members.len > 0;
+        for (u32 i = 0; i < members.len && every; i++) {
+            Ty const* member = ty_apparent_type(me, members.data[i]);
+            Prop const* prop = member->flags & TYF_OBJECT ? ty_get_object_prop(me, member, atom) : nullptr;
+            every = prop != nullptr;
+            if (prop) {
+                if (!first) first = prop;
+                ty_buf_push(&types, prop_type(me, prop));
+            }
+        }
+        if (every) {
+            ret.prop = first;
+            ret.props = ty_union(me, types.data, types.len, nullptr, (TyList){0});
+        }
+        ty_buf_drop(&types);
+        if (every) return ret;
+    }
     // (Object's members too: tsc's getIntrinsicTagSymbol asks getPropertyOfType, `<toString />` is Object's method)
-    if (apparent->flags & TYF_OBJECT) ret.prop = ty_get_object_prop(me, apparent, checker_atom(me, name));
+    if (apparent->flags & TYF_OBJECT) ret.prop = ty_get_object_prop(me, apparent, atom);
     if (ret.prop) {
         ret.props = prop_type(me, ret.prop);
         return ret;

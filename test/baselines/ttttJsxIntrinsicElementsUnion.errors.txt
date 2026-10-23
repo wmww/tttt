@@ -1,0 +1,14 @@
+ttttJsxIntrinsicElementsUnion.tsx(5,15): error TS2322: Type '3' is not assignable to type '1 | 2'.
+
+
+==== ttttJsxIntrinsicElementsUnion.tsx (1 errors) ====
+    // A union JSX.IntrinsicElements has the tag's union property when every member has it (tsc's getPropertyOfType):
+    // a tag variable of literal type "a" checks its attributes against `{ v: 1 } | { v: 2 }` (bun's 27-C14)
+    declare namespace JSX { interface Element { e: 1 } type IntrinsicElements = { a: { v: 1 } } | { a: { v: 2 } }; }
+    declare const La: "a";
+    const u = <La v={3} />;
+                  ~
+!!! error TS2322: Type '3' is not assignable to type '1 | 2'.
+!!! related TS6500 ttttJsxIntrinsicElementsUnion.tsx:3:84: The expected type comes from property 'v' which is declared here on type '{ v: 1; } | { v: 2; }'
+    const w = <La v={2} />;
+    
