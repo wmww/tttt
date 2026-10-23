@@ -5966,13 +5966,7 @@ static Ternary structured_related_members(
         }
         // The properties of the intersection as a whole too, as if not in one (tsc: IntersectionState.None): the
         // weak type and excess property checks of what they combine to
-        bool generic = false;
-        for (u32 i = 0; i < target->composite.types.len; i++) {
-            Ty const* member = target->composite.types.data[i];
-            generic |= member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED) || !(member->flags & TYF_OBJECT) ||
-                ty_members(me, member)->mapped;
-        }
-        if (result && !st->passed.target && !generic && (source->flags & TYF_OBJECT || source->kind == TY_INTERSECTION)) {
+        if (result && !st->passed.target && !ty_is_generic_object(me, target) && (source->flags & TYF_OBJECT || source->kind == TY_INTERSECTION)) {
             result &= intersection_props_related(me, st, source, target, report);
             // (And a fresh object literal's properties against the index signatures they combine to)
             if (result && ty_is_fresh_object(source) && source->kind == TY_ANONYMOUS && source->anonymous.object_literal) {

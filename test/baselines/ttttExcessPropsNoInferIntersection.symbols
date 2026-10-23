@@ -1,0 +1,66 @@
+//// [test/cases/ttttExcessPropsNoInferIntersection.ts] ////
+
+=== ttttExcessPropsNoInferIntersection.ts ===
+// An intersection target with a NoInfer member is not a generic object type (tsc's isGenericObjectType reads a
+// substitution type's base and constraint), so its combined properties are related too: the nested object literal's
+// excess property is reported. better-drizzle's `findMany<Args extends Q>(args?: Args & NoInfer<Q & ...>)`, whose
+// Args falls back to its constraint when the literal fails it
+type F = { a?: 'asc' | 'desc' };
+>F : Symbol(F, Decl(ttttExcessPropsNoInferIntersection.ts, 0, 0))
+>a : Symbol(a, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 10))
+
+type Q = { orderBy?: F | F[] };
+>Q : Symbol(Q, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 32))
+>orderBy : Symbol(orderBy, Decl(ttttExcessPropsNoInferIntersection.ts, 5, 10))
+>F : Symbol(F, Decl(ttttExcessPropsNoInferIntersection.ts, 0, 0))
+>F : Symbol(F, Decl(ttttExcessPropsNoInferIntersection.ts, 0, 0))
+
+type Q2 = { orderBy?: F };
+>Q2 : Symbol(Q2, Decl(ttttExcessPropsNoInferIntersection.ts, 5, 31))
+>orderBy : Symbol(orderBy, Decl(ttttExcessPropsNoInferIntersection.ts, 6, 11))
+>F : Symbol(F, Decl(ttttExcessPropsNoInferIntersection.ts, 0, 0))
+
+declare function find<A extends Q>(args?: A & NoInfer<Q>): void;
+>find : Symbol(find, Decl(ttttExcessPropsNoInferIntersection.ts, 6, 26))
+>A : Symbol(A, Decl(ttttExcessPropsNoInferIntersection.ts, 7, 22))
+>Q : Symbol(Q, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 32))
+>args : Symbol(args, Decl(ttttExcessPropsNoInferIntersection.ts, 7, 35))
+>A : Symbol(A, Decl(ttttExcessPropsNoInferIntersection.ts, 7, 22))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Q : Symbol(Q, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 32))
+
+find({ orderBy: { writer: { name: 'asc' } } });
+>find : Symbol(find, Decl(ttttExcessPropsNoInferIntersection.ts, 6, 26))
+>orderBy : Symbol(orderBy, Decl(ttttExcessPropsNoInferIntersection.ts, 8, 6))
+>writer : Symbol(writer, Decl(ttttExcessPropsNoInferIntersection.ts, 8, 17))
+>name : Symbol(name, Decl(ttttExcessPropsNoInferIntersection.ts, 8, 27))
+
+find({ orderBy: { a: 'asc', writer: 1 } });
+>find : Symbol(find, Decl(ttttExcessPropsNoInferIntersection.ts, 6, 26))
+>orderBy : Symbol(orderBy, Decl(ttttExcessPropsNoInferIntersection.ts, 9, 6))
+>a : Symbol(a, Decl(ttttExcessPropsNoInferIntersection.ts, 9, 17))
+>writer : Symbol(writer, Decl(ttttExcessPropsNoInferIntersection.ts, 9, 27))
+
+const s1: Q & NoInfer<Q> = { orderBy: { writer: 1 } };
+>s1 : Symbol(s1, Decl(ttttExcessPropsNoInferIntersection.ts, 10, 5))
+>Q : Symbol(Q, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 32))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Q : Symbol(Q, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 32))
+>orderBy : Symbol(orderBy, Decl(ttttExcessPropsNoInferIntersection.ts, 10, 28))
+>writer : Symbol(writer, Decl(ttttExcessPropsNoInferIntersection.ts, 10, 39))
+
+const s2: Q & NoInfer<Q2> = { orderBy: { writer: 1 } };
+>s2 : Symbol(s2, Decl(ttttExcessPropsNoInferIntersection.ts, 11, 5))
+>Q : Symbol(Q, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 32))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Q2 : Symbol(Q2, Decl(ttttExcessPropsNoInferIntersection.ts, 5, 31))
+>orderBy : Symbol(orderBy, Decl(ttttExcessPropsNoInferIntersection.ts, 11, 29))
+>writer : Symbol(writer, Decl(ttttExcessPropsNoInferIntersection.ts, 11, 40))
+
+const s3: Q & Q2 = { orderBy: { writer: 1 } };
+>s3 : Symbol(s3, Decl(ttttExcessPropsNoInferIntersection.ts, 12, 5))
+>Q : Symbol(Q, Decl(ttttExcessPropsNoInferIntersection.ts, 4, 32))
+>Q2 : Symbol(Q2, Decl(ttttExcessPropsNoInferIntersection.ts, 5, 31))
+>orderBy : Symbol(orderBy, Decl(ttttExcessPropsNoInferIntersection.ts, 12, 20))
+>writer : Symbol(writer, Decl(ttttExcessPropsNoInferIntersection.ts, 12, 31))
+

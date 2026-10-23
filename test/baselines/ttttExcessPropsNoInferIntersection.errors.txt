@@ -1,0 +1,32 @@
+ttttExcessPropsNoInferIntersection.ts(9,19): error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F[] | F'.
+ttttExcessPropsNoInferIntersection.ts(11,41): error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F[] | F'.
+ttttExcessPropsNoInferIntersection.ts(12,42): error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F | (F[] & F)'.
+ttttExcessPropsNoInferIntersection.ts(13,33): error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F | (F[] & F)'.
+
+
+==== ttttExcessPropsNoInferIntersection.ts (4 errors) ====
+    // An intersection target with a NoInfer member is not a generic object type (tsc's isGenericObjectType reads a
+    // substitution type's base and constraint), so its combined properties are related too: the nested object literal's
+    // excess property is reported. better-drizzle's `findMany<Args extends Q>(args?: Args & NoInfer<Q & ...>)`, whose
+    // Args falls back to its constraint when the literal fails it
+    type F = { a?: 'asc' | 'desc' };
+    type Q = { orderBy?: F | F[] };
+    type Q2 = { orderBy?: F };
+    declare function find<A extends Q>(args?: A & NoInfer<Q>): void;
+    find({ orderBy: { writer: { name: 'asc' } } });
+                      ~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F[] | F'.
+    find({ orderBy: { a: 'asc', writer: 1 } });
+    const s1: Q & NoInfer<Q> = { orderBy: { writer: 1 } };
+                                            ~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F[] | F'.
+!!! related TS6500 ttttExcessPropsNoInferIntersection.ts:6:12: The expected type comes from property 'orderBy' which is declared here on type 'Q & NoInfer<Q>'
+    const s2: Q & NoInfer<Q2> = { orderBy: { writer: 1 } };
+                                             ~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F | (F[] & F)'.
+!!! related TS6500 ttttExcessPropsNoInferIntersection.ts:6:12: The expected type comes from property 'orderBy' which is declared here on type 'Q & NoInfer<Q2>'
+    const s3: Q & Q2 = { orderBy: { writer: 1 } };
+                                    ~~~~~~
+!!! error TS2353: Object literal may only specify known properties, and 'writer' does not exist in type 'F | (F[] & F)'.
+!!! related TS6500 ttttExcessPropsNoInferIntersection.ts:6:12: The expected type comes from property 'orderBy' which is declared here on type 'Q & Q2'
+    
