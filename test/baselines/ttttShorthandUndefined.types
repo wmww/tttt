@@ -1,0 +1,35 @@
+//// [test/cases/ttttShorthandUndefined.ts] ////
+
+=== ttttShorthandUndefined.ts ===
+// A shorthand property `{ undefined }` takes the global undefined (tsc's resolveName finds undefinedSymbol): no
+// TS18004. openclaw's stream-payload-utils.test.ts `{ undefined, null: null, same: payload, replacement }[kind]`
+const kind = "undefined" as "undefined" | "x";
+>kind : "undefined" | "x"
+>"undefined" as "undefined" | "x" : "undefined" | "x"
+>"undefined" : "undefined"
+
+const expected = { undefined, x: 1 }[kind];
+>expected : number | undefined
+>{ undefined, x: 1 }[kind] : number | undefined
+>{ undefined, x: 1 } : { undefined: undefined; x: number; }
+>undefined : undefined
+>x : number
+>1 : 1
+>kind : "undefined" | "x"
+
+const o = { undefined };
+>o : { undefined: undefined; }
+>{ undefined } : { undefined: undefined; }
+>undefined : undefined
+
+declare let obj: { undefined: number };
+>obj : { undefined: number; }
+>undefined : number
+
+({ undefined } = obj);
+>({ undefined } = obj) : { undefined: number; }
+>{ undefined } = obj : { undefined: number; }
+>{ undefined } : { undefined: any; }
+>undefined : any
+>obj : { undefined: number; }
+

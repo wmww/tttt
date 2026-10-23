@@ -8283,7 +8283,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         // tsc's parseObjectLiteralElement: an identifier not followed by `:` is a shorthand property, whatever comes
         // next (`{ a; b }`, `{ a b }`: the list reports the missing comma)
         item.tag = OBJECT_ITEM_SHORTHAND;
-        item.value = expr_identifier(item.name_span, (IdentifierExpr){ .shorthand = true });
+        // (`{ undefined }`: the value is the global undefined, which tsc's resolveName finds as undefinedSymbol and
+        // tttt has as a literal)
+        item.value = span_equals(item.name_span, "undefined") ? expr_literal(item.name_span, value_undefined) :
+            expr_identifier(item.name_span, (IdentifierExpr){ .shorthand = true });
         if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
             // `{ a = 1 }` is only valid as a destructuring assignment target
             Anchor equals = anchor(&p);
