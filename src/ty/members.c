@@ -952,6 +952,7 @@ static void builder_add_interface_member(
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
                 // (A computed enum member name is that member, tsc's late bound nameType: keyof gives it, it prints `[E.A]`)
                 if (key && (key->flags & (TYF_NUMBER_LITERAL | TYF_ENUM_LITERAL))) prop_decl_rare_mut(me, prop->decl)->name_type = ty_regular(me, key);
+                if (key && (key->flags & TYF_UNIQUE_ES_SYMBOL) && interface_member_is_late(i)) prop_decl_rare_mut(me, prop->decl)->late_name = i->key.expr;
                 { u32 n = span_valid(i->declaration); prop_add_shared_decl_spans(me, prop, &i->declaration, n); }
                 builder_push(builder, props, prop);
             }   break;
@@ -1800,6 +1801,7 @@ static Prop* builder_add_class_prop_joined(
     prop->decl->name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
     prop->decl->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
     if (computed_key) prop->decl->name_form = ty_prop_name_form(span_sv(prop->decl->name_span), computed_key, key, false);
+    if (key && (key->flags & TYF_UNIQUE_ES_SYMBOL) && class_item_is_late(item)) prop_decl_rare_mut(me, prop->decl)->late_name = computed_key;
     prop->flags = access_prop_flags(item->access) | (class_item_is_static((ClassItem*)item) ? PROP_STATIC : 0);
     prop_add_shared_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);

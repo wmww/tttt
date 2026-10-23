@@ -1,0 +1,279 @@
+//// [test/cases/ttttDeclarationComputedNameDeclaredScope.ts] ////
+
+=== main.ts ===
+/// <reference path="ambient.ts" />
+import E = require("ev");
+>E : typeof E
+
+import { L } from "./local";
+>L : typeof L
+
+import { A, B } from "./alias";
+>A : typeof A
+>B : typeof B
+
+import N = require("ns");
+>N : typeof N
+
+import make = require("tl");
+>make : () => I
+
+import { lit } from "tl2";
+>lit : () => { [t2]: string; }
+
+import NX = require("nx");
+>NX : typeof NX
+
+export function f1() { return { ...new E() }; }
+>f1 : () => { [EventEmitter.capture]?: number; }
+>{ ...new E() } : { [EventEmitter.capture]?: number; }
+>new E() : E
+>E : typeof E
+
+export function f2() { return { ...new L() }; }
+>f2 : () => { [sym]: number; }
+>{ ...new L() } : { [sym]: number; }
+>new L() : L
+>L : typeof L
+
+export function f3() { return { ...new A() }; }
+>f3 : () => { [other]: number; }
+>{ ...new A() } : { [other]: number; }
+>new A() : A
+>A : typeof A
+
+export function f4() { return { ...new N.C() }; }
+>f4 : () => { [hidden]: number; }
+>{ ...new N.C() } : { [hidden]: number; }
+>new N.C() : N.C
+>N.C : typeof N.C
+>N : typeof N
+>C : typeof N.C
+
+export function f5(x: typeof import("imp")) { return { ...new x.Implicit() }; }
+>f5 : (x: typeof import("imp")) => { [s1]: number; }
+>x : typeof import("imp")
+>{ ...new x.Implicit() } : { [s1]: number; }
+>new x.Implicit() : import("imp").Implicit
+>x.Implicit : typeof import("imp").Implicit
+>x : typeof import("imp")
+>Implicit : typeof import("imp").Implicit
+
+export function f6() { return { ...new NX.C() }; }
+>f6 : () => { [shown]: number; }
+>{ ...new NX.C() } : { [shown]: number; }
+>new NX.C() : NX.C
+>NX.C : typeof NX.C
+>NX : typeof NX
+>C : typeof NX.C
+
+export function f7() { return { ...new B() }; }
+>f7 : () => { [Q.q]: number; }
+>{ ...new B() } : { [Q.q]: number; }
+>new B() : B
+>B : typeof B
+
+export function g1() { return { ...new G.GC() }; }
+>g1 : () => { [g]: number; }
+>{ ...new G.GC() } : { [g]: number; }
+>new G.GC() : G.GC
+>G.GC : typeof G.GC
+>G : typeof G
+>GC : typeof G.GC
+
+export function g2() { return { ...new G.GE() }; }
+>g2 : () => { [e]: number; }
+>{ ...new G.GE() } : { [e]: number; }
+>new G.GE() : G.GE
+>G.GE : typeof G.GE
+>G : typeof G
+>GE : typeof G.GE
+
+export function g3() { return { ...make() }; }
+>g3 : () => { [t]: number; }
+>{ ...make() } : { [t]: number; }
+>make() : I
+>make : () => I
+
+export function g4() { return { ...lit() }; }
+>g4 : () => { [t2]: string; }
+>{ ...lit() } : { [t2]: string; }
+>lit() : { [t2]: string; }
+>lit : () => { [t2]: string; }
+
+=== ambient.ts ===
+declare module "ev" {
+>"ev" : typeof import("ev")
+
+    class EventEmitter {
+>EventEmitter : EventEmitter
+
+        static readonly capture: unique symbol;
+>capture : unique symbol
+
+        [EventEmitter.capture]?: number;
+>[EventEmitter.capture] : number | undefined
+>EventEmitter.capture : unique symbol
+>EventEmitter : typeof EventEmitter
+>capture : unique symbol
+    }
+    export = EventEmitter;
+>EventEmitter : EventEmitter
+}
+declare module "imp" {
+>"imp" : typeof import("imp")
+
+    const s1: unique symbol;
+>s1 : unique symbol
+
+    class Implicit {
+>Implicit : Implicit
+
+        [s1]: number;
+>[s1] : number
+>s1 : unique symbol
+    }
+}
+declare module "ns" {
+>"ns" : typeof import("ns")
+
+    namespace N {
+>N : typeof N
+
+        const hidden: unique symbol;
+>hidden : unique symbol
+
+        class C { [hidden]: number; }
+>C : C
+>[hidden] : number
+>hidden : unique symbol
+    }
+    export = N;
+>N : typeof N
+}
+declare module "nx" {
+>"nx" : typeof import("nx")
+
+    namespace N {
+>N : typeof N
+
+        export const shown: unique symbol;
+>shown : unique symbol
+
+        export class C { [shown]: number; }
+>C : C
+>[shown] : number
+>shown : unique symbol
+    }
+    export = N;
+>N : typeof N
+}
+namespace G {
+>G : typeof G
+
+    const g: unique symbol = Symbol();
+>g : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+    export class GC { [g] = 1; }
+>GC : GC
+>[g] : number
+>g : unique symbol
+>1 : 1
+
+    export const e: unique symbol = Symbol();
+>e : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+    export class GE { [e] = 1; }
+>GE : GE
+>[e] : number
+>e : unique symbol
+>1 : 1
+}
+declare module "tl" {
+>"tl" : typeof import("tl")
+
+    const t: unique symbol;
+>t : unique symbol
+
+    interface I { [t]: number }
+>[t] : number
+>t : unique symbol
+
+    type Lit = { [t]: string };
+>Lit : Lit
+>[t] : string
+>t : unique symbol
+
+    function make(): I;
+>make : () => I
+
+    function lit(): Lit;
+>lit : () => Lit
+
+    export = make;
+>make : () => I
+}
+declare module "tl2" {
+>"tl2" : typeof import("tl2")
+
+    const t2: unique symbol;
+>t2 : unique symbol
+
+    type Lit = { [t2]: string };
+>Lit : Lit
+>[t2] : string
+>t2 : unique symbol
+
+    function lit(): Lit;
+>lit : () => Lit
+
+    export { lit };
+>lit : () => Lit
+}
+=== local.ts ===
+const sym: unique symbol = Symbol();
+>sym : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+export class L { [sym] = 1; }
+>L : L
+>[sym] : number
+>sym : unique symbol
+>1 : 1
+
+=== other.ts ===
+export const other: unique symbol = Symbol();
+>other : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+export namespace Q { export const q: unique symbol = Symbol(); }
+>Q : typeof Q
+>q : unique symbol
+>Symbol() : unique symbol
+>Symbol : SymbolConstructor
+
+=== alias.ts ===
+import { other, Q } from "./other";
+>other : unique symbol
+>Q : typeof Q
+
+export class A { [other] = 1; }
+>A : A
+>[other] : number
+>other : unique symbol
+>1 : 1
+
+export class B { [Q.q] = 1; }
+>B : B
+>[Q.q] : number
+>Q.q : unique symbol
+>Q : typeof Q
+>q : unique symbol
+>1 : 1
+

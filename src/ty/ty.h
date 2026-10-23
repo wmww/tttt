@@ -638,6 +638,9 @@ typedef struct PropDeclRare {
     FunctionImpl const* class_getter;
     FunctionImpl const* class_setter;
     bool class_auto_accessor; // `accessor x`: printed as a getter and a setter the same way
+    // A late bound class or type member's computed name (`[a.b]`): what its first identifier resolves to where it is
+    // written is what declaration emit tracks when it doesn't resolve where the type is printed (trackComputedName)
+    struct Expr const* late_name;
 } PropDeclRare;
 
 typedef struct PropDecl {
@@ -3201,8 +3204,10 @@ struct PseudoError;
 typedef struct DeclTracker {
     // A symbol the printer names (lookupSymbolChain's trackSymbol)
     void (*track_symbol)(struct DeclTracker* me, Symbol const* symbol, u32 meaning);
-    // The computed name (`[a.b]`, as written) of a late bound property's declaration in `file` (trackComputedName)
-    void (*track_computed_name)(struct DeclTracker* me, csview name, struct SourceFile const* file);
+    // The computed name (`[a.b]`, as written) of a late bound property's declaration in `file` (trackComputedName).
+    // `declared`: what its first identifier resolves to where it is written (null: not known), tracked when the name
+    // doesn't resolve from the declaration being emitted
+    void (*track_computed_name)(struct DeclTracker* me, csview name, struct SourceFile const* file, Symbol const* declared);
     void (*report)(struct DeclTracker* me, DeclTrackReport report, csview name);
     // A name the printer roots at `import("...")` of this file (symbolToTypeNode's import type: the specifier may only
     // reach it through a node_modules, TS2883 naming `symbol`)

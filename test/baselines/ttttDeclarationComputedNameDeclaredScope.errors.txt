@@ -1,0 +1,111 @@
+main.ts(10,17): error TS4058: Return type of exported function has or is using name 'sym' from external module "local" but cannot be named.
+main.ts(11,17): error TS4058: Return type of exported function has or is using name 'other' from external module "alias" but cannot be named.
+main.ts(12,17): error TS4058: Return type of exported function has or is using name 'hidden' from external module "ns" but cannot be named.
+main.ts(13,17): error TS4058: Return type of exported function has or is using name 's1' from external module "imp" but cannot be named.
+main.ts(14,17): error TS4058: Return type of exported function has or is using name 'shown' from external module "nx" but cannot be named.
+main.ts(15,17): error TS4058: Return type of exported function has or is using name 'Q' from external module "alias" but cannot be named.
+main.ts(16,17): error TS4060: Return type of exported function has or is using private name 'g'.
+main.ts(17,17): error TS4060: Return type of exported function has or is using private name 'e'.
+main.ts(18,17): error TS4058: Return type of exported function has or is using name 't' from external module "tl" but cannot be named.
+main.ts(19,17): error TS4058: Return type of exported function has or is using name 't2' from external module "tl2" but cannot be named.
+
+
+==== main.ts (10 errors) ====
+    /// <reference path="ambient.ts" />
+    import E = require("ev");
+    import { L } from "./local";
+    import { A, B } from "./alias";
+    import N = require("ns");
+    import make = require("tl");
+    import { lit } from "tl2";
+    import NX = require("nx");
+    export function f1() { return { ...new E() }; }
+    export function f2() { return { ...new L() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 'sym' from external module "local" but cannot be named.
+    export function f3() { return { ...new A() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 'other' from external module "alias" but cannot be named.
+    export function f4() { return { ...new N.C() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 'hidden' from external module "ns" but cannot be named.
+    export function f5(x: typeof import("imp")) { return { ...new x.Implicit() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 's1' from external module "imp" but cannot be named.
+    export function f6() { return { ...new NX.C() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 'shown' from external module "nx" but cannot be named.
+    export function f7() { return { ...new B() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 'Q' from external module "alias" but cannot be named.
+    export function g1() { return { ...new G.GC() }; }
+                    ~~
+!!! error TS4060: Return type of exported function has or is using private name 'g'.
+    export function g2() { return { ...new G.GE() }; }
+                    ~~
+!!! error TS4060: Return type of exported function has or is using private name 'e'.
+    export function g3() { return { ...make() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 't' from external module "tl" but cannot be named.
+    export function g4() { return { ...lit() }; }
+                    ~~
+!!! error TS4058: Return type of exported function has or is using name 't2' from external module "tl2" but cannot be named.
+    
+==== ambient.ts (0 errors) ====
+    declare module "ev" {
+        class EventEmitter {
+            static readonly capture: unique symbol;
+            [EventEmitter.capture]?: number;
+        }
+        export = EventEmitter;
+    }
+    declare module "imp" {
+        const s1: unique symbol;
+        class Implicit {
+            [s1]: number;
+        }
+    }
+    declare module "ns" {
+        namespace N {
+            const hidden: unique symbol;
+            class C { [hidden]: number; }
+        }
+        export = N;
+    }
+    declare module "nx" {
+        namespace N {
+            export const shown: unique symbol;
+            export class C { [shown]: number; }
+        }
+        export = N;
+    }
+    namespace G {
+        const g: unique symbol = Symbol();
+        export class GC { [g] = 1; }
+        export const e: unique symbol = Symbol();
+        export class GE { [e] = 1; }
+    }
+    declare module "tl" {
+        const t: unique symbol;
+        interface I { [t]: number }
+        type Lit = { [t]: string };
+        function make(): I;
+        function lit(): Lit;
+        export = make;
+    }
+    declare module "tl2" {
+        const t2: unique symbol;
+        type Lit = { [t2]: string };
+        function lit(): Lit;
+        export { lit };
+    }
+==== local.ts (0 errors) ====
+    const sym: unique symbol = Symbol();
+    export class L { [sym] = 1; }
+==== other.ts (0 errors) ====
+    export const other: unique symbol = Symbol();
+    export namespace Q { export const q: unique symbol = Symbol(); }
+==== alias.ts (0 errors) ====
+    import { other, Q } from "./other";
+    export class A { [other] = 1; }
+    export class B { [Q.q] = 1; }

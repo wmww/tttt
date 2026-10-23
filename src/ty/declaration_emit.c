@@ -802,8 +802,8 @@ static void track_module_file(DeclTracker* tracker, SourceFile const* target, Sy
 }
 
 // trackComputedName: the first identifier of a late bound name as resolved from here, else as resolved where the name
-// is declared (which is a module's local there, never accessible from another file)
-static void track_computed_name(DeclTracker* tracker, csview name, SourceFile const* file) {
+// is written (`declared`, null if not known: then as a local of the file it is written in)
+static void track_computed_name(DeclTracker* tracker, csview name, SourceFile const* file, Symbol const* declared) {
     Walk* me = tracker->ctx;
     char const* c = name.buf + (name.size && name.buf[0] == '[');
     char const* end = name.buf + name.size;
@@ -825,9 +825,36 @@ static void track_computed_name(DeclTracker* tracker, csview name, SourceFile co
             if (binding->tag == BINDING_IDENTIFIER && csview_equals_sv(span_sv(binding->content_span), first)) return;
         }
     }
-    Scope const* module = file && file->scope ? scope_external_module(file->scope) : nullptr;
-    if (module && module != scope_external_module(my scope)) {
-        cstr module_name = module_name_for_error(module->container, nullptr, false);
+    // (Else what it resolves to where it is written, tracked from here: a class an ambient module's `export =` names is
+    // named through the module. An export resolves to tsc's local symbol of it there (declareModuleMember's, an ambient
+    // namespace's implicit exports too) and an import to its alias, which no container has: a name of the module it is
+    // written in, an ambient one too, that can't be named; else a private name)
+    if (declared && !declared->parent && !(declared->flags & SYMBOL_ALIAS)) {
+        track_symbol(tracker, declared, SYMBOL_VALUE);
+        return;
+    }
+    Symbol const* module = nullptr;
+    for (u32 i = 0; declared && i < declared->decl_count && !module; i++) {
+        Scope const* scope = declared->decls[i].block ? scope_external_module(declared->decls[i].block) : nullptr;
+        if (scope) module = scope->container;
+    }
+    // (Not known: the module the name is written in, an ambient module's block in a script too)
+    Scope const* file_module = file && file->scope ? scope_external_module(file->scope) : nullptr;
+    if (!module && !declared && file && file->scope && !file_module) {
+        for (SymbolTable const* table = &file->scope->binder->ambient_modules; table && !module; table = table->parent) {
+            for (u32 i = 0; i < table->count && !module; i++) {
+                Symbol const* ambient = table->entries[i].symbol;
+                for (u32 j = 0; j < ambient->decl_count && !module; j++) {
+                    Span full = ambient->decls[j].full;
+                    if (full.buf && first.buf >= full.buf && first.buf < full.buf + full.size) module = ambient;
+                }
+            }
+        }
+    }
+    if (!module && file_module) module = file_module->container;
+    Scope const* here = scope_external_module(my scope);
+    if (module && (!here || module != here->container)) {
+        cstr module_name = module_name_for_error(module, nullptr, false);
         report_access(me, SYMBOL_CANNOT_BE_NAMED, first, cstr_sv(&module_name), true, span_null);
         cstr_drop(&module_name);
     } else {

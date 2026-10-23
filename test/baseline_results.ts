@@ -382,6 +382,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationComputedNameDeclaredScope': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationComputedOverloadImplementation': {
         errors: true,
         symbols: true,

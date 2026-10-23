@@ -2595,7 +2595,8 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
         (ty_expr_type(me, expr)->flags & TYF_UNIQUE_ES_SYMBOL)
     ) {
         Span name = expr_outer_span(expr);
-        d.tracker->track_computed_name(d.tracker, csview_slice(span_sv(name), 0, name.size), span_source(name));
+        d.tracker->track_computed_name(d.tracker, csview_slice(span_sv(name), 0, name.size), span_source(name),
+            leftmost->identifier.symbol);
     }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
         !name_accessible(me, d, leftmost->identifier.symbol, span_sv(leftmost->inner_span), SYMBOL_VALUE)
@@ -4769,6 +4770,31 @@ static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* 
     return true;
 }
 
+// What the first identifier of a late bound property's computed name `name` resolves to where it is written (tsc's
+// trackComputedName's fallback, resolveName at the identifier): the name's own resolution, else (a copy of the
+// property, a spread's) a lookup in the scope of the declaration of its parent (a class, an interface) that contains
+// it. Null: not known
+static Symbol const* computed_name_declared(Prop const* prop, Span name) {
+    Expr const* late = prop_decl_rare(prop->decl)->late_name;
+    if (!late && prop->decl->item) late = prop->decl->item->computed_key;
+    if (late) {
+        Expr const* leftmost = entity_leftmost(late);
+        return leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword ? leftmost->identifier.symbol : nullptr;
+    }
+    Symbol const* parent = prop->parent;
+    for (u32 i = 0; parent && i < parent->decl_count; i++) {
+        SymbolDecl const* decl = &parent->decls[i];
+        if (!decl->block || !span_contains_span(decl->full, name)) continue;
+        char const* c = name.buf + 1;
+        char const* end = name.buf + name.size;
+        while (c < end && (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\r')) c++;
+        char const* start = c;
+        while (c < end && *c != '.' && *c != ']' && *c != ' ' && *c != '[' && *c != '(') c++;
+        return c == start ? nullptr : scope_resolve(decl->block, csview_from_n(start, c - start), SYMBOL_VALUE);
+    }
+    return nullptr;
+}
+
 // Declaration emit's checks of a property it writes (createTypeNodesFromResolvedType, addPropertyToElementList).
 // Whether it is skipped
 static bool track_property(Checker* me, TyDisplay d, Prop const* prop) {
@@ -4799,7 +4825,7 @@ static bool track_property(Checker* me, TyDisplay d, Prop const* prop) {
     }
     Span name = declared->decl->name_span;
     if (span_valid(name) && name.size && name.buf[0] == '[') {
-        d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name));
+        d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name), computed_name_declared(declared, name));
     } else if (!span_valid(name) && !declared->decl->decl_span_count) {
         cstr text = ty_prop_name_cstr(me, prop->name);
         d.tracker->report(d.tracker, DECL_REPORT_NON_SERIALIZABLE, cstr_sv(&text));
@@ -5865,7 +5891,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 TyDisplay reused = reused_if(d, true);
                 if (d.tracker) {
                     Span name = expr_outer_span(component->name);
-                    d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name));
+                    Expr const* leftmost = entity_leftmost(component->name);
+                    d.tracker->track_computed_name(d.tracker, span_sv(name), span_source(name),
+                        leftmost->tag == EXPR_IDENTIFIER ? leftmost->identifier.symbol : nullptr);
                 }
                 member_begin(d);
                 // (Declaration maps: the member's node and its name's tokens keep their ranges, the type is made)
