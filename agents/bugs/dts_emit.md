@@ -42,21 +42,20 @@ size on real code, each with an example:
   undefined` members of normalized object literal unions (postiz, slate tests, excalidraw's actionElementLink, ui,
   vitest ui, vscode's terminal recordings, hoppscotch), qwik mcp `page.d.ts`, trpc next-prisma and ui
   registry-health all matched in a full dtsdiff run at 68adca3bc.
-- **Left at 68adca3bc** (full run from a worktree, 1487 / 1503; fixed since by corC: ethereumjs x2, kitajs x2,
-  golevelup hasura, telegraf, unovis vue), all checker-side or tsgo quirks:
-  - vest/packages/n4s `lazy.d.ts` (and vest): tsgo writes `arrayRules.isEmpty<Parameters<...>>` where tttt writes
-    `DropFirst<Parameters<TRules[K]>>`: vest-utils' `DropFirst` is probably unresolved and tsgo names the unknown
-    symbol through another alias that resolves to it (the unknown-symbol quirk, like feathers' NextFunction below);
-    tttt's symbol_alias_of_unknown() handles a reused node's name, not a printed type's. Unverified.
-  - feathers/packages/generators `app/index.d.ts`: `language: 'js' | 'ts'` (tttt reuses the single-quoted annotation,
-    tsgo prints the type), a duplicated `& { '@feathersjs/cli': any; }`, and comments on members tsgo drops: one
-    pinion `prompt()` inference, uninvestigated.
+- **Left at 2026-10-23** (full run from a worktree after corC's fixes: 1497 / 1503 projects, every corpus matching):
+  - feathers/packages/generators `app/index.d.ts` (and feathers): `generate`'s chain applies pinion's
+    `initializeBaseContext()` twice (strictNullChecks off). tsgo's `dependencyVersions` is
+    `DependencyVersions & { '@feathersjs/cli': any; } & { '@feathersjs/cli': any; }` (two distinct object types from
+    the two applications; tttt's are one type, deduplicated) and its `language` prints `"js" | "ts"` as a type where
+    tttt reuses the `'js' | 'ts'` annotation. Probably one cause: which instantiations make a new object literal type
+    (isTypeParameterPossiblyReferenced on the spread's trailing `{ '@feathersjs/cli': version }`, or the widened
+    copies), so the intersection property has two declarations in tsgo (no valueDeclaration, printed) and one in
+    tttt. Repro: the package's src/commons.ts and src/app/index.ts in a directory with feathers' node_modules linked
+    (connection import stubbed), compared with tsgo; cut-downs that drop the second application match.
   - kebo `models/root-store.d.ts`: mobx-state-tree's `IOptionalIType<IModelType<{...}>>` is `IOptionalIType<any,
-    [undefined]>` in tttt (a type tttt infers as any: checker).
-  - vueuse `.test/mount.d.ts`: `useInjectedSetup`'s DefineComponent with `components: Comp` prints shorter in tttt
-    (vue's component inference: checker).
-  - sequelize/packages/core `models`, babel-parser's predicate: tsgo's checker split (one matches tsgo
-    --singleThreaded), mcp-sdk/examples' hono specifier: as below.
+    [undefined]>` in tttt (the eager signature design, checker).
+  - babel-parser (one map), sequelize/packages/core `models`: tsgo's checker split (matches tsgo --singleThreaded or
+    differs between tsgo's own runs); mcp-sdk/examples' hono specifier: as below.
 - **Checker types, uninvestigated** (2026-10-15 leftovers; effect's query-repro fixed 2026-10-18 by the permissive wildcard
   fixes): excalidraw `tests/helpers/api.d.ts` (tsgo keeps `declare
   const { h }: Window & typeof globalThis;`); feathers `next?: HookContext` (tsgo names the unresolved NextFunction
