@@ -2637,7 +2637,9 @@ static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
                 ty_buf_drop(&args);
             }
             Ty const* base = ty_class_base_instance(current_checker, me);
-            if (!base) base = ty_intrinsic(current_checker, TY_ERROR);
+            // (No base type, or an error one, `extends Object.Missing`: tsc's getBaseTypes is empty and the tags aren't
+            // compared, checkClassLikeDeclaration)
+            if (!base || (base->flags & TYF_ERROR)) continue;
             matches = tag == base || (my jsdoc_extends_expression ? ty_is_related(current_checker, base, tag, TY_RELATION_ASSIGNABLE) :
                 ty_is_related(current_checker, tag, base, TY_RELATION_IDENTITY));
         }

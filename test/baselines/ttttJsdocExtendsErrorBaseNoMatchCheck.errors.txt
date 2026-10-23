@@ -1,0 +1,30 @@
+main.js(4,24): error TS2339: Property 'PureComponent' does not exist on type 'ObjectConstructor'.
+main.js(12,20): error TS8023: JSDoc '@extends Component' does not match the 'extends PureComponent' clause.
+
+
+==== react.d.ts (0 errors) ====
+    declare namespace React {
+        class Component { component: string }
+        class PureComponent { pure: string }
+    }
+    
+==== main.js (2 errors) ====
+    /**
+     * @extends {React.Component}
+     */
+    class C extends Object.PureComponent {}
+                           ~~~~~~~~~~~~~
+!!! error TS2339: Property 'PureComponent' does not exist on type 'ObjectConstructor'.
+    
+    /**
+     * @extends {React.Component}
+     */
+    class D extends React.Component {}
+    
+    /**
+     * @extends {React.Component}
+                       ~~~~~~~~~
+!!! error TS8023: JSDoc '@extends Component' does not match the 'extends PureComponent' clause.
+     */
+    class E extends React.PureComponent {}
+    
