@@ -1250,7 +1250,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_SOURCE_DIRECTIVE:
             switch (statement->source_directive->tag) {
                 case SOURCE_DIRECTIVE_REFERENCE_PATH:
-                    if (my options.no_resolve) break;
+                    if (program_options_of(me, source)->no_resolve) break;
                     if (path_is_network(cstr_sv(&statement->source_directive->path))) {
                         // (tsgo 7.1.0-beta's getSourceFileFromReference: TS5116, not looked up)
                         cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
@@ -1838,7 +1838,7 @@ static void program_queue_batch(LoadPool* pool, QueueBatch* batch) {
 // parsing, like the file's module-ness, the helpers and JSX runtime imports), so a wrong one only costs a parse.
 // Resolutions go to the shared resolver's cache, and to the file (SourceFile.preresolved), where the loader finds them
 static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile* file) {
-    if (my options.no_resolve) return;
+    if (program_options_of(me, file)->no_resolve) return;
     QueueBatch batch = {0};
     ModuleResolver* resolver = program_resolver_of(me, file);
     csview containing = program_resolution_containing(me, file);
@@ -4636,14 +4636,15 @@ void program_resolve_names(Program* me) {
     binder_check_ambient_module_exports(my binder, my errs);
     resolve_step_done("declare", &last);
 
-    if (my options.no_resolve) {
-        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-            SourceFile* source = *i;
-            if (!program_options_of(me, source)->no_resolve) continue; // (Loaded as it was added, program_add_made_source())
-            for (u32 j = 0; j < source->module_ref_count; j++) {
-                ModuleRef* ref = source->module_refs[j];
-                if ((!ref->is_declaration || source->is_module || ref->nested_in_ambient_module) && !ref->ambient_only) program_load_module_ref(me, source, ref);
-            }
+    // noResolve: the imports program_add_made_source() left, once every root is loaded. By the file's options: a
+    // referenced project's output declaration file resolves with its project's (loaded already when they don't say
+    // noResolve, whatever the program's say), and nothing is added to the program here
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        if (!program_options_of(me, source)->no_resolve) continue;
+        for (u32 j = 0; j < source->module_ref_count; j++) {
+            ModuleRef* ref = source->module_refs[j];
+            if ((!ref->is_declaration || source->is_module || ref->nested_in_ambient_module) && !ref->ambient_only) program_load_module_ref(me, source, ref);
         }
     }
 
