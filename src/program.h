@@ -144,6 +144,11 @@ void program_set_checker_memory_cap(Program* me, u64 bytes);
 // share (check_share()). UINT64_MAX, the default: the share from the start (the CLI's since 2026-10-21). Call it while
 // loading
 void program_set_checker_memory_shared(Program* me, u64 bytes);
+// The process's resident set may reach `bytes` while checking (UINT64_MAX, the default: no limit): past it, a checker
+// that holds at least as much as the average and CHECKER_POOL_MIN_HELD recycles after its file (check_share()), until
+// the process is below it again. The whole process counts (the AST, the binder, mapped text, materialized bodies), so
+// the checkers get what the program leaves. The CLI's default (main.c memory_pool_default()). Call it while loading
+void program_set_memory_pool(Program* me, u64 bytes);
 // The bytes of the files the checkers check, the default library's aside (what the default checker count follows)
 u64 program_checked_source_bytes(Program const* me);
 

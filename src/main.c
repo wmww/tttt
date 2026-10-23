@@ -68,7 +68,8 @@ typedef struct Options {
     u32 checkers; // --checkers
     u32 checker_cap; // Unless --checkers is given: default_checker_cap()
     u64 checker_memory; // --checker-memory, bytes (UINT64_MAX: off)
-    bool checker_memory_given; // Else the default total caps it (each at least 64 MB)
+    bool checker_memory_given; // Else the default: the memory pool (memory_pool), else that total caps it (each at least 64 MB)
+    u64 memory_pool; // The default's resident set bound (memory_pool_default()), 0 when unknown
     bool shared_graph; // --shared-graph
     bool first_touch_stamps; // --first-touch-stamps
     u32 threads; // --threads
@@ -849,10 +850,17 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (opts->first_touch_stamps) program_set_first_touch_stamps(program, true);
     program_set_checker_cap(program, opts->checker_cap);
     // (--expect-types reads each file's types in the checker that checked it)
-    if (!opts->expect_types) program_set_checker_memory(program, opts->checker_memory);
+    if (!opts->expect_types && opts->checker_memory_given) program_set_checker_memory(program, opts->checker_memory);
     // (No growing start, program_set_checker_memory_shared(): plan 81 stage 1's 16 MB start held vscode's peak at
     // 1.6 GB against 3.0 without it, for 6-20% more CPU; the human takes speed over memory, 2026-10-21)
-    if (!opts->expect_types && !opts->checker_memory_given) program_set_checker_memory_cap(program, opts->checker_memory);
+    if (!opts->expect_types && !opts->checker_memory_given) {
+        // The default: the memory pool (memory_pool_default()), else (unknown) the old quarter of the memory
+        if (opts->memory_pool) program_set_memory_pool(program, opts->memory_pool);
+        else {
+            program_set_checker_memory(program, opts->checker_memory);
+            program_set_checker_memory_cap(program, opts->checker_memory);
+        }
+    }
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
@@ -1562,9 +1570,11 @@ static void print_help(void) {
         "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
         "                4 threads, else 1). The output doesn't depend on it\n"
         "  --singleThreaded  one checker on one thread, one project at a time\n"
-        "  --checker-memory MB  what the checkers may hold together before each drops its types and goes on\n"
-        "                fresh (default: a quarter of the memory, at most " STRINGIFY(DEFAULT_CHECKER_MEMORY_MAX_MB) ", each\n"
-        "                at least 96 while that fits, else 64; 0: a fresh checker per file, off: never)\n"
+        "  --checker-memory MB  what the checkers' types may take together (split between them, each at least\n"
+        "                96) before each drops them and goes on fresh (0: a fresh checker per file, off: never).\n"
+        "                Default: the whole process stays below what it held at start plus 80% of the memory\n"
+        "                available then (MemAvailable, cgroup limits; TTTT_MEM_AVAILABLE_MB overrides it): past\n"
+        "                that the checkers holding the most start fresh\n"
         "  --shared-graph  the checkers share one type graph, never recycled (plan 86 stage 4; also\n"
         "                TTTT_SHARED_GRAPH=1)\n"
         "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"
@@ -1628,7 +1638,18 @@ static u32 default_checker_cap(u32 threads) {
     return cores > few ? cores : few;
 }
 
-// --checker-memory's default, bytes
+// The default memory pool (program_set_memory_pool()): what the process may reach while checking, bytes: its
+// resident set now plus 80% of what the system could still give it (memory_available_bytes(): MemAvailable, cgroup
+// limits), so that it never pushes the machine into an OOM kill of itself or anyone else but otherwise uses what is
+// free. 0 when the available memory is unknown (the quarter-of-RAM split then)
+#define MEMORY_POOL_PERCENT 80
+static u64 memory_pool_default(void) {
+    u64 available = memory_available_bytes();
+    if (!available) return 0;
+    return process_resident_bytes() + available / 100 * MEMORY_POOL_PERCENT;
+}
+
+// --checker-memory's old default, bytes (when memory_pool_default() is unknown)
 static u64 default_checker_memory(void) {
     long pages = sysconf(_SC_PHYS_PAGES), page = sysconf(_SC_PAGESIZE);
     u64 quarter = pages > 0 && page > 0 ? (u64)pages * (u64)page / 4 : (u64)DEFAULT_CHECKER_MEMORY_MIN_MB << 20;
@@ -1643,6 +1664,7 @@ static int run(int argc, const char** argv) {
     Options opts = {
         .paths = argv, .pretty = -1, .checkers = 0, .threads = cores < 1 ? 1 : (u32)cores,
         .checker_memory = default_checker_memory(),
+        .memory_pool = memory_pool_default(),
     };
     bool single_threaded = false;
     // tsc's executeCommandLine: `--build` only as the first argument (TS6369 elsewhere), and its options only with it

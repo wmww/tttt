@@ -199,6 +199,8 @@ typedef struct Program {
     u64 checker_memory; // program_set_checker_memory(), bytes: UINT64_MAX never recycles
     u64 checker_memory_cap; // program_set_checker_memory_cap(), bytes: UINT64_MAX none
     u64 checker_memory_shared; // program_set_checker_memory_shared(), bytes: UINT64_MAX none
+    u64 memory_pool; // program_set_memory_pool(), bytes of the process's resident set: UINT64_MAX none
+    _Atomic u64* pool_held; // malloc'd, per checker while typechecking under a memory pool: what it held after its last file
     u64 checker_budget; // While typechecking: what each checker may hold (checker_memory split between them)
     u64 checker_start_budget; // While typechecking: what each holds before its first recycle (check_share())
     // program_declaration_diagnostics_cli(): earlier phases reported something
@@ -285,6 +287,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .first_touch_stamps = getenv("TTTT_FIRST_TOUCH_STAMPS") && strcmp(getenv("TTTT_FIRST_TOUCH_STAMPS"), "0"),
         .checker_memory_cap = UINT64_MAX,
         .checker_memory_shared = UINT64_MAX,
+        .memory_pool = UINT64_MAX,
     });
     static atomic_uint serials;
     ret->serial = atomic_fetch_add(&serials, 1) + 1;
@@ -4659,6 +4662,10 @@ void program_set_checker_memory_cap(Program* me, u64 bytes) {
     my checker_memory_cap = bytes;
 }
 
+void program_set_memory_pool(Program* me, u64 bytes) {
+    my memory_pool = bytes;
+}
+
 void program_set_checker_memory_shared(Program* me, u64 bytes) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my checker_memory_shared = bytes;
@@ -5422,6 +5429,30 @@ static Checker* graph_fresh_worker(Program* me, Checker* checker) {
     return fresh;
 }
 
+// Below this a checker doesn't recycle for the memory pool: it would free little and rebuild its warm state
+#define CHECKER_POOL_MIN_HELD ((u64)64 << 20)
+
+// program_set_memory_pool(): whether the checker recycles after its file, the process being past the pool. The
+// checkers holding the most go first (at least the average of what each held after its last file), so the pool's
+// pressure is relieved where most can go; below the pool nobody recycles (the output doesn't depend on when)
+static bool pool_recycle_due(Program* me, Checker* checker, u32 c, u32 count) {
+    u64 held = checker_memory(checker);
+    atomic_store_explicit(&my pool_held[c], held, memory_order_relaxed);
+    if (held < CHECKER_POOL_MIN_HELD) return false;
+    u64 resident = process_resident_bytes();
+    if (!resident || resident <= my memory_pool) return false;
+    u64 sum = 0;
+    for (u32 i = 0; i < count; i++) sum += atomic_load_explicit(&my pool_held[i], memory_order_relaxed);
+    if (held * count < sum) return false;
+    if (debug_env.file_times) {
+        fprintf(stderr, "file time: pool recycle checker %u, held %llu MB, resident %llu MB of a %llu MB pool, checkers %llu MB\n",
+            c, (unsigned long long)(held >> 20), (unsigned long long)(resident >> 20),
+            (unsigned long long)(my memory_pool >> 20), (unsigned long long)(sum >> 20));
+    }
+    atomic_store_explicit(&my pool_held[c], 0, memory_order_relaxed);
+    return true;
+}
+
 // A file's check by `checker`
 static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at) {
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
@@ -5818,6 +5849,10 @@ static void check_share(Program* me, u32 c, u32 count) {
             segment_count = 0;
             checker = graph_epoch_arrive(me, checker, c, count);
             source_texts_release();
+        }
+        if (my pool_held && pool_recycle_due(me, checker, c, count)) {
+            recycle_due = true;
+            continue;
         }
         if (my checker_budget == UINT64_MAX) continue;
         u64 held = checker_memory(checker);
@@ -6367,6 +6402,10 @@ void program_typecheck(Program* me) {
     atomic_store(&my graph_leader, my graph && getenv("TTTT_GRAPH_LEAD") ? 0 : -1);
     my share_states = c_new_n(_Atomic u32, count);
     my share_left = c_new_n(_Atomic u64, count);
+    if (my memory_pool != UINT64_MAX && !my graph) {
+        my pool_held = c_new_n(_Atomic u64, count);
+        for (u32 c = 0; c < count; c++) atomic_init(&my pool_held[c], 0);
+    }
     my share_first = c_new_n(u32, count);
     deal_files(me);
     timespec_get(&my check_start, TIME_UTC);
@@ -6468,6 +6507,8 @@ void program_typecheck(Program* me) {
     }
     free(my share_states);
     free(my share_left);
+    free(my pool_held);
+    my pool_held = nullptr;
     free(my share_first);
     my share_states = nullptr;
     my share_left = nullptr;

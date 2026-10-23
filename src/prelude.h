@@ -74,6 +74,12 @@ extern DebugEnv debug_env;
 // arenas took it from 5.9 to 9.4 s (14k compaction stalls a run). So chunks are madvised only while the free blocks of
 // order >= 9 that /proc/buddyinfo listed at the first call cover them (TTTT_HUGEPAGES overrides)
 bool huge_pages_take(size_t bytes);
+// The process's resident set, bytes (/proc/self/statm; 0 if unreadable). A read of an fd kept open: cheap enough per file
+u64 process_resident_bytes(void);
+// The memory the system could give the process now, bytes: /proc/meminfo's MemAvailable, and when it runs in cgroups
+// (v2) with limits, the least that any of them still leaves (memory.max and memory.high minus memory.current, the
+// cgroup's and each ancestor's), whichever is less; TTTT_MEM_AVAILABLE_MB overrides it (testing). 0: unknown
+u64 memory_available_bytes(void);
 // A madvised chunk of `bytes` that huge_pages_take() allowed is unmapped: its blocks are free again
 void huge_pages_give(size_t bytes);
 
