@@ -18,8 +18,13 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   against `SqonNode | SqonNode[]` (SqonNode a union with zod v4's `z.infer` of a looseObject): tsgo reports TS2345 on
   the whole argument, tttt elaborates into the array literal and reports TS2322 on the element `site` (the same line;
   2 missing, 3 extra in the project). A union target containing the array type: tsgo's elaborateError doesn't descend
-  into the array literal here. Repro test/cases/npm__overture-stack_sqon_TS2345.ts (13 files, zod cut to ~40 lines; a zod-free cut didn't
-  reproduce yet). [open]
+  into the array literal here. Repro test/cases/npm__overture-stack_sqon_TS2345.ts (13 files, zod cut to ~40 lines).
+  Root cause: findMostOverlappyType's key overlap. tttt counted a tuple's "0" for the array member through its numeric
+  index signature; keyof's intersection doesn't (numeric index key: number), so the object member with a string index
+  signature is the best match, its [0] is unknown and nothing is elaborated (ttttBestMatchNumericIndexKeys). Fixed:
+  index_key_includes_name in relate.c. The repro's errors component passes; its types component still differs on
+  an import() specifier inside zod (`../core/core.cjs` where tsgo prints `../core/core.d.cts`), a separate [text]
+  bug. [fixed PENDING]
 - Seed 20261023, alex-korneyko/ngx-summernote-mod: the TS2769 elaboration of `combineLatest(requests).subscribe(
   (remotePaths: string[]) => ...)` (rxjs 6.5.3, `const requests = []` an evolving array pushed
   `Observable<string | false>` in a for-of) prints `(value: unknown[]) => void` where tsgo prints

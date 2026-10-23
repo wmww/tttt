@@ -1,0 +1,39 @@
+//// [test/cases/ttttBestMatchNumericIndexKeys.ts] ////
+
+=== ttttBestMatchNumericIndexKeys.ts ===
+// findMostOverlappyType intersects keyof the source with keyof each member: a numeric index signature's key is
+// number there, which a tuple's "0" isn't, so the array member overlaps less than an object with a string index
+// signature, which is the best match; indexing it gives unknown and the array literal isn't elaborated into:
+// TS2345 at the argument (overture-stack/sqon, npm seed 20261023)
+type SNode = { [x: string]: unknown; op?: "all" } | { [x: string]: unknown; op: "and"; content: SNode[] };
+>SNode : Symbol(SNode, Decl(ttttBestMatchNumericIndexKeys.ts, 0, 0))
+>x : Symbol(x, Decl(ttttBestMatchNumericIndexKeys.ts, 4, 16))
+>op : Symbol(op, Decl(ttttBestMatchNumericIndexKeys.ts, 4, 36))
+>x : Symbol(x, Decl(ttttBestMatchNumericIndexKeys.ts, 4, 55))
+>op : Symbol(op, Decl(ttttBestMatchNumericIndexKeys.ts, 4, 75))
+>content : Symbol(content, Decl(ttttBestMatchNumericIndexKeys.ts, 4, 86))
+>SNode : Symbol(SNode, Decl(ttttBestMatchNumericIndexKeys.ts, 0, 0))
+
+declare function or(content: SNode | SNode[]): void;
+>or : Symbol(or, Decl(ttttBestMatchNumericIndexKeys.ts, 4, 106))
+>content : Symbol(content, Decl(ttttBestMatchNumericIndexKeys.ts, 5, 20))
+>SNode : Symbol(SNode, Decl(ttttBestMatchNumericIndexKeys.ts, 0, 0))
+>SNode : Symbol(SNode, Decl(ttttBestMatchNumericIndexKeys.ts, 0, 0))
+
+const study = { op: 'in', v: 1 } as const;
+>study : Symbol(study, Decl(ttttBestMatchNumericIndexKeys.ts, 6, 5))
+>op : Symbol(op, Decl(ttttBestMatchNumericIndexKeys.ts, 6, 15))
+>v : Symbol(v, Decl(ttttBestMatchNumericIndexKeys.ts, 6, 25))
+>const : Symbol(const)
+
+const site = { op: 'in', v: 2 } as const;
+>site : Symbol(site, Decl(ttttBestMatchNumericIndexKeys.ts, 7, 5))
+>op : Symbol(op, Decl(ttttBestMatchNumericIndexKeys.ts, 7, 14))
+>v : Symbol(v, Decl(ttttBestMatchNumericIndexKeys.ts, 7, 24))
+>const : Symbol(const)
+
+or([study, site]);
+>or : Symbol(or, Decl(ttttBestMatchNumericIndexKeys.ts, 4, 106))
+>study : Symbol(study, Decl(ttttBestMatchNumericIndexKeys.ts, 6, 5))
+>site : Symbol(site, Decl(ttttBestMatchNumericIndexKeys.ts, 7, 5))
+

@@ -1,0 +1,25 @@
+ttttBestMatchNumericIndexKeys.ts(9,4): error TS2345: Argument of type '({ readonly op: "in"; readonly v: 1; } | { readonly op: "in"; readonly v: 2; })[]' is not assignable to parameter of type 'SNode[] | SNode'.
+  Type '({ readonly op: "in"; readonly v: 1; } | { readonly op: "in"; readonly v: 2; })[]' is not assignable to type 'SNode[]'.
+    Type '{ readonly op: "in"; readonly v: 1; } | { readonly op: "in"; readonly v: 2; }' is not assignable to type 'SNode'.
+      Type '{ readonly op: 'in'; readonly v: 1; }' is not assignable to type 'SNode'.
+        Property 'content' is missing in type '{ readonly op: 'in'; readonly v: 1; }' but required in type '{ [x: string]: unknown; op: "and"; content: SNode[]; }'.
+
+
+==== ttttBestMatchNumericIndexKeys.ts (1 errors) ====
+    // findMostOverlappyType intersects keyof the source with keyof each member: a numeric index signature's key is
+    // number there, which a tuple's "0" isn't, so the array member overlaps less than an object with a string index
+    // signature, which is the best match; indexing it gives unknown and the array literal isn't elaborated into:
+    // TS2345 at the argument (overture-stack/sqon, npm seed 20261023)
+    type SNode = { [x: string]: unknown; op?: "all" } | { [x: string]: unknown; op: "and"; content: SNode[] };
+    declare function or(content: SNode | SNode[]): void;
+    const study = { op: 'in', v: 1 } as const;
+    const site = { op: 'in', v: 2 } as const;
+    or([study, site]);
+       ~~~~~~~~~~~~~
+!!! error TS2345: Argument of type '({ readonly op: "in"; readonly v: 1; } | { readonly op: "in"; readonly v: 2; })[]' is not assignable to parameter of type 'SNode[] | SNode'.
+!!! error TS2345:   Type '({ readonly op: "in"; readonly v: 1; } | { readonly op: "in"; readonly v: 2; })[]' is not assignable to type 'SNode[]'.
+!!! error TS2345:     Type '{ readonly op: "in"; readonly v: 1; } | { readonly op: "in"; readonly v: 2; }' is not assignable to type 'SNode'.
+!!! error TS2345:       Type '{ readonly op: 'in'; readonly v: 1; }' is not assignable to type 'SNode'.
+!!! error TS2345:         Property 'content' is missing in type '{ readonly op: 'in'; readonly v: 1; }' but required in type '{ [x: string]: unknown; op: "and"; content: SNode[]; }'.
+!!! related TS2728 ttttBestMatchNumericIndexKeys.ts:5:88: 'content' is declared here.
+    

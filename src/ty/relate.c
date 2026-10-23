@@ -7591,6 +7591,21 @@ static bool is_array_like_type(Checker* me, Ty const* ty) {
 
 static void collect_prop_names(Checker* me, Ty const* ty, csview** names, u32* count, u32* cap, u32 depth);
 
+// Whether `keyof ty` holds the property name `name` (a string or unique symbol literal) through one of ty's index
+// signatures, as findMostOverlappyType's intersection of the two `keyof`s sees it: a numeric index signature's key is
+// `number` there, which a numeric-like name ("0") isn't (the name's applicability to it, tsc's isApplicableIndexType,
+// is the property lookup's rule, not keyof's): a tuple `[a, b]` against `Node | Node[]`, Node with a string index
+// signature, overlaps Node more than the array (overture-stack/sqon)
+static bool index_key_includes_name(Checker* me, Ty const* ty, Ty const* name) {
+    Ty const* apparent = apparent_type(me, ty);
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    Members const* members = ty_members(me, apparent);
+    for (u32 i = 0; i < members->index_count; i++) {
+        if (ty_is_related(me, name, members->index[i].key, TY_RELATION_ASSIGNABLE)) return true;
+    }
+    return false;
+}
+
 static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     if (target->kind != TY_UNION) return nullptr;
     TyList types = target->composite.types;
@@ -7676,7 +7691,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                 Atom const* name = props[p].prop->name;
                 // (Its own: `keyof` has no Object members)
                 count += find_prop_in(me, apparent_type(me, keyed), name, 0, true).found ||
-                    ty_applicable_index_info(me, keyed, ty_prop_name_literal(me, name));
+                    index_key_includes_name(me, keyed, ty_prop_name_literal(me, name));
             }
             // (The source's index signatures key the member's names they apply to: `{ [k: string]: X }` against
             // `any[] | Promise<any[]>` overlaps the array's `length`, `pop`... more than the promise's `then`...)

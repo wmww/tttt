@@ -1,0 +1,44 @@
+//// [test/cases/ttttBestMatchNumericIndexKeys.ts] ////
+
+=== ttttBestMatchNumericIndexKeys.ts ===
+// findMostOverlappyType intersects keyof the source with keyof each member: a numeric index signature's key is
+// number there, which a tuple's "0" isn't, so the array member overlaps less than an object with a string index
+// signature, which is the best match; indexing it gives unknown and the array literal isn't elaborated into:
+// TS2345 at the argument (overture-stack/sqon, npm seed 20261023)
+type SNode = { [x: string]: unknown; op?: "all" } | { [x: string]: unknown; op: "and"; content: SNode[] };
+>SNode : SNode
+>x : string
+>op : "all" | undefined
+>x : string
+>op : "and"
+>content : SNode[]
+
+declare function or(content: SNode | SNode[]): void;
+>or : (content: SNode | SNode[]) => void
+>content : SNode[] | SNode
+
+const study = { op: 'in', v: 1 } as const;
+>study : { readonly op: 'in'; readonly v: 1; }
+>{ op: 'in', v: 1 } as const : { readonly op: 'in'; readonly v: 1; }
+>{ op: 'in', v: 1 } : { readonly op: 'in'; readonly v: 1; }
+>op : "in"
+>'in' : "in"
+>v : 1
+>1 : 1
+
+const site = { op: 'in', v: 2 } as const;
+>site : { readonly op: 'in'; readonly v: 2; }
+>{ op: 'in', v: 2 } as const : { readonly op: 'in'; readonly v: 2; }
+>{ op: 'in', v: 2 } : { readonly op: 'in'; readonly v: 2; }
+>op : "in"
+>'in' : "in"
+>v : 2
+>2 : 2
+
+or([study, site]);
+>or([study, site]) : void
+>or : (content: SNode | SNode[]) => void
+>[study, site] : ({ readonly op: 'in'; readonly v: 1; } | { readonly op: 'in'; readonly v: 2; })[]
+>study : { readonly op: 'in'; readonly v: 1; }
+>site : { readonly op: 'in'; readonly v: 2; }
+
