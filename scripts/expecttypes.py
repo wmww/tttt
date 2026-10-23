@@ -21,7 +21,7 @@ import argparse, collections, concurrent.futures, gzip, json, os, re, resource, 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-import sweep  # noqa: E402
+import sweep, tttt_run  # noqa: E402
 
 DT = sweep.DT
 ORACLE = os.path.join(ROOT, 'test/sweep/DefinitelyTyped.expect.jsonl.gz')
@@ -43,21 +43,14 @@ def packages_with_assertions(filter=None):
 def run_tttt(package, asserts, timeout, mem_gb):
     """tttt's type for each asserted node: `--expect-types` reads `file line col endLine endCol` lines and prints
     `file:line:col<TAB>type` for each node it finds with that span"""
-    limit = mem_gb << 30
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as spans:
         for f, l, c, el, ec, *_ in asserts:
             spans.write(f'{f}\t{l}\t{c}\t{el}\t{ec}\n')
-    start = time.time()
-    try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--threads', '1',
-                               '--checkers', '1', '--noEmit', '--expect-types', spans.name, '-p', package], cwd=DT,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout,
-                              preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
-        code = proc.returncode
-        out, err = proc.stdout, proc.stderr
-        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
-    except subprocess.TimeoutExpired as e:
-        out, err, status = e.stdout or b'', e.stderr or b'', 'timeout'
+    r = tttt_run.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--threads', '1', '--checkers', '1',
+                      '--noEmit', '--expect-types', spans.name, '-p', package], DT, timeout=timeout, mem_gb=mem_gb,
+                     stderr=subprocess.PIPE)
+    out, err, status = r.out, r.err or b'', r.status
+    start = time.time() - r.wall
     os.unlink(spans.name)
     types = {}
     for line in out.decode(errors='replace').split('\n'):

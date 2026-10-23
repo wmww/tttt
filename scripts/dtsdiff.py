@@ -45,7 +45,7 @@ import subprocess, sys, tempfile, time, zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'scripts'))
-import realworld, sourcesweep, sweep, tscformat  # noqa: E402
+import realworld, sourcesweep, sweep, tscformat, tttt_run  # noqa: E402
 
 TSGO = os.path.join(ROOT, 'thirdparty/typescript/built/tsc')
 TTTT = os.path.join(ROOT, 'release/tttt')
@@ -203,18 +203,9 @@ def run_tttt(name, timeout, mem_gb, checkers=None):
     cwd, p = project_spec(name)
     tmp = tempfile.mkdtemp(prefix='dtsdiff-tttt-')
     out_dir, flags = overrides(os.path.join(tmp, 'out'), os.path.join(tmp, 'tsbuildinfo'))
-    limit = mem_gb << 30
-    start = time.time()
-    try:
-        k = ['--checkers', str(checkers), '--threads', str(min(checkers, 4))] if checkers else ['--threads', '1']
-        proc = subprocess.run([*SANDBOX, TTTT, '-p', p, '--pretty', 'false', *k, *flags],
-                              cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
-                              preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
-        code, out = proc.returncode, proc.stdout
-        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
-    except subprocess.TimeoutExpired as e:
-        status, out = 'timeout', e.stdout or b''
-    wall = time.time() - start
+    k = ['--checkers', str(checkers), '--threads', str(min(checkers, 4))] if checkers else ['--threads', '1']
+    r = tttt_run.run([*SANDBOX, TTTT, '-p', p, '--pretty', 'false', *k, *flags], cwd, timeout=timeout, mem_gb=mem_gb)
+    status, out, wall = r.status, r.out, r.wall
     texts = {}
     for d, _, files in os.walk(os.path.join(tmp, 'out')):
         for f in files:

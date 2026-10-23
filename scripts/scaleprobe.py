@@ -9,6 +9,7 @@ a quadratic path (agents/bugs/perf_leads.md "Scaling probes" lists what was foun
   scripts/scaleprobe.py --emit                # with declaration emit (+ declarationMap) instead of --noEmit
 """
 import argparse, os, resource, subprocess, sys, tempfile, time
+import tttt_run
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TSGO = os.path.join(ROOT, 'thirdparty/typescript/built/tsc')
@@ -76,8 +77,9 @@ SMALL = {'aliases': 4, 'cjs': 4}
 
 def run(cmd, cwd, timeout):
     start = time.time()
+    limit = tttt_run.limit_bytes(8, tttt_run.threads_of(cmd))
     proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                            preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (8 << 30, 8 << 30)))
+                            preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
     try:
         _, status, usage = os.wait4(proc.pid, 0) if timeout is None else wait(proc, timeout)
     except subprocess.TimeoutExpired:

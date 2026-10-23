@@ -32,7 +32,7 @@ at a time whatever -j (each uses every core), on a quiet machine: ~10 min for th
 """
 import argparse, concurrent.futures, gzip, json, os, re, resource, signal, socket, statistics, subprocess, sys, tempfile, time, zlib
 
-import sourcesweep
+import sourcesweep, tttt_run
 from realworld import CORPORA, BUILD_CORPORA
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +49,8 @@ def run(cmd, cwd, timeout, mem_gb, tttt=False):
     tttt: TTTT_SYNC_EXIT=1, so its CPU counts the kernel's exit teardown (the CLI otherwise leaves it to a detached
     reaper nobody's rusage counts, main.c exit_detached()), and the wall is to its last output byte (--time: there is
     always one), which is the detached exit's wall within 0.1 ms"""
-    limit = mem_gb << 30
+    # (tttt's limit scaled to its threads: tttt_run)
+    limit = tttt_run.limit_bytes(mem_gb, tttt_run.threads_of(cmd)) if tttt else mem_gb << 30
     start = time.time()
     proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             env={**os.environ, 'TTTT_SYNC_EXIT': '1'} if tttt else None,

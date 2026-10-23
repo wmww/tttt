@@ -11,7 +11,7 @@ shows up as a spurious TS2578.
   scripts/sweep.py                  # every package (~5 minutes on 4 cores)
   scripts/sweep.py -f '^react'      # the packages whose name matches
   scripts/sweep.py -k 'TS2339'      # list the packages and diagnostics whose root-cause key contains this
-  scripts/sweep.py --names spurious # the package names of a verdict (crash, timeout, spurious, missing, both, match)
+  scripts/sweep.py --names spurious # the package names of a verdict (crash, timeout, killed, spurious, missing, both, match)
   scripts/sweep.py --last ...       # reuse the last run's results (-k, --names) without running tttt again
   scripts/sweep.py --flags nuia     # every package rechecked with a flag on top of its tsconfig (plan 46): own oracle file
                               # (test/sweep/DefinitelyTyped.nuia.tsc.jsonl.gz, --tsc --flags nuia makes it)
@@ -20,7 +20,7 @@ A package that wants an older major of a dependency gets it (test/sweep_links.py
 versioned directories (types/NAME/vN) are packages of their own.
 """
 import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, threading, time
-import tscformat
+import tscformat, tttt_run
 
 
 def load_note():
@@ -123,25 +123,19 @@ def run_tsc(projects, jobs, extra=(), cwd=DT, progress=False):
 # default checker count, what users run (tsgo's output doesn't depend on its count: plan 62); one thread, so -j still
 # counts processes
 def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT):
-    limit = mem_gb << 30
-    start = time.time()
-    try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1',
-                               '--noEmit', '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT, timeout=timeout,
-                              preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
-        out, code = proc.stdout, proc.returncode
-        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'  # (tsc 7.1's exit codes: 2 with diagnostics)
-    except subprocess.TimeoutExpired as e:
-        out, status = e.stdout or b'', 'timeout'
-    wall = time.time() - start
-    text = re.sub(r'\x1b\[[0-9;]*m', '', out.decode(errors='replace'))
+    # (tttt_run: the address space limit scaled to the threads, killed/memory apart from crashes)
+    r = tttt_run.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1', '--noEmit', '-p',
+                      package, *flags], cwd, timeout=timeout, mem_gb=mem_gb, log_errors=True)
+    text = re.sub(r'\x1b\[[0-9;]*m', '', r.text())
     # (A diagnostic without a file, options or missing type libraries, is ('', 0), as tsc's oracle says)
     diags = [[f, l, c, m] for f, l, _, c, m in tscformat.parse(text)]
-    if status == 'ok' and re.search(r'\.c:\d+: (error|panic):', text):  # (cleat's log format)
-        status = 'log_error'
-    tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if status != 'ok' else ''
-    return {'package': package, 'status': status, 'wall': wall, 'diags': diags, 'tail': tail}
+    tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if r.status != 'ok' else ''
+    return {'package': package, 'status': r.status, 'wall': r.wall, 'diags': diags, 'tail': tail}
+
+
+def verdict_of_status(status):
+    """A run that didn't finish ok: its verdict (timeout, killed: timeouts and memory kills, crash)"""
+    return status if status == 'timeout' else 'killed' if tttt_run.resource_status(status) else 'crash'
 
 
 def shape(message):
@@ -264,7 +258,7 @@ def main():
     for r in results:
         p = r['package']
         if r['status'] != 'ok':
-            verdicts['timeout' if r['status'] == 'timeout' else 'crash'].append(p)
+            verdicts[verdict_of_status(r['status'])].append(p)
             continue
         spurious, missing = compare(p, oracle[p], r)
         verdicts['both' if spurious and missing else 'spurious' if spurious else 'missing' if missing else 'match'].append(p)
@@ -290,13 +284,14 @@ def main():
     total = len(results)
     tsc_clean = sum(1 for r in results if not oracle[r['package']]['diags'])
     print(f'{total} packages ({tsc_clean} clean under tsc): ' +
-          ', '.join(f'{k} {len(verdicts[k])}' for k in ('match', 'spurious', 'missing', 'both', 'crash', 'timeout')))
+          ', '.join(f'{k} {len(verdicts[k])}' for k in ('match', 'spurious', 'missing', 'both', 'crash', 'timeout')) +
+          (f', killed {len(verdicts["killed"])} (memory or SIGKILL: not crashes)' if verdicts['killed'] else ''))
     tttt_wall = sum(r['wall'] for r in results)
     tsc_ms = sum(oracle[r['package']]['ms'] for r in results)
     print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
           f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)' +
           (f'; {load_note()}' if not args.last else ''))
-    for v in ('crash', 'timeout'):
+    for v in ('crash', 'timeout', 'killed'):
         for p in verdicts[v][:args.n]:
             r = next(r for r in results if r['package'] == p)
             print(f'\n{v.upper()} {p} ({r["status"]}):\n    ' + r['tail'].replace('\n', '\n    ')[-400:])

@@ -23,7 +23,7 @@ written for bun's tree. bun's `theirs` (what 7.1 reported where bun's installed 
 the cache is the pinned tsgo's, and the headline says how many of those it agrees with.
 """
 import argparse, collections, concurrent.futures, gzip, hashlib, json, os, re, resource, shutil, subprocess, sys, time
-import tscformat
+import tscformat, tttt_run
 from sweep import tsc_jobs, shape, load_note
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -88,16 +88,11 @@ def fresh_root(side):
 def lines_of(cmd, cwd, root, timeout, crash_above, mem_gb=None):
     """bun's linesOf: the non-blank stdout lines with root stripped (case-insensitively), plus a line with the exit
     status after a crash"""
-    limit = (mem_gb or 0) << 30
-    start = time.time()
-    try:
-        proc = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout,
-                              env={**os.environ, 'NO_COLOR': '1'},
-                              preexec_fn=(lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit))) if limit else None)
-        out, err, code = proc.stdout.decode(errors='replace'), proc.stderr.decode(errors='replace'), proc.returncode
-        status = 'ok' if 0 <= code <= crash_above else f'exit {code}' if code > 0 else f'signal {-code}'
-    except subprocess.TimeoutExpired as e:
-        out, err, code, status = (e.stdout or b'').decode(errors='replace'), '', None, 'timeout'
+    # (tttt_run: mem_gb beyond the threads' reservations; killed and memory apart from crashes)
+    r = tttt_run.run(cmd, cwd, timeout=timeout, mem_gb=mem_gb, env={**os.environ, 'NO_COLOR': '1'},
+                     stderr=subprocess.PIPE, ok_codes=range(0, crash_above + 1))
+    out, err, code, status = r.text(), (r.err or b'').decode(errors='replace'), r.code, r.status
+    start = time.time() - r.wall
     prefix = re.compile(re.escape(root + '/'), re.I)
     lines = [prefix.sub('', l) for l in re.split(r'\r?\n', out) if l.strip()]
     ret = {'lines': lines, 'exit': code, 'status': status, 'ms': int((time.time() - start) * 1000)}
@@ -331,11 +326,12 @@ def main():
         want, r = oracle[n]['lines'], results[n]
         got = r['default']['lines']
         runs = {run: r[run]['lines'] + ([r[run]['status']] if r[run]['status'] != 'ok' else []) for run in TTTT_RUNS}
-        if len({tuple(v) for v in runs.values()}) > 1:
+        if len({tuple(v) for v in runs.values()}) > 1 and not any(tttt_run.resource_status(r[run]['status']) for run in TTTT_RUNS):
             kdep.append(n)
             verdicts['kdep'].append(n)
         if r['default']['status'] != 'ok':
-            verdicts['timeout' if r['default']['status'] == 'timeout' else 'crash'].append(n)
+            s = r['default']['status']
+            verdicts[s if s == 'timeout' else 'killed' if tttt_run.resource_status(s) else 'crash'].append(n)
             continue
         if got == want:
             verdicts['identical'].append(n)
@@ -375,6 +371,7 @@ def main():
           f'(file, line, code) match {same} ({100 * same / max(total, 1):.1f}%), of them byte-identical '
           f'{len(verdicts["identical"])}; ' +
           ', '.join(f'{k} {len(verdicts[k])}' for k in ('spurious', 'missing', 'both', 'crash', 'timeout')) +
+          (f', killed {len(verdicts["killed"])} (memory or SIGKILL)' if verdicts['killed'] else '') +
           f'; K-dependent {len(kdep)}')
     theirs = [n for n in names if 'theirs' in cases[n]]
     if theirs:
@@ -383,7 +380,7 @@ def main():
     if not args.last:
         print(f'tttt {elapsed:.0f}s wall for {total} cases x {len(TTTT_RUNS)} runs; {load_note()}')
     sites = collections.defaultdict(list)
-    for v in ('crash', 'timeout'):
+    for v in ('crash', 'timeout', 'killed'):
         for n in verdicts[v]:
             d = results[n]['default']
             sites[f'{v} ' + (d.get('sites') or [d['status']])[-1]].append(n)

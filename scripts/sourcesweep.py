@@ -21,7 +21,7 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
 """
 import argparse, collections, concurrent.futures, gzip, json, os, re, resource, signal, subprocess, sys, tempfile, threading, time, zlib
 
-import sweep, tscformat
+import sweep, tscformat, tttt_run
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCES = os.path.join(ROOT, 'thirdparty/sources')
@@ -167,21 +167,11 @@ def run_tsc_build(project, timeout):
 
 def run_tttt_build(project, timeout, mem_gb):
     """sweep.run_tttt's record for `tttt -b PROJECT` (writing nothing)"""
-    limit = mem_gb << 30
-    start = time.time()
-    try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-b', project, '--pretty', 'false', '--no-write',
-                               '--threads', '1'], cwd=SOURCES, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                              timeout=timeout, preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
-        out, code = proc.stdout, proc.returncode
-        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
-    except subprocess.TimeoutExpired as e:
-        out, status = e.stdout or b'', 'timeout'
-    text = out.decode(errors='replace')
-    if status == 'ok' and re.search(r'\.c:\d+: (error|panic):', text):
-        status = 'log_error'
-    tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if status != 'ok' else ''
-    return {'package': project, 'status': status, 'wall': time.time() - start,
+    r = tttt_run.run([os.path.join(ROOT, 'release/tttt'), '-b', project, '--pretty', 'false', '--no-write',
+                      '--threads', '1'], SOURCES, timeout=timeout, mem_gb=mem_gb, log_errors=True)
+    text = r.text()
+    tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if r.status != 'ok' else ''
+    return {'package': project, 'status': r.status, 'wall': r.wall,
             'diags': [[f, l, c, m] for f, l, _, c, m in tscformat.parse(text)], 'tail': tail}
 
 
@@ -312,7 +302,7 @@ def main():
     for r in results:
         p = r['package']
         if r['status'] != 'ok':
-            verdicts['timeout' if r['status'] == 'timeout' else 'crash'].append(p)
+            verdicts[sweep.verdict_of_status(r['status'])].append(p)
             continue
         spurious, missing = sweep.compare(p, oracle[p], r, SOURCES)
         if (spurious or missing) and args.build and p in KNOWN_BUILD:
@@ -345,6 +335,7 @@ def main():
     print(f'{len(matching)} / {total} projects match ({tsc_clean} clean under tsc), '
           f'{repos_matching} / {len(repos)} repos fully match: ' +
           ', '.join(f'{k} {len(verdicts[k])}' for k in ('spurious', 'missing', 'both', 'crash', 'timeout')) +
+          (f', killed {len(verdicts["killed"])} (memory or SIGKILL: not crashes)' if verdicts['killed'] else '') +
           (f', known {len(verdicts["known"])}' if verdicts['known'] else ''))
     for p in verdicts['known']:
         print(f'  known: {p}: {KNOWN_BUILD[p]}')
@@ -353,7 +344,7 @@ def main():
     print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
           f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)' +
           (f'; {sweep.load_note()}' if not args.last else ''))
-    for v in ('crash', 'timeout'):
+    for v in ('crash', 'timeout', 'killed'):
         for p in verdicts[v][:args.n]:
             r = next(r for r in results if r['package'] == p)
             print(f'\n{v.upper()} {p} ({r["status"]}):\n    ' + r['tail'].replace('\n', '\n    ')[-400:])

@@ -38,6 +38,7 @@ import argparse, collections, concurrent.futures, gzip, json, os, re, resource, 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import realworld  # noqa: E402
 import tscformat  # noqa: E402
+import tttt_run  # noqa: E402
 import sourcesweep  # noqa: E402
 import errtextdiff  # noqa: E402
 
@@ -184,15 +185,11 @@ def regenerate(args):
 
 
 def run_tttt(cwd, cmd, timeout, mem_gb):
-    limit = mem_gb << 30
-    try:
-        p = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           timeout=timeout, preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
-        code = p.returncode
-        return p.stdout.decode(errors='replace'), code if code in (0, 1, 2) else f'crash: exit {code}' if code > 0 \
-            else f'crash: signal {-code}'
-    except subprocess.TimeoutExpired as e:
-        return (e.stdout or b'').decode(errors='replace'), 'crash: timeout'
+    r = tttt_run.run(cmd, cwd, timeout=timeout, mem_gb=mem_gb, stderr=subprocess.PIPE)
+    if r.status == 'ok':
+        return r.text(), r.code
+    # (crash: timeout / killed / memory are resource kills, crash: exit N / signal N crashes)
+    return r.text(), f'crash: {r.status}'
 
 
 def split_diag(block):

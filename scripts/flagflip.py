@@ -20,7 +20,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from realworld import CORPORA, BUILD_CORPORA, pin  # noqa: E402
 from sweep import lib_key  # noqa: E402
-import tscformat  # noqa: E402
+import tscformat, tttt_run  # noqa: E402
 
 CACHE = os.path.join(ROOT, 'test/flagflip')
 TREE = os.path.basename(ROOT)
@@ -113,17 +113,11 @@ def run_tsc(corpus, flag):
 
 def run_tttt(corpus, flags, timeout=600, mem_gb=12):
     cwd, project = corpus_cwd(corpus)
-    limit = mem_gb << 30
-    try:
-        # (One checker, like tsc's cached --singleThreaded run: where an instantiation limit is first hit, TS5115,
-        # depends on which files a checker saw before, in tsgo too: xstate nosnc's StateId at --checkers 4)
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--noEmit', '--checkers', '1',
-                               '-p', project, *flags], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
-                              preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
-        out, code = proc.stdout, proc.returncode
-        status = 'ok' if code in (0, 1, 2) else f'exit {code}' if code > 0 else f'signal {-code}'
-    except subprocess.TimeoutExpired as e:
-        out, status = e.stdout or b'', 'timeout'
+    # (One checker, like tsc's cached --singleThreaded run: where an instantiation limit is first hit, TS5115,
+    # depends on which files a checker saw before, in tsgo too: xstate nosnc's StateId at --checkers 4)
+    r = tttt_run.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--noEmit', '--checkers', '1',
+                      '-p', project, *flags], cwd, timeout=timeout, mem_gb=mem_gb)
+    out, status = r.out, r.status
     text = re.sub(r'\x1b\[[0-9;]*m', '', out.decode(errors='replace'))
     # (Located ones only, like tsc's side)
     diags = [[f, l, c, m[:200]] for f, l, _, c, m in tscformat.parse(text) if f]

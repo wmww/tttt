@@ -12,6 +12,10 @@ own form (`baseline_tests --checkers K --dump DIR` against a K=1 dump) and the c
   scripts/kdiff.py -k 4 -f trpc    # some projects, K=4
   scripts/kdiff.py -k 1 -m 0       # one checker against a fresh checker per file (plan 67)
 
+(-k 1 without -m compares one checker with itself: refused.) A run that times out, is killed (SIGKILL: the OOM
+killer under load) or hits its address-space limit (--mem-gb, scaled to the threads by tttt_run) is no difference:
+it is counted and listed apart, and so is the same crash at both counts (a crash at one count only differs).
+
 At -m 0 a project whose files each pull a big shared type graph is slow, not stuck: dokploy/apps/dokploy (994
 files, most importing the tRPC router: 165k types for one .tsx alone) takes ~270 s against 5 s, flat per file
 (measured 2026-10-20), so it times out under load at the default --timeout.
@@ -19,18 +23,16 @@ files, most importing the tRPC router: 165k types for one .tsx alone) takes ~270
 import argparse, concurrent.futures, json, os, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import sweep, sourcesweep
+import sweep, sourcesweep, tttt_run
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def run(project, cwd, k, timeout, memory='off'):
-    try:
-        r = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1', '--checkers', str(k),
-                            '--checker-memory', memory, '--noEmit', '-p', project], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
-        return r.stdout.decode(errors='replace'), r.returncode
-    except subprocess.TimeoutExpired:
-        return 'TIMEOUT', -1
+def run(project, cwd, k, timeout, memory='off', mem_gb=8):
+    """(output, exit code, tttt_run status)"""
+    r = tttt_run.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--threads', '1', '--checkers', str(k),
+                      '--checker-memory', memory, '--noEmit', '-p', project], cwd, timeout=timeout, mem_gb=mem_gb)
+    return r.text(), r.code, r.status
 
 
 def main():
@@ -43,7 +45,10 @@ def main():
     ap.add_argument('-f', '--filter', help='regex the project must match (re.search)')
     ap.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
     ap.add_argument('--timeout', type=int, default=300)
+    ap.add_argument('--mem-gb', type=int, default=8, help="each run's address space beyond the threads' (tttt_run)")
     args = ap.parse_args()
+    if args.k == 1 and args.memory == 'off':
+        ap.error('-k 1 compares one checker with itself: give -k K > 1, or -m 0 (a fresh checker per file)')
     subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
     if args.dt:
         jobs = [(p, sweep.DT) for p in sweep.list_packages(args.filter)]
@@ -52,17 +57,22 @@ def main():
 
     def one(job):
         project, cwd = job
-        return project, run(project, cwd, 1, args.timeout), run(project, cwd, args.k, args.timeout, args.memory)
+        return (project, run(project, cwd, 1, args.timeout, mem_gb=args.mem_gb),
+                run(project, cwd, args.k, args.timeout, args.memory, args.mem_gb))
 
-    differ, timeouts = 0, []
+    differ, timeouts, crashes = 0, [], []
     with concurrent.futures.ThreadPoolExecutor(args.jobs) as ex:
         for project, a, b in ex.map(one, jobs):
-            if a == b:
+            if a[:2] == b[:2] and a[2] == 'ok':
                 continue
-            if 'TIMEOUT' in (a[0], b[0]):
+            if tttt_run.resource_status(a[2]) or tttt_run.resource_status(b[2]):
                 # (Not a difference: a fresh checker per file re-derives each file's dependencies, dokploy/apps/dokploy
-                # takes minutes at -m 0 against seconds at K1)
-                timeouts.append(project)
+                # takes minutes at -m 0 against seconds at K1; a memory kill under load isn't one either)
+                timeouts.append(f'{project} ({a[2]}/{b[2]})')
+                continue
+            if a[2] == b[2] != 'ok' and a[:2] == b[:2]:
+                # (The same crash at both counts: the sweeps' business, not a K-dependence)
+                crashes.append(f'{project} ({a[2]})')
                 continue
             differ += 1
             la, lb = set(a[0].split('\n')), set(b[0].split('\n'))
@@ -70,7 +80,8 @@ def main():
                               f'only{args.k}': sorted(lb - la)[:8]}), flush=True)
     memory = f' (--checker-memory {args.memory})' if args.memory != 'off' else ''
     print(f'{differ} / {len(jobs)} projects differ between 1 and {args.k} checkers{memory}' +
-          (f', {len(timeouts)} timed out: {", ".join(timeouts)}' if timeouts else ''))
+          (f', {len(timeouts)} timed out or killed: {", ".join(timeouts)}' if timeouts else '') +
+          (f', {len(crashes)} crashed alike: {", ".join(crashes)}' if crashes else ''))
     sys.exit(1 if differ else 0)
 
 

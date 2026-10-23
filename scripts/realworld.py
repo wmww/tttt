@@ -9,7 +9,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   scripts/realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue, effect, vscode, excalidraw, tanstack-router; tsc-src and typescript-eslint: -b on a solution config)
 """
 import argparse, collections, json, os, re, resource, subprocess, sys, time
-import sweep, tscformat
+import sweep, tscformat, tttt_run
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -179,15 +179,17 @@ def main():
         return
     if not args.no_build:
         subprocess.run(['ninja', '-C', 'release', 'tttt'], check=True, stdout=subprocess.DEVNULL)
-    limit = args.mem_gb << 30
+    cmd = tttt_command(args.options) + args.entry
+    limit = tttt_run.limit_bytes(args.mem_gb, tttt_run.threads_of(cmd))
     start = time.time()
     try:
-        cmd = tttt_command(args.options) + args.entry
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout, cwd=cwd,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)
         out = proc.stdout
+        if proc.returncode not in (0, 1, 2) and tttt_run.status_of(proc.returncode, out) == 'memory':
+            status = f'MEMORY LIMIT ({status}: raise --mem-gb)'
     except subprocess.TimeoutExpired as e:
         status, out = 'TIMEOUT', e.stdout or b''
     wall = time.time() - start
