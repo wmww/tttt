@@ -1035,6 +1035,9 @@ static DirectoryResult directory_with_package_json(
 static cstr as_node_module(Generator* me, csview path, SpecifierMode mode, bool is_redirect) {
     NodeModulePathParts parts;
     if (!node_module_path_parts(path, &parts)) return cstr_null;
+    // Only through a node_modules the importing file sees, checked before the package.json `exports` can give a bare
+    // specifier (tsgo 7.1.0-beta, #64599)
+    if (!starts_with(my source_dir, js_substring(path, 0, parts.top_level_node_modules))) return cstr_null;
     Endings endings = allowed_endings(me, SPECIFIER_MODE_NONE);
     cstr specifier = cstr_from_sv(path);
     isize root_index = parts.package_root;
@@ -1073,7 +1076,7 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode, bool 
         return cstr_null;
     }
     csview s = cstr_sv(&specifier);
-    // Only through a node_modules the importing file sees
+    // (Under that node_modules)
     csview top = js_substring(s, 0, parts.top_level_node_modules);
     if (!starts_with(my source_dir, top)) {
         cstr_drop(&specifier);

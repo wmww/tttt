@@ -12347,16 +12347,16 @@ const baselines = {
         dts: true,
     },
     'declarationEmitUnreachablePackageExports(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitUnreachablePackageExports(module=preserve)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitUnsafeImportSymbolName': {
         errors: true,
