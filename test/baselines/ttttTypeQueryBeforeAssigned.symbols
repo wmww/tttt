@@ -1,0 +1,156 @@
+//// [test/cases/ttttTypeQueryBeforeAssigned.ts] ////
+
+=== ttttTypeQueryBeforeAssigned.ts ===
+// A type query (`typeof` written as a type) is no use for definite assignment: `typeof this.x` is a QualifiedName,
+// not the `this.x` access that is undefined until assigned in the constructor (TS2565), and `typeof x` of an
+// unassigned variable isn't TS2454. Both are still narrowed by the flow.
+class Foo {
+>Foo : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+
+    foo: number;
+>foo : Symbol(Foo.foo, Decl(ttttTypeQueryBeforeAssigned.ts, 3, 11))
+
+    bar: string | number;
+>bar : Symbol(Foo.bar, Decl(ttttTypeQueryBeforeAssigned.ts, 4, 16))
+
+    baz: string | undefined;
+>baz : Symbol(Foo.baz, Decl(ttttTypeQueryBeforeAssigned.ts, 5, 25))
+
+    constructor() {
+        this.foo = 0 as typeof this.foo;
+>this.foo : Symbol(Foo.foo, Decl(ttttTypeQueryBeforeAssigned.ts, 3, 11))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>foo : Symbol(Foo.foo, Decl(ttttTypeQueryBeforeAssigned.ts, 3, 11))
+>this.foo : Symbol(Foo.foo, Decl(ttttTypeQueryBeforeAssigned.ts, 3, 11))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>foo : Symbol(Foo.foo, Decl(ttttTypeQueryBeforeAssigned.ts, 3, 11))
+
+        let a: typeof this.bar = 1;
+>a : Symbol(a, Decl(ttttTypeQueryBeforeAssigned.ts, 9, 11))
+>this.bar : Symbol(Foo.bar, Decl(ttttTypeQueryBeforeAssigned.ts, 4, 16))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>bar : Symbol(Foo.bar, Decl(ttttTypeQueryBeforeAssigned.ts, 4, 16))
+
+        this.bar = "s";
+>this.bar : Symbol(Foo.bar, Decl(ttttTypeQueryBeforeAssigned.ts, 4, 16))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>bar : Symbol(Foo.bar, Decl(ttttTypeQueryBeforeAssigned.ts, 4, 16))
+
+        let b: typeof this.bar = "t";
+>b : Symbol(b, Decl(ttttTypeQueryBeforeAssigned.ts, 11, 11))
+>this.bar : Symbol(Foo.bar, Decl(ttttTypeQueryBeforeAssigned.ts, 4, 16))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>bar : Symbol(Foo.bar, Decl(ttttTypeQueryBeforeAssigned.ts, 4, 16))
+
+        let c: typeof this.baz = undefined;
+>c : Symbol(c, Decl(ttttTypeQueryBeforeAssigned.ts, 12, 11))
+>this.baz : Symbol(Foo.baz, Decl(ttttTypeQueryBeforeAssigned.ts, 5, 25))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>baz : Symbol(Foo.baz, Decl(ttttTypeQueryBeforeAssigned.ts, 5, 25))
+>undefined : Symbol(undefined)
+
+        this.baz = "u";
+>this.baz : Symbol(Foo.baz, Decl(ttttTypeQueryBeforeAssigned.ts, 5, 25))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>baz : Symbol(Foo.baz, Decl(ttttTypeQueryBeforeAssigned.ts, 5, 25))
+
+        const d = "v" as typeof this.baz;
+>d : Symbol(d, Decl(ttttTypeQueryBeforeAssigned.ts, 14, 13))
+>this.baz : Symbol(Foo.baz, Decl(ttttTypeQueryBeforeAssigned.ts, 5, 25))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>baz : Symbol(Foo.baz, Decl(ttttTypeQueryBeforeAssigned.ts, 5, 25))
+
+        this.foo;
+>this.foo : Symbol(Foo.foo, Decl(ttttTypeQueryBeforeAssigned.ts, 3, 11))
+>this : Symbol(Foo, Decl(ttttTypeQueryBeforeAssigned.ts, 0, 0))
+>foo : Symbol(Foo.foo, Decl(ttttTypeQueryBeforeAssigned.ts, 3, 11))
+    }
+}
+
+class Used {
+>Used : Symbol(Used, Decl(ttttTypeQueryBeforeAssigned.ts, 17, 1))
+
+    p: number;
+>p : Symbol(Used.p, Decl(ttttTypeQueryBeforeAssigned.ts, 19, 12))
+
+    constructor() {
+        this.p;
+>this.p : Symbol(Used.p, Decl(ttttTypeQueryBeforeAssigned.ts, 19, 12))
+>this : Symbol(Used, Decl(ttttTypeQueryBeforeAssigned.ts, 17, 1))
+>p : Symbol(Used.p, Decl(ttttTypeQueryBeforeAssigned.ts, 19, 12))
+
+        this.p = 1;
+>this.p : Symbol(Used.p, Decl(ttttTypeQueryBeforeAssigned.ts, 19, 12))
+>this : Symbol(Used, Decl(ttttTypeQueryBeforeAssigned.ts, 17, 1))
+>p : Symbol(Used.p, Decl(ttttTypeQueryBeforeAssigned.ts, 19, 12))
+    }
+}
+
+function f(p: string | number, q?: string) {
+>f : Symbol(f, Decl(ttttTypeQueryBeforeAssigned.ts, 25, 1))
+>p : Symbol(p, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 11))
+>q : Symbol(q, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 30))
+
+    let x: number;
+>x : Symbol(x, Decl(ttttTypeQueryBeforeAssigned.ts, 28, 7))
+
+    const y = 0 as typeof x;
+>y : Symbol(y, Decl(ttttTypeQueryBeforeAssigned.ts, 29, 9))
+>x : Symbol(x, Decl(ttttTypeQueryBeforeAssigned.ts, 28, 7))
+
+    let z: typeof x = 1;
+>z : Symbol(z, Decl(ttttTypeQueryBeforeAssigned.ts, 30, 7))
+>x : Symbol(x, Decl(ttttTypeQueryBeforeAssigned.ts, 28, 7))
+
+    const c: string;
+>c : Symbol(c, Decl(ttttTypeQueryBeforeAssigned.ts, 31, 9))
+
+    let w: typeof c = "";
+>w : Symbol(w, Decl(ttttTypeQueryBeforeAssigned.ts, 32, 7))
+>c : Symbol(c, Decl(ttttTypeQueryBeforeAssigned.ts, 31, 9))
+
+    if (typeof p === "string") {
+>p : Symbol(p, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 11))
+
+        let s: typeof p = p;
+>s : Symbol(s, Decl(ttttTypeQueryBeforeAssigned.ts, 34, 11))
+>p : Symbol(p, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 11))
+>p : Symbol(p, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 11))
+
+        const n = p as typeof p;
+>n : Symbol(n, Decl(ttttTypeQueryBeforeAssigned.ts, 35, 13))
+>p : Symbol(p, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 11))
+>p : Symbol(p, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 11))
+    }
+    let u: string | undefined;
+>u : Symbol(u, Decl(ttttTypeQueryBeforeAssigned.ts, 37, 7))
+
+    let v: typeof u;
+>v : Symbol(v, Decl(ttttTypeQueryBeforeAssigned.ts, 38, 7))
+>u : Symbol(u, Decl(ttttTypeQueryBeforeAssigned.ts, 37, 7))
+
+    u = "a";
+>u : Symbol(u, Decl(ttttTypeQueryBeforeAssigned.ts, 37, 7))
+
+    let t: typeof u = u;
+>t : Symbol(t, Decl(ttttTypeQueryBeforeAssigned.ts, 40, 7))
+>u : Symbol(u, Decl(ttttTypeQueryBeforeAssigned.ts, 37, 7))
+>u : Symbol(u, Decl(ttttTypeQueryBeforeAssigned.ts, 37, 7))
+
+    let r: typeof q = q;
+>r : Symbol(r, Decl(ttttTypeQueryBeforeAssigned.ts, 41, 7))
+>q : Symbol(q, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 30))
+>q : Symbol(q, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 30))
+
+    if (q) {
+>q : Symbol(q, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 30))
+
+        let r2: typeof q = q;
+>r2 : Symbol(r2, Decl(ttttTypeQueryBeforeAssigned.ts, 43, 11))
+>q : Symbol(q, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 30))
+>q : Symbol(q, Decl(ttttTypeQueryBeforeAssigned.ts, 27, 30))
+    }
+    x;
+>x : Symbol(x, Decl(ttttTypeQueryBeforeAssigned.ts, 28, 7))
+}
+

@@ -2803,7 +2803,10 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     PropertyExpr const* access = expr->property;
     if (access->assignment_target == FLOW_TARGET_DEFINITE || !access->flow) return;
     Expr const* object = &access->expr;
-    bool this_access = object->tag == EXPR_IDENTIFIER && object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
+    // (`typeof this.x` written as a type is a QualifiedName for tsc, not an access expression: not the `this.x` case,
+    // though its flow type is still narrowed)
+    bool this_access = !access->qualified_name && object->tag == EXPR_IDENTIFIER &&
+        object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
     // (`this.x` under strictPropertyInitialization is only the first case)
     // (Not through a JSDoc cast, `/** @type {T} */ (o).x`: tsgo's reparsed assertion isn't a narrowable reference)
     bool cast = object->tag == EXPR_AS_TYPE;
@@ -2816,7 +2819,7 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
         error_ctx_error_d(errs, property_name(access), 2565, "Property '", property_name(access), "' is used before being assigned.");
         return;
     }
-    if (!options->strict_property_initialization || !property_context(access)->in_constructor_of) return;
+    if (!this_access || !options->strict_property_initialization || !property_context(access)->in_constructor_of) return;
     if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS ||
         object->identifier.this_kind != THIS_CLASS_INSTANCE || object->identifier.target != property_context(access)->in_constructor_of
     ) {

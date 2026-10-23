@@ -1,0 +1,179 @@
+//// [test/cases/ttttTypeQueryBeforeAssigned.ts] ////
+
+=== ttttTypeQueryBeforeAssigned.ts ===
+// A type query (`typeof` written as a type) is no use for definite assignment: `typeof this.x` is a QualifiedName,
+// not the `this.x` access that is undefined until assigned in the constructor (TS2565), and `typeof x` of an
+// unassigned variable isn't TS2454. Both are still narrowed by the flow.
+class Foo {
+>Foo : Foo
+
+    foo: number;
+>foo : number
+
+    bar: string | number;
+>bar : string | number
+
+    baz: string | undefined;
+>baz : string | undefined
+
+    constructor() {
+        this.foo = 0 as typeof this.foo;
+>this.foo = 0 as typeof this.foo : number
+>this.foo : number
+>this : this
+>foo : number
+>0 as typeof this.foo : number
+>0 : 0
+>this.foo : number
+>this : this
+>foo : number
+
+        let a: typeof this.bar = 1;
+>a : string | number
+>this.bar : string | number
+>this : this
+>bar : string | number
+>1 : 1
+
+        this.bar = "s";
+>this.bar = "s" : "s"
+>this.bar : string | number
+>this : this
+>bar : string | number
+>"s" : "s"
+
+        let b: typeof this.bar = "t";
+>b : string
+>this.bar : string
+>this : this
+>bar : string
+>"t" : "t"
+
+        let c: typeof this.baz = undefined;
+>c : string | undefined
+>this.baz : string | undefined
+>this : this
+>baz : string | undefined
+>undefined : undefined
+
+        this.baz = "u";
+>this.baz = "u" : "u"
+>this.baz : string | undefined
+>this : this
+>baz : string | undefined
+>"u" : "u"
+
+        const d = "v" as typeof this.baz;
+>d : string
+>"v" as typeof this.baz : string
+>"v" : "v"
+>this.baz : string
+>this : this
+>baz : string
+
+        this.foo;
+>this.foo : number
+>this : this
+>foo : number
+    }
+}
+
+class Used {
+>Used : Used
+
+    p: number;
+>p : number
+
+    constructor() {
+        this.p;
+>this.p : number
+>this : this
+>p : number
+
+        this.p = 1;
+>this.p = 1 : 1
+>this.p : number
+>this : this
+>p : number
+>1 : 1
+    }
+}
+
+function f(p: string | number, q?: string) {
+>f : (p: string | number, q?: string) => void
+>p : string | number
+>q : string | undefined
+
+    let x: number;
+>x : number
+
+    const y = 0 as typeof x;
+>y : number
+>0 as typeof x : number
+>0 : 0
+>x : number
+
+    let z: typeof x = 1;
+>z : number
+>x : number
+>1 : 1
+
+    const c: string;
+>c : string
+
+    let w: typeof c = "";
+>w : string
+>c : string
+>"" : ""
+
+    if (typeof p === "string") {
+>typeof p === "string" : boolean
+>typeof p : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>p : string | number
+>"string" : "string"
+
+        let s: typeof p = p;
+>s : string
+>p : string
+>p : string
+
+        const n = p as typeof p;
+>n : string
+>p as typeof p : string
+>p : string
+>p : string
+    }
+    let u: string | undefined;
+>u : string | undefined
+
+    let v: typeof u;
+>v : string | undefined
+>u : string | undefined
+
+    u = "a";
+>u = "a" : "a"
+>u : string | undefined
+>"a" : "a"
+
+    let t: typeof u = u;
+>t : string
+>u : string
+>u : string
+
+    let r: typeof q = q;
+>r : string | undefined
+>q : string | undefined
+>q : string | undefined
+
+    if (q) {
+>q : string | undefined
+
+        let r2: typeof q = q;
+>r2 : string
+>q : string
+>q : string
+    }
+    x;
+>x : number
+}
+

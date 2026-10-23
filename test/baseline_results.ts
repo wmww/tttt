@@ -2410,6 +2410,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttTypeQueryBeforeAssigned': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttTypeQueryQualifiedNameFlowOutside': {
         errors: true,
         symbols: true,
