@@ -627,7 +627,9 @@ def ensure_ts6():
 
 def write_tsv(seed, n):
     recs = sorted(read_jsonl(files(seed, 'setup.jsonl')), key=lambda r: r['i'])
-    acc = [r for r in recs if r['status'] == 'accepted'][:n]
+    # (Every accepted project, the overshoot too: installs running when the Nth is accepted finish, and compare
+    # covers them rather than leaving uncompared clones)
+    acc = [r for r in recs if r['status'] == 'accepted']
     with open(files(seed, 'tsv'), 'w') as f:
         for r in acc:
             f.write(f'{repo_dirname(r)}\t{r["config"]}\n')
@@ -792,12 +794,20 @@ def cmd_compare(seed, jobs, delete_same, last, code):
         lock = threading.Lock()
         with concurrent.futures.ThreadPoolExecutor(jobs) as ex:
             results = list(ex.map(lambda row: compare_one(seed, row[0], row[1], tsc_cache, lock, delete_same), rows))
-        json.dump(results, open(last_path, 'w'))
+        # (Merged by project with the earlier rounds' records: a batch resumed after the disk guard compares only what
+        # is left, and a clone deleted as matching comes back as `gone`, which never replaces its record)
         commit = head_commit()
+        fresh = {r['name']: r for r in results if r.get('verdict') != 'gone'}
+        earlier = json.load(open(last_path)) if os.path.exists(last_path) else []
+        results = [r for r in earlier if r['name'] not in fresh] + list(fresh.values())
+        results.sort(key=lambda r: r['name'])
+        json.dump(results, open(last_path, 'w'))
+        rows = {r['name']: r for r in read_jsonl(files(seed, 'results.jsonl'))}
+        rows.update({n: {**{k: v for k, v in r.items() if not k.startswith('_')}, 'tttt_commit': commit}
+                     for n, r in fresh.items()})
         with open(files(seed, 'results.jsonl'), 'w') as f:
-            for r in results:
-                if r.get('verdict') != 'gone':
-                    f.write(json.dumps({**{k: v for k, v in r.items() if not k.startswith('_')}, 'tttt_commit': commit}) + '\n')
+            for name in sorted(rows):
+                f.write(json.dumps(rows[name]) + '\n')
     if code:
         want = int(code.removeprefix('TS'))
         for r in results:
