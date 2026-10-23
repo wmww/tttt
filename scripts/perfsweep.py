@@ -299,7 +299,7 @@ def main():
         projects = [c for c in CORPORA if c not in BUILD_CORPORA]
         LAST = LAST.replace('.json', '-corpora.json')
     else:
-        projects = sourcesweep.list_projects()
+        projects = sourcesweep.list_projects(perf=True)
     if args.filter:
         projects = [p for p in projects if re.search(args.filter, p)]
     if args.sample:

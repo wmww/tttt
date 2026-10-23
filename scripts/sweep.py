@@ -63,11 +63,25 @@ def list_packages(filter=None):
 ORACLE_BIN = os.path.join(ROOT, 'thirdparty/typescript/built/tttt-oracle')
 
 
+def tsc_jobs(jobs, gb_each=8):
+    """How many tsgo processes a run may keep: at most MemAvailable / gb_each (default 8 GB: openclaw's projects take
+    6-11 GB each under tsgo, and seven at once filled a 60 GB box and its swap, 2026-10-23)"""
+    try:
+        available_kb = next(int(l.split()[1]) for l in open('/proc/meminfo') if l.startswith('MemAvailable:'))
+    except (OSError, StopIteration):
+        return jobs
+    bound = max(1, available_kb // (gb_each << 20))
+    if bound < jobs:
+        print(f'tsgo jobs {jobs} -> {bound} (MemAvailable {available_kb >> 20} GB, {gb_each} GB each)', file=sys.stderr)
+    return min(jobs, bound)
+
+
 def run_tsc(projects, jobs, extra=(), cwd=DT, progress=False):
     """tsc (tsgo 7.1, test/oracle/tttt-oracle: what `tsc -p P --noEmit` reports, in-process) on the projects, `jobs`
     processes each handed the next project when it finishes one (a few take minutes: a static share would leave the
     others idle). A project that kills the process gets a crash verdict, the rest go to a new one"""
     subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-typescript.sh')], check=True)
+    jobs = tsc_jobs(jobs)
     queue = list(projects)
     lock = threading.Lock()
     results = {}

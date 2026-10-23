@@ -16,6 +16,7 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
   scripts/sourcesweep.py --sample 4       # a fixed quarter of the projects (by a hash of the name: scripts/oracles.py's)
   scripts/sourcesweep.py --tsc [-f ...]   # regenerate tsc's cached verdicts (all projects, or -f's)
   scripts/sourcesweep.py --tsc-new        # tsc on the projects without a cached verdict (repos added to the manifest)
+  (tsgo-side runs keep at most MemAvailable / 8 GB processes, sweep.tsc_jobs(): openclaw's take 6-11 GB each)
   scripts/sourcesweep.py --build [...]    # the solutions instead: `tsc -b` against `tttt -b` (list_build_projects)
 """
 import argparse, collections, concurrent.futures, gzip, json, os, re, resource, signal, subprocess, sys, tempfile, threading, time, zlib
@@ -38,14 +39,22 @@ def list_repos():
     return [line.split()[0] for line in open(MANIFEST) if line.strip() and not line.startswith('#')]
 
 
-def list_projects(filter=None, every_config=False):
+def no_perf_repos():
+    """Repos a `# perf: no NAME` line excludes from perf measurements (correctness only)"""
+    return {line.split()[3] for line in open(MANIFEST) if line.startswith('# perf: no ')}
+
+
+def list_projects(filter=None, every_config=False, perf=False):
     """Every directory with a tsconfig.json in every installed repo, as REPO/path (outside node_modules, outputs and
     dot-directories). every_config (the -p sweep's): also every other `tsconfig*.json` and `*.tsconfig.json` there, as
     REPO/path/tsconfig.build.json, except the bases another config of the repo extends (`tsconfig.base.json`: nobody
     checks one by itself, and without `include` it would take its whole directory). tsconfig.json keeps its directory
     name, so the cached verdicts stay valid"""
     projects = []
+    excluded = no_perf_repos() if perf else set()  # (perf: the perf scripts' list)
     for repo in list_repos():
+        if repo in excluded:
+            continue
         base = os.path.join(SOURCES, repo)
         if not os.path.exists(os.path.join(base, '.tttt-installed')):
             continue
@@ -254,7 +263,7 @@ def main():
             projects = [p for p in projects if p not in oracle]
         start = time.time()
         if args.build:
-            with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+            with concurrent.futures.ThreadPoolExecutor(sweep.tsc_jobs(args.jobs)) as pool:
                 oracle.update((r['project'], r) for r in pool.map(lambda p: run_tsc_build(p, args.timeout), projects))
         else:
             oracle.update(run_tsc(projects, args.jobs))

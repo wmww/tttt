@@ -351,7 +351,7 @@ def regenerate(args):
     records = dict(old) if args.filter else {}
     done = 0
     # (The corpora first: the big ones shouldn't end up alone at the end)
-    with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+    with concurrent.futures.ThreadPoolExecutor(sweep.tsc_jobs(args.jobs)) as pool:
         for future in concurrent.futures.as_completed([pool.submit(run_tsgo, p) for p in projects]):
             record, _ = future.result()
             prev = old.get(record['project'])
@@ -377,7 +377,7 @@ def regenerate_single(args, records):
     todo = [p for p in projects if 'single' not in records[p]]
     print(f'tsgo --singleThreaded on {len(todo)} of the {len(projects)} mismatching projects', flush=True)
     start = time.time()
-    with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+    with concurrent.futures.ThreadPoolExecutor(sweep.tsc_jobs(args.jobs)) as pool:
         for p, (record, _) in zip(todo, pool.map(lambda p: run_tsgo(p, extra=('--singleThreaded',)), todo)):
             records[p]['single'] = record['files']
             same = record['files'] == records[p]['files']

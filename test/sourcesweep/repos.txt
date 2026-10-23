@@ -100,6 +100,12 @@ nuxt https://github.com/nuxt/nuxt.git 0296ca413dc7ab2e29555e7109f35581b81d5c41
 octokit https://github.com/octokit/octokit.js.git bc34deaf357486594c41f167c05921d16e6aabe9
 openai-node https://github.com/openai/openai-node.git 30d50ab301f4c348726d1fcb9c51a84cb8feb71a
 openapi-typescript https://github.com/openapi-ts/openapi-typescript.git d46a319ae2efab30e135ba9b223a3cffd1a67eab
+# openclaw: correctness only, excluded from perf tests (the human, 2026-10-23)
+# (tsgo's cached verdicts only for the root tsconfig.{core,extensions,ui,packages,scripts}.json: 6-11 GB each under tsgo,
+# `--tsc -j 1 -f ...`. They need `node scripts/generate-kysely-types.mts` run in the checkout, as the repo's own
+# run-tsgo.mts does: ensure-sources.sh installs with scripts off)
+# perf: no openclaw
+openclaw https://github.com/openclaw/openclaw.git faeacc706b4887e65c4db1e6ac992179a6f82630
 openspec https://github.com/Fission-AI/OpenSpec.git 9111a7654d7800391459431fff4eaf66e33a3d2e
 orama https://github.com/oramasearch/orama.git b030e1bd1d330327bad1483f2d9c88a9ea0d493c
 pi https://github.com/earendil-works/pi.git 1cedd32724abfcb0915f76cc61b6827e2c16dbad
