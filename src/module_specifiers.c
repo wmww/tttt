@@ -391,7 +391,9 @@ static Ending ending_preference(Generator* me, SpecifierMode mode) {
     for (u32 i = 0; i < r->import_count; i++) {
         csview text = r->imports[i].text;
         if (!path_is_relative(text)) continue;
-        if (my node_next && mode == SPECIFIER_MODE_COMMONJS && r->imports[i].mode == SPECIFIER_MODE_ESM) continue;
+        // (tsgo skips every relative import for a CommonJS specifier under node16/nodenext: tsc's check that the
+        // import is an ES one is a TODO there, so such a file prefers no extension whatever it imports)
+        if (my node_next && mode == SPECIFIER_MODE_COMMONJS) continue;
         if (extension_needs_writing(text)) continue;
         if (has_ts_extension(text)) {
             uses_ts = true;

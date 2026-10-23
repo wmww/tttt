@@ -1,0 +1,40 @@
+//// [test/cases/ttttDeclarationCommonJsSpecifierMinimal.ts] ////
+
+=== net/server/rlpxserver.ts ===
+export class RlpxServer { started = false; }
+>RlpxServer : Symbol(RlpxServer, Decl(rlpxserver.ts, 0, 0))
+>started : Symbol(RlpxServer.started, Decl(rlpxserver.ts, 0, 25))
+
+=== net/server/index.ts ===
+
+export * from "./rlpxserver.ts";
+=== config.ts ===
+import { RlpxServer } from "./net/server/index.ts";
+>RlpxServer : Symbol(RlpxServer, Decl(config.ts, 0, 8))
+
+export class Config { server: RlpxServer | undefined = undefined; }
+>Config : Symbol(Config, Decl(config.ts, 0, 51))
+>server : Symbol(Config.server, Decl(config.ts, 1, 21))
+>RlpxServer : Symbol(RlpxServer, Decl(config.ts, 0, 8))
+>undefined : Symbol(undefined)
+
+=== client.ts ===
+import { Config } from "./config.ts";
+>Config : Symbol(Config, Decl(client.ts, 0, 8))
+
+export class Client {
+>Client : Symbol(Client, Decl(client.ts, 0, 37))
+
+    constructor(readonly config: Config) {}
+>config : Symbol(Client.config, Decl(client.ts, 2, 16))
+>Config : Symbol(Config, Decl(client.ts, 0, 8))
+
+    server() { return this.config.server; }
+>server : Symbol(Client.server, Decl(client.ts, 2, 43))
+>this.config.server : Symbol(Config.server, Decl(config.ts, 1, 21))
+>this.config : Symbol(Client.config, Decl(client.ts, 2, 16))
+>this : Symbol(Client, Decl(client.ts, 0, 37))
+>config : Symbol(Client.config, Decl(client.ts, 2, 16))
+>server : Symbol(Config.server, Decl(config.ts, 1, 21))
+}
+

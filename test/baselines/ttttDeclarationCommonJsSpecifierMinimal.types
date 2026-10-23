@@ -1,0 +1,39 @@
+//// [test/cases/ttttDeclarationCommonJsSpecifierMinimal.ts] ////
+
+=== net/server/rlpxserver.ts ===
+export class RlpxServer { started = false; }
+>RlpxServer : RlpxServer
+>started : boolean
+>false : false
+
+=== net/server/index.ts ===
+
+export * from "./rlpxserver.ts";
+=== config.ts ===
+import { RlpxServer } from "./net/server/index.ts";
+>RlpxServer : typeof RlpxServer
+
+export class Config { server: RlpxServer | undefined = undefined; }
+>Config : Config
+>server : RlpxServer | undefined
+>undefined : undefined
+
+=== client.ts ===
+import { Config } from "./config.ts";
+>Config : typeof Config
+
+export class Client {
+>Client : Client
+
+    constructor(readonly config: Config) {}
+>config : Config
+
+    server() { return this.config.server; }
+>server : () => import("./net/server").RlpxServer | undefined
+>this.config.server : import("./net/server").RlpxServer | undefined
+>this.config : Config
+>this : this
+>config : Config
+>server : import("./net/server").RlpxServer | undefined
+}
+

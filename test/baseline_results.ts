@@ -392,6 +392,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationCommonJsSpecifierMinimal': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttDeclarationComputedNameDeclaredScope': {
         errors: true,
         symbols: true,
