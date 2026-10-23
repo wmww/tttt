@@ -1,0 +1,110 @@
+//// [test/cases/ttttAssignmentKeepsNarrowingBelowNonNull.ts] ////
+
+=== ttttAssignmentKeepsNarrowingBelowNonNull.ts ===
+// An assignment to x resets the narrowing of the references it contains through access expressions only (tsc's
+// containsMatchingReference): `x.a!.b` and `(x.a).b` keep theirs after `x = y` (bun's 21-C17a/b, 32-C13/b)
+function g4(x: { a: { b: string | number } }, y: typeof x) { if (typeof (x.a).b === "string") { x = y; (x.a).b.length; } }
+>g4 : (x: { a: { b: string | number; }; }, y: typeof x) => void
+>x : { a: { b: string | number; }; }
+>a : { b: string | number; }
+>b : string | number
+>y : { a: { b: string | number; }; }
+>x : { a: { b: string | number; }; }
+>typeof (x.a).b === "string" : boolean
+>typeof (x.a).b : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>(x.a).b : string | number
+>(x.a) : { b: string | number; }
+>x.a : { b: string | number; }
+>x : { a: { b: string | number; }; }
+>a : { b: string | number; }
+>b : string | number
+>"string" : "string"
+>x = y : { a: { b: string | number; }; }
+>x : { a: { b: string | number; }; }
+>y : { a: { b: string | number; }; }
+>(x.a).b.length : number
+>(x.a).b : string
+>(x.a) : { b: string | number; }
+>x.a : { b: string | number; }
+>x : { a: { b: string | number; }; }
+>a : { b: string | number; }
+>b : string
+>length : number
+
+function g1(x: { a?: { b: string | number } }, y: typeof x) { if (typeof x.a!.b === "string") { x = y; x.a!.b.length; } }
+>g1 : (x: { a?: { b: string | number; }; }, y: typeof x) => void
+>x : { a?: { b: string | number; }; }
+>a : { b: string | number; } | undefined
+>b : string | number
+>y : { a?: { b: string | number; }; }
+>x : { a?: { b: string | number; }; }
+>typeof x.a!.b === "string" : boolean
+>typeof x.a!.b : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x.a!.b : string | number
+>x.a! : { b: string | number; }
+>x.a : { b: string | number; } | undefined
+>x : { a?: { b: string | number; }; }
+>a : { b: string | number; } | undefined
+>b : string | number
+>"string" : "string"
+>x = y : { a?: { b: string | number; }; }
+>x : { a?: { b: string | number; }; }
+>y : { a?: { b: string | number; }; }
+>x.a!.b.length : number
+>x.a!.b : string
+>x.a! : { b: string | number; }
+>x.a : { b: string | number; } | undefined
+>x : { a?: { b: string | number; }; }
+>a : { b: string | number; } | undefined
+>b : string
+>length : number
+
+function g2(x: { a: string | number } | undefined, y: { a: number }) { if (typeof x!.a === "string") { x = y; x!.a.length; } }
+>g2 : (x: { a: string | number; } | undefined, y: { a: number; }) => void
+>x : { a: string | number; } | undefined
+>a : string | number
+>y : { a: number; }
+>a : number
+>typeof x!.a === "string" : boolean
+>typeof x!.a : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x!.a : string | number
+>x! : { a: string | number; }
+>x : { a: string | number; } | undefined
+>a : string | number
+>"string" : "string"
+>x = y : { a: number; }
+>x : { a: string | number; } | undefined
+>y : { a: number; }
+>x!.a.length : any
+>x!.a : string | number
+>x! : { a: string | number; }
+>x : { a: string | number; }
+>a : string | number
+>length : any
+
+function g3(x: { a: { b: string | number } }, y: typeof x) { if (typeof x.a.b === "string") { x = y; x.a.b.length; } }
+>g3 : (x: { a: { b: string | number; }; }, y: typeof x) => void
+>x : { a: { b: string | number; }; }
+>a : { b: string | number; }
+>b : string | number
+>y : { a: { b: string | number; }; }
+>x : { a: { b: string | number; }; }
+>typeof x.a.b === "string" : boolean
+>typeof x.a.b : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>x.a.b : string | number
+>x.a : { b: string | number; }
+>x : { a: { b: string | number; }; }
+>a : { b: string | number; }
+>b : string | number
+>"string" : "string"
+>x = y : { a: { b: string | number; }; }
+>x : { a: { b: string | number; }; }
+>y : { a: { b: string | number; }; }
+>x.a.b.length : any
+>x.a.b : string | number
+>x.a : { b: string | number; }
+>x : { a: { b: string | number; }; }
+>a : { b: string | number; }
+>b : string | number
+>length : any
+

@@ -830,11 +830,14 @@ static bool symbol_matches_reference(Expr const* reference, Symbol const* symbol
 }
 
 // `x.y.z` is about `x.y` and `x`
+// (tsc's containsMatchingReference walks access expressions only: `x.a!.b` and `(x.a).b` stop at `x.a!` and `(x.a)`,
+// so an assignment to x leaves their narrowing alone. Parentheses are a flag on the node here)
 static bool contains_matching_reference(Checker* me, Expr const* source, Expr const* target) {
     source = skip_reference_wrappers(source);
     while (source->tag == EXPR_PROPERTY) {
-        source = skip_reference_wrappers(&source->property->expr);
-        if (is_matching_reference(me, source, target)) return true;
+        source = &source->property->expr;
+        if (is_matching_reference(me, skip_reference_wrappers(source), target)) return true;
+        if (expr_is_perenthisized(source)) return false;
     }
     return false;
 }
@@ -842,8 +845,9 @@ static bool contains_matching_reference(Checker* me, Expr const* source, Expr co
 static bool contains_symbol_reference(Expr const* source, Symbol const* symbol) {
     source = skip_reference_wrappers(source);
     while (source->tag == EXPR_PROPERTY) {
-        source = skip_reference_wrappers(&source->property->expr);
-        if (symbol_matches_reference(source, symbol)) return true;
+        source = &source->property->expr;
+        if (symbol_matches_reference(skip_reference_wrappers(source), symbol)) return true;
+        if (expr_is_perenthisized(source)) return false;
     }
     return false;
 }
