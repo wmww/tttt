@@ -168,3 +168,7 @@ intersection's property symbol to bugs/type_core.md.
   output: the TS2304s come from resolve_alias_target's unreported_errs path, which needs understanding. tsc reports
   the specifier's TS2304 only when the alias is used (www -> xxx, a type use sss -> ttt), and module exports'
   aliases through checkExternalModuleExports presumably (bbb). tsgo's output for the case is in test/buncases.
+- `thirdparty/ensure-typescript.sh`'s Go build cache cap (clean when over 4 GB) ran while another process was linking
+  from the same GOCACHE (tsgotrace/overlaycheck builds share it): the link failed with "cannot open file .../cache/..:
+  no such file" and the rerun succeeded. Take the script's flock around the clean, or clean only when no `go` process
+  uses the cache (2026-10-23). [open]
