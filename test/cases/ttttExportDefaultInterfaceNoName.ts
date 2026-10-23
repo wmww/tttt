@@ -1,0 +1,4 @@
+// After `export default`, `interface` is a declaration whatever follows (tsc's isStartOfDeclaration, then
+// parseDeclarationWorker): without a name it is TS1003 and the missing name is declared. Babel's
+// interface/export-default fixture
+export default interface {}

@@ -6456,7 +6456,9 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
     list_leave(p, saved_clauses);
 }
 
-static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
+// committed: after `export default` (tsc's isStartOfDeclaration takes `export default` as a declaration whatever
+// follows, its parseDeclarationWorker the interface): a missing name is TS1003
+static bool parse_interface_decl(Parser* parent, bool committed, InterfaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -6466,13 +6468,18 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     hop_whitespace(&p);
     // tsc's isStartOfDeclaration: `interface` followed by a name on the same line, else `interface` is an expression
     // (`interface { }`: TS1438 from parseErrorForMissingSemicolonAfter, `interface & {}` an expression)
-    if (p.whitespace == WHITESPACE_NEWLINE || !tok_is_identifier(tok_peek(&p))) {
+    bool named = p.whitespace != WHITESPACE_NEWLINE && tok_is_identifier(tok_peek(&p));
+    if (!named && !committed) {
         return parse_fail(&p);
     }
 
     u32 this_count = p.shared->this_count;
     Span name;
-    if (!parse_identifier(&p, &name)) {
+    if (!named) {
+        parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
+        // (tsc's missing identifier, at the token's full start: the binder declares it, `(Missing)`)
+        name = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
+    } else if (!parse_identifier(&p, &name)) {
         parse_error(&p, span_from_pos(&p), 1438, "Interface must be given a name.");
         name = span_null;
     }
@@ -14766,7 +14773,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .type = ast_new(TypeDecl, parsed.type_decl),
             },
         };
-    } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
+    } else if (parse_interface_decl(&p, decl_props.exported == DECL_EXPORTED_YES_DEFAULT, &parsed.interface_decl)) {
         modified.kind = MODIFIED_INTERFACE;
         parsed.interface_decl.full_span = span_from(a);
         *ret = (Statement){
