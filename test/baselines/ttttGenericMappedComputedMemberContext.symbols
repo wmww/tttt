@@ -1,0 +1,93 @@
+//// [test/cases/ttttGenericMappedComputedMemberContext.ts] ////
+
+=== ttttGenericMappedComputedMemberContext.ts ===
+// A computed member of an object literal whose contextual type is a generic mapped type reads that type's index
+// signatures, which its key type's lower bound gives it (tsc's getContextualTypeForObjectLiteralElement: an element
+// with a dynamic name takes findApplicableIndexInfo of the apparent type's index infos): `[actionId]: (input) => input`
+// in a generic call's inference is typed, no TS7006. openclaw's plugin-sdk/feature-plugin.test.ts
+type Op = { kind: "query" | "action"; input: { t: unknown } };
+>Op : Symbol(Op, Decl(ttttGenericMappedComputedMemberContext.ts, 0, 0))
+>kind : Symbol(kind, Decl(ttttGenericMappedComputedMemberContext.ts, 4, 11))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 4, 37))
+>t : Symbol(t, Decl(ttttGenericMappedComputedMemberContext.ts, 4, 46))
+
+type Contract = { pluginId: string; operations: Readonly<Record<string, Op>> };
+>Contract : Symbol(Contract, Decl(ttttGenericMappedComputedMemberContext.ts, 4, 62))
+>pluginId : Symbol(pluginId, Decl(ttttGenericMappedComputedMemberContext.ts, 5, 17))
+>operations : Symbol(operations, Decl(ttttGenericMappedComputedMemberContext.ts, 5, 35))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Op : Symbol(Op, Decl(ttttGenericMappedComputedMemberContext.ts, 0, 0))
+
+type OpName<C extends Contract> = keyof C["operations"] & string;
+>OpName : Symbol(OpName, Decl(ttttGenericMappedComputedMemberContext.ts, 5, 79))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 6, 12))
+>Contract : Symbol(Contract, Decl(ttttGenericMappedComputedMemberContext.ts, 4, 62))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 6, 12))
+
+type Handlers<C extends Contract> = { [K in OpName<C>]: (input: C["operations"][K]["input"]["t"]) => unknown };
+>Handlers : Symbol(Handlers, Decl(ttttGenericMappedComputedMemberContext.ts, 6, 65))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 7, 14))
+>Contract : Symbol(Contract, Decl(ttttGenericMappedComputedMemberContext.ts, 4, 62))
+>K : Symbol(K, Decl(ttttGenericMappedComputedMemberContext.ts, 7, 39))
+>OpName : Symbol(OpName, Decl(ttttGenericMappedComputedMemberContext.ts, 5, 79))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 7, 14))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 7, 57))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 7, 14))
+>K : Symbol(K, Decl(ttttGenericMappedComputedMemberContext.ts, 7, 39))
+
+declare const actionId: string;
+>actionId : Symbol(actionId, Decl(ttttGenericMappedComputedMemberContext.ts, 8, 13))
+
+type C1 = { pluginId: "p"; operations: { [x: string]: { input: { t: unknown }; kind: "action" } } };
+>C1 : Symbol(C1, Decl(ttttGenericMappedComputedMemberContext.ts, 8, 31))
+>pluginId : Symbol(pluginId, Decl(ttttGenericMappedComputedMemberContext.ts, 9, 11))
+>operations : Symbol(operations, Decl(ttttGenericMappedComputedMemberContext.ts, 9, 26))
+>x : Symbol(x, Decl(ttttGenericMappedComputedMemberContext.ts, 9, 42))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 9, 55))
+>t : Symbol(t, Decl(ttttGenericMappedComputedMemberContext.ts, 9, 64))
+>kind : Symbol(kind, Decl(ttttGenericMappedComputedMemberContext.ts, 9, 78))
+
+const h: Handlers<C1> = { [actionId]: (input) => input };
+>h : Symbol(h, Decl(ttttGenericMappedComputedMemberContext.ts, 10, 5))
+>Handlers : Symbol(Handlers, Decl(ttttGenericMappedComputedMemberContext.ts, 6, 65))
+>C1 : Symbol(C1, Decl(ttttGenericMappedComputedMemberContext.ts, 8, 31))
+>[actionId] : Symbol([actionId], Decl(ttttGenericMappedComputedMemberContext.ts, 10, 25))
+>actionId : Symbol(actionId, Decl(ttttGenericMappedComputedMemberContext.ts, 8, 13))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 10, 39))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 10, 39))
+
+declare function definePlugin<C extends Contract>(d: { contract: C; setup: () => Handlers<C> }): void;
+>definePlugin : Symbol(definePlugin, Decl(ttttGenericMappedComputedMemberContext.ts, 10, 57))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 11, 30))
+>Contract : Symbol(Contract, Decl(ttttGenericMappedComputedMemberContext.ts, 4, 62))
+>d : Symbol(d, Decl(ttttGenericMappedComputedMemberContext.ts, 11, 50))
+>contract : Symbol(contract, Decl(ttttGenericMappedComputedMemberContext.ts, 11, 54))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 11, 30))
+>setup : Symbol(setup, Decl(ttttGenericMappedComputedMemberContext.ts, 11, 67))
+>Handlers : Symbol(Handlers, Decl(ttttGenericMappedComputedMemberContext.ts, 6, 65))
+>C : Symbol(C, Decl(ttttGenericMappedComputedMemberContext.ts, 11, 30))
+
+declare const c1: C1;
+>c1 : Symbol(c1, Decl(ttttGenericMappedComputedMemberContext.ts, 12, 13))
+>C1 : Symbol(C1, Decl(ttttGenericMappedComputedMemberContext.ts, 8, 31))
+
+definePlugin({ contract: c1, setup: () => ({ [actionId]: (input) => input }) });
+>definePlugin : Symbol(definePlugin, Decl(ttttGenericMappedComputedMemberContext.ts, 10, 57))
+>contract : Symbol(contract, Decl(ttttGenericMappedComputedMemberContext.ts, 13, 14))
+>c1 : Symbol(c1, Decl(ttttGenericMappedComputedMemberContext.ts, 12, 13))
+>setup : Symbol(setup, Decl(ttttGenericMappedComputedMemberContext.ts, 13, 28))
+>[actionId] : Symbol([actionId], Decl(ttttGenericMappedComputedMemberContext.ts, 13, 44))
+>actionId : Symbol(actionId, Decl(ttttGenericMappedComputedMemberContext.ts, 8, 13))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 13, 58))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 13, 58))
+
+definePlugin({ contract: c1, setup: () => ({ x: (input) => input }) });
+>definePlugin : Symbol(definePlugin, Decl(ttttGenericMappedComputedMemberContext.ts, 10, 57))
+>contract : Symbol(contract, Decl(ttttGenericMappedComputedMemberContext.ts, 14, 14))
+>c1 : Symbol(c1, Decl(ttttGenericMappedComputedMemberContext.ts, 12, 13))
+>setup : Symbol(setup, Decl(ttttGenericMappedComputedMemberContext.ts, 14, 28))
+>x : Symbol(x, Decl(ttttGenericMappedComputedMemberContext.ts, 14, 44))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 14, 49))
+>input : Symbol(input, Decl(ttttGenericMappedComputedMemberContext.ts, 14, 49))
+

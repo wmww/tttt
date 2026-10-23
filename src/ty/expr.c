@@ -834,7 +834,13 @@ static Ty const* get_prop_context_with_missing(Checker* me, Ty const* object, Pr
     // with `A: never`, reads the index signatures, which a generic mapped type has none of, tsc's
     // getContextualTypeForObjectLiteralElement past isTypeUsableAsPropertyName)
     bool names_property = (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL)) && key->kind != TY_UNION;
-    if (!names_property && ty_generic_mapped(me, object)) return nullptr;
+    if (!names_property && ty_generic_mapped(me, object)) {
+        // (Its index signatures are what its key type's lower bound gives it: `{ [K in keyof C["ops"] & string]: F<K>
+        // }` with C's ops a Record<string, ...> has a string one, which `[actionId]` reads, tsc's
+        // findApplicableIndexInfo over getIndexInfosOfStructuredType of the resolved mapped type)
+        IndexInfo const* index = ty_applicable_index_info(me, object, key);
+        return index ? index->value : nullptr;
+    }
     Ty const* mapped = ty_generic_mapped_prop_context(me, object, key);
     return mapped ? mapped : ty_access(me, object, key);
 }
