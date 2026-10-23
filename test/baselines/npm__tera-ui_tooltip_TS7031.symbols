@@ -1,0 +1,33 @@
+//// [test/cases/npm__tera-ui_tooltip_TS7031.ts] ////
+
+=== npm__tera-ui_tooltip_TS7031.ts ===
+// origin: npm @tera-ui/tooltip@1.3.3 https://github.com/hieumau12/tera-ui packages/components/tooltip/tsconfig.bench.json seed 20261025
+// flip: no
+// A computed non-literal key in an unannotated parameter's binding pattern: the implied type leaves it out, so the element
+// indexes it by string, any with a rest element (no TS7031), TS2537 without one. tttt reports TS7031 for both
+export const renameProp = (oldProp: string, newProp: string, {[oldProp]: old, ...others}) => ({
+>renameProp : Symbol(renameProp, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 12))
+>oldProp : Symbol(oldProp, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 27))
+>newProp : Symbol(newProp, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 43))
+>oldProp : Symbol(oldProp, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 27))
+>old : Symbol(old, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 62))
+>others : Symbol(others, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 77))
+
+  [newProp]: old,
+>[newProp] : Symbol([newProp], Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 95))
+>newProp : Symbol(newProp, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 43))
+>old : Symbol(old, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 62))
+
+  ...others,
+>others : Symbol(others, Decl(npm__tera-ui_tooltip_TS7031.ts, 4, 77))
+
+});
+export function f(k: string, {[k]: a, b}) { return [a, b]; }
+>f : Symbol(f, Decl(npm__tera-ui_tooltip_TS7031.ts, 7, 3))
+>k : Symbol(k, Decl(npm__tera-ui_tooltip_TS7031.ts, 8, 18))
+>k : Symbol(k, Decl(npm__tera-ui_tooltip_TS7031.ts, 8, 18))
+>a : Symbol(a, Decl(npm__tera-ui_tooltip_TS7031.ts, 8, 30))
+>b : Symbol(b, Decl(npm__tera-ui_tooltip_TS7031.ts, 8, 37))
+>a : Symbol(a, Decl(npm__tera-ui_tooltip_TS7031.ts, 8, 30))
+>b : Symbol(b, Decl(npm__tera-ui_tooltip_TS7031.ts, 8, 37))
+

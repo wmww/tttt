@@ -148,3 +148,17 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
 
 ## Seed 20261103 (second box)
 - npm_task-definition-ts_TS2339 (task-definition-ts@1.0.18, config tsconfig.bench.json, allowJs+checkJs, no include): tttt's default wildcard include adds `dist/index.mjs` although `dist/index.d.mts` sits beside it, and checks it (TS2339/TS7006 x6); tsgo drops the .mjs (same-basename extension priority: a declaration file beats the JS file), as tttt already does for `index.cjs` next to `index.d.cts`. Guess: the priority removal in tttt's wildcard expansion knows .d.cts/.cjs but not .d.mts/.mjs. [flip] [open]
+- **npm__skastr0_quartz-engine_TS2719** (seed 20261025, @skastr0/quartz-engine@0.2.3, skastr0/quartz
+  apps/opencode-plugin/src/server.ts:22): a generic arrow's return type annotation `V extends undefined ?
+  Record<never, never> : { readonly [P in K]?: V }`, with an `as` to the same conditional type written again in its
+  body. tsgo finds the two deferred conditional types unrelated: its elaboration ends at "Type 'V' is not assignable
+  to type 'V | undefined'", two distinct V's, which suggests one side's V is a substituted or instantiated copy.
+  tttt relates them. Guess: tsgo relates a deferred conditional to another only when the check and extends types are
+  identical and both branches are related both ways, through instantiations its constraint machinery makes distinct.
+  The fix needs the tsgo trace (scripts/tsgotrace.py 2719). [flip] [open]
+- **npm__tera-ui_tooltip_TS7031** (seed 20261025, @tera-ui/tooltip@1.3.3, hieumau12/tera-ui
+  packages/utilities/shared-utils/src/object.ts:9): `(k: string, {[k]: old, ...others}) => ...`, an unannotated
+  parameter's binding pattern with a computed non-literal key. tsc's getTypeFromObjectBindingPattern leaves that
+  element out of the implied type, and a rest element adds an `any` index signature. The element then indexes the
+  implied type by string: `any` with a rest element (no TS7031), TS2537 "has no matching index signature" without
+  one. tttt reports TS7031 for the element in both cases, and misses the TS2537. [open]

@@ -13,3 +13,5 @@ rw_foldkit_TS6133	yes	foldkit (sourcesweep)	https://github.com/foldkit/foldkit	0
 npm_ciceksepeti_cui-listbox_TS7006	no	@ciceksepeti/cui-listbox@1.0.0	https://github.com/ciceksepetitech/cactus-ui	29	23	-TS7006
 npm_dmptranscripts_TS2344	no	dmptranscripts@1.0.0	https://github.com/Deneyap-Mezunlar/dmptranscripts	16	18	+TS2344
 npm_task-definition-ts_TS2339	yes	task-definition-ts@1.0.18	https://github.com/shoma-mano/task-definition-ts	0	6	+TS2339 +TS7006
+npm__skastr0_quartz-engine_TS2719	yes	@skastr0/quartz-engine@0.2.3	https://github.com/skastr0/quartz	1	0	-TS2719
+npm__tera-ui_tooltip_TS7031	no	@tera-ui/tooltip@1.3.3	https://github.com/hieumau12/tera-ui	4	5	+TS7031

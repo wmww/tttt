@@ -1,0 +1,19 @@
+npm__tera-ui_tooltip_TS7031.ts(9,32): error TS2537: Type '{ b: any; }' has no matching index signature for type 'string'.
+npm__tera-ui_tooltip_TS7031.ts(9,39): error TS7031: Binding element 'b' implicitly has an 'any' type.
+
+
+==== npm__tera-ui_tooltip_TS7031.ts (2 errors) ====
+    // origin: npm @tera-ui/tooltip@1.3.3 https://github.com/hieumau12/tera-ui packages/components/tooltip/tsconfig.bench.json seed 20261025
+    // flip: no
+    // A computed non-literal key in an unannotated parameter's binding pattern: the implied type leaves it out, so the element
+    // indexes it by string, any with a rest element (no TS7031), TS2537 without one. tttt reports TS7031 for both
+    export const renameProp = (oldProp: string, newProp: string, {[oldProp]: old, ...others}) => ({
+      [newProp]: old,
+      ...others,
+    });
+    export function f(k: string, {[k]: a, b}) { return [a, b]; }
+                                   ~
+!!! error TS2537: Type '{ b: any; }' has no matching index signature for type 'string'.
+                                          ~
+!!! error TS7031: Binding element 'b' implicitly has an 'any' type.
+    

@@ -1,0 +1,26 @@
+npm__skastr0_quartz-engine_TS2719.ts(9,3): error TS2719: Type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }' is not assignable to type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }'. Two different types with this name exist, but they are unrelated.
+  Type 'Record<never, never> | { readonly [P in K]?: V | undefined; }' is not assignable to type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }'.
+    Type 'Record<never, never>' is not assignable to type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }'.
+      Type '{ readonly [P in K]?: V | undefined; }' is not assignable to type '{ readonly [P in K]?: V | undefined; }'. Two different types with this name exist, but they are unrelated.
+        Type 'V | undefined' is not assignable to type 'V | undefined'. Two different types with this name exist, but they are unrelated.
+          Type 'V' is not assignable to type 'V | undefined'.
+
+
+==== npm__skastr0_quartz-engine_TS2719.ts (1 errors) ====
+    // origin: npm @skastr0/quartz-engine@0.2.3 https://github.com/skastr0/quartz tsconfig.bench.json seed 20261025
+    // flip: yes
+    // A generic arrow's conditional return annotation and an `as` of the same conditional written again: tsgo reports TS2719
+    // (the two V's differ: the false branch's mapped property 'V | undefined' isn't related), tttt finds them assignable
+    const optionalOption = <K extends string, V>(
+      key: K,
+      value: V | undefined,
+    ): V extends undefined ? Record<never, never> : { readonly [P in K]?: V } =>
+      (value === undefined ? {} : { [key]: value }) as V extends undefined ? Record<never, never> : { readonly [P in K]?: V }
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2719: Type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }' is not assignable to type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type 'Record<never, never> | { readonly [P in K]?: V | undefined; }' is not assignable to type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }'.
+!!! error TS2719:     Type 'Record<never, never>' is not assignable to type 'V extends undefined ? Record<never, never> : { readonly [P in K]?: V | undefined; }'.
+!!! error TS2719:       Type '{ readonly [P in K]?: V | undefined; }' is not assignable to type '{ readonly [P in K]?: V | undefined; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:         Type 'V | undefined' is not assignable to type 'V | undefined'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:           Type 'V' is not assignable to type 'V | undefined'.
+    
