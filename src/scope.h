@@ -315,6 +315,9 @@ typedef struct SymbolRare {
     // symbol, or this symbol merged into it), what getMergedSymbol answers, one level deep. On a clone: `aug_clone`,
     // what it was cloned from, and the symbol that took its place when it was its origin's merged symbol
     struct Symbol* aug_merged;
+    // On a symbol that became the end of a longer chain: the clone one level down, what tsc's getSymbolOfDeclaration
+    // (getMergedSymbol, once) gives its own declarations, which checkInterfaceDeclaration checks
+    struct Symbol* aug_one_level;
     struct Symbol* aug_clone_of;
     struct Symbol* aug_absorbed_by;
     bool aug_clone;

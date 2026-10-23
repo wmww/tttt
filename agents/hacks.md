@@ -850,3 +850,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   field after the laptop bench confirms the defaults.
 - `KEY_REDUCTION_KEY`'s memo in subtype reduction (each member's discriminating property): could keep a transient
   answer if a property type is read mid-cycle (circular resolution); no test or oracle shows it.
+- **interface_heritage_typecheck's `aug_one_level`** (interface_decl.c, scope.c aug_merge_fixup): when module
+  augmentations clone one symbol along a chain longer than one (tsc's mergeSymbol of a re-export of an already augmented
+  interface: @stencil/vitest's `interface Assertion extends CustomMatchers` through vitest over @vitest/expect's), tttt
+  makes the symbol the end of the chain for everything, but checks its declarations' heritage (TS2320) as the first
+  clone, which tsc's getSymbolOfDeclaration (getMergedSymbol once) gives them. tsc's lookups apply getMergedSymbol a
+  path-dependent number of times (a declaration's symbol once, a type reference twice, a table entry once more), so
+  names and the symbols baseline still differ there (npm_My-first-stencil-project-001_TS2320's SYM/TYP). The faithful
+  model (a symbol the binder made is its first clone; type references and lookups go one level further) was tried on
+  2026-10-24 and regressed ttttAugmentationCloneChain's symbols and types (which symbol the harness names, local twins
+  of module exports): it needs the harness's twin logic and the display's container search reworked with it.

@@ -143,6 +143,12 @@ static bool decl_file_walked(Span name) {
 static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     if (!symbol) return;
+    // (A symbol augmentations cloned along a chain longer than one means its end, but its own declarations are checked
+    // as its first clone: tsc's getSymbolOfDeclaration applies getMergedSymbol once, and checkInterfaceDeclaration only
+    // checks at the first declaration. `declare module 'vitest' { interface Assertion extends CustomMatchers }` over
+    // @vitest/expect's Assertion, which vitest augmented first, isn't a base there: no TS2320 on @vitest/expect's)
+    // HACK (hacks.md): the one place the first clone is used; types, names and symbols still see the end of the chain
+    if (symbol_rare(symbol)->aug_one_level) symbol = symbol_rare(symbol)->aug_one_level;
     InterfaceDecl const* first = symbol_find_node(symbol, SYMBOL_DECL_INTERFACE);
     if (!first) return;
     for (u32 d = 0; d < symbol->decl_count; d++) {

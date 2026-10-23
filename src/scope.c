@@ -4555,6 +4555,7 @@ static void aug_merge_fixup(Binder* me) {
         any = true;
         Symbol* clone = aug_chain_end(s);
         if (!aug_is_clone(clone) || clone->rare->aug_absorbed_by || aug_root(clone) != s) continue;
+        if (aug_merged(s) != clone) s->rare->aug_one_level = aug_merged(s);
         s->flags = clone->flags;
         s->decl_flags_before = clone->decl_flags_before;
         s->is_ambient = clone->is_ambient;
