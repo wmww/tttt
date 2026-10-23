@@ -579,6 +579,27 @@ the `.d.ts`, before it. The suite's `dts` component compares the `.js.map` basel
 `scripts/dtsdiff.py` the maps of real projects (bucketed by their first differing mapping), `scripts/mapshow.py` decodes
 and compares two maps.
 
+### Traps
+Recurring mistakes of 2026-10-23, one line each:
+- **Parentheses are a flag, not a node**: `(x)` is the inner expression with `paren_before`/`paren_after` set, so a tsc
+  test "node kind is X" (`ast.IsPropertyAccessExpression(node)`, ...) is false for a parenthesized X in tsc and true
+  for tttt unless it also tests `!expr_is_perenthisized(e)` (sic): two TS2339 fixes the same day.
+- **A scratch ErrorCtx in the resolve walk swallows reports**: the sharded walk sends every report into a context other
+  than the shard's own to `discarded` (`shard_lasting_errs()`), so reporting into a scratch ErrorCtx there silently
+  drops it, and one on the stack is a use-after-scope once the shard keeps it.
+- **A parser-reported tsc checker error needs the right class**: `Error.grammar` for tsc's checkGrammar* codes (not
+  reported in a file with parse errors), the semantic phase for checker errors, the parse phase only for tsc's parse
+  diagnostics: `has_parse_errors` counts everything that isn't grammar or JS syntax, so a misclassified one suppresses
+  the file's grammar errors.
+- **tsgo's harness and CLI can disagree** on order-dependent results (circularities whose report depends on which
+  declaration is checked first): a suite or bun case isn't always a valid test of the CLI; compare
+  `scripts/tsgotrace.py CODE FILE` against `--suite FILE`.
+- **`git checkout COMMIT -- path` stages the old file** (an A/B nearly committed one): build the "before" side with
+  `scripts/abbuild.sh REV` (or `--revert COMMIT`) instead.
+- **Python's `glob(recursive=True)` and `os.walk(followlinks=True)` follow directory symlinks** into shared checkouts
+  (a reducer destroyed 690 shared files once): copy a project with `scripts/reduce.py` (`--no-reduce`) and work on the
+  copy.
+
 ## Memory Management
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).
 
