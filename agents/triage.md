@@ -9,6 +9,13 @@ HasNeverType (fixed). The combined import's member symbols went to bugs/binder_m
 intersection's property symbol to bugs/type_core.md. 
 
 
+- sequelize (the root config) varies at the defaults (2026-10-23, big; agents/measurements.md "Large projects at the
+  defaults"): 1 run in 3 reports TS7022 on `models` at packages/core/src/sequelize-typescript.ts:335 and then loses the
+  TS2322 at :1053 and TS2488 at :1080 that tsgo and the other runs report (the circularity makes `models` any). tsgo's
+  own sequelize/packages/core TS7022 depends on its checker count too (kdiff.py's doc), so the circularity is
+  order-dependent in both; tsgo's one-checker answer is ours at K1. Find which file checked first in the same checker
+  makes `models` circular (`TTTT_FILE_TIMES=1` on a varying run, then `TTTT_CHECK_ONLY=that,sequelize-typescript.ts
+  --checkers 1 --threads 1`, `TTTT_DEBUG_CYCLE=1`) and compare with tsgo at the same order. [open]
 - scripts/reduce.py on openclaw (2026-10-23, corB): `scripts/reduce.py --project
   /home/ai/tttt/thirdparty/sources/openclaw --config test/tsconfig/tsconfig.core.test.gateway-other.json --keep
   "placement-projector.test.ts.*TS2345" --tttt-has` printed "the copy does not reproduce" with no differences: the

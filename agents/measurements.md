@@ -74,6 +74,40 @@ the next batch's run (at 03bf32424) was not complete when this was written. Then
   measured drizzle +0.42..+0.58%, zod +0.18..+0.23% against it during the day (~+0.8% on drizzle by the end, pending
   attribution); the escaped-keyword commit's +1.05% on nest was taken back by 9a5647e3b (+0.08%).
 
+## Large projects at the defaults (2026-10-23)
+The question: do users (tttt's defaults: threads = cores, a checker per physical core, the memory pool) see
+divergences the sweep (`--threads 1`, one checker) can't? Measured at **da9e17675** (release build) on this box: 16
+vCPUs, load 31-44 from other agents, ~27 GB available (so the default pool never recycled). The projects: the 255
+installed source-sweep projects with a cached tsgo time over 5 s (`test/sourcesweep/tsc.jsonl.gz` `ms`), openclaw and
+opencode aside (owned elsewhere). Each run `tttt --pretty false --noEmit -p P` from thirdparty/sources through
+tttt_run (mem_gb 16, nice 10, one project at a time), compared with tsgo's cache by (file, line, code) and with each
+other line by line. The script and raw data: the worker's scratchpad `big/measure.py`, `m1.jsonl` (K1 + 3 defaults),
+`m2.jsonl` (2 runs at the defaults with `--checker-memory 1024`), `cwd.py` (run from the config's directory).
+
+| class | projects |
+|---|---|
+| (a) match tsgo in all 4 runs (K1 + 3 defaults) | **248** (92 of them tsgo-clean: all 92 clean in tttt) |
+| (b) K1 matches tsgo, the defaults don't | **0** |
+| (c) the defaults vary run to run | **1**: sequelize (below) |
+| (d) diverge alike at K1 and the defaults (all already in the sweep's list) | **6** |
+
+| project | tsgo | K1 | defaults | class | (file, line, code) differing |
+|---|---|---|---|---|---|
+| sequelize | 3390 | 3390 | 3389-3390 | c | 1 run in 3: +core/src/sequelize-typescript.ts:335 TS7022 ('models'), -:1053 TS2322, -:1080 TS2488 |
+| sunmao-ui | 3067 | 3064 | 3064 | d | -TS2590 chakra-ui-lib Button.tsx:85, Dialog.tsx:160, editor AddTraitButton.tsx:59 |
+| portabase | 52 | 51 | 51 | d | -TS2322 src/components/ui/form.tsx:227 |
+| monkeytype/frontend | 2 | 4 | 4 | d | +TS2578 SearchableAutoSetting.tsx:56, +TS2322 :59 |
+| better-auth/packages/better-auth | 4418 | 4416 | 4416 | d | -TS2345 lynx-store.ts:65, react-store.ts:67 (notes/reentrancy.md C/D) |
+| pothos/tsconfig.eslint.json | 7271 | 7270 | 7270 | d | -TS7023 plugin-smart-subscriptions/src/cache-node.ts:41 |
+| hono/tsconfig.spec.json | 6 | 7 | 7 | d | +TS2769 src/request.ts:214 |
+
+Also: the root `openclaw` project hits the 16 GB address-space limit at K1 and at the defaults (status memory).
+Recycling forced (`--checker-memory 1024`, 2 runs each; dokploy/apps/dokploy recycles each checker twice): **0 / 255**
+differ from K1. Run from the config's own directory (`cd DIR && tttt -p .`): 0 / 255 differ (path spelling aside).
+Conclusion: on the sweep's projects the defaults, recycling and the invocation add nothing the K1 sweep doesn't see;
+the human's "over half of large tsgo-clean projects" (private projects, single-threaded too, per the coordinator) is
+a training-set gap, not a checker-count one: the measure is fresh large repositories (vision.md).
+
 ## Known correctness bugs
 `scripts/bugcount.py --save`, one line per run (per batch): the open root causes from the tags of agents/bugs/*.md and
 triage.md (agents/bugs/README.md), then the symptom counts it read (suite_*: failing tests by origin; bun: bun cases

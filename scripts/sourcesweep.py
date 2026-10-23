@@ -18,6 +18,12 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
   scripts/sourcesweep.py --tsc-new        # tsc on the projects without a cached verdict (repos added to the manifest)
   (tsgo-side runs keep at most MemAvailable / 8 GB processes, sweep.tsc_jobs(): openclaw's take 6-11 GB each)
   scripts/sourcesweep.py --build [...]    # the solutions instead: `tsc -b` against `tttt -b` (list_build_projects)
+  scripts/sourcesweep.py --defaults [--runs 3]  # tttt at its default threads and checkers (what users run), each
+                                          # project N times: a project whose runs differ is verdict `varies`
+The plain sweep runs tttt at --threads 1 (one checker): a checker-count or schedule dependence (which file a checker
+saw first) is invisible there and visible to every user. --defaults runs what users run (fewer jobs at once: each
+tttt takes the cores); `varies` lists a project whose runs disagree (on any diagnostic line), and its first run is
+compared with tsc as usual. Its results file is its own (--last with --defaults reads it).
 """
 import argparse, collections, concurrent.futures, gzip, hashlib, json, os, re, resource, signal, subprocess, sys, tempfile, threading, time, zlib
 
@@ -253,6 +259,23 @@ def root_cause(project, diag, spurious):
     return f'+TS{diag[2]}{where} {sweep.shape(diag[3])}' if spurious else f'-TS{diag[2]}{where}'
 
 
+def runs_of(run, project, timeout, mem_gb, runs):
+    """run's record of project, run `runs` times: the first run's, with `varies` ({counts, lines}: each run's
+    diagnostic count and the lines not in every run) when the runs' diagnostics differ"""
+    records = [run(project, timeout, mem_gb) for _ in range(runs)]
+    first = records[0]
+    if any(r['status'] != first['status'] for r in records):
+        first['tail'] += '\n(runs differ in status: ' + ', '.join(r['status'] for r in records) + ')'
+    sets = [collections.Counter(f'{d[0]}:{d[1]} TS{d[2]} {d[3][:160]}' for d in r['diags']) for r in records]
+    if any(c != sets[0] for c in sets):
+        every = sets[0]
+        for c in sets[1:]:
+            every = every & c
+        lines = sorted(set().union(*sets) - set(every))
+        first['varies'] = {'counts': [len(r['diags']) for r in records], 'lines': lines}
+    return first
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('-f', '--filter', help='regex the project (REPO/path) must match (re.search)')
@@ -268,6 +291,9 @@ def main():
     ap.add_argument('--no-build', action='store_true')
     ap.add_argument('--sample', type=int, help='only the projects whose name hashes to 0 modulo this')
     ap.add_argument('--build', action='store_true', help='the solutions, `-b` (list_build_projects), not every `-p`')
+    ap.add_argument('--defaults', action='store_true',
+                    help="tttt at the CLI's default threads and checkers instead of --threads 1")
+    ap.add_argument('--runs', type=int, default=1, help='run each project N times; differing runs: verdict varies')
     args = ap.parse_args()
     check_sources()
 
@@ -277,6 +303,10 @@ def main():
         ORACLE = BUILD_ORACLE
         LAST = LAST.replace('.json', '-build.json')
         args.timeout = max(args.timeout, 600)
+    if args.defaults:
+        LAST = LAST.replace('.json', '-defaults.json')
+        if '-j' not in sys.argv and '--jobs' not in sys.argv:
+            args.jobs = max(1, (os.cpu_count() or 4) // 4)  # (Each run takes the cores)
     if args.sample:
         projects = [p for p in projects if zlib.crc32(p.encode()) % args.sample == 0]
         LAST = LAST.replace('.json', f'-sample{args.sample}.json')  # (Not the full run's)
@@ -317,8 +347,9 @@ def main():
         # The slowest projects first, so they don't end up alone at the end
         order = sorted(projects, key=lambda p: -oracle[p]['ms'])
         with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
-            run = run_tttt_build if args.build else lambda p, t, m: sweep.run_tttt(p, t, m, cwd=SOURCES)
-            results = list(pool.map(lambda p: run(p, args.timeout, args.mem_gb), order))
+            run = run_tttt_build if args.build else \
+                lambda p, t, m: sweep.run_tttt(p, t, m, cwd=SOURCES, defaults=args.defaults)
+            results = list(pool.map(lambda p: runs_of(run, p, args.timeout, args.mem_gb, args.runs), order))
         results.sort(key=lambda r: r['package'])
         elapsed = time.time() - start
         with open(LAST, 'w') as f:
@@ -331,11 +362,15 @@ def main():
         if r['status'] != 'ok':
             verdicts[sweep.verdict_of_status(r['status'])].append(p)
             continue
+        if r.get('varies'):
+            verdicts['varies'].append(p)
         spurious, missing = sweep.compare(p, oracle[p], r, SOURCES)
         if (spurious or missing) and args.build and p in KNOWN_BUILD:
             verdicts['known'].append(p)
             continue
-        verdicts['both' if spurious and missing else 'spurious' if spurious else 'missing' if missing else 'match'].append(p)
+        v = 'both' if spurious and missing else 'spurious' if spurious else 'missing' if missing else 'match'
+        if not (v == 'match' and r.get('varies')):  # (A project whose runs differ doesn't match, whatever its first did)
+            verdicts[v].append(p)
         for d, sp in [(d, True) for d in spurious] + [(d, False) for d in missing]:
             k = root_cause(p, d, sp)
             c = causes[k]
@@ -362,19 +397,25 @@ def main():
     print(f'{len(matching)} / {total} projects match ({tsc_clean} clean under tsc), '
           f'{repos_matching} / {len(repos)} repos fully match: ' +
           ', '.join(f'{k} {len(verdicts[k])}' for k in ('spurious', 'missing', 'both', 'crash', 'timeout')) +
+          (f', varies {len(verdicts["varies"])} (runs differ: a schedule or checker-count dependence)'
+           if args.runs > 1 or verdicts['varies'] else '') +
           (f', killed {len(verdicts["killed"])} (memory or SIGKILL: not crashes)' if verdicts['killed'] else '') +
           (f', known {len(verdicts["known"])}' if verdicts['known'] else ''))
     for p in verdicts['known']:
         print(f'  known: {p}: {KNOWN_BUILD[p]}')
     tttt_wall = sum(r['wall'] for r in results)
     tsc_ms = sum(oracle[r['package']]['ms'] for r in results)
-    print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
+    print(f'tttt {tttt_wall:.0f}s {"at the defaults" if args.defaults else "single-threaded"} in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
           f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)' +
           (f'; {sweep.load_note()}' if not args.last else ''))
     for v in ('crash', 'timeout', 'killed'):
         for p in verdicts[v][:args.n]:
             r = next(r for r in results if r['package'] == p)
             print(f'\n{v.upper()} {p} ({r["status"]}):\n    ' + r['tail'].replace('\n', '\n    ')[-400:])
+    for p in verdicts['varies'][:args.n]:
+        r = next(r for r in results if r['package'] == p)
+        print(f'\nVARIES {p}: diagnostics counts {r["varies"]["counts"]}; not in every run:\n    ' +
+              '\n    '.join(r['varies']['lines'][:8]))
     slow = sorted((r for r in results if r['wall'] > 1 and r['wall'] > oracle[r['package']]['ms'] / 1000),
                   key=lambda r: -r['wall'])
     if slow:
