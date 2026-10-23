@@ -442,3 +442,66 @@ smocker https://github.com/smocker-dev/smocker.git fccc714464e219abc56fde3883127
 # osis: the human's own project (its TypeScript project is ts/; its tsconfig lists build/test.ts, which ts/test.sh
 # generates with extra/collectTests.js, so without that step both sides report TS6053 for it)
 osis https://codeberg.org/sphi/osis.git 99d3b589c6aa53ca20a09a9465e0f716afb3de92
+# Refresh 8 (2026-10-23, cor10), the seventh rule: random large repositories, no library or topic rule. `scripts/
+# reposearch.py large 20261023 28`: language TypeScript, stars 100..20000, pushed since 2026-07-01, the pool of 20
+# search pages (GitHub size buckets 15..30, 30..60, 60..120, 120..300, 300..900 MB, sorted by updated and by stars,
+# two random page offsets each: 1669 repos), shuffled; kept when the languages API gives TypeScript as the main
+# language with >= 5 MB of it, a root package.json and lockfile, no deno.json, not already here nor a corpus. Lines of
+# .ts/.tsx verified after cloning (>= 150k). Checked out at their default branch's HEAD that day. Correctness only (the
+# coordinator, 2026-10-23: too big for the perf sweeps): each has a `# perf: no` line
+# perf: no 0sec
+0sec https://github.com/0sec-labs/0.git 3a5bdf3cb39bf7e2a65b5c03f945dc427460737e
+# ordewell: dropped, its package-lock.json is out of sync with package.json (`npm ci` refuses)
+#ordewell https://github.com/ordewell/ordewell.git 8976b5d9331a8d6caf40210125f5e4fe2616b6cc
+# perf: no ark
+ark https://github.com/chakra-ui/ark.git c7af88a51b9dc32e5903a75b3d49b4deaa36e8dc
+# perf: no semiotic
+semiotic https://github.com/nteract/semiotic.git 66cd1e5f904aab9b07c72231e398fea238dd7070
+# perf: no papra
+papra https://github.com/papra-hq/papra.git d0638d11e1ca3795600b7baa68afed1d5b1daabb
+# perf: no deepmonkey-studio
+deepmonkey-studio https://github.com/fatasia/DeepMonkey-Studio.git 898afba7c171214b0fe05ea68e9a2532e7535990
+# realm: dropped, its pnpm install fails (a private registry package, @hugeicons-pro: 404)
+#realm https://github.com/31Carlton7/realm.git 088e1d7499d160551c37e2774cbfd06863d976cc
+# perf: no open-connector
+open-connector https://github.com/oomol-lab/open-connector.git 10b937c872c34eb677ce6708b830df1d5d1911c9
+# perf: no mulmoclaude
+mulmoclaude https://github.com/receptron/mulmoclaude.git 9f9e0da8c882a31a68f1f814f1e9e1798b7733d3
+# perf: no genkit
+genkit https://github.com/genkit-ai/genkit.git 01ff269c24b18439697dba3a49095a0860d55b53
+# perf: no abacusai-bot
+abacusai-bot https://github.com/abacusai/abacusai-bot.git 00a5dbaea3ff1740adf5afad113dbd565601d0b6
+# perf: no smartperfetto
+smartperfetto https://github.com/Gracker/SmartPerfetto.git 22073f04bee638a70ce1d3dad45f6ea92bc04358
+# perf: no panelui
+panelui https://github.com/panel-ui/PanelUI.git c2b87f0b9cd0b78cf6574545755bd58d537dcf7c
+# perf: no onco
+onco https://github.com/judegomila/OnCo.git c148087dcc27e4ae25584cbdce38f4ae2d7e2664
+# perf: no amplify-ui
+amplify-ui https://github.com/aws-amplify/amplify-ui.git 1150de70d59e9f9879693e93d2f8e3dcef464fc7
+# perf: no appflare
+appflare https://github.com/appflare/appflare.git 6288a90d52e3f2ad76e844c420a53f6be7bb5c4d
+# perf: no javdbviewed
+javdbviewed https://github.com/JavdBviewed/JavdBviewed.git 30db3293526eb6dac5188c4c556a8263f7605b39
+# perf: no molio
+molio https://github.com/zhuzhaoyun/Molio.git 8bdfe7a95d8cba4b230b3b387c4996668f6c7818
+# perf: no vuetify0
+vuetify0 https://github.com/vuetifyjs/0.git 376f9e77dd80776bd15f18a0071e355fa0ef1473
+# perf: no ps5upload
+ps5upload https://github.com/phantomptr/ps5upload.git 9d24531c72481ea15c755bb93e695cda555e257d
+# perf: no crowd-dev
+crowd-dev https://github.com/linuxfoundation/crowd.dev.git 3f19d05815fc9975c924a2d4a545d14958b9984c
+# perf: no opentabs
+opentabs https://github.com/opentabs-dev/opentabs.git de9200b1231cae419d1a437e410114a9e2fe8eca
+# vercel-sdk: dropped, its pnpm install fails (pnpm 8: the pnpm-workspace.yaml has no `packages` field)
+#vercel-sdk https://github.com/vercel/sdk.git 49e2e4f3139f3874743d87d3daf5e1c77ca4dbfb
+# perf: no agentic-qe (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
+#agentic-qe https://github.com/proffesor-for-testing/agentic-qe.git 13469743237b2183577eeaab0a8ab22020bce121
+# perf: no emperor-agent (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
+#emperor-agent https://github.com/TheSyart/emperor-agent.git fffbefe7b3a8791cab1f13b56990a32e5475c490
+# perf: no foldkit (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
+#foldkit https://github.com/foldkit/foldkit.git b702a5efbb74bebc056b798b414ddb923a82fbd5
+# perf: no coop (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
+#coop https://github.com/roostorg/coop.git e464f8d7d42e5b6e5cbb782a38caabfb8fd3f750
+# perf: no harness-mcp (pending: its install waits on the sources' dedupe lock; tsgo verdicts follow)
+#harness-mcp https://github.com/harness/mcp-server.git 69394839f0d671d17d5a580874c941a84fe7ff1d

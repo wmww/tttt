@@ -460,3 +460,47 @@ which the sweep's cache no longer lists (its 62 configs are the packages'), so n
     first is the members stage E of agents/notes/reentrancy.md. [open]
 - A union member a non-generic alias names prints as the alias in tttt's error heads (`S` for `S | undefined`, `type S
   = readonly {...}[]`) and expanded in tsgo's. [open]
+
+## Refresh 8: random large repositories (2026-10-23, cor10)
+Day one at 57c517455 (measurements.md "Fresh repositories, seventh rule"); checkouts in thirdparty/sources/REPO, commands
+from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
+- **A raw NUL byte inside a regex literal ends it**: 0sec/packages/cli/src/tui/agents-panel-model.ts:41
+  `value.replace(/[<NUL>-<US><DEL>]+/g, " ")` (control bytes written literally) -> spurious TS1161/TS1127/TS1135 at
+  (41,...), and since the program then has syntax errors, every semantic diagnostic is suppressed (0sec/packages/cli
+  and 0sec/packages/core: ~4000 missing, -TS2307 880, -TS2591 2141...; abacusai-bot/apps/host has the same TS1127/TS1161
+  plus 354 -TS6305 behind it). parse_regex (src/parser.c) tests `!c` for the end of text; tsc's scanner only stops at
+  the real end (a NUL is an ordinary character in a regex body). cor10 is fixing it. [open]
+- **appflare: +TS5115 moves with the checker count** (to det3): tsgo (singleThreaded) reports one TS5115 ("Instantiations
+  of the following types appear infinitely circular: 'IsOptionalIn', '$ZodTypeInternals', '$InferZodRecordInput'", zod
+  4) at packages/schema/src/config-patch.ts(124,28). `release/tttt --noEmit --pretty false -p appflare/packages/schema`:
+  `--checkers 1 --threads 1` matches; `--checkers 2 --threads 2` config-patch.ts(131,12) instead; `--checkers 4
+  --threads 4` artifact.ts(144,30) + config-patch.ts(131,12); the defaults artifact.ts(144,30), (172,42),
+  config-patch.ts(131,12), wrangler-config-inline.ts(174,9). At K1 `TTTT_CHECK_ONLY=artifact.ts` gives
+  artifact.ts(144,30) and `=wrangler-config-inline.ts` (174,9): which file a checker saw first decides the site. 10
+  configs (apps/docs, apps/installer, apps/manager, apps/manager/screenshots, apps/sandbox, packages/cli, packages/pack,
+  packages/schema, packages/schema/tsconfig.build.json, scripts) match at K1 and fail at the defaults. Unchecked:
+  whether tsgo moves it too at its own default checkers. [open]
+- **abacusai-bot/apps/web: +TS2322 on motion components' props** (to corB): 23 spurious, e.g.
+  src/components/notch-controls.tsx:38 (`Type '{ ref?: Ref<HTMLDivElement> | undefined; variants?: Variants | undefined;
+  ... 338 more ...}' is not assignable ...`), src/features/chat/kit/message-actions.tsx:1249, permissions/notch-list.tsx:216
+  (`IntrinsicAttributes & Omit<HTMLMotionProps<"div">, "ref"> & RefAttributes<HT...`); plus one +TS2551. Guess: a
+  spread of motion's HTMLMotionProps against an Omit/intersection target (relation of a big mapped/intersection). [open]
+- **crowd-dev/services/libs/connectors: TS7022 on the wrong `nodes` loops**: tsgo reports TS7022 at
+  src/connectors/github/syncs/pullRequestComments.ts:32 and pullRequestReviewComments.ts:50, :86; tttt instead at
+  prWalk.ts:198, syncs/discussions.ts:124, issueComments.ts:86, issues.ts:33 (`'nodes' implicitly has type 'any' ...
+  referenced directly or indirectly in its own initializer`). Same at K1 and the defaults. Guess: a paginating loop
+  variable whose initializer calls a generic GraphQL helper; which declarations are in a circularity depends on the
+  resolution order. [open]
+- **mulmoclaude: +TS2345 `unknown` to `string`** at server/utils/validateEntryList.ts:40 (configs mulmoclaude/server,
+  mulmoclaude/test). Guess: a narrowing (typeof / type guard over an `unknown` element) tsgo applies. [open]
+- **deepmonkey-studio/apps/web: +TS2339 on `never`** at src/delivery/r3StateFrame.ts:211 (`clip.axis`, `clip.inverted`)
+  after `if (clip.kind !== "axis") fail(...)` inside a switch case in a for loop, `fail(): never`, `let clip:
+  ClipState`. Not K-dependent (K1 and `TTTT_CHECK_ONLY=r3StateFrame.ts` show it). Flow: an assertion-style `never` call
+  narrowing a reassigned `let` in a loop. [open]
+- **ark (packages/solid, templates/solid-start): +TS2322** at packages/solid/src/components/factory.tsx:32 (`Type 'string'
+  is not assignable to type 'keyof { [P in keyof HTMLArkProps<T> as Exclude<P, "asChild">]: HTMLArkProps<T>[P]; }'`).
+  Guess: keyof of a generic mapped type with an `as` clause (its constraint) against a string. [open]
+- **papra/apps/papra-client: +TS7006** at src/modules/tags/components/tag.component.tsx:28 (`Parameter 'e' implicitly
+  has an 'any' type`): a contextual type tsgo finds for a Solid JSX event handler. [open]
+- **genkit/js/testapps/dev-ui-gallery: -TS7022/-TS7024** at src/genkit.ts:78, src/main/middleware.ts:91 and :108: tsgo
+  finds a circularity tttt resolves. [open]

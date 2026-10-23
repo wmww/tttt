@@ -346,6 +346,50 @@ selection: about half match.
 - Text-only (same (file, line, code), 206 cases): TS2322 header 98 (type printing), TS2322 chains ~20, columns ~30,
   line order 10.
 
+## Fresh repositories, seventh rule: random large repositories (2026-10-23)
+Refresh 8 (cor10, repos.txt "Refresh 8"): the human's claim, "over half of the random reasonably large projects I
+test, clean under tsgo 7.1, have incorrect errors under tttt, even single-threaded", against a test set chosen by size
+and freshness only: `scripts/reposearch.py large 20261023 28` (20 search pages: size buckets x sort by updated / by
+stars x two random offsets, a 1669-repo pool, shuffled; TypeScript the main language with >= 5 MB of it, stars
+100..20000, pushed since 2026-07-01, a root package.json and lockfile). 28 picked, 3 dropped at install (ordewell, realm,
+vercel-sdk), 5 pending (agentic-qe, emperor-agent, foldkit, coop, harness-mcp: installs waiting), **20 repos of 153k to
+1.57M lines of .ts/.tsx (outside node_modules), 606 configs**, every one `# perf: no`. tsgo's verdicts: 160 s at `-j 3`.
+**Day one (57c517455, before any fix), (file, line, code): 594 / 606 configs (98.0%) at `--threads 1`, 584 / 606
+(96.4%) at the defaults; per repo 12 / 20 fully match at one thread, 11 / 20 at the defaults** (`scripts/sourcesweep.py
+-f ... [--defaults -j 2]`). By repo, the human's "over half" holds at the defaults (9 / 20 repos with a wrong config)
+though most configs match: the wrong ones are few per repo and a single parser bug (a raw NUL byte in a regex literal:
+TS1127 and every semantic diagnostic of the program suppressed) took out 3 configs of 2 repos with ~4000 missing
+diagnostics. Only 83 configs (2 repos) are clean under tsgo: tests without their runner's types, unbuilt references.
+
+| repo | TS lines | configs | tsgo-clean | match K1 | match defaults | repo matches K1 / defaults | tsgo-clean repo |
+|---|---|---|---|---|---|---|---|
+| 0sec | 619,326 | 12 | 1 | 10 | 10 | no / no | no |
+| ark | 183,767 | 14 | 3 | 12 | 12 | no / no | no |
+| semiotic | 596,888 | 13 | 8 | 13 | 13 | yes / yes | no |
+| papra | 152,799 | 11 | 3 | 10 | 10 | no / no | no |
+| deepmonkey-studio | 769,812 | 47 | 19 | 46 | 46 | no / no | no |
+| open-connector | 1,569,814 | 5 | 1 | 5 | 5 | yes / yes | no |
+| mulmoclaude | 350,853 | 83 | 15 | 81 | 81 | no / no | no |
+| genkit | 245,916 | 97 | 1 | 96 | 96 | no / no | no |
+| abacusai-bot | 503,470 | 14 | 8 | 12 | 12 | no / no | no |
+| smartperfetto | 555,810 | 2 | 0 | 2 | 2 | yes / yes | no |
+| panelui | 216,646 | 9 | 2 | 9 | 9 | yes / yes | no |
+| onco | 638,136 | 1 | 1 | 1 | 1 | yes / yes | yes |
+| amplify-ui | 217,737 | 51 | 3 | 51 | 51 | yes / yes | no |
+| appflare | 391,635 | 15 | 3 | 15 | 5 | yes / no | no |
+| javdbviewed | 354,286 | 3 | 3 | 3 | 3 | yes / yes | yes |
+| molio | 158,558 | 7 | 2 | 7 | 7 | yes / yes | no |
+| vuetify0 | 233,550 | 19 | 4 | 19 | 19 | yes / yes | no |
+| ps5upload | 321,699 | 1 | 0 | 1 | 1 | yes / yes | no |
+| crowd-dev | 331,853 | 60 | 0 | 59 | 59 | no / no | no |
+| opentabs | 339,646 | 142 | 6 | 142 | 142 | yes / yes | no |
+| **total** | | 606 | 83 | 594 (98.0%) | 584 (96.4%) | 12 / 11 of 20 | 2 |
+
+Causes (agents/bugs/sourcesweep_checker.md "Refresh 8"): 0sec and abacusai-bot/apps/host (the NUL byte), appflare
+(+TS5115 on zod 4 types, checker-count dependent: 15 -> 5 at the defaults), abacusai-bot/apps/web (+TS2322 on motion's
+props), crowd-dev (TS7022 on other `nodes` loops), mulmoclaude (+TS2345 unknown), deepmonkey-studio (+TS2339 on
+never), ark (solid factory +TS2322), papra (+TS7006), genkit (-TS7022/-TS7024).
+
 ## Fresh repositories, fifth rule: TypeScript 7 adopters (2026-10-23)
 Refresh 6 (cor8, repos.txt "Refresh 6"): repositories whose root package.json depends on `@typescript/native-preview`
 or `typescript` 7 (the people who'd use tttt), `scripts/reposearch.py ts7` over 30 topics (stars 20..5000, pushed
