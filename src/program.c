@@ -508,11 +508,13 @@ bool program_report_empty_files(Program* me) {
     return true;
 }
 
-bool program_report_no_inputs(Program* me) {
+bool program_report_no_inputs(Program* me) { return program_report_no_inputs_as(me, c_sv("")); }
+
+bool program_report_no_inputs_as(Program* me, csview name) {
     if (!my config_source || my config_json.tag != JSON_OBJECT) return false;
     JsonValue const* files = json_get(&my config_json, "files");
     JsonValue const* references = json_get(&my config_json, "references");
-    cstr config = absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path));
+    cstr config = name.size ? cstr_from_sv(name) : absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path));
     bool reported = false;
     // (tsc's canJsonReportNoInputFiles)
     if (files) {

@@ -50,6 +50,7 @@ Error* program_extended_config_error(Program* me, csview path, u32 start, u32 en
 // For a config that gave no root files: tsc's TS18002 (an empty `files` without references) or TS18003 (no inputs, no
 // `files` nor `references`). Whether it reported one
 bool program_report_no_inputs(Program* me);
+bool program_report_no_inputs_as(Program* me, csview name); // TS18003 naming the config `name` (empty: absolute)
 // tsc's TS18002 alone (an empty `files` without references nor `extends`), also when `include` found inputs (msw's
 // tsconfig.worker.json). Whether it reported it
 bool program_report_empty_files(Program* me);

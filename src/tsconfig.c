@@ -938,17 +938,23 @@ static bool allows_js(CompilerOptions const* options) {
     return options->is_set[COMPILER_OPTION_allow_js] ? options->allow_js : options->check_js;
 }
 
+// (A name that is only the extension has none: tsgo's FileExtensionIsOneOf of a directory entry wants something
+// before it, so a file named `.ts` is never matched by an include pattern)
+static bool name_has_extension(csview name, char const* extension) {
+    return name.size > (isize)strlen(extension) && csview_ends_with(name, extension);
+}
+
 static bool has_source_extension(ConfigLoad* me, csview name) {
     static const char* const ts[] = { ".ts", ".tsx", ".mts", ".cts" };
     static const char* const js[] = { ".js", ".jsx", ".mjs", ".cjs" };
     for (isize i = 0; i < (isize)c_arraylen(ts); i++) {
-        if (csview_ends_with(name, ts[i])) return true;
+        if (name_has_extension(name, ts[i])) return true;
     }
     if (content_mapper_for_path(my options, name)) return true;
     if (!allows_js(my options)) return false;
     if (csview_ends_with(name, ".min.js")) return false;
     for (isize i = 0; i < (isize)c_arraylen(js); i++) {
-        if (csview_ends_with(name, js[i])) return true;
+        if (name_has_extension(name, js[i])) return true;
     }
     return false;
 }

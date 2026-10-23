@@ -722,6 +722,9 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
                 d->message = cstr_null;
             }
             c_drop(cstr, &harness_cwd, &own);
+            // A config that finds no files: TS18003 by the test's spelling of it (tsgo's harness reports the
+            // config's parse errors, canJsonReportNoInputFiles among them)
+            if (!my tsconfig_roots.count) program_report_no_inputs_as(my program, cstr_sv(&i->path));
         }
         tsconfig_diagnostics_drop(&diagnostics);
         VecCStr directives = my directives;
