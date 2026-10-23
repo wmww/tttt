@@ -1379,6 +1379,42 @@ static_failable build(Options const* opts, returns int) {
     }
     str_list_drop(&cycles);
 
+    // tsgo 7.1's builders take the projects in build order stably sorted by dependency depth (the orchestrator's
+    // computeScheduleOrder: projects without references in the build first, then their dependents...) and report them
+    // in build order. Jobs are numbered in that schedule order; printed[k] is the job of build position k
+    u32* printed = c_new_n(u32, count + 1);
+    {
+        u32 project_count = 0;
+        for (u32 k = 0; k < count; k++) if (order[k] + 1 > project_count) project_count = order[k] + 1;
+        u32* at = c_new_n(u32, project_count + 1);
+        for (u32 p = 0; p < project_count; p++) at[p] = UINT32_MAX;
+        for (u32 k = 0; k < count; k++) at[order[k]] = k;
+        u32* depth = c_new_n(u32, count + 1);
+        u32 max_depth = 0;
+        for (u32 k = 0; k < count; k++) {
+            Project const* p = project_set_at(projects, order[k]);
+            depth[k] = 0;
+            for (u32 r = 0; p->readable && r < p->reference_count; r++) {
+                u32 ref = p->referenced[r] < project_count ? at[p->referenced[r]] : UINT32_MAX;
+                if (ref < k && depth[ref] + 1 > depth[k]) depth[k] = depth[ref] + 1;
+            }
+            if (depth[k] > max_depth) max_depth = depth[k];
+        }
+        u32* scheduled = c_new_n(u32, count + 1);
+        u32 s = 0;
+        for (u32 d = 0; d <= max_depth && s < count; d++) {
+            for (u32 k = 0; k < count; k++) {
+                if (depth[k] != d) continue;
+                printed[k] = s;
+                scheduled[s++] = order[k];
+            }
+        }
+        memcpy(order, scheduled, sizeof(u32) * count);
+        c_free_n(scheduled, count + 1);
+        c_free_n(depth, count + 1);
+        c_free_n(at, project_count + 1);
+    }
+
     u32 jobs = opts->build_jobs ? opts->build_jobs : opts->threads >= 4 ? 2 : 1;
     if (jobs > count) jobs = count ? count : 1;
     Build b = { .opts = opts, .project_opts = *opts, .projects = projects, .order = order, .count = count };
@@ -1390,7 +1426,7 @@ static_failable build(Options const* opts, returns int) {
     atomic_init(&b.end, count);
     // Everything the programs read of the project set, made before any of them runs. A program reads the outputs of
     // the projects tsc -b built before it, references or not (an import into another package's `dist`). tsgo's
-    // builders (4, else --builders) take projects in build order and only wait for references: an unreferenced
+    // builders (4, else --builders) take projects in schedule order and only wait for references: an unreferenced
     // project is built by the time one 4 places later starts, else it races with it, and counts as not built
     // (hacks.md). (The one way --builders changes the output, like tsgo's: `--builders 1` is tsc 5's sequential -b)
     u32 window = opts->build_jobs ? opts->build_jobs : TSGO_BUILDERS;
@@ -1404,7 +1440,7 @@ static_failable build(Options const* opts, returns int) {
     for (u32 i = 0; i < count; i++) position[order[i]] = i;
     u32* stack = c_new_n(u32, count + 1);
     for (u32 i = 0; i < count; i++) {
-        b.jobs[i].out.buffered = jobs > 1;
+        b.jobs[i].out.buffered = true; // (Printed in build order, which isn't the schedule's)
         b.jobs[i].readers++;
         if (!project_set_at(projects, order[i])->readable) continue;
         project_set_root_files(projects, order[i]);
@@ -1444,17 +1480,21 @@ static_failable build(Options const* opts, returns int) {
 
     CheckCounts counts = {0};
     FailableResult failure = {0};
-    for (u32 i = 0; i < count; i++) {
+    u32 next_run = 0; // (Without build threads: the jobs are run here, in schedule order, as far as each print needs)
+    for (u32 k = 0; k < count; k++) {
+        u32 i = printed[k];
         BuildJob* job = &b.jobs[i];
         if (jobs > 1) {
             pthread_mutex_lock(&b.lock);
             while (!job->done) pthread_cond_wait(&b.done, &b.lock);
             pthread_mutex_unlock(&b.lock);
-            output_flush(&job->out);
         } else {
-            build_run(&b, i);
-            build_job_done(&b, i);
+            for (; !job->done && next_run < count; next_run++) {
+                build_run(&b, next_run);
+                build_job_done(&b, next_run);
+            }
         }
+        output_flush(&job->out);
         error_summary_merge(&direct.summary, &job->out.summary);
         if (job->result.error) {
             // (What stops us checking at all: a later project's error isn't any less fatal, but this one comes first)
@@ -1494,6 +1534,7 @@ static_failable build(Options const* opts, returns int) {
     emit_store_destroy(b.store);
     free(b.jobs);
     free(order);
+    c_free_n(printed, count + 1);
     if (failure.error) {
 #ifdef DEBUG_BUILD
         project_set_destroy(projects);

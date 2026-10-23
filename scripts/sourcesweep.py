@@ -31,6 +31,14 @@ LAST = f'/tmp/sourcesweep-{os.path.basename(ROOT)}.json'
 BUILD_ORACLE = os.path.join(ROOT, 'test/sourcesweep/tsc-build.jsonl.gz')
 TSC = [os.path.join(ROOT, 'thirdparty/typescript/built/tsc')]
 SANDBOX = ['bwrap', '--ro-bind', '/', '/', '--bind', '/tmp', '/tmp', '--dev', '/dev', '--proc', '/proc']  # (clidiff's)
+# --build: solutions whose mismatch is a tsgo bug tttt deliberately doesn't emulate, with why (agents/bugs/
+# sourcesweep_build.md). A mismatch there is verdict `known` (listed apart, not among the root causes); a match is a match
+KNOWN_BUILD = {
+    'atproto/tsconfig.json': "tsgo's build-wide cachedvfs never sees writes: a dist an earlier program probed stays "
+                             'missing (TS2307 tsgo reports, tttt rightly not)',
+    'b4run/tsconfig.json': "tsgo's builder race: core starts after permissions only by timing (2 places apart in "
+                           'schedule order, inside the 4-builder window)',
+}
 # Directories that hold no project of the repo's own: outputs, dependencies, tooling state
 SKIP_DIRS = {'node_modules', 'dist', 'build'}
 
@@ -307,6 +315,9 @@ def main():
             verdicts['timeout' if r['status'] == 'timeout' else 'crash'].append(p)
             continue
         spurious, missing = sweep.compare(p, oracle[p], r, SOURCES)
+        if (spurious or missing) and args.build and p in KNOWN_BUILD:
+            verdicts['known'].append(p)
+            continue
         verdicts['both' if spurious and missing else 'spurious' if spurious else 'missing' if missing else 'match'].append(p)
         for d, sp in [(d, True) for d in spurious] + [(d, False) for d in missing]:
             k = root_cause(p, d, sp)
@@ -333,7 +344,10 @@ def main():
     repos_matching = sum(1 for ps in repos.values() if all(p in matching for p in ps))
     print(f'{len(matching)} / {total} projects match ({tsc_clean} clean under tsc), '
           f'{repos_matching} / {len(repos)} repos fully match: ' +
-          ', '.join(f'{k} {len(verdicts[k])}' for k in ('spurious', 'missing', 'both', 'crash', 'timeout')))
+          ', '.join(f'{k} {len(verdicts[k])}' for k in ('spurious', 'missing', 'both', 'crash', 'timeout')) +
+          (f', known {len(verdicts["known"])}' if verdicts['known'] else ''))
+    for p in verdicts['known']:
+        print(f'  known: {p}: {KNOWN_BUILD[p]}')
     tttt_wall = sum(r['wall'] for r in results)
     tsc_ms = sum(oracle[r['package']]['ms'] for r in results)
     print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +

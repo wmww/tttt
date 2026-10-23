@@ -784,7 +784,8 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - Deliberate simplifications (permanent, see documentation.md "baseline_tests"): `apply_setting`, the lib `Program`
   cache, `@noTypesAndSymbols`, `engine.c`, `failstats.py`'s `line_ratio`.
 - `-b`'s visibility window (`build()` in main.c): a program sees an unreferenced project's emitted declarations only
-  when that project is at least 4 places (`--builders`) earlier in build order, and waits for it: a deterministic
+  when that project is at least 4 places (`--builders`) earlier in schedule order (tsgo 7.1's build order sorted by
+  dependency depth), and waits for it: a deterministic
   stand-in for tsgo's builder race (it waits only on references, so whether `dist` exists yet depends on timing;
   atproto's whole solution gets it right but for one import, oauth-client alone at its default builders doesn't). The
   `EmitView` doesn't list in-memory files in directory listings (an `include` glob into a reference's `dist` misses
