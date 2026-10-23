@@ -109,9 +109,13 @@ and the oracle that would show it wrong. How things work belongs in documentatio
 - **The CLI's address-space teardown runs in a detached reaper** (main.c exit_detached(): a CLONE_VM child that drops
   its descriptors, waits on a pidfd for the process to be gone and exits holding the last mm reference). The caller
   gets the status and the pipes' end before the kernel frees the pages (7-66 ms: nest to vscode), but that sys time
-  is nobody's: `/usr/bin/time`, wait4's rusage and perfsweep undercount sys by it, and a caller acting as a child
-  subreaper sees an extra child. `TTTT_SYNC_EXIT=1` (or TTTT_TEARDOWN, valgrind, sanitizers, debug builds) exits in
-  the process. Correct for measuring: set it when comparing sys or kernel cycles across builds.
+  is nobody's: `/usr/bin/time` and wait4's rusage undercount sys by it. A caller that is a child subreaper
+  (PR_SET_CHILD_SUBREAPER: some init shims and harnesses) gets the reaper as an extra child to reap, its exit
+  status 0. `TTTT_SYNC_EXIT=1` (or TTTT_TEARDOWN, valgrind, sanitizers, debug builds) exits in the process: set it
+  when comparing sys or kernel cycles across builds. bench.sh (a second run per sample for CPU), perfshape.sh and
+  perfsweep.py (synced runs, wall to the last output byte of `--time`) already do. The tail was measured on a box
+  with THP `madvise` (4 KB pages: 7-66 ms); the laptop, THP `always`, should measure it (fewer pages to free: it may
+  be smaller there).
 
 ## Parser
 - **A program with a syntax error is loaded twice when it has deferred bodies** (`program_deferred_bodies_parse()`,

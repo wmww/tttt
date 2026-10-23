@@ -44,14 +44,26 @@ LAST = f'/tmp/perfsweep-{os.path.basename(ROOT)}.json'
 MACHINE = socket.gethostname()
 
 
-def run(cmd, cwd, timeout, mem_gb):
-    """Runs cmd, returns (stdout+stderr text, exit status or 'timeout', wall s, peak RSS KB, CPU s (user + sys))"""
+def run(cmd, cwd, timeout, mem_gb, tttt=False):
+    """Runs cmd, returns (stdout+stderr text, exit status or 'timeout', wall s, peak RSS KB, CPU s (user + sys)).
+    tttt: TTTT_SYNC_EXIT=1, so its CPU counts the kernel's exit teardown (the CLI otherwise leaves it to a detached
+    reaper nobody's rusage counts, main.c exit_detached()), and the wall is to its last output byte (--time: there is
+    always one), which is the detached exit's wall within 0.1 ms"""
     limit = mem_gb << 30
     start = time.time()
     proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            env={**os.environ, 'TTTT_SYNC_EXIT': '1'} if tttt else None,
                             preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
     out = []
-    reader = concurrent.futures.ThreadPoolExecutor(1).submit(lambda: out.append(proc.stdout.read()))
+    last = [start]
+
+    def read():
+        chunks = []
+        while chunk := proc.stdout.read1(1 << 20):
+            chunks.append(chunk)
+            last[0] = time.time()
+        out.append(b''.join(chunks))
+    reader = concurrent.futures.ThreadPoolExecutor(1).submit(read)
     status = None
     while status is None:
         pid, code, usage = os.wait4(proc.pid, os.WNOHANG)
@@ -66,7 +78,7 @@ def run(cmd, cwd, timeout, mem_gb):
         time.sleep(0.005)
     proc.returncode = 0  # (Reaped above: keep Popen from waiting again)
     reader.result()
-    wall = time.time() - start
+    wall = (last[0] if tttt and status != 'timeout' else time.time()) - start
     return (out[0] if out else b'').decode(errors='replace'), status, wall, usage.ru_maxrss, usage.ru_utime + usage.ru_stime
 
 
@@ -107,7 +119,7 @@ def run_tttt(project, timeout, mem_gb, defaults=False, extra=()):
     cwd, p = project_args(project)
     single = [] if defaults else ['--checkers', '1', '--threads', '1']
     text, status, wall, rss, cpu = run([TTTT, '-p', p, '--noEmit', '--pretty', 'false', *single,
-                                   *extra, '--time'], cwd, timeout, mem_gb)
+                                   *extra, '--time'], cwd, timeout, mem_gb, tttt=True)
     phases = {m.group(1): float(m.group(2)) for m in re.finditer(r'^time: ([a-z+ ]+?) ([\d.]+) ms', text, re.M)}
     checker = re.search(r'^time: checker 0: ([\d.]+) ms, arena (\d+) MB, (\d+) types', text, re.M)
     return {'project': project, 'status': status if status in (0, 1, 2) else str(status),

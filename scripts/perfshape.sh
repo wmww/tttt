@@ -34,18 +34,34 @@ lib_dir = os.path.join(root, 'thirdparty/lib')
 cores = os.cpu_count()
 
 
-def run(cmd, cwd, env=None):
-    """(stdout, stderr, status, wall s, CPU s (user + sys), sys s, peak RSS MB)"""
+def run(cmd, cwd, env=None, tttt=False):
+    """(stdout, stderr, status, wall s, CPU s (user + sys), sys s, peak RSS MB). tttt: TTTT_SYNC_EXIT=1, so its CPU
+    and sys count the kernel's exit teardown (the CLI otherwise leaves it to a detached reaper nobody's rusage counts,
+    main.c exit_detached()), and the wall is to its last output byte (--time: there is always one), which is the
+    detached exit's wall within 0.1 ms"""
+    import select
     start = time.time()
-    with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:
-        proc = subprocess.Popen(cmd, cwd=cwd, stdout=out, stderr=err, env={**os.environ, **(env or {})})
-        _, code, usage = os.wait4(proc.pid, 0)
-        wall = time.time() - start
-        proc.returncode = 0
-        out.seek(0)
-        err.seek(0)
-        return (out.read().decode(errors='replace'), err.read().decode(errors='replace'), os.waitstatus_to_exitcode(code),
-                wall, usage.ru_utime + usage.ru_stime, usage.ru_stime, usage.ru_maxrss / 1024)
+    env = {**os.environ, **(env or {}), **({'TTTT_SYNC_EXIT': '1'} if tttt else {})}
+    proc = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    bufs = {proc.stdout.fileno(): [], proc.stderr.fileno(): []}
+    open_fds, last = list(bufs), start
+    while open_fds:
+        for fd in select.select(open_fds, [], [])[0]:
+            chunk = os.read(fd, 1 << 20)
+            if chunk:
+                bufs[fd].append(chunk)
+                last = time.time()
+            else:
+                open_fds.remove(fd)
+    _, code, usage = os.wait4(proc.pid, 0)
+    wall = (last if tttt else time.time()) - start
+    proc.returncode = 0
+    text = lambda f: b''.join(bufs[f.fileno()]).decode(errors='replace')
+    out, err = text(proc.stdout), text(proc.stderr)
+    proc.stdout.close()
+    proc.stderr.close()
+    return (out, err, os.waitstatus_to_exitcode(code), wall, usage.ru_utime + usage.ru_stime, usage.ru_stime,
+            usage.ru_maxrss / 1024)
 
 
 work = tempfile.mkdtemp(prefix='perfshape-')
@@ -63,7 +79,7 @@ if tsgo:
 def tttt_run(single=False, files=True):
     extra = ['--checkers', '1', '--threads', '1'] if single else []
     return run([tttt, '-p', project, '--noEmit', '--pretty', 'false', '--time', *extra, *(['--listFiles'] if files else [])],
-               work, {'TTTT_FILE_TIMES': '1'} if files else {})
+               work, {'TTTT_FILE_TIMES': '1'} if files else {}, tttt=True)
 
 
 runs, buns = [], []

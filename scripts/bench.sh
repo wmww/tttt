@@ -37,13 +37,19 @@ TSGO=thirdparty/typescript/built/tsc
 mkdir -p build/bench
 
 # measure NAME CMD...: runs CMD RUNS times, prints best/median wall seconds, the median run's CPU seconds (user + sys,
-# all threads: the cost of the defaults' parallelism, which wall hides) and peak RSS
+# all threads: the cost of the defaults' parallelism, which wall hides) and peak RSS. tttt runs twice each time: its
+# wall as it exits (the kernel's address-space teardown left to a detached reaper, main.c exit_detached()), its CPU
+# with TTTT_SYNC_EXIT=1 (the teardown's sys counted, as every other tool's is)
 measure() {
     local name="$1"; shift
     local runs=() rss=0 status=0
     for _ in $(seq "$RUNS"); do
         /usr/bin/time -f '%e %M %U %S' -o build/bench/time.txt "$@" > build/bench/last_output.txt 2>&1 || status=$?
         read -r wall mem user sys < <(tail -1 build/bench/time.txt)
+        if test "$1" = "$TTTT"; then
+            TTTT_SYNC_EXIT=1 /usr/bin/time -f '%e %M %U %S' -o build/bench/time.txt "$@" > /dev/null 2>&1 || true
+            read -r _ _ user sys < <(tail -1 build/bench/time.txt)
+        fi
         runs+=("$wall $(echo "$user + $sys" | bc)")
         if test "$mem" -gt "$rss"; then rss="$mem"; fi
     done
