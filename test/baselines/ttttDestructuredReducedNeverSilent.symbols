@@ -1,0 +1,59 @@
+//// [test/cases/ttttDestructuredReducedNeverSilent.ts] ////
+
+=== ttttDestructuredReducedNeverSilent.ts ===
+// A property destructured from an intersection reduced to never is never, without an error: tsc's
+// getPropertyTypeForIndexType returns the reduced apparent never silently; only a property access expression reports
+// TS2339 (checkPropertyAccessExpression). portabase's `const { status } = await auth.api.unlinkAccount(...)`, a
+// better-auth response whose `status` is number in one member and boolean in another
+declare const x: { status: number; a: 1 } & { status: boolean }
+>x : Symbol(x, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 13))
+>status : Symbol(status, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 18))
+>a : Symbol(a, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 34))
+>status : Symbol(status, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 45))
+
+const p = x.status
+>p : Symbol(p, Decl(ttttDestructuredReducedNeverSilent.ts, 5, 5))
+>x : Symbol(x, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 13))
+
+const e = x["status"]
+>e : Symbol(e, Decl(ttttDestructuredReducedNeverSilent.ts, 6, 5))
+>x : Symbol(x, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 13))
+
+const { status: s, a } = x
+>s : Symbol(s, Decl(ttttDestructuredReducedNeverSilent.ts, 7, 7))
+>a : Symbol(a, Decl(ttttDestructuredReducedNeverSilent.ts, 7, 18))
+>x : Symbol(x, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 13))
+
+let t: unknown
+>t : Symbol(t, Decl(ttttDestructuredReducedNeverSilent.ts, 8, 3))
+
+;({ status: t } = x)
+>status : Symbol(status, Decl(ttttDestructuredReducedNeverSilent.ts, 9, 3))
+>t : Symbol(t, Decl(ttttDestructuredReducedNeverSilent.ts, 8, 3))
+>x : Symbol(x, Decl(ttttDestructuredReducedNeverSilent.ts, 4, 13))
+
+declare const u: ({ k: 1 } & { k: 2 }) | ({ k: 3 } & { k: 4 })
+>u : Symbol(u, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 13))
+>k : Symbol(k, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 19))
+>k : Symbol(k, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 30))
+>k : Symbol(k, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 43))
+>k : Symbol(k, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 54))
+
+const { k } = u
+>k : Symbol(k, Decl(ttttDestructuredReducedNeverSilent.ts, 11, 7))
+>u : Symbol(u, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 13))
+
+const k2 = u["k"]
+>k2 : Symbol(k2, Decl(ttttDestructuredReducedNeverSilent.ts, 12, 5))
+>u : Symbol(u, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 13))
+
+const k3 = u.k
+>k3 : Symbol(k3, Decl(ttttDestructuredReducedNeverSilent.ts, 13, 5))
+>u : Symbol(u, Decl(ttttDestructuredReducedNeverSilent.ts, 10, 13))
+
+function f({ status: s2 }: { status: number } & { status: boolean }) {}
+>f : Symbol(f, Decl(ttttDestructuredReducedNeverSilent.ts, 13, 14))
+>s2 : Symbol(s2, Decl(ttttDestructuredReducedNeverSilent.ts, 14, 12))
+>status : Symbol(status, Decl(ttttDestructuredReducedNeverSilent.ts, 14, 28))
+>status : Symbol(status, Decl(ttttDestructuredReducedNeverSilent.ts, 14, 49))
+

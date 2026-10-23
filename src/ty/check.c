@@ -2038,8 +2038,10 @@ static void check_access(
 
     // A union of intersections that all reduce to never is never (tsc's getReducedApparentType): narrowing a union by a
     // predicate it has nothing in common with intersects each member with the candidate
+    // (Not a destructured property: tsc's getPropertyTypeForIndexType gives the reduced never silently, only a property
+    // access expression reports, checkPropertyAccessExpression)
     if (error_if_not_found && object->kind == TY_UNION && (ty_reduced(me, object)->flags & TYF_NEVER)) {
-        report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
+        if (span_valid(object_span)) report_no_property(me, object, index, 2339, index_span, false, errs);
         return;
     }
     // An intersection that may be null or undefined, `T & ({} | null)` from narrowing an unconstrained T, is said to
@@ -2193,8 +2195,9 @@ static void check_access(
 
     if (!error_if_not_found) return;
     // `never` has no properties (tsc: only the silent never of inference passes is any-like)
+    // (Destructured, silently: see the union case above)
     if (ty_reduced(me, object)->flags & TYF_NEVER) {
-        report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
+        if (span_valid(object_span)) report_no_property(me, object, index, 2339, index_span, false, errs);
         return;
     }
     // An object literal of a JavaScript file is open-ended (tsc's isJSLiteralType)

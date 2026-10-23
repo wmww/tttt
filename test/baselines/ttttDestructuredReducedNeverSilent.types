@@ -1,0 +1,72 @@
+//// [test/cases/ttttDestructuredReducedNeverSilent.ts] ////
+
+=== ttttDestructuredReducedNeverSilent.ts ===
+// A property destructured from an intersection reduced to never is never, without an error: tsc's
+// getPropertyTypeForIndexType returns the reduced apparent never silently; only a property access expression reports
+// TS2339 (checkPropertyAccessExpression). portabase's `const { status } = await auth.api.unlinkAccount(...)`, a
+// better-auth response whose `status` is number in one member and boolean in another
+declare const x: { status: number; a: 1 } & { status: boolean }
+>x : never
+>status : number
+>a : 1
+>status : boolean
+
+const p = x.status
+>p : any
+>x.status : any
+>x : never
+>status : any
+
+const e = x["status"]
+>e : never
+>x["status"] : never
+>x : never
+>"status" : "status"
+
+const { status: s, a } = x
+>status : any
+>s : never
+>a : never
+>x : never
+
+let t: unknown
+>t : unknown
+
+;({ status: t } = x)
+>({ status: t } = x) : never
+>{ status: t } = x : never
+>{ status: t } : { status: unknown; }
+>status : unknown
+>t : unknown
+>x : never
+
+declare const u: ({ k: 1 } & { k: 2 }) | ({ k: 3 } & { k: 4 })
+>u : never
+>k : 1
+>k : 2
+>k : 3
+>k : 4
+
+const { k } = u
+>k : never
+>u : never
+
+const k2 = u["k"]
+>k2 : never
+>u["k"] : never
+>u : never
+>"k" : "k"
+
+const k3 = u.k
+>k3 : any
+>u.k : any
+>u : never
+>k : any
+
+function f({ status: s2 }: { status: number } & { status: boolean }) {}
+>f : ({ status: s2 }: { status: number; } & { status: boolean; }) => void
+>status : any
+>s2 : never
+>status : number
+>status : boolean
+

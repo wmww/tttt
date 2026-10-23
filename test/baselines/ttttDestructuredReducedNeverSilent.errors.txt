@@ -1,0 +1,29 @@
+ttttDestructuredReducedNeverSilent.ts(6,13): error TS2339: Property 'status' does not exist on type 'never'.
+  The intersection '{ status: number; a: 1; } & { status: boolean; }' was reduced to 'never' because property 'status' has conflicting types in some constituents.
+ttttDestructuredReducedNeverSilent.ts(14,14): error TS2339: Property 'k' does not exist on type 'never'.
+  Property 'k' does not exist on type 'never'.
+
+
+==== ttttDestructuredReducedNeverSilent.ts (2 errors) ====
+    // A property destructured from an intersection reduced to never is never, without an error: tsc's
+    // getPropertyTypeForIndexType returns the reduced apparent never silently; only a property access expression reports
+    // TS2339 (checkPropertyAccessExpression). portabase's `const { status } = await auth.api.unlinkAccount(...)`, a
+    // better-auth response whose `status` is number in one member and boolean in another
+    declare const x: { status: number; a: 1 } & { status: boolean }
+    const p = x.status
+                ~~~~~~
+!!! error TS2339: Property 'status' does not exist on type 'never'.
+!!! error TS2339:   The intersection '{ status: number; a: 1; } & { status: boolean; }' was reduced to 'never' because property 'status' has conflicting types in some constituents.
+    const e = x["status"]
+    const { status: s, a } = x
+    let t: unknown
+    ;({ status: t } = x)
+    declare const u: ({ k: 1 } & { k: 2 }) | ({ k: 3 } & { k: 4 })
+    const { k } = u
+    const k2 = u["k"]
+    const k3 = u.k
+                 ~
+!!! error TS2339: Property 'k' does not exist on type 'never'.
+!!! error TS2339:   Property 'k' does not exist on type 'never'.
+    function f({ status: s2 }: { status: number } & { status: boolean }) {}
+    
