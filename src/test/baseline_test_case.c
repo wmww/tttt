@@ -714,7 +714,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
                     program_config_error(my program, d->start, d->end, d->code, d->message) :
                     extended ? program_extended_config_error(my program, cstr_sv(&extended->path), d->start, d->end, d->code, d->message) :
                     error_ctx_global_error_s(program_errors(my program), d->code, d->message);
-                error->phase = ERROR_PHASE_PARSE;
+                if (error) error->phase = ERROR_PHASE_PARSE; // (Null when it repeats one)
                 // (The baseline shows that file's errors with it, through its config source)
                 if (extended && error && span_valid(error->span) && !extended->config_source) {
                     ((BaselineTestFile*)extended)->config_source = span_source(error->span);

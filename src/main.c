@@ -385,7 +385,8 @@ static_failable apply_compiler_options(Options const* opts, csview config, Progr
                 error = program_extended_config_error(program, cstr_sv(&extended), d->start, d->end, d->code, d->message);
                 cstr_drop(&extended);
             }
-            error->phase = ERROR_PHASE_PARSE;
+            // (Null when it repeats one: `"extends": ["./base.json", "./base.json"]`, which tsc reports twice)
+            if (error) error->phase = ERROR_PHASE_PARSE;
             d->message = cstr_null;
         }
         tsconfig_diagnostics_drop(&diagnostics);
