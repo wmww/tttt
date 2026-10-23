@@ -4826,6 +4826,13 @@ static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
         if (constraint && conditional->conditional.mapper) constraint = ty_instantiate(me, constraint, conditional->conditional.mapper);
         targets[i] = constraint && !(constraint->flags & (TYF_UNKNOWN | TYF_ANY)) ? constraint : ty_intrinsic(me, TY_UNKNOWN_);
     }
+    // A constraint that mentions the other infer type parameters says what they were inferred as: tsc's getInferredType
+    // instantiates it with the nonFixingMapper, so `T extends G<infer X, infer Y>` with G's `A extends B[]` has X's
+    // `Y[]` come to `unknown[]` (Y inferred as nothing)
+    TyMapper const* so_far = ty_mapper_new(me, infers, (TyList){ .data = targets, .len = infers.len });
+    for (u32 i = 0; i < infers.len; i++) {
+        if (targets[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) targets[i] = ty_instantiate(me, targets[i], so_far);
+    }
     Ty const* ret = ty_instantiate(me, branch, ty_mapper_new(me, infers, (TyList){ .data = targets, .len = infers.len }));
     if (targets != stack_buf) free(targets);
     *intern_slot(me, &my links, key, 2) = ret;
