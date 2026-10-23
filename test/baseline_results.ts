@@ -1439,6 +1439,12 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInferIntersectionSourceUnaliased': {
+        errors: true,
+        symbols: true,
+        types: true,
+        dts: true,
+    },
     'ttttInferPredicateOnlyForPredicateTarget': {
         errors: true,
         symbols: true,

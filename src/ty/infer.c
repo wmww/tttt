@@ -1635,6 +1635,10 @@ static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** s
     if (left && kept_targets.len < targets.len) {
         *source = ty_intersection(me, kept_sources.data, kept_sources.len, nullptr, (TyList){0});
         *target = ty_intersection(me, kept_targets.data, kept_targets.len, nullptr, (TyList){0});
+    } else if (left && (*source)->kind == TY_INTERSECTION && (*source)->alias) {
+        // (tsc remakes the source with getIntersectionType even when nothing matched: an aliased intersection is
+        // inferred unaliased, vue's `components: Comp` infers LC as DefineComponent's members, not `DefineComponent<...>`)
+        *source = ty_intersection(me, kept_sources.data, kept_sources.len, nullptr, (TyList){0});
     } else if (left && !compiler_options()->strict_null_checks && ((*source)->flags & TYF_NULLABLE) &&
         ((*source)->xflags & TYX_CONTAINS_WIDENING)
     ) {

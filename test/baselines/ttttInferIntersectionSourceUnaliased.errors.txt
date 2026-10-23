@@ -1,0 +1,23 @@
+ttttInferIntersectionSourceUnaliased.ts(7,31): error TS2322: Type 'Named<number>' is not assignable to type '((new () => number) & { name: string; } & Record<string, unknown>) | undefined'.
+  Type 'Named<number>' is not assignable to type '(new () => number) & { name: string; } & Record<string, unknown>'.
+    Type 'Named<number>' is not assignable to type 'Record<string, unknown>'.
+      Index signature for type 'string' is missing in type 'Named<number>'.
+
+
+==== ttttInferIntersectionSourceUnaliased.ts (1 errors) ====
+    // Inferring from an aliased intersection to an intersection target with an inference candidate: tsc's
+    // inferFromTypes remakes the source with getIntersectionType after inferFromMatchingTypes, so the inferred type is
+    // unaliased (vueuse: vue's `components: Comp` infers LC as DefineComponent's members, not `DefineComponent<...>`)
+    type Named<T> = { new (): T } & { name: string };
+    declare const comp: Named<number>;
+    declare function use<LC>(options: { components?: LC & Record<string, unknown> }): LC;
+    export const inferred = use({ components: comp });
+                                  ~~~~~~~~~~
+!!! error TS2322: Type 'Named<number>' is not assignable to type '((new () => number) & { name: string; } & Record<string, unknown>) | undefined'.
+!!! error TS2322:   Type 'Named<number>' is not assignable to type '(new () => number) & { name: string; } & Record<string, unknown>'.
+!!! error TS2322:     Type 'Named<number>' is not assignable to type 'Record<string, unknown>'.
+!!! error TS2322:       Index signature for type 'string' is missing in type 'Named<number>'.
+!!! related TS6500 ttttInferIntersectionSourceUnaliased.ts:6:37: The expected type comes from property 'components' which is declared here on type '{ components?: ((new () => number) & { name: string; } & Record<string, unknown>) | undefined; }'
+    declare function plain<LC>(options: { components?: LC }): LC;
+    export const kept = plain({ components: comp });
+    

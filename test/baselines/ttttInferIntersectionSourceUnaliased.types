@@ -1,0 +1,39 @@
+//// [test/cases/ttttInferIntersectionSourceUnaliased.ts] ////
+
+=== ttttInferIntersectionSourceUnaliased.ts ===
+// Inferring from an aliased intersection to an intersection target with an inference candidate: tsc's
+// inferFromTypes remakes the source with getIntersectionType after inferFromMatchingTypes, so the inferred type is
+// unaliased (vueuse: vue's `components: Comp` infers LC as DefineComponent's members, not `DefineComponent<...>`)
+type Named<T> = { new (): T } & { name: string };
+>Named : Named<T>
+>name : string
+
+declare const comp: Named<number>;
+>comp : Named<number>
+
+declare function use<LC>(options: { components?: LC & Record<string, unknown> }): LC;
+>use : <LC>(options: { components?: LC & Record<string, unknown>; }) => LC
+>options : { components?: LC & Record<string, unknown>; }
+>components : (LC & Record<string, unknown>) | undefined
+
+export const inferred = use({ components: comp });
+>inferred : (new () => number) & { name: string; }
+>use({ components: comp }) : (new () => number) & { name: string; }
+>use : <LC>(options: { components?: LC & Record<string, unknown>; }) => LC
+>{ components: comp } : { components: Named<number>; }
+>components : Named<number>
+>comp : Named<number>
+
+declare function plain<LC>(options: { components?: LC }): LC;
+>plain : <LC>(options: { components?: LC; }) => LC
+>options : { components?: LC; }
+>components : LC | undefined
+
+export const kept = plain({ components: comp });
+>kept : Named<number>
+>plain({ components: comp }) : Named<number>
+>plain : <LC>(options: { components?: LC; }) => LC
+>{ components: comp } : { components: Named<number>; }
+>components : Named<number>
+>comp : Named<number>
+

@@ -1,0 +1,45 @@
+//// [test/cases/ttttInferIntersectionSourceUnaliased.ts] ////
+
+=== ttttInferIntersectionSourceUnaliased.ts ===
+// Inferring from an aliased intersection to an intersection target with an inference candidate: tsc's
+// inferFromTypes remakes the source with getIntersectionType after inferFromMatchingTypes, so the inferred type is
+// unaliased (vueuse: vue's `components: Comp` infers LC as DefineComponent's members, not `DefineComponent<...>`)
+type Named<T> = { new (): T } & { name: string };
+>Named : Symbol(Named, Decl(ttttInferIntersectionSourceUnaliased.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferIntersectionSourceUnaliased.ts, 3, 11))
+>T : Symbol(T, Decl(ttttInferIntersectionSourceUnaliased.ts, 3, 11))
+>name : Symbol(name, Decl(ttttInferIntersectionSourceUnaliased.ts, 3, 33))
+
+declare const comp: Named<number>;
+>comp : Symbol(comp, Decl(ttttInferIntersectionSourceUnaliased.ts, 4, 13))
+>Named : Symbol(Named, Decl(ttttInferIntersectionSourceUnaliased.ts, 0, 0))
+
+declare function use<LC>(options: { components?: LC & Record<string, unknown> }): LC;
+>use : Symbol(use, Decl(ttttInferIntersectionSourceUnaliased.ts, 4, 34))
+>LC : Symbol(LC, Decl(ttttInferIntersectionSourceUnaliased.ts, 5, 21))
+>options : Symbol(options, Decl(ttttInferIntersectionSourceUnaliased.ts, 5, 25))
+>components : Symbol(components, Decl(ttttInferIntersectionSourceUnaliased.ts, 5, 35))
+>LC : Symbol(LC, Decl(ttttInferIntersectionSourceUnaliased.ts, 5, 21))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>LC : Symbol(LC, Decl(ttttInferIntersectionSourceUnaliased.ts, 5, 21))
+
+export const inferred = use({ components: comp });
+>inferred : Symbol(inferred, Decl(ttttInferIntersectionSourceUnaliased.ts, 6, 12))
+>use : Symbol(use, Decl(ttttInferIntersectionSourceUnaliased.ts, 4, 34))
+>components : Symbol(components, Decl(ttttInferIntersectionSourceUnaliased.ts, 6, 29))
+>comp : Symbol(comp, Decl(ttttInferIntersectionSourceUnaliased.ts, 4, 13))
+
+declare function plain<LC>(options: { components?: LC }): LC;
+>plain : Symbol(plain, Decl(ttttInferIntersectionSourceUnaliased.ts, 6, 50))
+>LC : Symbol(LC, Decl(ttttInferIntersectionSourceUnaliased.ts, 7, 23))
+>options : Symbol(options, Decl(ttttInferIntersectionSourceUnaliased.ts, 7, 27))
+>components : Symbol(components, Decl(ttttInferIntersectionSourceUnaliased.ts, 7, 37))
+>LC : Symbol(LC, Decl(ttttInferIntersectionSourceUnaliased.ts, 7, 23))
+>LC : Symbol(LC, Decl(ttttInferIntersectionSourceUnaliased.ts, 7, 23))
+
+export const kept = plain({ components: comp });
+>kept : Symbol(kept, Decl(ttttInferIntersectionSourceUnaliased.ts, 8, 12))
+>plain : Symbol(plain, Decl(ttttInferIntersectionSourceUnaliased.ts, 6, 50))
+>components : Symbol(components, Decl(ttttInferIntersectionSourceUnaliased.ts, 8, 27))
+>comp : Symbol(comp, Decl(ttttInferIntersectionSourceUnaliased.ts, 4, 13))
+
