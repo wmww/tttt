@@ -1,0 +1,76 @@
+//// [test/cases/ttttSpreadDivergentAccessorKept.ts] ////
+
+=== ttttSpreadDivergentAccessorKept.ts ===
+// A spread keeps an accessor pair whose setter takes another type as that symbol (tsc's getSpreadSymbol), and
+// widening keeps it (getWidenedProperty): writes go by the setter
+const o1 = { get d(): number { return 1 }, set d(v: string | number) {} };
+>o1 : { get d(): number; set d(v: string | number); }
+>{ get d(): number { return 1 }, set d(v: string | number) {} } : { get d(): number; set d(v: string | number); }
+>d : number
+>1 : 1
+>d : number
+>v : string | number
+
+const sp = { ...o1 }; sp.d = "x";
+>sp : { get d(): number; set d(v: string | number); }
+>{ ...o1 } : { get d(): number; set d(v: string | number); }
+>o1 : { get d(): number; set d(v: string | number); }
+>sp.d = "x" : "x"
+>sp.d : string | number
+>sp : { get d(): number; set d(v: string | number); }
+>d : string | number
+>"x" : "x"
+
+const s1: string = sp;
+>s1 : string
+>sp : { get d(): number; set d(v: string | number); }
+
+interface I { get d(): number; set d(v: string | number); r: 1 }
+>d : number
+>d : number
+>v : string | number
+>r : 1
+
+declare const i: I;
+>i : I
+
+const { r, ...rest } = i; rest.d = "x";
+>r : 1
+>rest : { get d(): number; set d(v: string | number); }
+>i : I
+>rest.d = "x" : "x"
+>rest.d : string | number
+>rest : { get d(): number; set d(v: string | number); }
+>d : string | number
+>"x" : "x"
+
+const sp2 = { ...i }; sp2.d = "y";
+>sp2 : { get d(): number; set d(v: string | number); r: 1; }
+>{ ...i } : { get d(): number; set d(v: string | number); r: 1; }
+>i : I
+>sp2.d = "y" : "y"
+>sp2.d : string | number
+>sp2 : { get d(): number; set d(v: string | number); r: 1; }
+>d : string | number
+>"y" : "y"
+
+const sp3 = { ...i, d: 1 };
+>sp3 : { r: 1; d: number; }
+>{ ...i, d: 1 } : { r: 1; d: number; }
+>i : I
+>d : number
+>1 : 1
+
+const sp4 = { a: 1, ...(i as Partial<I>) };
+>sp4 : { d?: number | undefined; r?: 1 | undefined; a: number; }
+>{ a: 1, ...(i as Partial<I>) } : { d?: number | undefined; r?: 1 | undefined; a: number; }
+>a : number
+>1 : 1
+>(i as Partial<I>) : Partial<I>
+>i as Partial<I> : Partial<I>
+>i : I
+
+const sentinel: number = "";
+>sentinel : number
+>"" : ""
+

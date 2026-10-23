@@ -6650,6 +6650,12 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
     ObjectLiteralProp* props = calloc(capacity ? capacity : 1, sizeof(ObjectLiteralProp));
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
+        // (An accessor pair a spread kept with its write type stays itself: tsc's getWidenedProperty returns what isn't a
+        // SymbolFlags.Property as it is)
+        if (!prop->decl->function && prop_write_type(me, prop)) {
+            props[i] = (ObjectLiteralProp){ .name = prop->name, .reuse = prop };
+            continue;
+        }
         Ty const* type = nullptr;
         if (!prop->decl->function && ctx) {
             WideningCtx child = { .parent = ctx, .name = prop->name };

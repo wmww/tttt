@@ -1,0 +1,63 @@
+//// [test/cases/ttttSpreadDivergentAccessorKept.ts] ////
+
+=== ttttSpreadDivergentAccessorKept.ts ===
+// A spread keeps an accessor pair whose setter takes another type as that symbol (tsc's getSpreadSymbol), and
+// widening keeps it (getWidenedProperty): writes go by the setter
+const o1 = { get d(): number { return 1 }, set d(v: string | number) {} };
+>o1 : Symbol(o1, Decl(ttttSpreadDivergentAccessorKept.ts, 2, 5))
+>d : Symbol(d, Decl(ttttSpreadDivergentAccessorKept.ts, 2, 12), Decl(ttttSpreadDivergentAccessorKept.ts, 2, 42))
+>d : Symbol(d, Decl(ttttSpreadDivergentAccessorKept.ts, 2, 12), Decl(ttttSpreadDivergentAccessorKept.ts, 2, 42))
+>v : Symbol(v, Decl(ttttSpreadDivergentAccessorKept.ts, 2, 49))
+
+const sp = { ...o1 }; sp.d = "x";
+>sp : Symbol(sp, Decl(ttttSpreadDivergentAccessorKept.ts, 3, 5))
+>o1 : Symbol(o1, Decl(ttttSpreadDivergentAccessorKept.ts, 2, 5))
+>sp.d : Symbol(d, Decl(ttttSpreadDivergentAccessorKept.ts, 2, 12), Decl(ttttSpreadDivergentAccessorKept.ts, 2, 42))
+>sp : Symbol(sp, Decl(ttttSpreadDivergentAccessorKept.ts, 3, 5))
+>d : Symbol(d, Decl(ttttSpreadDivergentAccessorKept.ts, 2, 12), Decl(ttttSpreadDivergentAccessorKept.ts, 2, 42))
+
+const s1: string = sp;
+>s1 : Symbol(s1, Decl(ttttSpreadDivergentAccessorKept.ts, 4, 5))
+>sp : Symbol(sp, Decl(ttttSpreadDivergentAccessorKept.ts, 3, 5))
+
+interface I { get d(): number; set d(v: string | number); r: 1 }
+>I : Symbol(I, Decl(ttttSpreadDivergentAccessorKept.ts, 4, 22))
+>d : Symbol(I.d, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 13), Decl(ttttSpreadDivergentAccessorKept.ts, 5, 30))
+>d : Symbol(I.d, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 13), Decl(ttttSpreadDivergentAccessorKept.ts, 5, 30))
+>v : Symbol(v, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 37))
+>r : Symbol(I.r, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 57))
+
+declare const i: I;
+>i : Symbol(i, Decl(ttttSpreadDivergentAccessorKept.ts, 6, 13))
+>I : Symbol(I, Decl(ttttSpreadDivergentAccessorKept.ts, 4, 22))
+
+const { r, ...rest } = i; rest.d = "x";
+>r : Symbol(r, Decl(ttttSpreadDivergentAccessorKept.ts, 7, 7))
+>rest : Symbol(rest, Decl(ttttSpreadDivergentAccessorKept.ts, 7, 10))
+>i : Symbol(i, Decl(ttttSpreadDivergentAccessorKept.ts, 6, 13))
+>rest.d : Symbol(I.d, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 13), Decl(ttttSpreadDivergentAccessorKept.ts, 5, 30))
+>rest : Symbol(rest, Decl(ttttSpreadDivergentAccessorKept.ts, 7, 10))
+>d : Symbol(I.d, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 13), Decl(ttttSpreadDivergentAccessorKept.ts, 5, 30))
+
+const sp2 = { ...i }; sp2.d = "y";
+>sp2 : Symbol(sp2, Decl(ttttSpreadDivergentAccessorKept.ts, 8, 5))
+>i : Symbol(i, Decl(ttttSpreadDivergentAccessorKept.ts, 6, 13))
+>sp2.d : Symbol(I.d, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 13), Decl(ttttSpreadDivergentAccessorKept.ts, 5, 30))
+>sp2 : Symbol(sp2, Decl(ttttSpreadDivergentAccessorKept.ts, 8, 5))
+>d : Symbol(I.d, Decl(ttttSpreadDivergentAccessorKept.ts, 5, 13), Decl(ttttSpreadDivergentAccessorKept.ts, 5, 30))
+
+const sp3 = { ...i, d: 1 };
+>sp3 : Symbol(sp3, Decl(ttttSpreadDivergentAccessorKept.ts, 9, 5))
+>i : Symbol(i, Decl(ttttSpreadDivergentAccessorKept.ts, 6, 13))
+>d : Symbol(d, Decl(ttttSpreadDivergentAccessorKept.ts, 9, 19))
+
+const sp4 = { a: 1, ...(i as Partial<I>) };
+>sp4 : Symbol(sp4, Decl(ttttSpreadDivergentAccessorKept.ts, 10, 5))
+>a : Symbol(a, Decl(ttttSpreadDivergentAccessorKept.ts, 10, 13))
+>i : Symbol(i, Decl(ttttSpreadDivergentAccessorKept.ts, 6, 13))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>I : Symbol(I, Decl(ttttSpreadDivergentAccessorKept.ts, 4, 22))
+
+const sentinel: number = "";
+>sentinel : Symbol(sentinel, Decl(ttttSpreadDivergentAccessorKept.ts, 11, 5))
+

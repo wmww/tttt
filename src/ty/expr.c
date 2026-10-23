@@ -3761,6 +3761,9 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
                 (!origin->decl->symbol && prop_decl_rare(origin->decl)->spread_fresh),
             .spread_alias = origin->decl->symbol ? (origin->flags & PROP_NO_VALUE_DECLARATION) != 0 :
                 prop_decl_rare(origin->decl)->spread_alias,
+            // (An accessor pair whose setter takes another type stays that symbol, with its write type: tsc's
+            // getSpreadSymbol keeps a property whose readonly-ness doesn't change, `sp.d = "x"` writes the setter's)
+            .reuse = !partial && !setonly && readonly == !!(prop->flags & PROP_READONLY) && prop_write_type(me, prop) ? prop : nullptr,
         });
     }
     // (Not readonly outside a const context, like the properties: tsc's getIndexInfoWithReadonly in getSpreadType)
@@ -3798,6 +3801,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         // Optional: what was there stays possible, and so does its being required
         ObjectLiteralProp merged = *l;
         merged.parent = nullptr;
+        merged.reuse = nullptr;
         if (!merged.type && merged.accessor) { // (A getter (and setter) pair: getTypeOfSymbol)
             merged.type = ty_object_literal_accessor_type(me, merged.accessor, (merged.flags & PROP_GETTER) != 0);
             merged.accessor = merged.setter = nullptr;
