@@ -1,0 +1,19 @@
+src/a.ts(1,19): error TS7016: Could not find a declaration file for module 'react'. 'node_modules/react/index.js' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "strict": true, "module": "esnext", "moduleResolution": "bundler", "types": [], "noEmit": true, "paths": { "*": ["./src/*", "./node_modules/*"] } }, "include": ["src"] }
+==== src/a.ts (1 errors) ====
+    import { x } from "react";
+                      ~~~~~~~
+!!! error TS7016: Could not find a declaration file for module 'react'. 'node_modules/react/index.js' implicitly has an 'any' type.
+    export const y: number = x;
+    
+==== node_modules/react/package.json (0 errors) ====
+    { "name": "react", "version": "16.13.1", "main": "index.js" }
+==== node_modules/react/index.js (0 errors) ====
+    module.exports = {};
+==== node_modules/@types/react/package.json (0 errors) ====
+    { "name": "@types/react", "version": "16.9.0", "types": "index.d.ts" }
+==== node_modules/@types/react/index.d.ts (0 errors) ====
+    export declare const x: number;

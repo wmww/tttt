@@ -36,3 +36,10 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   Exclude compares StrictFunction with itself, and tttt's callable_definitely_related shortcut asked for its return type
   (the Exclude being resolved): TS2577. tsc's isTypeAssignableTo answers identity first. Fixed by taking the true
   branch for identical check and extends types (ty_conditional_resolve). [flip] [fixed 389887243]
+- **npm_react-smooth-scroll-hook_TS7016** (seed 20261027, react-smooth-scroll-hook@1.3.4, ron0115/react-smooth-scroll-hook
+  tsconfig.bench.json): `paths: { "*": ["./src/*", "./node_modules/*"] }` under bundler resolution. tsgo resolves
+  `react` through the paths candidate ./node_modules/react to the untyped index.js (TypeScript and JavaScript extensions
+  tried together at each location for bundler/node16/nodenext) and reports TS7016, then TS2503 for `React.` namespaces;
+  tttt goes on to @types/react (as if TypeScript extensions were tried everywhere before JavaScript, node10's two
+  passes). Missing 3 TS7016 + 1 TS2503 there; not a flip (both have errors). Guess: the module resolver's extension
+  passes for paths mappings (src/ module resolution). The clone is deleted. [open]

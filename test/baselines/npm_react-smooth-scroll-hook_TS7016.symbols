@@ -1,0 +1,10 @@
+//// [test/cases/npm_react-smooth-scroll-hook_TS7016.ts] ////
+
+=== src/a.ts ===
+import { x } from "react";
+>x : Symbol(x, Decl(a.ts, 0, 8))
+
+export const y: number = x;
+>y : Symbol(y, Decl(a.ts, 1, 12))
+>x : Symbol(x, Decl(a.ts, 0, 8))
+
