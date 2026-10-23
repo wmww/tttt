@@ -57,8 +57,9 @@ brief, you don't understand the task yet. The common rules, each learned from an
   `perfsweep.py`) from a worktree; the merger runs those.
 - Never `git stash` (shared by all worktrees); never `pkill -f PATTERN` with the pattern on the same command line,
   and never `pgrep -f`/`pkill -f` a generic pattern (`tttt`, `callgrind`): it matches other workers' jobs and once
-  killed one. Kill by a PID you started. Never `rm` a path built from a shell variable (literal paths, or
-  `"${S:?}"/...`).
+  killed one. Kill by a PID you started. Never `rm -rf` a glob, `*`, or a path built from a shell variable: each
+  raises a permission prompt on the human's side, which they deny (`rm -rf *` in a probe directory did, 2026-10-23).
+  Literal paths only; a fresh `mktemp -d` directory per probe, removed by one literal `rm -rf PATH` at the end.
 - Never create a symlink into `thirdparty/` from scratch, nor copy a project by following its links: a write
   through one lands in the shared, hardlinked checkouts (a reducer once stubbed 690 dependency files across every
   repo). Reduce with `scripts/reduce.py` (symlink-free copy, bwrap sandbox); `scripts/sourcescheck.sh` tells.
