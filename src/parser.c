@@ -6680,11 +6680,20 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     Span name;
     Span word;
     Parser probe = parser(&p);
-    bool reserved = parse_identifier_or_keyword(&probe, &word) && is_reserved_word(span_sv(word));
+    bool is_word = parse_identifier_or_keyword(&probe, &word);
+    bool reserved = is_word && is_reserved_word(span_sv(word));
+    // (`await` in an async function or static block, `yield` in a generator: no identifier there, tsc's isIdentifier,
+    // and no reserved word either, so TS1003)
+    bool contextual = is_word && !reserved &&
+        ((span_equals(word, "await") && (p.shared->in_async || p.shared->in_static_block)) ||
+            (span_equals(word, "yield") && p.shared->in_generator));
     parse_fail(&probe);
     if (reserved) {
         // tsc's parseIdentifier: TS1359, and a missing name (the word stays for what follows to trip over)
         parse_error(&p, word, 1359, "Identifier expected. '", word, "' is a reserved word that cannot be used here.");
+        name = span_make(p.shared->source, token_full_start(&p), token_full_start(&p)); // (tsc's missing node)
+    } else if (contextual) {
+        parse_error(&p, word, 1003, "Identifier expected.");
         name = span_make(p.shared->source, token_full_start(&p), token_full_start(&p)); // (tsc's missing node)
     } else {
         expect_identifier(&p, &name);
@@ -14650,7 +14659,10 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     VecSpan names = vec_span_init();
     Span name;
     if (parse_identifier(&p, &name)) {
-        if (is_reserved_word(span_sv(name))) {
+        // (`await` in an async function or static block, `yield` in a generator: no identifier either, tsc's isIdentifier)
+        bool contextual = (span_equals(name, "await") && (p.shared->in_async || p.shared->in_static_block)) ||
+            (span_equals(name, "yield") && p.shared->in_generator);
+        if (is_reserved_word(span_sv(name)) || contextual) {
             // tsc's nextTokenIsIdentifierOrStringLiteralOnSameLine: `module debugger {}` is an expression statement
             // `module` (TS2819, report_missing_semicolon_after_identifier())
             vec_span_drop(&names);
