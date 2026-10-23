@@ -1,0 +1,40 @@
+//// [test/cases/ttttEnumKeyDeclaredAfterUse.ts] ////
+
+=== ttttEnumKeyDeclaredAfterUse.ts ===
+// An enum member as an element access key names its property only once declared: tsc's tryGetNameFromEntityNameExpression
+// reads an initializer only if isBlockScopedNameDeclaredBeforeUse, so `o[E.A]` above `const enum E` isn't narrowed
+// (bun's 25-C2)
+declare const o: { a: string | number };
+>o : Symbol(o, Decl(ttttEnumKeyDeclaredAfterUse.ts, 3, 13))
+>a : Symbol(a, Decl(ttttEnumKeyDeclaredAfterUse.ts, 3, 18))
+
+if (typeof o[E.A] === "string") o[E.A].length;
+>o : Symbol(o, Decl(ttttEnumKeyDeclaredAfterUse.ts, 3, 13))
+>E.A : Symbol(E.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 14))
+>E : Symbol(E, Decl(ttttEnumKeyDeclaredAfterUse.ts, 4, 46))
+>A : Symbol(E.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 14))
+>o : Symbol(o, Decl(ttttEnumKeyDeclaredAfterUse.ts, 3, 13))
+>E.A : Symbol(E.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 14))
+>E : Symbol(E, Decl(ttttEnumKeyDeclaredAfterUse.ts, 4, 46))
+>A : Symbol(E.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 14))
+
+const enum E { A = "a" }
+>E : Symbol(E, Decl(ttttEnumKeyDeclaredAfterUse.ts, 4, 46))
+>A : Symbol(E.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 14))
+
+const enum F { A = "a" }
+>F : Symbol(F, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 24))
+>A : Symbol(F.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 6, 14))
+
+if (typeof o[F.A] === "string") o[F.A].length;
+>o : Symbol(o, Decl(ttttEnumKeyDeclaredAfterUse.ts, 3, 13))
+>F.A : Symbol(F.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 6, 14))
+>F : Symbol(F, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 24))
+>A : Symbol(F.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 6, 14))
+>o[F.A].length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>o : Symbol(o, Decl(ttttEnumKeyDeclaredAfterUse.ts, 3, 13))
+>F.A : Symbol(F.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 6, 14))
+>F : Symbol(F, Decl(ttttEnumKeyDeclaredAfterUse.ts, 5, 24))
+>A : Symbol(F.A, Decl(ttttEnumKeyDeclaredAfterUse.ts, 6, 14))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+

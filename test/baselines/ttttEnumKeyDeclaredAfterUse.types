@@ -1,0 +1,54 @@
+//// [test/cases/ttttEnumKeyDeclaredAfterUse.ts] ////
+
+=== ttttEnumKeyDeclaredAfterUse.ts ===
+// An enum member as an element access key names its property only once declared: tsc's tryGetNameFromEntityNameExpression
+// reads an initializer only if isBlockScopedNameDeclaredBeforeUse, so `o[E.A]` above `const enum E` isn't narrowed
+// (bun's 25-C2)
+declare const o: { a: string | number };
+>o : { a: string | number; }
+>a : string | number
+
+if (typeof o[E.A] === "string") o[E.A].length;
+>typeof o[E.A] === "string" : boolean
+>typeof o[E.A] : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>o[E.A] : string | number
+>o : { a: string | number; }
+>E.A : E
+>E : typeof E
+>A : E
+>"string" : "string"
+>o[E.A].length : any
+>o[E.A] : string | number
+>o : { a: string | number; }
+>E.A : E
+>E : typeof E
+>A : E
+>length : any
+
+const enum E { A = "a" }
+>E : E
+>A : E.A
+>"a" : "a"
+
+const enum F { A = "a" }
+>F : F
+>A : F.A
+>"a" : "a"
+
+if (typeof o[F.A] === "string") o[F.A].length;
+>typeof o[F.A] === "string" : boolean
+>typeof o[F.A] : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>o[F.A] : string | number
+>o : { a: string | number; }
+>F.A : F
+>F : typeof F
+>A : F
+>"string" : "string"
+>o[F.A].length : number
+>o[F.A] : string
+>o : { a: string | number; }
+>F.A : F
+>F : typeof F
+>A : F
+>length : number
+

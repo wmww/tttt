@@ -709,6 +709,16 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     } else if (!is_constant_entity_name(me, key)) {
         return nullptr;
     }
+    // (An enum member declared after the use names nothing: tsc's tryGetNameFromEntityNameExpression reads an enum
+    // member's initializer only if isBlockScopedNameDeclaredBeforeUse, `o[E.A]` above `const enum E { A = "a" }`)
+    if (key->tag == EXPR_PROPERTY && key->property->expr.tag == EXPR_IDENTIFIER && key->property->expr.identifier.target &&
+        (key->property->expr.identifier.target->flags & SYMBOL_ENUM)
+    ) {
+        Span declared = key->property->expr.identifier.target->name_span;
+        if (span_source(declared) == span_source(key->inner_span) && span_start_ptr(declared) > span_start_ptr(key->inner_span)) {
+            return nullptr;
+        }
+    }
     bool is_number = false;
     Atom const* name = ty_property_name_of_key(me, ty_flow_expr_type(me, key), &is_number);
     if (name || key->tag != EXPR_PROPERTY) return name;
