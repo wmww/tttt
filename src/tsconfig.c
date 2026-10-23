@@ -34,7 +34,35 @@ typedef struct ConfigLoad {
     TsconfigDiagnostics* diagnostics; // Null: not wanted
     TsconfigFoundHook found; // tsconfig_load_streamed()
     void* found_ctx;
+    // Which config last set each option, by the order configs are applied in (`null` takes back only what the
+    // configs a config extends set: apply_compiler_options())
+    u32 applied; // Configs whose own options were applied so far
+    struct { char const* name; u32 by; } setters[64];
+    u32 setter_count;
+    // Of the config being applied: `applied` when the config whose `extends` lists it began its extends (0 for the
+    // root): a null takes back what was set since (tsgo merges each extended config's own options, explicit nulls
+    // included, into the accumulated options of the config that extends it, and that one's raw has no null)
+    u32 null_start;
+    u32 parent_extends_start; // While a config's extends load: its `applied` before them
 } ConfigLoad;
+
+// The config (its `applied` ordinal) that last set `name`, UINT32_MAX if none did
+static u32 option_setter(ConfigLoad const* me, char const* name) {
+    for (u32 i = my setter_count; i-- > 0;) {
+        if (!strcmp(my setters[i].name, name)) return my setters[i].by;
+    }
+    return UINT32_MAX;
+}
+
+static void note_option_setter(ConfigLoad* me, char const* name) {
+    for (u32 i = 0; i < my setter_count; i++) {
+        if (!strcmp(my setters[i].name, name)) {
+            my setters[i].by = my applied;
+            return;
+        }
+    }
+    if (my setter_count < c_arraylen(my setters)) my setters[my setter_count++] = (__typeof__(my setters[0])){ name, my applied };
+}
 
 static void config_diagnostic(ConfigLoad* me, unsigned code, cstr message, csview config, u32 start, u32 end) {
     if (!my diagnostics) {
@@ -133,6 +161,19 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
             }
         }
         if (value->tag == JSON_NULL) {
+            // (Not what this object itself set: `"strict": false, "strict": null` is false, tsgo's null merge goes by
+            // the extended configs' options only)
+            bool set_here = false;
+            for (isize j = 0; j < i && !set_here; j++) {
+                set_here = !strcmp(cstr_str(&compiler_options->members[j].key), name) &&
+                    compiler_options->members[j].value.tag != JSON_NULL;
+            }
+            if (set_here) continue;
+            // (Nor what was set before the config whose `extends` lists this one began its extends: `"extends":
+            // ["./x.json", "./y.json"]` with y extending one that says null keeps x's, `["./b.json", "./c.json"]` with a
+            // null in c takes back b's)
+            u32 setter = option_setter(me, name);
+            if (setter == UINT32_MAX || setter < my null_start) continue;
             // null takes back what an extended config gave (tsc: the option is undefined again), e.g. a config
             // extending one with the 6.0-deprecated baseUrl. Only the options that tell "unset" from a value here
             if (!strcmp(name, "baseUrl") || compiler_option_is_boolean(csview_from(name))) {
@@ -142,6 +183,7 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
             }
             continue;
         }
+        note_option_setter(me, name);
         if (!strcmp(name, "paths")) {
             if (value->tag != JSON_OBJECT) continue;
             compiler_options_clear_paths(my options);
@@ -659,6 +701,8 @@ static_failable load_config(ConfigLoad* me, csview path) {
     }
 
     cstr dir = cstr_from_sv(parent_of(path));
+    u32 null_start = my depth ? my parent_extends_start : 0;
+    u32 extends_start = my applied;
     // What is extended first, so that this config overrides it
     JsonValue const* extends = json_get(document, "extends");
     for (isize i = 0; extends && i < (extends->tag == JSON_ARRAY ? extends->count : 1); i++) {
@@ -677,6 +721,7 @@ static_failable load_config(ConfigLoad* me, csview path) {
         }
         follow_links(me, &base);
         my depth++;
+        my parent_extends_start = extends_start;
         try (load_config(me, cstr_sv(&base))) cleanup {
             cstr_drop(&base);
             cstr_drop(&dir);
@@ -749,8 +794,14 @@ static_failable load_config(ConfigLoad* me, csview path) {
                 path, member->key_start, member->key_end);
         }
     }
-    JsonValue const* compiler_options = json_get_tagged(document, "compilerOptions", JSON_OBJECT);
-    if (compiler_options) apply_compiler_options(me, path, cstr_sv(&dir), compiler_options);
+    // (Every `compilerOptions` the object has, in order: tsgo converts the properties one by one, a second one adds to
+    // the first)
+    my null_start = null_start;
+    for (isize i = 0; document->tag == JSON_OBJECT && i < document->count; i++) {
+        if (!cstr_equals(&document->members[i].key, "compilerOptions") || document->members[i].value.tag != JSON_OBJECT) continue;
+        apply_compiler_options(me, path, cstr_sv(&dir), &document->members[i].value);
+    }
+    my applied++;
     if (!my depth) check_content_mappers(me, path, document);
 
     // `files` and `include` are inherited as a pair, `exclude` on its own
