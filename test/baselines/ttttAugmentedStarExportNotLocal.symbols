@@ -1,0 +1,58 @@
+//// [test/cases/ttttAugmentedStarExportNotLocal.ts] ////
+
+=== node_modules/core/index.d.ts ===
+export interface PuppeteerNode { launch(): void }
+>PuppeteerNode : Symbol(PuppeteerNode, Decl(index.d.ts, 0, 0), Decl(extra.d.ts, 4, 23))
+>launch : Symbol(PuppeteerNode.launch, Decl(index.d.ts, 0, 32))
+
+=== node_modules/pup/types.d.ts ===
+import type { PuppeteerNode } from "core";
+>PuppeteerNode : Symbol(PuppeteerNode, Decl(types.d.ts, 0, 13))
+
+declare const puppeteer: PuppeteerNode;
+>puppeteer : Symbol(puppeteer, Decl(types.d.ts, 1, 13))
+>PuppeteerNode : Symbol(PuppeteerNode, Decl(types.d.ts, 0, 13))
+
+export default puppeteer;
+>puppeteer : Symbol(puppeteer, Decl(types.d.ts, 1, 13))
+
+export * from "core";
+=== extra.d.ts ===
+interface Vanilla { extra(): void }
+>Vanilla : Symbol(Vanilla, Decl(extra.d.ts, 0, 0))
+>extra : Symbol(Vanilla.extra, Decl(extra.d.ts, 0, 19))
+
+declare module "pup" {
+>"pup" : Symbol("pup", Decl(types.d.ts, 0, 0), Decl(extra.d.ts, 0, 35))
+
+  interface PuppeteerNode extends Vanilla {}
+>PuppeteerNode : Symbol(PuppeteerNode, Decl(index.d.ts, 0, 0), Decl(extra.d.ts, 1, 22))
+>Vanilla : Symbol(Vanilla, Decl(extra.d.ts, 0, 0))
+}
+declare module "core" {
+>"core" : Symbol("core", Decl(index.d.ts, 0, 0), Decl(extra.d.ts, 3, 1))
+
+  interface PuppeteerNode extends Vanilla {}
+>PuppeteerNode : Symbol(PuppeteerNode, Decl(index.d.ts, 0, 0), Decl(extra.d.ts, 4, 23))
+>Vanilla : Symbol(Vanilla, Decl(extra.d.ts, 0, 0))
+}
+export {}
+=== use.ts ===
+import p, { type PuppeteerNode } from "pup";
+>p : Symbol(p, Decl(use.ts, 0, 6))
+>PuppeteerNode : Symbol(PuppeteerNode, Decl(use.ts, 0, 11))
+
+p.launch();
+>p.launch : Symbol(PuppeteerNode.launch, Decl(index.d.ts, 0, 32))
+>p : Symbol(p, Decl(use.ts, 0, 6))
+>launch : Symbol(PuppeteerNode.launch, Decl(index.d.ts, 0, 32))
+
+declare const n: PuppeteerNode;
+>n : Symbol(n, Decl(use.ts, 2, 13))
+>PuppeteerNode : Symbol(PuppeteerNode, Decl(use.ts, 0, 11))
+
+n.extra();
+>n.extra : Symbol(Vanilla.extra, Decl(extra.d.ts, 0, 19))
+>n : Symbol(n, Decl(use.ts, 2, 13))
+>extra : Symbol(Vanilla.extra, Decl(extra.d.ts, 0, 19))
+

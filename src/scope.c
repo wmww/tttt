@@ -5185,6 +5185,13 @@ void binder_link(Binder* me) {
             if (exported && container->is_module && !container->module->file && !symbol_declared_in_block(exported, symbol->alias->scope)) {
                 exported = nullptr;
             }
+            // (Nor is an export only another file declares: an augmentation's clone of what `export *` brings, which
+            // the module's exports hold after the merge, tsc's mergeSymbolTable, isn't one of this file's locals)
+            if (exported && !(exported->flags & SYMBOL_ALIAS)) {
+                bool here = false;
+                for (u32 d = 0; d < exported->decl_count && !here; d++) here = span_source(exported->decls[d].full) == span_source(symbol->alias->item->full_span);
+                if (!here) exported = nullptr;
+            }
             if (exported && exported != symbol) local_flags |= exported->flags & ~(u32)SYMBOL_ALIAS;
             if (exported && exported != symbol && (exported->flags & SYMBOL_VALUE) && !(exported->flags & SYMBOL_ALIAS)) {
                 symbol->alias->export_value = exported;

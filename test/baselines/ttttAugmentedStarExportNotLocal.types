@@ -1,0 +1,52 @@
+//// [test/cases/ttttAugmentedStarExportNotLocal.ts] ////
+
+=== node_modules/core/index.d.ts ===
+export interface PuppeteerNode { launch(): void }
+>launch : () => void
+
+=== node_modules/pup/types.d.ts ===
+import type { PuppeteerNode } from "core";
+>PuppeteerNode : PuppeteerNode
+
+declare const puppeteer: PuppeteerNode;
+>puppeteer : PuppeteerNode
+
+export default puppeteer;
+>puppeteer : PuppeteerNode
+
+export * from "core";
+=== extra.d.ts ===
+interface Vanilla { extra(): void }
+>extra : () => void
+
+declare module "pup" {
+>"pup" : typeof import("pup")
+
+  interface PuppeteerNode extends Vanilla {}
+}
+declare module "core" {
+>"core" : typeof import("core")
+
+  interface PuppeteerNode extends Vanilla {}
+}
+export {}
+=== use.ts ===
+import p, { type PuppeteerNode } from "pup";
+>p : import("core").PuppeteerNode
+>PuppeteerNode : any
+
+p.launch();
+>p.launch() : void
+>p.launch : () => void
+>p : import("core").PuppeteerNode
+>launch : () => void
+
+declare const n: PuppeteerNode;
+>n : PuppeteerNode
+
+n.extra();
+>n.extra() : void
+>n.extra : () => void
+>n : PuppeteerNode
+>extra : () => void
+
