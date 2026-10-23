@@ -2718,7 +2718,8 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
             if (p.pos == item_start) hop_token(&p);
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
-            parse_error(&p, span_from_token(&p), 1110, "Type expected.");
+            // (tsc's parseBracketedList(TypeParameters): what isn't an element is TS1139, the `,` taken as the delimiter)
+            parse_error(&p, span_from_token(&p), 1139, "Type parameter declaration expected.");
         } else if (*p.pos == ':' && !generic_empty(ret)) {
             // (tsc's parseDelimitedList: a token nothing around can use is skipped, `<T: Bound>` of Flow)
             parse_error(&p, span_from_token(&p), 1139, "Type parameter declaration expected.");

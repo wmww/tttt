@@ -1,0 +1,18 @@
+ttttTypeParameterListComma.ts(3,23): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListComma.ts(4,11): error TS1139: Type parameter declaration expected.
+ttttTypeParameterListComma.ts(5,12): error TS1139: Type parameter declaration expected.
+
+
+==== ttttTypeParameterListComma.ts (3 errors) ====
+    // A type parameter list's element that isn't one is TS1139 (tsc's parseBracketedList(TypeParameters), its
+    // parsingContextErrors), a `,` too: babel's anonymous-function-generator-invalid fixtures
+    const fn = function* <,>(input: number) { yield input; };
+                          ~
+!!! error TS1139: Type parameter declaration expected.
+    class C<T,,U> {}
+              ~
+!!! error TS1139: Type parameter declaration expected.
+    function f<,T>() {}
+               ~
+!!! error TS1139: Type parameter declaration expected.
+    
