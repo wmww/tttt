@@ -3688,8 +3688,18 @@ static Members const* instantiate_members(
         u32 count = pass ? source->construct_count : source->call_count;
         Signature* const* sigs = pass ? source->construct : source->call;
         for (u32 i = 0; i < count; i++) {
-            // (An instantiation expression drops the signatures its type arguments don't apply to)
-            if (applies_type_args && !ty_instantiation_keeps_signature(me, sigs[i], mapper)) continue;
+            // (An instantiation expression drops the signatures its type arguments don't apply to, and keeps those whose
+            // constraints they don't satisfy as they are)
+            TyInstantiationKeeps keeps = applies_type_args ? ty_instantiation_keeps_signature(me, sigs[i], mapper) : TY_INSTANTIATION_INSTANTIATES;
+            if (keeps == TY_INSTANTIATION_DROPS) continue;
+            if (keeps == TY_INSTANTIATION_KEEPS_AS_IS) {
+                if (pass) {
+                    builder_push(&builder, construct, sigs[i]);
+                } else {
+                    builder_push(&builder, call, sigs[i]);
+                }
+                continue;
+            }
             bool shared = false;
             for (u32 j = 0; thisless && j < thisless->len && !shared; j++) shared = thisless->sigs[j] == sigs[i];
             if (shared) {

@@ -1,0 +1,33 @@
+//// [test/cases/ttttHackInstantiationKeepsViolating.ts] ////
+
+=== ttttHackInstantiationKeepsViolating.ts ===
+// An instantiation expression keeps a signature whose constraint its type arguments violate, uninstantiated (tsc's
+// getInstantiatedSignatures); hacks.md `apply_type_arguments_part`: tttt dropped it, so a call it fits was an error
+declare function f<T extends string>(x: T): T;
+>f : Symbol(f, Decl(ttttHackInstantiationKeepsViolating.ts, 0, 0), Decl(ttttHackInstantiationKeepsViolating.ts, 2, 46))
+>T : Symbol(T, Decl(ttttHackInstantiationKeepsViolating.ts, 2, 19))
+>x : Symbol(x, Decl(ttttHackInstantiationKeepsViolating.ts, 2, 37))
+>T : Symbol(T, Decl(ttttHackInstantiationKeepsViolating.ts, 2, 19))
+>T : Symbol(T, Decl(ttttHackInstantiationKeepsViolating.ts, 2, 19))
+
+declare function f<T>(x: T[]): T;
+>f : Symbol(f, Decl(ttttHackInstantiationKeepsViolating.ts, 0, 0), Decl(ttttHackInstantiationKeepsViolating.ts, 2, 46))
+>T : Symbol(T, Decl(ttttHackInstantiationKeepsViolating.ts, 3, 19))
+>x : Symbol(x, Decl(ttttHackInstantiationKeepsViolating.ts, 3, 22))
+>T : Symbol(T, Decl(ttttHackInstantiationKeepsViolating.ts, 3, 19))
+>T : Symbol(T, Decl(ttttHackInstantiationKeepsViolating.ts, 3, 19))
+
+const g = f<number>;
+>g : Symbol(g, Decl(ttttHackInstantiationKeepsViolating.ts, 4, 5))
+>f : Symbol(f, Decl(ttttHackInstantiationKeepsViolating.ts, 0, 0), Decl(ttttHackInstantiationKeepsViolating.ts, 2, 46))
+
+g([1]);
+>g : Symbol(g, Decl(ttttHackInstantiationKeepsViolating.ts, 4, 5))
+
+g("s");
+>g : Symbol(g, Decl(ttttHackInstantiationKeepsViolating.ts, 4, 5))
+
+const h = f<"a">;
+>h : Symbol(h, Decl(ttttHackInstantiationKeepsViolating.ts, 7, 5))
+>f : Symbol(f, Decl(ttttHackInstantiationKeepsViolating.ts, 0, 0), Decl(ttttHackInstantiationKeepsViolating.ts, 2, 46))
+

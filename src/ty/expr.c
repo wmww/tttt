@@ -5549,19 +5549,20 @@ bool as_type_is_const(AsTypeExpr const* as_type) {
 }
 
 // Whether an instantiation expression keeps a signature (tsc's getInstantiatedSignatures: generic, with the right
-// number of type arguments): the type arguments are mapped to the type parameters of exactly those
-static bool applies_to_signature(Checker* me, Signature const* sig, TyMapper const* mapper) {
-    SigResolved const* sig_r = sig_res(me, sig);
-    if (!sig_r->type_params.len) return false;
-    for (u32 k = 0; k < mapper->len; k++) {
-        if (mapper->sources[k] == sig_r->type_params.data[0]) return true;
-    }
-    return false;
-}
-
-bool ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMapper const* mapper) {
+// number of type arguments): the type arguments are mapped to the type parameters of exactly those. One whose
+// constraints the arguments don't satisfy is kept uninstantiated: its first type parameter is mapped to the unreachable
+// never type, which marks it (apply_type_arguments_part()). No type argument is that type, nor does any mapper make it
+// (unlike the wildcard: the permissive instantiation of a conditional type maps the outer type parameters to that), so
+// an instantiation of the type with an outer mapper keeps the mark
+TyInstantiationKeeps ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMapper const* mapper) {
     signature_resolve(me, sig);
-    return applies_to_signature(me, sig, mapper);
+    SigResolved const* sig_r = sig_res(me, sig);
+    if (!sig_r->type_params.len) return TY_INSTANTIATION_DROPS;
+    for (u32 k = 0; k < mapper->len; k++) {
+        if (mapper->sources[k] != sig_r->type_params.data[0]) continue;
+        return mapper->targets[k] == ty_intrinsic(me, TY_UNREACHABLE_NEVER) ? TY_INSTANTIATION_KEEPS_AS_IS : TY_INSTANTIATION_INSTANTIATES;
+    }
+    return TY_INSTANTIATION_DROPS;
 }
 
 // `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures, the others
@@ -5663,7 +5664,12 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
                 Ty const* constraint = ty_param_constraint(me, params.data[j]);
                 fits = !constraint || ty_is_related(me, own[j], ty_instantiate(me, constraint, own_mapper), TY_RELATION_ASSIGNABLE);
             }
-            if (!fits) continue;
+            if (!fits) {
+                // (Kept as it is, see ty_instantiation_keeps_signature())
+                sources[len] = params.data[0];
+                targets[len++] = ty_intrinsic(me, TY_UNREACHABLE_NEVER);
+                continue;
+            }
             fitting++;
             for (u32 j = 0; j < params.len; j++) {
                 bool seen = false;
@@ -5674,8 +5680,7 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
             }
         }
     }
-    // (None of them fits and none was dropped: the type as it is. HACK: with some dropped, the ones that don't fit are
-    // dropped too, where tsc keeps them uninstantiated: the mapper can't say "kept as is", see hacks.md)
+    // (None of them fits and none was dropped: the type as it is)
     if (!fitting && applicable && applicable == total) return ty;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
     return ty_apply_type_arguments_mapper(me, ty, mapper);

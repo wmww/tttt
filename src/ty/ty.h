@@ -2524,7 +2524,13 @@ Ty const* ty_mapped_homomorphic_variable(Checker* me, Ty const* ty);
 TyList ty_alias_args_filled(Checker* me, Ty const* ty, Ty const* buf[MAX_TYPE_ARGS]);
 Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper);
 Ty const* ty_apply_type_arguments_mapper_of(Checker* me, Ty const* ty, TyMapper const* mapper, Ty const* query);
-bool ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMapper const* mapper);
+// What an instantiation expression's mapper does to one of the type's signatures
+typedef enum TyInstantiationKeeps : uint8_t {
+    TY_INSTANTIATION_DROPS,
+    TY_INSTANTIATION_INSTANTIATES,
+    TY_INSTANTIATION_KEEPS_AS_IS, // Generic with the right arity, but its constraints don't fit the arguments
+} TyInstantiationKeeps;
+TyInstantiationKeeps ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMapper const* mapper);
 
 typedef struct ObjectLiteralProp {
     Atom const* name;
