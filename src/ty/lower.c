@@ -2143,6 +2143,14 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     Members const* members = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(me, apparent) : nullptr;
     bool callable = members && (members->call_count || members->construct_count);
     bool has_default = members && ty_get_prop(me, apparent, my atoms.default_);
+    // (A union's too, a property of every member: tsc's getPropertyOfType)
+    if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
+        has_default = true;
+        for (u32 i = 0; i < apparent->composite.types.len && has_default; i++) {
+            Ty const* part = ty_apparent_type(me, apparent->composite.types.data[i]);
+            has_default = (part->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_get_prop(me, part, my atoms.default_);
+        }
+    }
     if (!callable && !has_default && !esm_cjs) return nullptr;
     // A module that says it's an ES module has no synthetic default (tsc's canHaveSyntheticDefault), nor does a
     // declaration file whose `export =` value has a `default` that a module declares (`export default`: resolveExportByName
@@ -2168,6 +2176,11 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     }
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
     if (!structured) return with_synthetic_default(me, type, false, OBJECT_MODULE_CLONE);
+    // A union's clone has no properties: tsc's cloneTypeAsModuleType takes resolveStructuredTypeMembers' members, which a
+    // union (also as the spread with its synthetic default, getSpreadType mapping over it) doesn't have: `{}`
+    if (type->kind == TY_UNION && !(type->flags & TYF_BOOLEAN)) {
+        return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_MODULE_CLONE);
+    }
     return synthetic ? with_synthetic_default(me, type, true, OBJECT_MODULE_CLONE) : nullptr;
 }
 
