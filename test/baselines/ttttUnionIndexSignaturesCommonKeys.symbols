@@ -1,0 +1,56 @@
+//// [test/cases/ttttUnionIndexSignaturesCommonKeys.ts] ////
+
+=== ttttUnionIndexSignaturesCommonKeys.ts ===
+// A union none of whose members has the key as a property of its own reads the union's index signatures: the key
+// types every member has, each member's signature for that key (tsc's getUnionIndexInfos), not each member's
+// applicable one. pothos's ShapeFromEnumValues: `Values[K]['value']` with Values narrowed to the map branch of
+// `Map | readonly string[]` was a spurious TS2536
+interface C { value?: number | string }
+>C : Symbol(C, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 0, 0))
+>value : Symbol(C.value, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 13))
+
+type M = Record<string, C>;
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>C : Symbol(C, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 0, 0))
+
+type X4 = (M | (string[] & M))[string | number | symbol]['value'];
+>X4 : Symbol(X4, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 5, 27))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+
+type X8 = (M | (string[] & M))[number];
+>X8 : Symbol(X8, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 6, 66))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+
+type S1<V extends M | readonly string[]> = V extends M ? { [K in keyof V]: V[K]['value'] }[keyof V] : never;
+>S1 : Symbol(S1, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 7, 39))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 8))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 8))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>K : Symbol(K, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 60))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 8))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 8))
+>K : Symbol(K, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 60))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 8))
+
+type S3<V extends M | string[]> = V extends M ? V[keyof V]['value'] : never;
+>S3 : Symbol(S3, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 8, 108))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 9, 8))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 9, 8))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 9, 8))
+>V : Symbol(V, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 9, 8))
+
+declare const u: M | (string[] & M);
+>u : Symbol(u, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 10, 13))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+>M : Symbol(M, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 4, 39))
+
+const e = u[0];
+>e : Symbol(e, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 11, 5))
+>u : Symbol(u, Decl(ttttUnionIndexSignaturesCommonKeys.ts, 10, 13))
+

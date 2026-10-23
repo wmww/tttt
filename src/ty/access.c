@@ -485,6 +485,18 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         // elsewhere, tsc's createUnionOrIntersectionProperty makes none, and the union's index signatures, which the
         // literal lacks, are read: `(p || {}).c` with `p: { [k: string]: number; x: number }` is TS2339)
         if (ret && (!padded || literal_padded) && !union_index_applies(me, object, index, flags)) ret = nullptr;
+        // Without a member's own property there is no union property: the union's own index signatures are read,
+        // the key types every member has exactly, each member's of those (tsc's getUnionIndexInfos), not each
+        // member's applicable one: `(Record<string, C> | (string[] & Record<string, C>))[number]` is C, not `string | C`
+        if (ret && !padded) {
+            bool own = false;
+            for (u32 i = 0; i < object->composite.types.len && !own; i++) {
+                Ty const* member = object->composite.types.data[i];
+                if (!(member->flags & TYF_NULLABLE)) own = reads_own_prop(me, member, index);
+            }
+            Ty const* common = own ? nullptr : ty_union_any_index_type(me, object, index, TYF_OBJECT | TYF_INTERSECTION);
+            if (common) ret = include_undefined ? with_missing(me, common) : common;
+        }
         free(parts);
         Atom const* name = ret ? ty_literal_name(me, index) : nullptr;
         if (name && ty_union_non_public_conflict(me, object, name)) ret = nullptr;
