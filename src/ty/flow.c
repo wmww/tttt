@@ -1256,6 +1256,14 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
         for (u32 i = 0; i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
         if (!has_rest) ret = ty_intrinsic(me, TY_UNDEFINED);
     }
+    // (A union with undefined or null has neither the property nor an iterated element: tsc's
+    // getTypeOfDestructuredProperty and getTypeOfDestructuredArrayElement give the error type, which leaves the declared
+    // type: `let [, a]: string[] | number[] = s.match(r)` reads a as string | number)
+    if (!ret && compiler_options()->strict_null_checks && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            if (object->composite.types.data[i]->flags & TYF_NULLABLE) return ty_binding_assigned_type(me, binding);
+        }
+    }
     if (!ret) ret = object->flags & TYF_ANY ? nullptr : ty_access_reading(me, object, key);
     if (!ret) return ty_binding_assigned_type(me, binding);
     // (tsc's getTypeWithDefault)

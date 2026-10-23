@@ -1,0 +1,54 @@
+//// [test/cases/ttttDestructuredNullableUnionInitial.ts] ////
+
+=== index.ts ===
+declare const s: string
+>s : string
+
+function f() {
+>f : () => void
+
+    let [, a, b]: string[] | number[] = s.match(/"(.+)"/)
+>a : string | number
+>b : string | number
+>s.match(/"(.+)"/) : RegExpMatchArray | null
+>s.match : { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }
+>s : string
+>match : { (regexp: string | RegExp): RegExpMatchArray | null; (matcher: { [Symbol.match](string: string): RegExpMatchArray | null; }): RegExpMatchArray | null; }
+>/"(.+)"/ : RegExp
+
+    b = parseInt(a, 10)
+>b = parseInt(a, 10) : number
+>b : string | number
+>parseInt(a, 10) : number
+>parseInt : (string: string, radix?: number) => number
+>a : string | number
+>10 : 10
+}
+declare const o: { x: string | number } | undefined
+>o : { x: string | number; } | undefined
+>x : string | number
+
+function g() {
+>g : () => void
+
+    let { x }: { x: string | number } = o
+>x : string | number
+>x : string | number
+>o : { x: string | number; } | undefined
+
+    x.length
+>x.length : any
+>x : string | number
+>length : any
+
+    let [y]: (string | number)[] = [""]
+>y : string | number
+>[""] : string[]
+>"" : ""
+
+    y.length
+>y.length : number
+>y : string
+>length : number
+}
+

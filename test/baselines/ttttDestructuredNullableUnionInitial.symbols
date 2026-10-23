@@ -1,0 +1,45 @@
+//// [test/cases/ttttDestructuredNullableUnionInitial.ts] ////
+
+=== index.ts ===
+declare const s: string
+>s : Symbol(s, Decl(index.ts, 0, 13))
+
+function f() {
+>f : Symbol(f, Decl(index.ts, 0, 23))
+
+    let [, a, b]: string[] | number[] = s.match(/"(.+)"/)
+>a : Symbol(a, Decl(index.ts, 2, 10))
+>b : Symbol(b, Decl(index.ts, 2, 13))
+>s.match : Symbol(String.match, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>s : Symbol(s, Decl(index.ts, 0, 13))
+>match : Symbol(String.match, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    b = parseInt(a, 10)
+>b : Symbol(b, Decl(index.ts, 2, 13))
+>parseInt : Symbol(parseInt, Decl(lib.es5.d.ts, --, --))
+>a : Symbol(a, Decl(index.ts, 2, 10))
+}
+declare const o: { x: string | number } | undefined
+>o : Symbol(o, Decl(index.ts, 5, 13))
+>x : Symbol(x, Decl(index.ts, 5, 18))
+
+function g() {
+>g : Symbol(g, Decl(index.ts, 5, 51))
+
+    let { x }: { x: string | number } = o
+>x : Symbol(x, Decl(index.ts, 7, 9))
+>x : Symbol(x, Decl(index.ts, 7, 16))
+>o : Symbol(o, Decl(index.ts, 5, 13))
+
+    x.length
+>x : Symbol(x, Decl(index.ts, 7, 9))
+
+    let [y]: (string | number)[] = [""]
+>y : Symbol(y, Decl(index.ts, 9, 9))
+
+    y.length
+>y.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>y : Symbol(y, Decl(index.ts, 9, 9))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+}
+

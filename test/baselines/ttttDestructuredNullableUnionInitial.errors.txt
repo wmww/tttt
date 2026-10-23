@@ -1,0 +1,36 @@
+index.ts(3,9): error TS2322: Type 'RegExpMatchArray | null' is not assignable to type 'string[] | number[]'.
+  Type 'null' is not assignable to type 'string[] | number[]'.
+index.ts(4,18): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+index.ts(8,9): error TS2322: Type '{ x: string | number; } | undefined' is not assignable to type '{ x: string | number; }'.
+  Type 'undefined' is not assignable to type '{ x: string | number; }'.
+index.ts(9,7): error TS2339: Property 'length' does not exist on type 'string | number'.
+  Property 'length' does not exist on type 'number'.
+
+
+==== index.ts (4 errors) ====
+    declare const s: string
+    function f() {
+        let [, a, b]: string[] | number[] = s.match(/"(.+)"/)
+            ~~~~~~~~
+!!! error TS2322: Type 'RegExpMatchArray | null' is not assignable to type 'string[] | number[]'.
+!!! error TS2322:   Type 'null' is not assignable to type 'string[] | number[]'.
+        b = parseInt(a, 10)
+                     ~
+!!! error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+!!! error TS2345:   Type 'number' is not assignable to type 'string'.
+    }
+    declare const o: { x: string | number } | undefined
+    function g() {
+        let { x }: { x: string | number } = o
+            ~~~~~
+!!! error TS2322: Type '{ x: string | number; } | undefined' is not assignable to type '{ x: string | number; }'.
+!!! error TS2322:   Type 'undefined' is not assignable to type '{ x: string | number; }'.
+        x.length
+          ~~~~~~
+!!! error TS2339: Property 'length' does not exist on type 'string | number'.
+!!! error TS2339:   Property 'length' does not exist on type 'number'.
+        let [y]: (string | number)[] = [""]
+        y.length
+    }
+    
