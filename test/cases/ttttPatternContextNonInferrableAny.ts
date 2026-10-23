@@ -1,0 +1,15 @@
+// @strict: true
+// A binding pattern as a contextual type: an element without a default is tsc's nonInferrableAnyType, which inference
+// never infers directly, so `{ a: [n, s], b }` doesn't make T any through b, and the array literal is a tuple (bun's
+// 55-L18b, 76-R11)
+declare function one<T>(v: T): { a: T; b: T };
+const { a: [n2, s2], b: b2 } = one([1, "hi"]);
+s2.length;
+declare function id<T>(v: T): T;
+const [x1, y1] = id([1, "hi"]);
+y1.length;
+const { a: [n3, s3] } = one([1, "hi"]);
+s3.length;
+declare function pair<A>(a: A, b: A): [A, A];
+const [a6, [p6, q6]] = pair([1, "a"], [2, "b"]);
+p6.toFixed(); q6.toFixed();

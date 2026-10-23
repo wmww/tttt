@@ -3519,7 +3519,8 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
     if (element->tag == BINDING_OBJECT || element->tag == BINDING_ARRAY) return ty_binding_pattern_type(me, element, include_pattern);
-    return ty_intrinsic(me, TY_ANY);
+    // (While the pattern is a contextual type, an any inference never infers directly: tsc's nonInferrableAnyType)
+    return ty_intrinsic(me, include_pattern ? TY_NON_INFERRABLE_ANY : TY_ANY);
 }
 
 // tsc's getTypeFromBindingPattern: what an unannotated `{ a, b = 1 }` or `[a, b = 1]` parameter takes, `{ a: any; b?:

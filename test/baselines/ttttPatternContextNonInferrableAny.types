@@ -1,0 +1,90 @@
+//// [test/cases/ttttPatternContextNonInferrableAny.ts] ////
+
+=== ttttPatternContextNonInferrableAny.ts ===
+// A binding pattern as a contextual type: an element without a default is tsc's nonInferrableAnyType, which inference
+// never infers directly, so `{ a: [n, s], b }` doesn't make T any through b, and the array literal is a tuple (bun's
+// 55-L18b, 76-R11)
+declare function one<T>(v: T): { a: T; b: T };
+>one : <T>(v: T) => { a: T; b: T; }
+>v : T
+>a : T
+>b : T
+
+const { a: [n2, s2], b: b2 } = one([1, "hi"]);
+>a : any
+>n2 : number
+>s2 : string
+>b : any
+>b2 : [number, string]
+>one([1, "hi"]) : { a: [number, string]; b: [number, string]; }
+>one : <T>(v: T) => { a: T; b: T; }
+>[1, "hi"] : [number, string]
+>1 : 1
+>"hi" : "hi"
+
+s2.length;
+>s2.length : number
+>s2 : string
+>length : number
+
+declare function id<T>(v: T): T;
+>id : <T>(v: T) => T
+>v : T
+
+const [x1, y1] = id([1, "hi"]);
+>x1 : number
+>y1 : string
+>id([1, "hi"]) : [number, string]
+>id : <T>(v: T) => T
+>[1, "hi"] : [number, string]
+>1 : 1
+>"hi" : "hi"
+
+y1.length;
+>y1.length : number
+>y1 : string
+>length : number
+
+const { a: [n3, s3] } = one([1, "hi"]);
+>a : any
+>n3 : number
+>s3 : string
+>one([1, "hi"]) : { a: [number, string]; b: [number, string]; }
+>one : <T>(v: T) => { a: T; b: T; }
+>[1, "hi"] : [number, string]
+>1 : 1
+>"hi" : "hi"
+
+s3.length;
+>s3.length : number
+>s3 : string
+>length : number
+
+declare function pair<A>(a: A, b: A): [A, A];
+>pair : <A>(a: A, b: A) => [A, A]
+>a : A
+>b : A
+
+const [a6, [p6, q6]] = pair([1, "a"], [2, "b"]);
+>a6 : [number, string]
+>p6 : number
+>q6 : string
+>pair([1, "a"], [2, "b"]) : [[number, string], [number, string]]
+>pair : <A>(a: A, b: A) => [A, A]
+>[1, "a"] : [number, string]
+>1 : 1
+>"a" : "a"
+>[2, "b"] : [number, string]
+>2 : 2
+>"b" : "b"
+
+p6.toFixed(); q6.toFixed();
+>p6.toFixed() : string
+>p6.toFixed : (fractionDigits?: number) => string
+>p6 : number
+>toFixed : (fractionDigits?: number) => string
+>q6.toFixed() : any
+>q6.toFixed : any
+>q6 : string
+>toFixed : any
+

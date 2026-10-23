@@ -883,6 +883,8 @@ static Checker* checker_make(Program* program, bool join_graph) {
     my intrinsics[TY_IMPLICIT_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_UNREACHABLE_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_NON_PRIMITIVE] = make_intrinsic(me, "object", TYF_NON_PRIMITIVE);
+    // (Not TYF_NON_INFERRABLE, which spreads to what contains it: only the type itself is never inferred)
+    my intrinsics[TY_NON_INFERRABLE_ANY] = make_intrinsic(me, "any", TYF_ANY);
     {
         // tsc's zeroBigIntType comes first: compareTypes orders bigint literals by type id (`0n | 1n`)
         Value zero_bigint = value_bigint("0", 1, false);

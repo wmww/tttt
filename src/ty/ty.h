@@ -1106,6 +1106,9 @@ typedef enum TyIntrinsic {
     // nullWideningType/undefinedWideningType): only these widen to any. The regular ones under strictNullChecks
     TY_UNDEFINED_WIDENING,
     TY_NULL_WIDENING,
+    // An element of a binding pattern without a default while the pattern is a contextual type (tsc's
+    // nonInferrableAnyType): any that inference never infers directly, `{ a: [x, y], b }` doesn't make b's T any
+    TY_NON_INFERRABLE_ANY,
     TY_INTRINSIC_COUNT,
 } TyIntrinsic;
 

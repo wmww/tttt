@@ -1,0 +1,79 @@
+//// [test/cases/ttttPatternContextNonInferrableAny.ts] ////
+
+=== ttttPatternContextNonInferrableAny.ts ===
+// A binding pattern as a contextual type: an element without a default is tsc's nonInferrableAnyType, which inference
+// never infers directly, so `{ a: [n, s], b }` doesn't make T any through b, and the array literal is a tuple (bun's
+// 55-L18b, 76-R11)
+declare function one<T>(v: T): { a: T; b: T };
+>one : Symbol(one, Decl(ttttPatternContextNonInferrableAny.ts, 0, 0))
+>T : Symbol(T, Decl(ttttPatternContextNonInferrableAny.ts, 3, 21))
+>v : Symbol(v, Decl(ttttPatternContextNonInferrableAny.ts, 3, 24))
+>T : Symbol(T, Decl(ttttPatternContextNonInferrableAny.ts, 3, 21))
+>a : Symbol(a, Decl(ttttPatternContextNonInferrableAny.ts, 3, 32))
+>T : Symbol(T, Decl(ttttPatternContextNonInferrableAny.ts, 3, 21))
+>b : Symbol(b, Decl(ttttPatternContextNonInferrableAny.ts, 3, 38))
+>T : Symbol(T, Decl(ttttPatternContextNonInferrableAny.ts, 3, 21))
+
+const { a: [n2, s2], b: b2 } = one([1, "hi"]);
+>a : Symbol(a, Decl(ttttPatternContextNonInferrableAny.ts, 3, 32))
+>n2 : Symbol(n2, Decl(ttttPatternContextNonInferrableAny.ts, 4, 12))
+>s2 : Symbol(s2, Decl(ttttPatternContextNonInferrableAny.ts, 4, 15))
+>b : Symbol(b, Decl(ttttPatternContextNonInferrableAny.ts, 3, 38))
+>b2 : Symbol(b2, Decl(ttttPatternContextNonInferrableAny.ts, 4, 20))
+>one : Symbol(one, Decl(ttttPatternContextNonInferrableAny.ts, 0, 0))
+
+s2.length;
+>s2.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>s2 : Symbol(s2, Decl(ttttPatternContextNonInferrableAny.ts, 4, 15))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+declare function id<T>(v: T): T;
+>id : Symbol(id, Decl(ttttPatternContextNonInferrableAny.ts, 5, 10))
+>T : Symbol(T, Decl(ttttPatternContextNonInferrableAny.ts, 6, 20))
+>v : Symbol(v, Decl(ttttPatternContextNonInferrableAny.ts, 6, 23))
+>T : Symbol(T, Decl(ttttPatternContextNonInferrableAny.ts, 6, 20))
+>T : Symbol(T, Decl(ttttPatternContextNonInferrableAny.ts, 6, 20))
+
+const [x1, y1] = id([1, "hi"]);
+>x1 : Symbol(x1, Decl(ttttPatternContextNonInferrableAny.ts, 7, 7))
+>y1 : Symbol(y1, Decl(ttttPatternContextNonInferrableAny.ts, 7, 10))
+>id : Symbol(id, Decl(ttttPatternContextNonInferrableAny.ts, 5, 10))
+
+y1.length;
+>y1.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>y1 : Symbol(y1, Decl(ttttPatternContextNonInferrableAny.ts, 7, 10))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+const { a: [n3, s3] } = one([1, "hi"]);
+>a : Symbol(a, Decl(ttttPatternContextNonInferrableAny.ts, 3, 32))
+>n3 : Symbol(n3, Decl(ttttPatternContextNonInferrableAny.ts, 9, 12))
+>s3 : Symbol(s3, Decl(ttttPatternContextNonInferrableAny.ts, 9, 15))
+>one : Symbol(one, Decl(ttttPatternContextNonInferrableAny.ts, 0, 0))
+
+s3.length;
+>s3.length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+>s3 : Symbol(s3, Decl(ttttPatternContextNonInferrableAny.ts, 9, 15))
+>length : Symbol(String.length, Decl(lib.es5.d.ts, --, --))
+
+declare function pair<A>(a: A, b: A): [A, A];
+>pair : Symbol(pair, Decl(ttttPatternContextNonInferrableAny.ts, 10, 10))
+>A : Symbol(A, Decl(ttttPatternContextNonInferrableAny.ts, 11, 22))
+>a : Symbol(a, Decl(ttttPatternContextNonInferrableAny.ts, 11, 25))
+>A : Symbol(A, Decl(ttttPatternContextNonInferrableAny.ts, 11, 22))
+>b : Symbol(b, Decl(ttttPatternContextNonInferrableAny.ts, 11, 30))
+>A : Symbol(A, Decl(ttttPatternContextNonInferrableAny.ts, 11, 22))
+>A : Symbol(A, Decl(ttttPatternContextNonInferrableAny.ts, 11, 22))
+>A : Symbol(A, Decl(ttttPatternContextNonInferrableAny.ts, 11, 22))
+
+const [a6, [p6, q6]] = pair([1, "a"], [2, "b"]);
+>a6 : Symbol(a6, Decl(ttttPatternContextNonInferrableAny.ts, 12, 7))
+>p6 : Symbol(p6, Decl(ttttPatternContextNonInferrableAny.ts, 12, 12))
+>q6 : Symbol(q6, Decl(ttttPatternContextNonInferrableAny.ts, 12, 15))
+>pair : Symbol(pair, Decl(ttttPatternContextNonInferrableAny.ts, 10, 10))
+
+p6.toFixed(); q6.toFixed();
+>p6.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>p6 : Symbol(p6, Decl(ttttPatternContextNonInferrableAny.ts, 12, 12))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>q6 : Symbol(q6, Decl(ttttPatternContextNonInferrableAny.ts, 12, 15))
+

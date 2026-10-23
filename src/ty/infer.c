@@ -1732,7 +1732,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     if (target->kind == TY_SUBSTITUTION || target->kind == TY_INDEXED) target = ty_actual_type_variable(me, target);
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
-        if (!param || param->fixed || (source->flags & TYF_NON_INFERRABLE)) return;
+        if (!param || param->fixed || (source->flags & TYF_NON_INFERRABLE) || source == ty_intrinsic(me, TY_NON_INFERRABLE_ANY)) return;
         if (inf->priority < inf->hit_priority) inf->hit_priority = inf->priority;
         if (!param->has_priority || inf->priority < param->priority) {
             if (param->co_len || param->contra_len) inf->replaced++;
