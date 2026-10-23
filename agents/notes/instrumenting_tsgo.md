@@ -1,7 +1,9 @@
 # Instrumenting tsgo (and the tttt side of the comparison)
 When tttt and tsgo disagree and the mechanism isn't obvious from tsgo's Go sources, print what tsgo does. Recipe and
 hooks from the correctness workers cor and cor2 (2026-10-22); `scripts/variancetrace.py` and `scripts/reentrytrace.py`
-automate two such builds.
+automate two such builds, and `scripts/tsgotrace.py CODE TARGET [--funcs f,g]` the most common one (the stack of every
+diagnostic with a code, `TSGO_DIAG_STACK` below, plus a stack at named functions) without writing any Go.
+`scripts/overlaycheck.sh` compiles every overlay: run it after a re-pin (patches match tsgo's text exactly and rot).
 
 ## The recipe
 1. Copy the Go files to patch into your scratch dir: `thirdparty/typescript/tsc/internal/checker/checker.go` and

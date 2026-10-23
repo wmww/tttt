@@ -78,7 +78,7 @@ func (c *Checker) ttttDesc(t *Type, d int) string {
 		return "(" + b.String() + ")"
 	}
 	if t.alias != nil && t.alias.symbol != nil {
-		b.WriteString(t.alias.symbol.Name)
+		b.WriteString(t.alias.symbol.Name())
 		if len(t.alias.typeArguments) > 0 {
 			b.WriteString("<")
 			for i, a := range t.alias.typeArguments {
@@ -92,7 +92,7 @@ func (c *Checker) ttttDesc(t *Type, d int) string {
 		return b.String()
 	}
 	if t.symbol != nil {
-		b.WriteString(t.symbol.Name)
+		b.WriteString(t.symbol.Name())
 		if t.flags&TypeFlagsTypeParameter != 0 {
 			fmt.Fprintf(&b, "@%d", t.id)
 		}
@@ -133,7 +133,7 @@ PATCHES = [
     ('''			c.varianceStack = append(c.varianceStack, VarianceStackEntry{symbol, typeParameters})
 ''', '''			c.varianceStack = append(c.varianceStack, VarianceStackEntry{symbol, typeParameters})
 			if ttttDebugVar {
-				c.ttttLog("VAR> %s depth=%d", symbol.Name, len(c.varianceStack))
+				c.ttttLog("VAR> %s depth=%d", symbol.Name(), len(c.varianceStack))
 			}
 			ttttTypes := c.TypeCount
 '''),
@@ -141,13 +141,13 @@ PATCHES = [
 			if len(links.variances) == 0 {
 ''', '''			// Store the results unless a restarted computation has already stored them.
 			if ttttDebugVar {
-				c.ttttLog("VAR< %s %v stored=%v types=%d", symbol.Name, ttttVarianceInts(variances), len(links.variances) == 0, c.TypeCount-ttttTypes)
+				c.ttttLog("VAR< %s %v stored=%v types=%d", symbol.Name(), ttttVarianceInts(variances), len(links.variances) == 0, c.TypeCount-ttttTypes)
 			}
 			if len(links.variances) == 0 {
 '''),
     ('''			if minIndex > stackIndex {
 				saveVarianceStack''', '''			if ttttDebugVar {
-				c.ttttLog("VAR circular %s restart=%s", symbol.Name, c.varianceStack[minIndex].symbol.Name)
+				c.ttttLog("VAR circular %s restart=%s", symbol.Name(), c.varianceStack[minIndex].symbol.Name())
 			}
 			if minIndex > stackIndex {
 				saveVarianceStack'''),
@@ -187,10 +187,11 @@ PATCHES = [
 ]
 
 
-def build():
-    exe = os.path.join(OUT, 'tsc')
+def build(OUT=OUT, check=False):
+    """check (scripts/overlaycheck.sh): only apply the patches into OUT and compile, nothing kept"""
+    exe = '/dev/null' if check else os.path.join(OUT, 'tsc')
     relater = os.path.join(TSC_DIR, 'internal/checker/relater.go')
-    if os.path.exists(exe) and os.path.getmtime(exe) > max(os.path.getmtime(__file__), os.path.getmtime(relater)):
+    if not check and os.path.exists(exe) and os.path.getmtime(exe) > max(os.path.getmtime(__file__), os.path.getmtime(relater)):
         return exe
     os.makedirs(OUT, exist_ok=True)
     src = open(relater).read()
@@ -208,7 +209,8 @@ def build():
     print('variancetrace: building the instrumented tsgo (~2 min)...', file=sys.stderr)
     # (Its own build cache: the shared GOCACHE of ensure-typescript.sh can miss entries a plain go build then needs,
     # "could not import ..."; delete OUT/gocache after use, it's ~1-2 GB of tmpfs)
-    env_line += f'\nexport GOCACHE={OUT}/gocache\n'
+    if not check:
+        env_line += f'\nexport GOCACHE={OUT}/gocache\n'
     subprocess.run(['bash', '-c', f'{env_line}\ngo build -overlay {OUT}/overlay.json -o {exe} ./cmd/tsc'],
                    cwd=TSC_DIR, check=True)
     return exe
@@ -279,9 +281,18 @@ def block(lines, name):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('project', help='a tsconfig.json or its directory')
+    ap.add_argument('project', nargs='?', help='a tsconfig.json or its directory')
+    ap.add_argument('--check', action='store_true', help='only apply the patches and compile (scripts/overlaycheck.sh)')
     ap.add_argument('--block', metavar='NAME', help="write NAME's stored measurement of both sides to files")
     args = ap.parse_args()
+    if args.check:
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix='variancetrace-check-') as d:
+            build(d, check=True)
+        print('variancetrace: overlay OK')
+        return
+    if not args.project:
+        ap.error('PROJECT is needed')
     exe = build()
     subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
     project = os.path.abspath(args.project)

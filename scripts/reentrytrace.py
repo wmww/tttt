@@ -167,10 +167,11 @@ RELATER_PATCHES = [
 ]
 
 
-def build(gocache):
-    exe = os.path.join(OUT, 'tsc')
+def build(gocache, OUT=OUT, check=False):
+    """check (scripts/overlaycheck.sh): only apply the patches into OUT and compile, nothing kept"""
+    exe = '/dev/null' if check else os.path.join(OUT, 'tsc')
     sources = {name: os.path.join(TSC_DIR, 'internal/checker', name) for name in ('checker.go', 'relater.go')}
-    if os.path.exists(exe) and os.path.getmtime(exe) > max([os.path.getmtime(__file__)] + [os.path.getmtime(p) for p in sources.values()]):
+    if not check and os.path.exists(exe) and os.path.getmtime(exe) > max([os.path.getmtime(__file__)] + [os.path.getmtime(p) for p in sources.values()]):
         return exe
     os.makedirs(OUT, exist_ok=True)
     replace = {}
@@ -249,13 +250,22 @@ def summary(counter):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('targets', nargs='+', help='tsconfig.json files, their directories, or single .ts files')
+    ap.add_argument('targets', nargs='*', help='tsconfig.json files, their directories, or single .ts files')
+    ap.add_argument('--check', action='store_true', help='only apply the patches and compile (scripts/overlaycheck.sh)')
     ap.add_argument('--tsgo-only', action='store_true', help="only tsgo's events (no tttt run)")
     ap.add_argument('--trace', action='store_true', help="write tsgo's pushTypeResolution trace to /tmp/tsgo-reentry/tsgo.trace")
     ap.add_argument('-j', '--jobs', type=int, default=1)
     ap.add_argument('-n', type=int, default=30, help='rows of differing locations per target')
     ap.add_argument('--gocache', help='GOCACHE for the build (default: the shared one in thirdparty/typescript-gopath)')
     args = ap.parse_args()
+    if args.check:
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix='reentrytrace-check-') as d:
+            build(args.gocache, d, check=True)
+        print('reentrytrace: overlay OK')
+        return
+    if not args.targets:
+        ap.error('a target is needed')
     exe = build(args.gocache)
     if not args.tsgo_only:
         subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
