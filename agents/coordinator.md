@@ -94,6 +94,9 @@ checker policy at +13% RSS) without asking you is doing its job.
 - **Decide fast, in a paragraph with reasons.** Workers ask for decisions (design, gate relaxation, budget overrun)
   several times a day; ask them to propose, choose within minutes, state the reason and the recovery lever if you
   accept a cost.
+- **Don't ask for a stop you may not answer.** An interim "stop and wait for my go" that the coordinator forgot to
+  answer idled a worker for an hour. Either say go in the same message that relays the numbers, or let the worker
+  continue to its next milestone.
 - **Relay.** Workers can't reach each other; what one learns about a shared file goes to the other through you. Hand
   a finished worker's leads to the owner of the file, not to whoever found them.
 - **Resume, don't respawn.** A finished worker with its context is the cheapest agent for adjacent follow-ups.
@@ -115,6 +118,11 @@ checker policy at +13% RSS) without asking you is doing its job.
 - **A semantics change is gated by the full source sweep or a repro, not the sample.** A commit described as "needed
   only in combination with" something else, landed without its own repro, is the one that regresses: one blew up a
   project outside the quarter sample and only the full run caught it.
+- **Gate relation and semantics changes at several checker counts** (K1 and K8/16 kdiff on the affected project),
+  not only the K1 gates: a generic-mapped-target fix right at K1 added a TS2502 at K>1 only, outside the sweep
+  sample, and only the merger's whole-sweep kdiff saw it.
+- **Hacks are suspects.** When a divergence appears, read hacks.md for its code path first: two documented hacks
+  produced wrong answers in one week (a deep-nesting target push, a generic-mapped member fallback).
 - **Price a hack's removal against tsc's own work**, not against the hack's speed: removing a relation hack cost
   react +36% instructions, and tsgo's relation and type counts showed that was tsc's work, not a new runaway.
 - **Cycles-level claims need the laptop.** Cachegrind's icache proxy over-predicted `-fno-peel-loops` and
@@ -126,6 +134,11 @@ checker policy at +13% RSS) without asking you is doing its job.
   the box in measurements.md, decisions in vision.md "Decisions", the order in todo.md. Keep those current through a
   docs worker with a brief of the facts (it catches what you got wrong).
 - Mutation seeds yield less each time; the oracles' tails are not where new bugs come from: refreshes and new axes are.
+  Two refreshes in a row at ~94% on day one (application code by topic, low stars, bun-only lockfiles) against 96-98%
+  for the earlier rules say the newer slicing rules find what the old oracles can't: pick the next rule the same way.
+- **Numbers measured under load disagree between boxes and agents** (nest's libs-phase sys time: down for the
+  worker, up for the merger, both loaded). Record both with their conditions and send the question to the laptop
+  rather than arguing it out with more loaded runs.
 
 ## Hygiene when a piece of work lands
 `scripts/fasttest.sh -s`, `scripts/instrcount.sh` (investigate a flagged rise), `git worktree list` shows only the

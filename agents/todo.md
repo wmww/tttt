@@ -3,8 +3,8 @@ The live list of directions and ideas, roughly in order (vision.md "Direction" s
 is known, where the numbers are. Delete an entry when it lands, leaving its numbers in measurements.md; add new ones
 where they fit the order. Uninvestigated items go to triage.md, known bugs to `bugs/*.md`.
 
-Starting point: measurements.md "Oracle totals (2026-10-23, 0a400eb6f)" and the laptop's three sections of
-2026-10-22 (at 2989c0f0, 8e3f4fb0, 277be4bc). `test/instrcount.txt` is fast/tttt (BOLT) at a recycle-free K1, so a
+Starting point: measurements.md "Oracle totals (2026-10-23, a5252a764 + acb8dfe7f)" and the laptop's latest
+section (at bbe37c5f; the counters at 2989c0f0). `test/instrcount.txt` is fast/tttt (BOLT) at a recycle-free K1, so a
 jump against it needs attribution (policy, build or code) before it is celebrated.
 
 ## Always first: the re-pin to TypeScript 7.1.0 stable
@@ -29,62 +29,62 @@ Done when `grep -rn fed0bf24 scripts src test thirdparty/*.sh` is empty, no orac
 suite's lost list is fixed or written up. tsgo's `.tsbuildinfo` `version` string would matter only if a buildinfo is
 ever written (it isn't).
 
-The re-pin above is direction 6 (vision.md "Direction"). The human's priorities for the rest: distinctly faster than
+The re-pin above is direction 5 (vision.md "Direction"). The human's priorities for the rest: distinctly faster than
 bun; threading efficiency on mid-size and small projects is the key; easy wins first; the correctness long tail
 continues.
 
 ## For the human
-- **The loader not blocking on libs** (notes/front_end.md "Measured and not built"): designed, not built. The
-  libs phase stays on the critical path (laptop nest: main blocked ~8 ms on lib.dom before the chunked parse, ~4 ms
-  likely now, 4-8 ms of nest's ~80); ~1 day in program_add_source_idempotent() and main.c's libs phase, the riskiest
-  ordering code. Build it or not.
-- **Re-land the indexed-access recursion identity** (triage.md): tsc's rule, reverted for youtube-enhancer's runaway
-  (1.16M types against tsgo's 211k). It needs a cut-down repro from src/validation/constraints.ts first.
-- **Laptop confirmations** of round three: the nest timeline (libs with the chunked parse, the directory listings'
-  wall), the 16 KB checker policy (32 KB if CPU matters more), huge text's determinism (the `MADV_COLLAPSE` retry),
-  the noinline splits' I1 gain (simulated -4.5..-6%), react's new cost (+36% instructions), and whether thread
-  creation and re-faulting are serial cost (that would revive the persistent pool).
+- **The sharing A/B on the laptop** (the prompt: notes/sharing_design.md "The laptop A/B"): plain against today's
+  flag, flag + content order, flag + content + the split shard lines, and + batching, on drizzle, zod, effect and vue
+  at K12 with `perf stat` and `perf c2c`. The decision numbers are the IPC gap between plain and flag + content +
+  split, and vue's wall (2x slower under today's flag). It decides stage 2 (section 4).
+- **Keep or revert the relation HACK's removal** (f38a8b493, one commit): react 0.09 -> 0.11 s at the defaults and
+  type-fest single 0.61 -> 0.68 on the laptop (bbe37c5f), react +36% / type-fest +7% instructions; it is tsc's own
+  relation work (tsgo 84.6k relations on react, tttt 93.4k) and fixed pi-bolt's TypeBox chain. Kept unless the human
+  says otherwise.
+- **nest's libs-phase sys time under the 4 KB-page AST slabs** (triage.md): the worker measured it down, the merger
+  up, both on a loaded box. On the laptop: nest `--time` libs sys and wall, the default against
+  `TTTT_AST_SMALL_KB=0`. The RSS win (nest 210 -> 169 MB, react 293 -> 255) stands either way.
+- Laptop confirmations of round four: the checker cap (TypeScript6 at K4), the loader not blocking on libs (nest libs
+  + load 41 -> 37 ms here), malloc_trim's RSS.
 
-## 1. Per-checker memory on small projects
-react's peak RSS ~300 MB at the defaults against ~169 at `--threads 1` (nest ~195 / ~136), typecheck 16.8k minor
-faults against 7.7k, libs 2.9k against 0.2k (`--time` prints faults per phase). Suspects: checker arenas starting on
-huge pages (`Arena.huge_first`: 2 MB+ populated per checker for 1-4 MB used), 8 sets of intern tables, per-thread
-malloc heaps (triage.md). Gates: RSS at many threads next to the wall; threadcheck/checkerdiff byte-identical.
+## 1. Small projects
+react is bound by one file: `src/components/ui/form/form.tsx` (react-hook-form's Path/PathImpl) is ~44 ms at K1
+since the HACK's removal, 55-62 ms at the defaults, the next file 9-29 ms (measurements.md "The 12-core box at
+bbe37c5f"). It is tsc's work too: measure tsgo's time on that file (`scripts/tsgoprobe.sh` or a one-file tsconfig)
+before optimizing it; react's relation count against tsgo's is in "Smaller ideas". The rest is per-checker
+duplication (each checker's arena is its repeated work, 3-6 MB on nest, 12-33 MB on react: notes/front_end.md
+"Done"). Gates: RSS at many threads next to the wall; threadcheck/checkerdiff byte-identical.
 
 ## 2. Code footprint
-Still ~50% frontend-bound after BOLT and huge text (op cache hit 63%, icache misses 23% of fetches at 2989c0f0):
-the working set is what is left. Two noinline splits (ty_instantiate_mapped's ~110 copies, hop_whitespace_slow's
-~30) took simulated I1 misses -4.5..-6% and the hot text 2.17 -> 2.04 MB; `scripts/inlinedup.py` and the inlining
-ledger (notes/code_layout.md) list the next copies. Next: the parser's hot path, the giant functions' source size,
-relate.c's inline-unit growth. Every claim confirmed with the laptop's counters (cachegrind's icache proxy misjudged
-both `-fno-peel-loops` and BOLT).
+Still ~50% frontend-bound after BOLT and huge text (op cache hit 63%, icache misses 23% of fetches at 2989c0f0).
+The noinline splits (ty_instantiate_mapped's ~110 copies, hop_whitespace_slow's ~30) simulated I1 misses -4.5..-6%,
+but on the laptop vscode K1's icache misses per instruction rose 1.4% and the cycles' -1.7% came from fewer
+instructions: the working set is what is left. `scripts/inlinedup.py` and the inlining ledger (notes/code_layout.md)
+list the next copies; the parser's hot path, the giant functions' source size, relate.c's inline-unit growth. Every
+claim confirmed with the laptop's counters (cachegrind's icache proxy misjudged `-fno-peel-loops`, BOLT and now the
+splits).
 
-## 3. The rest of the small-program floor
-After round three (chunked parse, directory listings, resolver shards, clock reads, realpath, wakeups; notes/
-front_end.md "Done"), fe4's leads on nest (laptop, before the chunked parse: config 2, libs 16, load+parse 6,
-declare 7, link 10, walk 7 ms; typecheck 27):
-- **Link's 10 ms is mostly AST arena madvise/munmap page faulting**, not linking: pre-fault or reuse arenas. A
-  parallel link per import-cycle level (bun's design) only if link is real work after that; a two-phase link first.
-- **The load pool's own mutex** (the finish-file lock) is now the top blocked wait; workers' `file_size_of()` makes
-  2.4k stats on nest.
-- The walk's 7 ms includes thread start-up on the main thread.
-Gates: the suite, corpora, threadcheck/checkerdiff byte-identical; malloc or thread changes an RSS gate at many
-threads; walls from the laptop.
-
-## 4. Correctness long tail (continuous)
+## 3. Correctness long tail (continuous)
 New real-code sightings first; every unfixed divergence gets a known-failing test in `test/cases`. Grep `bugs/` for a
-repository's name before investigating it. **No semantics commit lands without a repro or the full source sweep**
-(the sample missed youtube-enhancer's regression). Open:
-- **The source sweep's last 7** (es-toolkit, monkeytype, hono x2, better-auth, discordx, sunmao): each a confirmed
-  tsgo artifact or a written-up design (bugs/sourcesweep_checker.md, bugs/sourcesweep_build.md). The next refresh by
-  a new rule when the human reports new divergences (the recipe: measurements.md "Fresh repositories, third rule").
-- **The indexed-access recursion identity's repro** ("For the human" above).
+repository's name before investigating it. **No semantics commit lands without a repro or the full source sweep, and
+a relation change runs kdiff on the affected project at K1 and K8/16** (better-drizzle's 742 was K>1 only). Hacks
+are suspects (vision.md "Decisions"). Open:
+- **kebo's mobx-state-tree cycle** (bugs/sourcesweep_checker.md "fourth rule"): tsc resolves a returned function's
+  parameter types lazily, tttt eagerly in signature_resolve_slow(); the same root as triage.md's missed TS2502 through
+  `ReturnType<typeof h>`. Needs lazy parameter types in signature resolution: a design first, then a repro from MST's
+  real types.
+- **better-drizzle's two TS2578** at tests/types/order-by-relations.ts:24,26 (uninvestigated; the K>1 TS2502 is fixed).
+- **mcp-linker's 1.73x types** (triage.md): the worst perfsweep ratio, a missing cache or a runaway.
+- **The indexed-access recursion identity** (triage.md): tsc's rule, reverted for youtube-enhancer's runaway (1.16M
+  types against tsgo's 211k); needs a cut-down repro from src/validation/constraints.ts first.
+- **The source sweep's other 7** (es-toolkit, monkeytype, hono x2, better-auth, discordx, sunmao): each a confirmed
+  tsgo artifact or a written-up design (bugs/sourcesweep_checker.md, bugs/sourcesweep_build.md). **hono's TS2769**:
+  tsgo keeps a this-instantiated method type apart from the declared one, tttt merges them (bugs/missing_checks.md;
+  known-failing test ttttThisInstantiatedMethodErased).
+- **A fifth refresh rule** when the human reports new divergences (the recipe: measurements.md "Fresh repositories,
+  third rule" and "fourth rule"); the app-code, low-star and bun slices found what the old oracles couldn't.
 - **The missing TS2536** on an indexed access of a recursive conditional alias inside its own declaration (triage.md).
-- **The bun-lockfile slice**: 16 application repositories with only a `bun.lock` were skipped because
-  `thirdparty/ensure-sources.sh` has no `bun install` (a pinned bun, `--frozen-lockfile --ignore-scripts`; triage.md
-  and repos.txt's "Refresh 4" comment).
-- **hono's TS2769**: tsgo keeps a this-instantiated method type apart from the declared one, tttt merges them (design
-  in bugs/missing_checks.md; known-failing test ttttThisInstantiatedMethodErased).
 - **The seed-62 spurious getter circularities** (recursiveTypeInference `_zod?` line 28, noCircularitySelfReferentialGetter2
   drop-as): not the expression-memo mechanism; unexplained. Instrumented tsgo (notes/instrumenting_tsgo.md,
   `TSGO_PUSH`/`TSGO_CYCLE`) against `TTTT_DEBUG_CYCLE=1` is the method.
@@ -94,16 +94,27 @@ repository's name before investigating it. **No semantics commit lands without a
 - Mutation seeds yield less each time; parser-recovery mutants (58-77 per seed, `scripts/mutate.py`,
   `failstats.py --syntax`) are untouched.
 
-## 5. Mid-size threading: a design memo, not a build
-The duplication across checkers is inherent per checker (vscode 1.09x at K12, drizzle 2.15x; notes/duplication.md);
-affinity, block stealing, cost-estimate dealing, the shared graph and variance sharing are measured and closed, the
-persistent pool declined (vision.md "Decisions"). The one shape not yet tried is bun's: types published at creation
-into one hash-consed store, results in per-file batches into dense tables, ~90% never published
-(notes/bun_concurrency.md). A memo must first show how tttt's output stays deterministic without bun's rollback
-(which needs id-free ordering). Only then a prototype, measured on drizzle (the laptop: the shared-graph flag's -26%
-instructions bought only -9% cycles there).
+## 4. Mid-size threading: the staged path, as the laptop decides
+notes/sharing_design.md "The staged path". The duplication across checkers is inherent per checker (vscode 1.09x at
+K12, drizzle 2.15x; notes/duplication.md); affinity, block stealing, cost-estimate dealing, variance sharing and the
+persistent pool are closed (vision.md "Decisions").
+- **Stage 1, content order by default** (go; a session plus the full, DT and source sweeps): `TTTT_NESTING_ORDER=
+  content` becomes the deep-nesting test, push numbers on both relation stacks and inference's as bun has them (the
+  prototype's push search is quadratic: +1.6% drizzle). Its parity cost recorded as known-failing: 2 suite tests
+  (inferFromNestedSameShapeTuple, ttttDeferredReferenceNormalizedInRelation), drizzle's 3 TS2416 chains, webpack's
+  TS2345, valibot's 5 flagflip sites. No gain alone; the precondition for stage 2.
+- **Stage 2, the flag on for K > 1 with the plain path at K1** (go only after the laptop A/B: premium ~1.1-1.3x,
+  drizzle cycles >= 15% below plain, zod and effect within 5%, vue no longer 2x). Before a default flip: the effect
+  cascade (C+V) closed, seeded schedules and 300-run loops, the full oracles flagged and plain identical, the
+  `ty_reduced_slow()` KEY_REDUCED_UNION race fixed (triage.md). 2-3 worker-sessions.
+- **Stage 3, rollback**: no-go for now.
 
 ## Smaller ideas
+- **The small-program floor's leftovers** (fe4's leads on nest, laptop, before round three: link 10 ms, walk 7 ms):
+  link's time is mostly AST arena madvise/munmap page faulting, not linking (pre-fault or reuse arenas; a parallel
+  link per import-cycle level only if link is real work after that); the load pool's finish-file lock is its top
+  blocked wait; the walk includes thread start-up on the main thread. The laptop's nest timeline at bbe37c5f: link
+  3.0 ms, walk 6.4, 44.7 ms before typecheck.
 - **react's relation work against tsgo** (93.4k relations past the cache against tsgo's 84.6k since the HACK's
   removal): small unions related without caching (tsc's skipCaching, prototyped at -12% assignable cache entries) and
   the indexed-access constraint chains tttt relates inside UseFormResetField's variance measurement and tsgo doesn't

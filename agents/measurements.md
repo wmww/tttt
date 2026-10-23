@@ -4,7 +4,8 @@ append history, git has it. Older sections (oracle tallies, stage logs, supersed
 condensed on 2026-10-20 into "Past conclusions" below; the full log is `git show a9c5e07da:agents/measurements.md`.
 
 ## Machine and caveats
-AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22. The oracle (tsc)
+AMD EPYC-Turin, 16 vCPUs = 8 cores x 2 SMT threads (KVM, shared with other agents: load often 10-40), 60 GB
+(4 vCPUs and 31 GB until about 2026-10-20: older sections say which); Ubuntu 26.04, GCC 15.2, node 22.22. The oracle (tsc)
 is tsgo 7.1.0-dev fed0bf24 (`thirdparty/typescript`; every cache since 2026-10-09). `scripts/bench.sh` compares against the pinned tsgo only (since 2026-10-12). Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one sitting. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across days. Neither side is clean on webpack, drizzle, vue, effect and
@@ -15,7 +16,7 @@ there (`nproc` 24): its section below; it is the one to read for core scaling.
 
 ## How to measure (notes that still hold)
 - **Instructions**: `scripts/instrcount.sh` (callgrind, K1 T1, fast/tttt since 92828ad6e (pgo/tttt 2026-10-19 ..
-  10-22): `fastbuild.sh --measured`; saved in `test/instrcount.txt`, vscode 66.35 G there at 0a400eb6f). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
+  10-22): `fastbuild.sh --measured`; saved in `test/instrcount.txt`, vscode 66.39 G there at acb8dfe7f). Callgrind counts run ~3% above `perf stat -e instructions:u`: don't compare across tools. At
   K1 the counts include recycling's warm-ups (type-fest, drizzle, vscode recycle at 256 MB): compare with
   `--checker-memory off` for the checker's own work. instrcount gives valgrind a 64 MB main stack (type-fest's
   IntRange needs ~16 MB). A worktree with symlinked corpora can measure some corpora differently (nest +8% once):
@@ -42,7 +43,7 @@ alias variances on conditional types), dev-3.0 (`Parameters<typeof f>` re-enteri
 a type-predicate lookup tsc doesn't make), emailthing (typesVersions tested against 6.0 instead of tsgo's 7.1.0-dev:
 bun-types' `>=7.1` import-attribute modules missed). **After (769d64973): 97 / 100 (97.0%), 26 / 28 repos**; left:
 kebo's MST cycle (eager signature parameters, bugs/sourcesweep_checker.md) and better-drizzle's K-dependent second
-TS2502 plus two TS2578. better-drizzle at K1: 2.08M -> 364k types (tsgo 492k), types ratio 4.23 -> 0.74. Instructions
+TS2502 (fixed since by acb8dfe7f) plus two TS2578. better-drizzle at K1: 2.08M -> 364k types (tsgo 492k), types ratio 4.23 -> 0.74. Instructions
 (callgrind, release builds) flat within 0.4% across the corpora for the relation fixes.
 
 ## Fresh repositories, third rule (2026-10-23)
@@ -1030,48 +1031,32 @@ claim_and_measure() is gone (not just off). Base = de94e1179 (lock on, stamps of
   (lock) 0.417 / 0.439: the lock's +54% is gone and the flag now beats the defaults. Effect defaults 0.267 / 0.271,
   flag 0.293 / 0.297, base flag 0.281 / 0.286: effect is still +10% over the defaults (it was +17% at G2).
 
-## Oracle totals (2026-10-23, 0a400eb6f)
-The merger's `scripts/oracles.py` after round three, at 0a400eb6f (main 4ebdb0179 adds only the revert 52ce0a84d,
-which changes youtube-enhancer alone; the previous totals were d01aee7a8's: `git log -S'Oracle totals (2026-10-23,
-d01aee7a8)' -- agents/measurements.md`). Suite 13993 / 14029 (was 13982 / 14018; dts 1888 / 1910), 0 lost; the two
-failing own tests fail by design (ttttThisInstantiatedMethodErased: hono's this-instantiated members;
-ttttDeferredBodyBeforeContextualParameters: tsc's deferred-body check order; the refresh's known-failing repros for
-pi-bolt and bekuto3d pass since). The same with `--no-defer-bodies`; `--checker-memory 0`: 0 of 17666 differ. Every
-corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 /
-2 / 2 (all vue pluginScoped.ts, won't fix), source sweep `--sample 4` 1301 / 1303 (with refresh 4: 288 repositories,
-5364 projects; the full sweep at 4430f1512 was 5352 / 5364, pi-bolt x4 and bekuto3d fixed since: ~5357 expected,
-es-toolkit, monkeytype, hono x2, better-auth, discordx and sunmao left), `-b` sweep 411 / 416, dtsdiff 1328 / 1350
-projects, clidiff 3899 / 3907, kdiff 3 / 3890, recycle 3 / 3890 (rxjs, sequelize x2: tsgo-shared). youtube-enhancer's
-spurious TS2589 + TS5114 appeared with 20fa22369 (the indexed-access recursion identity) and is gone with its revert
-52ce0a84d (triage.md). perfsweep median check ratio 0.17, worst types ratio ~1.40 (lit tsserver-plugin;
-youtube-enhancer 0.67 after the revert).
+## Oracle totals (2026-10-23, a5252a764 + acb8dfe7f)
+The merger's `scripts/oracles.py` after round four at a5252a764 (02c372df4's message), then wt-cor7's acb8dfe7f with
+the whole source sweep's kdiff and recycle and every corpus' instructions (0a1f67836's message); the previous totals
+were 0a400eb6f's (`git log -S'Oracle totals (2026-10-23, 0a400eb6f)' -- agents/measurements.md`). Suite **13999 /
+14035** at main (13998 / 14034 at a5252a764; cor7 added one own test; dts 1888 / 1910), 0 lost; the two failing own
+tests fail by design (ttttThisInstantiatedMethodErased, ttttDeferredBodyBeforeContextualParameters). The same with
+`--no-defer-bodies`; `--checker-memory 0`: 0 of 17671 differ. Every corpus 0/0 but vue 0/2 (tsgo's TS5115 runaway
+artifact), DT 8595 / 8595, `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2 (all vue pluginScoped.ts, won't fix),
+source sweep `--sample 4` 1322 / 1324 (with refresh 5: 316 repositories, 5464 projects; refresh 5 added 28
+bun-lockfile repos, 100 projects), the full sweep 5454 / 5464 before cor7 (better-drizzle's :742 TS2502 fixed since),
+`-b` sweep 411 / 416, dtsdiff 1328 / 1350 projects, clidiff 3974 / 3986 (text 3, diagnostics 9), kdiff 3 / 3969 and
+recycle 3 / 3969 after cor7 (rxjs, sequelize x2: tsgo-shared; 4 at a5252a764 with better-drizzle, whose TS2502 at
+src/types/plugins.ts:742 appeared at K>1 only, from c0a04350a; recycle's dokploy times out under load: triage.md).
+perfsweep 2000 projects, median check ratio 0.28 (the box loaded: 0.17 last round), worst types ratio **1.73**
+(mcp-linker, refresh 5: 139k types against tsgo's 81k, unexamined: triage.md; lit tsserver-plugin's 1.40 next).
 
 **The round's instructions** (`scripts/instrcount.sh`, callgrind K1, fast/tttt, `test/instrcount.txt` at
-d01aee7a8 -> 0a400eb6f), G:
-
-| corpus | before | after | |
-|---|---|---|---|
-| react | 1.116 | 1.518 | +36.0% |
-| type-fest | 8.138 | 8.705 | +7.0% |
-| nest | 0.914 | 0.916 | +0.2% |
-| drizzle, excalidraw, tanstack-router, vscode, vue | | | -0.0..+0.1% (vscode 66.36 -> 66.35) |
-| tsc, xstate, zod | | | -0.1..-0.4% |
-| valibot | 2.658 | 2.633 | -0.9% |
-| webpack | 7.564 | 7.473 | -1.2% |
-| effect | 7.264 | 7.173 | -1.3% |
-
-react's and type-fest's rises are f38a8b493 (247d87ac5's message has the table): the conditional_source_related HACK
-removed, so tttt does tsc's relation work on react-hook-form's Path/PathImpl (tsgo 84.6k relations / 133k types on
-react, tttt 93.4k / 89.6k after, 21.8k / 39.5k before: the wrong answer's price); accepted (vision.md "Decisions").
-Front end, measured on this box (16 vCPUs, loaded; walls for the laptop to confirm): the chunked parse of declaration
-files >= 512 KB took nest's libs wait on lib.dom ~14 -> ~8 ms; the 16 KB checker policy nest -20% wall at +13% RSS;
-LazySlots in the checker's arena vscode `mprotect` 18231 -> 22 (glibc grows a non-main arena's heap by exactly the
-top allocation, so `M_TOP_PAD` never applied); resolver shards 64 -> 1024 took the load phase's blocked share
-26-56% -> 0-6%; CPU-clock reads only under flags 4.4k syscalls -> 0 on nest; realpath from the parent readlink 1.8k
--> 9; directory listings in CachedFs +0.45% instructions on nest (accepted); load pool wakeups react futex 1.45k ->
-0.89k; the noinline splits (ty_instantiate_mapped ~110 copies, hop_whitespace_slow ~30) simulated I1 misses
--4.5..-6%, hot text 2.17 -> 2.04 MB. Small-project memory, `--time`'s new fault counts: react typecheck 16.8k minor
-faults at the defaults against 7.7k at T1, peak ~300 MB against ~169 (triage.md).
+0a400eb6f -> acb8dfe7f): flat. vscode 66.346 -> 66.388 G (+0.06%), type-fest 8.705 -> 8.663 (-0.49%), vue 5.015 ->
+4.995 (-0.40%), valibot +0.17%, effect, zod, drizzle, xstate, nest -0.13..-0.18%, the rest within 0.07%. The round's
+checker fixes (cor6, cor7) and the front end's (fe6) moved nothing at K1; better-drizzle at K1 2.08M -> 364k types
+(tsgo 492k) is outside the corpora.
+Front end on this box (16 vCPUs, loaded; the laptop to confirm): the checker cap (10398e204) took TypeScript6 8 -> 4
+checkers, -5% instructions at T1, its longest checker +3%; AST slabs' first 4 MB per thread on 4 KB pages (50a59a729)
+nest peak 190 -> 169 MB, react 285 -> 268 (huge pages forced; with malloc_trim at the defaults 210 -> 169 and 293 -> 255), the libs phase's sys down a third here, up on the
+merger's run (triage.md); malloc_trim(0) before checking (03bca3127) -4 / -3 MB; the loader not blocking on libs
+(b6f8a4650) nest libs + load+parse files 41.3 -> 36.8 ms (libs phase 15.7 -> 0.2), react 143 -> 135 ms wall.
 
 ## Oracle totals with and without the shared graph (2026-10-21/22, plain at 9032ae214 and 8d693aeb5)
 Suite 13962 / 13996 (dts 1887 / 1909; `scripts/passcount.py`), `--no-defer-bodies` and `--checker-memory 0` unchanged,

@@ -8,90 +8,105 @@ faster; correctness is never traded. Completeness first in the sense that nothin
 be fast or can't be complete. The suite's baselines are the first oracle, not the goal; real projects that are clean
 under tsc are the second.
 
-## State (2026-10-23: oracles at 0a400eb6f, main 4ebdb0179; the laptop at 2989c0f0, 8e3f4fb0 and 277be4bc)
+## State (2026-10-23: oracles at a5252a764 plus cor7's acb8dfe7f, main 0a1f67836; the laptop at bbe37c5f)
 - **Target: TypeScript 7.1** (`main` at the 7.1 nightly fed0bf24, `thirdparty/typescript`; re-pin to 7.1.0 stable
-  when it is on npm: todo.md). Suite with own tests and the dts component **13993 / 14029** (dts 1888 / 1910), the
-  same with `--no-defer-bodies`, `--checker-memory 0` 0 of 17666 differ; two of tttt's own tests fail by design
+  when it is on npm: todo.md). Suite with own tests and the dts component **13999 / 14035** (dts 1888 / 1910), the
+  same with `--no-defer-bodies`, `--checker-memory 0` 0 of 17671 differ; two of tttt's own tests fail by design
   (known-failing tests for unfixed divergences: ttttThisInstantiatedMethodErased, hono's this-instantiated members;
   ttttDeferredBodyBeforeContextualParameters, tsc's deferred-body check order); the native suite's last 12
   configurations are argued or one-test mechanisms (bugs/tsgo_divergences.md).
 - **Drop-in `tsc --noEmit`, and drop-in `tsc` where the config only emits declarations**, TypeScript and JavaScript
-  alike. clidiff (the whole `--pretty false` output on every corpus and source sweep project) **3899 / 3907**, dtsdiff
+  alike. clidiff (the whole `--pretty false` output on every corpus and source sweep project) **3974 / 3986**, dtsdiff
   **1328 / 1350** projects. Refused: `--watch`, `--incremental`'s `.tsbuildinfo`, `--showConfig`, `--explainFiles`,
   `--init` (parked by the human). JS emit is out of scope.
 - **Real code**: corpora 0 / 0 everywhere but vue (0 / 2, a tsgo runaway artifact), DT sweep 8595 / 8595,
   `$ExpectType` 68640 / 68640, flagflip 16 / 2 / 2 (all 20 vue pluginScoped.ts, tsgo's TS5115 runaway: won't fix),
-  scenarios 221 / 0 failed, source sweep (288 repositories, 5364 projects since the fourth refresh) quarter sample
-  1301 / 1303; the full sweep was 5352 / 5364 at 4430f1512, pi-bolt x4 and bekuto3d fixed since, so ~5357 / 5364
-  expected with es-toolkit, monkeytype, hono x2, better-auth, discordx and sunmao left, each a confirmed tsgo artifact
-  or a written-up design (bugs/sourcesweep_checker.md, bugs/sourcesweep_build.md); `-b` sweep 411 / 416 solutions
-  (the 5 are tsgo's), kdiff 3 / 3890, recycle 3 / 3890 (rxjs, sequelize x2: tsgo-shared), perfsweep median check
-  ratio 0.17, worst types ratio ~1.40 (lit tsserver-plugin). The fourth refresh (40 application repositories) matched
-  115 / 122 on day one (94.3%), 117 / 122 after five fixes; pi-bolt and bekuto3d were fixed in round three, so all
-  122 should match (unconfirmed until the next full sweep).
-- **Speed** (the human's 12-core laptop, 24 threads; measurements.md "The 12-core box at 2989c0f0", "... at
-  8e3f4fb0", "... at 277be4bc"): **tttt leads or ties bun canary's wall on every corpus** at the defaults; vscode
-  1.70 s against bun's 1.74 (was 1.93 at f2ad73c9: the front end ~250 ms, was ~500). Single-threaded tttt is fastest
-  everywhere. Hardware counters: tttt is **frontend-bound** (53% of slots at K1; icache misses 23% of fetches, op
-  cache hit 63%, 5.4 MB of text), IPC 1.42 at K1, 0.76 at the defaults. BOLT took -3.2% K1 wall, the hot text on a
-  2 MB huge page -4.6% wall at K1 (-1.2% at the defaults). Round three's front end and footprint work (chunked parse
-  of big declaration files, 16 KB checker policy, fewer syscalls and lock waits, two noinline splits) is unmeasured on
-  the laptop yet (todo.md "For the human"). What is left at the defaults: the small-program floor (thread starts,
-  the libs phase on the critical path, per-checker memory: todo.md 1) and duplicated work across checkers (vscode
-  1.09x at K12, mostly inherent: notes/duplication.md).
+  scenarios 221 / 0 failed, source sweep (316 repositories, 5464 projects since refresh 5's 28 bun-lockfile repos)
+  quarter sample 1322 / 1324; the full sweep 5454 / 5464 before cor7, whose fix removed better-drizzle's
+  checker-count-dependent TS2502 since. Left: es-toolkit, monkeytype, hono x2, better-auth, discordx and sunmao (each a
+  confirmed tsgo artifact or a written-up design), kebo's mobx-state-tree cycle (eager signature parameters) and
+  better-drizzle's two TS2578 (bugs/sourcesweep_checker.md, bugs/sourcesweep_build.md); `-b` sweep 411 / 416
+  solutions (the 5 are tsgo's), kdiff 3 / 3969, recycle 3 / 3969 (rxjs, sequelize x2: tsgo-shared; dokploy's recycle
+  run times out under load: triage.md), perfsweep median check ratio 0.28 (measured loaded; 0.17 last round), worst
+  types ratio **1.73 (mcp-linker, refresh 5, unexamined: triage.md)**. Refresh 5 matched 94 / 100 projects on day one
+  (the same 94% as refresh 4), 97 / 100 after five fixes.
+- **Speed** (the human's 12-core laptop, 24 threads; measurements.md "The 12-core box at bbe37c5f"): **tttt is ahead
+  of bun canary's wall on every corpus** at the defaults; vscode 1.70 s alone (level with 277be4bc; bun's 1.74 there).
+  nest 84 -> 58.6 ms median (-30%: the chunked parse of lib.dom took libs 12-19 -> 7 ms, 0 fallbacks); zod, vue and
+  TS6 -b faster. **react 0.09 -> 0.11 s and type-fest single 0.61 -> 0.68** are the relation HACK's removal: react's
+  form.tsx is 8 -> 44 ms at K1 alone, tsc's own work there, and bounds react at every checker count. Single-threaded
+  tttt is fastest everywhere. Hardware counters: tttt is **frontend-bound** (~50% of slots at K1), IPC 1.42 at K1; the
+  noinline splits took vscode K1 cycles -1.7% through fewer instructions, the simulated icache gain didn't show.
+  Round four's front end (the checker cap, AST slabs' first 4 MB on 4 KB pages, malloc_trim, the loader not blocking
+  on libs) is unmeasured on the laptop (todo.md "For the human"). What is left at the defaults: the small-program
+  floor (react's one file, per-checker memory: todo.md 1) and duplicated work across checkers (vscode 1.09x at K12,
+  mostly inherent: notes/duplication.md).
 - **The shipped build is `scripts/fastbuild.sh` -> `fast/tttt`**: GCC LTO + PGO, `-fno-plt`, `-z now`, then an
   llvm-bolt layout (llvm-bolt is a dependency), the hot text on a huge page at startup (`huge_text()`, verified via
-  smaps_rollup, with an `MADV_COLLAPSE` retry; `TTTT_HUGE_TEXT=0/2`). The measuring scripts take their binary from
-  `fastbuild.sh --measured`. `release/` (plain -O3) stays the edit-test build.
+  smaps_rollup, with an `MADV_COLLAPSE` retry; `TTTT_HUGE_TEXT=0/2`: 20 of 20 nest runs took it on the laptop). The
+  measuring scripts take their binary from `fastbuild.sh --measured`. `release/` (plain -O3) stays the edit-test build.
 - **Memory**: the quarter-of-RAM `--checker-memory` default costs vscode 5.4 GB (K1 4.1 GB). Recycling costs 15-20%
   of check time on vscode at small budgets and ~2 GB of the peak is the program plus per-thread state whatever the
-  budget: structural, deferred until we are distinctly faster. The checker policy of one per 16 KB of source spends
-  some RSS for wall on small programs (nest -20% wall at +13% RSS); per-checker memory is the small-project fault
-  lever (react 16.8k typecheck faults at the defaults against 7.7k at T1: triage.md).
-- Instructions: `test/instrcount.txt` (fast/tttt, every corpus, at 0a400eb6f). Round three left vscode flat (66.35
-  G; 68.14 at 92828ad6e before round two), effect -1.3%, webpack -1.2%, valibot -0.9%, and took **react +36%** and
-  type-fest +7% for removing a relation HACK (tsc's own relation work: Decisions; measurements.md "Oracle totals").
+  budget: structural, deferred until we are distinctly faster. Small programs: AST slabs' first 4 MB per thread on 4
+  KB pages and a malloc_trim before checking took nest's peak 210 -> 169 MB and react's 293 -> 255 at the defaults;
+  the checkers' arenas are each checker's repeated work, not start-up slack (notes/front_end.md "Done").
+- Instructions: `test/instrcount.txt` (fast/tttt, every corpus, at acb8dfe7f): **vscode 66.39 G**. Round four was flat
+  (0a400eb6f -> acb8dfe7f: vscode +0.06%, type-fest -0.5%, vue -0.4%, the rest within 0.2%); react's +36% and
+  type-fest's +7% of round three stand (tsc's relation work: Decisions).
 
-## Direction (2026-10-23, after round three at 0a400eb6f; the items and their numbers are in todo.md)
+## Direction (2026-10-23, after round four at 0a1f67836; the items and their numbers are in todo.md)
 The human's priorities: distinctly faster than bun; threading efficiency on mid-size and small projects is the key;
 easy wins first; the correctness long tail continues.
-0. **For the human**: the "loader not blocking on libs" design (notes/front_end.md, decide whether to build it);
-   laptop confirmations of round three (chunked parse, directory listings, the 16 KB policy, huge text's
-   determinism, the noinline I1 gain, react's new cost).
-1. **Per-checker memory on small projects**: arenas starting on huge pages, 8 sets of intern tables, per-thread
-   malloc heaps (react's typecheck faults 16.8k at the defaults against 7.7k at T1).
-2. **Code footprint**: the parser's hot path and the giant functions' source size; still ~50% frontend-bound
-   (notes/code_layout.md, `scripts/inlinedup.py`).
-3. **The rest of the small-program floor**: the load pool's finish-file lock (now its top blocked wait), the link
-   phase's page faults before any parallel link.
-4. **The correctness long tail, continuously**: the indexed-access recursion identity re-landed with a repro from
-   youtube-enhancer; the TS2536 recursive conditional alias; bun-lockfile install support (16 skipped repositories);
-   the next refresh by a new rule when the human reports new divergences.
-5. **Mid-size threading** as a design memo only: the one sharing shape not yet tried is bun's batched publication
-   (types published at creation into one hash-consed store, ~90% never published); the memo must first show how
-   determinism survives without bun's rollback.
-6. **Re-pin to 7.1.0 stable** when it ships.
+0. **For the human**: the sharing A/B on the laptop (the prompt is notes/sharing_design.md "The laptop A/B") decides
+   stage 2; keep or revert the relation HACK's removal (one commit, react's and type-fest's cost); nest's libs-phase
+   sys time under the 4 KB-page AST slabs (`TTTT_AST_SMALL_KB=0` against the default).
+1. **Small projects**: react is bound by one file (form.tsx, ~44 ms at K1: a per-file cost tsc pays too; check
+   tsgo's time on that file); per-checker duplication is the rest.
+2. **Code footprint**: still ~50% frontend-bound (notes/code_layout.md, `scripts/inlinedup.py`).
+3. **The correctness long tail, continuously**: kebo's mobx-state-tree cycle (lazy parameter types in signature
+   resolution: a design first), better-drizzle's two TS2578, mcp-linker's 1.73x types, the indexed-access recursion
+   identity's repro, hono; a fifth refresh rule when the human reports new divergences.
+4. **Mid-size threading**: stage 1 (content order by default) and stage 2 (the shared graph on for K > 1, the plain
+   path at K1) of notes/sharing_design.md, as the laptop A/B decides; stage 3 (rollback) no-go for now.
+5. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
-- **A semantics commit lands only with a repro or the full source sweep** (2026-10-23): the indexed-access recursion
-  identity (tsc's rule, landed without a repro "needed only in combination with" the removed HACK) regressed
-  youtube-enhancer, outside the quarter sample (1.16M types against tsgo's 211k, a spurious TS2589); the full run
-  caught it and it was reverted (triage.md).
+- **Bun's sharing model is work, not incompatible** (2026-10-23, sg2, notes/sharing_design.md): an id-free
+  deep-nesting order (bun's content order: height, then push order) costs 2-3 suite tests and ~20-35 real-code
+  diagnostics, all from the deep-nesting cut; with it the shared graph is deterministic (160 / 161 loaded K12 runs,
+  the miss effect's known residue, against 12 / 20 for today's flag, whose residue C came back with a parser inlining
+  change: a latent race); bun-style rollback would recheck 0-10% of the work on our corpora. Layout: the shard's
+  slots pointer split from its lock line (-4-5% check CPU under the flag; slot padding and file-end batching lose);
+  per-instruction premium drizzle 1.38 -> 1.29x, zod 1.26 -> 1.14, effect 1.16 -> 1.06; net check CPU against plain
+  K12 drizzle -11%, zod +4%, effect +10%. The staged path: stage 1 content order by default (go), stage 2 the flag on
+  for K > 1 with the plain path at K1 (go after the laptop A/B: the IPC gap, vue's 2x), stage 3 rollback (no-go now);
+  a warm prefix + fork() is not worth it. Awaiting the laptop.
+- **A semantics commit lands only with a repro or the full source sweep, gated at several checker counts**
+  (2026-10-23): the indexed-access recursion identity (tsc's rule, landed without a repro "needed only in combination
+  with" the removed HACK) regressed youtube-enhancer, outside the quarter sample (1.16M types against tsgo's 211k, a
+  spurious TS2589); the full run caught it and it was reverted (triage.md). c0a04350a (a generic mapped target no
+  longer passing an intersection source by its members) was right at K1 and added a TS2502 to better-drizzle only at
+  K>1 (kdiff caught it; cor7's acb8dfe7f fixed it): a relation change runs kdiff on the affected project at K1 and
+  K8/16, not only the K1 gates.
+- **Documented hacks are suspects when a divergence appears** (2026-10-23): two produced wrong answers in a week, the
+  deep-nesting target push (pi-bolt) and the generic-mapped member fallback (better-drizzle's 4.23x types runaway
+  behind tsc's TS2502). Read hacks.md for the code path before hypothesising.
 - **The conditional_source_related HACK's removal is accepted at react +36%, type-fest +7% instructions**
   (2026-10-23, f38a8b493): tttt now does the relation work tsc does on react-hook-form's Path/PathImpl (tsgo 84.6k
   relations / 133k types on react, tttt 93.4k / 89.6k; the old 21.8k / 39.5k was the wrong answer's price) and
   pi-bolt's TypeBox chain is fixed. Price a hack's removal against tsc's work, not the hack's speed; a one-commit
   revert if the human decides otherwise.
 - **No persistent thread pool for now** (2026-10-23, fe4): ~1 ms on nest for 1-2 days of work and a 58-thread-local
-  audit; the design and the audit are in notes/front_end.md. **The loader not blocking on libs** is designed, not
-  built (4-8 ms of nest's ~80, a day in program.c's riskiest ordering code): the human decides.
+  audit; the design and the audit are in notes/front_end.md. **The loader not blocking on libs** was built (fe6,
+  b6f8a4650, with a `TTTT_DEFER_LIBS=all` oracle against `TTTT_NO_DEFER_LIBS=1`): nest libs + load 41 -> 37 ms on
+  this box, the laptop to confirm.
 - **Directory listings in CachedFs landed at the +0.5% instruction bar** (2026-10-23; nest +0.45%, syscalls down by
-  thousands): the laptop judges the wall.
+  thousands): nil on the laptop's wall either way (bbe37c5f), kept.
 - **The shared type graph is parked** (2026-10-21/22): built correct by construction and in the tree behind
   `TTTT_SHARED_GRAPH=1`, but at K12 each of its instructions costs 1.2-1.6x plain's, which outweighs the duplicated
   work it saves on ordinary projects, and its output still differs under load on effect (~1%). It wins 2.2-2.5x only
-  on recycle thrashers (dokploy, monkeytype). Reopen only with hardware counters and a design for variance groups
-  cut by deep nesting (notes/shared_graph.md). The earlier lock/wait/redo design was deleted, not narrowed: waiting
+  on recycle thrashers (dokploy, monkeytype). Reopened by the sharing study (above): content order and the split
+  shard lines answer the determinism and part of the premium; the laptop's counters decide (notes/shared_graph.md). The earlier lock/wait/redo design was deleted, not narrowed: waiting
   creates the cycles a redo must break, and the redo's history is no sequential checker's.
 - **The shared graph's ceiling is measured** (2026-10-22, notes/shared_graph.md "The ceiling, measured"): at most
   12% off a vscode checker at K24, below its own 1.2-1.6x per-instruction overhead: off the table for vscode; only
@@ -107,10 +122,11 @@ easy wins first; the correctness long tail continues.
   duplicated variance work is tsc's own per-closure cost (tsgo pays it too); the "25x blow-up" seen
   on the way was a census counter summing type ids across id chunks.
 - **Bun's concurrency is not adoptable whole** (2026-10-22, notes/bun_concurrency.md): bun publishes selectively in
-  batches and keeps its output deterministic by rollback, which needs id-free type ordering (parity-breaking for us).
+  batches and keeps its output deterministic by rollback, which needs id-free type ordering (priced since: 2-3 suite
+  tests, ~20-35 real-code diagnostics, the sharing study above).
   What applied: the chunked parse of big declaration files (landed), a persistent pool (designed, declined for now),
   link in parallel per import-cycle level (30-40 ms on vscode; after link's page faults).
-  Its type-store shape is the one sharing design not yet tried (todo.md, a memo first).
+  Its type-store shape was studied as a memo (notes/sharing_design.md): the staged path above.
 - **GCC, BOLT and huge text** (2026-10-22, the laptop at 8e3f4fb0 and 277be4bc): the shipped build is GCC LTO + PGO
   relaid out by llvm-bolt (-3.2% K1 wall) with the hot text on a 2 MB huge page (-4.6% K1 wall). clang compiles but
   costs +1.4% cycles at K1 and +2..7% instructions, with a 3.67 MB hot window against GCC's 2.47: not the production
@@ -132,8 +148,9 @@ easy wins first; the correctness long tail continues.
 - **No shared declared layer** (2026-10-18): what checkers re-derive is instantiations of the project's own code; lib
   and `.d.ts` declarations are 2-6% of it (measurements.md "What the checkers re-derive").
 - **Defaults** (2026-10-22/23): `--threads` every core; checkers one per 16 KB of checked source (was 64 KB: nest and
-  react get ~8 checkers, nest -20% wall at +13% RSS; 32 KB is the alternative if the laptop prefers CPU) up to the
-  physical cores, past them one per 4 MB up to the threads (only vscode gets 24); `--checker-memory`
+  react get ~8 checkers, nest -20% wall at +13% RSS; level with K12 on the laptop, ahead of K4 on nest, xstate and
+  valibot), capped at ceil(checked bytes / the largest checked file) (10398e204: TypeScript6 8 -> 4, where the laptop
+  measured K4 -10% wall and -32% CPU), up to the physical cores, past them one per 4 MB up to the threads (only vscode gets 24); `--checker-memory`
   a quarter of RAM (256 MB..8 GB; zero recycles on everything measured); a stolen file starts a fresh checker only
   when the thief holds half its budget. A wall gain must be weighed against CPU: K12 -> K24 on vscode bought 0.09 s
   for 12 CPU s.
