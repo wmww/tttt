@@ -35,6 +35,9 @@ typedef struct Found {
     // A relative name found as a file (next to where it points, not a directory's index or package.json): tsgo's
     // nodeLoadModuleByRelativeName gives that one, and only that one, the package id of the node_modules package it's in
     bool relative_file;
+    // Found through a `paths` mapping: like a relative name, a package id only when found as a file (tsgo's paths loader
+    // is nodeLoadModuleByRelativeName; a directory's package.json main or index has none)
+    bool via_paths;
     ResolvedKind kind;
     bool used_ts_extension;
     bool ts_extension_from_star; // used_ts_extension of a package.json target's `*` (load_package_json_field())
@@ -861,8 +864,21 @@ static cstr join_rooted(State const* me, csview dir, csview rest) {
     return join(dir, rest);
 }
 
+// Whether a candidate location was found as a file next to where it points (`./x.js` as x.d.ts: the stem without its
+// extension), not as a directory's index or package.json target
+static bool found_as_file(csview stem, csview path) {
+    csview path_dir = parent_of(path), stem_dir = parent_of(stem);
+    csview stem_base = csview_from_n(stem.buf + stem_dir.size, stem.size - stem_dir.size);
+    csview path_base = csview_from_n(path.buf + path_dir.size, path.size - path_dir.size);
+    isize dot = stem_base.size;
+    while (dot > 1 && stem_base.buf[dot - 1] != '.' && stem_base.buf[dot - 1] != '/') dot--;
+    csview stem_name = dot > 1 && stem_base.buf[dot - 1] == '.' ? csview_from_n(stem_base.buf, dot - 1) : stem_base;
+    return csview_equals_sv(path_dir, stem_dir) && sv_starts_with(path_base, stem_name) &&
+        (path_base.size == stem_name.size || path_base.buf[stem_name.size] == '.');
+}
+
 static bool try_substitution(
-    State* me, csview base, csview substitution, csview star, int extensions, Loader loader, Found* out
+    State* me, csview base, csview substitution, csview star, int extensions, Loader loader, Found* out, bool via_paths
 ) {
     cstr path = replace_first_star(substitution, star);
     cstr candidate = join_rooted(me, base, cstr_sv(&path));
@@ -875,6 +891,10 @@ static bool try_substitution(
         found = true;
     }
     if (!found) found = loader(me, cstr_sv(&candidate), extensions, out);
+    if (found && via_paths) {
+        out->via_paths = true;
+        out->relative_file = found_as_file(cstr_sv(&candidate), cstr_sv(&out->path));
+    }
     cstr_drop(&candidate);
     return found;
 }
@@ -899,7 +919,7 @@ static Search load_using_paths_option(State* me, csview name, int extensions, Lo
         option_path(my resolver, c_sv("."));
     Search ret = SEARCH_STOP;
     for (isize i = 0; i < best->substitutions.count; i++) {
-        if (try_substitution(me, cstr_sv(&base), cstr_sv(&best->substitutions.items[i]), best_star, extensions, loader, out)) {
+        if (try_substitution(me, cstr_sv(&base), cstr_sv(&best->substitutions.items[i]), best_star, extensions, loader, out, true)) {
             ret = SEARCH_FOUND;
             break;
         }
@@ -930,7 +950,7 @@ static Search load_using_version_paths(
     for (isize i = 0; i < best->value.count; i++) {
         JsonValue const* substitution = &best->value.items[i];
         if (substitution->tag != JSON_STRING) continue;
-        if (try_substitution(me, base, cstr_sv(&substitution->string), best_star, extensions, loader, out)) {
+        if (try_substitution(me, base, cstr_sv(&substitution->string), best_star, extensions, loader, out, false)) {
             return SEARCH_FOUND;
         }
     }
@@ -1638,19 +1658,7 @@ static Search node_try_resolve(State* me, csview name, int extensions, Found* ou
         ends_with(name, "/.") || ends_with(name, "/..");
     if (is_directory) cstr_append_lit(&candidate, "/");
     bool found = load_as_file_or_directory(me, cstr_sv(&candidate), extensions, out);
-    if (found && !is_directory) {
-        csview path = cstr_sv(&out->path);
-        csview stem = cstr_sv(&candidate);
-        csview path_dir = parent_of(path), stem_dir = parent_of(stem);
-        csview stem_base = csview_from_n(stem.buf + stem_dir.size, stem.size - stem_dir.size);
-        csview path_base = csview_from_n(path.buf + path_dir.size, path.size - path_dir.size);
-        // (`./x.js` found as x.d.ts: the stem without its extension)
-        isize dot = stem_base.size;
-        while (dot > 1 && stem_base.buf[dot - 1] != '.' && stem_base.buf[dot - 1] != '/') dot--;
-        csview stem_name = dot > 1 && stem_base.buf[dot - 1] == '.' ? csview_from_n(stem_base.buf, dot - 1) : stem_base;
-        out->relative_file = csview_equals_sv(path_dir, stem_dir) && sv_starts_with(path_base, stem_name) &&
-            (path_base.size == stem_name.size || path_base.buf[stem_name.size] == '.');
-    }
+    if (found && !is_directory) out->relative_file = found_as_file(cstr_sv(&candidate), cstr_sv(&out->path));
     cstr_drop(&candidate);
     // (tsgo's resolveNodeLikeWorker: whether what was found is in a node_modules, for a relative name too: a package's
     // own `./types` is an external library import)
@@ -1743,8 +1751,16 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         // All extensions at once (`./dir` is dir.js before dir/index.ts), except that
         // HACK: a package name with export maps in play is resolved in two passes (the TypeScript extensions first: a
         // `types` condition anywhere beats any JavaScript), which is how tsc ends up in its selfNameModuleAugmentation
-        // behaviour (microsoft/TypeScript#50762) by other means
-        result = node_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
+        // behaviour (microsoft/TypeScript#50762) by other means. A `paths` mapping comes before any package lookup and
+        // with every extension at once (tsc's tryLoadModuleUsingOptionalResolutionSettings): `"*": ["./node_modules/*"]`
+        // finds an untyped package's index.js before @types is looked at
+        result = SEARCH_CONTINUE;
+        if (my options->path_count) {
+            result = load_using_options(&state, specifier, EXT_TS | EXT_DTS | secondary, load_as_file_or_directory, &found);
+            if (result == SEARCH_FOUND) external = path_contains_node_modules(cstr_sv(&found.path));
+            else result = SEARCH_CONTINUE;
+        }
+        if (result != SEARCH_FOUND) result = node_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
         if (result != SEARCH_FOUND) {
             Search second = node_try_resolve(&state, specifier, secondary, &found, &external);
             if (second == SEARCH_FOUND) result = second;
@@ -1791,7 +1807,7 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         ret.arbitrary_extension = found.arbitrary_extension;
         // (A relative or rooted name found as a directory has no package id, whatever node_modules it reaches: tsgo
         // sets it on the node_modules package and exports/imports paths, and on a relative name's file)
-        if (!module_name_is_relative(specifier) || found.relative_file) {
+        if (found.via_paths ? found.relative_file : !module_name_is_relative(specifier) || found.relative_file) {
             ret.package_id = package_id_of(&state, cstr_sv(&ret.path), cstr_sv(&found.package_dir), found.nested_package, &ret.package_name);
         }
         // (Not for a relative name, external or not: tsgo's relative branch is createResolvedModule, without
