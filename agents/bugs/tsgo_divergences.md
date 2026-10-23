@@ -94,6 +94,17 @@ argued here instead. Nothing a user sees differs in any of them.
   124,28 because it had already tripped while checking its share_first, catalog.test.ts. A K-stable, tsgo-K1-identical
   answer needs a K1 history: either a recheck in one checker, in program order and without recycling, whenever a limit
   trips at K>1, or nothing (the deterministic deal gives run-to-run stability only). [tsgo]
+- **The owner rule** (det3, 2026-10-23): tsgo keeps only the diagnostics a file's own checker reports in it
+  (getBindAndCheckDiagnosticsForFile -> fileChecker.GetDiagnostics -> collection.GetDiagnosticsForFile). A diagnostic
+  that checker A leaves at a node of file F, which checker B checks, is dropped. tttt merges every checker's errors
+  (program_typecheck(): error_ctx_merge per share). The evidence is appflare/packages/schema's TS5115 at K16: tttt
+  reports five sites (artifact.ts 144,30 and 172,42; config-patch.ts 124,28 and 131,12; wrangler-config-inline.ts
+  174,9). tsgo K16 reports three. With an experimental filter (drop an error whose span's file share_of() gives to
+  another checker, before error_ctx_keep_first_once()), tttt K16 was exactly tsgo K16's three: 13 trips dropped.
+  checkerdiff -k 16 on every corpus with the filter: 0 differing (no owner failed to reproduce a dropped
+  diagnostic). webpack was "twice: DIFFERENT", probably the experiment's own stderr count line. Not implemented: K>1
+  output is K1's anyway once the limit fallback recheck exists, and with a deterministic deal the rule only matters for
+  history-dependent reports. Revisit if tttt's K>1 output should equal tsgo's at the same K. [design]
 - sequelize/packages/core's TS7022 differs with the checker count in tsgo too (kdiff); tttt's K16 shows it
   since costliest-first (2026-10-20: kdiff 2 -> 4, sequelize and sequelize/packages/core; `TTTT_NO_COSTLIEST_FIRST=1`
   hides it again). The defaults match tsc. Rechecked 2026-10-21 with the pinned tsgo (`tsc -p packages/core --noEmit
