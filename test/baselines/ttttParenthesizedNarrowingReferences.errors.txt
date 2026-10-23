@@ -1,0 +1,19 @@
+ttttParenthesizedNarrowingReferences.ts(4,83): error TS2339: Property 'a' does not exist on type '{ k: "a"; a: 1; } | { k: "b"; }'.
+  Property 'a' does not exist on type '{ k: "b"; }'.
+ttttParenthesizedNarrowingReferences.ts(7,37): error TS2339: Property 'b' does not exist on type 'A'.
+
+
+==== ttttParenthesizedNarrowingReferences.ts (2 errors) ====
+    // Parentheses are nodes to tsc: `(o!).k` isn't a non-null access (isNonNullAccess), so a nullable union isn't
+    // narrowed by its discriminant, and `(x.isB)()` has no narrowable argument (the binder's hasNarrowableArgument), so
+    // its `this is B` narrows nothing (bun's 32-C3, 25-C1, 21-C6)
+    function f(o: { k: "a"; a: 1 } | { k: "b" } | undefined) { if ((o!).k === "a") o!.a; if (o!.k === "a") o!.a; }
+                                                                                      ~
+!!! error TS2339: Property 'a' does not exist on type '{ k: "a"; a: 1; } | { k: "b"; }'.
+!!! error TS2339:   Property 'a' does not exist on type '{ k: "b"; }'.
+    class A { isB(): this is B { return false; } }
+    class B extends A { b = 1; }
+    function g(x: A) { if ((x.isB)()) x.b; if (x.isB()) x.b; }
+                                        ~
+!!! error TS2339: Property 'b' does not exist on type 'A'.
+    

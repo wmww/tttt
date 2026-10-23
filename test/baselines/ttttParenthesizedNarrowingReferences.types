@@ -1,0 +1,64 @@
+//// [test/cases/ttttParenthesizedNarrowingReferences.ts] ////
+
+=== ttttParenthesizedNarrowingReferences.ts ===
+// Parentheses are nodes to tsc: `(o!).k` isn't a non-null access (isNonNullAccess), so a nullable union isn't
+// narrowed by its discriminant, and `(x.isB)()` has no narrowable argument (the binder's hasNarrowableArgument), so
+// its `this is B` narrows nothing (bun's 32-C3, 25-C1, 21-C6)
+function f(o: { k: "a"; a: 1 } | { k: "b" } | undefined) { if ((o!).k === "a") o!.a; if (o!.k === "a") o!.a; }
+>f : (o: { k: "a"; a: 1; } | { k: "b"; } | undefined) => void
+>o : { k: "a"; a: 1; } | { k: "b"; } | undefined
+>k : "a"
+>a : 1
+>k : "b"
+>(o!).k === "a" : boolean
+>(o!).k : "a" | "b"
+>(o!) : { k: "a"; a: 1; } | { k: "b"; }
+>o! : { k: "a"; a: 1; } | { k: "b"; }
+>o : { k: "a"; a: 1; } | { k: "b"; } | undefined
+>k : "a" | "b"
+>"a" : "a"
+>o!.a : any
+>o! : { k: "a"; a: 1; } | { k: "b"; }
+>o : { k: "a"; a: 1; } | { k: "b"; } | undefined
+>a : any
+>o!.k === "a" : boolean
+>o!.k : "a" | "b"
+>o! : { k: "a"; a: 1; } | { k: "b"; }
+>o : { k: "a"; a: 1; } | { k: "b"; } | undefined
+>k : "a" | "b"
+>"a" : "a"
+>o!.a : 1
+>o! : { k: "a"; a: 1; }
+>o : { k: "a"; a: 1; } | undefined
+>a : 1
+
+class A { isB(): this is B { return false; } }
+>A : A
+>isB : () => this is B
+>false : false
+
+class B extends A { b = 1; }
+>B : B
+>A : A
+>b : number
+>1 : 1
+
+function g(x: A) { if ((x.isB)()) x.b; if (x.isB()) x.b; }
+>g : (x: A) => void
+>x : A
+>(x.isB)() : boolean
+>(x.isB) : () => this is B
+>x.isB : () => this is B
+>x : A
+>isB : () => this is B
+>x.b : any
+>x : A
+>b : any
+>x.isB() : boolean
+>x.isB : () => this is B
+>x : A
+>isB : () => this is B
+>x.b : number
+>x : B
+>b : number
+

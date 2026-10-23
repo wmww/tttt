@@ -2139,7 +2139,9 @@ static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, Discrimina
     if (!name) return type;
     bool optional_chain = access && access->optional_chain;
     bool remove_nullable = compiler_options()->strict_null_checks && has_type_facts(me, type, TF_EQ_UNDEFINED_OR_NULL) &&
-        (optional_chain || (access && access->expr.tag == EXPR_UNARY_OP && access->expr.unary_op->op == UNARY_OP_RIGHT_BANG));
+        (optional_chain || (access && access->expr.tag == EXPR_UNARY_OP && access->expr.unary_op->op == UNARY_OP_RIGHT_BANG &&
+            // (Not `(o!).k`: tsc's isNonNullAccess sees a parenthesized expression there)
+            !expr_is_perenthisized(&access->expr)));
     Ty const* holder = remove_nullable ? type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL) : type;
     // (`x!.kind` of an x that is only null here: never has no properties, tsc's getTypeOfPropertyOfType finds none and
     // doesn't narrow)
@@ -2905,7 +2907,7 @@ static bool has_matching_argument(FlowQuery* q, CallExpr const* call) {
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
     // (A method called on it: `o.m(x)` only, not `o[k](x)` nor `(o.m)(x)`, tsc's
     // `expression.expression.kind === SyntaxKind.PropertyAccessExpression`)
-    if (callee->tag != EXPR_PROPERTY || callee->property->form != PROPERTY_EXPR_DOT) return false;
+    if (callee->tag != EXPR_PROPERTY || callee->property->form != PROPERTY_EXPR_DOT || expr_is_perenthisized(callee)) return false;
     Expr const* object = &callee->property->expr;
     return query_matches(q, object) || contains_matching_reference(me, q->reference, object);
 }
