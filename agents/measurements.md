@@ -277,8 +277,14 @@ on (file, line, code), 0 crashes; **byte-identical text (clidiff): 291 / 307** (
 verdicts, 2 text-only: tanstack-ai/packages/ai-react's header wording, pothos/packages/plugin-dataloader's header).
 Root causes by repo: openscience (Solid and React JSX in one tree; cor8: a quick type for `f?.(x)`, union mapped
 modifiers through index signatures, tsc's JSX children indexing past empty expressions: 14 / 14 after), pothos (corF),
-tanstack-ai, node-pg-migrate and portabase (corG). After: pending the shared store's repair (corF's corruption of
-graphql/@types/node store files, 10:51-10:57, voids every sweep after it).
+tanstack-ai, node-pg-migrate and portabase (corG). **After (2026-10-23 evening, main + wt-cor8): 423 / 429 projects
+(98.6%), 25 / 29 repos; text 300 / 307** (openscience's 215 header lines now visible as text-only, bugs/display.md;
+tanstack-ai/packages/ai-react's 2). Left: pothos (plugin-with-input TS7031, plugin-add-graphql TS2345,
+plugin-smart-subscriptions -TS7023), node-pg-migrate/docs (TS7's own `typeof ts` typings, +TS2322/-TS2741),
+portabase (auth.ts:690 `never`, form.tsx:227 -TS2322), tanstack-ai/packages/ai-harness (-TS2615), with corF and corG.
+The full source sweep then (main + wt-cor8, the shared store repaired after corF's 10:51-10:57 corruption):
+**6053 / 6085 projects, 334 / 346 repos**, 1 timeout (openclaw's root under load); the rest are openclaw's det
+items, kebo's MST cycle, monkeytype, hono, discordx, sunmao, better-auth, es-toolkit (all known) and refresh 6's.
 
 ## Fresh repositories, fourth rule: bun lockfiles (2026-10-22)
 Refresh 5 (cor6, repos.txt "Refresh 5"): the application-code rule of refresh 4 for repos whose only lockfile is bun's,

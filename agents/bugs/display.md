@@ -237,6 +237,13 @@ diagnostics). Left:
   log of `*d.approx` around ty_display(); the first entry where the numbers part is the bug. The same logging at
   mapToTypeNodes, and threshold probes (grow a property name before the type until a `...` appears, binary search,
   both CLIs) narrowed graphql-yoga's to colliding list members.
+- **openscience (refresh 6, 2026-10-23)**: once its diagnostics matched (cor8), 215 header lines in the root project
+  (React JSX applied to Solid code, ~11.5k diagnostics) and one chain line differ. Kinds seen: tsgo prints
+  `React.JSX.Element` where tttt prints `Element` in a signature's return type (`(props: ParentProps<...>) =>
+  React.JSX.Element`: tsgo qualifies the JSX namespace's Element when another `Element` is in scope); tsgo names
+  csstype's `Properties<string | number, string & {}>` where tttt names its alias `CSSProperties`; long object
+  literal headers truncated at other points. Not cut down yet (`scripts/clidiff.py -f '^openscience$' -v`); text
+  only, priority 4. tanstack-ai/packages/ai-react's two header-wording lines are corG's.
 - Corpora: all match but vue's two `diagnostics` (known); webpack's zod TS5115 order was the missing-properties scan
   typing the source (cfcd8174).
 
