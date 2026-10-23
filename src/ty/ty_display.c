@@ -1382,6 +1382,14 @@ cstr ty_prop_written_name(Checker* me, Prop const* prop) {
     // (A missing name, a JSDoc `@property {function(A): B} f`'s: the binder's '(Missing)' as it is)
     if (span_valid(name) && !name.size) return cstr_from_sv(atom_sv(prop->name));
     if (ty_prop_name_form_of(root) & PROP_NAME_RAW) return cstr_from_sv(atom_sv(prop->name));
+    // (A symbol without declarations named by a unique symbol, a non-homomorphic mapped type's over `keyof X`: tsc's
+    // getNameOfSymbolFromNameType, the unique symbol's own name as written in brackets, `[iterator]`)
+    if (!prop->decl->decl_span_count && !root->decl->decl_span_count) {
+        Ty const* unique = ty_unique_symbol_of_name(me, prop->name);
+        UniqueSymbolDecl const* decl = unique ? unique->literal.unique : nullptr;
+        if (decl && span_valid(decl->member) && decl->member.size) return cstr_d("[", span_sv(decl->member), "]");
+        if (decl && decl->owner) return cstr_d("[", span_sv(ty_symbol_display_name(decl->owner)), "]");
+    }
     return ty_prop_name_cstr(me, prop->name);
 }
 

@@ -216,6 +216,31 @@ void text_decode_utf16_bom(cstr* contents) {
     *contents = out;
 }
 
+bool path_is_network(csview path) {
+    if (path.size < 2 || (path.buf[0] != '/' && path.buf[0] != '\\')) return false;
+    if (path.buf[1] == '/' || path.buf[1] == '\\') return true; // (A UNC root: normalizing keeps it)
+    // `/??`: what's left once the segments after the root are normalized
+    char const* segments[64];
+    isize sizes[64];
+    u32 count = 0;
+    char const* c = path.buf + 1;
+    char const* end = path.buf + path.size;
+    while (c <= end) {
+        char const* next = c;
+        while (next < end && *next != '/' && *next != '\\') next++;
+        isize n = next - c;
+        if (n == 2 && c[0] == '.' && c[1] == '.') {
+            if (count) count--;
+        } else if (n && !(n == 1 && c[0] == '.')) {
+            if (count == 64) return false;
+            segments[count] = c;
+            sizes[count++] = n;
+        }
+        c = next + 1;
+    }
+    return count && sizes[0] == 2 && segments[0][0] == '?' && segments[0][1] == '?';
+}
+
 bool path_is_normalized(csview path) {
     if (!path.size) return false;
     const char* c = path.buf;

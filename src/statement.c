@@ -1944,7 +1944,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     // (The reference as written, slashes normalized: tsgo's getSourceFileFromReference)
                     cstr path = cstr_clone(my source_directive->not_found);
                     cstr_replace(&path, "\\", "/");
-                    if (my source_directive->not_found_extensionless) {
+                    if (my source_directive->not_found_network) {
+                        error_ctx_error_d(errs, span, 5116, "Network path '", path, "' is not supported.");
+                    } else if (my source_directive->not_found_extensionless) {
                         // (tsc's getSourceFileFromReferenceWorker lists every supported extension)
                         error_ctx_error_d(errs, span, 6231, "Could not resolve the path '", path,
                             "' with the extensions: ", compiler_options()->allow_js ?

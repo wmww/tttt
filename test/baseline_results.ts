@@ -12154,7 +12154,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'declarationEmitSubpathImportsReexport': {
         errors: true,
@@ -13782,7 +13782,7 @@ const baselines = {
         types: true,
     },
     'domIterableSymbolMappedValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23275,7 +23275,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'jsDeclarationExportDefaultAssignmentCrash': {
         errors: true,
@@ -27842,7 +27842,7 @@ const baselines = {
         types: true,
     },
     'networkPathReferences': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56944,7 +56944,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'jsdocAugmentsMissingType': {
         errors: true,
@@ -57268,7 +57268,7 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
-        dts: false,
+        dts: true,
     },
     'jsdocReturnTag1': {
         errors: true,

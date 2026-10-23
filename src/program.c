@@ -1210,6 +1210,12 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
             switch (statement->source_directive->tag) {
                 case SOURCE_DIRECTIVE_REFERENCE_PATH:
                     if (my options.no_resolve) break;
+                    if (path_is_network(cstr_sv(&statement->source_directive->path))) {
+                        // (tsgo 7.1.0-beta's getSourceFileFromReference: TS5116, not looked up)
+                        cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
+                        statement->source_directive->not_found_network = true;
+                        break;
+                    }
                     SourceFile const* referenced = program_load_reference_path(
                         me,
                         statement->source_directive->path_span,
@@ -2635,6 +2641,8 @@ static void program_validate_paths(Program* me) {
                 }
                 if (!path_is_relative_or_absolute(cstr_sv(substitution))) {
                     option_error_d_one(me, site, 5090, "Non-relative paths are not allowed. Did you forget a leading './'?");
+                } else if (path_is_network(cstr_sv(substitution))) {
+                    option_error_d_one(me, site, 5116, "Network path '", *substitution, "' is not supported.");
                 }
             }
         }
@@ -2683,6 +2691,8 @@ static void program_validate_paths(Program* me) {
                 }
                 if (!path_is_relative_or_absolute(cstr_sv(&substitution->string))) {
                     error_ctx_error_d(my errs, at, 5090, "Non-relative paths are not allowed. Did you forget a leading './'?");
+                } else if (path_is_network(cstr_sv(&substitution->string))) {
+                    error_ctx_error_d(my errs, at, 5116, "Network path '", substitution->string, "' is not supported.");
                 }
             }
         }

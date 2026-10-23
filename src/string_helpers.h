@@ -27,6 +27,11 @@ const char* string_to_double(
 // empty, `.` or `..` segment (no `//`, no trailing slash). `/` is
 bool path_is_normalized(csview path);
 
+// tsgo's nativepath.IsNetworkPath of the path normalized (slashes, `.` and `..`) as written, which tsgo reports as
+// TS5116 wherever a config or a reference names one (`//server/share`, `\\?\UNC\...`, `/??/...`). A relative path is
+// never one (the directory it is relative to isn't)
+bool path_is_network(csview path);
+
 // Skip the Byte Order Mark
 const char* file_start_excluding_bom(const char* contents);
 

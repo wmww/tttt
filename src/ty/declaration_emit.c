@@ -2843,6 +2843,7 @@ static void check_enum(Walk* me, EnumDecl const* decl) {
 
 static void check_statements(Walk* me, VecStatement const* statements, Container container);
 
+static bool alias_type_internal(TypeDecl const* decl);
 static void check_statement_now(Walk* me, Statement const* statement, Container container);
 
 static Symbol const* statement_declared_symbol(Statement const* statement) {
@@ -3050,7 +3051,9 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
                 check_generic(me, &decl->generic, SIG_TYPE_ALIAS);
                 // (A type literal that is the alias's type gives its members diagnostics of their own)
                 Emitting saved = emit_enter(me, EMIT_TYPE_ALIAS, SIG_TYPE_ALIAS, decl->name, decl->name);
-                if (decl->type.tag == TYPE_INTERFACE) {
+                if (alias_type_internal(decl)) {
+                    // (Written as `any`: nothing it names is painted)
+                } else if (decl->type.tag == TYPE_INTERFACE) {
                     check_type_members(me, &decl->type.interface.members, nullptr, true);
                 } else {
                     check_written_type(me, &decl->type);
@@ -4586,7 +4589,13 @@ static void emit_js_this_properties(Walk* me, ClassDecl const* cls) {
         // (With the comments of its expression statement: preserveJsDoc)
         w_leading(me, p->decl->full.buf);
         w_indent(me);
+        // (Its JSDoc's modifiers too since tsgo 7.1.0-beta, #64696: ensureModifierFlags of the assignment, `@public` and
+        // `@override` masked)
+        u32 jsdoc = p->decl->jsdoc_modifiers;
+        if (jsdoc & JSDOC_MODIFIER_PRIVATE) w_lit(me, "private ");
+        else if (jsdoc & JSDOC_MODIFIER_PROTECTED) w_lit(me, "protected ");
         if (p->is_static) w_lit(me, "static ");
+        if (jsdoc & JSDOC_MODIFIER_READONLY) w_lit(me, "readonly ");
         // (`this["a-b"] = v`: a string literal name, as written)
         csview literal = this_property_literal_name(me, p->decl);
         bool identifier = name.size && !isdigit((unsigned char)name.buf[0]);
@@ -4613,8 +4622,7 @@ static void emit_js_this_properties(Walk* me, ClassDecl const* cls) {
             w(me, name);
             w_lit(me, "\"");
         }
-        // (`/** @private */ this.x = v` has no type, nor a modifier: ensureType's GetEffectiveDeclarationFlags sees the
-        // tag, the modifiers aren't the JSDoc's)
+        // (`/** @private */ this.x = v` has no type: ensureType's GetEffectiveDeclarationFlags sees the tag)
         if (!(p->decl->jsdoc_modifiers & JSDOC_MODIFIER_PRIVATE)) {
             w_lit(me, ": ");
             TypeNode const* annotation = symbol_decl_jsdoc_type(p->decl);
@@ -4974,6 +4982,27 @@ static void emit_interface(Walk* me, InterfaceDecl const* decl, Statement const*
     w_lit(me, "\n");
 }
 
+// tsgo's visitDeclarationSubtree strips a node whose leading comments say `@internal` wherever it is (stripInternal):
+// for a type alias's right-hand side, 7.1.0-beta (#64770) writes `any` instead of nothing. Whether the first token after
+// the alias's `=` has one
+static bool alias_type_internal(TypeDecl const* decl) {
+    if (!compiler_options()->strip_internal || !span_valid(decl->name) || !span_valid(decl->full_span)) return false;
+    SourceFile const* file = span_source(decl->name);
+    char const* end = span_end_ptr(decl->full_span);
+    char const* at = decl_map_skip_trivia(span_end_ptr(decl->name), end);
+    if (at < end && *at == '<') {
+        u32 depth = 0;
+        for (; at < end; at++) {
+            if (*at == '<') depth++;
+            else if (*at == '>' && at[-1] != '=' && !--depth) break;
+        }
+        at = at < end ? decl_map_skip_trivia(at + 1, end) : end;
+    }
+    if (at >= end || *at != '=') return false;
+    at = decl_map_skip_trivia(at + 1, end);
+    return at < end && source_text_internal_before(file, at);
+}
+
 static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* statement, Container container) {
     w_indent(me);
     m_span(me, statement->span, false);
@@ -4986,7 +5015,8 @@ static void emit_type_alias(Walk* me, TypeDecl const* decl, Statement const* sta
     // descriptions)
     TypeNode const* literal = decl->type.tag == TYPE_ARRAY && decl->type.array.element ? decl->type.array.element : &decl->type;
     bool described = decl->jsdoc && literal->tag == TYPE_INTERFACE && literal->interface.jsdoc_literal;
-    w_node_described(me, &decl->type, false, true, described ? &literal->interface : nullptr);
+    if (alias_type_internal(decl)) w_lit(me, "any");
+    else w_node_described(me, &decl->type, false, true, described ? &literal->interface : nullptr);
     w_lit(me, ";");
     m(me, decl->jsdoc && decl->jsdoc_end ? decl->jsdoc_end : statement_end(statement));
     w_lit(me, "\n");
