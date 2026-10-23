@@ -1,0 +1,89 @@
+//// [test/cases/ttttMappedToTypeParamFreshKey.ts] ////
+
+=== ttttMappedToTypeParamFreshKey.ts ===
+// A mapped type is related to a type parameter T through its template and T[P], where P is the instantiation's own key
+// parameter, constrained by the instantiated constraint (tsc's instantiateMappedType makes it fresh): writing T[P] for
+// `Pick<X, "limit" | "hard">` is through those keys, not through the declared `K extends keyof X`, which has "unit" too
+type P = { limit: number; unit: "c" | "u"; hard?: number };
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>limit : Symbol(limit, Decl(ttttMappedToTypeParamFreshKey.ts, 3, 10))
+>unit : Symbol(unit, Decl(ttttMappedToTypeParamFreshKey.ts, 3, 25))
+>hard : Symbol(hard, Decl(ttttMappedToTypeParamFreshKey.ts, 3, 42))
+
+function viaOmit<Ch extends P>(o: Omit<P, "unit">) {
+>viaOmit : Symbol(viaOmit, Decl(ttttMappedToTypeParamFreshKey.ts, 3, 59))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 5, 17))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 5, 31))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+
+  return { o, z: 1 } as { o: Ch };
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 6, 10))
+>z : Symbol(z, Decl(ttttMappedToTypeParamFreshKey.ts, 6, 13))
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 6, 25))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 5, 17))
+}
+
+type M<K extends keyof P> = { [Q in K]: P[Q] };
+>M : Symbol(M, Decl(ttttMappedToTypeParamFreshKey.ts, 7, 1))
+>K : Symbol(K, Decl(ttttMappedToTypeParamFreshKey.ts, 9, 7))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>Q : Symbol(Q, Decl(ttttMappedToTypeParamFreshKey.ts, 9, 31))
+>K : Symbol(K, Decl(ttttMappedToTypeParamFreshKey.ts, 9, 7))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>Q : Symbol(Q, Decl(ttttMappedToTypeParamFreshKey.ts, 9, 31))
+
+function viaAlias<Ch extends P>(o: M<"limit" | "hard">) {
+>viaAlias : Symbol(viaAlias, Decl(ttttMappedToTypeParamFreshKey.ts, 9, 47))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 10, 18))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 10, 32))
+>M : Symbol(M, Decl(ttttMappedToTypeParamFreshKey.ts, 7, 1))
+
+  return { o, z: 1 } as { o: Ch };
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 11, 10))
+>z : Symbol(z, Decl(ttttMappedToTypeParamFreshKey.ts, 11, 13))
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 11, 25))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 10, 18))
+}
+
+type Chunk<Ch extends P> = Omit<P, "unit"> & { unit: Ch["unit"] };
+>Chunk : Symbol(Chunk, Decl(ttttMappedToTypeParamFreshKey.ts, 12, 1))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 14, 11))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>unit : Symbol(unit, Decl(ttttMappedToTypeParamFreshKey.ts, 14, 46))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 14, 11))
+
+function viaIntersection<Ch extends P>(ch: Ch) {
+>viaIntersection : Symbol(viaIntersection, Decl(ttttMappedToTypeParamFreshKey.ts, 14, 66))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 15, 25))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>ch : Symbol(ch, Decl(ttttMappedToTypeParamFreshKey.ts, 15, 39))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 15, 25))
+
+  return { ch } as { ch: Chunk<Ch>; z: 1 };
+>ch : Symbol(ch, Decl(ttttMappedToTypeParamFreshKey.ts, 16, 10))
+>ch : Symbol(ch, Decl(ttttMappedToTypeParamFreshKey.ts, 16, 20))
+>Chunk : Symbol(Chunk, Decl(ttttMappedToTypeParamFreshKey.ts, 12, 1))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 15, 25))
+>z : Symbol(z, Decl(ttttMappedToTypeParamFreshKey.ts, 16, 35))
+}
+
+// Still not comparable: the template doesn't fit
+function mismatch<Ch extends P>(o: { [Q in "limit" | "hard"]: string }) {
+>mismatch : Symbol(mismatch, Decl(ttttMappedToTypeParamFreshKey.ts, 17, 1))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 20, 18))
+>P : Symbol(P, Decl(ttttMappedToTypeParamFreshKey.ts, 0, 0))
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 20, 32))
+>Q : Symbol(Q, Decl(ttttMappedToTypeParamFreshKey.ts, 20, 38))
+
+  return { o, z: 1 } as { o: Ch };
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 21, 10))
+>z : Symbol(z, Decl(ttttMappedToTypeParamFreshKey.ts, 21, 13))
+>o : Symbol(o, Decl(ttttMappedToTypeParamFreshKey.ts, 21, 25))
+>Ch : Symbol(Ch, Decl(ttttMappedToTypeParamFreshKey.ts, 20, 18))
+}
+

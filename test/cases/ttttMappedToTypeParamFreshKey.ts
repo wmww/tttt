@@ -1,0 +1,26 @@
+// @strict: true
+// @noEmit: true
+
+// A mapped type is related to a type parameter T through its template and T[P], where P is the instantiation's own key
+// parameter, constrained by the instantiated constraint (tsc's instantiateMappedType makes it fresh): writing T[P] for
+// `Pick<X, "limit" | "hard">` is through those keys, not through the declared `K extends keyof X`, which has "unit" too
+type P = { limit: number; unit: "c" | "u"; hard?: number };
+
+function viaOmit<Ch extends P>(o: Omit<P, "unit">) {
+  return { o, z: 1 } as { o: Ch };
+}
+
+type M<K extends keyof P> = { [Q in K]: P[Q] };
+function viaAlias<Ch extends P>(o: M<"limit" | "hard">) {
+  return { o, z: 1 } as { o: Ch };
+}
+
+type Chunk<Ch extends P> = Omit<P, "unit"> & { unit: Ch["unit"] };
+function viaIntersection<Ch extends P>(ch: Ch) {
+  return { ch } as { ch: Chunk<Ch>; z: 1 };
+}
+
+// Still not comparable: the template doesn't fit
+function mismatch<Ch extends P>(o: { [Q in "limit" | "hard"]: string }) {
+  return { o, z: 1 } as { o: Ch };
+}

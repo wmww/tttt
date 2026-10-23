@@ -6136,7 +6136,12 @@ static Ternary structured_related_members(
             if (mapped && !mapped->name_type && mapped->optional <= 0 &&
                 is_related_to(me, st, ty_keyof(me, target), mapped->constraint, false)
             ) {
-                Ternary related = is_related_to(me, st, ty_mapped_template(me, mapped), ty_indexed(me, target, mapped->type_param), report);
+                // (With the instantiation's own key parameter, constrained by its instantiated constraint: tsc's
+                // instantiateMappedType makes it fresh, so T[P] for writing is through `Pick<X, "a">`'s "a", not
+                // through the declared `K extends keyof X`)
+                TyMapper const* key_mapper = mapped_key_param_mapper(me, mapped);
+                Ternary related = is_related_to(me, st, ty_instantiate(me, ty_mapped_template(me, mapped), key_mapper),
+                    ty_indexed(me, target, ty_instantiate(me, mapped->type_param, key_mapper)), report);
                 if (related) return related;
             }
             if (comparable && source->kind == TY_TYPE_PARAM) {

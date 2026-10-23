@@ -1000,6 +1000,16 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDeleteUnionIndexSignatureMember(exactoptionalpropertytypes=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDeleteUnionIndexSignatureMember(exactoptionalpropertytypes=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDeprecatedSuggestion': {
         errors: true,
         symbols: true,
@@ -1805,6 +1815,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedToTypeParamFreshKey': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedTupleRestErrorElement': {
         errors: true,
         symbols: true,
@@ -2373,6 +2388,11 @@ const baselines = {
         types: true,
     },
     'ttttTypeParameterMissingName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttTypeQueryQualifiedNameFlowOutside': {
         errors: true,
         symbols: true,
         types: true,
