@@ -1,0 +1,41 @@
+//// [test/cases/ttttImportTypeIdentifierFirst.ts] ////
+
+=== m.ts ===
+declare const d: number;
+>d : Symbol(d, Decl(m.ts, 0, 13))
+
+export default d;
+>d : Symbol(d, Decl(m.ts, 0, 13))
+
+export const bar = 1;
+>bar : Symbol(bar, Decl(m.ts, 2, 12))
+
+export type T = number;
+>T : Symbol(T, Decl(m.ts, 2, 21))
+
+=== a.ts ===
+// An import's `type` is an identifier first (tsc's parseImportDeclarationOrImportEqualsDeclaration): the type-only
+// modifier only where what follows can't take it as the default import's name, and spelled with an escape it's no
+// TS1260. Babel's import-default-and-named-id-type and import-type-escaped-error fixtures
+import type, { bar } from "./m";
+>type : Symbol(type, Decl(a.ts, 3, 6))
+>bar : Symbol(bar, Decl(a.ts, 3, 14))
+
+import typ\u{65} d2 from "./m";
+>d2 : Symbol(d2, Decl(a.ts, 4, 6))
+
+import typ\u0065 { T } from "./m";
+>T : Symbol(T, Decl(a.ts, 5, 18))
+
+import typ\u0065 * as ns from "./m";
+>ns : Symbol(ns, Decl(a.ts, 6, 16))
+
+export { bar, d2, ns };
+>bar : Symbol(bar, Decl(a.ts, 7, 8))
+>d2 : Symbol(d2, Decl(a.ts, 7, 13))
+>ns : Symbol(ns, Decl(a.ts, 7, 17))
+
+let t: T = 0;
+>t : Symbol(t, Decl(a.ts, 8, 3))
+>T : Symbol(T, Decl(a.ts, 5, 18))
+

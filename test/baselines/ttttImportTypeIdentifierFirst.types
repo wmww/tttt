@@ -1,0 +1,42 @@
+//// [test/cases/ttttImportTypeIdentifierFirst.ts] ////
+
+=== m.ts ===
+declare const d: number;
+>d : number
+
+export default d;
+>d : number
+
+export const bar = 1;
+>bar : 1
+>1 : 1
+
+export type T = number;
+>T : number
+
+=== a.ts ===
+// An import's `type` is an identifier first (tsc's parseImportDeclarationOrImportEqualsDeclaration): the type-only
+// modifier only where what follows can't take it as the default import's name, and spelled with an escape it's no
+// TS1260. Babel's import-default-and-named-id-type and import-type-escaped-error fixtures
+import type, { bar } from "./m";
+>type : number
+>bar : 1
+
+import typ\u{65} d2 from "./m";
+>d2 : any
+
+import typ\u0065 { T } from "./m";
+>T : number
+
+import typ\u0065 * as ns from "./m";
+>ns : typeof ns
+
+export { bar, d2, ns };
+>bar : 1
+>d2 : number
+>ns : typeof ns
+
+let t: T = 0;
+>t : number
+>0 : 0
+

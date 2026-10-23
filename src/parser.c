@@ -12289,7 +12289,14 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
         return parse_fail(&p);
     }
     hop_whitespace(&p);
-    if (span_equals(name, "type") && *p.pos != '=') {
+    // (The name's text: an escaped `typ\u0065` is `type` too, tsc's identifier.Text())
+    bool named_type = span_equals(name, "type");
+    if (!named_type && memchr(name.buf, '\\', (size_t)name.size)) {
+        cstr cooked = identifier_name_value(span_sv(name));
+        named_type = strcmp(cstr_str(&cooked), "type") == 0;
+        cstr_drop(&cooked);
+    }
+    if (named_type && *p.pos != '=') {
         // (`import type from "m"` imports a default named `type`: tsc's parseImportDeclarationOrImportEqualsDeclaration
         // takes `type` as the modifier before `from` only if `from` or `=` follows that)
         Tok t = tok_peek(&p);
@@ -12545,7 +12552,28 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
 
     a = anchor(&p);
     Parser type_p = parser(&p);
-    if (hop_start_if_ends_on_word_break(&type_p, "type")) {
+    if (!is_export && hop_word_cooked(&type_p, "type")) {
+        // An import's `type` is an identifier first (an escaped one is no TS1260), the modifier where what follows
+        // can't take it as the default import's name: `import type x from`, `import type {`, `import type *`, `import
+        // type from from` (tsc's parseImportDeclarationOrImportEqualsDeclaration). `import type, { a } from` and
+        // `import type from "m"` import a default named type
+        hop_whitespace(&type_p);
+        Tok t = tok_peek(&type_p);
+        bool identifier = tok_is_identifier(t);
+        bool modifier = false;
+        if (!tok_is(t, "from")) {
+            modifier = identifier || tok_is(t, "*") || tok_is(t, "{");
+        } else {
+            Tok next = tok_next(&type_p, t);
+            modifier = tok_is(next, "from") || tok_is(next, "=");
+        }
+        if (modifier) {
+            parse_success(&type_p);
+            statement.main.type_only = true;
+        } else {
+            parse_fail(&type_p);
+        }
+    } else if (is_export && hop_start_if_ends_on_word_break(&type_p, "type")) {
         hop_whitespace(&type_p);
         // (Not `import type from "m"`, a default import named `type`, see parse_import_equals())
         Tok t = tok_peek(&type_p);
