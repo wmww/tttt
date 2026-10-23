@@ -1,0 +1,81 @@
+//// [test/cases/ttttManyInterfaceDeclarationsSubsequentProperty.ts] ////
+
+=== ttttManyInterfaceDeclarationsSubsequentProperty.ts ===
+// TS2717 compares a property with its first declaration across every declaration of a merged interface, not only the
+// first 16 (pothos's global PothosSchemaTypes.SchemaBuilderOptions, augmented by 19 plugins and examples)
+interface Opts { exampleOption?: boolean }
+>Opts : Symbol(Opts, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 0, 0))
+>exampleOption : Symbol(Opts.exampleOption, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 16))
+
+interface I { p1?: number; nested?: Opts }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p1 : Symbol(I.p1, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 13))
+>nested : Symbol(I.nested, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 26), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 19, 27))
+>Opts : Symbol(Opts, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 0, 0))
+
+interface I { p2?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p2 : Symbol(I.p2, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 13))
+
+interface I { p3?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p3 : Symbol(I.p3, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 13))
+
+interface I { p4?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p4 : Symbol(I.p4, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 13))
+
+interface I { p5?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p5 : Symbol(I.p5, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 7, 13))
+
+interface I { p6?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p6 : Symbol(I.p6, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 8, 13))
+
+interface I { p7?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p7 : Symbol(I.p7, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 9, 13))
+
+interface I { p8?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p8 : Symbol(I.p8, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 10, 13))
+
+interface I { p9?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p9 : Symbol(I.p9, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 11, 13))
+
+interface I { p10?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p10 : Symbol(I.p10, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 12, 13))
+
+interface I { p11?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p11 : Symbol(I.p11, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 13, 13))
+
+interface I { p12?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p12 : Symbol(I.p12, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 14, 13))
+
+interface I { p13?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p13 : Symbol(I.p13, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 15, 13))
+
+interface I { p14?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p14 : Symbol(I.p14, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 16, 13))
+
+interface I { p15?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p15 : Symbol(I.p15, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 17, 13))
+
+interface I { p16?: number }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p16 : Symbol(I.p16, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 18, 13))
+
+interface I { p17?: number; nested?: { exampleOption: string } }
+>I : Symbol(I, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 2, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 42), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 4, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 5, 27), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 6, 27) ... and 12 more)
+>p17 : Symbol(I.p17, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 19, 13))
+>nested : Symbol(I.nested, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 3, 26), Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 19, 27))
+>exampleOption : Symbol(exampleOption, Decl(ttttManyInterfaceDeclarationsSubsequentProperty.ts, 19, 38))
+

@@ -260,15 +260,18 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         if (file && !file->is_stdlib && source_file_is_checked(file)) first_checked = decl->node;
     }
     if (first_checked == me) {
-        VecInterfaceMember const* lists[16];
+        // (Every one of them: pothos's global PothosSchemaTypes.SchemaBuilderOptions has 19)
+        VecInterfaceMember const** lists = malloc(sizeof(VecInterfaceMember const*) * my symbol->decl_count);
+        panic_if(!lists, "out of memory");
         u32 list_count = 0;
-        for (u32 d = 0; d < my symbol->decl_count && list_count < c_arraylen(lists); d++) {
+        for (u32 d = 0; d < my symbol->decl_count; d++) {
             if (my symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
             lists[list_count++] = &((InterfaceDecl const*)my symbol->decls[d].node)->type.interface.members;
         }
         // (The declared type first: it makes the later declarations' type parameters the first one's)
         if (list_count > 1) ty_declared_type_of(current_checker, my symbol);
         ty_check_object_type_duplicate_members(current_checker, lists, list_count, errs);
+        free(lists);
         if (my symbol->flags & SYMBOL_CLASS) ty_check_class_interface_property_types(current_checker, my symbol, errs);
     }
     if (first_checked == me && !(my symbol->flags & SYMBOL_CLASS)) { // A class checks its own

@@ -1,0 +1,62 @@
+//// [test/cases/ttttManyInterfaceDeclarationsSubsequentProperty.ts] ////
+
+=== ttttManyInterfaceDeclarationsSubsequentProperty.ts ===
+// TS2717 compares a property with its first declaration across every declaration of a merged interface, not only the
+// first 16 (pothos's global PothosSchemaTypes.SchemaBuilderOptions, augmented by 19 plugins and examples)
+interface Opts { exampleOption?: boolean }
+>exampleOption : boolean | undefined
+
+interface I { p1?: number; nested?: Opts }
+>p1 : number | undefined
+>nested : Opts | undefined
+
+interface I { p2?: number }
+>p2 : number | undefined
+
+interface I { p3?: number }
+>p3 : number | undefined
+
+interface I { p4?: number }
+>p4 : number | undefined
+
+interface I { p5?: number }
+>p5 : number | undefined
+
+interface I { p6?: number }
+>p6 : number | undefined
+
+interface I { p7?: number }
+>p7 : number | undefined
+
+interface I { p8?: number }
+>p8 : number | undefined
+
+interface I { p9?: number }
+>p9 : number | undefined
+
+interface I { p10?: number }
+>p10 : number | undefined
+
+interface I { p11?: number }
+>p11 : number | undefined
+
+interface I { p12?: number }
+>p12 : number | undefined
+
+interface I { p13?: number }
+>p13 : number | undefined
+
+interface I { p14?: number }
+>p14 : number | undefined
+
+interface I { p15?: number }
+>p15 : number | undefined
+
+interface I { p16?: number }
+>p16 : number | undefined
+
+interface I { p17?: number; nested?: { exampleOption: string } }
+>p17 : number | undefined
+>nested : Opts | undefined
+>exampleOption : string
+

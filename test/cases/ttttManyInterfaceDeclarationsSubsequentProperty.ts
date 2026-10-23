@@ -1,0 +1,22 @@
+// @strict: true
+// @noEmit: true
+// TS2717 compares a property with its first declaration across every declaration of a merged interface, not only the
+// first 16 (pothos's global PothosSchemaTypes.SchemaBuilderOptions, augmented by 19 plugins and examples)
+interface Opts { exampleOption?: boolean }
+interface I { p1?: number; nested?: Opts }
+interface I { p2?: number }
+interface I { p3?: number }
+interface I { p4?: number }
+interface I { p5?: number }
+interface I { p6?: number }
+interface I { p7?: number }
+interface I { p8?: number }
+interface I { p9?: number }
+interface I { p10?: number }
+interface I { p11?: number }
+interface I { p12?: number }
+interface I { p13?: number }
+interface I { p14?: number }
+interface I { p15?: number }
+interface I { p16?: number }
+interface I { p17?: number; nested?: { exampleOption: string } }
