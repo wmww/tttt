@@ -3102,6 +3102,9 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
     // (tsc's getTypeOnlyAliasDeclaration(symbol, Value): only when what it names is a value)
     Symbol const* named_by = nullptr;
     PortItem const* type_only = symbol_type_only_declaration_naming(symbol, &named_by);
+    // (tsc's typeOnlyDeclaration whatever it names, for the isolatedModules checks below; the verbatimModuleSyntax one
+    // only counts it for a value, as its branch is the value one)
+    PortItem const* type_only_any = type_only;
     if (type_only) {
         Symbol* named = named_by ? (Symbol*)named_by : symbol;
         if (named->flags & SYMBOL_ALIAS) named = symbol_resolve_alias(named);
@@ -3123,7 +3126,8 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
     u32 non_local = target && !target->is_placeholder ? symbol_resolved_flags(target) : 0;
     SourceFile const* type_only_file = type_only ? span_source(type_only->decl_name) : nullptr;
     bool elsewhere = type_only && type_only_file != file;
-    if (non_local & SYMBOL_TYPE && !(non_local & SYMBOL_VALUE) && (!type_only || elsewhere)) {
+    bool any_elsewhere = type_only_any && span_source(type_only_any->decl_name) != file;
+    if (non_local & SYMBOL_TYPE && !(non_local & SYMBOL_VALUE) && (!type_only_any || any_elsewhere)) {
         if (export_equals) {
             error_ctx_error_d(errs, id, 1291, "'", id, "' resolves to a type and must be marked type-only in this file "
                 "before re-exporting when '", flag, "' is enabled. Consider using 'import type' where '", id, "' is imported.");
