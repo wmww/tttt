@@ -7126,14 +7126,14 @@ const baselines = {
         types: true,
     },
     'bun37-C13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bun37-C14': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bun37-C16': {
         errors: false,
@@ -7186,7 +7186,7 @@ const baselines = {
         types: true,
     },
     'bun37-C20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7341,7 +7341,7 @@ const baselines = {
         types: false,
     },
     'bun38-C3b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13407,6 +13407,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttInterfaceComputedKeyInitializer': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttInterfaceExtendsGenericFunctionAlias': {
         errors: true,
         symbols: true,
@@ -13806,6 +13811,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttLibReferenceUnknownName': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttLiteralGetterDuringResolution': {
         errors: true,
         symbols: true,
@@ -14113,6 +14123,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttObjectLiteralOuterInstantiableNotGeneric': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttObjectToGenericMappedRecord': {
         errors: true,
