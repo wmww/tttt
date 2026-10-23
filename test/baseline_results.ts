@@ -3123,9 +3123,9 @@ const baselines = {
         types: true,
     },
     'ambientModuleImportingItselfNotResolved': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ambientModuleWithClassDeclarationWithExtends': {
         errors: true,
@@ -13020,14 +13020,14 @@ const baselines = {
         types: true,
     },
     'defaultTypesExcludeBaseLibraryReferences': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'defaultTypesExcludeLibraryReferences': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'defaultValueInConstructorOverload1': {
         errors: true,
@@ -69218,7 +69218,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeConstraints2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
         dts: true,

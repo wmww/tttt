@@ -27,6 +27,11 @@
 - The harness reruns a test when the first run leaves net allocations (lib cache fill), ~170 times per suite run.
   `failstats.py` counts by test *name*; a few names exist in both `compiler/` and `conformance/`, so its counts can
   differ from the harness by one or two (13540 vs 13542).
+- The harness decides a test's libs before loading it (the libs are a shared cached program): every `/// <reference
+  lib>` in the test's text adds one (baseline_test_case.c), whether or not its file ends up in the program. Since the
+  7.1.0-beta's defaultTypesExclude*LibraryReferences tests, one in a `node_modules/@types/X/` unit doesn't unless
+  `@types` names X or `*` (tsgo's default `types` is empty); an @types package an import loads would be missed
+  (no test has one). Correct: libs a test's program can add to.
 - The CLI (`program.c`) loads the default lib even when a file says `/// <reference no-default-lib="true"/>`; only the
   harness honours it.
 - Option diagnostics go on the tsconfig (program_set_config_file(), option_sites()) since suite checker bugs 6. Left:

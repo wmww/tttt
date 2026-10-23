@@ -2146,7 +2146,19 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 // TS2307. unplugin-auto-import's `declare global { export type { Ref } from 'vue' }`, which `typeof import('vue')`
 // types in the same file resolve
 static void program_mark_uncollected_refs(Program const* me, SourceFile* source_file) {
-    if (!source_file->is_module) return;
+    if (!source_file->is_module) {
+        // A script's import of a name it declares an ambient module for (top level) isn't resolved: it can only be that
+        // module (tsgo 7.1.0-beta's AmbientModuleNames, #64491: the package of the name isn't loaded)
+        for (u32 i = 0; i < source_file->module_ref_count; i++) {
+            ModuleRef* ref = source_file->module_refs[i];
+            if (ref->is_declaration || ref->ambient_only) continue;
+            for (u32 j = 0; j < source_file->module_ref_count && !ref->ambient_only; j++) {
+                ModuleRef const* other = source_file->module_refs[j];
+                ref->ambient_only = other->is_declaration && !other->nested_in_ambient_module && cstr_eq(&other->path, &ref->path);
+            }
+        }
+        return;
+    }
     for (u32 i = 0; i < source_file->module_ref_count; i++) {
         ModuleRef* ref = source_file->module_refs[i];
         if (!ref->in_augmentation_body || ref->is_declaration) continue;
@@ -2254,8 +2266,6 @@ static SourceFile* program_add_made_source(Program* me, cstr canonical_path, Sou
         if (ref->is_declaration && !source_file->is_module && !ref->nested_in_ambient_module) continue;
         if (ref->ambient_only) continue;
         if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
-        // (tsgo resolves a name the file declares an ambient module for too, tsc 6's resolveToOwnAmbientModule is gone: the
-        // file it finds is part of the program, and checked)
         program_load_module_ref(me, source_file, ref);
     }
     // A content mapper's supplemental outputs, after what the file imports (tsgo's parse subtasks)

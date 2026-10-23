@@ -618,10 +618,36 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     // itself (the lib comes from node_modules/@typescript/lib-*)
     cstr referenced_libs = cstr_null;
     bool lib_replacement = csview_find_sv(contents_sv, c_sv("@libReplacement: true")) != c_NPOS;
+    // (Not one of an `@types` package `types` doesn't name, which nothing else loads in these tests: tsgo's default
+    // `types` is empty, defaultTypesExcludeLibraryReferences)
+    bool types_wildcard = csview_find_sv(contents_sv, c_sv("@types: *")) != c_NPOS;
     for (csview rest = contents_sv; !lib_replacement;) {
         isize at = csview_find_sv(rest, c_sv("<reference lib=\""));
         if (at == c_NPOS) break;
+        csview before = csview_slice(contents_sv, 0, rest.buf + at - contents_sv.buf);
         rest = csview_slice(rest, at + (isize)strlen("<reference lib=\""), INTPTR_MAX);
+        isize unit = c_NPOS;
+        for (isize from = 0;;) {
+            isize found = csview_find_sv(csview_slice(before, from, before.size), c_sv("@filename:"));
+            if (found == c_NPOS) break;
+            unit = from + found;
+            from = unit + 1;
+        }
+        if (unit != c_NPOS && !types_wildcard) {
+            csview line = csview_slice(before, unit, before.size);
+            isize eol = csview_find_sv(line, c_sv("\n"));
+            if (eol != c_NPOS) line = csview_slice(line, 0, eol);
+            isize types_at = csview_find_sv(line, c_sv("node_modules/@types/"));
+            if (types_at != c_NPOS) {
+                csview package = csview_slice(line, types_at + (isize)strlen("node_modules/@types/"), line.size);
+                isize slash = csview_find_sv(package, c_sv("/"));
+                if (slash != c_NPOS) package = csview_slice(package, 0, slash);
+                cstr named = cstr_d("@types: ", package);
+                bool in_types = csview_find_sv(contents_sv, cstr_sv(&named)) != c_NPOS;
+                cstr_drop(&named);
+                if (!in_types) continue;
+            }
+        }
         isize end = csview_find_sv(rest, c_sv("\""));
         if (end == c_NPOS) break;
         cstr name = cstr_from_sv(csview_slice(rest, 0, end));
