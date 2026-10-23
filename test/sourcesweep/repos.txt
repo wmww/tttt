@@ -394,3 +394,42 @@ audnexus https://github.com/laxamentumtech/audnexus.git 8216b070ab1271c8637aa91c
 finopenpos https://github.com/JoaoHenriqueBarbosa/FinOpenPOS.git 948bac8e9a9a17fdd4e1a1e95c3bf6c35dd054e6
 # clarity: dropped, its bun install fails (a private registry, npm.hugeicons.com: 401)
 #clarity https://github.com/SchroederNathan/clarity.git 297e699ea03902d4f3172aa7b1f3ddbc2ef8900c
+# Refresh 6 (2026-10-23, cor8), the fifth rule: TypeScript 7 adopters, the people who'd use tttt. `scripts/reposearch.py
+# ts7` on the topics typescript, nextjs, react, vite, cli, mcp, ai, hono, bun, monorepo, nodejs, svelte, vue, library,
+# api, discord-bot, electron, tauri, chrome-extension, trpc, drizzle-orm, zod, effect, game, database, testing,
+# graphql, llm, agents, developer-tools (2 per topic, 3 pages of 100): stars 20..5000, pushed since 2026-07-01, a root
+# package.json depending on @typescript/native-preview or typescript 7, any root lockfile (bun's too), a root
+# tsconfig.json, no deno.json. 51 hits; the 32 with the most stars among those under 100 MB. Checked out at their
+# default branch's HEAD that day.
+ueli https://github.com/oliverschwendener/ueli.git d38331685c572384699b8403fbca5fbdebdcadb3
+petdex https://github.com/crafter-station/petdex.git 31c0aee7f4fb387774b87d40e8047dc0f9cea94b
+skill-recorder https://github.com/microsoft/skill-recorder.git b05d59036182e897e1a60e90651e775cf5f97e8d
+openscience https://github.com/synthetic-sciences/openscience.git d720862157d146d52b6faae1e5aff9d3973ed918
+react-ace https://github.com/securingsincity/react-ace.git 334f49e2681ed5c2a84847b739d821d4b8df9534
+iron-session https://github.com/vvo/iron-session.git 6f40d921bc9d9216e504fb0cf6d70b132a9e2678
+shapeshifter https://github.com/alexjlockwood/ShapeShifter.git c6382eba84522b8a08fb5275e823cea920a6efa0
+steipete-oracle https://github.com/steipete/oracle.git 998d11bce7e253fbcde319ec5a3c0174f1748469
+constate https://github.com/diegohaz/constate.git 1f41cbb57f7d85e1b48ba3a8c10b8ed66aee4f3a
+vidstack-player https://github.com/vidstack/player.git 0133da67e4f84a5aaad59c63853b12c6cda0a6a9
+unplugin https://github.com/unjs/unplugin.git bd0f8ddba859b2ca1d0e91269afb8eac42785576
+crypto-trading-bot https://github.com/Haehnchen/crypto-trading-bot.git cb9563344a20ea7ac89ff214d350f141d1521219
+agent-chat-ui https://github.com/langchain-ai/agent-chat-ui.git 7a503412aeeb4534a24b04bd97b618ee3871821e
+tanstack-ai https://github.com/TanStack/ai.git 5651e07e3181745984155ad88b65b86b8528844e
+eidos https://github.com/mayneyao/eidos.git e56f0a1ee928278eb06ad33a8103a7eb54976670
+analog https://github.com/analogjs/analog.git 3588221961fe32895982ccdfb335bb31c74b7091
+cac https://github.com/cacjs/cac.git 12a5e8278719dfd9a4b7197a6690e7bf01b20b07
+form-builder https://github.com/shadcn-labs/form-builder.git 4fbae4ef98caa0296560e5749648305b9263f92a
+pothos https://github.com/hayes/pothos.git 291c02db193a0221d46fb8bf63a507a642e2b45e
+webchat https://github.com/molvqingtai/WebChat.git e7f99d780acc524d8180b266d6a2be46fd0eca03
+jshookmcp https://github.com/vmoranv/jshookmcp.git ff30bf9ae2ca492a431c6df23b4281358247edbb
+answeroverflow https://github.com/AnswerOverflow/AnswerOverflow.git 80b1dceb10e1abbf42ce3c301697e8958727b791
+en-croissant https://github.com/franciscoBSalgueiro/en-croissant.git d64ce9ec3cd4ebb5ea8670aa16871227f46ba4fa
+portabase https://github.com/Portabase/portabase.git 317ce72223ec87a6fb5185a16f9031a7a93c3793
+cc-safety-net https://github.com/kenryu42/cc-safety-net.git 752273c32eb3a0a931c8790d0a188deb9c63ff5f
+remix-words-funny https://github.com/SteveSuv/remix-words-funny.git 18d667999b1e1207e1ca97d85597fb253749563e
+envalid https://github.com/af/envalid.git 453527b643cc3a3c467d6707811d26f9b3ce75c9
+youwee https://github.com/vanloctech/youwee.git 8db7ea4302c181159598d3e1c068dac80390845e
+node-pg-migrate https://github.com/salsita/node-pg-migrate.git 99697e97d5a2238ce5c5cbaddb2b7d9fa110229f
+faast https://github.com/faastjs/faast.js.git a39b694600aadc9fda9c36ce931b42b4dd0b55a1
+ovis https://github.com/devswha/ovis.git 464fda5724f553dfe965bf3cedff71d94f902ec6
+smocker https://github.com/smocker-dev/smocker.git fccc714464e219abc56fde388312779307040d49
