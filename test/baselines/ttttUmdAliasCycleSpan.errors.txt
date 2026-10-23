@@ -1,0 +1,18 @@
+foo.d.ts(1,1): error TS2303: Circular definition of import alias 'Thing'.
+foo.d.ts(1,10): error TS2304: Cannot find name 'Thing'.
+foo.d.ts(2,1): error TS2303: Circular definition of import alias 'Foo'.
+
+
+==== a.ts (0 errors) ====
+    /// <reference path="foo.d.ts" />
+    let y = 1;
+    
+==== foo.d.ts (3 errors) ====
+    export = Thing;
+    ~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'Thing'.
+             ~~~~~
+!!! error TS2304: Cannot find name 'Thing'.
+    export as namespace Foo;
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2303: Circular definition of import alias 'Foo'.

@@ -1,0 +1,12 @@
+//// [test/cases/ttttUmdAliasCycleSpan.ts] ////
+
+=== a.ts ===
+/// <reference path="foo.d.ts" />
+let y = 1;
+>y : Symbol(y, Decl(a.ts, 1, 3))
+
+=== foo.d.ts ===
+export = Thing;
+export as namespace Foo;
+>Foo : Symbol(Foo, Decl(foo.d.ts, 0, 15))
+

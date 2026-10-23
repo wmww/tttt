@@ -4068,7 +4068,9 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         SourceFile const* file = my alias->scope->file;
         bool commonjs = !item && file && file->is_js && file->is_commonjs && span_valid(my decls[0].name);
         Span at = commonjs ? my decls[0].name : !item ? my decls[0].full :
-            item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
+            // (`export as namespace N` too: tsc's error node is the NamespaceExportDeclaration)
+            item->tag == PORT_IMPORT_ALIAS || item->is_require || item->tag == PORT_EXPORT_AS_NAMESPACE ?
+                span_with_semicolon(item->full_span) : item->decl_name;
         // (A specifier is reported whole: `A as B`)
         bool specifier = item && (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC ||
             item->tag == PORT_REEXPORT_SPECIFIC);
