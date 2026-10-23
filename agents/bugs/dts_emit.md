@@ -44,14 +44,13 @@ size on real code, each with an example:
   registry-health all matched in a full dtsdiff run at 68adca3bc. [fixed oracle 2026-10-23]
 - **Left at 2026-10-23** (full run from a worktree after corC's fixes: 1497 / 1503 projects, every corpus matching):
   - feathers/packages/generators `app/index.d.ts` (and feathers): `generate`'s chain applies pinion's
-    `initializeBaseContext()` twice (strictNullChecks off). tsgo's `dependencyVersions` is
-    `DependencyVersions & { '@feathersjs/cli': any; } & { '@feathersjs/cli': any; }` (two distinct object types from
-    the two applications; tttt's are one type, deduplicated) and its `language` prints `"js" | "ts"` as a type where
-    tttt reuses the `'js' | 'ts'` annotation. Probably one cause: which instantiations make a new object literal type
-    (isTypeParameterPossiblyReferenced on the spread's trailing `{ '@feathersjs/cli': version }`, or the widened
-    copies), so the intersection property has two declarations in tsgo (no valueDeclaration, printed) and one in
-    tttt. Repro: the package's src/commons.ts and src/app/index.ts in a directory with feathers' node_modules linked
-    (connection import stubbed), compared with tsgo; cut-downs that drop the second application match. [open]
+    `initializeBaseContext()` twice (strictNullChecks off). The two `{ '@feathersjs/cli': any }` members now match
+    (corF 2026-10-23: an object literal's type is instantiated by every outer type parameter, like tsc's
+    getObjectTypeInstantiation; test/cases/ttttObjectLiteralInstantiatedByOuterTypeParams.ts). Left: its `language`
+    is `"js" | "ts"`, printed, in tsgo, where tttt reuses the `'js' | 'ts'` annotation. The intersection property
+    has several declarations in tsgo (Base's and the two literal instances'), so declaration emit has no single
+    valueDeclaration annotation to reuse. tttt still picks one. A cut-down with the same spreads matches, so it needs
+    the real chain (pinion's loadJSON types and the `.then`s). [open]
   - kebo `models/root-store.d.ts`: mobx-state-tree's `IOptionalIType<IModelType<{...}>>` is `IOptionalIType<any,
     [undefined]>` in tttt (the eager signature design, checker). [dup]
   - babel-parser (one map), sequelize/packages/core `models`: tsgo's checker split (matches tsgo --singleThreaded or

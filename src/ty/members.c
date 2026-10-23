@@ -6528,6 +6528,13 @@ Ty const* ty_object_literal_alternative(
             flags |= (index[i].key->flags | index[i].value->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
             builder_push(&builder, index, index[i]);
         }
+        // (A literal inside a generic function or class could contain every type parameter declared around it: tsc's
+        // couldContainTypeVariables of an object literal's type, instantiated by all of them, see
+        // object_literal_type_mentions())
+        Expr const* literal_node = kind != OBJECT_SYNTHETIC ? (Expr const*)expr : nullptr;
+        if (literal_node && ty_literal_has_outer_type_params(literal_node)) {
+            flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
+        }
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
         if (kind != OBJECT_SYNTHETIC && !compiler_options()->strict_null_checks) {
             // (A spread property's ContainsWideningType doesn't propagate: tsc's checkObjectLiteral only collects its own

@@ -28,6 +28,27 @@ bool ty_function_closed(Checker* me, FunctionImpl const* function) {
 // The type parameters in scope where a function is declared (tsc's getOuterTypeParameters with includeThisTypes): the
 // lists of what encloses it, outermost first, the `this` types of the classes around it, and the type parameters of a
 // generic contextual signature an enclosing context-sensitive function expression takes (see ty_function_closed())
+// The type parameters declared around a scope, and the `this` types of the classes around it (tsc's
+// getOuterTypeParameters with includeThisTypes)
+bool ty_literal_has_outer_type_params(Expr const* literal) {
+    return literal->tag == EXPR_OBJECT && (literal->object_generics || literal->object_class);
+}
+
+TyList ty_literal_outer_type_params(Checker* me, Expr const* literal) {
+    if (literal->tag != EXPR_OBJECT || (!literal->object_generics && !literal->object_class)) return (TyList){0};
+    TyBuf out = {0};
+    TyList generics = ty_outer_type_params(me, literal->object_generics);
+    for (u32 i = 0; i < generics.len; i++) ty_buf_push(&out, generics.data[i]);
+    for (ClassDecl const* c = literal->object_class; c; c = c->outer_class) {
+        if (!c->symbol) continue;
+        Ty const* declared = ty_declared_type_of(me, c->symbol);
+        if (declared && declared->kind == TY_DECLARED && declared->declared.this_param) ty_buf_push(&out, declared->declared.this_param);
+    }
+    TyList ret = ty_list_copy(me, out.data, out.len);
+    ty_buf_drop(&out);
+    return ret;
+}
+
 TyList ty_function_outer_type_params(Checker* me, FunctionImpl const* function) {
     TyBuf out = {0};
     Scope const* scope = function->outer_scope;

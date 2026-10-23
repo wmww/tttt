@@ -1,0 +1,75 @@
+//// [test/cases/ttttObjectLiteralInstantiatedByOuterTypeParams.ts] ////
+
+=== ttttObjectLiteralInstantiatedByOuterTypeParams.ts ===
+// An object literal's type is instantiated by every type parameter declared around it, whatever its properties
+// mention (tsc's getObjectTypeInstantiation filters only a method's or type literal's by
+// isTypeParameterPossiblyReferenced): two applications of a generic function make two `{ n: number }` types, which
+// an intersection keeps both of. A type literal in an annotation mentions nothing and stays one type (feathers'
+// initializeBaseContext() applied twice)
+interface Base { language: 'js' | 'ts' }
+>language : "js" | "ts"
+
+declare const ctx: Base;
+>ctx : Base
+
+const init = <C extends Base>(ctx: C) => ({ ...ctx, n: 1 });
+>init : <C extends Base>(ctx: C) => C & { n: number; }
+><C extends Base>(ctx: C) => ({ ...ctx, n: 1 }) : <C extends Base>(ctx: C) => C & { n: number; }
+>ctx : C
+>({ ...ctx, n: 1 }) : C & { n: number; }
+>{ ...ctx, n: 1 } : C & { n: number; }
+>ctx : C
+>n : number
+>1 : 1
+
+export const twice = init(init(ctx));
+>twice : Base & { n: number; } & { n: number; }
+>init(init(ctx)) : Base & { n: number; } & { n: number; }
+>init : <C extends Base>(ctx: C) => C & { n: number; }
+>init(ctx) : Base & { n: number; }
+>init : <C extends Base>(ctx: C) => C & { n: number; }
+>ctx : Base
+
+const plain = <C,>(c: C) => ({ n: 1 });
+>plain : <C>(c: C) => { n: number; }
+><C,>(c: C) => ({ n: 1 }) : <C>(c: C) => { n: number; }
+>c : C
+>({ n: 1 }) : { n: number; }
+>{ n: 1 } : { n: number; }
+>n : number
+>1 : 1
+
+declare function both<A, B>(a: A, b: B): A & B;
+>both : <A, B>(a: A, b: B) => A & B
+>a : A
+>b : B
+
+export const x = both(plain(1), plain(""));
+>x : { n: number; } & { n: number; }
+>both(plain(1), plain("")) : { n: number; } & { n: number; }
+>both : <A, B>(a: A, b: B) => A & B
+>plain(1) : { n: number; }
+>plain : <C>(c: C) => { n: number; }
+>1 : 1
+>plain("") : { n: number; }
+>plain : <C>(c: C) => { n: number; }
+>"" : ""
+
+type L = { n: number };
+>L : L
+>n : number
+
+const annotated = <C extends Base>(ctx: C): C & L => null!;
+>annotated : <C extends Base>(ctx: C) => C & L
+><C extends Base>(ctx: C): C & L => null! : <C extends Base>(ctx: C) => C & L
+>ctx : C
+>null! : never
+
+export const once = annotated(annotated(ctx));
+>once : Base & L
+>annotated(annotated(ctx)) : Base & L
+>annotated : <C extends Base>(ctx: C) => C & L
+>annotated(ctx) : Base & L
+>annotated : <C extends Base>(ctx: C) => C & L
+>ctx : Base
+

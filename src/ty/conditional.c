@@ -410,7 +410,28 @@ static bool object_literal_type_mentions(Checker* me, Ty const* ty, TyList* out)
         // (A property type not known yet: unknown, a peek that selects between results, so an event (rule 5))
         if (TAINT_IF(TAINT_IN_FLIGHT_OTHER, !prop_type_peek(me, prop)) || prop->target || (prop->flags & PROP_GETTER)) return false;
     }
-    return compute_mentions(me, ty, key, out);
+    if (!compute_mentions(me, ty, key, out)) return false;
+    // And the type parameters declared around it whatever it mentions: tsc keys an object literal's instantiations by
+    // all of its outer type parameters (getObjectTypeInstantiation filters only a method's or type literal's by
+    // isTypeParameterPossiblyReferenced), so `<C>(c: C) => ({ ...c, n: 1 })` applied to two different C makes two
+    // `{ n: number }` types, which an intersection keeps both of (feathers' initializeBaseContext() applied twice)
+    Expr const* literal = ty->anonymous.literal_expr;
+    TyList outer = literal ? ty_literal_outer_type_params(me, literal) : (TyList){0};
+    if (!outer.len) return true;
+    TyBuf all = {0};
+    for (u32 i = 0; i < out->len; i++) ty_buf_push(&all, out->data[i]);
+    for (u32 i = 0; i < outer.len; i++) {
+        bool known = false;
+        for (u32 j = 0; j < out->len && !known; j++) known = out->data[j] == outer.data[i];
+        if (!known) ty_buf_push(&all, outer.data[i]);
+    }
+    FunctionMentions* computed = arena_new(&my arena, FunctionMentions);
+    computed->known = true;
+    computed->params = ty_list_copy(me, all.data, all.len);
+    ty_buf_drop(&all);
+    *intern_slot(me, &my links, key, 2) = computed;
+    *out = computed->params;
+    return true;
 }
 
 // What instantiating a function expression's type can change: the type parameters its one signature mentions (its

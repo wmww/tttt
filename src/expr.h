@@ -198,7 +198,14 @@ typedef struct Expr {
         TernaryExpr* ternary;
         CallExpr* call;
         FunctionImpl* function;
-        ObjectExpr object;
+        struct {
+            ObjectExpr object;
+            // What encloses an object literal (null where none does): the type parameters and the class around it,
+            // its outer type parameters, which key its type's instantiations (tsc's getObjectTypeInstantiation). Set
+            // by expr_lookup_names() (the scope itself is released after the lookup)
+            struct OuterGenerics const* object_generics;
+            struct ClassDecl const* object_class;
+        };
         VecExpr array;
         ClassDecl* class_decl;
         Expr* spread;

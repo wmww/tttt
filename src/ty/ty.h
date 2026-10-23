@@ -2468,6 +2468,8 @@ void ty_context_root_leave(bool entered);
 bool ty_function_closed(Checker* me, FunctionImpl const* function); // function.c: instantiating its type is the identity
 // function.c: the type parameters in scope where it is declared, `this` types included (tsc's getOuterTypeParameters)
 TyList ty_function_outer_type_params(Checker* me, FunctionImpl const* function);
+TyList ty_literal_outer_type_params(Checker* me, Expr const* literal); // An object literal's (EXPR_OBJECT), else none
+bool ty_literal_has_outer_type_params(Expr const* literal);
 // The type of an object literal accessor property: the getter's widened return type, else the setter's parameter
 // TS2353 for a literal whose contextual type is an object binding pattern's implied type
 void ty_check_object_literal_pattern(Checker* me, Expr const* expr, ErrorCtx* errs);

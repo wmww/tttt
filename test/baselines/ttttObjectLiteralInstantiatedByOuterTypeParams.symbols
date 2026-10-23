@@ -1,0 +1,74 @@
+//// [test/cases/ttttObjectLiteralInstantiatedByOuterTypeParams.ts] ////
+
+=== ttttObjectLiteralInstantiatedByOuterTypeParams.ts ===
+// An object literal's type is instantiated by every type parameter declared around it, whatever its properties
+// mention (tsc's getObjectTypeInstantiation filters only a method's or type literal's by
+// isTypeParameterPossiblyReferenced): two applications of a generic function make two `{ n: number }` types, which
+// an intersection keeps both of. A type literal in an annotation mentions nothing and stays one type (feathers'
+// initializeBaseContext() applied twice)
+interface Base { language: 'js' | 'ts' }
+>Base : Symbol(Base, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 0, 0))
+>language : Symbol(Base.language, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 5, 16))
+
+declare const ctx: Base;
+>ctx : Symbol(ctx, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 6, 13))
+>Base : Symbol(Base, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 0, 0))
+
+const init = <C extends Base>(ctx: C) => ({ ...ctx, n: 1 });
+>init : Symbol(init, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 5))
+>C : Symbol(C, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 14))
+>Base : Symbol(Base, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 0, 0))
+>ctx : Symbol(ctx, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 30))
+>C : Symbol(C, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 14))
+>ctx : Symbol(ctx, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 30))
+>n : Symbol(n, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 51))
+
+export const twice = init(init(ctx));
+>twice : Symbol(twice, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 8, 12))
+>init : Symbol(init, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 5))
+>init : Symbol(init, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 7, 5))
+>ctx : Symbol(ctx, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 6, 13))
+
+const plain = <C,>(c: C) => ({ n: 1 });
+>plain : Symbol(plain, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 5))
+>C : Symbol(C, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 15))
+>c : Symbol(c, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 19))
+>C : Symbol(C, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 15))
+>n : Symbol(n, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 30))
+
+declare function both<A, B>(a: A, b: B): A & B;
+>both : Symbol(both, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 39))
+>A : Symbol(A, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 22))
+>B : Symbol(B, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 24))
+>a : Symbol(a, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 28))
+>A : Symbol(A, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 22))
+>b : Symbol(b, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 33))
+>B : Symbol(B, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 24))
+>A : Symbol(A, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 22))
+>B : Symbol(B, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 10, 24))
+
+export const x = both(plain(1), plain(""));
+>x : Symbol(x, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 11, 12))
+>both : Symbol(both, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 39))
+>plain : Symbol(plain, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 5))
+>plain : Symbol(plain, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 9, 5))
+
+type L = { n: number };
+>L : Symbol(L, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 11, 43))
+>n : Symbol(n, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 12, 10))
+
+const annotated = <C extends Base>(ctx: C): C & L => null!;
+>annotated : Symbol(annotated, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 13, 5))
+>C : Symbol(C, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 13, 19))
+>Base : Symbol(Base, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 0, 0))
+>ctx : Symbol(ctx, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 13, 35))
+>C : Symbol(C, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 13, 19))
+>C : Symbol(C, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 13, 19))
+>L : Symbol(L, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 11, 43))
+
+export const once = annotated(annotated(ctx));
+>once : Symbol(once, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 14, 12))
+>annotated : Symbol(annotated, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 13, 5))
+>annotated : Symbol(annotated, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 13, 5))
+>ctx : Symbol(ctx, Decl(ttttObjectLiteralInstantiatedByOuterTypeParams.ts, 6, 13))
+

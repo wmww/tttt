@@ -806,7 +806,11 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
                 ret = fresh;
                 // (Checked with the instance in place: a literal whose members lead back to it gets that instance, so
                 // it's a new one)
-                if (!inner && literal_instance_is_itself(me, target, composed)) ret = target;
+                // (Not a literal whose outer type parameters are known: tsc makes an instance per mapping of them,
+                // what its members say or not, object_literal_type_mentions())
+                Expr const* literal = target->anonymous.object_literal ? target->anonymous.literal_expr : nullptr;
+                bool by_outer = !free_params_unknown && literal && ty_literal_has_outer_type_params(literal);
+                if (!inner && !by_outer && literal_instance_is_itself(me, target, composed)) ret = target;
                 // (Published with --shared-graph once its value is final)
                 *slot = nullptr;
                 ret = intern_set(me, &my types, slot, ret);
