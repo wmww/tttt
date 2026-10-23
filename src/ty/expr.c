@@ -2691,6 +2691,7 @@ Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr) {
 // `import.meta`: the global ImportMeta interface (tsc's getGlobalImportMetaType, `{}` without one)
 Ty const* ty_import_meta_type(Checker* me) {
     Symbol const* symbol = program_get_global(my program, c_sv("ImportMeta"), SYMBOL_TYPE);
+    if (!symbol) ty_report_missing_global_type(me, c_sv("ImportMeta")); // (reportErrors: TS2318 without a lib)
     return symbol ? ty_declared_type_of(me, symbol) : ty_empty_object_type(me);
 }
 

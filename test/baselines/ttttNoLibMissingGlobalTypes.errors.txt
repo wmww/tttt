@@ -1,0 +1,48 @@
+error TS2318: Cannot find global type 'Extract'.
+error TS2318: Cannot find global type 'ImportAttributes'.
+error TS2318: Cannot find global type 'ImportCallOptions'.
+error TS2318: Cannot find global type 'ImportMeta'.
+error TS2318: Cannot find global type 'Omit'.
+error TS2318: Cannot find global type 'Promise'.
+error TS2318: Cannot find global type 'Record'.
+error TS2318: Cannot find global type 'TemplateStringsArray'.
+a.ts(23,1): error TS2711: A dynamic import call returns a 'Promise'. Make sure you have a declaration for 'Promise' or include 'ES2015' in your '--lib' option.
+
+
+!!! error TS2318: Cannot find global type 'Extract'.
+!!! error TS2318: Cannot find global type 'ImportAttributes'.
+!!! error TS2318: Cannot find global type 'ImportCallOptions'.
+!!! error TS2318: Cannot find global type 'ImportMeta'.
+!!! error TS2318: Cannot find global type 'Omit'.
+!!! error TS2318: Cannot find global type 'Promise'.
+!!! error TS2318: Cannot find global type 'Record'.
+!!! error TS2318: Cannot find global type 'TemplateStringsArray'.
+==== b.ts (0 errors) ====
+    export default 1;
+==== a.ts (1 errors) ====
+    export {};
+    declare global {
+    interface Array<T> {}
+    interface Object {}
+    interface Function {}
+    interface String {}
+    interface Number {}
+    interface Boolean {}
+    interface RegExp {}
+    interface IArguments {}
+    interface CallableFunction {}
+    interface NewableFunction {}
+    }
+    async function f1() { return 1; }
+    function tag(x: any) {}
+    tag`a`;
+    function f5<T extends { a: number }>(o: T) { const { a, ...rest } = o; }
+    import.meta;
+    import x from "./b" with { type: "json" };
+    function f6(o: object) { if ("a" in o) { o; } }
+    function f7<T>(o: T) { for (const k in o) { k; } }
+    interface Omit<T, K> {}
+    import("./b", { with: {} });
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!!! error TS2711: A dynamic import call returns a 'Promise'. Make sure you have a declaration for 'Promise' or include 'ES2015' in your '--lib' option.
+    

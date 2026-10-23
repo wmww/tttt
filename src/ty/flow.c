@@ -2751,7 +2751,7 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
     if (!is_known) {
         // A property no member declares: `x & Record<"a", unknown>` (tsc's narrowTypeByInKeyword)
         if (!assume_true) return type;
-        Symbol const* record = ty_global_type_alias(me, c_sv("Record"), 2);
+        Symbol const* record = ty_global_type_alias_reported(me, c_sv("Record"), 2);
         if (!record) return type;
         Ty const* args[2] = { name_type, ty_intrinsic(me, TY_UNKNOWN_) };
         Ty const* parts[2] = { type, ty_alias_instance(me, record, (TyList){ .data = args, .len = 2 }) };

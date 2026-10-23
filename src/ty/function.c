@@ -103,7 +103,11 @@ static void report_promise_missing(Checker* me, FunctionImpl const* function, ui
 }
 
 Ty const* ty_promise_of(Checker* me, FunctionImpl const* function, Ty const* type) {
-    if (!function_impl_rare(function)->promise_decl) return ty_intrinsic(me, TY_ANY);
+    // (tsc's createPromiseReturnType: getGlobalPromiseType with reportErrors, TS2318 without a lib)
+    if (!function_impl_rare(function)->promise_decl) {
+        if (!program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE)) ty_report_missing_global_type(me, c_sv("Promise"));
+        return ty_intrinsic(me, TY_ANY);
+    }
     Ty const* promise = ty_declared_type_of(me, function_impl_rare(function)->promise_decl);
     if (promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return ty_intrinsic(me, TY_ANY);
     return ty_reference(me, promise, (TyList){ .data = &type, .len = 1 });

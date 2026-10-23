@@ -918,7 +918,7 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 // tsc's getExtractStringType: Extract<keys, string> (string without the global alias)
 static Ty const* extract_string_type(Checker* me, Ty const* keys) {
     Ty const* string = ty_intrinsic(me, TY_STRING);
-    Symbol const* extract = ty_global_type_alias(me, c_sv("Extract"), 2);
+    Symbol const* extract = ty_global_type_alias_reported(me, c_sv("Extract"), 2);
     if (!extract) return string;
     Ty const* args[2] = { keys, string };
     return ty_alias_instance(me, extract, (TyList){ .data = args, .len = 2 });

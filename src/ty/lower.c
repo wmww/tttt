@@ -521,6 +521,20 @@ Symbol const* ty_global_type_alias(Checker* me, csview name, u32 arity) {
     return symbol;
 }
 
+// The same with tsc's reportErrors: TS2318 (once, a global diagnostic) when there is no global type alias of the name
+// (tsc's getGlobalSymbol with SymbolFlags.TypeAlias: a global `interface Omit<T, K>` is none). The arity's TS2317 isn't
+Symbol const* ty_global_type_alias_reported(Checker* me, csview name, u32 arity) {
+    Symbol const* symbol = ty_global_type_alias(me, name, arity);
+    Symbol const* named = program_get_global(my program, name, SYMBOL_TYPE);
+    if (named) named = binder_redirect(my binder, named);
+    if (!symbol && !(named && (named->flags & SYMBOL_TYPE_ALIAS))) ty_report_missing_global_type(me, name);
+    return symbol;
+}
+
+void ty_report_missing_global_type(Checker* me, csview name) {
+    error_ctx_global_error_d(my errs, 2318, "Cannot find global type '", name, "'.");
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx, Symbol const* body_of);
 
 // An instantiation of a generic alias whose body is a union or intersection, made of the same constituents
@@ -3362,7 +3376,7 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern
     Ty const* omitted = keys.len ? ty_union(me, keys.data, keys.len, nullptr, (TyList){0}) : nullptr;
     ty_buf_drop(&keys);
     if (!omitted || (omitted->flags & TYF_NEVER)) return source;
-    Symbol const* omit = ty_global_type_alias(me, c_sv("Omit"), 2);
+    Symbol const* omit = ty_global_type_alias_reported(me, c_sv("Omit"), 2);
     if (!omit) return ty_intrinsic(me, TY_ERROR);
     Ty const* args[2] = { source, omitted };
     return ty_alias_instance(me, omit, (TyList){ .data = args, .len = 2 });

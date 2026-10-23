@@ -1209,6 +1209,7 @@ bool ty_check_assignable_to_access(
 // object type, which isn't checked against)
 static Ty const* global_import_type(Checker* me, char const* name) {
     Symbol const* symbol = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
+    if (!symbol) ty_report_missing_global_type(me, csview_from(name)); // (reportErrors: TS2318 without a lib)
     if (!symbol || !(symbol->flags & SYMBOL_INTERFACE)) return nullptr;
     Ty const* type = ty_declared_type_of(me, symbol);
     return type->kind == TY_DECLARED && !type->declared.type_params.len ? type : nullptr;

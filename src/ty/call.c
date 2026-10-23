@@ -221,6 +221,7 @@ static void collect_args(Checker* me, CallInfo const* info, Args* out) {
     }
     if (info->tagged_template) {
         Symbol const* strings = program_get_global(my program, c_sv("TemplateStringsArray"), SYMBOL_TYPE);
+        if (!strings) ty_report_missing_global_type(me, c_sv("TemplateStringsArray")); // (TS2318 without a lib)
         Ty const* type = strings ? ty_declared_type_of(me, strings) : ty_empty_object_type(me);
         args_push(out, (Arg){ .expr = info->tagged_template, .type = type, .part_of_spread = true });
         out->incomplete = info->tagged_template->template_->incomplete;
@@ -3585,7 +3586,12 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
         module = ty_dynamic_import_module_type(me, resolved, span_source(ref->span));
     }
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
-    if (!promise_symbol) return ty_intrinsic(me, TY_ANY); // TODO: TS2711
+    if (!promise_symbol) {
+        // (tsc's createPromiseReturnType for an import call without a global Promise type)
+        ty_error_at_current_node(me, 2711, cstr_lit("A dynamic import call returns a 'Promise'. Make sure you have a "
+            "declaration for 'Promise' or include 'ES2015' in your '--lib' option."));
+        return ty_intrinsic(me, TY_ANY);
+    }
     // The ES5 lib has the type, not the constructor (tsc's createPromiseReturnType: getGlobalPromiseConstructorSymbol)
     if (!program_get_global(my program, c_sv("Promise"), SYMBOL_VALUE)) {
         ty_error_at(me, span_null, 2468, cstr_lit("Cannot find global value 'Promise'."));

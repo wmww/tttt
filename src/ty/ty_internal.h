@@ -496,6 +496,8 @@ Ty const* ty_alias_instance(Checker* me, Symbol const* decl, TyList args);
 Signature const* ty_erased_signature(Checker* me, Signature const* sig); // relate.c, tsc's getErasedSignature
 TyList ty_alias_type_params(Checker* me, Symbol const* decl);
 Symbol const* ty_global_type_alias(Checker* me, csview name, u32 arity);
+Symbol const* ty_global_type_alias_reported(Checker* me, csview name, u32 arity); // TS2318 when missing
+void ty_report_missing_global_type(Checker* me, csview name); // tsc's getGlobalType with reportErrors: TS2318
 bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
