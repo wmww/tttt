@@ -1,0 +1,71 @@
+//// [test/cases/ttttInstantiationExpressionParameterCycle.ts] ////
+
+=== ttttInstantiationExpressionParameterCycle.ts ===
+// A parameter typed through `Parameters<typeof f<T>>` of a function f's body calls: the conditional type's check
+// (the permissive instantiation) must not infer f's return type, which would re-enter the signature being resolved
+// (tttt reported `Expected 2-0 arguments, but got 4`, and on openclaw what the cycle left behind depended on the
+// file a checker saw first)
+export async function first() {
+>first : Symbol(first, Decl(ttttInstantiationExpressionParameterCycle.ts, 0, 0))
+
+  return await runP("", 1, async (s) => s);
+>runP : Symbol(runP, Decl(ttttInstantiationExpressionParameterCycle.ts, 12, 1))
+>s : Symbol(s, Decl(ttttInstantiationExpressionParameterCycle.ts, 5, 34))
+>s : Symbol(s, Decl(ttttInstantiationExpressionParameterCycle.ts, 5, 34))
+}
+export async function withP<T>(owner: string, run: (s: number) => Promise<T>, options: { p?: boolean } = {}) {
+>withP : Symbol(withP, Decl(ttttInstantiationExpressionParameterCycle.ts, 6, 1))
+>T : Symbol(T, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 28))
+>owner : Symbol(owner, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 31))
+>run : Symbol(run, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 45))
+>s : Symbol(s, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 52))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>T : Symbol(T, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 28))
+>options : Symbol(options, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 77))
+>p : Symbol(p, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 88))
+
+  return await withStore(owner, (store) => runP(owner, store, run, options));
+>withStore : Symbol(withStore, Decl(ttttInstantiationExpressionParameterCycle.ts, 9, 1))
+>owner : Symbol(owner, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 31))
+>store : Symbol(store, Decl(ttttInstantiationExpressionParameterCycle.ts, 8, 33))
+>runP : Symbol(runP, Decl(ttttInstantiationExpressionParameterCycle.ts, 12, 1))
+>owner : Symbol(owner, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 31))
+>store : Symbol(store, Decl(ttttInstantiationExpressionParameterCycle.ts, 8, 33))
+>run : Symbol(run, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 45))
+>options : Symbol(options, Decl(ttttInstantiationExpressionParameterCycle.ts, 7, 77))
+}
+async function withStore<R>(o: string, f: (s: number) => Promise<R>): Promise<R> {
+>withStore : Symbol(withStore, Decl(ttttInstantiationExpressionParameterCycle.ts, 9, 1))
+>R : Symbol(R, Decl(ttttInstantiationExpressionParameterCycle.ts, 10, 25))
+>o : Symbol(o, Decl(ttttInstantiationExpressionParameterCycle.ts, 10, 28))
+>f : Symbol(f, Decl(ttttInstantiationExpressionParameterCycle.ts, 10, 38))
+>s : Symbol(s, Decl(ttttInstantiationExpressionParameterCycle.ts, 10, 43))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>R : Symbol(R, Decl(ttttInstantiationExpressionParameterCycle.ts, 10, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>R : Symbol(R, Decl(ttttInstantiationExpressionParameterCycle.ts, 10, 25))
+
+  return f(1);
+>f : Symbol(f, Decl(ttttInstantiationExpressionParameterCycle.ts, 10, 38))
+}
+async function runP<T>(owner: string, store: number, run: Parameters<typeof withP<T>>[1], options: { p?: boolean } = {}) {
+>runP : Symbol(runP, Decl(ttttInstantiationExpressionParameterCycle.ts, 12, 1))
+>T : Symbol(T, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 20))
+>owner : Symbol(owner, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 23))
+>store : Symbol(store, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 37))
+>run : Symbol(run, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 52))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>withP : Symbol(withP, Decl(ttttInstantiationExpressionParameterCycle.ts, 6, 1))
+>T : Symbol(T, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 20))
+>options : Symbol(options, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 89))
+>p : Symbol(p, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 100))
+
+  return await run(store);
+>run : Symbol(run, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 52))
+>store : Symbol(store, Decl(ttttInstantiationExpressionParameterCycle.ts, 13, 37))
+}
+export const x: Promise<string> = withP("", async () => "");
+>x : Symbol(x, Decl(ttttInstantiationExpressionParameterCycle.ts, 16, 12))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>withP : Symbol(withP, Decl(ttttInstantiationExpressionParameterCycle.ts, 6, 1))
+

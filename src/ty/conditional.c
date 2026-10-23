@@ -112,6 +112,17 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             if (ty->anonymous.function && ty_function_closed(me, ty->anonymous.function)) return false;
             Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
             TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
+            // An instantiation expression's type (`typeof f<T>`) mentions what its type arguments (and the outer mapping
+            // kept with them) and the type it instantiates do, without resolving its signatures: a return type may be
+            // inferred from a body that calls what is being resolved (`run: Parameters<typeof f<T>>[1]` in a signature
+            // f's body calls). tsc's permissive instantiation is lazy, and its relation skips a return type an any or
+            // void target's doesn't need
+            if (ty->anonymous.applies_type_args) {
+                for (u32 j = 0; j < mapper->len; j++) {
+                    if (mentions_type_variables(me, mapper->targets[j], walk, depth + 1)) return true;
+                }
+                return mentions_type_variables(me, target, walk, depth + 1);
+            }
             // A function expression's type (or an instance of one) by what its signature mentions, without reading the
             // members of instances (which instantiates them, level by level for a function returning a call of its own
             // container: `deeper: <U>(c: U) => testRecFun<T & U>(...)`)

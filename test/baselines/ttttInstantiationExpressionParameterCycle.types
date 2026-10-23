@@ -1,0 +1,78 @@
+//// [test/cases/ttttInstantiationExpressionParameterCycle.ts] ////
+
+=== ttttInstantiationExpressionParameterCycle.ts ===
+// A parameter typed through `Parameters<typeof f<T>>` of a function f's body calls: the conditional type's check
+// (the permissive instantiation) must not infer f's return type, which would re-enter the signature being resolved
+// (tttt reported `Expected 2-0 arguments, but got 4`, and on openclaw what the cycle left behind depended on the
+// file a checker saw first)
+export async function first() {
+>first : () => Promise<number>
+
+  return await runP("", 1, async (s) => s);
+>await runP("", 1, async (s) => s) : number
+>runP("", 1, async (s) => s) : Promise<number>
+>runP : <T>(owner: string, store: number, run: Parameters<typeof withP<T>>[1], options?: { p?: boolean; }) => Promise<T>
+>"" : ""
+>1 : 1
+>async (s) => s : (s: number) => Promise<number>
+>s : number
+>s : number
+}
+export async function withP<T>(owner: string, run: (s: number) => Promise<T>, options: { p?: boolean } = {}) {
+>withP : <T>(owner: string, run: (s: number) => Promise<T>, options?: { p?: boolean; }) => Promise<T>
+>owner : string
+>run : (s: number) => Promise<T>
+>s : number
+>options : { p?: boolean; }
+>p : boolean | undefined
+>{} : {}
+
+  return await withStore(owner, (store) => runP(owner, store, run, options));
+>await withStore(owner, (store) => runP(owner, store, run, options)) : Awaited<T>
+>withStore(owner, (store) => runP(owner, store, run, options)) : Promise<T>
+>withStore : <R>(o: string, f: (s: number) => Promise<R>) => Promise<R>
+>owner : string
+>(store) => runP(owner, store, run, options) : (store: number) => Promise<T>
+>store : number
+>runP(owner, store, run, options) : Promise<T>
+>runP : <T_1>(owner: string, store: number, run: Parameters<typeof withP<T_1>>[1], options?: { p?: boolean; }) => Promise<T_1>
+>owner : string
+>store : number
+>run : (s: number) => Promise<T>
+>options : { p?: boolean; }
+}
+async function withStore<R>(o: string, f: (s: number) => Promise<R>): Promise<R> {
+>withStore : <R>(o: string, f: (s: number) => Promise<R>) => Promise<R>
+>o : string
+>f : (s: number) => Promise<R>
+>s : number
+
+  return f(1);
+>f(1) : Promise<R>
+>f : (s: number) => Promise<R>
+>1 : 1
+}
+async function runP<T>(owner: string, store: number, run: Parameters<typeof withP<T>>[1], options: { p?: boolean } = {}) {
+>runP : <T>(owner: string, store: number, run: Parameters<typeof withP<T>>[1], options?: { p?: boolean; }) => Promise<T>
+>owner : string
+>store : number
+>run : (s: number) => Promise<T>
+>withP : <T_1>(owner: string, run: (s: number) => Promise<T_1>, options?: { p?: boolean; }) => Promise<T_1>
+>options : { p?: boolean; }
+>p : boolean | undefined
+>{} : {}
+
+  return await run(store);
+>await run(store) : Awaited<T>
+>run(store) : Promise<T>
+>run : (s: number) => Promise<T>
+>store : number
+}
+export const x: Promise<string> = withP("", async () => "");
+>x : Promise<string>
+>withP("", async () => "") : Promise<string>
+>withP : <T>(owner: string, run: (s: number) => Promise<T>, options?: { p?: boolean; }) => Promise<T>
+>"" : ""
+>async () => "" : () => Promise<string>
+>"" : ""
+
