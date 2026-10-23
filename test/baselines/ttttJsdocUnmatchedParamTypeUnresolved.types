@@ -1,0 +1,47 @@
+//// [test/cases/ttttJsdocUnmatchedParamTypeUnresolved.ts] ////
+
+=== a.js ===
+/**
+ * @param {number} a
+ * @param {Nope} b
+ * @param {Array<Nope2>} c
+ */
+function f6(a) { return 42 }
+>f6 : (a: number) => number
+>a : number
+>42 : 42
+
+function g(...args) {}
+>g : (...args: any[]) => void
+>args : any[]
+
+/**
+ * @param {Nope3} x
+ */
+function h() { return arguments; }
+>h : () => IArguments
+>arguments : IArguments
+
+/**
+ * @type {(a: 1) => number}
+ * @template T
+ * @template U
+ * @param {T} a
+ * @param {U} b
+ * @param {V} c
+ */
+function f5b(a) { return 42 }
+>f5b : (a: 1) => number
+>a : 1
+>42 : 42
+
+/**
+ * @template T
+ * @param {T} a
+ * @param {T} b
+ */
+function f6b(a) { return 42 }
+>f6b : <T>(a: T) => number
+>a : T
+>42 : 42
+

@@ -242,6 +242,11 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   more for the root pattern only (`ty_rest_binding_initializer_type`, tsc's CheckMode.RestBindingElement does every
   level); call.c's return mapper ignores a pattern with a rest element. Oracle: suite destructuring tests' types. Probed 2026-10-23, matches tsgo (rest patterns nested in array and object patterns, from literals and from a generic call).
 
+- **Unmatched `@param` types and `arguments`** (`function_text_mentions_arguments`, function_impl.c): tsgo resolves the
+  type of the last `@param` that names no parameter only when the body references `arguments`, for TS8029. The
+  parameters are looked up before the body walk sets `uses_arguments`, so the candidate's lookup errors are kept when
+  the function's text has the word `arguments` anywhere (a string, a comment, a nested function's own `arguments` too).
+
 ## Declarations and bindings (AST-side walk)
 - `ty_binding_assigned_type` (not memoised): tsc unions the undefined-stripped element with the default (subtype
   reduction), then widens; tttt decides with the fresh default, but when that drops the default it reduces again

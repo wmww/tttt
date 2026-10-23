@@ -1,0 +1,54 @@
+a.js(3,18): error TS8024: JSDoc '@param' tag has name 'b', but there is no parameter with that name.
+a.js(4,26): error TS8024: JSDoc '@param' tag has name 'c', but there is no parameter with that name.
+a.js(7,12): error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+a.js(9,12): error TS2304: Cannot find name 'Nope3'.
+a.js(9,19): error TS8029: JSDoc '@param' tag has name 'x', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+a.js(17,15): error TS8024: JSDoc '@param' tag has name 'b', but there is no parameter with that name.
+a.js(18,15): error TS8024: JSDoc '@param' tag has name 'c', but there is no parameter with that name.
+a.js(24,15): error TS8024: JSDoc '@param' tag has name 'b', but there is no parameter with that name.
+
+
+==== a.js (8 errors) ====
+    /**
+     * @param {number} a
+     * @param {Nope} b
+                     ~
+!!! error TS8024: JSDoc '@param' tag has name 'b', but there is no parameter with that name.
+     * @param {Array<Nope2>} c
+                             ~
+!!! error TS8024: JSDoc '@param' tag has name 'c', but there is no parameter with that name.
+     */
+    function f6(a) { return 42 }
+    function g(...args) {}
+               ~~~~~~~
+!!! error TS7019: Rest parameter 'args' implicitly has an 'any[]' type.
+    /**
+     * @param {Nope3} x
+               ~~~~~
+!!! error TS2304: Cannot find name 'Nope3'.
+                      ~
+!!! error TS8029: JSDoc '@param' tag has name 'x', but there is no parameter with that name. It would match 'arguments' if it had an array type.
+     */
+    function h() { return arguments; }
+    /**
+     * @type {(a: 1) => number}
+     * @template T
+     * @template U
+     * @param {T} a
+     * @param {U} b
+                  ~
+!!! error TS8024: JSDoc '@param' tag has name 'b', but there is no parameter with that name.
+     * @param {V} c
+                  ~
+!!! error TS8024: JSDoc '@param' tag has name 'c', but there is no parameter with that name.
+     */
+    function f5b(a) { return 42 }
+    /**
+     * @template T
+     * @param {T} a
+     * @param {T} b
+                  ~
+!!! error TS8024: JSDoc '@param' tag has name 'b', but there is no parameter with that name.
+     */
+    function f6b(a) { return 42 }
+    

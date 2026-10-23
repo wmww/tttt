@@ -10,3 +10,7 @@ import source a from "./a" with { type: 42 };
 import b from "./a" with { type: 42 };
 >b : Symbol(b, Decl(b.ts, 1, 6))
 
+export const c = b;
+>c : Symbol(c, Decl(b.ts, 2, 12))
+>b : Symbol(b, Decl(b.ts, 1, 6))
+

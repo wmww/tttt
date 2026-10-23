@@ -8,3 +8,4 @@ export {};
 // @filename: b.ts
 import source a from "./a" with { type: 42 };
 import b from "./a" with { type: 42 };
+export const c = b;

@@ -12,3 +12,7 @@ import b from "./a" with { type: 42 };
 >b : any
 >type : any
 
+export const c = b;
+>c : any
+>b : any
+

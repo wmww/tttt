@@ -229,6 +229,22 @@ bool function_arg_decoratable(FunctionImpl const* me, isize index, bool in_class
         (my is_constructor || my is_method || my accessor == 2) &&
         !(index == 0 && is_this_parameter(vec_function_arg_at(&my args, 0)));
 }
+// Whether the function's text has the word `arguments` (a string, comment or nested function's too: an over-
+// approximation of tsc's containsArgumentsReference, for before the walk that tells, see uses_arguments)
+static bool function_text_mentions_arguments(FunctionImpl const* me) {
+    Span span = my full_span;
+    if (!span_valid(span)) return false;
+    char const* text = span_start_ptr(span);
+    char const* end = span_end_ptr(span);
+    for (char const* c = text; c + 9 <= end; c++) {
+        if (memcmp(c, "arguments", 9) != 0) continue;
+        bool before = c > text && (isalnum((unsigned char)c[-1]) || c[-1] == '_' || c[-1] == '$' || (unsigned char)c[-1] >= 0x80);
+        bool after = c + 9 < end && (isalnum((unsigned char)c[9]) || c[9] == '_' || c[9] == '$' || (unsigned char)c[9] >= 0x80);
+        if (!before && !after) return true;
+    }
+    return false;
+}
+
 
 static DeferredBodies* deferred_bodies_of(SourceFile* file);
 static void function_impl_lookup_body(FunctionImpl* me, FlowBuilder* flow, FlowBuilder* outer, Scope* function_scope,
@@ -380,12 +396,24 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             compiler_options()->strict_null_checks && !my ambient && !my is_type;
         initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, !my has_body && !looked_at, errs);
     }
-    // (The `@param` tags that name no parameter: their types are where the parameters' are)
-    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) {
-        type_lookup_names(&function_impl_rare(me)->jsdoc_unmatched[i].type, parameter_scope, errs);
+    // (The `@param` tags that name no parameter: their types are where the parameters' are. tsgo's
+    // checkUnmatchedJSDocParameters only resolves the last one's, for `arguments` (TS8029) when the body uses it: what
+    // looking up the others reports is dropped, the candidate's too unless the body mentions `arguments`, which the
+    // walk that would tell (uses_arguments) hasn't done yet (hacks.md). Into a context that outlives the parameter
+    // scope: a name it can't resolve yet is reported at scope_release(); a parallel walk discards it anyway)
+    u32 unmatched = function_impl_rare(me)->jsdoc_unmatched_count;
+    ErrorCtx* dropped = unmatched ? c_new(ErrorCtx, error_ctx_scratch(errs)) : nullptr;
+    bool mentions_arguments = unmatched && function_text_mentions_arguments(me);
+    for (u32 i = 0; i < unmatched; i++) {
+        bool candidate = i + 1 == function_impl_rare(me)->jsdoc_arguments_candidate && mentions_arguments;
+        type_lookup_names(&function_impl_rare(me)->jsdoc_unmatched[i].type, parameter_scope, candidate ? errs : dropped);
     }
     if (js) identifier_type_set_jsdoc_host(saved_host);
     scope_release(parameter_scope, pending_mark);
+    if (dropped) {
+        error_ctx_drop(dropped);
+        free(dropped);
+    }
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
     if (my has_body) {
@@ -1411,7 +1439,12 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 
     if (my ret_explicit) type_typecheck(&my ret, errs);
     ty_check_async_return_annotation(current_checker, me, errs);
-    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) type_typecheck(&function_impl_rare(me)->jsdoc_unmatched[i].type, errs);
+    // (Of the unmatched `@param` tags only the `arguments` candidate's type is resolved, by tsgo's
+    // checkUnmatchedJSDocParameters, when the body uses `arguments`)
+    u32 arguments_candidate = function_impl_rare(me)->jsdoc_arguments_candidate;
+    if (my uses_arguments && arguments_candidate && arguments_candidate - 1 < function_impl_rare(me)->jsdoc_unmatched_count) {
+        type_typecheck(&function_impl_rare(me)->jsdoc_unmatched[arguments_candidate - 1].type, errs);
+    }
     // A function's `@type` needs a call signature that takes its parameters (tsgo's FullSignature check in
     // checkFunctionOrMethodDeclaration and checkFunctionExpressionOrObjectLiteralMethod; not an accessor's)
     if (span_valid(function_impl_rare(me)->jsdoc_signature_span) && my has_body && !my accessor) {
