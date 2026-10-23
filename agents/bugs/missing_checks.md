@@ -438,3 +438,7 @@ Diagnostics-class leftovers, not fixed:
 - With a non-string import attribute value, tsc resolves (and reports) the bindings only when something uses them;
   tttt approximates by a text scan for the binding names (hacks.md).
 - Seen while fixing: `/** @type {} */ var w = 1` types w as any in tsgo (TS1110 there), number in tttt.
+- Seed 2313 (multi/js, 40 / 3977): the stop seed, two new diagnostics-class divergences. The harness's TS5024 location
+  in an extended config is fixed. Not fixed: tsgo's doubled TS2304 next to its TS2552 for `export { StringHash }` of a
+  missing name under `@declaration` (declarationsForIndirectTypeAliasReference delete-stmt), most likely the
+  declaration emitter resolving the name again without a suggestion (dts_emit.md's area).

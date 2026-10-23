@@ -701,10 +701,24 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
             if (fs_is_directory(mock_fs_get_fs(my fs), cstr_sv(&own))) cstr_append_lit(&own, "/tsconfig.json");
             for (u32 j = 0; j < diagnostics.count; j++) {
                 TsconfigDiagnostic* d = &diagnostics.items[j];
+                // (One in a config it extends is at that config, by the test's spelling of it, like the CLI's
+                // program_extended_config_error(); one in a config the test doesn't have has no location)
+                BaselineTestFile const* extended = nullptr;
+                for_each (k, vec_baseline_test_file, &my files) {
+                    cstr absolute = absolute_path_of(cstr_sv(&harness_cwd), cstr_sv(&k->path));
+                    if (cstr_eq(&absolute, &d->config)) extended = k;
+                    cstr_drop(&absolute);
+                    if (extended) break;
+                }
                 Error* error = cstr_eq(&d->config, &own) ?
                     program_config_error(my program, d->start, d->end, d->code, d->message) :
+                    extended ? program_extended_config_error(my program, cstr_sv(&extended->path), d->start, d->end, d->code, d->message) :
                     error_ctx_global_error_s(program_errors(my program), d->code, d->message);
                 error->phase = ERROR_PHASE_PARSE;
+                // (The baseline shows that file's errors with it, through its config source)
+                if (extended && error && span_valid(error->span) && !extended->config_source) {
+                    ((BaselineTestFile*)extended)->config_source = span_source(error->span);
+                }
                 d->message = cstr_null;
             }
             c_drop(cstr, &harness_cwd, &own);

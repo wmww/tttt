@@ -1,0 +1,14 @@
+/project/base.json(1,34): error TS5024: Compiler option 'outDir' requires a value of type string.
+
+
+==== /project/tsconfig.json (0 errors) ====
+    { "extends": "./base.json", "compilerOptions": {}, "files": ["src/index.ts"] }
+    
+==== /project/src/index.ts (0 errors) ====
+    export const value = 0;
+    
+==== /project/base.json (1 errors) ====
+    { "compilerOptions": { "outDir": 42 } }
+                                     ~~
+!!! error TS5024: Compiler option 'outDir' requires a value of type string.
+    

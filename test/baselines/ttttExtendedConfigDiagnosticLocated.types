@@ -1,0 +1,7 @@
+//// [test/cases/ttttExtendedConfigDiagnosticLocated.ts] ////
+
+=== /project/src/index.ts ===
+export const value = 0;
+>value : 0
+>0 : 0
+
