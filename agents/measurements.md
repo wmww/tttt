@@ -116,6 +116,7 @@ tttt at its defaults, both sandboxed; records in test/npmsample/S.*; divergences
 |---|---|---|---|---|---|
 | 20261023 | 2026-10-23 | 4dcca0d89 (main) | 44/50 | 46/50 | 49/50 |
 | 20261023 | 2026-10-23 | 8ec4e47a4 (+2 fixes) | 46/50 | 48/50 | 49/50 |
+| 20261029 | 2026-10-23 | 71ec34371 (vobs: +daf488efd, ef9b44945) | 55/57 | 55/57 | 56/57 (stencil's TS2320 flip) |
 
 Seed 20261023 differences at 8ec4e47a4 (all persist at --threads 1):
 
