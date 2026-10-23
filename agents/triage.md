@@ -144,3 +144,7 @@ intersection's property symbol to bugs/type_core.md.
   specifier as `foo`'s declaration file writes it). Declaration emit's TS2883 already matches (it computes the specifier
   from the entry file); the types baseline's import type printing doesn't. Repro: test/cases/ttttDeclarationUnsafeImportModuleName.ts
   without its `@noTypesAndSymbols`.
+- **Symbols baseline: a CommonJS export assigned inside parentheses** (2026-10-23, corC): `})(Kind = exports.Kind ||
+  (exports.Kind = {}));` gives `exports.Kind : Symbol(Kind, Decl(enums.js, 4, 25))` in tttt, `4, 27` in tsgo (the
+  inner `exports.Kind`'s start; tttt's column is two before it, the space after `||`). Repro:
+  test/cases/ttttDeclarationCommonJsExportedAliasMap.ts without its `@noTypesAndSymbols`.

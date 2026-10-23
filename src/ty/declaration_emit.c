@@ -6007,7 +6007,11 @@ static void emit_commonjs_member(Walk* me, CjsMember const* member, csview ns) {
         w_lit(me, "export { ");
         w(me, cstr_sv(&name));
         w_lit(me, " as ");
+        // (The exported name is the assignment's property name node, mapped)
+        Span left_name = member->expr->tag == EXPR_BINARY_OP ? expr_static_property_name(&member->expr->binary_op->left) : span_null;
+        if (span_valid(left_name)) m_span(me, left_name, false);
         w_export_name(me, member);
+        if (span_valid(left_name)) m_span(me, left_name, true);
         w_lit(me, " };\n");
         cstr_drop(&name);
     }
