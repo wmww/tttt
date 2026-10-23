@@ -250,9 +250,12 @@ static Ty const* best_match_indexed_access(Checker* me, Ty const* source, Ty con
     if (ty_is_generic_object(me, target)) return nullptr;
     // (ty_access() reads past a union's null and undefined, tsc's getIndexedAccessTypeOrUndefined finds nothing in them:
     // `["x"]` against `readonly T[] | T | undefined` goes to the best matching member)
+    // (So does a NoInfer of such a union, whose apparent type is the union: and with no union to pick a best match
+    // from, nothing is elaborated, `toEqual<X = T>(expected: NoInfer<X>)` with T `S[] | undefined`)
+    Ty const* members = target->kind == TY_SUBSTITUTION && ty_is_no_infer(target) ? target->substitution.base : target;
     bool nullable_member = false;
-    for (u32 i = 0; target->kind == TY_UNION && i < target->composite.types.len; i++) {
-        nullable_member |= (target->composite.types.data[i]->flags & TYF_NULLABLE) != 0;
+    for (u32 i = 0; members->kind == TY_UNION && i < members->composite.types.len; i++) {
+        nullable_member |= (members->composite.types.data[i]->flags & TYF_NULLABLE) != 0;
     }
     Ty const* ret = nullable_member ? nullptr : ty_access(me, target, name_type);
     if (ret || target->kind != TY_UNION) return ret;

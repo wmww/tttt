@@ -1,0 +1,60 @@
+//// [test/cases/ttttNoInferUnionNotElaborated.ts] ////
+
+=== ttttNoInferUnionNotElaborated.ts ===
+// A NoInfer of a union with undefined isn't elaborated into: tsc's getBestMatchIndexedAccessTypeOrUndefined indexes the
+// substitution through its apparent type, the union, where undefined has no element, and a substitution is no union to
+// pick a best match from (bun's `toEqual<X = T>(expected: NoInfer<X>)` with T `readonly S[] | undefined`, opencode's
+// google-transcription test: TS2769 at the argument, not at its elements' properties)
+declare const n: number | undefined;
+>n : Symbol(n, Decl(ttttNoInferUnionNotElaborated.ts, 4, 13))
+
+declare const a: any;
+>a : Symbol(a, Decl(ttttNoInferUnionNotElaborated.ts, 5, 13))
+
+interface M<T> { toEqual(expected: T): void; toEqual<X = T>(expected: NoInfer<X>): void }
+>M : Symbol(M, Decl(ttttNoInferUnionNotElaborated.ts, 5, 21))
+>T : Symbol(T, Decl(ttttNoInferUnionNotElaborated.ts, 6, 12))
+>toEqual : Symbol(M.toEqual, Decl(ttttNoInferUnionNotElaborated.ts, 6, 16), Decl(ttttNoInferUnionNotElaborated.ts, 6, 44))
+>expected : Symbol(expected, Decl(ttttNoInferUnionNotElaborated.ts, 6, 25))
+>T : Symbol(T, Decl(ttttNoInferUnionNotElaborated.ts, 6, 12))
+>toEqual : Symbol(M.toEqual, Decl(ttttNoInferUnionNotElaborated.ts, 6, 16), Decl(ttttNoInferUnionNotElaborated.ts, 6, 44))
+>X : Symbol(X, Decl(ttttNoInferUnionNotElaborated.ts, 6, 53))
+>T : Symbol(T, Decl(ttttNoInferUnionNotElaborated.ts, 6, 12))
+>expected : Symbol(expected, Decl(ttttNoInferUnionNotElaborated.ts, 6, 60))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>X : Symbol(X, Decl(ttttNoInferUnionNotElaborated.ts, 6, 53))
+
+declare function expect<T>(v: T): M<T>;
+>expect : Symbol(expect, Decl(ttttNoInferUnionNotElaborated.ts, 6, 89))
+>T : Symbol(T, Decl(ttttNoInferUnionNotElaborated.ts, 7, 24))
+>v : Symbol(v, Decl(ttttNoInferUnionNotElaborated.ts, 7, 27))
+>T : Symbol(T, Decl(ttttNoInferUnionNotElaborated.ts, 7, 24))
+>M : Symbol(M, Decl(ttttNoInferUnionNotElaborated.ts, 5, 21))
+>T : Symbol(T, Decl(ttttNoInferUnionNotElaborated.ts, 7, 24))
+
+declare const segs: readonly { readonly text: string; readonly startSeconds: number; readonly speaker?: string }[] | undefined;
+>segs : Symbol(segs, Decl(ttttNoInferUnionNotElaborated.ts, 8, 13))
+>text : Symbol(text, Decl(ttttNoInferUnionNotElaborated.ts, 8, 30))
+>startSeconds : Symbol(startSeconds, Decl(ttttNoInferUnionNotElaborated.ts, 8, 53))
+>speaker : Symbol(speaker, Decl(ttttNoInferUnionNotElaborated.ts, 8, 84))
+
+expect(segs).toEqual([
+>expect(segs).toEqual : Symbol(M.toEqual, Decl(ttttNoInferUnionNotElaborated.ts, 6, 16), Decl(ttttNoInferUnionNotElaborated.ts, 6, 44))
+>expect : Symbol(expect, Decl(ttttNoInferUnionNotElaborated.ts, 6, 89))
+>segs : Symbol(segs, Decl(ttttNoInferUnionNotElaborated.ts, 8, 13))
+>toEqual : Symbol(M.toEqual, Decl(ttttNoInferUnionNotElaborated.ts, 6, 16), Decl(ttttNoInferUnionNotElaborated.ts, 6, 44))
+  {
+    text: "a",
+>text : Symbol(text, Decl(ttttNoInferUnionNotElaborated.ts, 10, 3))
+
+    startSeconds: n,
+>startSeconds : Symbol(startSeconds, Decl(ttttNoInferUnionNotElaborated.ts, 11, 14))
+>n : Symbol(n, Decl(ttttNoInferUnionNotElaborated.ts, 4, 13))
+
+    speaker: a,
+>speaker : Symbol(speaker, Decl(ttttNoInferUnionNotElaborated.ts, 12, 20))
+>a : Symbol(a, Decl(ttttNoInferUnionNotElaborated.ts, 5, 13))
+
+  },
+]);
+
