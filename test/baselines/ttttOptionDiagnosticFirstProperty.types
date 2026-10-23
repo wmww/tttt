@@ -1,0 +1,7 @@
+//// [test/cases/ttttOptionDiagnosticFirstProperty.ts] ////
+
+=== /app/index.ts ===
+export const x = 0;
+>x : 0
+>0 : 0
+

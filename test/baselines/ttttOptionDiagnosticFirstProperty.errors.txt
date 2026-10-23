@@ -1,0 +1,18 @@
+/app/tsconfig.json(4,9): error TS5069: Option 'mapRoot' cannot be specified without specifying option 'sourceMap' or option 'declarationMap'.
+
+
+==== /app/tsconfig.json (1 errors) ====
+    {
+        "compilerOptions": {
+            "outDir": "bin",
+            "sourceMap": false,
+            ~~~~~~~~~~~
+!!! error TS5069: Option 'mapRoot' cannot be specified without specifying option 'sourceMap' or option 'declarationMap'.
+            "mapRoot": "myMapRoot",
+            "declaration": true
+        }
+    }
+    
+==== /app/index.ts (0 errors) ====
+    export const x = 0;
+    

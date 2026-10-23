@@ -439,9 +439,9 @@ static JsonMember const* config_compiler_options(Program const* me) {
     return nullptr;
 }
 
-// Where tsc's createDiagnosticForOption puts a diagnostic about an option: on the key (or the value) of every member
-// named name or name2 of the config's compilerOptions (forEachPropertyAssignment), else on the `compilerOptions` key
-// (createCompilerOptionsDiagnostic), else nowhere (a global diagnostic). At least one site, at most 4
+// Where tsc's createDiagnosticForOption puts a diagnostic about an option: on the key (or the value) of the first member
+// named name or name2 of the config's compilerOptions (tsgo's ForEachPropertyAssignment; tsc 5 used every one), else on
+// the `compilerOptions` key (createCompilerOptionsDiagnostic), else nowhere (a global diagnostic). One site
 static u32 option_sites(Program const* me, char const* name, char const* name2, bool on_key, Span sites[4]) {
     JsonMember const* options = config_compiler_options(me);
     if (!options) {
@@ -455,6 +455,9 @@ static u32 option_sites(Program const* me, char const* name, char const* name2, 
             if (!cstr_equals(&member->key, name) && !(name2 && cstr_equals(&member->key, name2))) continue;
             sites[count++] = on_key ? config_span(me, member->key_start, member->key_end) :
                 config_span(me, member->value.start, member->value.end);
+            // (The first property named either: tsgo's ForEachPropertyAssignment returns the callback's first result,
+            // `"sourceMap": false, "mapRoot": "m"` has its TS5069 at sourceMap only)
+            break;
         }
     }
     if (!count) sites[count++] = config_span(me, options->key_start, options->key_end);
