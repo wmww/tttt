@@ -1,0 +1,116 @@
+//// [test/cases/ttttArrayUnionMethodGenericMember.ts] ////
+
+=== ttttArrayUnionMethodGenericMember.ts ===
+// A method of a union of arrays whose members have no signatures in common is that of an array of all their
+// elements (tsc's getArrayMemberCallSignatures), also when a member is generic and its constraint is itself a union of
+// arrays (tsc goes by the union of the method's types, which is flat): openclaw's
+// `(registry?.[params.key] ?? []).filter(...)`
+type Reg<T> = { pluginId: string; provider: T };
+>Reg : Reg<T>
+>pluginId : string
+>provider : T
+
+interface Registry {
+    a: Reg<{ x: number }>[];
+>a : Reg<{ x: number; }>[]
+>x : number
+
+    b: Reg<{ y: string }>[];
+>b : Reg<{ y: string; }>[]
+>y : string
+
+    c: Reg<{ z: boolean }>[];
+>c : Reg<{ z: boolean; }>[]
+>z : boolean
+
+    m: Map<string, Reg<number>>;
+>m : Map<string, Reg<number>>
+}
+type Key = "a" | "b" | "c";
+>Key : Key
+
+declare const ids: Set<string>;
+>ids : Set<string>
+
+function f<K extends Key>(key: K, registry: Registry | undefined): Registry[K] {
+>f : <K extends Key>(key: K, registry: Registry | undefined) => Registry[K]
+>key : K
+>registry : Registry | undefined
+
+    const entries = (registry?.[key] ?? []).filter((entry) => ids.has(entry.pluginId)) as Registry[K];
+>entries : Registry[K]
+>(registry?.[key] ?? []).filter((entry) => ids.has(entry.pluginId)) as Registry[K] : Registry[K]
+>(registry?.[key] ?? []).filter((entry) => ids.has(entry.pluginId)) : (Reg<{ x: number; }> | Reg<{ y: string; }> | Reg<{ z: boolean; }>)[]
+>(registry?.[key] ?? []).filter : { <S extends never>(predicate: (value: never, index: number, array: never[]) => value is S, thisArg?: any): S[]; (predicate: (value: never, index: number, array: never[]) => unknown, thisArg?: any): never[]; } | { <S extends Reg<{ x: number; }>>(predicate: (value: Reg<{ x: number; }>, index: number, array: Reg<{ x: number; }>[]) => value is S, thisArg?: any): S[]; (predicate: (value: Reg<{ x: number; }>, index: number, array: Reg<{ x: number; }>[]) => unknown, thisArg?: any): Reg<{ x: number; }>[]; } | { <S extends Reg<{ y: string; }>>(predicate: (value: Reg<{ y: string; }>, index: number, array: Reg<{ y: string; }>[]) => value is S, thisArg?: any): S[]; (predicate: (value: Reg<{ y: string; }>, index: number, array: Reg<{ y: string; }>[]) => unknown, thisArg?: any): Reg<{ y: string; }>[]; } | { <S extends Reg<{ z: boolean; }>>(predicate: (value: Reg<{ z: boolean; }>, index: number, array: Reg<{ z: boolean; }>[]) => value is S, thisArg?: any): S[]; (predicate: (value: Reg<{ z: boolean; }>, index: number, array: Reg<{ z: boolean; }>[]) => unknown, thisArg?: any): Reg<{ z: boolean; }>[]; }
+>(registry?.[key] ?? []) : never[] | Registry[K]
+>registry?.[key] ?? [] : never[] | Registry[K]
+>registry?.[key] : Registry[K] | undefined
+>registry : Registry | undefined
+>key : K
+>[] : never[]
+>filter : { <S extends never>(predicate: (value: never, index: number, array: never[]) => value is S, thisArg?: any): S[]; (predicate: (value: never, index: number, array: never[]) => unknown, thisArg?: any): never[]; } | { <S extends Reg<{ x: number; }>>(predicate: (value: Reg<{ x: number; }>, index: number, array: Reg<{ x: number; }>[]) => value is S, thisArg?: any): S[]; (predicate: (value: Reg<{ x: number; }>, index: number, array: Reg<{ x: number; }>[]) => unknown, thisArg?: any): Reg<{ x: number; }>[]; } | { <S extends Reg<{ y: string; }>>(predicate: (value: Reg<{ y: string; }>, index: number, array: Reg<{ y: string; }>[]) => value is S, thisArg?: any): S[]; (predicate: (value: Reg<{ y: string; }>, index: number, array: Reg<{ y: string; }>[]) => unknown, thisArg?: any): Reg<{ y: string; }>[]; } | { <S extends Reg<{ z: boolean; }>>(predicate: (value: Reg<{ z: boolean; }>, index: number, array: Reg<{ z: boolean; }>[]) => value is S, thisArg?: any): S[]; (predicate: (value: Reg<{ z: boolean; }>, index: number, array: Reg<{ z: boolean; }>[]) => unknown, thisArg?: any): Reg<{ z: boolean; }>[]; }
+>(entry) => ids.has(entry.pluginId) : (entry: Reg<{ x: number; }> | Reg<{ y: string; }> | Reg<{ z: boolean; }>) => boolean
+>entry : Reg<{ x: number; }> | Reg<{ y: string; }> | Reg<{ z: boolean; }>
+>ids.has(entry.pluginId) : boolean
+>ids.has : (value: string) => boolean
+>ids : Set<string>
+>has : (value: string) => boolean
+>entry.pluginId : string
+>entry : Reg<{ x: number; }> | Reg<{ y: string; }> | Reg<{ z: boolean; }>
+>pluginId : string
+
+    return entries;
+>entries : Registry[K]
+}
+function g<K extends Key>(key: K, registry: Registry, e: readonly never[]) {
+>g : <K extends Key>(key: K, registry: Registry, e: readonly never[]) => ({ x: number; } | { y: string; } | { z: boolean; })[]
+>key : K
+>registry : Registry
+>e : readonly never[]
+
+    return (Math.random() ? registry[key] : e).map((entry) => entry.provider);
+>(Math.random() ? registry[key] : e).map((entry) => entry.provider) : ({ x: number; } | { y: string; } | { z: boolean; })[]
+>(Math.random() ? registry[key] : e).map : (<U>(callbackfn: (value: never, index: number, array: readonly never[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: Reg<{ x: number; }>, index: number, array: Reg<{ x: number; }>[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: Reg<{ y: string; }>, index: number, array: Reg<{ y: string; }>[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: Reg<{ z: boolean; }>, index: number, array: Reg<{ z: boolean; }>[]) => U, thisArg?: any) => U[])
+>(Math.random() ? registry[key] : e) : readonly never[] | Registry[K]
+>Math.random() ? registry[key] : e : readonly never[] | Registry[K]
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>registry[key] : Registry[K]
+>registry : Registry
+>key : K
+>e : readonly never[]
+>map : (<U>(callbackfn: (value: never, index: number, array: readonly never[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: Reg<{ x: number; }>, index: number, array: Reg<{ x: number; }>[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: Reg<{ y: string; }>, index: number, array: Reg<{ y: string; }>[]) => U, thisArg?: any) => U[]) | (<U>(callbackfn: (value: Reg<{ z: boolean; }>, index: number, array: Reg<{ z: boolean; }>[]) => U, thisArg?: any) => U[])
+>(entry) => entry.provider : (entry: Reg<{ x: number; }> | Reg<{ y: string; }> | Reg<{ z: boolean; }>) => { x: number; } | { y: string; } | { z: boolean; }
+>entry : Reg<{ x: number; }> | Reg<{ y: string; }> | Reg<{ z: boolean; }>
+>entry.provider : { x: number; } | { y: string; } | { z: boolean; }
+>entry : Reg<{ x: number; }> | Reg<{ y: string; }> | Reg<{ z: boolean; }>
+>provider : { x: number; } | { y: string; } | { z: boolean; }
+}
+function h<K extends Key | "m">(key: K, registry: Registry) {
+>h : <K extends Key | "m">(key: K, registry: Registry) => any
+>key : K
+>registry : Registry
+
+    return (registry[key] ?? []).filter((entry) => ids.has(entry.pluginId));
+>(registry[key] ?? []).filter((entry) => ids.has(entry.pluginId)) : any
+>(registry[key] ?? []).filter : any
+>(registry[key] ?? []) : Registry[K]
+>registry[key] ?? [] : Registry[K]
+>registry[key] : Registry[K]
+>registry : Registry
+>key : K
+>[] : never[]
+>filter : any
+>(entry) => ids.has(entry.pluginId) : (entry: any) => boolean
+>entry : any
+>ids.has(entry.pluginId) : boolean
+>ids.has : (value: string) => boolean
+>ids : Set<string>
+>has : (value: string) => boolean
+>entry.pluginId : any
+>entry : any
+>pluginId : any
+}
+

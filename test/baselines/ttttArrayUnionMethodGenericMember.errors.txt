@@ -1,0 +1,33 @@
+ttttArrayUnionMethodGenericMember.ts(22,34): error TS2339: Property 'filter' does not exist on type 'Registry[K]'.
+ttttArrayUnionMethodGenericMember.ts(22,42): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+
+
+==== ttttArrayUnionMethodGenericMember.ts (2 errors) ====
+    // A method of a union of arrays whose members have no signatures in common is that of an array of all their
+    // elements (tsc's getArrayMemberCallSignatures), also when a member is generic and its constraint is itself a union of
+    // arrays (tsc goes by the union of the method's types, which is flat): openclaw's
+    // `(registry?.[params.key] ?? []).filter(...)`
+    type Reg<T> = { pluginId: string; provider: T };
+    interface Registry {
+        a: Reg<{ x: number }>[];
+        b: Reg<{ y: string }>[];
+        c: Reg<{ z: boolean }>[];
+        m: Map<string, Reg<number>>;
+    }
+    type Key = "a" | "b" | "c";
+    declare const ids: Set<string>;
+    function f<K extends Key>(key: K, registry: Registry | undefined): Registry[K] {
+        const entries = (registry?.[key] ?? []).filter((entry) => ids.has(entry.pluginId)) as Registry[K];
+        return entries;
+    }
+    function g<K extends Key>(key: K, registry: Registry, e: readonly never[]) {
+        return (Math.random() ? registry[key] : e).map((entry) => entry.provider);
+    }
+    function h<K extends Key | "m">(key: K, registry: Registry) {
+        return (registry[key] ?? []).filter((entry) => ids.has(entry.pluginId));
+                                     ~~~~~~
+!!! error TS2339: Property 'filter' does not exist on type 'Registry[K]'.
+                                             ~~~~~
+!!! error TS7006: Parameter 'entry' implicitly has an 'any' type.
+    }
+    

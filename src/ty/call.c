@@ -2695,6 +2695,42 @@ static Ty const* this_argument(Checker* me, CallExpr const* call, Span call_span
 // tsc's getSignaturesOfType arrayFallbackSignatures: a method of a union of arrays and tuples whose members have no
 // signatures in common is that method of an array of all their elements (`(A[] | B[]).filter` is `(A | B)[]`'s,
 // readonly if one of them is). Null if the callee isn't such a method
+// One member of array_fallback_callee's receiver: its element type appended to `elements` (a member whose apparent
+// type is a union, `Registry[K]` constrained to `A[] | B[]`, contributes each of its members: tsc goes by the union
+// of the method's types, which is flat). False if it isn't an array, a tuple or an interface extending Array
+static bool array_fallback_elements(Checker* me, Ty const* member, Atom const* method, TyBuf* elements,
+    bool* readonly, u32 depth
+) {
+    Ty const* array = ty_apparent_type(me, member);
+    if (array->kind == TY_UNION) {
+        if (depth > 8) return false;
+        TyList members = array->composite.types;
+        for (u32 i = 0; i < members.len; i++) {
+            if (!array_fallback_elements(me, members.data[i], method, elements, readonly, depth + 1)) return false;
+        }
+        return true;
+    }
+    if (ty_is_tuple(array)) array = ty_tuple_as_array(me, array);
+    if (!ty_is_array(me, array) && (array->flags & TYF_OBJECT)) {
+        // An interface extending Array (RegExpMatchArray): the method is Array's, at its element type (tsc goes
+        // by the method's declaring symbol and mapper)
+        Prop const* prop = ty_get_prop(me, array, method);
+        // (Without a global Array (noLib) an array is the empty object type, which has no target)
+        Ty const* any_array = ty_array(me, ty_intrinsic(me, TY_ANY), false);
+        Symbol const* array_symbol = any_array->kind == TY_REFERENCE ? any_array->reference.target->declared.symbol : nullptr;
+        Symbol const* readonly_symbol = ty_readonly_array_target(me)->declared.symbol;
+        if (prop && prop->parent && (prop->parent == array_symbol || prop->parent == readonly_symbol)) {
+            *readonly |= prop->parent == readonly_symbol;
+            ty_buf_push(elements, ty_indexed(me, array, ty_intrinsic(me, TY_NUMBER)));
+            return true;
+        }
+    }
+    if (!ty_is_array(me, array)) return false;
+    *readonly |= array->reference.target != ty_array(me, ty_intrinsic(me, TY_ANY), false)->reference.target;
+    ty_buf_push(elements, ty_reference_args(me, array).data[0]);
+    return true;
+}
+
 static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
@@ -2705,36 +2741,15 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
         property->optional_chain, nullptr);
     Ty const* apparent = ty_apparent_type(me, receiver);
     if (apparent->kind != TY_UNION) return nullptr;
-    TyList members = apparent->composite.types;
-    Ty const** elements = malloc(sizeof(Ty const*) * members.len);
+    TyBuf elements = {0};
     bool readonly = false;
     Atom const* method = checker_atom(me, name_cooked(span_sv(property_name(property))));
-    for (u32 i = 0; i < members.len; i++) {
-        Ty const* array = ty_apparent_type(me, members.data[i]);
-        if (ty_is_tuple(array)) array = ty_tuple_as_array(me, array);
-        if (!ty_is_array(me, array) && (array->flags & TYF_OBJECT)) {
-            // An interface extending Array (RegExpMatchArray): the method is Array's, at its element type (tsc goes
-            // by the method's declaring symbol and mapper)
-            Prop const* prop = ty_get_prop(me, array, method);
-            // (Without a global Array (noLib) an array is the empty object type, which has no target)
-            Ty const* any_array = ty_array(me, ty_intrinsic(me, TY_ANY), false);
-            Symbol const* array_symbol = any_array->kind == TY_REFERENCE ? any_array->reference.target->declared.symbol : nullptr;
-            Symbol const* readonly_symbol = ty_readonly_array_target(me)->declared.symbol;
-            if (prop && prop->parent && (prop->parent == array_symbol || prop->parent == readonly_symbol)) {
-                readonly |= prop->parent == readonly_symbol;
-                elements[i] = ty_indexed(me, array, ty_intrinsic(me, TY_NUMBER));
-                continue;
-            }
-        }
-        if (!ty_is_array(me, array)) {
-            free(elements);
-            return nullptr;
-        }
-        readonly |= array->reference.target != ty_array(me, ty_intrinsic(me, TY_ANY), false)->reference.target;
-        elements[i] = ty_reference_args(me, array).data[0];
+    if (!array_fallback_elements(me, apparent, method, &elements, &readonly, 0)) {
+        ty_buf_drop(&elements);
+        return nullptr;
     }
-    Ty const* element = ty_union(me, elements, members.len, nullptr, (TyList){0});
-    free(elements);
+    Ty const* element = ty_union(me, elements.data, elements.len, nullptr, (TyList){0});
+    ty_buf_drop(&elements);
     Ty const* index = ty_string_literal(me, atom_sv(method));
     return ty_access(me, ty_array(me, element, readonly), index);
 }

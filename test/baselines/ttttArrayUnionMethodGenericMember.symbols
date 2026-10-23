@@ -1,0 +1,117 @@
+//// [test/cases/ttttArrayUnionMethodGenericMember.ts] ////
+
+=== ttttArrayUnionMethodGenericMember.ts ===
+// A method of a union of arrays whose members have no signatures in common is that of an array of all their
+// elements (tsc's getArrayMemberCallSignatures), also when a member is generic and its constraint is itself a union of
+// arrays (tsc goes by the union of the method's types, which is flat): openclaw's
+// `(registry?.[params.key] ?? []).filter(...)`
+type Reg<T> = { pluginId: string; provider: T };
+>Reg : Symbol(Reg, Decl(ttttArrayUnionMethodGenericMember.ts, 0, 0))
+>T : Symbol(T, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 9))
+>pluginId : Symbol(pluginId, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 15))
+>provider : Symbol(provider, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 33))
+>T : Symbol(T, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 9))
+
+interface Registry {
+>Registry : Symbol(Registry, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 48))
+
+    a: Reg<{ x: number }>[];
+>a : Symbol(Registry.a, Decl(ttttArrayUnionMethodGenericMember.ts, 5, 20))
+>Reg : Symbol(Reg, Decl(ttttArrayUnionMethodGenericMember.ts, 0, 0))
+>x : Symbol(x, Decl(ttttArrayUnionMethodGenericMember.ts, 6, 12))
+
+    b: Reg<{ y: string }>[];
+>b : Symbol(Registry.b, Decl(ttttArrayUnionMethodGenericMember.ts, 6, 28))
+>Reg : Symbol(Reg, Decl(ttttArrayUnionMethodGenericMember.ts, 0, 0))
+>y : Symbol(y, Decl(ttttArrayUnionMethodGenericMember.ts, 7, 12))
+
+    c: Reg<{ z: boolean }>[];
+>c : Symbol(Registry.c, Decl(ttttArrayUnionMethodGenericMember.ts, 7, 28))
+>Reg : Symbol(Reg, Decl(ttttArrayUnionMethodGenericMember.ts, 0, 0))
+>z : Symbol(z, Decl(ttttArrayUnionMethodGenericMember.ts, 8, 12))
+
+    m: Map<string, Reg<number>>;
+>m : Symbol(Registry.m, Decl(ttttArrayUnionMethodGenericMember.ts, 8, 29))
+>Map : Symbol(Map, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2026.collection.d.ts, --, --))
+>Reg : Symbol(Reg, Decl(ttttArrayUnionMethodGenericMember.ts, 0, 0))
+}
+type Key = "a" | "b" | "c";
+>Key : Symbol(Key, Decl(ttttArrayUnionMethodGenericMember.ts, 10, 1))
+
+declare const ids: Set<string>;
+>ids : Symbol(ids, Decl(ttttArrayUnionMethodGenericMember.ts, 12, 13))
+>Set : Symbol(Set, Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.collection.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.collection.d.ts, --, --))
+
+function f<K extends Key>(key: K, registry: Registry | undefined): Registry[K] {
+>f : Symbol(f, Decl(ttttArrayUnionMethodGenericMember.ts, 12, 31))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 11))
+>Key : Symbol(Key, Decl(ttttArrayUnionMethodGenericMember.ts, 10, 1))
+>key : Symbol(key, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 26))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 11))
+>registry : Symbol(registry, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 33))
+>Registry : Symbol(Registry, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 48))
+>Registry : Symbol(Registry, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 48))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 11))
+
+    const entries = (registry?.[key] ?? []).filter((entry) => ids.has(entry.pluginId)) as Registry[K];
+>entries : Symbol(entries, Decl(ttttArrayUnionMethodGenericMember.ts, 14, 9))
+>(registry?.[key] ?? []).filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>registry : Symbol(registry, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 33))
+>key : Symbol(key, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 26))
+>filter : Symbol(Array.filter, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entry : Symbol(entry, Decl(ttttArrayUnionMethodGenericMember.ts, 14, 52))
+>ids.has : Symbol(Set.has, Decl(lib.es2015.collection.d.ts, --, --))
+>ids : Symbol(ids, Decl(ttttArrayUnionMethodGenericMember.ts, 12, 13))
+>has : Symbol(Set.has, Decl(lib.es2015.collection.d.ts, --, --))
+>entry.pluginId : Symbol(pluginId, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 15))
+>entry : Symbol(entry, Decl(ttttArrayUnionMethodGenericMember.ts, 14, 52))
+>pluginId : Symbol(pluginId, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 15))
+>Registry : Symbol(Registry, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 48))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 13, 11))
+
+    return entries;
+>entries : Symbol(entries, Decl(ttttArrayUnionMethodGenericMember.ts, 14, 9))
+}
+function g<K extends Key>(key: K, registry: Registry, e: readonly never[]) {
+>g : Symbol(g, Decl(ttttArrayUnionMethodGenericMember.ts, 16, 1))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 11))
+>Key : Symbol(Key, Decl(ttttArrayUnionMethodGenericMember.ts, 10, 1))
+>key : Symbol(key, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 26))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 11))
+>registry : Symbol(registry, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 33))
+>Registry : Symbol(Registry, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 48))
+>e : Symbol(e, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 53))
+
+    return (Math.random() ? registry[key] : e).map((entry) => entry.provider);
+>(Math.random() ? registry[key] : e).map : Symbol(map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2025.float16.d.ts, --, --) ... and 1 more)
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>registry : Symbol(registry, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 33))
+>key : Symbol(key, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 26))
+>e : Symbol(e, Decl(ttttArrayUnionMethodGenericMember.ts, 17, 53))
+>map : Symbol(map, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entry : Symbol(entry, Decl(ttttArrayUnionMethodGenericMember.ts, 18, 52))
+>entry.provider : Symbol(provider, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 33))
+>entry : Symbol(entry, Decl(ttttArrayUnionMethodGenericMember.ts, 18, 52))
+>provider : Symbol(provider, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 33))
+}
+function h<K extends Key | "m">(key: K, registry: Registry) {
+>h : Symbol(h, Decl(ttttArrayUnionMethodGenericMember.ts, 19, 1))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 20, 11))
+>Key : Symbol(Key, Decl(ttttArrayUnionMethodGenericMember.ts, 10, 1))
+>key : Symbol(key, Decl(ttttArrayUnionMethodGenericMember.ts, 20, 32))
+>K : Symbol(K, Decl(ttttArrayUnionMethodGenericMember.ts, 20, 11))
+>registry : Symbol(registry, Decl(ttttArrayUnionMethodGenericMember.ts, 20, 39))
+>Registry : Symbol(Registry, Decl(ttttArrayUnionMethodGenericMember.ts, 4, 48))
+
+    return (registry[key] ?? []).filter((entry) => ids.has(entry.pluginId));
+>registry : Symbol(registry, Decl(ttttArrayUnionMethodGenericMember.ts, 20, 39))
+>key : Symbol(key, Decl(ttttArrayUnionMethodGenericMember.ts, 20, 32))
+>entry : Symbol(entry, Decl(ttttArrayUnionMethodGenericMember.ts, 21, 41))
+>ids.has : Symbol(Set.has, Decl(lib.es2015.collection.d.ts, --, --))
+>ids : Symbol(ids, Decl(ttttArrayUnionMethodGenericMember.ts, 12, 13))
+>has : Symbol(Set.has, Decl(lib.es2015.collection.d.ts, --, --))
+>entry : Symbol(entry, Decl(ttttArrayUnionMethodGenericMember.ts, 21, 41))
+}
+
