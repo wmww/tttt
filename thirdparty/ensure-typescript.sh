@@ -24,7 +24,9 @@ BLUE="\x1b[34m"
 RED="\x1b[1;31m"
 
 HERE="$PWD"
-GOENV="export PATH=\"$HERE/go/bin:\$PATH\" GOPATH=\"$HERE/typescript-gopath\" GOCACHE=\"$HERE/typescript-gopath/cache\" GOTOOLCHAIN=local GOFLAGS= GOWORK="
+mkdir -p "$HERE/typescript-gopath/tmp"
+# (GOTMPDIR: Go's $WORK dirs go beside the cache, not under /tmp, whose quota a build hit on 2026-10-23)
+GOENV="export PATH=\"$HERE/go/bin:\$PATH\" GOPATH=\"$HERE/typescript-gopath\" GOCACHE=\"$HERE/typescript-gopath/cache\" GOTMPDIR=\"$HERE/typescript-gopath/tmp\" GOTOOLCHAIN=local GOFLAGS= GOWORK="
 
 # Every instrumented tsgo build (an overlay patching internal/checker) adds hundreds of MB to the build cache, and Go
 # only trims entries unused for 5 days: it reached 50 GB and filled the disk (2026-10-14). Cap it at 4 GB.
@@ -81,7 +83,17 @@ ORACLE_DIR="$HERE/../test/oracle"
 # Rebuilt when the overlay's content changes (not its mtime: every new worktree's checkout is newer than the tools,
 # and a rebuild from a worktree would point overlay.json at it)
 ORACLE_HASH="$(cd "$ORACLE_DIR" && find . -name "*.go" | sort | xargs cat | sha256sum | cut -d' ' -f1)"
-if test "$(cat typescript/built/tttt-oracle.hash 2>/dev/null)" != "$ORACLE_HASH" -o ! -e typescript/built/tttt-oracle \
+# The built tools are shared by every worktree (typescript/ is a symlink there), so only the main tree rebuilds them:
+# a worktree at another commit has another test/oracle hash, and rebuilding from it flipped the shared tools back and
+# forth between two worktrees' versions under running oracles (2026-10-23). A worktree whose hash differs gets main's
+# tools and a warning; rebase onto main to match.
+IN_WORKTREE=
+if test "$(git -C "$HERE/.." rev-parse --git-dir 2>/dev/null)" != "$(git -C "$HERE/.." rev-parse --git-common-dir 2>/dev/null)"; then IN_WORKTREE=1; fi
+if test -n "$IN_WORKTREE" && test -e typescript/built/tttt-oracle && test -e typescript/built/tttt-probe.test && test -e typescript/built/tttt-test-mapper; then
+    if test "$(cat typescript/built/tttt-oracle.hash 2>/dev/null)" != "$ORACLE_HASH"; then
+        printf "${BLUE}ensure-typescript: this worktree's test/oracle differs from the shared oracle tools' (built by the main tree); using main's. Rebase onto main to match.$EOL" >&2
+    fi
+elif test "$(cat typescript/built/tttt-oracle.hash 2>/dev/null)" != "$ORACLE_HASH" -o ! -e typescript/built/tttt-oracle \
         -o ! -e typescript/built/tttt-probe.test -o ! -e typescript/built/tttt-test-mapper; then
     printf "${BLUE}Building tttt's tsgo oracle tools (test/oracle)...$EOL"
     # (Go matches overlay paths against real paths: in a worktree, typescript/ is a symlink to the main tree's)
