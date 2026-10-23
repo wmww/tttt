@@ -79,6 +79,11 @@ memory, but memory is now worth cutting where it is cheap; easy, measured wins f
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **Diagnostic presence before exactness** (2026-10-23, the human): tttt must never report where tsgo doesn't nor
+  stay silent where tsgo reports; that is absolute. Exact message text, elaboration chains, related info and printed
+  types remain the goal, but where exactness would cost perf or great complexity it may be compromised and written up
+  (bugs/display.md, errtextdiff's buckets) instead. Rank divergences: missing, spurious, wrong code or position, then
+  text and type printing; report match rates separately for the (file, line, code) set and for byte-identical text.
 - **No machine-specific tuning** (2026-10-23, the human): no pinning of work to kinds of cores, no `-march`, no
   per-microarchitecture rules; the shipped build's PGO and BOLT profiles are instrumentation counts of the training
   corpora (input-dependent, not machine-dependent) and the huge-page paths fall back at runtime. Defaults are derived
