@@ -1891,7 +1891,15 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             // (A JSDoc `@type` on it is its type: tsc's getEffectiveTypeAnnotationNode of an ExportAssignment)
             if (symbol_decl_jsdoc_type(decl)) return ty_of_node(symbol_decl_jsdoc_type(decl));
             // A JSON file's value is widened, literals too (getTypeOfVariableOrParameterOrPropertyWorker)
-            if (span_source(decl->full) && span_source(decl->full)->is_json) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
+            if (span_source(decl->full) && span_source(decl->full)->is_json) {
+                // (An empty file, parsed as an empty `{}` there, is tsc's emptyObjectType: no symbol, so no inferable
+                // index, `Record<string, unknown>` needs one)
+                Expr const* value = decl->node;
+                if (value->tag == EXPR_OBJECT && !value->inner_span.size && !vec_object_expr_item_size(&value->object)) {
+                    return ty_empty_object_type(me);
+                }
+                return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
+            }
             // An alias of `a.b` that names no symbol (entity_value_symbol()): what checking it resolved, which for
             // a property of any is nothing (tsc's getTargetOfAliasLikeExpression: unknownSymbol, errorType)
             if (symbol->alias == nullptr && ((Expr const*)decl->node)->tag == EXPR_PROPERTY && expr_is_entity_name(decl->node) &&

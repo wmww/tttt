@@ -1,0 +1,24 @@
+//// [test/cases/ttttEmptyJsonModuleNoInferableIndex.ts] ////
+
+=== e.json ===
+
+=== a.ts ===
+// An empty JSON file is tsc's emptyObjectType, which has no symbol and so no inferable index
+import j from "./e.json";
+>j : Symbol(j, Decl(a.ts, 1, 6))
+
+const m1: Record<string, unknown> = j;
+>m1 : Symbol(m1, Decl(a.ts, 2, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>j : Symbol(j, Decl(a.ts, 1, 6))
+
+const { a, ...rest } = { a: 1 };
+>a : Symbol(a, Decl(a.ts, 3, 7))
+>rest : Symbol(rest, Decl(a.ts, 3, 10))
+>a : Symbol(a, Decl(a.ts, 3, 24))
+
+const m6: Record<string, unknown> = rest;
+>m6 : Symbol(m6, Decl(a.ts, 4, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>rest : Symbol(rest, Decl(a.ts, 3, 10))
+

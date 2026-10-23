@@ -1,0 +1,16 @@
+a.ts(3,7): error TS2322: Type '{}' is not assignable to type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type '{}'.
+
+
+==== e.json (0 errors) ====
+    
+==== a.ts (1 errors) ====
+    // An empty JSON file is tsc's emptyObjectType, which has no symbol and so no inferable index
+    import j from "./e.json";
+    const m1: Record<string, unknown> = j;
+          ~~
+!!! error TS2322: Type '{}' is not assignable to type 'Record<string, unknown>'.
+!!! error TS2322:   Index signature for type 'string' is missing in type '{}'.
+    const { a, ...rest } = { a: 1 };
+    const m6: Record<string, unknown> = rest;
+    
