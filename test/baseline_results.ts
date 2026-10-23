@@ -850,6 +850,12 @@ const baselines = {
         types: true,
         dts: true,
     },
+    'ttttDeclarationSignatureNameBodyLocal': {
+        errors: true,
+        symbols: true,
+        types: false,
+        dts: true,
+    },
     'ttttDeclarationSingleLineMappedNestedLiteral': {
         errors: true,
         symbols: true,

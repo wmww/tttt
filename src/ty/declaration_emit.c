@@ -167,6 +167,9 @@ typedef struct Walk {
     // that isn't accessible from here makes it fall back instead (trackExistingEntityName)
     bool reusing;
     Root root; // The declaration being serialized
+    // The function declaration (a method, a constructor, an accessor) whose signature is being walked: tsc's
+    // enclosingDeclaration, from which a written name resolves to the function's locals first, its body's included
+    FunctionImpl const* signature_of;
     Accessors class_pair; // Serializing a class accessor: its pair
     // The declaration's type is printed because its pseudo type doesn't say it (tsgo's typeToTypeNode fallback): the
     // pseudo types of what it prints report (else they did already)
@@ -909,11 +912,26 @@ static Symbol const* export_specifier_local(Symbol const* symbol) {
     return target && target != symbol ? target : nullptr;
 }
 
+// What a name in the signature of the function declaration being walked resolves to from the function (tsc's
+// isEntityNameVisible resolves it at the enclosing declaration, the function itself, whose locals are its parameters
+// and its body's top-level declarations and vars: `const { f } = await import("./a")` in the body shadows the
+// `import type { f }` a parameter's `typeof f` names). `symbol`: what it resolves to where it is written
+static Symbol const* signature_name_resolution(Walk* me, Symbol const* symbol, csview name, u32 meaning) {
+    FunctionImpl const* fn = my signature_of;
+    if (!fn || !fn->has_body) return symbol;
+    Block const* body = function_impl_body(fn);
+    if (!body->scope || body->scope->function != fn) return symbol;
+    Symbol const* local = symbol_table_get(scope_locals(body->scope), name);
+    if (!local || local == symbol || local->is_parameter || !(local->flags & meaning)) return symbol;
+    return local;
+}
+
 // tsc's isEntityNameVisible of a name in a written type, and handleSymbolAccessibilityError: `symbol` is what its first
 // identifier resolved to (null: unresolved, which the checker reports)
 static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 meaning) {
     if (!symbol || my emitting.kind == EMIT_NONE) return;
     if (symbol->flags & SYMBOL_TYPE_PARAMETER) return;
+    symbol = signature_name_resolution(me, symbol, span_sv(first), meaning);
     if (my reusing) {
         if (symbol->is_parameter) return; // (resolvable here, so visible)
         SymbolAccess access = symbol_accessibility_at(my scope, symbol, meaning);
@@ -2612,6 +2630,8 @@ static void check_generic(Walk* me, Generic const* generic, EmitSig sig) {
 // `declaration`: a declaration the transformer visits (its return type gets the signature's diagnostics), else a
 // function type or a function expression the syntactic builder reuses
 static void check_written_signature(Walk* me, FunctionImpl const* fn, EmitSig sig, bool declaration) {
+    FunctionImpl const* outer_signature = my signature_of;
+    if (declaration && !fn->is_expression) my signature_of = fn;
     check_generic(me, &fn->generic, sig);
     for_each (i, vec_function_arg, &fn->args) {
         if (!i->initializer.binding.has_explicit_type) continue;
@@ -2629,6 +2649,7 @@ static void check_written_signature(Walk* me, FunctionImpl const* fn, EmitSig si
     if (fn->ret_explicit) check_written_type(me, &fn->ret);
     if (fn->predicate && fn->predicate->has_type) check_written_type(me, &fn->predicate->type);
     emit_leave(me, saved);
+    my signature_of = outer_signature;
 }
 
 // The members of an interface or type literal (`decl`: an interface's, whose merged members come from elsewhere too).

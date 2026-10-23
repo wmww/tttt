@@ -1,0 +1,119 @@
+//// [test/cases/ttttDeclarationSignatureNameBodyLocal.ts] ////
+
+=== helper.ts ===
+export function helper(a: number, b: string): number { return a; }
+>helper : (a: number, b: string) => number
+>a : number
+>b : string
+>a : number
+
+export type Opts = { a: number };
+>Opts : Opts
+>a : number
+
+=== main.ts ===
+import type { helper, Opts } from "./helper.js";
+>helper : any
+>Opts : Opts
+
+export async function f1(...args: Parameters<typeof helper>) {
+>f1 : (a: number, b: string) => Promise<number>
+>args : [a: number, b: string]
+>helper : (a: number, b: string) => number
+
+    const { helper } = await import("./helper.js");
+>helper : (a: number, b: string) => number
+>await import("./helper.js") : typeof import("./helper.js")
+>import("./helper.js") : Promise<typeof import("./helper.js")>
+>"./helper.js" : "./helper.js"
+
+    return helper(...args);
+>helper(...args) : number
+>helper : (a: number, b: string) => number
+>...args : string | number
+>args : [a: number, b: string]
+}
+export function f2(o: Opts): Opts {
+>f2 : (o: import("./helper.js").Opts) => import("./helper.js").Opts
+>o : import("./helper.js").Opts
+
+    type Opts = string;
+>Opts : string
+
+    return o;
+>o : import("./helper.js").Opts
+}
+export function f3(): ReturnType<typeof helper> {
+>f3 : () => ReturnType<typeof import("./helper.js").helper>
+>helper : (a: number, b: string) => number
+
+    if (Math.random()) { var helper = (x: number) => x; }
+>Math.random() : number
+>Math.random : () => number
+>Math : Math
+>random : () => number
+>helper : (x: number) => number
+>(x: number) => x : (x: number) => number
+>x : number
+>x : number
+
+    return 1;
+>1 : 1
+}
+export function f4(x: Parameters<typeof helper>[0]) {
+>f4 : (x: Parameters<typeof helper>[0]) => number
+>x : number
+>helper : (a: number, b: string) => number
+
+    { const helper = 1; }
+>helper : 1
+>1 : 1
+
+    return x;
+>x : number
+}
+export function f5(helper: number, y: typeof helper) { return y; }
+>f5 : (helper: number, y: typeof helper) => number
+>helper : number
+>y : number
+>helper : number
+>y : number
+
+export class C {
+>C : C
+
+    m(x: Parameters<typeof helper>[0]) { const helper = 1; return x + helper; }
+>m : (x: Parameters<typeof import("./helper.js").helper>[0]) => number
+>x : number
+>helper : (a: number, b: string) => number
+>helper : 1
+>1 : 1
+>x + helper : number
+>x : number
+>helper : 1
+}
+export const f6 = (x: Parameters<typeof helper>[0]) => { const helper = 1; return x + helper; };
+>f6 : (x: Parameters<typeof helper>[0]) => number
+>(x: Parameters<typeof helper>[0]) => { const helper = 1; return x + helper; } : (x: Parameters<typeof helper>[0]) => number
+>x : number
+>helper : (a: number, b: string) => number
+>helper : 1
+>1 : 1
+>x + helper : number
+>x : number
+>helper : 1
+
+export function f7<T extends Opts>(x: T) { interface Opts { b: 1 } return x; }
+>f7 : <T extends import("./helper.js").Opts>(x: T) => T
+>x : T
+>b : 1
+>x : T
+
+export function f8(x: Parameters<typeof helper>[0]) { function helper(q: number) {} return x; }
+>f8 : (x: Parameters<(q: number) => void>[0]) => number
+>x : number
+>helper : (q: number) => void
+>helper : (q: number) => void
+>q : number
+>x : number
+

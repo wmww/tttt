@@ -1,0 +1,54 @@
+main.ts(2,53): error TS4078: Parameter 'args' of exported function has or is using private name 'helper'.
+main.ts(6,23): error TS4078: Parameter 'o' of exported function has or is using private name 'Opts'.
+main.ts(6,30): error TS4060: Return type of exported function has or is using private name 'Opts'.
+main.ts(10,41): error TS4060: Return type of exported function has or is using private name 'helper'.
+main.ts(20,28): error TS4073: Parameter 'x' of public method from exported class has or is using private name 'helper'.
+main.ts(23,30): error TS4016: Type parameter 'T' of exported function has or is using private name 'Opts'.
+main.ts(24,41): error TS4078: Parameter 'x' of exported function has or is using private name 'helper'.
+
+
+==== package.json (0 errors) ====
+    { "type": "module" }
+==== helper.ts (0 errors) ====
+    export function helper(a: number, b: string): number { return a; }
+    export type Opts = { a: number };
+==== main.ts (7 errors) ====
+    import type { helper, Opts } from "./helper.js";
+    export async function f1(...args: Parameters<typeof helper>) {
+                                                        ~~~~~~
+!!! error TS4078: Parameter 'args' of exported function has or is using private name 'helper'.
+        const { helper } = await import("./helper.js");
+        return helper(...args);
+    }
+    export function f2(o: Opts): Opts {
+                          ~~~~
+!!! error TS4078: Parameter 'o' of exported function has or is using private name 'Opts'.
+                                 ~~~~
+!!! error TS4060: Return type of exported function has or is using private name 'Opts'.
+        type Opts = string;
+        return o;
+    }
+    export function f3(): ReturnType<typeof helper> {
+                                            ~~~~~~
+!!! error TS4060: Return type of exported function has or is using private name 'helper'.
+        if (Math.random()) { var helper = (x: number) => x; }
+        return 1;
+    }
+    export function f4(x: Parameters<typeof helper>[0]) {
+        { const helper = 1; }
+        return x;
+    }
+    export function f5(helper: number, y: typeof helper) { return y; }
+    export class C {
+        m(x: Parameters<typeof helper>[0]) { const helper = 1; return x + helper; }
+                               ~~~~~~
+!!! error TS4073: Parameter 'x' of public method from exported class has or is using private name 'helper'.
+    }
+    export const f6 = (x: Parameters<typeof helper>[0]) => { const helper = 1; return x + helper; };
+    export function f7<T extends Opts>(x: T) { interface Opts { b: 1 } return x; }
+                                 ~~~~
+!!! error TS4016: Type parameter 'T' of exported function has or is using private name 'Opts'.
+    export function f8(x: Parameters<typeof helper>[0]) { function helper(q: number) {} return x; }
+                                            ~~~~~~
+!!! error TS4078: Parameter 'x' of exported function has or is using private name 'helper'.
+    

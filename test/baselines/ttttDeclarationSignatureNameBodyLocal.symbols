@@ -1,0 +1,118 @@
+//// [test/cases/ttttDeclarationSignatureNameBodyLocal.ts] ////
+
+=== helper.ts ===
+export function helper(a: number, b: string): number { return a; }
+>helper : Symbol(helper, Decl(helper.ts, 0, 0))
+>a : Symbol(a, Decl(helper.ts, 0, 23))
+>b : Symbol(b, Decl(helper.ts, 0, 33))
+>a : Symbol(a, Decl(helper.ts, 0, 23))
+
+export type Opts = { a: number };
+>Opts : Symbol(Opts, Decl(helper.ts, 0, 66))
+>a : Symbol(a, Decl(helper.ts, 1, 20))
+
+=== main.ts ===
+import type { helper, Opts } from "./helper.js";
+>helper : Symbol(helper, Decl(main.ts, 0, 13))
+>Opts : Symbol(Opts, Decl(main.ts, 0, 21))
+
+export async function f1(...args: Parameters<typeof helper>) {
+>f1 : Symbol(f1, Decl(main.ts, 0, 48))
+>args : Symbol(args, Decl(main.ts, 1, 25))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>helper : Symbol(helper, Decl(main.ts, 0, 13))
+
+    const { helper } = await import("./helper.js");
+>helper : Symbol(helper, Decl(main.ts, 2, 11))
+>"./helper.js" : Symbol("./helper.js", Decl(helper.ts, 0, 0))
+
+    return helper(...args);
+>helper : Symbol(helper, Decl(main.ts, 2, 11))
+>args : Symbol(args, Decl(main.ts, 1, 25))
+}
+export function f2(o: Opts): Opts {
+>f2 : Symbol(f2, Decl(main.ts, 4, 1))
+>o : Symbol(o, Decl(main.ts, 5, 19))
+>Opts : Symbol(Opts, Decl(main.ts, 0, 21))
+>Opts : Symbol(Opts, Decl(main.ts, 0, 21))
+
+    type Opts = string;
+>Opts : Symbol(Opts, Decl(main.ts, 5, 35))
+
+    return o;
+>o : Symbol(o, Decl(main.ts, 5, 19))
+}
+export function f3(): ReturnType<typeof helper> {
+>f3 : Symbol(f3, Decl(main.ts, 8, 1))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>helper : Symbol(helper, Decl(main.ts, 0, 13))
+
+    if (Math.random()) { var helper = (x: number) => x; }
+>Math.random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>Math : Symbol(Math, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>random : Symbol(Math.random, Decl(lib.es5.d.ts, --, --))
+>helper : Symbol(helper, Decl(main.ts, 10, 28))
+>x : Symbol(x, Decl(main.ts, 10, 39))
+>x : Symbol(x, Decl(main.ts, 10, 39))
+
+    return 1;
+}
+export function f4(x: Parameters<typeof helper>[0]) {
+>f4 : Symbol(f4, Decl(main.ts, 12, 1))
+>x : Symbol(x, Decl(main.ts, 13, 19))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>helper : Symbol(helper, Decl(main.ts, 0, 13))
+
+    { const helper = 1; }
+>helper : Symbol(helper, Decl(main.ts, 14, 11))
+
+    return x;
+>x : Symbol(x, Decl(main.ts, 13, 19))
+}
+export function f5(helper: number, y: typeof helper) { return y; }
+>f5 : Symbol(f5, Decl(main.ts, 16, 1))
+>helper : Symbol(helper, Decl(main.ts, 17, 19))
+>y : Symbol(y, Decl(main.ts, 17, 34))
+>helper : Symbol(helper, Decl(main.ts, 17, 19))
+>y : Symbol(y, Decl(main.ts, 17, 34))
+
+export class C {
+>C : Symbol(C, Decl(main.ts, 17, 66))
+
+    m(x: Parameters<typeof helper>[0]) { const helper = 1; return x + helper; }
+>m : Symbol(C.m, Decl(main.ts, 18, 16))
+>x : Symbol(x, Decl(main.ts, 19, 6))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>helper : Symbol(helper, Decl(main.ts, 0, 13))
+>helper : Symbol(helper, Decl(main.ts, 19, 46))
+>x : Symbol(x, Decl(main.ts, 19, 6))
+>helper : Symbol(helper, Decl(main.ts, 19, 46))
+}
+export const f6 = (x: Parameters<typeof helper>[0]) => { const helper = 1; return x + helper; };
+>f6 : Symbol(f6, Decl(main.ts, 21, 12))
+>x : Symbol(x, Decl(main.ts, 21, 19))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>helper : Symbol(helper, Decl(main.ts, 0, 13))
+>helper : Symbol(helper, Decl(main.ts, 21, 62))
+>x : Symbol(x, Decl(main.ts, 21, 19))
+>helper : Symbol(helper, Decl(main.ts, 21, 62))
+
+export function f7<T extends Opts>(x: T) { interface Opts { b: 1 } return x; }
+>f7 : Symbol(f7, Decl(main.ts, 21, 96))
+>T : Symbol(T, Decl(main.ts, 22, 19))
+>Opts : Symbol(Opts, Decl(main.ts, 0, 21))
+>x : Symbol(x, Decl(main.ts, 22, 35))
+>T : Symbol(T, Decl(main.ts, 22, 19))
+>Opts : Symbol(Opts, Decl(main.ts, 22, 42))
+>b : Symbol(Opts.b, Decl(main.ts, 22, 59))
+>x : Symbol(x, Decl(main.ts, 22, 35))
+
+export function f8(x: Parameters<typeof helper>[0]) { function helper(q: number) {} return x; }
+>f8 : Symbol(f8, Decl(main.ts, 22, 78))
+>x : Symbol(x, Decl(main.ts, 23, 19))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>helper : Symbol(helper, Decl(main.ts, 23, 53))
+>helper : Symbol(helper, Decl(main.ts, 23, 53))
+>q : Symbol(q, Decl(main.ts, 23, 70))
+>x : Symbol(x, Decl(main.ts, 23, 19))
+

@@ -278,3 +278,14 @@ left (the full write-up: `git show af936072c:agents/plans/55_pseudochecker.md`):
   method being the literal's widened type itself (tsgo's getWidenedType(checkExpressionCached(literal)) is another
   type, so it prints one level deeper; the pseudo return type hides this where the method's return is printed from
   syntax).
+
+## A function's body locals shadowing names in its signature
+- test/cases/ttttDeclarationSignatureNameBodyLocal (TYP fails, errors pass): `export function f2(o: Opts): Opts { type
+  Opts = string; ... }` with `Opts` imported prints `(o: import("./helper.js").Opts) => import(...)` in tsgo's types
+  baseline (and `typeof import("./helper.js").helper` where a body `const helper` shadows an imported one): the node
+  builder's enclosing declaration is the function (or a node inside it), whose locals (getAccessibleSymbolChain's
+  forEachSymbolTableInScope) hold the body's top-level declarations and vars, so the import isn't accessible by its
+  name. tttt's printer reuses `Opts`. Declaration emit's TS4078/TS4060 for the written signature follow tsc since
+  2026-10-23 (declaration_emit.c's signature_name_resolution()); the printer's name_accessible() doesn't look at the
+  function's body scope. Only methods and function declarations, not arrow functions (a variable is the enclosing
+  declaration there).
