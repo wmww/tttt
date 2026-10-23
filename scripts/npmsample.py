@@ -47,6 +47,12 @@ BUILT = os.path.realpath(os.path.join(ROOT, 'thirdparty/typescript/built'))
 TSGO = os.path.join(BUILT, 'tsc')
 ORACLE = os.path.join(BUILT, 'tttt-oracle')
 PM_CACHE = os.path.join(CACHE, 'pm')
+COREPACK = os.path.join(PM_CACHE, 'corepack')  # (the managers corepack fetched, verified: shared, kept)
+
+
+def seed_cache(seed):
+    """The package managers' caches of one batch (deleted at its end: concurrent batches never share one)"""
+    return os.path.join(PM_CACHE, 'seeds', str(seed))
 TTTT = os.path.join(ROOT, 'release/tttt')
 REGISTRY = 'https://registry.npmjs.org/'
 LOCKFILES = ('pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb', 'package-lock.json', 'npm-shrinkwrap.json')
@@ -573,7 +579,7 @@ def setup_one(seed, c):
     if count_ts(pkg) < 3:
         return {**rec, 'status': 'skip', 'reason': 'fewer than 3 .ts files'}
     if not os.path.exists(marker):
-        r = sb.install(repo, pkg, PM_CACHE)
+        r = sb.install(repo, pkg, seed_cache(seed), corepack_home=COREPACK)
         rec['install'] = {k: r[k] for k in ('pm', 'dir', 'notes', 'changes', 'commands')}
         if r['refused']:
             return {**rec, 'status': 'skip', 'pm': r['pm'], 'reason': 'install refused: ' + r['refused']}
@@ -609,10 +615,12 @@ def ensure_ts6():
     if not os.path.exists(TS6):
         d = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(TS6))))
         os.makedirs(d, exist_ok=True)
-        os.makedirs(PM_CACHE, exist_ok=True)
+        npm_cache = os.path.join(CACHE, 'ts6-npm-cache')
+        os.makedirs(npm_cache, exist_ok=True)
         p = sb.run([os.path.join(NODE_BIN, 'npm'), 'install', '--ignore-scripts', '--no-audit', '--no-fund',
-                    f'--registry={sb.REGISTRY}', f'--cache={PM_CACHE}/npm', f'typescript@{TS6_VERSION}'], d,
-                   rw=[d, PM_CACHE], ro=[sb.NODE_DIR], network=True)
+                    f'--registry={sb.REGISTRY}', f'--cache={npm_cache}', f'typescript@{TS6_VERSION}'], d,
+                   rw=[d, npm_cache], ro=[sb.NODE_DIR], network=True)
+        shutil.rmtree(npm_cache, ignore_errors=True)
         if p.returncode:
             sys.exit(f'typescript@{TS6_VERSION} install failed:\n{p.stdout[-1000:]}{p.stderr[-1000:]}')
 
@@ -678,8 +686,7 @@ def cmd_setup(seed, n, jobs):
                         f2.cancel()
                     break
     # (The package managers' caches only matter while installing: the installed files are copies or hardlinks)
-    for d in ('pnpm-store', 'npm', 'yarn1', 'bun', 'berry'):
-        shutil.rmtree(os.path.join(PM_CACHE, d), ignore_errors=True)
+    shutil.rmtree(seed_cache(seed), ignore_errors=True)
     acc = write_tsv(seed, n)
     print(f'setup: {len(acc)}/{n} accepted -> {os.path.relpath(files(seed, "tsv"), ROOT)}')
     return len(acc) >= n
@@ -820,6 +827,8 @@ def cmd_compare(seed, jobs, delete_same, last, code):
 # ----------------------------------------------------------------------------------------------------------- clean
 
 def cmd_clean(seed, everything, keep):
+    # (The batch's package-manager caches: corepack's managers and ts6 stay)
+    shutil.rmtree(seed_cache(seed), ignore_errors=True)
     base = os.path.join(NS, str(seed))
     if not os.path.isdir(base):
         return

@@ -79,3 +79,8 @@ You'll need tsgo 7.1-beta (`npm i typescript@7.1.0-beta`), the tttt binary, Type
   logged in the setup record's `install.changes`; a pnpm-workspace.yaml with hooks/pnpmfile/configDependencies is
   refused (a skip reason). Nothing from node_modules ever runs: only tsc 6 (installed by us into .cache/ts6), tsgo and
   tttt, all in bwrap without the network.
+- **Caches per batch.** The package managers' caches are thirdparty/npmsample/.cache/pm/seeds/SEED (deleted at the
+  end of `setup` and by `clean`), so one finder's cleanup never deletes a store another finder's install is reading;
+  corepack's verified managers (.cache/pm/corepack) and ts6 are shared and kept. The shared .cache/pm/{npm,
+  pnpm-store,yarn1,bun,berry} of the first runs grew to 7 GB with four finders; they go once no finder runs the old
+  script.

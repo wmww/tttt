@@ -157,8 +157,8 @@ def plan(d):
     return 'npm', 'bundled', first + [npm + ['install'] + flags, npm + ['install', '--force'] + flags], notes
 
 
-def pm_env(cache):
-    return {'COREPACK_HOME': f'{cache}/corepack', 'COREPACK_ENABLE_DOWNLOAD_PROMPT': '0', 'COREPACK_ENABLE_STRICT': '0',
+def pm_env(cache, corepack_home):
+    return {'COREPACK_HOME': corepack_home, 'COREPACK_ENABLE_DOWNLOAD_PROMPT': '0', 'COREPACK_ENABLE_STRICT': '0',
             'COREPACK_ENABLE_AUTO_PIN': '0', 'COREPACK_ENABLE_PROJECT_SPEC': '0', 'CI': '1',
             'YARN_IGNORE_PATH': '1', 'YARN_PLUGINS': '', 'YARN_ENABLE_SCRIPTS': 'false',
             'YARN_NODE_LINKER': 'node-modules', 'YARN_ENABLE_GLOBAL_CACHE': 'true', 'YARN_GLOBAL_FOLDER': f'{cache}/berry',
@@ -232,9 +232,12 @@ def prepare(repo, d, strip=True):
     return changes, None
 
 
-def install(repo, pkg, cache, timeout=1200, strip=True, dry_run=False):
-    """Installs the dependencies of the package at pkg (in repo) in the sandbox; the record of what ran"""
+def install(repo, pkg, cache, timeout=1200, strip=True, dry_run=False, corepack_home=None):
+    """Installs the dependencies of the package at pkg (in repo) in the sandbox; the record of what ran. cache: the
+    package managers' caches (one per batch: concurrent batches never share a store a cleanup deletes); corepack_home:
+    the managers corepack fetched (default cache/corepack; shared, read-only to an install once fetched)"""
     repo, pkg, cache = os.path.realpath(repo), os.path.realpath(pkg), os.path.realpath(cache)
+    corepack_home = os.path.realpath(corepack_home or os.path.join(cache, 'corepack'))
     d = install_dir(repo, pkg)
     family, version, cmds, notes = plan(d)
     rec = {'pm': family and f'{family}@{version}', 'dir': os.path.relpath(d, repo), 'notes': notes, 'changes': [],
@@ -247,16 +250,17 @@ def install(repo, pkg, cache, timeout=1200, strip=True, dry_run=False):
         if rec['refused']:
             return rec
     os.makedirs(cache, exist_ok=True)
-    env = pm_env(cache)
+    os.makedirs(corepack_home, exist_ok=True)
+    env = pm_env(cache, corepack_home)
     for cmd in cmds:
         cmd = [a.replace('{CACHE}', cache) for a in cmd]
         rec['commands'].append(' '.join(cmd))
         # (A package manager corepack fetched before is read-only to every later install: one install can't change
         # the manager the next one runs)
         name = family if family == 'pnpm' else 'yarn'
-        fetched = os.path.join(cache, 'corepack', 'v1', name, version) if family in ('pnpm', 'yarn1', 'berry') else None
+        fetched = os.path.join(corepack_home, 'v1', name, version) if family in ('pnpm', 'yarn1', 'berry') else None
         ro = [NODE_DIR] + ([fetched] if fetched and os.path.isdir(fetched) else [])
-        argv = sandbox_argv(rw=[repo, cache], ro=[], network=True, cwd=d)[:-1] + \
+        argv = sandbox_argv(rw=[repo, cache, corepack_home], ro=[], network=True, cwd=d)[:-1] + \
             sum((['--ro-bind', x, x] for x in ro), []) + ['--'] + cmd
         if dry_run:
             rec['argv'], rec['env'] = argv, clean_env(env)
