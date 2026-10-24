@@ -1,0 +1,12 @@
+//// [test/cases/ttttTsconfigMaxNodeModuleJsDepth.ts] ////
+
+=== main.ts ===
+import { a, b } from "pkg";
+>a : 1
+>b : any
+
+=== node_modules/pkg/index.js ===
+export const a = 1;
+>a : 1
+>1 : 1
+

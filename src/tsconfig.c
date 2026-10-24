@@ -223,6 +223,13 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
             if (value->tag == JSON_ARRAY) set_path_list(me, dir, name, value);
         } else if (value->tag == JSON_BOOL) {
             ignore compiler_options_set(my options, csview_from(name), value->boolean ? c_sv("true") : c_sv("false"));
+        } else if (value->tag == JSON_NUMBER) {
+            // A number option (maxNodeModuleJsDepth: a config's JavaScript packages are read only with one) as its
+            // decimal digits (a fraction or a negative number is left out: TODO tsgo's validation)
+            if (value->number < 0 || value->number != (double)(i64)value->number) continue;
+            char digits[32];
+            snprintf(digits, sizeof digits, "%lld", (long long)value->number);
+            ignore compiler_options_set(my options, csview_from(name), csview_from(digits));
         } else if (value->tag == JSON_STRING && !cstr_size(&value->string) && compiler_option_is_string(csview_from(name))) {
             // (An empty string leaves what an extended config gave: tsgo merges the options' non-zero values. qwik's
             // `"sourceRoot": ""` over its base's "." is still TS5051)

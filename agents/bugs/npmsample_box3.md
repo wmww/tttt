@@ -24,7 +24,7 @@ for flips); a separate file so the three boxes never conflict.
   as an untyped JS module. Without the paths tttt agrees, so the guess is that a node_modules result reached after a
   failed paths attempt loses its external-library/JS-depth handling. Repro
   test/cases/npm__abrevior_apollo-federation-upload_TS7016.ts (the missing errors in the package's JS should follow
-  from the same cause; not reproduced separately). [open]
+  from the same cause; not reproduced separately). Fixed: not paths. tttt ignored every number in a tsconfig's compilerOptions (no JSON_NUMBER case in tsconfig.c), so maxNodeModuleJsDepth stayed 0 from a config; the harness reads it from a header and was fine. [fixed corF 2026-10-24]
 - Seed 20261202, ragokan/bunicorn (@bunicorn/server@0.0.30): spurious TS6196 "'T' is declared but never used" for
   `serve<T>(options: Omit<ServeOptions & Serve<T>, "fetch">)`, where `Serve` is a namespace (TS2709). tsgo's
   checkTypeReferenceNode still checks the type arguments of a reference that fails to resolve, which marks T

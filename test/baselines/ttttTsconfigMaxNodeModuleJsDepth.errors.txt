@@ -1,0 +1,14 @@
+main.ts(1,13): error TS2305: Module '"pkg"' has no exported member 'b'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "module": "esnext", "moduleResolution": "bundler", "allowJs": true, "strict": true, "noEmit": true, "maxNodeModuleJsDepth": 1 } }
+==== main.ts (1 errors) ====
+    import { a, b } from "pkg";
+                ~
+!!! error TS2305: Module '"pkg"' has no exported member 'b'.
+    
+==== node_modules/pkg/package.json (0 errors) ====
+    { "name": "pkg", "version": "1.0.0", "main": "index.js" }
+==== node_modules/pkg/index.js (0 errors) ====
+    export const a = 1;
