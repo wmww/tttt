@@ -1,0 +1,275 @@
+//// [test/cases/npm__react-above_modal_TS2339.tsx] ////
+
+=== demo/index.tsx ===
+import React, { useState } from 'react'
+>React : typeof React
+>useState : <S>(initialState: S | (() => S)) => [S, Dispatch<SetStateAction<S>>]
+
+import { ThemeDefault } from '@react-above/modal-theme-default'
+>ThemeDefault : any
+
+import {
+  createModal,
+>createModal : <TModal extends import("../src/types").ModalFC, TOptions = void>({ theme, }: import("../src/create-modal").CreateModal<TModal, TOptions>) => TModal
+
+  ModalRenderer,
+>ModalRenderer : any
+
+} from '../src'
+const Modal = createModal({
+>Modal : import("../src/types").ModalFC
+>createModal({  theme: ThemeDefault(),}) : import("../src/types").ModalFC
+>createModal : <TModal extends import("../src/types").ModalFC, TOptions = void>({ theme, }: import("../src/create-modal").CreateModal<TModal, TOptions>) => TModal
+>{  theme: ThemeDefault(),} : { theme: any; }
+
+  theme: ThemeDefault(),
+>theme : any
+>ThemeDefault() : any
+>ThemeDefault : any
+
+})
+const Renderer: ModalRenderer = ({ close }) => {
+>Renderer : ModalRenderer
+>({ close }) => {  return (    <Modal.Surface>      <Modal.Body>      </Modal.Body>    </Modal.Surface>  )} : ({ close }: { close: () => void; }) => any
+>close : () => void
+
+  return (
+>(    <Modal.Surface>      <Modal.Body>      </Modal.Body>    </Modal.Surface>  ) : any
+
+    <Modal.Surface>
+><Modal.Surface>      <Modal.Body>      </Modal.Body>    </Modal.Surface> : any
+>Modal.Surface : any
+>Modal : import("../src/types").ModalFC
+>Surface : any
+
+      <Modal.Body>
+><Modal.Body>      </Modal.Body> : any
+>Modal.Body : any
+>Modal : import("../src/types").ModalFC
+>Body : any
+
+      </Modal.Body>
+>Modal.Body : any
+>Modal : import("../src/types").ModalFC
+>Body : any
+
+    </Modal.Surface>
+>Modal.Surface : any
+>Modal : import("../src/types").ModalFC
+>Surface : any
+
+  )
+}
+=== node_modules/@types/react/index.d.ts ===
+export = React;
+>React : typeof React
+
+declare namespace React {
+>React : typeof React
+
+    interface ReactElement<P = any, T extends string | JSXElementConstructor<any> = string | JSXElementConstructor<any>> {
+    }
+    type ReactNode = ReactChild | ReactFragment | ReactPortal | boolean | null | undefined;
+>ReactNode : any
+
+    function createContext<T>(
+>createContext : <T>(defaultValue: T) => Context<T>
+
+        defaultValue: T,
+>defaultValue : T
+
+    ): Context<T>;
+    type FC<P = {}> = FunctionComponent<P>;
+>FC : FC<P>
+
+    interface FunctionComponent<P = {}> {
+        (props: PropsWithChildren<P>, context?: any): ReactElement<any, any> | null;
+>props : PropsWithChildren<P>
+>context : any
+    }
+    type ComponentRef<T extends ElementType> = T extends NamedExoticComponent<
+>ComponentRef : ComponentRef<T>
+
+    >
+            ? Method
+            : never;
+    interface MutableRefObject<T> {
+    }
+    function useContext<T>(context: Context<T>/*, (not public API) observedBits?: number|boolean */): T;
+>useContext : <T>(context: Context<T>) => T
+>context : Context<T>
+
+    /**
+     */
+    function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>];
+>useState : <S>(initialState: S | (() => S)) => [S, Dispatch<SetStateAction<S>>]
+>initialState : S | (() => S)
+
+    function useRef<T>(initialValue: T): MutableRefObject<T>;
+>useRef : <T>(initialValue: T) => MutableRefObject<T>
+>initialValue : T
+
+    /**
+     */
+    function useEffect(effect: EffectCallback, deps?: DependencyList): void;
+>useEffect : (effect: EffectCallback, deps?: DependencyList) => void
+>effect : EffectCallback
+>deps : any
+
+    interface AriaAttributes {
+    }
+}
+=== src/create-modal.tsx ===
+import React, { FC } from 'react'
+>React : typeof React
+>FC : any
+
+import { ModalFC, ModalProps } from './types'
+>ModalFC : any
+>ModalProps : any
+
+import { ThemeOutput, ThemeProvider, useTheme } from './themes'
+>ThemeOutput : any
+>ThemeProvider : any
+>useTheme : () => void
+
+export interface CreateModal<TModal extends ModalFC, TOptions = void> {
+  theme: ThemeOutput<TModal, TOptions>
+>theme : ThemeOutput<TModal, TOptions>
+}
+export function createModal<TModal extends ModalFC, TOptions = void>({
+>createModal : <TModal extends ModalFC, TOptions = void>({ theme, }: CreateModal<TModal, TOptions>) => TModal
+
+  theme,
+>theme : ThemeOutput<TModal, TOptions>
+
+}: CreateModal<TModal, TOptions>): TModal {
+  const WrappedModal: ModalFC = (props) => (
+>WrappedModal : ModalFC
+>(props) => (    <ThemeProvider value={theme}>    </ThemeProvider>  ) : (props: PropsWithChildren<P>) => any
+>props : PropsWithChildren<P>
+>(    <ThemeProvider value={theme}>    </ThemeProvider>  ) : any
+
+    <ThemeProvider value={theme}>
+><ThemeProvider value={theme}>    </ThemeProvider> : any
+>ThemeProvider : any
+>value : ThemeOutput<TModal, TOptions>
+>theme : ThemeOutput<TModal, TOptions>
+
+    </ThemeProvider>
+>ThemeProvider : any
+
+  )
+  return theme.extend(WrappedModal)
+>theme.extend(WrappedModal) : TModal
+>theme.extend : (modal: ModalFC) => TModal
+>theme : ThemeOutput<TModal, TOptions>
+>extend : (modal: ModalFC) => TModal
+>WrappedModal : ModalFC
+}
+=== src/index.ts ===
+export { createModal } from './create-modal'
+>createModal : <TModal extends import("./types").ModalFC, TOptions = void>({ theme, }: import("./create-modal").CreateModal<TModal, TOptions>) => TModal
+
+export type {
+  ModalRenderer,
+>ModalRenderer : import("./types").ModalRenderer
+
+} from './types'
+=== src/themes/context.ts ===
+import { createContext, useContext } from 'react'
+>createContext : <T>(defaultValue: T) => Context<T>
+>useContext : <T>(context: Context<T>) => T
+
+import { ModalFC } from '../types'
+>ModalFC : any
+
+import { ThemeOutput } from './types'
+>ThemeOutput : any
+
+type AnyTheme = ThemeOutput<ModalFC, unknown>
+>AnyTheme : AnyTheme
+
+const ThemeContext = createContext<AnyTheme>({} as AnyTheme)
+>ThemeContext : Context<T>
+>createContext<AnyTheme>({} as AnyTheme) : Context<T>
+>createContext : <T>(defaultValue: T) => Context<T>
+>{} as AnyTheme : AnyTheme
+>{} : {}
+
+export const ThemeProvider = ThemeContext.Provider
+>ThemeProvider : any
+>ThemeContext.Provider : any
+>ThemeContext : Context<T>
+>Provider : any
+
+export function useTheme() {
+>useTheme : () => void
+}
+=== src/themes/index.ts ===
+
+export * from './context'
+export * from './types'
+=== src/themes/types.ts ===
+import { A11yAttributes, ModalFC, Refs, ReplaceVoid } from '../types'
+>A11yAttributes : any
+>ModalFC : any
+>Refs : any
+>ReplaceVoid : any
+
+export interface ThemeOutput<TModal extends ModalFC, TOptions = void> {
+  extend: (modal: ModalFC) => TModal
+>extend : (modal: ModalFC) => TModal
+>modal : ModalFC
+}
+=== src/types/index.ts ===
+
+export * from './shared'
+export * from './util'
+=== src/types/shared.ts ===
+import { AriaAttributes, FC, MutableRefObject, ReactNode } from 'react'
+>AriaAttributes : any
+>FC : any
+>MutableRefObject : any
+>ReactNode : any
+
+import { ChildfreeFC } from './util'
+>ChildfreeFC : any
+
+export type Refs = {
+>Refs : Refs
+}
+export interface LifecycleCallbacks {
+}
+export type ModalRenderer = ChildfreeFC<{ close: () => void }>
+>ModalRenderer : ModalRenderer
+>close : () => void
+
+export type A11yAttributes = { role: 'dialog' } & AriaAttributes
+>A11yAttributes : A11yAttributes
+>role : "dialog"
+
+export type ModalProps = {
+>ModalProps : LifecycleCallbacks
+
+} & LifecycleCallbacks
+export type ModalFC = FC<ModalProps>
+>ModalFC : ModalFC
+
+=== src/types/util.ts ===
+import { ReactElement } from 'react'
+>ReactElement : any
+
+/**
+ */
+export type ReplaceVoid<T> = T extends void
+>ReplaceVoid : ReplaceVoid<T>
+
+  ? Exclude<T | undefined, void> extends never
+    ? undefined
+    : Exclude<T | undefined, void>
+  : T
+export type ChildfreeFC<T = {}> = (props: T) => ReactElement<any, any> | null
+>ChildfreeFC : ChildfreeFC<T>
+>props : T
+

@@ -46,6 +46,29 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   K-dependence. The one text-only difference (unbywyd-postcss-color-extractor src/index.ts(108) TS5115: tttt's column is
   11, tsgo's 26) is not a divergence here. No repros.
 
+## Seed 20261109
+54 accepted, 50 byte-identical, 51 same (file, line, code), clean agreement 54/54, no K-dependence, no flips.
+- npm__react-above_modal_TS2339 (@react-above/modal 0.3.9, demo/index.tsx(14,15)): tsgo reports 4 TS2339 "Property
+  'Body'/'Surface' does not exist on type 'ModalFC'" that tttt misses (`createModal({theme})` returns a type whose
+  members come from a conditional/mapped type over `TModal extends ModalFC`; tttt resolves it to a type that has them).
+  Guess: constraint/instantiation of the generic return type `CreateModal<TModal, TOptions>` differs. The case fails on
+  the errors and types components. Flip: no. [open]
+- npm__bumblebee032_ng-feedback_TS2345 (@bumblebee032/ng-feedback 2.0.97, feedback-dialog.component.ts(249) 3 extra
+  TS2345/TS18046 "Argument of type 'unknown' is not assignable to parameter of type 'Rectangle'"): rxjs
+  `mouseDown.pipe(mergeMap((e: MouseEvent) => ... mouseMove.pipe(map(...), takeUntil(mouseUp))))` on `Observable<Event>`
+  then `.subscribe(rec => this.drawRectangle(rec))`: tttt infers `unknown` for the pipe's output. Guess: inference
+  through a callback whose parameter annotation (MouseEvent) is narrower than the source (Event) under bivariance, or an
+  overload choice of `pipe`. The cut-down case is non-strict and fails only the types component in the harness (the
+  errors component agrees there: a mismatch of the shape of the project, not reproduced as a diagnostic). Flip: no. [open]
+- Unreduced, non-flip (reduce.py drops project references): berget-ai/r8s packages/eneo (tsconfig.bench.json, composite
+  with `references` to packages/core): both report TS6059 "not under rootDir", tsgo at ../core/src/index.ts(1) naming
+  core/src/jsx-runtime.ts, tttt at src/index.tsx(1) naming core/src/index.ts. The same area as the TS6059 entries in
+  agents/bugs/harness.md (which root file/import gets the program error). With the plain tsconfig.json tsgo also reports
+  TS6305 at src/index.tsx(449) (output not built) that tttt doesn't. [open]
+- Odd: scripts/test.sh (valgrind, debug build) on the react-above case ends with "264 bytes possibly lost" in
+  worker_thread_join (load_pool.c:215) via program_drop, with --exit-on-first-error: a leak-check report, not a memory
+  error in the checker; not investigated. [triage]
+
 ## Seed 20261110
 - 59 accepted, 57 byte-identical, 57/59 same (file, line, code), clean agreement 58/59, no K-dependence (no varies).
 - **npm_ensnode_ensnode-sdk_TS2769** (seed 20261110, @ensnode/ensnode-sdk@1.16.0, namehash/ensnode at 566cab2 packages/ensnode-sdk/src/shared/currencies.ts(206); tsgo 0,
