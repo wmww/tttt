@@ -7,6 +7,8 @@ by tsgo and tttt, and every difference is a tttt bug (or a formatting-only one, 
   scripts/npmsample.py --seed S [-N 50]       # sample, setup, compare, clean: the whole batch
   scripts/npmsample.py sample --seed S [-n 2000]   # test/npmsample/S.candidates.jsonl (TS packages, GitHub repos)
   scripts/npmsample.py setup --seed S [-N 50]      # clone + install + bench config + tsgo trial, resumable
+        [--prefer-large] [--skip-monorepos]        # the trees listed first (precheck(): skips before any checkout),
+                                                   # largest first; workspaces skipped (opt-in, see npm_sampling.md)
   scripts/npmsample.py compare --seed S [--last] [-k CODE] [--keep]   # tttt at the defaults twice and --threads 1:
                                                    # any two differing is verdict `varies`, priority 1; matches deleted
   scripts/npmsample.py clean --seed S [--all] [--except NAME...]   # delete the clones compare matched (--all: all)
@@ -541,33 +543,106 @@ SPARSE_EXCLUDE = ('woff', 'woff2', 'ttf', 'otf', 'eot', 'png', 'jpg', 'jpeg', 'g
                   'blend', 'parquet', 'npy', 'onnx', 'pt', 'h5', 'csv', 'tsv', 'geojson', 'map')
 
 
-def clone(url, repo):
+def git_run(repo, *a, network=True):
     env = git_env()
-    # (Clone, sparse checkout and checkout in the sandbox: the clone's directory writable, the network on)
-    run = lambda *a: sb.run(['git', *a], repo, rw=[repo], network=True,  # noqa: E731
-                            env={k: v for k, v in env.items() if k.startswith('GIT_')}, timeout=900)
+    return sb.run(['git', *a], repo, rw=[repo], network=network,
+                  env={k: v for k, v in env.items() if k.startswith('GIT_')}, timeout=900)
+
+
+def clone_tree(url, repo):
+    """The repository's commit and trees only (no blobs, no checkout): what precheck() reads"""
+    env = git_env()
     parent = os.path.dirname(repo)
-    p = sb.run(['git', 'clone', '-q', '--depth', '1', '--single-branch', '--filter=blob:none', '--no-checkout', url,
-                repo], parent, rw=[parent], network=True, env={k: v for k, v in env.items() if k.startswith('GIT_')},
-               timeout=900)
+    return sb.run(['git', 'clone', '-q', '--depth', '1', '--single-branch', '--filter=blob:none', '--no-checkout', url,
+                   repo], parent, rw=[parent], network=True, env={k: v for k, v in env.items() if k.startswith('GIT_')},
+                  timeout=900)
+
+
+def checkout(repo):
+    """After clone_tree(): the sparse checkout (fonts, images, media left out), which fetches the blobs"""
+    p = git_run(repo, '-C', repo, 'sparse-checkout', 'set', '--no-cone', '/*', *[f'!*.{e}' for e in SPARSE_EXCLUDE])
     if p.returncode == 0:
-        p = run('-C', repo, 'sparse-checkout', 'set', '--no-cone', '/*', *[f'!*.{e}' for e in SPARSE_EXCLUDE])
-    if p.returncode == 0:
-        p = run('-C', repo, 'checkout', '-q')
+        p = git_run(repo, '-C', repo, 'checkout', '-q')
     return p
 
 
-def setup_one(seed, c):
+def is_ts_source(path):
+    f = path.rsplit('/', 1)[-1]
+    return f.endswith(TS_SOURCE) and '.d.' not in f
+
+
+def precheck(repo, directory):
+    """Before any checkout or install, from the tree listing alone (and the root package.json, one blob): a skip
+    reason (what setup_one() would find after the checkout: no tsconfig.json, fewer than 3 .ts files, the
+    package directory gone), or None; and what the listing says (ts files under the package directory, monorepo)"""
+    p = git_run(repo, '-C', repo, 'ls-tree', '-r', '--name-only', '-z', 'HEAD', network=False)
+    if p.returncode != 0:
+        return 'ls-tree: ' + (p.stderr.strip().splitlines() or [''])[-1][:200], {}
+    paths = [x for x in p.stdout.split('\0') if x]
+    d = os.path.normpath(directory).strip('/') if directory else ''
+    if d == '.':
+        d = ''
+    prefix = d + '/' if d else ''
+    if d.startswith('..') or (d and not any(x.startswith(prefix) for x in paths)):
+        return 'repository.directory gone', {}
+    names = set(paths)
+    info = {'ts_files': sum(1 for x in paths if x.startswith(prefix) and is_ts_source(x) and '/node_modules/' not in
+                            '/' + x)}
+    info['monorepo'] = 'pnpm-workspace.yaml' in names or 'lerna.json' in names or 'nx.json' in names
+    if 'package.json' in names and not info['monorepo']:
+        q = git_run(repo, '-C', repo, 'show', 'HEAD:package.json')
+        try:
+            info['monorepo'] = q.returncode == 0 and 'workspaces' in json.loads(q.stdout)
+        except (ValueError, TypeError):
+            pass
+    if prefix + 'tsconfig.json' not in names and 'tsconfig.json' not in names:
+        return 'no tsconfig.json', info
+    if info['ts_files'] < 3:
+        return 'fewer than 3 .ts files', info
+    return None, info
+
+
+def clone(url, repo):
+    p = clone_tree(url, repo)
+    return checkout(repo) if p.returncode == 0 else p
+
+
+def list_one(seed, c, skip_monorepos=False):
+    """The first stage of a candidate's setup: its trees cloned (no blobs, no checkout) and precheck()ed. A skip
+    record, or None and what the listing says (setup_one() then checks out the same clone)"""
+    rec = {k: c[k] for k in ('i', 'name', 'version', 'repo', 'directory')}
+    repo = os.path.join(NS, str(seed), repo_dirname(c))
+    if os.path.exists(os.path.join(repo, '.npmsample-installed')):
+        return None, {}
+    if os.path.exists(repo):
+        shutil.rmtree(repo)
+    p = clone_tree(c['repo'], repo)
+    if p.returncode != 0:
+        shutil.rmtree(repo, ignore_errors=True)
+        return {**rec, 'status': 'skip', 'reason': 'clone: ' + (p.stderr.strip().splitlines() or [''])[-1][:200]}, {}
+    reason, info = precheck(repo, c['directory'])
+    if not reason and skip_monorepos and info.get('monorepo'):
+        reason = 'monorepo (--skip-monorepos)'
+    if reason:
+        shutil.rmtree(repo, ignore_errors=True)
+        return {**rec, **info, 'status': 'skip', 'reason': reason, 'precheck': True}, info
+    return None, info
+
+
+def setup_one(seed, c, listed=None, skip_monorepos=False):
+    """`listed`: list_one()'s result if it ran already"""
     rec = {k: c[k] for k in ('i', 'name', 'version', 'repo', 'directory')}
     repo = os.path.join(NS, str(seed), repo_dirname(c))
     marker = os.path.join(repo, '.npmsample-installed')
+    skip, info = listed if listed else list_one(seed, c, skip_monorepos)
+    if skip:
+        return skip
+    rec.update(info)
     if not os.path.exists(marker):
-        if os.path.exists(repo):
-            shutil.rmtree(repo)
-        p = clone(c['repo'], repo)
+        p = checkout(repo)
         if p.returncode != 0:
             shutil.rmtree(repo, ignore_errors=True)
-            return {**rec, 'status': 'skip', 'reason': 'clone: ' + (p.stderr.strip().splitlines() or [''])[-1][:200]}
+            return {**rec, 'status': 'skip', 'reason': 'checkout: ' + (p.stderr.strip().splitlines() or [''])[-1][:200]}
     rec['commit'] = sb.run(['git', '-C', repo, 'rev-parse', 'HEAD'], repo, ro=[repo]).stdout.strip()
     pkg = os.path.normpath(os.path.join(repo, c['directory'])) if c['directory'] else repo
     if not os.path.isdir(pkg) or not pkg.startswith(repo):
@@ -640,7 +715,7 @@ def write_tsv(seed, n):
     return acc
 
 
-def cmd_setup(seed, n, jobs):
+def cmd_setup(seed, n, jobs, prefer_large=False, skip_monorepos=False):
     cands = read_jsonl(files(seed, 'candidates.jsonl'))
     if not cands:
         sys.exit(f'no candidates: run `scripts/npmsample.py sample --seed {seed}` first')
@@ -670,7 +745,7 @@ def cmd_setup(seed, n, jobs):
             print(f'setup: stopping, {free:.0f} GB free (< {MIN_FREE_GB})', flush=True)
             return None
         try:
-            r = setup_one(seed, c)
+            r = setup_one(seed, c, listed.get(c['i']), skip_monorepos)
         except Exception as e:  # noqa: BLE001 (one candidate's surprise is its skip reason)
             r = {k: c[k] for k in ('i', 'name', 'version', 'repo', 'directory')}
             r.update(status='skip', reason=f'setup error: {type(e).__name__}: {str(e)[:200]}')
@@ -681,10 +756,37 @@ def cmd_setup(seed, n, jobs):
             with open(log, 'a') as f:
                 f.write(json.dumps(r) + '\n')
         return r
-    if accepted < n and todo:
+    listed = {}
+
+    def record(r):
+        with lock:
+            with open(log, 'a') as f:
+                f.write(json.dumps(r) + '\n')
+
+    def list_chunk(chunk):
+        # (--prefer-large: the chunk's trees listed first, cheaply, its skips recorded; the rest set up largest
+        # first by their .ts file count. Never by what tsgo says: clean projects and erroring ones alike)
+        with concurrent.futures.ThreadPoolExecutor(jobs * 2) as ex:
+            got = list(ex.map(lambda c: list_one(seed, c, skip_monorepos), chunk))
+        kept = []
+        for c, (skip, info) in zip(chunk, got):
+            if skip:
+                record(skip)
+                print(f'  {c["i"]:4} {c["name"][:40]:40} skip: {skip["reason"][:150]}', flush=True)
+            else:
+                listed[c['i']] = (None, info)
+                kept.append(c)
+        return sorted(kept, key=lambda c: -listed[c['i']][1].get('ts_files', 0))
+
+    while accepted < n and todo and not stop.is_set():
+        if prefer_large:
+            size = max(20, 4 * (n - accepted))
+            batch, todo = list_chunk(todo[:size]), todo[size:]
+        else:
+            batch, todo = todo, []
         with concurrent.futures.ThreadPoolExecutor(jobs) as ex:
-            futs = [ex.submit(one, c) for c in todo]
-            for c, fu in zip(todo, futs):
+            futs = [ex.submit(one, c) for c in batch]
+            for c, fu in zip(batch, futs):
                 r = fu.result()
                 if r is None:
                     continue
@@ -698,6 +800,12 @@ def cmd_setup(seed, n, jobs):
                     for f2 in futs:
                         f2.cancel()
                     break
+    # (Listed by --prefer-large but never set up, the batch being full: their tree-only clones go, no record says
+    # anything about them, a resume lists them again)
+    recorded = {r['i'] for r in read_jsonl(log)}
+    for c in cands:
+        if c['i'] in listed and c['i'] not in recorded:
+            shutil.rmtree(os.path.join(NS, str(seed), repo_dirname(c)), ignore_errors=True)
     # (The package managers' caches only matter while installing: the installed files are copies or hardlinks)
     shutil.rmtree(seed_cache(seed), ignore_errors=True)
     os.remove(pid_file)
@@ -904,6 +1012,11 @@ def main():
                     "matching projects, no clean)")
     ap.add_argument('--all', action='store_true', help='clean: the diverging clones too')
     ap.add_argument('--except', dest='keep_names', nargs='*', default=[], help='clean: also keep these clones')
+    ap.add_argument('--prefer-large', action='store_true', help='setup: list the next candidates\' trees first and '
+                    'set up the ones with the most .ts files first (bigger projects, never filtered on tsgo\'s verdict)')
+    ap.add_argument('--skip-monorepos', action='store_true', help='setup: skip a candidate whose repository is a '
+                    'workspace (package.json workspaces, pnpm-workspace.yaml, lerna.json, nx.json) before installing '
+                    '(npm_sampling.md: it cuts the trial rejects, and a third of the accepted projects too)')
     args = ap.parse_args()
     c = args.command
     if c in ('setup', 'compare', None) and not args.last:
@@ -912,7 +1025,7 @@ def main():
     if c == 'sample' or (c is None and not os.path.exists(files(args.seed, 'candidates.jsonl'))):
         cmd_sample(args.seed, args.n)
     if c in ('setup', None):
-        if not cmd_setup(args.seed, args.N, args.j) and c is None:
+        if not cmd_setup(args.seed, args.N, args.j, args.prefer_large, args.skip_monorepos) and c is None:
             sys.exit('setup: fewer than N accepted (sample more names with -n, then rerun)')
     if c in ('compare', None):
         cmd_compare(args.seed, args.j, not args.keep, args.last, args.k)

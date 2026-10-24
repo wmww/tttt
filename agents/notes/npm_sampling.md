@@ -84,3 +84,26 @@ You'll need tsgo 7.1-beta (`npm i typescript@7.1.0-beta`), the tttt binary, Type
   corepack's verified managers (.cache/pm/corepack) and ts6 are shared and kept. The shared .cache/pm/{npm,
   pnpm-store,yarn1,bun,berry} of the first runs grew to 7 GB with four finders; they go once no finder runs the old
   script.
+
+## Prechecks before any checkout, --prefer-large, --skip-monorepos (2026-10-24, corF)
+setup now clones each candidate's trees only (`--depth 1 --filter=blob:none --no-checkout`). precheck() reads the
+`git ls-tree -r` listing, plus the root package.json (one blob), and takes the checkout-free skips before any
+checkout or install: no tsconfig.json in the package directory or the root, fewer than 3 .ts sources under the
+package directory, `repository.directory` gone. Those records carry `"precheck": true`, plus `ts_files` and
+`monorepo` (package.json `workspaces`, pnpm-workspace.yaml, lerna.json or nx.json). Accepted records carry them too.
+- **Before** (all 21 recorded setup.jsonl files, 3129 candidates): 1151 accepted; 622 clone failures (private or gone
+  repositories, cheap); 868 (28%) skipped only after a full sparse checkout (517 no tsconfig, 274 fewer than 3 .ts,
+  77 directory gone); 341 rejected after install by the tsgo trial (errors > 100 or TS2307 > 5 or no own files);
+  ~50 other.
+- **After**, on a stratified sample of 80 recorded candidates of old seeds (`probe.py`, the clones deleted): all
+  30 checkout-skips were reproduced by precheck() with the same reason, and none of 25 accepted ones was skipped.
+  So the 28% now skip after a tree listing (30 candidates in ~4 s at -j 8) instead of a checkout. Installs aren't
+  cut by this: these candidates were never installed.
+- **The installs that are wasted are the trial rejects** (~23% of installs). Workspaces predict them only weakly. In
+  two samples, 16/25 and 25/40 trial-rejected candidates were monorepos, against 3/25 and 14/40 accepted ones.
+  `--skip-monorepos` would cut roughly 60% of the trial rejects and 12-35% of the good projects, and monorepos
+  are real code tttt must handle, so it is opt-in. Not the default.
+- `--prefer-large`: setup lists the next max(20, 4×(N−accepted)) candidates' trees, records their skips, and sets up
+  the rest in decreasing `ts_files` order, chunk by chunk. tsgo's verdict is never used, so clean projects and
+  erroring ones are kept alike. Listed-but-unused tree clones are deleted at the end and listed again on a resume.
+  It biases the sample toward bigger projects (more code per install); say so in a batch's results.
