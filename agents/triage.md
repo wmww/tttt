@@ -224,3 +224,8 @@ intersection's property symbol to bugs/type_core.md.
   (chakra-ui's `as` prop, As an imported alias of React's ElementType) to `number` gives tttt a second line "Type
   'undefined' is not assignable to type 'number'." that tsgo doesn't print (header line identical). Text only, seen in
   a probe while fixing the 0xsonic TS2590. [text]
+- Instantiated indexed access through an optional property (corB, 2026-10-24): `type I<C extends { g?: string[][] }>
+  = C["g"][number]` instantiated with C = `{ g?: string[][] }` is `unknown` in tsc (getIndexedAccessType without an
+  access node: nothing found on `string[][] | undefined`, unknownType) and likely `string[]` in tttt
+  (ty_access_without_node skips nullable members; only the constraint path uses ACCESS_NULLABLE_FAILS since the
+  seal-hub TS2344 fix). Unverified on real code. [open]

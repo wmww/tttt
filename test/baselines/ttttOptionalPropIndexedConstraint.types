@@ -1,0 +1,38 @@
+//// [test/cases/ttttOptionalPropIndexedConstraint.ts] ////
+
+=== ttttOptionalPropIndexedConstraint.ts ===
+// The constraint of `C["groups"][number]` with `groups?: X[]` is nothing: undefined in `X[] | undefined` has no index
+// signature (tsc's getIndexedAccessTypeOrUndefined without an access node), so G isn't known to be an array (TS2344)
+type Config = { groups?: any[] };
+>Config : Config
+>groups : any[] | undefined
+
+type Need<G extends unknown[]> = G;
+>Need : G
+
+type A<C extends Config, G extends C["groups"][number]> = Need<G>;
+>A : G
+
+type Config2 = { groups: any[] };
+>Config2 : Config2
+>groups : any[]
+
+type B<C extends Config2, G extends C["groups"][number]> = Need<G>;
+>B : G
+
+type Config3 = { groups?: string[][] };
+>Config3 : Config3
+>groups : string[][] | undefined
+
+type D<C extends Config3, G extends C["groups"][number]> = Need<G>;
+>D : G
+
+type E<C extends Config, K extends number & keyof C["groups"], G extends C["groups"][K]> = Need<G>;
+>E : G
+
+function f<C extends Config3>(x: C["groups"][number]) { const y: number = x; }
+>f : <C extends Config3>(x: C["groups"][number]) => void
+>x : C["groups"][number]
+>y : number
+>x : C["groups"][number]
+

@@ -1,0 +1,46 @@
+ttttOptionalPropIndexedConstraint.ts(5,36): error TS2536: Type 'number' cannot be used to index type 'C["groups"]'.
+ttttOptionalPropIndexedConstraint.ts(5,64): error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+  Type 'C["groups"][number]' is not assignable to type 'unknown[]'.
+ttttOptionalPropIndexedConstraint.ts(9,37): error TS2536: Type 'number' cannot be used to index type 'C["groups"]'.
+ttttOptionalPropIndexedConstraint.ts(9,65): error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+  Type 'C["groups"][number]' is not assignable to type 'unknown[]'.
+ttttOptionalPropIndexedConstraint.ts(10,97): error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+  Type 'C["groups"][K]' is not assignable to type 'unknown[]'.
+    Type 'C["groups"][number & keyof C["groups"]]' is not assignable to type 'unknown[]'.
+      Type 'C["groups"][number]' is not assignable to type 'unknown[]'.
+ttttOptionalPropIndexedConstraint.ts(11,34): error TS2536: Type 'number' cannot be used to index type 'C["groups"]'.
+ttttOptionalPropIndexedConstraint.ts(11,63): error TS2322: Type 'C["groups"][number]' is not assignable to type 'number'.
+
+
+==== ttttOptionalPropIndexedConstraint.ts (7 errors) ====
+    // The constraint of `C["groups"][number]` with `groups?: X[]` is nothing: undefined in `X[] | undefined` has no index
+    // signature (tsc's getIndexedAccessTypeOrUndefined without an access node), so G isn't known to be an array (TS2344)
+    type Config = { groups?: any[] };
+    type Need<G extends unknown[]> = G;
+    type A<C extends Config, G extends C["groups"][number]> = Need<G>;
+                                       ~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'number' cannot be used to index type 'C["groups"]'.
+                                                                   ~
+!!! error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+!!! error TS2344:   Type 'C["groups"][number]' is not assignable to type 'unknown[]'.
+    type Config2 = { groups: any[] };
+    type B<C extends Config2, G extends C["groups"][number]> = Need<G>;
+    type Config3 = { groups?: string[][] };
+    type D<C extends Config3, G extends C["groups"][number]> = Need<G>;
+                                        ~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'number' cannot be used to index type 'C["groups"]'.
+                                                                    ~
+!!! error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+!!! error TS2344:   Type 'C["groups"][number]' is not assignable to type 'unknown[]'.
+    type E<C extends Config, K extends number & keyof C["groups"], G extends C["groups"][K]> = Need<G>;
+                                                                                                    ~
+!!! error TS2344: Type 'G' does not satisfy the constraint 'unknown[]'.
+!!! error TS2344:   Type 'C["groups"][K]' is not assignable to type 'unknown[]'.
+!!! error TS2344:     Type 'C["groups"][number & keyof C["groups"]]' is not assignable to type 'unknown[]'.
+!!! error TS2344:       Type 'C["groups"][number]' is not assignable to type 'unknown[]'.
+    function f<C extends Config3>(x: C["groups"][number]) { const y: number = x; }
+                                     ~~~~~~~~~~~~~~~~~~~
+!!! error TS2536: Type 'number' cannot be used to index type 'C["groups"]'.
+                                                                  ~
+!!! error TS2322: Type 'C["groups"][number]' is not assignable to type 'number'.
+    

@@ -1,0 +1,70 @@
+//// [test/cases/ttttOptionalPropIndexedConstraint.ts] ////
+
+=== ttttOptionalPropIndexedConstraint.ts ===
+// The constraint of `C["groups"][number]` with `groups?: X[]` is nothing: undefined in `X[] | undefined` has no index
+// signature (tsc's getIndexedAccessTypeOrUndefined without an access node), so G isn't known to be an array (TS2344)
+type Config = { groups?: any[] };
+>Config : Symbol(Config, Decl(ttttOptionalPropIndexedConstraint.ts, 0, 0))
+>groups : Symbol(groups, Decl(ttttOptionalPropIndexedConstraint.ts, 2, 15))
+
+type Need<G extends unknown[]> = G;
+>Need : Symbol(Need, Decl(ttttOptionalPropIndexedConstraint.ts, 2, 33))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 3, 10))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 3, 10))
+
+type A<C extends Config, G extends C["groups"][number]> = Need<G>;
+>A : Symbol(A, Decl(ttttOptionalPropIndexedConstraint.ts, 3, 35))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 4, 7))
+>Config : Symbol(Config, Decl(ttttOptionalPropIndexedConstraint.ts, 0, 0))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 4, 24))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 4, 7))
+>Need : Symbol(Need, Decl(ttttOptionalPropIndexedConstraint.ts, 2, 33))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 4, 24))
+
+type Config2 = { groups: any[] };
+>Config2 : Symbol(Config2, Decl(ttttOptionalPropIndexedConstraint.ts, 4, 66))
+>groups : Symbol(groups, Decl(ttttOptionalPropIndexedConstraint.ts, 5, 16))
+
+type B<C extends Config2, G extends C["groups"][number]> = Need<G>;
+>B : Symbol(B, Decl(ttttOptionalPropIndexedConstraint.ts, 5, 33))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 6, 7))
+>Config2 : Symbol(Config2, Decl(ttttOptionalPropIndexedConstraint.ts, 4, 66))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 6, 25))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 6, 7))
+>Need : Symbol(Need, Decl(ttttOptionalPropIndexedConstraint.ts, 2, 33))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 6, 25))
+
+type Config3 = { groups?: string[][] };
+>Config3 : Symbol(Config3, Decl(ttttOptionalPropIndexedConstraint.ts, 6, 67))
+>groups : Symbol(groups, Decl(ttttOptionalPropIndexedConstraint.ts, 7, 16))
+
+type D<C extends Config3, G extends C["groups"][number]> = Need<G>;
+>D : Symbol(D, Decl(ttttOptionalPropIndexedConstraint.ts, 7, 39))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 8, 7))
+>Config3 : Symbol(Config3, Decl(ttttOptionalPropIndexedConstraint.ts, 6, 67))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 8, 25))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 8, 7))
+>Need : Symbol(Need, Decl(ttttOptionalPropIndexedConstraint.ts, 2, 33))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 8, 25))
+
+type E<C extends Config, K extends number & keyof C["groups"], G extends C["groups"][K]> = Need<G>;
+>E : Symbol(E, Decl(ttttOptionalPropIndexedConstraint.ts, 8, 67))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 7))
+>Config : Symbol(Config, Decl(ttttOptionalPropIndexedConstraint.ts, 0, 0))
+>K : Symbol(K, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 24))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 7))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 62))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 7))
+>K : Symbol(K, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 24))
+>Need : Symbol(Need, Decl(ttttOptionalPropIndexedConstraint.ts, 2, 33))
+>G : Symbol(G, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 62))
+
+function f<C extends Config3>(x: C["groups"][number]) { const y: number = x; }
+>f : Symbol(f, Decl(ttttOptionalPropIndexedConstraint.ts, 9, 99))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 10, 11))
+>Config3 : Symbol(Config3, Decl(ttttOptionalPropIndexedConstraint.ts, 6, 67))
+>x : Symbol(x, Decl(ttttOptionalPropIndexedConstraint.ts, 10, 30))
+>C : Symbol(C, Decl(ttttOptionalPropIndexedConstraint.ts, 10, 11))
+>y : Symbol(y, Decl(ttttOptionalPropIndexedConstraint.ts, 10, 61))
+>x : Symbol(x, Decl(ttttOptionalPropIndexedConstraint.ts, 10, 30))
+

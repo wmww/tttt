@@ -4400,7 +4400,7 @@ static Ty const* indexed_or_null_flagged(Checker* me, Ty const* object, Ty const
     ) {
         return ty_indexed_include_undefined(me, object, index, include_undefined);
     }
-    return ty_access_without_node_include_undefined(me, object, index, include_undefined);
+    return ty_access_for_constraint(me, object, index, include_undefined);
 }
 
 static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index) {

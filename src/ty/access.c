@@ -230,6 +230,10 @@ enum {
     // getPropertyTypeForIndexType does (reporting TS2538 where there's an access node). Not for lookups by name (tsc's
     // getPropertyOfType and getApplicableIndexInfoForName: a late-bound name only looks for symbol index signatures)
     ACCESS_SYMBOL_STRING = 1 << 1,
+    // A union member that is null or undefined has nothing to index, the access is nothing (tsc's
+    // getPropertyTypeForIndexType on the union: what a constraint of `C["groups"][number]` with `groups?: X[]` is). Without
+    // it they are skipped, which is how an expression reads them (its TS18048 is the caller's)
+    ACCESS_NULLABLE_FAILS = 1 << 3,
 };
 
 // ACCESS_INCLUDE_UNDEFINED: what an index signature or the rest of a tuple gives includes undefined (noUncheckedIndexedAccess, tsc's
@@ -431,7 +435,10 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
         u64 padded_tuples = 0; // (bit i: parts[i] is a too short tuple's undefined)
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
-            if (member->flags & TYF_NULLABLE) continue;
+            if (member->flags & TYF_NULLABLE) {
+                if (flags & ACCESS_NULLABLE_FAILS) missing = true;
+                continue;
+            }
             // (Nor an intersection that is never once apparent, `undefined & M` with M an object: tsc's
             // createUnionOrIntersectionProperty skips members whose apparent type is never)
             if (member->kind == TY_INTERSECTION && (ty_reduced(me, ty_apparent_type(me, member))->flags & TYF_NEVER)) continue;
@@ -636,6 +643,13 @@ Ty const* ty_access_own_named_prop(Checker* me, Ty const* object, Atom const* na
 
 Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
     return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | ACCESS_SYMBOL_STRING | (include_undefined ? ACCESS_INCLUDE_UNDEFINED : 0));
+}
+
+// What the constraint of `object[index]` is when it isn't deferred (tsc's getIndexedAccessTypeOrUndefined without an
+// access node): a nullable union member makes it nothing, null
+Ty const* ty_access_for_constraint(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
+    return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | ACCESS_SYMBOL_STRING | ACCESS_NULLABLE_FAILS |
+        (include_undefined ? ACCESS_INCLUDE_UNDEFINED : 0));
 }
 
 Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index) {

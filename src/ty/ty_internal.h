@@ -370,6 +370,7 @@ bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty); // tsc's isEmptyAn
 // string index signature when nothing else applies
 Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
+Ty const* ty_access_for_constraint(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
 bool ty_symbol_reads_string_index(Checker* me, Ty const* object, Ty const* index); // access.c, TS2538
 Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool reading); // access.c
 Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
