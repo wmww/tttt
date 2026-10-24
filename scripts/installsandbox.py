@@ -45,7 +45,7 @@ HOME = os.path.realpath(os.path.expanduser('~'))
 # The package-manager versions an install may use, by major (corepack downloads them, signature-checked). Berry 2 and
 # 3 lockfiles install with 4 (non-immutably when it rewrites them)
 ALLOWED = {
-    'pnpm': {7: '7.33.7', 8: '8.15.9', 9: '9.15.9', 10: '10.30.3', 11: '11.24.0'},
+    'pnpm': {7: '7.33.7', 8: '8.15.9', 9: '9.15.9', 10: '10.30.3', 11: '11.24.0', 12: '12.15.0'},
     'yarn': {1: '1.22.22', 2: '4.11.0', 3: '4.11.0', 4: '4.11.0'},
 }
 LOCKFILES = ('pnpm-lock.yaml', 'yarn.lock', 'bun.lock', 'bun.lockb', 'package-lock.json', 'npm-shrinkwrap.json')

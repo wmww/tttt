@@ -370,3 +370,25 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   `parent: never`). tttt's is_instantiated_generic_param read the any that param_type_at() gives for an element of a
   non-tuple rest, so Parameters<> came out never. Test npm_Zoo-Code-Org_Zoo-Code_TS2322; repro of the rule:
   ttttRestOfInferredParametersNotCallback. (claimed: fixF) [flip] [fixed 5f3c08628]
+
+## Named projects (the human, 2026-10-25)
+
+n8n-io/n8n at 3c7a553dc, one sandboxed pnpm install (the repo wants pnpm >= 12.4.2: installsandbox.py's ALLOWED got
+12.15.0), the workspace packages unbuilt (tsgo itself reports 15.5k TS2307 in packages/cli). Not flips, not
+K-dependent.
+- n8n (packages/cli, bench: tsBuildInfoFile -> null): tsgo 28064 / tttt 28071 at f81ef487c.
+  - 60 TS2345 in tsgo that tttt reported as TS2741/TS2739 at the same sites (agent-config.service.ts:68,
+    `composeJsonConfig(entity, ...)` with `type ProjectAgent = Agent & { projectId: string }`). tsc's
+    getApparentTypeOfIntersectionType instantiates a class (or generic or non-thisless interface) member with `this`, a
+    new intersection without the alias, so the missing property's line names `Agent & { projectId: string; }`, which
+    doesn't repeat the head's `ProjectAgent`, and the head stays (reportRelationError's chainArgsMatch). tttt's line
+    named the alias and dropped the head. relate.c apparent_intersection() now drops the alias for such members.
+    Test test/cases/rw_n8n_TS2345.ts. [fixed PENDING]
+  - +TS7031 x7 (tttt only): agent-execution.service.test.ts:1911 ('allowed', x2), agent-background-job.service.test.ts:380
+    ('expected', x5). [open]
+- n8n-nodes-base (packages/nodes-base, bench: composite -> false, declaration true; tsBuildInfoFile -> null): tsgo 7138 /
+  tttt 7138, same (file, line, code), 8 text-only lines:
+  - TS2684 x3 (Airtop agent.utils.ts:15, run.operation.ts:175, methods/index.ts:46): tsgo prints `body?: IDataObject`
+    in the 'this' context's signature, tttt `body?: any`. [open]
+  - TS2353 x5 (FormTriggerV2.node.test.ts:308, 437, 540, 597, 638): where the long target type is truncated, tsgo
+    `{ [EventEmitter.captureRejectionSymbol]?: ...; ... 105 more ...`, tttt names `off?: ...` instead. [open]

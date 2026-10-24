@@ -1,0 +1,108 @@
+//// [test/cases/rw_n8n_TS2345.ts] ////
+
+=== rw_n8n_TS2345.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), e.g. src/modules/agents/agent-config.service.ts:68
+// An aliased intersection with a class or interface member is named without its alias inside the relation (tsc's
+// getApparentTypeOfIntersectionType gives the members `this`): the missing property's line doesn't repeat the head's
+// types, so an argument keeps its TS2345 head. With anonymous members only, the alias stays and TS2741 is the head.
+declare const WithBase: any;
+>WithBase : any
+
+class Agent extends WithBase { schema: string = ""; projectId: string | null = null; }
+>Agent : Agent
+>WithBase : any
+>schema : string
+>"" : ""
+>projectId : string | null
+
+class Plain { schema: string = ""; projectId: string | null = null; }
+>Plain : Plain
+>schema : string
+>"" : ""
+>projectId : string | null
+
+interface Iface { schema: string }
+>schema : string
+
+interface T1 { id: string; schema: string }
+>id : string
+>schema : string
+
+declare function f(a: T1): void;
+>f : (a: T1) => void
+>a : T1
+
+declare function g(a: Pick<Agent, "id" | "schema">): void;
+>g : (a: Pick<Agent, "id" | "schema">) => void
+>a : Pick<Agent, "id" | "schema">
+
+type ProjectScoped<T extends Pick<Agent, "projectId">> = T & { projectId: string };
+>ProjectScoped : ProjectScoped<T>
+>projectId : string
+
+type ProjectAgent = ProjectScoped<Agent>;
+>ProjectAgent : ProjectAgent
+
+declare const pa: ProjectAgent;
+>pa : ProjectAgent
+
+f(pa);
+>f(pa) : void
+>f : (a: T1) => void
+>pa : ProjectAgent
+
+g(pa);
+>g(pa) : void
+>g : (a: Pick<Agent, "id" | "schema">) => void
+>pa : ProjectAgent
+
+type PB = Plain & { projectId: string };
+>PB : PB
+>projectId : string
+
+declare const pb: PB;
+>pb : PB
+
+f(pb);
+>f(pb) : void
+>f : (a: T1) => void
+>pb : PB
+
+type PI = Iface & { projectId: string };
+>PI : PI
+>projectId : string
+
+declare const pi: PI;
+>pi : PI
+
+f(pi);
+>f(pi) : void
+>f : (a: T1) => void
+>pi : PI
+
+type PD = { schema: string } & { projectId: string };
+>PD : PD
+>schema : string
+>projectId : string
+
+declare const pd: PD;
+>pd : PD
+
+f(pd);
+>f(pd) : void
+>f : (a: T1) => void
+>pd : PD
+
+declare const unaliased: Agent & { projectId: string };
+>unaliased : Agent & { projectId: string; }
+>projectId : string
+
+f(unaliased);
+>f(unaliased) : void
+>f : (a: T1) => void
+>unaliased : Agent & { projectId: string; }
+
+const x: T1 = pb;
+>x : T1
+>pb : PB
+

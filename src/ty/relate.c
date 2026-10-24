@@ -856,17 +856,29 @@ static Ty const* normalized_reference(Checker* me, Ty const* ty) {
     return ty;
 }
 
+// Whether tsc's getTypeWithThisArgument makes a new type of an intersection member: a reference to a class or
+// interface (given the `this` argument): a class, a generic interface or one that isn't thisless, not a thisless
+// interface, a tuple nor an anonymous object
+static bool takes_this_argument(Checker* me, Ty const* ty) {
+    return ty_is_tsc_reference(me, ty->kind == TY_REFERENCE ? ty->reference.target : ty);
+}
+
 // The apparent type of an intersection as tsc's getApparentTypeOfIntersectionType makes it: each member's apparent
-// type (`Number & { a: 1 }`), a new intersection without alias. Only for messages, the relation looks at the members
+// type (`Number & { a: 1 }`), a new intersection without alias. So is one with a class or interface member, which
+// getTypeWithThisArgument instantiates with the intersection as `this` (`type PA = Agent & { p: string }` is named
+// `Agent & { p: string; }` inside the relation's messages, so an argument's TS2741 keeps its TS2345 head). Only for
+// messages, the relation looks at the members
 static Ty const* apparent_intersection(Checker* me, Ty const* ty) {
     if (ty->kind != TY_INTERSECTION) return ty;
     TyList types = ty->composite.types;
-    bool primitive = false;
+    bool primitive = false, with_this = false;
     // (Or a type parameter: `T & {}` with T unconstrained is `{}`)
     for (u32 i = 0; i < types.len && !primitive; i++) {
         primitive = !(types.data[i]->flags & (TYF_OBJECT | TYF_TYPE_PARAM | TYF_DEFERRED)) || types.data[i]->kind == TY_TYPE_PARAM;
+        with_this |= takes_this_argument(me, types.data[i]);
     }
-    if (!primitive) return ty;
+    if (!primitive && !with_this) return ty;
+    if (!primitive) return ty->alias ? ty_intersection(me, types.data, types.len, nullptr, (TyList){0}) : ty;
     Ty const** apparent = malloc(sizeof(Ty const*) * types.len);
     panic_if(!apparent, "out of memory");
     for (u32 i = 0; i < types.len; i++) apparent[i] = ty_apparent_type(me, types.data[i]);

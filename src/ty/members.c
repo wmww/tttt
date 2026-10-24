@@ -2855,6 +2855,11 @@ static bool is_tsc_reference(Checker* me, Ty const* declared, u32 depth) {
     return false;
 }
 
+bool ty_is_tsc_reference(Checker* me, Ty const* declared) {
+    return declared->kind == TY_DECLARED && (declared->declared.kind == TY_DECLARED_INTERFACE ||
+        declared->declared.kind == TY_DECLARED_CLASS_INSTANCE) && is_tsc_reference(me, declared, 0);
+}
+
 Ty const* ty_single_base_for_non_augmenting_subtype(Checker* me, Ty const* ty) {
     Ty const* declared = ty->kind == TY_REFERENCE && !ty->reference.deferred ? ty->reference.target : ty;
     if (declared->kind != TY_DECLARED || declared->declared.merged_value) return nullptr;

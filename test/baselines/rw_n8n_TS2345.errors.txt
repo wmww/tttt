@@ -1,0 +1,67 @@
+rw_n8n_TS2345.ts(15,3): error TS2345: Argument of type 'ProjectAgent' is not assignable to parameter of type 'T1'.
+  Property 'id' is missing in type 'Agent & { projectId: string; }' but required in type 'T1'.
+rw_n8n_TS2345.ts(16,3): error TS2345: Argument of type 'ProjectAgent' is not assignable to parameter of type 'Pick<Agent, "id" | "schema">'.
+  Property 'id' is missing in type 'Agent & { projectId: string; }' but required in type 'Pick<Agent, "id" | "schema">'.
+rw_n8n_TS2345.ts(19,3): error TS2345: Argument of type 'PB' is not assignable to parameter of type 'T1'.
+  Property 'id' is missing in type 'Plain & { projectId: string; }' but required in type 'T1'.
+rw_n8n_TS2345.ts(22,3): error TS2741: Property 'id' is missing in type 'PI' but required in type 'T1'.
+rw_n8n_TS2345.ts(25,3): error TS2741: Property 'id' is missing in type 'PD' but required in type 'T1'.
+rw_n8n_TS2345.ts(27,3): error TS2741: Property 'id' is missing in type 'Agent & { projectId: string; }' but required in type 'T1'.
+rw_n8n_TS2345.ts(28,7): error TS2322: Type 'PB' is not assignable to type 'T1'.
+  Property 'id' is missing in type 'Plain & { projectId: string; }' but required in type 'T1'.
+
+
+==== rw_n8n_TS2345.ts (7 errors) ====
+    // origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), e.g. src/modules/agents/agent-config.service.ts:68
+    // An aliased intersection with a class or interface member is named without its alias inside the relation (tsc's
+    // getApparentTypeOfIntersectionType gives the members `this`): the missing property's line doesn't repeat the head's
+    // types, so an argument keeps its TS2345 head. With anonymous members only, the alias stays and TS2741 is the head.
+    declare const WithBase: any;
+    class Agent extends WithBase { schema: string = ""; projectId: string | null = null; }
+    class Plain { schema: string = ""; projectId: string | null = null; }
+    interface Iface { schema: string }
+    interface T1 { id: string; schema: string }
+    declare function f(a: T1): void;
+    declare function g(a: Pick<Agent, "id" | "schema">): void;
+    type ProjectScoped<T extends Pick<Agent, "projectId">> = T & { projectId: string };
+    type ProjectAgent = ProjectScoped<Agent>;
+    declare const pa: ProjectAgent;
+    f(pa);
+      ~~
+!!! error TS2345: Argument of type 'ProjectAgent' is not assignable to parameter of type 'T1'.
+!!! error TS2345:   Property 'id' is missing in type 'Agent & { projectId: string; }' but required in type 'T1'.
+!!! related TS2728 rw_n8n_TS2345.ts:9:16: 'id' is declared here.
+    g(pa);
+      ~~
+!!! error TS2345: Argument of type 'ProjectAgent' is not assignable to parameter of type 'Pick<Agent, "id" | "schema">'.
+!!! error TS2345:   Property 'id' is missing in type 'Agent & { projectId: string; }' but required in type 'Pick<Agent, "id" | "schema">'.
+    type PB = Plain & { projectId: string };
+    declare const pb: PB;
+    f(pb);
+      ~~
+!!! error TS2345: Argument of type 'PB' is not assignable to parameter of type 'T1'.
+!!! error TS2345:   Property 'id' is missing in type 'Plain & { projectId: string; }' but required in type 'T1'.
+!!! related TS2728 rw_n8n_TS2345.ts:9:16: 'id' is declared here.
+    type PI = Iface & { projectId: string };
+    declare const pi: PI;
+    f(pi);
+      ~~
+!!! error TS2741: Property 'id' is missing in type 'PI' but required in type 'T1'.
+!!! related TS2728 rw_n8n_TS2345.ts:9:16: 'id' is declared here.
+    type PD = { schema: string } & { projectId: string };
+    declare const pd: PD;
+    f(pd);
+      ~~
+!!! error TS2741: Property 'id' is missing in type 'PD' but required in type 'T1'.
+!!! related TS2728 rw_n8n_TS2345.ts:9:16: 'id' is declared here.
+    declare const unaliased: Agent & { projectId: string };
+    f(unaliased);
+      ~~~~~~~~~
+!!! error TS2741: Property 'id' is missing in type 'Agent & { projectId: string; }' but required in type 'T1'.
+!!! related TS2728 rw_n8n_TS2345.ts:9:16: 'id' is declared here.
+    const x: T1 = pb;
+          ~
+!!! error TS2322: Type 'PB' is not assignable to type 'T1'.
+!!! error TS2322:   Property 'id' is missing in type 'Plain & { projectId: string; }' but required in type 'T1'.
+!!! related TS2728 rw_n8n_TS2345.ts:9:16: 'id' is declared here.
+    

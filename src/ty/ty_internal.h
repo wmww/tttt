@@ -373,6 +373,9 @@ Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object
 Ty const* ty_access_for_constraint(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
 bool ty_symbol_reads_string_index(Checker* me, Ty const* object, Ty const* index); // access.c, TS2538
 Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool reading); // access.c
+// Whether tsc makes a class or interface's declared type a TypeReference: a class, a generic one, an interface that
+// isn't thisless (members.c)
+bool ty_is_tsc_reference(Checker* me, Ty const* declared);
 Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
 
 // A generic function nested in a literal argument whose contextual type wants a single non-generic signature (tsc's

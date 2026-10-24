@@ -1,0 +1,119 @@
+//// [test/cases/rw_n8n_TS2345.ts] ////
+
+=== rw_n8n_TS2345.ts ===
+// origin: n8n-io/n8n at 3c7a553dc packages/cli (named projects, seed 20269001), e.g. src/modules/agents/agent-config.service.ts:68
+// An aliased intersection with a class or interface member is named without its alias inside the relation (tsc's
+// getApparentTypeOfIntersectionType gives the members `this`): the missing property's line doesn't repeat the head's
+// types, so an argument keeps its TS2345 head. With anonymous members only, the alias stays and TS2741 is the head.
+declare const WithBase: any;
+>WithBase : Symbol(WithBase, Decl(rw_n8n_TS2345.ts, 4, 13))
+
+class Agent extends WithBase { schema: string = ""; projectId: string | null = null; }
+>Agent : Symbol(Agent, Decl(rw_n8n_TS2345.ts, 4, 28))
+>WithBase : Symbol(WithBase, Decl(rw_n8n_TS2345.ts, 4, 13))
+>schema : Symbol(Agent.schema, Decl(rw_n8n_TS2345.ts, 5, 30))
+>projectId : Symbol(Agent.projectId, Decl(rw_n8n_TS2345.ts, 5, 51))
+
+class Plain { schema: string = ""; projectId: string | null = null; }
+>Plain : Symbol(Plain, Decl(rw_n8n_TS2345.ts, 5, 86))
+>schema : Symbol(Plain.schema, Decl(rw_n8n_TS2345.ts, 6, 13))
+>projectId : Symbol(Plain.projectId, Decl(rw_n8n_TS2345.ts, 6, 34))
+
+interface Iface { schema: string }
+>Iface : Symbol(Iface, Decl(rw_n8n_TS2345.ts, 6, 69))
+>schema : Symbol(Iface.schema, Decl(rw_n8n_TS2345.ts, 7, 17))
+
+interface T1 { id: string; schema: string }
+>T1 : Symbol(T1, Decl(rw_n8n_TS2345.ts, 7, 34))
+>id : Symbol(T1.id, Decl(rw_n8n_TS2345.ts, 8, 14))
+>schema : Symbol(T1.schema, Decl(rw_n8n_TS2345.ts, 8, 26))
+
+declare function f(a: T1): void;
+>f : Symbol(f, Decl(rw_n8n_TS2345.ts, 8, 43))
+>a : Symbol(a, Decl(rw_n8n_TS2345.ts, 9, 19))
+>T1 : Symbol(T1, Decl(rw_n8n_TS2345.ts, 7, 34))
+
+declare function g(a: Pick<Agent, "id" | "schema">): void;
+>g : Symbol(g, Decl(rw_n8n_TS2345.ts, 9, 32))
+>a : Symbol(a, Decl(rw_n8n_TS2345.ts, 10, 19))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Agent : Symbol(Agent, Decl(rw_n8n_TS2345.ts, 4, 28))
+
+type ProjectScoped<T extends Pick<Agent, "projectId">> = T & { projectId: string };
+>ProjectScoped : Symbol(ProjectScoped, Decl(rw_n8n_TS2345.ts, 10, 58))
+>T : Symbol(T, Decl(rw_n8n_TS2345.ts, 11, 19))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>Agent : Symbol(Agent, Decl(rw_n8n_TS2345.ts, 4, 28))
+>T : Symbol(T, Decl(rw_n8n_TS2345.ts, 11, 19))
+>projectId : Symbol(projectId, Decl(rw_n8n_TS2345.ts, 11, 62))
+
+type ProjectAgent = ProjectScoped<Agent>;
+>ProjectAgent : Symbol(ProjectAgent, Decl(rw_n8n_TS2345.ts, 11, 83))
+>ProjectScoped : Symbol(ProjectScoped, Decl(rw_n8n_TS2345.ts, 10, 58))
+>Agent : Symbol(Agent, Decl(rw_n8n_TS2345.ts, 4, 28))
+
+declare const pa: ProjectAgent;
+>pa : Symbol(pa, Decl(rw_n8n_TS2345.ts, 13, 13))
+>ProjectAgent : Symbol(ProjectAgent, Decl(rw_n8n_TS2345.ts, 11, 83))
+
+f(pa);
+>f : Symbol(f, Decl(rw_n8n_TS2345.ts, 8, 43))
+>pa : Symbol(pa, Decl(rw_n8n_TS2345.ts, 13, 13))
+
+g(pa);
+>g : Symbol(g, Decl(rw_n8n_TS2345.ts, 9, 32))
+>pa : Symbol(pa, Decl(rw_n8n_TS2345.ts, 13, 13))
+
+type PB = Plain & { projectId: string };
+>PB : Symbol(PB, Decl(rw_n8n_TS2345.ts, 15, 6))
+>Plain : Symbol(Plain, Decl(rw_n8n_TS2345.ts, 5, 86))
+>projectId : Symbol(projectId, Decl(rw_n8n_TS2345.ts, 16, 19))
+
+declare const pb: PB;
+>pb : Symbol(pb, Decl(rw_n8n_TS2345.ts, 17, 13))
+>PB : Symbol(PB, Decl(rw_n8n_TS2345.ts, 15, 6))
+
+f(pb);
+>f : Symbol(f, Decl(rw_n8n_TS2345.ts, 8, 43))
+>pb : Symbol(pb, Decl(rw_n8n_TS2345.ts, 17, 13))
+
+type PI = Iface & { projectId: string };
+>PI : Symbol(PI, Decl(rw_n8n_TS2345.ts, 18, 6))
+>Iface : Symbol(Iface, Decl(rw_n8n_TS2345.ts, 6, 69))
+>projectId : Symbol(projectId, Decl(rw_n8n_TS2345.ts, 19, 19))
+
+declare const pi: PI;
+>pi : Symbol(pi, Decl(rw_n8n_TS2345.ts, 20, 13))
+>PI : Symbol(PI, Decl(rw_n8n_TS2345.ts, 18, 6))
+
+f(pi);
+>f : Symbol(f, Decl(rw_n8n_TS2345.ts, 8, 43))
+>pi : Symbol(pi, Decl(rw_n8n_TS2345.ts, 20, 13))
+
+type PD = { schema: string } & { projectId: string };
+>PD : Symbol(PD, Decl(rw_n8n_TS2345.ts, 21, 6))
+>schema : Symbol(schema, Decl(rw_n8n_TS2345.ts, 22, 11))
+>projectId : Symbol(projectId, Decl(rw_n8n_TS2345.ts, 22, 32))
+
+declare const pd: PD;
+>pd : Symbol(pd, Decl(rw_n8n_TS2345.ts, 23, 13))
+>PD : Symbol(PD, Decl(rw_n8n_TS2345.ts, 21, 6))
+
+f(pd);
+>f : Symbol(f, Decl(rw_n8n_TS2345.ts, 8, 43))
+>pd : Symbol(pd, Decl(rw_n8n_TS2345.ts, 23, 13))
+
+declare const unaliased: Agent & { projectId: string };
+>unaliased : Symbol(unaliased, Decl(rw_n8n_TS2345.ts, 25, 13))
+>Agent : Symbol(Agent, Decl(rw_n8n_TS2345.ts, 4, 28))
+>projectId : Symbol(projectId, Decl(rw_n8n_TS2345.ts, 25, 34))
+
+f(unaliased);
+>f : Symbol(f, Decl(rw_n8n_TS2345.ts, 8, 43))
+>unaliased : Symbol(unaliased, Decl(rw_n8n_TS2345.ts, 25, 13))
+
+const x: T1 = pb;
+>x : Symbol(x, Decl(rw_n8n_TS2345.ts, 27, 5))
+>T1 : Symbol(T1, Decl(rw_n8n_TS2345.ts, 7, 34))
+>pb : Symbol(pb, Decl(rw_n8n_TS2345.ts, 17, 13))
+
