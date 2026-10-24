@@ -1,0 +1,91 @@
+//// [test/cases/ttttContextualThisNotInSignature.ts] ////
+
+=== vue.d.ts ===
+export interface Vue {}
+type Accessors<T> = { [K in keyof T]: (() => T[K]) | ComputedOptions<T[K]> };
+>Accessors : Accessors<T>
+
+type ThisTypedComponentOptionsWithRecordProps<V extends Vue, Data, Methods, Computed, Props> =
+>ThisTypedComponentOptionsWithRecordProps : ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>
+
+  ComponentOptions<V, DataDef<Data, Props, V>, Methods, Computed, RecordPropsDefinition<Props>, Props> &
+  ThisType<CombinedVueInstance<V, Data, Methods, Computed, Readonly<Props>>>;
+type DefaultMethods<V> = { [key: string]: (this: V, ...args: any[]) => any };
+>DefaultMethods : DefaultMethods<V>
+>key : string
+>this : V
+>args : any[]
+
+interface ComponentOptions<V extends Vue, Data = DefaultData<V>, Methods = DefaultMethods<V>, Computed = DefaultComputed, PropsDef = PropsDefinition<DefaultProps>, Props = DefaultProps> {
+  props?: PropsDef; computed?: Accessors<Computed>; methods?: Methods;
+>props : PropsDef | undefined
+>computed : Accessors<Computed> | undefined
+>methods : Methods | undefined
+}
+type RecordPropsDefinition<T> = { [K in keyof T]: PropValidator<T[K]> };
+>RecordPropsDefinition : RecordPropsDefinition<T>
+
+interface ComputedOptions<T> { get?(): T; }
+>get : (() => T) | undefined
+
+type CombinedVueInstance<Instance extends Vue, Data, Methods, Computed, Props> = Data & Methods & Computed & Props & Instance;
+>CombinedVueInstance : CombinedVueInstance<Instance, Data, Methods, Computed, Props>
+
+interface VueConstructor<V extends Vue = Vue> {
+  extend<Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>;
+>extend : { <Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>; (options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>; }
+>options : ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props> | undefined
+
+  extend(options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>;
+>extend : { <Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>; (options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>; }
+>options : ComponentOptions<V, DefaultData<V_1>, DefaultMethods<V>, DefaultComputed, PropsDefinition<DefaultProps>, DefaultProps> | undefined
+}
+export declare const Vue: VueConstructor;
+>Vue : VueConstructor<Vue>
+
+=== a.ts ===
+import { Vue } from "./vue";
+>Vue : import("./vue").VueConstructor<Vue>
+
+declare const model: string;
+>model : string
+
+Vue.extend({
+>Vue.extend({  props: { [model]: Boolean },  computed: { $visible: { get() { return (this as any)[model]; } } },  methods: { m(type: string) { this.$visible = false; } },}) : error
+>Vue.extend : { <Data, Methods, Computed, Props>(options?: import("./vue").ThisTypedComponentOptionsWithRecordProps<Vue, Data, Methods, Computed, Props> | undefined): ExtendedVue<Vue, Data, Methods, Computed, Props>; (options?: import("./vue").ComponentOptions<Vue, DefaultData<V>, import("./vue").DefaultMethods<Vue>, DefaultComputed, PropsDefinition<DefaultProps>, DefaultProps> | undefined): ExtendedVue<Vue, {}, {}, {}, {}>; }
+>Vue : import("./vue").VueConstructor<Vue>
+>extend : { <Data, Methods, Computed, Props>(options?: import("./vue").ThisTypedComponentOptionsWithRecordProps<Vue, Data, Methods, Computed, Props> | undefined): ExtendedVue<Vue, Data, Methods, Computed, Props>; (options?: import("./vue").ComponentOptions<Vue, DefaultData<V>, import("./vue").DefaultMethods<Vue>, DefaultComputed, PropsDefinition<DefaultProps>, DefaultProps> | undefined): ExtendedVue<Vue, {}, {}, {}, {}>; }
+>{  props: { [model]: Boolean },  computed: { $visible: { get() { return (this as any)[model]; } } },  methods: { m(type: string) { this.$visible = false; } },} : { props: { [model]: BooleanConstructor; }; computed: { $visible: { get(): any; }; }; methods: { m(type: string): void; }; }
+
+  props: { [model]: Boolean },
+>props : { [model]: BooleanConstructor; }
+>{ [model]: Boolean } : { [model]: BooleanConstructor; }
+>[model] : BooleanConstructor
+>model : string
+>Boolean : BooleanConstructor
+
+  computed: { $visible: { get() { return (this as any)[model]; } } },
+>computed : { $visible: { get(): any; }; }
+>{ $visible: { get() { return (this as any)[model]; } } } : { $visible: { get(): any; }; }
+>$visible : { get(): any; }
+>{ get() { return (this as any)[model]; } } : { get(): any; }
+>get : () => any
+>(this as any)[model] : any
+>(this as any) : any
+>this as any : any
+>this : import("./vue").CombinedVueInstance<Vue, unknown, { m(type: string): void; }, { $visible: any; }, Readonly<{ [x: string]: any; }>>
+>model : string
+
+  methods: { m(type: string) { this.$visible = false; } },
+>methods : { m(type: string): void; }
+>{ m(type: string) { this.$visible = false; } } : { m(type: string): void; }
+>m : (type: string) => void
+>type : string
+>this.$visible = false : false
+>this.$visible : any
+>this : import("./vue").CombinedVueInstance<Vue, unknown, { m(type: string): void; }, { $visible: any; }, Readonly<{ [x: string]: any; }>>
+>$visible : any
+>false : false
+
+});
+

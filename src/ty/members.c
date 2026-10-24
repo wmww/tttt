@@ -6138,9 +6138,13 @@ static void function_signature_params(Checker* me, Signature const* sig, SigReso
         count--;
     } else if (function->is_expression && ty_function_is_context_sensitive(function)) {
         // A function expression without one takes its contextual signature's `this` (tsc's
-        // assignContextualParameterTypes gives the signature a thisParameter)
+        // assignContextualParameterTypes gives the signature a thisParameter), the first check's only: one checked
+        // first without a contextual signature has none for good (assignNonContextualParameterTypes), whatever a later
+        // candidate's says to its body's `this` (KEY_CONTEXT_THIS: Vue 2's `extend`, the DefaultMethods overload
+        // tried after the settled one first checked the method)
+        Signature const* assigned = ty_function_assigned_contextual_signature(me, function);
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
-        r->this_type = intern_get(&my links, this_key, 2);
+        r->this_type = assigned ? intern_get(&my links, this_key, 2) : nullptr;
     }
     r->min_args = min_args;
     r->params = params;
