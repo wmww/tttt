@@ -117,6 +117,21 @@ static bool overloads_free_params(Checker* me, Ty const* target, TyList* out) {
     return known;
 }
 
+// The function whose body asking for the signature's return type would infer it from (it, or the signature it is an
+// instance of, has none known yet and no annotation), null if none
+static FunctionImpl const* signature_body_inferred(Checker* me, Signature const* sig) {
+    for (u32 depth = 0; sig && depth < 64; depth++) {
+        if (sig_return_known(me, sig)) return nullptr;
+        Signature const* target = sig_target(me, sig);
+        if (!target) {
+            FunctionImpl const* function = sig->function;
+            return function && !function->is_type && !function->ret_explicit && function->has_body ? function : nullptr;
+        }
+        sig = target;
+    }
+    return nullptr;
+}
+
 static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk, u32 depth) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !(walk->collect && tsc_could_contain_type_variables(ty, 0))) return false;
     if (ty->kind == TY_TYPE_PARAM) {
@@ -293,7 +308,23 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                         Ty const* constraint = ty_param_constraint(me, sig_rs->type_params.data[j]);
                         found = constraint && mentions_type_variables(me, constraint, walk, depth + 1);
                     }
-                    found = found || mentions_type_variables(me, signature_return_type(me, sig), walk, depth + 1);
+                    // A return type still to be inferred from a body isn't inferred from here: it may mention any type
+                    // parameter around the function, those are what it mentions (tsc's permissive and restrictive
+                    // instantiations map the outer type parameters and instantiate lazily, a relation to `Function`
+                    // never asks for the return type. Inferring it here, below a call's argument check, took a method's
+                    // contextual `this` before the call's inference was under way: better-all's
+                    // `T[K] extends Function ? K : never` over the tasks literal)
+                    FunctionImpl const* inferred = found || !walk->collect ? nullptr : signature_body_inferred(me, sig);
+                    if (inferred) {
+                        TyList outer = ty_function_outer_type_params(me, inferred);
+                        TyMapper const* mapper = sig_target(me, sig) ? sig_mapper(me, sig) : nullptr;
+                        for (u32 j = 0; !found && j < outer.len; j++) {
+                            Ty const* param = mapper ? ty_instantiate(me, outer.data[j], mapper) : outer.data[j];
+                            found = mentions_type_variables(me, param, walk, depth + 1);
+                        }
+                    } else {
+                        found = found || mentions_type_variables(me, signature_return_type(me, sig), walk, depth + 1);
+                    }
                     // (A type predicate's type too: `(ast: AST): ast is Extract<AST, { _tag: T }>` mentions T)
                     TyPredicate const* predicate = found ? nullptr : signature_predicate(me, sig);
                     found = found || (predicate && predicate->type && mentions_type_variables(me, predicate->type, walk, depth + 1));

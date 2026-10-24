@@ -195,7 +195,7 @@ for flips); a separate file so the three boxes never conflict.
   (tsconfig.json; api reaches core's file): spurious TS2322 at packages/core/src/services/runtime/SandboxProvisioner.ts:852
   "Type 'Promise<unknown> | Promise<ReturnType<T[string]>>' is not assignable to type 'Promise<void>'", in `await
   all({ async reachable() {...}, async load() { ... this.$.reachable ... } })` (better-all's `all`, a `this`-typed
-  task object). tsgo 0, tttt 1 each, so a flip. Not K-dependent. No repro (corF reduces it). [flip] [open]
+  task object). tsgo 0, tttt 1 each, so a flip. Not K-dependent. Repro test/cases/npm_marimo-team_marimohub_TS2322.ts (by hand from reduce.py's cut). (claimed: corF) [flip] [open]
 - Large seed 20261402, deepagent-ltd/deepagent-code@dev (commit 87403bac1), packages/app (tsconfig.json): spurious
   TS2322 at src/utils/persist.ts:643 and :644 "Type 'T | Accessor<(readonly unknown[] & Exclude<T,
   NotWrappable>)[number]>' is not assignable to type 'T'", in the returned tuple `[state, setState, init, ...]` of a

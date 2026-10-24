@@ -1,0 +1,83 @@
+//// [test/cases/npm_marimo-team_marimohub_TS2322.ts] ////
+
+=== npm_marimo-team_marimohub_TS2322.ts ===
+// origin: npm marimo-team/marimohub@main (2139c26c50ad) https://github.com/marimo-team/marimohub packages/core/tsconfig.bench.json large seed 20261402
+// flip: yes
+// better-all's `all(tasks)`: the `as` clause's `T[K] extends Function` over the tasks literal (checking the argument)
+// walked the methods' types for the type variables they mention and inferred `load`'s return type, from a class
+// method's body where the literal's methods aren't closed (the class's `this`). Inferring it there took `load`'s
+// contextual `this` (the ThisType marker) before the call's inference was under way: `this.$.reachable` stayed
+// `Promise<unknown> | Promise<ReturnType<T[string]>>`, not assignable to `() => Promise<void>`'s return
+declare function all<T extends Record<string, any>>(tasks: T & ThisType<{
+>all : Symbol(all, Decl(npm_marimo-team_marimohub_TS2322.ts, 0, 0))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>tasks : Symbol(tasks, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 52))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>ThisType : Symbol(ThisType, Decl(lib.es5.d.ts, --, --))
+
+    $: { [K in keyof T]: ReturnType<T[K]> extends Promise<infer R> ? Promise<R> : Promise<ReturnType<T[K]>> };
+>$ : Symbol($, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 73))
+>K : Symbol(K, Decl(npm_marimo-team_marimohub_TS2322.ts, 8, 10))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>K : Symbol(K, Decl(npm_marimo-team_marimohub_TS2322.ts, 8, 10))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>R : Symbol(R, Decl(npm_marimo-team_marimohub_TS2322.ts, 8, 63))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>R : Symbol(R, Decl(npm_marimo-team_marimohub_TS2322.ts, 8, 63))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>K : Symbol(K, Decl(npm_marimo-team_marimohub_TS2322.ts, 8, 10))
+
+}> & {
+    [K in keyof T as T[K] extends Function ? K : never]: T[K];
+>K : Symbol(K, Decl(npm_marimo-team_marimohub_TS2322.ts, 10, 5))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>K : Symbol(K, Decl(npm_marimo-team_marimohub_TS2322.ts, 10, 5))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>K : Symbol(K, Decl(npm_marimo-team_marimohub_TS2322.ts, 10, 5))
+>T : Symbol(T, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 21))
+>K : Symbol(K, Decl(npm_marimo-team_marimohub_TS2322.ts, 10, 5))
+
+}): void;
+declare const launchStrategy: any;
+>launchStrategy : Symbol(launchStrategy, Decl(npm_marimo-team_marimohub_TS2322.ts, 12, 13))
+
+export class SandboxProvisioner {
+>SandboxProvisioner : Symbol(SandboxProvisioner, Decl(npm_marimo-team_marimohub_TS2322.ts, 12, 34))
+
+	prepareInto() {
+>prepareInto : Symbol(SandboxProvisioner.prepareInto, Decl(npm_marimo-team_marimohub_TS2322.ts, 13, 33))
+
+		const loadWorkspace = (waitUntilReady: () => Promise<void>) => launchStrategy;
+>loadWorkspace : Symbol(loadWorkspace, Decl(npm_marimo-team_marimohub_TS2322.ts, 15, 7))
+>waitUntilReady : Symbol(waitUntilReady, Decl(npm_marimo-team_marimohub_TS2322.ts, 15, 25))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>launchStrategy : Symbol(launchStrategy, Decl(npm_marimo-team_marimohub_TS2322.ts, 12, 13))
+
+		all({
+>all : Symbol(all, Decl(npm_marimo-team_marimohub_TS2322.ts, 0, 0))
+
+			async reachable() {},
+>reachable : Symbol(reachable, Decl(npm_marimo-team_marimohub_TS2322.ts, 16, 7))
+
+			async load() {
+>load : Symbol(load, Decl(npm_marimo-team_marimohub_TS2322.ts, 17, 24))
+
+				return loadWorkspace(() => this.$.reachable);
+>loadWorkspace : Symbol(loadWorkspace, Decl(npm_marimo-team_marimohub_TS2322.ts, 15, 7))
+>this.$.reachable : Symbol(reachable, Decl(npm_marimo-team_marimohub_TS2322.ts, 16, 7))
+>this.$ : Symbol($, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 73))
+>this : Symbol(__type, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 72))
+>$ : Symbol($, Decl(npm_marimo-team_marimohub_TS2322.ts, 7, 73))
+>reachable : Symbol(reachable, Decl(npm_marimo-team_marimohub_TS2322.ts, 16, 7))
+
+			},
+		});
+	}
+}
+

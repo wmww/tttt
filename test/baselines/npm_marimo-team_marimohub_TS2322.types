@@ -1,0 +1,61 @@
+//// [test/cases/npm_marimo-team_marimohub_TS2322.ts] ////
+
+=== npm_marimo-team_marimohub_TS2322.ts ===
+// origin: npm marimo-team/marimohub@main (2139c26c50ad) https://github.com/marimo-team/marimohub packages/core/tsconfig.bench.json large seed 20261402
+// flip: yes
+// better-all's `all(tasks)`: the `as` clause's `T[K] extends Function` over the tasks literal (checking the argument)
+// walked the methods' types for the type variables they mention and inferred `load`'s return type, from a class
+// method's body where the literal's methods aren't closed (the class's `this`). Inferring it there took `load`'s
+// contextual `this` (the ThisType marker) before the call's inference was under way: `this.$.reachable` stayed
+// `Promise<unknown> | Promise<ReturnType<T[string]>>`, not assignable to `() => Promise<void>`'s return
+declare function all<T extends Record<string, any>>(tasks: T & ThisType<{
+>all : <T extends Record<string, any>>(tasks: T & ThisType<{ $: { [K in keyof T]: ReturnType<T[K]> extends Promise<infer R> ? Promise<R> : Promise<ReturnType<T[K]>>; }; }> & { [K in keyof T as T[K] extends Function ? K : never]: T[K]; }) => void
+>tasks : T & ThisType<{ $: { [K in keyof T]: ReturnType<T[K]> extends Promise<infer R> ? Promise<R> : Promise<ReturnType<T[K]>>; }; }> & { [K in keyof T as T[K] extends Function ? K : never]: T[K]; }
+
+    $: { [K in keyof T]: ReturnType<T[K]> extends Promise<infer R> ? Promise<R> : Promise<ReturnType<T[K]>> };
+>$ : { [K in keyof T]: ReturnType<T[K]> extends Promise<infer R> ? Promise<R> : Promise<ReturnType<T[K]>>; }
+
+}> & {
+    [K in keyof T as T[K] extends Function ? K : never]: T[K];
+}): void;
+declare const launchStrategy: any;
+>launchStrategy : any
+
+export class SandboxProvisioner {
+>SandboxProvisioner : SandboxProvisioner
+
+	prepareInto() {
+>prepareInto : () => void
+
+		const loadWorkspace = (waitUntilReady: () => Promise<void>) => launchStrategy;
+>loadWorkspace : (waitUntilReady: () => Promise<void>) => any
+>(waitUntilReady: () => Promise<void>) => launchStrategy : (waitUntilReady: () => Promise<void>) => any
+>waitUntilReady : () => Promise<void>
+>launchStrategy : any
+
+		all({
+>all({			async reachable() {},			async load() {				return loadWorkspace(() => this.$.reachable);			},		}) : void
+>all : <T extends Record<string, any>>(tasks: T & ThisType<{ $: { [K in keyof T]: ReturnType<T[K]> extends Promise<infer R> ? Promise<R> : Promise<ReturnType<T[K]>>; }; }> & { [K in keyof T as T[K] extends Function ? K : never]: T[K]; }) => void
+>{			async reachable() {},			async load() {				return loadWorkspace(() => this.$.reachable);			},		} : { reachable(): Promise<void>; load(): Promise<any>; }
+
+			async reachable() {},
+>reachable : () => Promise<void>
+
+			async load() {
+>load : () => Promise<any>
+
+				return loadWorkspace(() => this.$.reachable);
+>loadWorkspace(() => this.$.reachable) : any
+>loadWorkspace : (waitUntilReady: () => Promise<void>) => any
+>() => this.$.reachable : () => Promise<void>
+>this.$.reachable : Promise<void>
+>this.$ : { reachable: Promise<void>; load: Promise<any>; }
+>this : { $: { reachable: Promise<void>; load: Promise<any>; }; }
+>$ : { reachable: Promise<void>; load: Promise<any>; }
+>reachable : Promise<void>
+
+			},
+		});
+	}
+}
+
