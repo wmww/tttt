@@ -133,7 +133,7 @@ for flips); a separate file so the three boxes never conflict.
   alias_instance, ty_alias_body_mapped_instance and ty_realias (the last two silently skipped realiasing past 36 arguments), and
   the 32-entry caps on type parameters (MergedTypeParams, now 63: the arity memo's 6 bits), lowered type arguments
   (lower_type_args/ty_alias_args_filled: arena past MAX_TYPE_ARGS) and explicit call/JSX/instantiation-expression type arguments
-  (truncated before). Repro of the rest: ttttManyTypeArguments (40 parameters). [crash] [fixed PENDING]
+  (truncated before). Repro of the rest: ttttManyTypeArguments (40 parameters). [crash] [fixed e0ed0046b]
 - Seed 20261212, cfdude/mcp-namecheap (mcp-namecheap@1.0.0): spurious TS2883 "The inferred type of '(Missing)'
   cannot be named without a reference to 'Server'..." in a `// @ts-nocheck` file under declaration: true. tsgo
   reports no diagnostics for a nocheck file, declaration diagnostics included, and tttt's declaration walk reports
