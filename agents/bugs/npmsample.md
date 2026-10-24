@@ -313,7 +313,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   another path (probe_eager_bases -> a reference's members re-entered, members_reentered_unguarded, reported as the
   limit), never a 100-deep chain, so no member of Pseudo becomes the error type and `ss` gets `Pseudo | Root`. Matching
   it means tttt's instantiation sequence reaching tsgo's depth-100 point on the same type (the order members, bases
-  and conditional types are instantiated in), not a local rule. Repro test/cases/rw_vue_TS7006.ts (fails). [design]
+  and conditional types are instantiated in), not a local rule. Repro test/cases/rw_vue_TS7006.ts (fails). (claimed: det3) [design]
 - ag-sockets@14.0.4 (Agamnentzar/ag-sockets, tsconfig.bench.json, src/serverSocket.ts:149, reduced to a 20-line case): tsgo reports TS2345 when a `import * as ws from 'ws'` (an `export =` class merged with a namespace, @types/ws) is used as a type, `socket: ws`, and a `Server<T extends WebSocket>` callback's `client: T` is passed to it (the type is the module's namespace type whose `on(): this` returns are incompatible with `this`); tttt reports nothing (tsgo 19, tttt 18 errors). `test/cases/npm_ag-sockets_TS2345.ts`. [open]
 ## Seed 20261042
 
