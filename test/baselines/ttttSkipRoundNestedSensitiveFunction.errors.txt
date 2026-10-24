@@ -1,0 +1,42 @@
+ttttSkipRoundNestedSensitiveFunction.ts(15,25): error TS2695: Left side of comma operator is unused and has no side effects.
+ttttSkipRoundNestedSensitiveFunction.ts(18,14): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type '((x: never) => void) | undefined' is not assignable to parameter of type '((x: string | number) => void) | undefined'.
+      Type '(x: never) => void' is not assignable to type '(x: string | number) => void'.
+        Types of parameters 'x' and 'x' are incompatible.
+          Type 'string | number' is not assignable to type 'never'.
+            Type 'string' is not assignable to type 'never'.
+
+
+==== ttttSkipRoundNestedSensitiveFunction.ts (2 errors) ====
+    // A round that leaves out the context-sensitive arguments (tsc's CheckMode.SkipContextSensitive) also leaves out a
+    // context-sensitive function inside an argument that isn't one itself (`o && ((x) => ...)`): an overload that fails
+    // on another argument doesn't type it for good. Without a context-sensitive argument there is no such round, and the
+    // first overload types it (effect's Channel.catchIf: the refinement overload, then the predicate one)
+    declare const c: {
+        <E, EB extends E>(e: E, refinement: (e: E) => e is EB, f: (x: EB) => void, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void;
+        <E>(e: E, predicate: (e: E) => boolean, f: (x: E) => void, orElse?: ((x: E) => void) | undefined): void;
+    };
+    declare const c2: {
+        <E, EB extends E>(e: E, refinement: (e: E) => e is EB, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void;
+        <E>(e: E, predicate: (e: E) => boolean, orElse?: ((x: E) => void) | undefined): void;
+    };
+    function g<E>(e: E, p: (e: E) => boolean, o?: (e: E) => void) {
+        c(e, p, (x) => {}, o && ((x) => o(x)));
+        c(e, p, (x) => {}, (0, (x) => o!(x)));
+                            ~
+!!! error TS2695: Left side of comma operator is unused and has no side effects.
+    }
+    function h(e: string | number, p: (e: string | number) => boolean, o?: (e: string | number) => void) {
+        c2(e, p, o && ((x) => o(x)));
+                 ~~~~~~~~~~~~~~~~~~
+!!! error TS2769: No overload matches this call.
+!!! error TS2769:   The last overload gave the following error.
+!!! error TS2769:     Argument of type '((x: never) => void) | undefined' is not assignable to parameter of type '((x: string | number) => void) | undefined'.
+!!! error TS2769:       Type '(x: never) => void' is not assignable to type '(x: string | number) => void'.
+!!! error TS2769:         Types of parameters 'x' and 'x' are incompatible.
+!!! error TS2769:           Type 'string | number' is not assignable to type 'never'.
+!!! error TS2769:             Type 'string' is not assignable to type 'never'.
+!!! related TS2771 ttttSkipRoundNestedSensitiveFunction.ts:11:5: The last overload is declared here.
+    }
+    

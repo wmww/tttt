@@ -1,0 +1,126 @@
+//// [test/cases/ttttSkipRoundNestedSensitiveFunction.ts] ////
+
+=== ttttSkipRoundNestedSensitiveFunction.ts ===
+// A round that leaves out the context-sensitive arguments (tsc's CheckMode.SkipContextSensitive) also leaves out a
+// context-sensitive function inside an argument that isn't one itself (`o && ((x) => ...)`): an overload that fails
+// on another argument doesn't type it for good. Without a context-sensitive argument there is no such round, and the
+// first overload types it (effect's Channel.catchIf: the refinement overload, then the predicate one)
+declare const c: {
+>c : Symbol(c, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 4, 13))
+
+    <E, EB extends E>(e: E, refinement: (e: E) => e is EB, f: (x: EB) => void, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void;
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 5))
+>EB : Symbol(EB, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 7))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 5))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 22))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 5))
+>refinement : Symbol(refinement, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 27))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 41))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 5))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 41))
+>EB : Symbol(EB, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 7))
+>f : Symbol(f, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 58))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 63))
+>EB : Symbol(EB, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 7))
+>orElse : Symbol(orElse, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 78))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 90))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 5))
+>EB : Symbol(EB, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 5, 7))
+
+    <E>(e: E, predicate: (e: E) => boolean, f: (x: E) => void, orElse?: ((x: E) => void) | undefined): void;
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 5))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 8))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 5))
+>predicate : Symbol(predicate, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 13))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 26))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 5))
+>f : Symbol(f, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 43))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 48))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 5))
+>orElse : Symbol(orElse, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 62))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 74))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 6, 5))
+
+};
+declare const c2: {
+>c2 : Symbol(c2, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 8, 13))
+
+    <E, EB extends E>(e: E, refinement: (e: E) => e is EB, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void;
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 5))
+>EB : Symbol(EB, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 7))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 5))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 22))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 5))
+>refinement : Symbol(refinement, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 27))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 41))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 5))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 41))
+>EB : Symbol(EB, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 7))
+>orElse : Symbol(orElse, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 58))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 70))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 5))
+>EB : Symbol(EB, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 9, 7))
+
+    <E>(e: E, predicate: (e: E) => boolean, orElse?: ((x: E) => void) | undefined): void;
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 5))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 8))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 5))
+>predicate : Symbol(predicate, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 13))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 26))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 5))
+>orElse : Symbol(orElse, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 43))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 55))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 10, 5))
+
+};
+function g<E>(e: E, p: (e: E) => boolean, o?: (e: E) => void) {
+>g : Symbol(g, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 11, 2))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 11))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 14))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 11))
+>p : Symbol(p, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 19))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 24))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 11))
+>o : Symbol(o, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 41))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 47))
+>E : Symbol(E, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 11))
+
+    c(e, p, (x) => {}, o && ((x) => o(x)));
+>c : Symbol(c, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 4, 13))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 14))
+>p : Symbol(p, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 19))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 13, 13))
+>o : Symbol(o, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 41))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 13, 30))
+>o : Symbol(o, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 41))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 13, 30))
+
+    c(e, p, (x) => {}, (0, (x) => o!(x)));
+>c : Symbol(c, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 4, 13))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 14))
+>p : Symbol(p, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 19))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 14, 13))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 14, 28))
+>o : Symbol(o, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 12, 41))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 14, 28))
+}
+function h(e: string | number, p: (e: string | number) => boolean, o?: (e: string | number) => void) {
+>h : Symbol(h, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 15, 1))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 11))
+>p : Symbol(p, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 30))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 35))
+>o : Symbol(o, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 66))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 72))
+
+    c2(e, p, o && ((x) => o(x)));
+>c2 : Symbol(c2, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 8, 13))
+>e : Symbol(e, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 11))
+>p : Symbol(p, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 30))
+>o : Symbol(o, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 66))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 17, 20))
+>o : Symbol(o, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 16, 66))
+>x : Symbol(x, Decl(ttttSkipRoundNestedSensitiveFunction.ts, 17, 20))
+}
+

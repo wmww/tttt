@@ -1,0 +1,111 @@
+//// [test/cases/ttttSkipRoundNestedSensitiveFunction.ts] ////
+
+=== ttttSkipRoundNestedSensitiveFunction.ts ===
+// A round that leaves out the context-sensitive arguments (tsc's CheckMode.SkipContextSensitive) also leaves out a
+// context-sensitive function inside an argument that isn't one itself (`o && ((x) => ...)`): an overload that fails
+// on another argument doesn't type it for good. Without a context-sensitive argument there is no such round, and the
+// first overload types it (effect's Channel.catchIf: the refinement overload, then the predicate one)
+declare const c: {
+>c : { <E, EB extends E>(e: E, refinement: (e: E) => e is EB, f: (x: EB) => void, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void; <E>(e: E, predicate: (e: E) => boolean, f: (x: E) => void, orElse?: ((x: E) => void) | undefined): void; }
+
+    <E, EB extends E>(e: E, refinement: (e: E) => e is EB, f: (x: EB) => void, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void;
+>e : E
+>refinement : (e: E) => e is EB
+>e : E
+>f : (x: EB) => void
+>x : EB
+>orElse : ((x: Exclude<E, EB>) => void) | undefined
+>x : Exclude<E, EB>
+
+    <E>(e: E, predicate: (e: E) => boolean, f: (x: E) => void, orElse?: ((x: E) => void) | undefined): void;
+>e : E
+>predicate : (e: E) => boolean
+>e : E
+>f : (x: E) => void
+>x : E
+>orElse : ((x: E) => void) | undefined
+>x : E
+
+};
+declare const c2: {
+>c2 : { <E, EB extends E>(e: E, refinement: (e: E) => e is EB, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void; <E>(e: E, predicate: (e: E) => boolean, orElse?: ((x: E) => void) | undefined): void; }
+
+    <E, EB extends E>(e: E, refinement: (e: E) => e is EB, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void;
+>e : E
+>refinement : (e: E) => e is EB
+>e : E
+>orElse : ((x: Exclude<E, EB>) => void) | undefined
+>x : Exclude<E, EB>
+
+    <E>(e: E, predicate: (e: E) => boolean, orElse?: ((x: E) => void) | undefined): void;
+>e : E
+>predicate : (e: E) => boolean
+>e : E
+>orElse : ((x: E) => void) | undefined
+>x : E
+
+};
+function g<E>(e: E, p: (e: E) => boolean, o?: (e: E) => void) {
+>g : <E>(e: E, p: (e: E) => boolean, o?: (e: E) => void) => void
+>e : E
+>p : (e: E) => boolean
+>e : E
+>o : ((e: E) => void) | undefined
+>e : E
+
+    c(e, p, (x) => {}, o && ((x) => o(x)));
+>c(e, p, (x) => {}, o && ((x) => o(x))) : void
+>c : { <E_1, EB extends E_1>(e: E_1, refinement: (e: E_1) => e is EB, f: (x: EB) => void, orElse?: ((x: Exclude<E_1, EB>) => void) | undefined): void; <E_1>(e: E_1, predicate: (e: E_1) => boolean, f: (x: E_1) => void, orElse?: ((x: E_1) => void) | undefined): void; }
+>e : E
+>p : (e: E) => boolean
+>(x) => {} : (x: E) => void
+>x : E
+>o && ((x) => o(x)) : ((x: E) => void) | undefined
+>o : ((e: E) => void) | undefined
+>((x) => o(x)) : (x: E) => void
+>(x) => o(x) : (x: E) => void
+>x : E
+>o(x) : void
+>o : (e: E) => void
+>x : E
+
+    c(e, p, (x) => {}, (0, (x) => o!(x)));
+>c(e, p, (x) => {}, (0, (x) => o!(x))) : void
+>c : { <E_1, EB extends E_1>(e: E_1, refinement: (e: E_1) => e is EB, f: (x: EB) => void, orElse?: ((x: Exclude<E_1, EB>) => void) | undefined): void; <E_1>(e: E_1, predicate: (e: E_1) => boolean, f: (x: E_1) => void, orElse?: ((x: E_1) => void) | undefined): void; }
+>e : E
+>p : (e: E) => boolean
+>(x) => {} : (x: E) => void
+>x : E
+>(0, (x) => o!(x)) : (x: E) => void
+>0, (x) => o!(x) : (x: E) => void
+>0 : 0
+>(x) => o!(x) : (x: E) => void
+>x : E
+>o!(x) : void
+>o! : (e: E) => void
+>o : ((e: E) => void) | undefined
+>x : E
+}
+function h(e: string | number, p: (e: string | number) => boolean, o?: (e: string | number) => void) {
+>h : (e: string | number, p: (e: string | number) => boolean, o?: (e: string | number) => void) => void
+>e : string | number
+>p : (e: string | number) => boolean
+>e : string | number
+>o : ((e: string | number) => void) | undefined
+>e : string | number
+
+    c2(e, p, o && ((x) => o(x)));
+>c2(e, p, o && ((x) => o(x))) : void
+>c2 : { <E, EB extends E>(e: E, refinement: (e: E) => e is EB, orElse?: ((x: Exclude<E, EB>) => void) | undefined): void; <E>(e: E, predicate: (e: E) => boolean, orElse?: ((x: E) => void) | undefined): void; }
+>e : string | number
+>p : (e: string | number) => boolean
+>o && ((x) => o(x)) : ((x: never) => void) | undefined
+>o : ((e: string | number) => void) | undefined
+>((x) => o(x)) : (x: never) => void
+>(x) => o(x) : (x: never) => void
+>x : never
+>o(x) : void
+>o : (e: string | number) => void
+>x : never
+}
+

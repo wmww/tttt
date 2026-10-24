@@ -350,7 +350,17 @@ static Ty const* shape_type_at(ParamShape const* shape, u32 i) {
 static Ty const* return_mapped_context(Checker* me, Ty const* contextual);
 
 // Checks argument i with its parameter's type as the contextual type
-static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
+// An argument that isn't context sensitive but has a context-sensitive function where tsc's check mode reaches it:
+// `orElse && ((e) => orElse(e).channel)` (see check_with() in expr.c)
+static bool holds_skipped_function(Expr const* expr) {
+    return expr->tag == EXPR_BINARY_OP && (expr->binary_op->op == BINARY_OP_AND_AND || expr->binary_op->op == BINARY_OP_COMMA) &&
+        ty_expr_is_context_sensitive(&expr->binary_op->right);
+}
+
+// `skip_sensitive`: a round that leaves out the context-sensitive arguments (tsc's CheckMode.SkipContextSensitive),
+// which also leaves out a context-sensitive function in an argument that isn't one itself, untyped: a candidate that
+// fails on another argument doesn't type it for good (effect's Channel.catchIf, whose refinement overload comes first)
+static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i, bool skip_sensitive) {
     Arg* arg = &args->data[i];
     if (arg->spread || arg->part_of_spread) return;
     Ty const* contextual = shape_type_at(shape, i);
@@ -372,7 +382,8 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
             contextual = ty_contextual_element_type_of(me, rest, i - shape->count, length);
         }
     }
-    arg->type = ty_check_expr(me, arg->expr, contextual);
+    arg->type = skip_sensitive && holds_skipped_function(arg->expr) ?
+        ty_check_expr_skipping_sensitive(me, arg->expr, contextual, false) : ty_check_expr(me, arg->expr, contextual);
     // A function argument with a contextual signature has its return type inferred as it is checked, before it is
     // related to the parameter (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod: getReturnTypeFromBody,
     // no pushTypeResolution). The relation's request then re-enters it, nested, below the call's barrier: genkit's
@@ -429,7 +440,7 @@ static void check_args_from(
     for (u32 i = from; i < args->len; i++) {
         if (skipped_arg(&args->data[i], skip_sensitive, skip_generic_functions)) continue;
         if (first_pass_typed_arg(&args->data[i], skip_sensitive, skip_generic_functions)) continue;
-        check_arg(me, shape, args, i);
+        check_arg(me, shape, args, i, skip_sensitive);
     }
 }
 
@@ -1601,7 +1612,7 @@ static TyMapper const* infer_type_arguments(
             arg->nested_generic = mode.skipped;
             any_sensitive |= mode.skipped;
         } else {
-            check_arg(me, &shape, args, i);
+            check_arg(me, &shape, args, i, skip_sensitive);
         }
         // A function argument's return type is computed while the calls it returns still see this one (tsc computes it
         // as it checks the argument)
@@ -1667,7 +1678,7 @@ static TyMapper const* infer_type_arguments(
             if ((skip_generic || skip_sensitive || skip_generic_functions) && !ty_call_resolved_return(me, arg->expr->call)) continue;
             // Checked like in the first pass, but now the calls in it see what the other arguments inferred
             my outer_inference = &self;
-            check_arg(me, &shape, args, i);
+            check_arg(me, &shape, args, i, false);
             my outer_inference = nullptr;
             // What it returns is a generic function like any other: instantiated in the context of the parameter's
             // signature (tsc's checkExpression instantiates every expression's single generic call signature),
@@ -1828,7 +1839,7 @@ static i32 check_args_until_unfit(
                 Arg const* a = &args->data[checked];
                 if (skipped_arg(a, skip_sensitive, skip_generic_functions)) continue;
                 if (first_pass_typed_arg(a, skip_sensitive, skip_generic_functions)) continue;
-                check_arg(me, shape, args, checked);
+                check_arg(me, shape, args, checked, skip_sensitive);
             }
         }
         Ty const* source;
