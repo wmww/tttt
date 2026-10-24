@@ -1674,5 +1674,5 @@ Before the trigger fix (27cd0d2cf), under load: vue wall +177%, type-fest +495%,
 type-fest and effect reran on `@ts-expect-error`-suppressed TS2589/TS2590 that the output never shows. After it,
 quiet box: vue +265% wall (0.19 -> 0.70 s; its shown TS5115 still reruns: the legitimate cost, about one K1 check on
 top), type-fest +5.9%, effect +11.4%, drizzle +2.1%, excalidraw +6.2% (user +1..+5%; callgrind zod +1.74%, drizzle
-+1.31% over the same span). tsgo's caches have a limit code in 28 / 6990 source-sweep configs and a circularity code
++1.31%, excalidraw +1.70%, type-fest +1.52%, effect +1.72% over the same span: the 223 correctness commits' drift, no rerun involved). tsgo's caches have a limit code in 28 / 6990 source-sweep configs and a circularity code
 in 112: the ceiling for legitimate reruns. agents/notes/one_checker_rerun.md (det3) has the design discussion.
