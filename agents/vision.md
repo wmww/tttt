@@ -74,6 +74,11 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **Structural work is good** (2026-10-24, the human, approving the "this-instantiated members" project after hono's
+  TS2769 turned out to be that design gap): a fix that gives a structural solution instead of a point fix is welcome
+  even when the triggering case isn't a flip, as long as it lands in gated stages (quickgate --vs-main incl. instrcount
+  on the class-heavy corpora, threadcheck/checkerdiff, $ExpectType, DT sweep, a sampled source sweep) and stops when
+  a stage opens up; agents/notes/this_instantiated_members.md is the design and progress log (det3).
 - **The sweep is biased heavily toward big projects** (2026-10-24, the human: "its time to heavily bias towards big
   projects"). After ~1900 random npm projects (95.7% identical, 20 flips found and all fixed), small packages return
   mostly clean batches, while the large-repo refreshes showed 9 of 20 repos diverging. `scripts/npmsample.py sample
