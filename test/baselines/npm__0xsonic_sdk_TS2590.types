@@ -1,0 +1,996 @@
+//// [test/cases/npm__0xsonic_sdk_TS2590.tsx] ////
+
+=== node_modules/@chakra-ui/layout/dist/index.d.ts ===
+export { Text, TextProps } from './text.js';
+>Text : import("@chakra-ui/system").ComponentWithAs<"p", import("./text.js").TextProps>
+>TextProps : any
+
+=== node_modules/@chakra-ui/layout/dist/text.d.ts ===
+import * as _chakra_ui_system from '@chakra-ui/system';
+>_chakra_ui_system : typeof _chakra_ui_system
+
+import { HTMLChakraProps, ThemingProps, SystemProps } from '@chakra-ui/system';
+>HTMLChakraProps : any
+>ThemingProps : any
+>SystemProps : any
+
+interface TextProps extends HTMLChakraProps<"p">, ThemingProps<"Text"> {
+    /**
+     */
+}
+declare const Text: _chakra_ui_system.ComponentWithAs<"p", TextProps>;
+>Text : _chakra_ui_system.ComponentWithAs<"p", TextProps>
+>_chakra_ui_system : any
+
+=== node_modules/@chakra-ui/react/dist/index.d.ts ===
+
+export * from '@chakra-ui/layout';
+=== node_modules/@chakra-ui/styled-system/dist/index.d.ts ===
+interface StyleProps extends SpaceProps, ColorProps, TransitionProps, TypographyProps, FlexboxProps, TransformProps, GridProps, FilterProps, LayoutProps, BorderProps, EffectProps, BackgroundProps, ListProps, PositionProps, RingProps, ScrollProps, InteractivityProps, TextDecorationProps, OtherProps {
+}
+export { BackgroundProps, BorderProps, CSSObject, CSSWithMultiValues, ColorProps, CustomThemeTypings, EffectProps, FilterProps, FlatToken, FlatTokens, FlattenTokensParam, FlexboxProps, FunctionCSSInterpolation, GridProps, InteractivityProps, LayoutProps, ListProps, MultiStyleConfig, OmitSpaceXY, Operand, OtherProps, PartsStyleFunction, PartsStyleInterpolation, PartsStyleObject, PlainToken, PositionProps, Pseudos, RecursiveCSSObject, RecursiveCSSSelector, RecursivePseudo, ResponsiveArray, ResponsiveObject, ResponsiveValue, RingProps, ScrollProps, SemanticToken, SemanticValue, SpaceProps, StyleConfig, StyleFunctionProps, StyleObjectOrFn, StyleProps, SystemCSSProperties, SystemProps, SystemStyleFunction, SystemStyleInterpolation, SystemStyleObject, TextDecorationProps, ThemeScale, ThemeThunk, ThemeTypings, ThemingProps, TransformProps, TransitionProps, TypographyProps, WithCSSVar, addPrefix, background, border, calc, color, createMultiStyleConfigHelpers, css, cssVar, defineStyle, defineStyleConfig, effect, filter, flatten, flattenTokens, flexbox, getCSSVar, getCss, grid, interactivity, isStyleProp, layout, layoutPropNames, list, omitThemingProps, others, position, propNames, pseudoPropNames, pseudoSelectors, resolveStyleConfig, ring, scroll, space, systemProps, textDecoration, toCSSVar, toVarDefinition, toVarReference, tokenToCSSVar, transform, transition, typography };
+>BackgroundProps : any
+>BorderProps : any
+>CSSObject : any
+>CSSWithMultiValues : any
+>ColorProps : any
+>CustomThemeTypings : any
+>EffectProps : any
+>FilterProps : any
+>FlatToken : any
+>FlatTokens : any
+>FlattenTokensParam : any
+>FlexboxProps : any
+>FunctionCSSInterpolation : any
+>GridProps : any
+>InteractivityProps : any
+>LayoutProps : any
+>ListProps : any
+>MultiStyleConfig : any
+>OmitSpaceXY : any
+>Operand : any
+>OtherProps : any
+>PartsStyleFunction : any
+>PartsStyleInterpolation : any
+>PartsStyleObject : any
+>PlainToken : any
+>PositionProps : any
+>Pseudos : any
+>RecursiveCSSObject : any
+>RecursiveCSSSelector : any
+>RecursivePseudo : any
+>ResponsiveArray : any
+>ResponsiveObject : any
+>ResponsiveValue : any
+>RingProps : any
+>ScrollProps : any
+>SemanticToken : any
+>SemanticValue : any
+>SpaceProps : any
+>StyleConfig : any
+>StyleFunctionProps : any
+>StyleObjectOrFn : any
+>StyleProps : any
+>SystemCSSProperties : any
+>SystemProps : any
+>SystemStyleFunction : any
+>SystemStyleInterpolation : any
+>SystemStyleObject : any
+>TextDecorationProps : any
+>ThemeScale : any
+>ThemeThunk : any
+>ThemeTypings : any
+>ThemingProps : any
+>TransformProps : any
+>TransitionProps : any
+>TypographyProps : any
+>WithCSSVar : any
+>addPrefix : any
+>background : any
+>border : any
+>calc : any
+>color : any
+>createMultiStyleConfigHelpers : any
+>css : any
+>cssVar : any
+>defineStyle : any
+>defineStyleConfig : any
+>effect : any
+>filter : any
+>flatten : any
+>flattenTokens : any
+>flexbox : any
+>getCSSVar : any
+>getCss : any
+>grid : any
+>interactivity : any
+>isStyleProp : any
+>layout : any
+>layoutPropNames : any
+>list : any
+>omitThemingProps : any
+>others : any
+>position : any
+>propNames : any
+>pseudoPropNames : any
+>pseudoSelectors : any
+>resolveStyleConfig : any
+>ring : any
+>scroll : { (options?: ScrollToOptions): void; (x: number, y: number): void; }
+>space : any
+>systemProps : any
+>textDecoration : any
+>toCSSVar : any
+>toVarDefinition : any
+>toVarReference : any
+>tokenToCSSVar : any
+>transform : any
+>transition : any
+>typography : any
+
+=== node_modules/@chakra-ui/system/dist/index.d.ts ===
+export { As, ChakraComponent, ChakraProps, ComponentWithAs, MergeWithAs, OmitCommonProps, PropsOf, RightJoinProps } from './system.types.js';
+>As : any
+>ChakraComponent : any
+>ChakraProps : any
+>ComponentWithAs : any
+>MergeWithAs : any
+>OmitCommonProps : any
+>PropsOf : any
+>RightJoinProps : any
+
+export { ChakraStyledOptions, HTMLChakraComponents, HTMLChakraProps, styled, toCSSObject } from './system.js';
+>ChakraStyledOptions : any
+>HTMLChakraComponents : any
+>HTMLChakraProps : any
+>styled : any
+>toCSSObject : any
+
+import 'react';
+=== node_modules/@chakra-ui/system/dist/system.d.ts ===
+import { SystemStyleObject, StyleProps } from '@chakra-ui/styled-system';
+>SystemStyleObject : any
+>StyleProps : any
+
+import { As, ChakraComponent, PropsOf, ChakraProps } from './system.types.js';
+>As : any
+>ChakraComponent : any
+>PropsOf : any
+>ChakraProps : any
+
+/**
+ */
+declare type HTMLChakraProps<T extends As> = Omit<PropsOf<T>, "ref" | keyof StyleProps> & ChakraProps & {
+>HTMLChakraProps : HTMLChakraProps<T>
+
+    as?: As;
+>as : As | undefined
+
+};
+=== node_modules/@chakra-ui/system/dist/system.types.d.ts ===
+import { Interpolation } from '@emotion/react';
+>Interpolation : any
+
+interface ChakraProps extends SystemProps {
+}
+declare type As<Props = any> = React.ElementType<Props>;
+>As : As<Props>
+>React : any
+
+declare type PropsOf<T extends As> = React.ComponentPropsWithoutRef<T> & {
+>PropsOf : PropsOf<T>
+>React : any
+
+    as?: As;
+>as : As<any> | undefined
+
+};
+declare type OmitCommonProps<Target, OmitAdditionalProps extends keyof any = never> = Omit<Target, "transition" | "as" | "color" | OmitAdditionalProps>;
+>OmitCommonProps : OmitCommonProps<Target, OmitAdditionalProps>
+
+declare type RightJoinProps<SourceProps extends object = {}, OverrideProps extends object = {}> = OmitCommonProps<SourceProps, keyof OverrideProps> & OverrideProps;
+>RightJoinProps : RightJoinProps<SourceProps, OverrideProps>
+
+declare type MergeWithAs<ComponentProps extends object, AsProps extends object, AdditionalProps extends object = {}, AsComponent extends As = As> = RightJoinProps<ComponentProps, AdditionalProps> & RightJoinProps<AsProps, AdditionalProps> & {
+>MergeWithAs : MergeWithAs<ComponentProps, AsProps, AdditionalProps, AsComponent>
+
+    as?: AsComponent;
+>as : AsComponent | undefined
+
+};
+declare type ComponentWithAs<Component extends As, Props extends object = {}> = {
+>ComponentWithAs : ComponentWithAs<Component, Props>
+
+    <AsComponent extends As = Component>(props: MergeWithAs<React.ComponentProps<Component>, React.ComponentProps<AsComponent>, Props, AsComponent>): JSX.Element;
+>props : MergeWithAs<import("react").ComponentProps<Component>, import("react").ComponentProps<AsComponent>, Props, AsComponent>
+>React : any
+>React : any
+>JSX : any
+
+};
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/@types/react/index.d.ts ===
+export = React;
+>React : any
+
+export as namespace React;
+>React : any
+
+declare namespace React {
+    type ElementType<P = any> =
+>ElementType : ElementType<P>
+        {
+            [K in keyof JSX.IntrinsicElements]: P extends JSX.IntrinsicElements[K] ? K : never
+>JSX : any
+>JSX : any
+
+        }[keyof JSX.IntrinsicElements] |
+>JSX : any
+
+        ComponentType<P>;
+    type ComponentType<P = {}> = ComponentClass<P> | FunctionComponent<P>;
+>ComponentType : ComponentType<P>
+
+    type JSXElementConstructor<P> =
+>JSXElementConstructor : new (props: P) => Component<any, any>
+
+        | (new (props: P) => Component<any, any>);
+>props : P
+
+    /**
+     */
+    interface ExoticComponent<P = {}> {
+        (props: P): (ReactElement|null);
+>props : P
+    }
+    interface NamedExoticComponent<P = {}> extends ExoticComponent<P> {
+    }
+    interface FunctionComponent<P = {}> {
+    }
+    interface ComponentClass<P = {}, S = ComponentState> extends StaticLifecycle<P, S> {
+    }
+    type PropsWithoutRef<P> =
+>PropsWithoutRef : PropsWithoutRef<P>
+
+        P extends any ? ('ref' extends keyof P ? Pick<P, Exclude<keyof P, 'ref'>> : P) : P;
+    type PropsWithRef<P> =
+>PropsWithRef : PropsWithRef<P>
+
+        'ref' extends keyof P
+            ? P extends { ref?: infer R | undefined }
+>ref : R | undefined
+
+                ? string extends R
+                    ? PropsWithoutRef<P> & { ref?: Exclude<R, string> | undefined }
+>ref : Exclude<R, string> | undefined
+
+                    : P
+                : P
+            : P;
+    type ComponentProps<T extends keyof JSX.IntrinsicElements | JSXElementConstructor<any>> =
+>ComponentProps : ComponentProps<T>
+>JSX : any
+
+        T extends JSXElementConstructor<infer P>
+                ? JSX.IntrinsicElements[T]
+>JSX : any
+
+                : {};
+    type ComponentPropsWithRef<T extends ElementType> =
+>ComponentPropsWithRef : ComponentPropsWithRef<T>
+
+        T extends (new (props: infer P) => Component<any, any>)
+>props : P
+
+            ? PropsWithoutRef<P> & RefAttributes<InstanceType<T>>
+            : PropsWithRef<ComponentProps<T>>;
+    type ComponentPropsWithoutRef<T extends ElementType> =
+>ComponentPropsWithoutRef : ComponentPropsWithoutRef<T>
+
+        PropsWithoutRef<ComponentProps<T>>;
+    type ComponentRef<T extends ElementType> = T extends NamedExoticComponent<
+>ComponentRef : ComponentRef<T>
+
+    >
+            ? Method
+            : never;
+    type MemoExoticComponent<T extends ComponentType<any>> = NamedExoticComponent<ComponentPropsWithRef<T>> & {
+>MemoExoticComponent : NamedExoticComponent<ComponentPropsWithRef<T>>
+
+    };
+    type LazyExoticComponent<T extends ComponentType<any>> = ExoticComponent<ComponentPropsWithRef<T>> & {
+>LazyExoticComponent : ExoticComponent<ComponentPropsWithRef<T>>
+
+    };
+    type AriaRole =
+>AriaRole : "alert"
+
+        | 'alert'
+}
+type MergePropTypes<P, T> =
+>MergePropTypes : MergePropTypes<P, T>
+
+    P extends any
+            ? Defaultize<P, D>
+            : P;
+declare global {
+>global : any
+
+    namespace JSX {
+        type LibraryManagedAttributes<C, P> = C extends React.MemoExoticComponent<infer T> | React.LazyExoticComponent<infer T>
+>LibraryManagedAttributes : LibraryManagedAttributes<C, P>
+>React : any
+>React : any
+
+            ? T extends React.MemoExoticComponent<infer U> | React.LazyExoticComponent<infer U>
+>React : any
+>React : any
+
+                ? ReactManagedAttributes<U, P>
+                : ReactManagedAttributes<T, P>
+            : ReactManagedAttributes<C, P>;
+        interface IntrinsicElements {
+            abbr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>abbr : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            address: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>address : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            area: React.DetailedHTMLProps<React.AreaHTMLAttributes<HTMLAreaElement>, HTMLAreaElement>;
+>area : React.DetailedHTMLProps<React.AreaHTMLAttributes<HTMLAreaElement>, HTMLAreaElement>
+>React : any
+>React : any
+
+            bdo: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>bdo : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            big: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>big : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            blockquote: React.DetailedHTMLProps<React.BlockquoteHTMLAttributes<HTMLQuoteElement>, HTMLQuoteElement>;
+>blockquote : React.DetailedHTMLProps<React.BlockquoteHTMLAttributes<HTMLQuoteElement>, HTMLQuoteElement>
+>React : any
+>React : any
+
+            body: React.DetailedHTMLProps<React.HTMLAttributes<HTMLBodyElement>, HTMLBodyElement>;
+>body : React.DetailedHTMLProps<React.HTMLAttributes<HTMLBodyElement>, HTMLBodyElement>
+>React : any
+>React : any
+
+            br: React.DetailedHTMLProps<React.HTMLAttributes<HTMLBRElement>, HTMLBRElement>;
+>br : React.DetailedHTMLProps<React.HTMLAttributes<HTMLBRElement>, HTMLBRElement>
+>React : any
+>React : any
+
+            button: React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
+>button : React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>
+>React : any
+>React : any
+
+            canvas: React.DetailedHTMLProps<React.CanvasHTMLAttributes<HTMLCanvasElement>, HTMLCanvasElement>;
+>canvas : React.DetailedHTMLProps<React.CanvasHTMLAttributes<HTMLCanvasElement>, HTMLCanvasElement>
+>React : any
+>React : any
+
+            caption: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>caption : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            center: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>center : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            cite: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>cite : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            code: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>code : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            hgroup: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>hgroup : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            hr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLHRElement>, HTMLHRElement>;
+>hr : React.DetailedHTMLProps<React.HTMLAttributes<HTMLHRElement>, HTMLHRElement>
+>React : any
+>React : any
+
+            html: React.DetailedHTMLProps<React.HtmlHTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement>;
+>html : React.DetailedHTMLProps<React.HtmlHTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement>
+>React : any
+>React : any
+
+            i: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>i : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            iframe: React.DetailedHTMLProps<React.IframeHTMLAttributes<HTMLIFrameElement>, HTMLIFrameElement>;
+>iframe : React.DetailedHTMLProps<React.IframeHTMLAttributes<HTMLIFrameElement>, HTMLIFrameElement>
+>React : any
+>React : any
+
+            img: React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>;
+>img : React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>
+>React : any
+>React : any
+
+            input: React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
+>input : React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>
+>React : any
+>React : any
+
+            ins: React.DetailedHTMLProps<React.InsHTMLAttributes<HTMLModElement>, HTMLModElement>;
+>ins : React.DetailedHTMLProps<React.InsHTMLAttributes<HTMLModElement>, HTMLModElement>
+>React : any
+>React : any
+
+            kbd: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>kbd : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            keygen: React.DetailedHTMLProps<React.KeygenHTMLAttributes<HTMLElement>, HTMLElement>;
+>keygen : React.DetailedHTMLProps<React.KeygenHTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            label: React.DetailedHTMLProps<React.LabelHTMLAttributes<HTMLLabelElement>, HTMLLabelElement>;
+>label : React.DetailedHTMLProps<React.LabelHTMLAttributes<HTMLLabelElement>, HTMLLabelElement>
+>React : any
+>React : any
+
+            legend: React.DetailedHTMLProps<React.HTMLAttributes<HTMLLegendElement>, HTMLLegendElement>;
+>legend : React.DetailedHTMLProps<React.HTMLAttributes<HTMLLegendElement>, HTMLLegendElement>
+>React : any
+>React : any
+
+            li: React.DetailedHTMLProps<React.LiHTMLAttributes<HTMLLIElement>, HTMLLIElement>;
+>li : React.DetailedHTMLProps<React.LiHTMLAttributes<HTMLLIElement>, HTMLLIElement>
+>React : any
+>React : any
+
+            link: React.DetailedHTMLProps<React.LinkHTMLAttributes<HTMLLinkElement>, HTMLLinkElement>;
+>link : React.DetailedHTMLProps<React.LinkHTMLAttributes<HTMLLinkElement>, HTMLLinkElement>
+>React : any
+>React : any
+
+            main: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>main : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            map: React.DetailedHTMLProps<React.MapHTMLAttributes<HTMLMapElement>, HTMLMapElement>;
+>map : React.DetailedHTMLProps<React.MapHTMLAttributes<HTMLMapElement>, HTMLMapElement>
+>React : any
+>React : any
+
+            mark: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>mark : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            menu: React.DetailedHTMLProps<React.MenuHTMLAttributes<HTMLElement>, HTMLElement>;
+>menu : React.DetailedHTMLProps<React.MenuHTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            menuitem: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>menuitem : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            meta: React.DetailedHTMLProps<React.MetaHTMLAttributes<HTMLMetaElement>, HTMLMetaElement>;
+>meta : React.DetailedHTMLProps<React.MetaHTMLAttributes<HTMLMetaElement>, HTMLMetaElement>
+>React : any
+>React : any
+
+            meter: React.DetailedHTMLProps<React.MeterHTMLAttributes<HTMLMeterElement>, HTMLMeterElement>;
+>meter : React.DetailedHTMLProps<React.MeterHTMLAttributes<HTMLMeterElement>, HTMLMeterElement>
+>React : any
+>React : any
+
+            nav: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>nav : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            noindex: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>noindex : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            noscript: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>noscript : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            object: React.DetailedHTMLProps<React.ObjectHTMLAttributes<HTMLObjectElement>, HTMLObjectElement>;
+>object : React.DetailedHTMLProps<React.ObjectHTMLAttributes<HTMLObjectElement>, HTMLObjectElement>
+>React : any
+>React : any
+
+            ol: React.DetailedHTMLProps<React.OlHTMLAttributes<HTMLOListElement>, HTMLOListElement>;
+>ol : React.DetailedHTMLProps<React.OlHTMLAttributes<HTMLOListElement>, HTMLOListElement>
+>React : any
+>React : any
+
+            optgroup: React.DetailedHTMLProps<React.OptgroupHTMLAttributes<HTMLOptGroupElement>, HTMLOptGroupElement>;
+>optgroup : React.DetailedHTMLProps<React.OptgroupHTMLAttributes<HTMLOptGroupElement>, HTMLOptGroupElement>
+>React : any
+>React : any
+
+            option: React.DetailedHTMLProps<React.OptionHTMLAttributes<HTMLOptionElement>, HTMLOptionElement>;
+>option : React.DetailedHTMLProps<React.OptionHTMLAttributes<HTMLOptionElement>, HTMLOptionElement>
+>React : any
+>React : any
+
+            output: React.DetailedHTMLProps<React.OutputHTMLAttributes<HTMLOutputElement>, HTMLOutputElement>;
+>output : React.DetailedHTMLProps<React.OutputHTMLAttributes<HTMLOutputElement>, HTMLOutputElement>
+>React : any
+>React : any
+
+            p: React.DetailedHTMLProps<React.HTMLAttributes<HTMLParagraphElement>, HTMLParagraphElement>;
+>p : React.DetailedHTMLProps<React.HTMLAttributes<HTMLParagraphElement>, HTMLParagraphElement>
+>React : any
+>React : any
+
+            param: React.DetailedHTMLProps<React.ParamHTMLAttributes<HTMLParamElement>, HTMLParamElement>;
+>param : React.DetailedHTMLProps<React.ParamHTMLAttributes<HTMLParamElement>, HTMLParamElement>
+>React : any
+>React : any
+
+            picture: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>picture : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            pre: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>;
+>pre : React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>
+>React : any
+>React : any
+
+            progress: React.DetailedHTMLProps<React.ProgressHTMLAttributes<HTMLProgressElement>, HTMLProgressElement>;
+>progress : React.DetailedHTMLProps<React.ProgressHTMLAttributes<HTMLProgressElement>, HTMLProgressElement>
+>React : any
+>React : any
+
+            q: React.DetailedHTMLProps<React.QuoteHTMLAttributes<HTMLQuoteElement>, HTMLQuoteElement>;
+>q : React.DetailedHTMLProps<React.QuoteHTMLAttributes<HTMLQuoteElement>, HTMLQuoteElement>
+>React : any
+>React : any
+
+            rp: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>rp : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            rt: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>rt : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            ruby: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>ruby : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            s: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>s : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            samp: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>samp : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            slot: React.DetailedHTMLProps<React.SlotHTMLAttributes<HTMLSlotElement>, HTMLSlotElement>;
+>slot : React.DetailedHTMLProps<React.SlotHTMLAttributes<HTMLSlotElement>, HTMLSlotElement>
+>React : any
+>React : any
+
+            script: React.DetailedHTMLProps<React.ScriptHTMLAttributes<HTMLScriptElement>, HTMLScriptElement>;
+>script : React.DetailedHTMLProps<React.ScriptHTMLAttributes<HTMLScriptElement>, HTMLScriptElement>
+>React : any
+>React : any
+
+            section: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>section : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            select: React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement>;
+>select : React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement>
+>React : any
+>React : any
+
+            small: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>small : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            source: React.DetailedHTMLProps<React.SourceHTMLAttributes<HTMLSourceElement>, HTMLSourceElement>;
+>source : React.DetailedHTMLProps<React.SourceHTMLAttributes<HTMLSourceElement>, HTMLSourceElement>
+>React : any
+>React : any
+
+            span: React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>;
+>span : React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>
+>React : any
+>React : any
+
+            strong: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>strong : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            style: React.DetailedHTMLProps<React.StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>;
+>style : React.DetailedHTMLProps<React.StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>
+>React : any
+>React : any
+
+            sub: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>sub : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            summary: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>summary : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            sup: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>sup : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            table: React.DetailedHTMLProps<React.TableHTMLAttributes<HTMLTableElement>, HTMLTableElement>;
+>table : React.DetailedHTMLProps<React.TableHTMLAttributes<HTMLTableElement>, HTMLTableElement>
+>React : any
+>React : any
+
+            template: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTemplateElement>, HTMLTemplateElement>;
+>template : React.DetailedHTMLProps<React.HTMLAttributes<HTMLTemplateElement>, HTMLTemplateElement>
+>React : any
+>React : any
+
+            tbody: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>;
+>tbody : React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>
+>React : any
+>React : any
+
+            td: React.DetailedHTMLProps<React.TdHTMLAttributes<HTMLTableDataCellElement>, HTMLTableDataCellElement>;
+>td : React.DetailedHTMLProps<React.TdHTMLAttributes<HTMLTableDataCellElement>, HTMLTableDataCellElement>
+>React : any
+>React : any
+
+            textarea: React.DetailedHTMLProps<React.TextareaHTMLAttributes<HTMLTextAreaElement>, HTMLTextAreaElement>;
+>textarea : React.DetailedHTMLProps<React.TextareaHTMLAttributes<HTMLTextAreaElement>, HTMLTextAreaElement>
+>React : any
+>React : any
+
+            tfoot: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>;
+>tfoot : React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>
+>React : any
+>React : any
+
+            th: React.DetailedHTMLProps<React.ThHTMLAttributes<HTMLTableHeaderCellElement>, HTMLTableHeaderCellElement>;
+>th : React.DetailedHTMLProps<React.ThHTMLAttributes<HTMLTableHeaderCellElement>, HTMLTableHeaderCellElement>
+>React : any
+>React : any
+
+            thead: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>;
+>thead : React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>
+>React : any
+>React : any
+
+            time: React.DetailedHTMLProps<React.TimeHTMLAttributes<HTMLTimeElement>, HTMLTimeElement>;
+>time : React.DetailedHTMLProps<React.TimeHTMLAttributes<HTMLTimeElement>, HTMLTimeElement>
+>React : any
+>React : any
+
+            title: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTitleElement>, HTMLTitleElement>;
+>title : React.DetailedHTMLProps<React.HTMLAttributes<HTMLTitleElement>, HTMLTitleElement>
+>React : any
+>React : any
+
+            tr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableRowElement>, HTMLTableRowElement>;
+>tr : React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableRowElement>, HTMLTableRowElement>
+>React : any
+>React : any
+
+            track: React.DetailedHTMLProps<React.TrackHTMLAttributes<HTMLTrackElement>, HTMLTrackElement>;
+>track : React.DetailedHTMLProps<React.TrackHTMLAttributes<HTMLTrackElement>, HTMLTrackElement>
+>React : any
+>React : any
+
+            u: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>u : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            ul: React.DetailedHTMLProps<React.HTMLAttributes<HTMLUListElement>, HTMLUListElement>;
+>ul : React.DetailedHTMLProps<React.HTMLAttributes<HTMLUListElement>, HTMLUListElement>
+>React : any
+>React : any
+
+            "var": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>"var" : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            video: React.DetailedHTMLProps<React.VideoHTMLAttributes<HTMLVideoElement>, HTMLVideoElement>;
+>video : React.DetailedHTMLProps<React.VideoHTMLAttributes<HTMLVideoElement>, HTMLVideoElement>
+>React : any
+>React : any
+
+            wbr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>wbr : React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>
+>React : any
+>React : any
+
+            webview: React.DetailedHTMLProps<React.WebViewHTMLAttributes<HTMLWebViewElement>, HTMLWebViewElement>;
+>webview : React.DetailedHTMLProps<React.WebViewHTMLAttributes<HTMLWebViewElement>, HTMLWebViewElement>
+>React : any
+>React : any
+
+            animate: React.SVGProps<SVGElement>; // TODO: It is SVGAnimateElement but is not in TypeScript's lib.dom.d.ts for now.
+>animate : React.SVGProps<SVGElement>
+>React : any
+
+            animateMotion: React.SVGProps<SVGElement>;
+>animateMotion : React.SVGProps<SVGElement>
+>React : any
+
+            animateTransform: React.SVGProps<SVGElement>; // TODO: It is SVGAnimateTransformElement but is not in TypeScript's lib.dom.d.ts for now.
+>animateTransform : React.SVGProps<SVGElement>
+>React : any
+
+            circle: React.SVGProps<SVGCircleElement>;
+>circle : React.SVGProps<SVGCircleElement>
+>React : any
+
+            clipPath: React.SVGProps<SVGClipPathElement>;
+>clipPath : React.SVGProps<SVGClipPathElement>
+>React : any
+
+            defs: React.SVGProps<SVGDefsElement>;
+>defs : React.SVGProps<SVGDefsElement>
+>React : any
+
+            desc: React.SVGProps<SVGDescElement>;
+>desc : React.SVGProps<SVGDescElement>
+>React : any
+
+            ellipse: React.SVGProps<SVGEllipseElement>;
+>ellipse : React.SVGProps<SVGEllipseElement>
+>React : any
+
+            feBlend: React.SVGProps<SVGFEBlendElement>;
+>feBlend : React.SVGProps<SVGFEBlendElement>
+>React : any
+
+            feColorMatrix: React.SVGProps<SVGFEColorMatrixElement>;
+>feColorMatrix : React.SVGProps<SVGFEColorMatrixElement>
+>React : any
+
+            feComponentTransfer: React.SVGProps<SVGFEComponentTransferElement>;
+>feComponentTransfer : React.SVGProps<SVGFEComponentTransferElement>
+>React : any
+
+            feComposite: React.SVGProps<SVGFECompositeElement>;
+>feComposite : React.SVGProps<SVGFECompositeElement>
+>React : any
+
+            feConvolveMatrix: React.SVGProps<SVGFEConvolveMatrixElement>;
+>feConvolveMatrix : React.SVGProps<SVGFEConvolveMatrixElement>
+>React : any
+
+            feDiffuseLighting: React.SVGProps<SVGFEDiffuseLightingElement>;
+>feDiffuseLighting : React.SVGProps<SVGFEDiffuseLightingElement>
+>React : any
+
+            feDisplacementMap: React.SVGProps<SVGFEDisplacementMapElement>;
+>feDisplacementMap : React.SVGProps<SVGFEDisplacementMapElement>
+>React : any
+
+            feDistantLight: React.SVGProps<SVGFEDistantLightElement>;
+>feDistantLight : React.SVGProps<SVGFEDistantLightElement>
+>React : any
+
+            feDropShadow: React.SVGProps<SVGFEDropShadowElement>;
+>feDropShadow : React.SVGProps<SVGFEDropShadowElement>
+>React : any
+
+            feFlood: React.SVGProps<SVGFEFloodElement>;
+>feFlood : React.SVGProps<SVGFEFloodElement>
+>React : any
+
+            feFuncA: React.SVGProps<SVGFEFuncAElement>;
+>feFuncA : React.SVGProps<SVGFEFuncAElement>
+>React : any
+
+            feFuncB: React.SVGProps<SVGFEFuncBElement>;
+>feFuncB : React.SVGProps<SVGFEFuncBElement>
+>React : any
+
+            feFuncG: React.SVGProps<SVGFEFuncGElement>;
+>feFuncG : React.SVGProps<SVGFEFuncGElement>
+>React : any
+
+            feFuncR: React.SVGProps<SVGFEFuncRElement>;
+>feFuncR : React.SVGProps<SVGFEFuncRElement>
+>React : any
+
+            feGaussianBlur: React.SVGProps<SVGFEGaussianBlurElement>;
+>feGaussianBlur : React.SVGProps<SVGFEGaussianBlurElement>
+>React : any
+
+            feImage: React.SVGProps<SVGFEImageElement>;
+>feImage : React.SVGProps<SVGFEImageElement>
+>React : any
+
+            feMerge: React.SVGProps<SVGFEMergeElement>;
+>feMerge : React.SVGProps<SVGFEMergeElement>
+>React : any
+
+            feMergeNode: React.SVGProps<SVGFEMergeNodeElement>;
+>feMergeNode : React.SVGProps<SVGFEMergeNodeElement>
+>React : any
+
+            feMorphology: React.SVGProps<SVGFEMorphologyElement>;
+>feMorphology : React.SVGProps<SVGFEMorphologyElement>
+>React : any
+
+            feOffset: React.SVGProps<SVGFEOffsetElement>;
+>feOffset : React.SVGProps<SVGFEOffsetElement>
+>React : any
+
+            fePointLight: React.SVGProps<SVGFEPointLightElement>;
+>fePointLight : React.SVGProps<SVGFEPointLightElement>
+>React : any
+
+            feSpecularLighting: React.SVGProps<SVGFESpecularLightingElement>;
+>feSpecularLighting : React.SVGProps<SVGFESpecularLightingElement>
+>React : any
+
+            feSpotLight: React.SVGProps<SVGFESpotLightElement>;
+>feSpotLight : React.SVGProps<SVGFESpotLightElement>
+>React : any
+
+            feTile: React.SVGProps<SVGFETileElement>;
+>feTile : React.SVGProps<SVGFETileElement>
+>React : any
+
+            feTurbulence: React.SVGProps<SVGFETurbulenceElement>;
+>feTurbulence : React.SVGProps<SVGFETurbulenceElement>
+>React : any
+
+            filter: React.SVGProps<SVGFilterElement>;
+>filter : React.SVGProps<SVGFilterElement>
+>React : any
+
+            foreignObject: React.SVGProps<SVGForeignObjectElement>;
+>foreignObject : React.SVGProps<SVGForeignObjectElement>
+>React : any
+
+            g: React.SVGProps<SVGGElement>;
+>g : React.SVGProps<SVGGElement>
+>React : any
+
+            image: React.SVGProps<SVGImageElement>;
+>image : React.SVGProps<SVGImageElement>
+>React : any
+
+            line: React.SVGProps<SVGLineElement>;
+>line : React.SVGProps<SVGLineElement>
+>React : any
+
+            linearGradient: React.SVGProps<SVGLinearGradientElement>;
+>linearGradient : React.SVGProps<SVGLinearGradientElement>
+>React : any
+
+            marker: React.SVGProps<SVGMarkerElement>;
+>marker : React.SVGProps<SVGMarkerElement>
+>React : any
+
+            mask: React.SVGProps<SVGMaskElement>;
+>mask : React.SVGProps<SVGMaskElement>
+>React : any
+
+            metadata: React.SVGProps<SVGMetadataElement>;
+>metadata : React.SVGProps<SVGMetadataElement>
+>React : any
+
+            mpath: React.SVGProps<SVGElement>;
+>mpath : React.SVGProps<SVGElement>
+>React : any
+
+            path: React.SVGProps<SVGPathElement>;
+>path : React.SVGProps<SVGPathElement>
+>React : any
+
+            pattern: React.SVGProps<SVGPatternElement>;
+>pattern : React.SVGProps<SVGPatternElement>
+>React : any
+
+            polygon: React.SVGProps<SVGPolygonElement>;
+>polygon : React.SVGProps<SVGPolygonElement>
+>React : any
+
+            polyline: React.SVGProps<SVGPolylineElement>;
+>polyline : React.SVGProps<SVGPolylineElement>
+>React : any
+
+            radialGradient: React.SVGProps<SVGRadialGradientElement>;
+>radialGradient : React.SVGProps<SVGRadialGradientElement>
+>React : any
+
+            rect: React.SVGProps<SVGRectElement>;
+>rect : React.SVGProps<SVGRectElement>
+>React : any
+
+            stop: React.SVGProps<SVGStopElement>;
+>stop : React.SVGProps<SVGStopElement>
+>React : any
+
+            switch: React.SVGProps<SVGSwitchElement>;
+>switch : React.SVGProps<SVGSwitchElement>
+>React : any
+
+            symbol: React.SVGProps<SVGSymbolElement>;
+>symbol : React.SVGProps<SVGSymbolElement>
+>React : any
+
+            text: React.SVGProps<SVGTextElement>;
+>text : React.SVGProps<SVGTextElement>
+>React : any
+
+            textPath: React.SVGProps<SVGTextPathElement>;
+>textPath : React.SVGProps<SVGTextPathElement>
+>React : any
+
+            tspan: React.SVGProps<SVGTSpanElement>;
+>tspan : React.SVGProps<SVGTSpanElement>
+>React : any
+
+            use: React.SVGProps<SVGUseElement>;
+>use : React.SVGProps<SVGUseElement>
+>React : any
+
+            view: React.SVGProps<SVGViewElement>;
+>view : React.SVGProps<SVGViewElement>
+>React : any
+        }
+    }
+}
+=== src/components/User.tsx ===
+import { Text } from '@chakra-ui/react';
+>Text : import("@chakra-ui/system").ComponentWithAs<"p", import("@chakra-ui/react").TextProps>
+
+  return <Text>Connected to {user.did}</Text>;
+><Text>Connected to {user.did}</Text> : any
+>Text : import("@chakra-ui/system").ComponentWithAs<"p", import("@chakra-ui/react").TextProps>
+>user.did : any
+>user : any
+>did : any
+>Text : import("@chakra-ui/system").ComponentWithAs<"p", import("@chakra-ui/react").TextProps>
+

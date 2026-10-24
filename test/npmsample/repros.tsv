@@ -28,3 +28,4 @@ npm_serverless-openapi_TS2339	no	serverless-openapi@1.1.2	https://github.com/the
 npm_rabbitmq-pub-sub_TS2339	no	rabbitmq-pub-sub@0.2.5	https://github.com/cdmbase/rabbitmq-pubsub	31	11	-TS2322 -TS2339 -TS7006
 npm__overlastic_vue2_TS2339	no	@overlastic/vue2@0.9.0	https://github.com/hairyf/overlastic	37	39	+TS2339
 npm__overlastic_vue2_TS2339_strictmode	no	@overlastic/vue2@0.9.0	https://github.com/hairyf/overlastic	37	39	-TS2339
+npm__0xsonic_sdk_TS2590	yes	@0xsonic/sdk@0.2.6	https://github.com/sahilpabale/sonic-sdk	2	0	TS2590

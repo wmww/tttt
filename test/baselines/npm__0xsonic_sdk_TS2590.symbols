@@ -1,0 +1,1653 @@
+//// [test/cases/npm__0xsonic_sdk_TS2590.tsx] ////
+
+=== node_modules/@chakra-ui/layout/dist/index.d.ts ===
+export { Text, TextProps } from './text.js';
+>Text : Symbol(Text, Decl(index.d.ts, 0, 8))
+>TextProps : Symbol(TextProps, Decl(index.d.ts, 0, 14))
+
+=== node_modules/@chakra-ui/layout/dist/text.d.ts ===
+import * as _chakra_ui_system from '@chakra-ui/system';
+>_chakra_ui_system : Symbol(_chakra_ui_system, Decl(text.d.ts, 0, 6))
+
+import { HTMLChakraProps, ThemingProps, SystemProps } from '@chakra-ui/system';
+>HTMLChakraProps : Symbol(HTMLChakraProps, Decl(text.d.ts, 1, 8))
+>ThemingProps : Symbol(ThemingProps, Decl(text.d.ts, 1, 25))
+>SystemProps : Symbol(SystemProps, Decl(text.d.ts, 1, 39))
+
+interface TextProps extends HTMLChakraProps<"p">, ThemingProps<"Text"> {
+>TextProps : Symbol(TextProps, Decl(text.d.ts, 1, 79))
+>HTMLChakraProps : Symbol(HTMLChakraProps, Decl(text.d.ts, 1, 8))
+>ThemingProps : Symbol(ThemingProps, Decl(text.d.ts, 1, 25))
+
+    /**
+     */
+}
+declare const Text: _chakra_ui_system.ComponentWithAs<"p", TextProps>;
+>Text : Symbol(Text, Decl(text.d.ts, 6, 13))
+>_chakra_ui_system : Symbol(_chakra_ui_system, Decl(text.d.ts, 0, 6))
+>ComponentWithAs : Symbol(_chakra_ui_system.ComponentWithAs, Decl(index.d.ts, 0, 42))
+>TextProps : Symbol(TextProps, Decl(text.d.ts, 1, 79))
+
+=== node_modules/@chakra-ui/react/dist/index.d.ts ===
+
+export * from '@chakra-ui/layout';
+=== node_modules/@chakra-ui/styled-system/dist/index.d.ts ===
+interface StyleProps extends SpaceProps, ColorProps, TransitionProps, TypographyProps, FlexboxProps, TransformProps, GridProps, FilterProps, LayoutProps, BorderProps, EffectProps, BackgroundProps, ListProps, PositionProps, RingProps, ScrollProps, InteractivityProps, TextDecorationProps, OtherProps {
+>StyleProps : Symbol(StyleProps, Decl(index.d.ts, 0, 0))
+}
+export { BackgroundProps, BorderProps, CSSObject, CSSWithMultiValues, ColorProps, CustomThemeTypings, EffectProps, FilterProps, FlatToken, FlatTokens, FlattenTokensParam, FlexboxProps, FunctionCSSInterpolation, GridProps, InteractivityProps, LayoutProps, ListProps, MultiStyleConfig, OmitSpaceXY, Operand, OtherProps, PartsStyleFunction, PartsStyleInterpolation, PartsStyleObject, PlainToken, PositionProps, Pseudos, RecursiveCSSObject, RecursiveCSSSelector, RecursivePseudo, ResponsiveArray, ResponsiveObject, ResponsiveValue, RingProps, ScrollProps, SemanticToken, SemanticValue, SpaceProps, StyleConfig, StyleFunctionProps, StyleObjectOrFn, StyleProps, SystemCSSProperties, SystemProps, SystemStyleFunction, SystemStyleInterpolation, SystemStyleObject, TextDecorationProps, ThemeScale, ThemeThunk, ThemeTypings, ThemingProps, TransformProps, TransitionProps, TypographyProps, WithCSSVar, addPrefix, background, border, calc, color, createMultiStyleConfigHelpers, css, cssVar, defineStyle, defineStyleConfig, effect, filter, flatten, flattenTokens, flexbox, getCSSVar, getCss, grid, interactivity, isStyleProp, layout, layoutPropNames, list, omitThemingProps, others, position, propNames, pseudoPropNames, pseudoSelectors, resolveStyleConfig, ring, scroll, space, systemProps, textDecoration, toCSSVar, toVarDefinition, toVarReference, tokenToCSSVar, transform, transition, typography };
+>BackgroundProps : Symbol(BackgroundProps, Decl(index.d.ts, 2, 8))
+>BorderProps : Symbol(BorderProps, Decl(index.d.ts, 2, 25))
+>CSSObject : Symbol(CSSObject, Decl(index.d.ts, 2, 38))
+>CSSWithMultiValues : Symbol(CSSWithMultiValues, Decl(index.d.ts, 2, 49))
+>ColorProps : Symbol(ColorProps, Decl(index.d.ts, 2, 69))
+>CustomThemeTypings : Symbol(CustomThemeTypings, Decl(index.d.ts, 2, 81))
+>EffectProps : Symbol(EffectProps, Decl(index.d.ts, 2, 101))
+>FilterProps : Symbol(FilterProps, Decl(index.d.ts, 2, 114))
+>FlatToken : Symbol(FlatToken, Decl(index.d.ts, 2, 127))
+>FlatTokens : Symbol(FlatTokens, Decl(index.d.ts, 2, 138))
+>FlattenTokensParam : Symbol(FlattenTokensParam, Decl(index.d.ts, 2, 150))
+>FlexboxProps : Symbol(FlexboxProps, Decl(index.d.ts, 2, 170))
+>FunctionCSSInterpolation : Symbol(FunctionCSSInterpolation, Decl(index.d.ts, 2, 184))
+>GridProps : Symbol(GridProps, Decl(index.d.ts, 2, 210))
+>InteractivityProps : Symbol(InteractivityProps, Decl(index.d.ts, 2, 221))
+>LayoutProps : Symbol(LayoutProps, Decl(index.d.ts, 2, 241))
+>ListProps : Symbol(ListProps, Decl(index.d.ts, 2, 254))
+>MultiStyleConfig : Symbol(MultiStyleConfig, Decl(index.d.ts, 2, 265))
+>OmitSpaceXY : Symbol(OmitSpaceXY, Decl(index.d.ts, 2, 283))
+>Operand : Symbol(Operand, Decl(index.d.ts, 2, 296))
+>OtherProps : Symbol(OtherProps, Decl(index.d.ts, 2, 305))
+>PartsStyleFunction : Symbol(PartsStyleFunction, Decl(index.d.ts, 2, 317))
+>PartsStyleInterpolation : Symbol(PartsStyleInterpolation, Decl(index.d.ts, 2, 337))
+>PartsStyleObject : Symbol(PartsStyleObject, Decl(index.d.ts, 2, 362))
+>PlainToken : Symbol(PlainToken, Decl(index.d.ts, 2, 380))
+>PositionProps : Symbol(PositionProps, Decl(index.d.ts, 2, 392))
+>Pseudos : Symbol(Pseudos, Decl(index.d.ts, 2, 407))
+>RecursiveCSSObject : Symbol(RecursiveCSSObject, Decl(index.d.ts, 2, 416))
+>RecursiveCSSSelector : Symbol(RecursiveCSSSelector, Decl(index.d.ts, 2, 436))
+>RecursivePseudo : Symbol(RecursivePseudo, Decl(index.d.ts, 2, 458))
+>ResponsiveArray : Symbol(ResponsiveArray, Decl(index.d.ts, 2, 475))
+>ResponsiveObject : Symbol(ResponsiveObject, Decl(index.d.ts, 2, 492))
+>ResponsiveValue : Symbol(ResponsiveValue, Decl(index.d.ts, 2, 510))
+>RingProps : Symbol(RingProps, Decl(index.d.ts, 2, 527))
+>ScrollProps : Symbol(ScrollProps, Decl(index.d.ts, 2, 538))
+>SemanticToken : Symbol(SemanticToken, Decl(index.d.ts, 2, 551))
+>SemanticValue : Symbol(SemanticValue, Decl(index.d.ts, 2, 566))
+>SpaceProps : Symbol(SpaceProps, Decl(index.d.ts, 2, 581))
+>StyleConfig : Symbol(StyleConfig, Decl(index.d.ts, 2, 593))
+>StyleFunctionProps : Symbol(StyleFunctionProps, Decl(index.d.ts, 2, 606))
+>StyleObjectOrFn : Symbol(StyleObjectOrFn, Decl(index.d.ts, 2, 626))
+>StyleProps : Symbol(StyleProps, Decl(index.d.ts, 2, 643))
+>SystemCSSProperties : Symbol(SystemCSSProperties, Decl(index.d.ts, 2, 655))
+>SystemProps : Symbol(SystemProps, Decl(index.d.ts, 2, 676))
+>SystemStyleFunction : Symbol(SystemStyleFunction, Decl(index.d.ts, 2, 689))
+>SystemStyleInterpolation : Symbol(SystemStyleInterpolation, Decl(index.d.ts, 2, 710))
+>SystemStyleObject : Symbol(SystemStyleObject, Decl(index.d.ts, 2, 736))
+>TextDecorationProps : Symbol(TextDecorationProps, Decl(index.d.ts, 2, 755))
+>ThemeScale : Symbol(ThemeScale, Decl(index.d.ts, 2, 776))
+>ThemeThunk : Symbol(ThemeThunk, Decl(index.d.ts, 2, 788))
+>ThemeTypings : Symbol(ThemeTypings, Decl(index.d.ts, 2, 800))
+>ThemingProps : Symbol(ThemingProps, Decl(index.d.ts, 2, 814))
+>TransformProps : Symbol(TransformProps, Decl(index.d.ts, 2, 828))
+>TransitionProps : Symbol(TransitionProps, Decl(index.d.ts, 2, 844))
+>TypographyProps : Symbol(TypographyProps, Decl(index.d.ts, 2, 861))
+>WithCSSVar : Symbol(WithCSSVar, Decl(index.d.ts, 2, 878))
+>addPrefix : Symbol(addPrefix, Decl(index.d.ts, 2, 890))
+>background : Symbol(background, Decl(index.d.ts, 2, 901))
+>border : Symbol(border, Decl(index.d.ts, 2, 913))
+>calc : Symbol(calc, Decl(index.d.ts, 2, 921))
+>color : Symbol(color, Decl(index.d.ts, 2, 927))
+>createMultiStyleConfigHelpers : Symbol(createMultiStyleConfigHelpers, Decl(index.d.ts, 2, 934))
+>css : Symbol(css, Decl(index.d.ts, 2, 965))
+>cssVar : Symbol(cssVar, Decl(index.d.ts, 2, 970))
+>defineStyle : Symbol(defineStyle, Decl(index.d.ts, 2, 978))
+>defineStyleConfig : Symbol(defineStyleConfig, Decl(index.d.ts, 2, 991))
+>effect : Symbol(effect, Decl(index.d.ts, 2, 1010))
+>filter : Symbol(filter, Decl(index.d.ts, 2, 1018))
+>flatten : Symbol(flatten, Decl(index.d.ts, 2, 1026))
+>flattenTokens : Symbol(flattenTokens, Decl(index.d.ts, 2, 1035))
+>flexbox : Symbol(flexbox, Decl(index.d.ts, 2, 1050))
+>getCSSVar : Symbol(getCSSVar, Decl(index.d.ts, 2, 1059))
+>getCss : Symbol(getCss, Decl(index.d.ts, 2, 1070))
+>grid : Symbol(grid, Decl(index.d.ts, 2, 1078))
+>interactivity : Symbol(interactivity, Decl(index.d.ts, 2, 1084))
+>isStyleProp : Symbol(isStyleProp, Decl(index.d.ts, 2, 1099))
+>layout : Symbol(layout, Decl(index.d.ts, 2, 1112))
+>layoutPropNames : Symbol(layoutPropNames, Decl(index.d.ts, 2, 1120))
+>list : Symbol(list, Decl(index.d.ts, 2, 1137))
+>omitThemingProps : Symbol(omitThemingProps, Decl(index.d.ts, 2, 1143))
+>others : Symbol(others, Decl(index.d.ts, 2, 1161))
+>position : Symbol(position, Decl(index.d.ts, 2, 1169))
+>propNames : Symbol(propNames, Decl(index.d.ts, 2, 1179))
+>pseudoPropNames : Symbol(pseudoPropNames, Decl(index.d.ts, 2, 1190))
+>pseudoSelectors : Symbol(pseudoSelectors, Decl(index.d.ts, 2, 1207))
+>resolveStyleConfig : Symbol(resolveStyleConfig, Decl(index.d.ts, 2, 1224))
+>ring : Symbol(ring, Decl(index.d.ts, 2, 1244))
+>scroll : Symbol(scroll, Decl(index.d.ts, 2, 1250))
+>space : Symbol(space, Decl(index.d.ts, 2, 1258))
+>systemProps : Symbol(systemProps, Decl(index.d.ts, 2, 1265))
+>textDecoration : Symbol(textDecoration, Decl(index.d.ts, 2, 1278))
+>toCSSVar : Symbol(toCSSVar, Decl(index.d.ts, 2, 1294))
+>toVarDefinition : Symbol(toVarDefinition, Decl(index.d.ts, 2, 1304))
+>toVarReference : Symbol(toVarReference, Decl(index.d.ts, 2, 1321))
+>tokenToCSSVar : Symbol(tokenToCSSVar, Decl(index.d.ts, 2, 1337))
+>transform : Symbol(transform, Decl(index.d.ts, 2, 1352))
+>transition : Symbol(transition, Decl(index.d.ts, 2, 1363))
+>typography : Symbol(typography, Decl(index.d.ts, 2, 1375))
+
+=== node_modules/@chakra-ui/system/dist/index.d.ts ===
+export { As, ChakraComponent, ChakraProps, ComponentWithAs, MergeWithAs, OmitCommonProps, PropsOf, RightJoinProps } from './system.types.js';
+>As : Symbol(As, Decl(index.d.ts, 0, 8))
+>ChakraComponent : Symbol(ChakraComponent, Decl(index.d.ts, 0, 12))
+>ChakraProps : Symbol(ChakraProps, Decl(index.d.ts, 0, 29))
+>ComponentWithAs : Symbol(ComponentWithAs, Decl(index.d.ts, 0, 42))
+>MergeWithAs : Symbol(MergeWithAs, Decl(index.d.ts, 0, 59))
+>OmitCommonProps : Symbol(OmitCommonProps, Decl(index.d.ts, 0, 72))
+>PropsOf : Symbol(PropsOf, Decl(index.d.ts, 0, 89))
+>RightJoinProps : Symbol(RightJoinProps, Decl(index.d.ts, 0, 98))
+
+export { ChakraStyledOptions, HTMLChakraComponents, HTMLChakraProps, styled, toCSSObject } from './system.js';
+>ChakraStyledOptions : Symbol(ChakraStyledOptions, Decl(index.d.ts, 1, 8))
+>HTMLChakraComponents : Symbol(HTMLChakraComponents, Decl(index.d.ts, 1, 29))
+>HTMLChakraProps : Symbol(HTMLChakraProps, Decl(index.d.ts, 1, 51))
+>styled : Symbol(styled, Decl(index.d.ts, 1, 68))
+>toCSSObject : Symbol(toCSSObject, Decl(index.d.ts, 1, 76))
+
+import 'react';
+=== node_modules/@chakra-ui/system/dist/system.d.ts ===
+import { SystemStyleObject, StyleProps } from '@chakra-ui/styled-system';
+>SystemStyleObject : Symbol(SystemStyleObject, Decl(system.d.ts, 0, 8))
+>StyleProps : Symbol(StyleProps, Decl(system.d.ts, 0, 27))
+
+import { As, ChakraComponent, PropsOf, ChakraProps } from './system.types.js';
+>As : Symbol(As, Decl(system.d.ts, 1, 8))
+>ChakraComponent : Symbol(ChakraComponent, Decl(system.d.ts, 1, 12))
+>PropsOf : Symbol(PropsOf, Decl(system.d.ts, 1, 29))
+>ChakraProps : Symbol(ChakraProps, Decl(system.d.ts, 1, 38))
+
+/**
+ */
+declare type HTMLChakraProps<T extends As> = Omit<PropsOf<T>, "ref" | keyof StyleProps> & ChakraProps & {
+>HTMLChakraProps : Symbol(HTMLChakraProps, Decl(system.d.ts, 1, 78))
+>T : Symbol(T, Decl(system.d.ts, 4, 29))
+>As : Symbol(As, Decl(system.d.ts, 1, 8))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>PropsOf : Symbol(PropsOf, Decl(system.d.ts, 1, 29))
+>T : Symbol(T, Decl(system.d.ts, 4, 29))
+>StyleProps : Symbol(StyleProps, Decl(system.d.ts, 0, 27))
+>ChakraProps : Symbol(ChakraProps, Decl(system.d.ts, 1, 38))
+
+    as?: As;
+>as : Symbol(as, Decl(system.d.ts, 4, 105))
+>As : Symbol(As, Decl(system.d.ts, 1, 8))
+
+};
+=== node_modules/@chakra-ui/system/dist/system.types.d.ts ===
+import { Interpolation } from '@emotion/react';
+>Interpolation : Symbol(Interpolation, Decl(system.types.d.ts, 0, 8))
+
+interface ChakraProps extends SystemProps {
+>ChakraProps : Symbol(ChakraProps, Decl(system.types.d.ts, 0, 47))
+}
+declare type As<Props = any> = React.ElementType<Props>;
+>As : Symbol(As, Decl(system.types.d.ts, 2, 1))
+>Props : Symbol(Props, Decl(system.types.d.ts, 3, 16))
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+>ElementType : Symbol(React.ElementType, Decl(index.d.ts, 2, 25))
+>Props : Symbol(Props, Decl(system.types.d.ts, 3, 16))
+
+declare type PropsOf<T extends As> = React.ComponentPropsWithoutRef<T> & {
+>PropsOf : Symbol(PropsOf, Decl(system.types.d.ts, 3, 56))
+>T : Symbol(T, Decl(system.types.d.ts, 4, 21))
+>As : Symbol(As, Decl(system.types.d.ts, 2, 1))
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+>ComponentPropsWithoutRef : Symbol(React.ComponentPropsWithoutRef, Decl(index.d.ts, 39, 46))
+>T : Symbol(T, Decl(system.types.d.ts, 4, 21))
+
+    as?: As;
+>as : Symbol(as, Decl(system.types.d.ts, 4, 74))
+>As : Symbol(As, Decl(system.types.d.ts, 2, 1))
+
+};
+declare type OmitCommonProps<Target, OmitAdditionalProps extends keyof any = never> = Omit<Target, "transition" | "as" | "color" | OmitAdditionalProps>;
+>OmitCommonProps : Symbol(OmitCommonProps, Decl(system.types.d.ts, 6, 2))
+>Target : Symbol(Target, Decl(system.types.d.ts, 7, 29))
+>OmitAdditionalProps : Symbol(OmitAdditionalProps, Decl(system.types.d.ts, 7, 36))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Target : Symbol(Target, Decl(system.types.d.ts, 7, 29))
+>OmitAdditionalProps : Symbol(OmitAdditionalProps, Decl(system.types.d.ts, 7, 36))
+
+declare type RightJoinProps<SourceProps extends object = {}, OverrideProps extends object = {}> = OmitCommonProps<SourceProps, keyof OverrideProps> & OverrideProps;
+>RightJoinProps : Symbol(RightJoinProps, Decl(system.types.d.ts, 7, 152))
+>SourceProps : Symbol(SourceProps, Decl(system.types.d.ts, 8, 28))
+>OverrideProps : Symbol(OverrideProps, Decl(system.types.d.ts, 8, 60))
+>OmitCommonProps : Symbol(OmitCommonProps, Decl(system.types.d.ts, 6, 2))
+>SourceProps : Symbol(SourceProps, Decl(system.types.d.ts, 8, 28))
+>OverrideProps : Symbol(OverrideProps, Decl(system.types.d.ts, 8, 60))
+>OverrideProps : Symbol(OverrideProps, Decl(system.types.d.ts, 8, 60))
+
+declare type MergeWithAs<ComponentProps extends object, AsProps extends object, AdditionalProps extends object = {}, AsComponent extends As = As> = RightJoinProps<ComponentProps, AdditionalProps> & RightJoinProps<AsProps, AdditionalProps> & {
+>MergeWithAs : Symbol(MergeWithAs, Decl(system.types.d.ts, 8, 164))
+>ComponentProps : Symbol(ComponentProps, Decl(system.types.d.ts, 9, 25))
+>AsProps : Symbol(AsProps, Decl(system.types.d.ts, 9, 55))
+>AdditionalProps : Symbol(AdditionalProps, Decl(system.types.d.ts, 9, 79))
+>AsComponent : Symbol(AsComponent, Decl(system.types.d.ts, 9, 116))
+>As : Symbol(As, Decl(system.types.d.ts, 2, 1))
+>As : Symbol(As, Decl(system.types.d.ts, 2, 1))
+>RightJoinProps : Symbol(RightJoinProps, Decl(system.types.d.ts, 7, 152))
+>ComponentProps : Symbol(ComponentProps, Decl(system.types.d.ts, 9, 25))
+>AdditionalProps : Symbol(AdditionalProps, Decl(system.types.d.ts, 9, 79))
+>RightJoinProps : Symbol(RightJoinProps, Decl(system.types.d.ts, 7, 152))
+>AsProps : Symbol(AsProps, Decl(system.types.d.ts, 9, 55))
+>AdditionalProps : Symbol(AdditionalProps, Decl(system.types.d.ts, 9, 79))
+
+    as?: AsComponent;
+>as : Symbol(as, Decl(system.types.d.ts, 9, 242))
+>AsComponent : Symbol(AsComponent, Decl(system.types.d.ts, 9, 116))
+
+};
+declare type ComponentWithAs<Component extends As, Props extends object = {}> = {
+>ComponentWithAs : Symbol(ComponentWithAs, Decl(system.types.d.ts, 11, 2))
+>Component : Symbol(Component, Decl(system.types.d.ts, 12, 29))
+>As : Symbol(As, Decl(system.types.d.ts, 2, 1))
+>Props : Symbol(Props, Decl(system.types.d.ts, 12, 50))
+
+    <AsComponent extends As = Component>(props: MergeWithAs<React.ComponentProps<Component>, React.ComponentProps<AsComponent>, Props, AsComponent>): JSX.Element;
+>AsComponent : Symbol(AsComponent, Decl(system.types.d.ts, 13, 5))
+>As : Symbol(As, Decl(system.types.d.ts, 2, 1))
+>Component : Symbol(Component, Decl(system.types.d.ts, 12, 29))
+>props : Symbol(props, Decl(system.types.d.ts, 13, 41))
+>MergeWithAs : Symbol(MergeWithAs, Decl(system.types.d.ts, 8, 164))
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+>ComponentProps : Symbol(React.ComponentProps, Decl(index.d.ts, 31, 16))
+>Component : Symbol(Component, Decl(system.types.d.ts, 12, 29))
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+>ComponentProps : Symbol(React.ComponentProps, Decl(index.d.ts, 31, 16))
+>AsComponent : Symbol(AsComponent, Decl(system.types.d.ts, 13, 5))
+>Props : Symbol(Props, Decl(system.types.d.ts, 12, 50))
+>AsComponent : Symbol(AsComponent, Decl(system.types.d.ts, 13, 5))
+>JSX : Symbol(JSX, Decl(index.d.ts, 57, 16))
+>Element : Symbol(JSX.Element)
+
+};
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/@types/react/index.d.ts ===
+export = React;
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+export as namespace React;
+>React : Symbol(React, Decl(index.d.ts, 0, 15))
+
+declare namespace React {
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+
+    type ElementType<P = any> =
+>ElementType : Symbol(ElementType, Decl(index.d.ts, 2, 25))
+>P : Symbol(P, Decl(index.d.ts, 3, 21))
+        {
+            [K in keyof JSX.IntrinsicElements]: P extends JSX.IntrinsicElements[K] ? K : never
+>K : Symbol(K, Decl(index.d.ts, 5, 13))
+>JSX : Symbol(JSX, Decl(index.d.ts, 57, 16))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(index.d.ts, 63, 43))
+>P : Symbol(P, Decl(index.d.ts, 3, 21))
+>JSX : Symbol(JSX, Decl(index.d.ts, 57, 16))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(index.d.ts, 63, 43))
+>K : Symbol(K, Decl(index.d.ts, 5, 13))
+>K : Symbol(K, Decl(index.d.ts, 5, 13))
+
+        }[keyof JSX.IntrinsicElements] |
+>JSX : Symbol(JSX, Decl(index.d.ts, 57, 16))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(index.d.ts, 63, 43))
+
+        ComponentType<P>;
+>ComponentType : Symbol(ComponentType, Decl(index.d.ts, 7, 25))
+>P : Symbol(P, Decl(index.d.ts, 3, 21))
+
+    type ComponentType<P = {}> = ComponentClass<P> | FunctionComponent<P>;
+>ComponentType : Symbol(ComponentType, Decl(index.d.ts, 7, 25))
+>P : Symbol(P, Decl(index.d.ts, 8, 23))
+>ComponentClass : Symbol(ComponentClass, Decl(index.d.ts, 19, 5))
+>P : Symbol(P, Decl(index.d.ts, 8, 23))
+>FunctionComponent : Symbol(FunctionComponent, Decl(index.d.ts, 17, 5))
+>P : Symbol(P, Decl(index.d.ts, 8, 23))
+
+    type JSXElementConstructor<P> =
+>JSXElementConstructor : Symbol(JSXElementConstructor, Decl(index.d.ts, 8, 74))
+>P : Symbol(P, Decl(index.d.ts, 9, 31))
+
+        | (new (props: P) => Component<any, any>);
+>props : Symbol(props, Decl(index.d.ts, 10, 16))
+>P : Symbol(P, Decl(index.d.ts, 9, 31))
+>Component : Symbol(Component)
+
+    /**
+     */
+    interface ExoticComponent<P = {}> {
+>ExoticComponent : Symbol(ExoticComponent, Decl(index.d.ts, 10, 50))
+>P : Symbol(P, Decl(index.d.ts, 13, 30))
+
+        (props: P): (ReactElement|null);
+>props : Symbol(props, Decl(index.d.ts, 14, 9))
+>P : Symbol(P, Decl(index.d.ts, 13, 30))
+>ReactElement : Symbol(ReactElement)
+    }
+    interface NamedExoticComponent<P = {}> extends ExoticComponent<P> {
+>NamedExoticComponent : Symbol(NamedExoticComponent, Decl(index.d.ts, 15, 5))
+>P : Symbol(P, Decl(index.d.ts, 16, 35))
+>ExoticComponent : Symbol(ExoticComponent, Decl(index.d.ts, 10, 50))
+>P : Symbol(P, Decl(index.d.ts, 16, 35))
+    }
+    interface FunctionComponent<P = {}> {
+>FunctionComponent : Symbol(FunctionComponent, Decl(index.d.ts, 17, 5))
+>P : Symbol(P, Decl(index.d.ts, 18, 32))
+    }
+    interface ComponentClass<P = {}, S = ComponentState> extends StaticLifecycle<P, S> {
+>ComponentClass : Symbol(ComponentClass, Decl(index.d.ts, 19, 5))
+>P : Symbol(P, Decl(index.d.ts, 20, 29))
+>S : Symbol(S, Decl(index.d.ts, 20, 36))
+>ComponentState : Symbol(ComponentState)
+>P : Symbol(P, Decl(index.d.ts, 20, 29))
+>S : Symbol(S, Decl(index.d.ts, 20, 36))
+    }
+    type PropsWithoutRef<P> =
+>PropsWithoutRef : Symbol(PropsWithoutRef, Decl(index.d.ts, 21, 5))
+>P : Symbol(P, Decl(index.d.ts, 22, 25))
+
+        P extends any ? ('ref' extends keyof P ? Pick<P, Exclude<keyof P, 'ref'>> : P) : P;
+>P : Symbol(P, Decl(index.d.ts, 22, 25))
+>P : Symbol(P, Decl(index.d.ts, 22, 25))
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(index.d.ts, 22, 25))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>P : Symbol(P, Decl(index.d.ts, 22, 25))
+>P : Symbol(P, Decl(index.d.ts, 22, 25))
+>P : Symbol(P, Decl(index.d.ts, 22, 25))
+
+    type PropsWithRef<P> =
+>PropsWithRef : Symbol(PropsWithRef, Decl(index.d.ts, 23, 91))
+>P : Symbol(P, Decl(index.d.ts, 24, 22))
+
+        'ref' extends keyof P
+>P : Symbol(P, Decl(index.d.ts, 24, 22))
+
+            ? P extends { ref?: infer R | undefined }
+>P : Symbol(P, Decl(index.d.ts, 24, 22))
+>ref : Symbol(ref, Decl(index.d.ts, 26, 25))
+>R : Symbol(R, Decl(index.d.ts, 26, 37))
+
+                ? string extends R
+>R : Symbol(R, Decl(index.d.ts, 26, 37))
+
+                    ? PropsWithoutRef<P> & { ref?: Exclude<R, string> | undefined }
+>PropsWithoutRef : Symbol(PropsWithoutRef, Decl(index.d.ts, 21, 5))
+>P : Symbol(P, Decl(index.d.ts, 24, 22))
+>ref : Symbol(ref, Decl(index.d.ts, 28, 44))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(index.d.ts, 26, 37))
+
+                    : P
+>P : Symbol(P, Decl(index.d.ts, 24, 22))
+
+                : P
+>P : Symbol(P, Decl(index.d.ts, 24, 22))
+
+            : P;
+>P : Symbol(P, Decl(index.d.ts, 24, 22))
+
+    type ComponentProps<T extends keyof JSX.IntrinsicElements | JSXElementConstructor<any>> =
+>ComponentProps : Symbol(ComponentProps, Decl(index.d.ts, 31, 16))
+>T : Symbol(T, Decl(index.d.ts, 32, 24))
+>JSX : Symbol(JSX, Decl(index.d.ts, 57, 16))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(index.d.ts, 63, 43))
+>JSXElementConstructor : Symbol(JSXElementConstructor, Decl(index.d.ts, 8, 74))
+
+        T extends JSXElementConstructor<infer P>
+>T : Symbol(T, Decl(index.d.ts, 32, 24))
+>JSXElementConstructor : Symbol(JSXElementConstructor, Decl(index.d.ts, 8, 74))
+>P : Symbol(P, Decl(index.d.ts, 33, 45))
+
+                ? JSX.IntrinsicElements[T]
+>JSX : Symbol(JSX, Decl(index.d.ts, 57, 16))
+>IntrinsicElements : Symbol(JSX.IntrinsicElements, Decl(index.d.ts, 63, 43))
+>T : Symbol(T, Decl(index.d.ts, 32, 24))
+
+                : {};
+    type ComponentPropsWithRef<T extends ElementType> =
+>ComponentPropsWithRef : Symbol(ComponentPropsWithRef, Decl(index.d.ts, 35, 21))
+>T : Symbol(T, Decl(index.d.ts, 36, 31))
+>ElementType : Symbol(ElementType, Decl(index.d.ts, 2, 25))
+
+        T extends (new (props: infer P) => Component<any, any>)
+>T : Symbol(T, Decl(index.d.ts, 36, 31))
+>props : Symbol(props, Decl(index.d.ts, 37, 24))
+>P : Symbol(P, Decl(index.d.ts, 37, 36))
+>Component : Symbol(Component)
+
+            ? PropsWithoutRef<P> & RefAttributes<InstanceType<T>>
+>PropsWithoutRef : Symbol(PropsWithoutRef, Decl(index.d.ts, 21, 5))
+>P : Symbol(P, Decl(index.d.ts, 37, 36))
+>RefAttributes : Symbol(RefAttributes)
+>InstanceType : Symbol(InstanceType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(index.d.ts, 36, 31))
+
+            : PropsWithRef<ComponentProps<T>>;
+>PropsWithRef : Symbol(PropsWithRef, Decl(index.d.ts, 23, 91))
+>ComponentProps : Symbol(ComponentProps, Decl(index.d.ts, 31, 16))
+>T : Symbol(T, Decl(index.d.ts, 36, 31))
+
+    type ComponentPropsWithoutRef<T extends ElementType> =
+>ComponentPropsWithoutRef : Symbol(ComponentPropsWithoutRef, Decl(index.d.ts, 39, 46))
+>T : Symbol(T, Decl(index.d.ts, 40, 34))
+>ElementType : Symbol(ElementType, Decl(index.d.ts, 2, 25))
+
+        PropsWithoutRef<ComponentProps<T>>;
+>PropsWithoutRef : Symbol(PropsWithoutRef, Decl(index.d.ts, 21, 5))
+>ComponentProps : Symbol(ComponentProps, Decl(index.d.ts, 31, 16))
+>T : Symbol(T, Decl(index.d.ts, 40, 34))
+
+    type ComponentRef<T extends ElementType> = T extends NamedExoticComponent<
+>ComponentRef : Symbol(ComponentRef, Decl(index.d.ts, 41, 43))
+>T : Symbol(T, Decl(index.d.ts, 42, 22))
+>ElementType : Symbol(ElementType, Decl(index.d.ts, 2, 25))
+>T : Symbol(T, Decl(index.d.ts, 42, 22))
+>NamedExoticComponent : Symbol(NamedExoticComponent, Decl(index.d.ts, 15, 5))
+
+    >
+            ? Method
+>Method : Symbol(Method)
+
+            : never;
+    type MemoExoticComponent<T extends ComponentType<any>> = NamedExoticComponent<ComponentPropsWithRef<T>> & {
+>MemoExoticComponent : Symbol(MemoExoticComponent, Decl(index.d.ts, 45, 20))
+>T : Symbol(T, Decl(index.d.ts, 46, 29))
+>ComponentType : Symbol(ComponentType, Decl(index.d.ts, 7, 25))
+>NamedExoticComponent : Symbol(NamedExoticComponent, Decl(index.d.ts, 15, 5))
+>ComponentPropsWithRef : Symbol(ComponentPropsWithRef, Decl(index.d.ts, 35, 21))
+>T : Symbol(T, Decl(index.d.ts, 46, 29))
+
+    };
+    type LazyExoticComponent<T extends ComponentType<any>> = ExoticComponent<ComponentPropsWithRef<T>> & {
+>LazyExoticComponent : Symbol(LazyExoticComponent, Decl(index.d.ts, 47, 6))
+>T : Symbol(T, Decl(index.d.ts, 48, 29))
+>ComponentType : Symbol(ComponentType, Decl(index.d.ts, 7, 25))
+>ExoticComponent : Symbol(ExoticComponent, Decl(index.d.ts, 10, 50))
+>ComponentPropsWithRef : Symbol(ComponentPropsWithRef, Decl(index.d.ts, 35, 21))
+>T : Symbol(T, Decl(index.d.ts, 48, 29))
+
+    };
+    type AriaRole =
+>AriaRole : Symbol(AriaRole, Decl(index.d.ts, 49, 6))
+
+        | 'alert'
+}
+type MergePropTypes<P, T> =
+>MergePropTypes : Symbol(MergePropTypes, Decl(index.d.ts, 52, 1))
+>P : Symbol(P, Decl(index.d.ts, 53, 20))
+>T : Symbol(T, Decl(index.d.ts, 53, 22))
+
+    P extends any
+>P : Symbol(P, Decl(index.d.ts, 53, 20))
+
+            ? Defaultize<P, D>
+>Defaultize : Symbol(Defaultize)
+>P : Symbol(P, Decl(index.d.ts, 53, 20))
+>D : Symbol(D)
+
+            : P;
+>P : Symbol(P, Decl(index.d.ts, 53, 20))
+
+declare global {
+>global : Symbol(global, Decl(index.d.ts, 56, 16))
+
+    namespace JSX {
+>JSX : Symbol(JSX, Decl(index.d.ts, 57, 16))
+
+        type LibraryManagedAttributes<C, P> = C extends React.MemoExoticComponent<infer T> | React.LazyExoticComponent<infer T>
+>LibraryManagedAttributes : Symbol(LibraryManagedAttributes, Decl(index.d.ts, 58, 19))
+>C : Symbol(C, Decl(index.d.ts, 59, 38))
+>P : Symbol(P, Decl(index.d.ts, 59, 40))
+>C : Symbol(C, Decl(index.d.ts, 59, 38))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>MemoExoticComponent : Symbol(React.MemoExoticComponent, Decl(index.d.ts, 45, 20))
+>T : Symbol(T, Decl(index.d.ts, 59, 87), Decl(index.d.ts, 59, 124))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>LazyExoticComponent : Symbol(React.LazyExoticComponent, Decl(index.d.ts, 47, 6))
+>T : Symbol(T, Decl(index.d.ts, 59, 87), Decl(index.d.ts, 59, 124))
+
+            ? T extends React.MemoExoticComponent<infer U> | React.LazyExoticComponent<infer U>
+>T : Symbol(T, Decl(index.d.ts, 59, 87), Decl(index.d.ts, 59, 124))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>MemoExoticComponent : Symbol(React.MemoExoticComponent, Decl(index.d.ts, 45, 20))
+>U : Symbol(U, Decl(index.d.ts, 60, 55), Decl(index.d.ts, 60, 92))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>LazyExoticComponent : Symbol(React.LazyExoticComponent, Decl(index.d.ts, 47, 6))
+>U : Symbol(U, Decl(index.d.ts, 60, 55), Decl(index.d.ts, 60, 92))
+
+                ? ReactManagedAttributes<U, P>
+>ReactManagedAttributes : Symbol(ReactManagedAttributes)
+>U : Symbol(U, Decl(index.d.ts, 60, 55), Decl(index.d.ts, 60, 92))
+>P : Symbol(P, Decl(index.d.ts, 59, 40))
+
+                : ReactManagedAttributes<T, P>
+>ReactManagedAttributes : Symbol(ReactManagedAttributes)
+>T : Symbol(T, Decl(index.d.ts, 59, 87), Decl(index.d.ts, 59, 124))
+>P : Symbol(P, Decl(index.d.ts, 59, 40))
+
+            : ReactManagedAttributes<C, P>;
+>ReactManagedAttributes : Symbol(ReactManagedAttributes)
+>C : Symbol(C, Decl(index.d.ts, 59, 38))
+>P : Symbol(P, Decl(index.d.ts, 59, 40))
+
+        interface IntrinsicElements {
+>IntrinsicElements : Symbol(IntrinsicElements, Decl(index.d.ts, 63, 43))
+
+            abbr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>abbr : Symbol(IntrinsicElements.abbr, Decl(index.d.ts, 64, 37))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            address: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>address : Symbol(IntrinsicElements.address, Decl(index.d.ts, 65, 90))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            area: React.DetailedHTMLProps<React.AreaHTMLAttributes<HTMLAreaElement>, HTMLAreaElement>;
+>area : Symbol(IntrinsicElements.area, Decl(index.d.ts, 66, 93))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>AreaHTMLAttributes : Symbol(React.AreaHTMLAttributes)
+>HTMLAreaElement : Symbol(HTMLAreaElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLAreaElement : Symbol(HTMLAreaElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            bdo: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>bdo : Symbol(IntrinsicElements.bdo, Decl(index.d.ts, 67, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            big: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>big : Symbol(IntrinsicElements.big, Decl(index.d.ts, 68, 89))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            blockquote: React.DetailedHTMLProps<React.BlockquoteHTMLAttributes<HTMLQuoteElement>, HTMLQuoteElement>;
+>blockquote : Symbol(IntrinsicElements.blockquote, Decl(index.d.ts, 69, 89))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>BlockquoteHTMLAttributes : Symbol(React.BlockquoteHTMLAttributes)
+>HTMLQuoteElement : Symbol(HTMLQuoteElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLQuoteElement : Symbol(HTMLQuoteElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            body: React.DetailedHTMLProps<React.HTMLAttributes<HTMLBodyElement>, HTMLBodyElement>;
+>body : Symbol(IntrinsicElements.body, Decl(index.d.ts, 70, 116))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLBodyElement : Symbol(HTMLBodyElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLBodyElement : Symbol(HTMLBodyElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            br: React.DetailedHTMLProps<React.HTMLAttributes<HTMLBRElement>, HTMLBRElement>;
+>br : Symbol(IntrinsicElements.br, Decl(index.d.ts, 71, 98))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLBRElement : Symbol(HTMLBRElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLBRElement : Symbol(HTMLBRElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            button: React.DetailedHTMLProps<React.ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
+>button : Symbol(IntrinsicElements.button, Decl(index.d.ts, 72, 92))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>ButtonHTMLAttributes : Symbol(React.ButtonHTMLAttributes)
+>HTMLButtonElement : Symbol(HTMLButtonElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLButtonElement : Symbol(HTMLButtonElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            canvas: React.DetailedHTMLProps<React.CanvasHTMLAttributes<HTMLCanvasElement>, HTMLCanvasElement>;
+>canvas : Symbol(IntrinsicElements.canvas, Decl(index.d.ts, 73, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>CanvasHTMLAttributes : Symbol(React.CanvasHTMLAttributes)
+>HTMLCanvasElement : Symbol(HTMLCanvasElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLCanvasElement : Symbol(HTMLCanvasElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            caption: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>caption : Symbol(IntrinsicElements.caption, Decl(index.d.ts, 74, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            center: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>center : Symbol(IntrinsicElements.center, Decl(index.d.ts, 75, 93))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            cite: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>cite : Symbol(IntrinsicElements.cite, Decl(index.d.ts, 76, 92))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            code: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>code : Symbol(IntrinsicElements.code, Decl(index.d.ts, 77, 90))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            hgroup: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>hgroup : Symbol(IntrinsicElements.hgroup, Decl(index.d.ts, 78, 90))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            hr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLHRElement>, HTMLHRElement>;
+>hr : Symbol(IntrinsicElements.hr, Decl(index.d.ts, 79, 92))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLHRElement : Symbol(HTMLHRElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLHRElement : Symbol(HTMLHRElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            html: React.DetailedHTMLProps<React.HtmlHTMLAttributes<HTMLHtmlElement>, HTMLHtmlElement>;
+>html : Symbol(IntrinsicElements.html, Decl(index.d.ts, 80, 92))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HtmlHTMLAttributes : Symbol(React.HtmlHTMLAttributes)
+>HTMLHtmlElement : Symbol(HTMLHtmlElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLHtmlElement : Symbol(HTMLHtmlElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            i: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>i : Symbol(IntrinsicElements.i, Decl(index.d.ts, 81, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            iframe: React.DetailedHTMLProps<React.IframeHTMLAttributes<HTMLIFrameElement>, HTMLIFrameElement>;
+>iframe : Symbol(IntrinsicElements.iframe, Decl(index.d.ts, 82, 87))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>IframeHTMLAttributes : Symbol(React.IframeHTMLAttributes)
+>HTMLIFrameElement : Symbol(HTMLIFrameElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLIFrameElement : Symbol(HTMLIFrameElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            img: React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>;
+>img : Symbol(IntrinsicElements.img, Decl(index.d.ts, 83, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>ImgHTMLAttributes : Symbol(React.ImgHTMLAttributes)
+>HTMLImageElement : Symbol(HTMLImageElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLImageElement : Symbol(HTMLImageElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            input: React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
+>input : Symbol(IntrinsicElements.input, Decl(index.d.ts, 84, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>InputHTMLAttributes : Symbol(React.InputHTMLAttributes)
+>HTMLInputElement : Symbol(HTMLInputElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLInputElement : Symbol(HTMLInputElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            ins: React.DetailedHTMLProps<React.InsHTMLAttributes<HTMLModElement>, HTMLModElement>;
+>ins : Symbol(IntrinsicElements.ins, Decl(index.d.ts, 85, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>InsHTMLAttributes : Symbol(React.InsHTMLAttributes)
+>HTMLModElement : Symbol(HTMLModElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLModElement : Symbol(HTMLModElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            kbd: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>kbd : Symbol(IntrinsicElements.kbd, Decl(index.d.ts, 86, 98))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            keygen: React.DetailedHTMLProps<React.KeygenHTMLAttributes<HTMLElement>, HTMLElement>;
+>keygen : Symbol(IntrinsicElements.keygen, Decl(index.d.ts, 87, 89))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>KeygenHTMLAttributes : Symbol(React.KeygenHTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            label: React.DetailedHTMLProps<React.LabelHTMLAttributes<HTMLLabelElement>, HTMLLabelElement>;
+>label : Symbol(IntrinsicElements.label, Decl(index.d.ts, 88, 98))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>LabelHTMLAttributes : Symbol(React.LabelHTMLAttributes)
+>HTMLLabelElement : Symbol(HTMLLabelElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLLabelElement : Symbol(HTMLLabelElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            legend: React.DetailedHTMLProps<React.HTMLAttributes<HTMLLegendElement>, HTMLLegendElement>;
+>legend : Symbol(IntrinsicElements.legend, Decl(index.d.ts, 89, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLLegendElement : Symbol(HTMLLegendElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLLegendElement : Symbol(HTMLLegendElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            li: React.DetailedHTMLProps<React.LiHTMLAttributes<HTMLLIElement>, HTMLLIElement>;
+>li : Symbol(IntrinsicElements.li, Decl(index.d.ts, 90, 104))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>LiHTMLAttributes : Symbol(React.LiHTMLAttributes)
+>HTMLLIElement : Symbol(HTMLLIElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLLIElement : Symbol(HTMLLIElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            link: React.DetailedHTMLProps<React.LinkHTMLAttributes<HTMLLinkElement>, HTMLLinkElement>;
+>link : Symbol(IntrinsicElements.link, Decl(index.d.ts, 91, 94))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>LinkHTMLAttributes : Symbol(React.LinkHTMLAttributes)
+>HTMLLinkElement : Symbol(HTMLLinkElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLLinkElement : Symbol(HTMLLinkElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            main: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>main : Symbol(IntrinsicElements.main, Decl(index.d.ts, 92, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            map: React.DetailedHTMLProps<React.MapHTMLAttributes<HTMLMapElement>, HTMLMapElement>;
+>map : Symbol(IntrinsicElements.map, Decl(index.d.ts, 93, 90))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>MapHTMLAttributes : Symbol(React.MapHTMLAttributes)
+>HTMLMapElement : Symbol(HTMLMapElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLMapElement : Symbol(HTMLMapElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            mark: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>mark : Symbol(IntrinsicElements.mark, Decl(index.d.ts, 94, 98))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            menu: React.DetailedHTMLProps<React.MenuHTMLAttributes<HTMLElement>, HTMLElement>;
+>menu : Symbol(IntrinsicElements.menu, Decl(index.d.ts, 95, 90))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>MenuHTMLAttributes : Symbol(React.MenuHTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            menuitem: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>menuitem : Symbol(IntrinsicElements.menuitem, Decl(index.d.ts, 96, 94))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            meta: React.DetailedHTMLProps<React.MetaHTMLAttributes<HTMLMetaElement>, HTMLMetaElement>;
+>meta : Symbol(IntrinsicElements.meta, Decl(index.d.ts, 97, 94))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>MetaHTMLAttributes : Symbol(React.MetaHTMLAttributes)
+>HTMLMetaElement : Symbol(HTMLMetaElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLMetaElement : Symbol(HTMLMetaElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            meter: React.DetailedHTMLProps<React.MeterHTMLAttributes<HTMLMeterElement>, HTMLMeterElement>;
+>meter : Symbol(IntrinsicElements.meter, Decl(index.d.ts, 98, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>MeterHTMLAttributes : Symbol(React.MeterHTMLAttributes)
+>HTMLMeterElement : Symbol(HTMLMeterElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLMeterElement : Symbol(HTMLMeterElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            nav: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>nav : Symbol(IntrinsicElements.nav, Decl(index.d.ts, 99, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            noindex: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>noindex : Symbol(IntrinsicElements.noindex, Decl(index.d.ts, 100, 89))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            noscript: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>noscript : Symbol(IntrinsicElements.noscript, Decl(index.d.ts, 101, 93))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            object: React.DetailedHTMLProps<React.ObjectHTMLAttributes<HTMLObjectElement>, HTMLObjectElement>;
+>object : Symbol(IntrinsicElements.object, Decl(index.d.ts, 102, 94))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>ObjectHTMLAttributes : Symbol(React.ObjectHTMLAttributes)
+>HTMLObjectElement : Symbol(HTMLObjectElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLObjectElement : Symbol(HTMLObjectElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            ol: React.DetailedHTMLProps<React.OlHTMLAttributes<HTMLOListElement>, HTMLOListElement>;
+>ol : Symbol(IntrinsicElements.ol, Decl(index.d.ts, 103, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>OlHTMLAttributes : Symbol(React.OlHTMLAttributes)
+>HTMLOListElement : Symbol(HTMLOListElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLOListElement : Symbol(HTMLOListElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            optgroup: React.DetailedHTMLProps<React.OptgroupHTMLAttributes<HTMLOptGroupElement>, HTMLOptGroupElement>;
+>optgroup : Symbol(IntrinsicElements.optgroup, Decl(index.d.ts, 104, 100))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>OptgroupHTMLAttributes : Symbol(React.OptgroupHTMLAttributes)
+>HTMLOptGroupElement : Symbol(HTMLOptGroupElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLOptGroupElement : Symbol(HTMLOptGroupElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            option: React.DetailedHTMLProps<React.OptionHTMLAttributes<HTMLOptionElement>, HTMLOptionElement>;
+>option : Symbol(IntrinsicElements.option, Decl(index.d.ts, 105, 118))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>OptionHTMLAttributes : Symbol(React.OptionHTMLAttributes)
+>HTMLOptionElement : Symbol(HTMLOptionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLOptionElement : Symbol(HTMLOptionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            output: React.DetailedHTMLProps<React.OutputHTMLAttributes<HTMLOutputElement>, HTMLOutputElement>;
+>output : Symbol(IntrinsicElements.output, Decl(index.d.ts, 106, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>OutputHTMLAttributes : Symbol(React.OutputHTMLAttributes)
+>HTMLOutputElement : Symbol(HTMLOutputElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLOutputElement : Symbol(HTMLOutputElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            p: React.DetailedHTMLProps<React.HTMLAttributes<HTMLParagraphElement>, HTMLParagraphElement>;
+>p : Symbol(IntrinsicElements.p, Decl(index.d.ts, 107, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLParagraphElement : Symbol(HTMLParagraphElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLParagraphElement : Symbol(HTMLParagraphElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            param: React.DetailedHTMLProps<React.ParamHTMLAttributes<HTMLParamElement>, HTMLParamElement>;
+>param : Symbol(IntrinsicElements.param, Decl(index.d.ts, 108, 105))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>ParamHTMLAttributes : Symbol(React.ParamHTMLAttributes)
+>HTMLParamElement : Symbol(HTMLParamElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLParamElement : Symbol(HTMLParamElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            picture: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>picture : Symbol(IntrinsicElements.picture, Decl(index.d.ts, 109, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            pre: React.DetailedHTMLProps<React.HTMLAttributes<HTMLPreElement>, HTMLPreElement>;
+>pre : Symbol(IntrinsicElements.pre, Decl(index.d.ts, 110, 93))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLPreElement : Symbol(HTMLPreElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLPreElement : Symbol(HTMLPreElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            progress: React.DetailedHTMLProps<React.ProgressHTMLAttributes<HTMLProgressElement>, HTMLProgressElement>;
+>progress : Symbol(IntrinsicElements.progress, Decl(index.d.ts, 111, 95))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>ProgressHTMLAttributes : Symbol(React.ProgressHTMLAttributes)
+>HTMLProgressElement : Symbol(HTMLProgressElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLProgressElement : Symbol(HTMLProgressElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            q: React.DetailedHTMLProps<React.QuoteHTMLAttributes<HTMLQuoteElement>, HTMLQuoteElement>;
+>q : Symbol(IntrinsicElements.q, Decl(index.d.ts, 112, 118))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>QuoteHTMLAttributes : Symbol(React.QuoteHTMLAttributes)
+>HTMLQuoteElement : Symbol(HTMLQuoteElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLQuoteElement : Symbol(HTMLQuoteElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            rp: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>rp : Symbol(IntrinsicElements.rp, Decl(index.d.ts, 113, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            rt: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>rt : Symbol(IntrinsicElements.rt, Decl(index.d.ts, 114, 88))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            ruby: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>ruby : Symbol(IntrinsicElements.ruby, Decl(index.d.ts, 115, 88))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            s: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>s : Symbol(IntrinsicElements.s, Decl(index.d.ts, 116, 90))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            samp: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>samp : Symbol(IntrinsicElements.samp, Decl(index.d.ts, 117, 87))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            slot: React.DetailedHTMLProps<React.SlotHTMLAttributes<HTMLSlotElement>, HTMLSlotElement>;
+>slot : Symbol(IntrinsicElements.slot, Decl(index.d.ts, 118, 90))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SlotHTMLAttributes : Symbol(React.SlotHTMLAttributes)
+>HTMLSlotElement : Symbol(HTMLSlotElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLSlotElement : Symbol(HTMLSlotElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            script: React.DetailedHTMLProps<React.ScriptHTMLAttributes<HTMLScriptElement>, HTMLScriptElement>;
+>script : Symbol(IntrinsicElements.script, Decl(index.d.ts, 119, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>ScriptHTMLAttributes : Symbol(React.ScriptHTMLAttributes)
+>HTMLScriptElement : Symbol(HTMLScriptElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLScriptElement : Symbol(HTMLScriptElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            section: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>section : Symbol(IntrinsicElements.section, Decl(index.d.ts, 120, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            select: React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement>;
+>select : Symbol(IntrinsicElements.select, Decl(index.d.ts, 121, 93))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SelectHTMLAttributes : Symbol(React.SelectHTMLAttributes)
+>HTMLSelectElement : Symbol(HTMLSelectElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLSelectElement : Symbol(HTMLSelectElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            small: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>small : Symbol(IntrinsicElements.small, Decl(index.d.ts, 122, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            source: React.DetailedHTMLProps<React.SourceHTMLAttributes<HTMLSourceElement>, HTMLSourceElement>;
+>source : Symbol(IntrinsicElements.source, Decl(index.d.ts, 123, 91))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SourceHTMLAttributes : Symbol(React.SourceHTMLAttributes)
+>HTMLSourceElement : Symbol(HTMLSourceElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLSourceElement : Symbol(HTMLSourceElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            span: React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>;
+>span : Symbol(IntrinsicElements.span, Decl(index.d.ts, 124, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLSpanElement : Symbol(HTMLSpanElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLSpanElement : Symbol(HTMLSpanElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            strong: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>strong : Symbol(IntrinsicElements.strong, Decl(index.d.ts, 125, 98))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            style: React.DetailedHTMLProps<React.StyleHTMLAttributes<HTMLStyleElement>, HTMLStyleElement>;
+>style : Symbol(IntrinsicElements.style, Decl(index.d.ts, 126, 92))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>StyleHTMLAttributes : Symbol(React.StyleHTMLAttributes)
+>HTMLStyleElement : Symbol(HTMLStyleElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLStyleElement : Symbol(HTMLStyleElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            sub: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>sub : Symbol(IntrinsicElements.sub, Decl(index.d.ts, 127, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            summary: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>summary : Symbol(IntrinsicElements.summary, Decl(index.d.ts, 128, 89))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            sup: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>sup : Symbol(IntrinsicElements.sup, Decl(index.d.ts, 129, 93))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            table: React.DetailedHTMLProps<React.TableHTMLAttributes<HTMLTableElement>, HTMLTableElement>;
+>table : Symbol(IntrinsicElements.table, Decl(index.d.ts, 130, 89))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>TableHTMLAttributes : Symbol(React.TableHTMLAttributes)
+>HTMLTableElement : Symbol(HTMLTableElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTableElement : Symbol(HTMLTableElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            template: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTemplateElement>, HTMLTemplateElement>;
+>template : Symbol(IntrinsicElements.template, Decl(index.d.ts, 131, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLTemplateElement : Symbol(HTMLTemplateElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTemplateElement : Symbol(HTMLTemplateElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            tbody: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>;
+>tbody : Symbol(IntrinsicElements.tbody, Decl(index.d.ts, 132, 110))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLTableSectionElement : Symbol(HTMLTableSectionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTableSectionElement : Symbol(HTMLTableSectionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            td: React.DetailedHTMLProps<React.TdHTMLAttributes<HTMLTableDataCellElement>, HTMLTableDataCellElement>;
+>td : Symbol(IntrinsicElements.td, Decl(index.d.ts, 133, 115))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>TdHTMLAttributes : Symbol(React.TdHTMLAttributes)
+>HTMLTableDataCellElement : Symbol(HTMLTableDataCellElement, Decl(lib.dom.d.ts, --, --))
+>HTMLTableDataCellElement : Symbol(HTMLTableDataCellElement, Decl(lib.dom.d.ts, --, --))
+
+            textarea: React.DetailedHTMLProps<React.TextareaHTMLAttributes<HTMLTextAreaElement>, HTMLTextAreaElement>;
+>textarea : Symbol(IntrinsicElements.textarea, Decl(index.d.ts, 134, 116))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>TextareaHTMLAttributes : Symbol(React.TextareaHTMLAttributes)
+>HTMLTextAreaElement : Symbol(HTMLTextAreaElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTextAreaElement : Symbol(HTMLTextAreaElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            tfoot: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>;
+>tfoot : Symbol(IntrinsicElements.tfoot, Decl(index.d.ts, 135, 118))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLTableSectionElement : Symbol(HTMLTableSectionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTableSectionElement : Symbol(HTMLTableSectionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            th: React.DetailedHTMLProps<React.ThHTMLAttributes<HTMLTableHeaderCellElement>, HTMLTableHeaderCellElement>;
+>th : Symbol(IntrinsicElements.th, Decl(index.d.ts, 136, 115))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>ThHTMLAttributes : Symbol(React.ThHTMLAttributes)
+>HTMLTableHeaderCellElement : Symbol(HTMLTableHeaderCellElement, Decl(lib.dom.d.ts, --, --))
+>HTMLTableHeaderCellElement : Symbol(HTMLTableHeaderCellElement, Decl(lib.dom.d.ts, --, --))
+
+            thead: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableSectionElement>, HTMLTableSectionElement>;
+>thead : Symbol(IntrinsicElements.thead, Decl(index.d.ts, 137, 120))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLTableSectionElement : Symbol(HTMLTableSectionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTableSectionElement : Symbol(HTMLTableSectionElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            time: React.DetailedHTMLProps<React.TimeHTMLAttributes<HTMLTimeElement>, HTMLTimeElement>;
+>time : Symbol(IntrinsicElements.time, Decl(index.d.ts, 138, 115))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>TimeHTMLAttributes : Symbol(React.TimeHTMLAttributes)
+>HTMLTimeElement : Symbol(HTMLTimeElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTimeElement : Symbol(HTMLTimeElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            title: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTitleElement>, HTMLTitleElement>;
+>title : Symbol(IntrinsicElements.title, Decl(index.d.ts, 139, 102))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLTitleElement : Symbol(HTMLTitleElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTitleElement : Symbol(HTMLTitleElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            tr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTableRowElement>, HTMLTableRowElement>;
+>tr : Symbol(IntrinsicElements.tr, Decl(index.d.ts, 140, 101))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLTableRowElement : Symbol(HTMLTableRowElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTableRowElement : Symbol(HTMLTableRowElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            track: React.DetailedHTMLProps<React.TrackHTMLAttributes<HTMLTrackElement>, HTMLTrackElement>;
+>track : Symbol(IntrinsicElements.track, Decl(index.d.ts, 141, 104))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>TrackHTMLAttributes : Symbol(React.TrackHTMLAttributes)
+>HTMLTrackElement : Symbol(HTMLTrackElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLTrackElement : Symbol(HTMLTrackElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            u: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>u : Symbol(IntrinsicElements.u, Decl(index.d.ts, 142, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            ul: React.DetailedHTMLProps<React.HTMLAttributes<HTMLUListElement>, HTMLUListElement>;
+>ul : Symbol(IntrinsicElements.ul, Decl(index.d.ts, 143, 87))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLUListElement : Symbol(HTMLUListElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLUListElement : Symbol(HTMLUListElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            "var": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>"var" : Symbol(IntrinsicElements["var"], Decl(index.d.ts, 144, 98))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            video: React.DetailedHTMLProps<React.VideoHTMLAttributes<HTMLVideoElement>, HTMLVideoElement>;
+>video : Symbol(IntrinsicElements.video, Decl(index.d.ts, 145, 91))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>VideoHTMLAttributes : Symbol(React.VideoHTMLAttributes)
+>HTMLVideoElement : Symbol(HTMLVideoElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLVideoElement : Symbol(HTMLVideoElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            wbr: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+>wbr : Symbol(IntrinsicElements.wbr, Decl(index.d.ts, 146, 106))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>HTMLAttributes : Symbol(React.HTMLAttributes)
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>HTMLElement : Symbol(HTMLElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            webview: React.DetailedHTMLProps<React.WebViewHTMLAttributes<HTMLWebViewElement>, HTMLWebViewElement>;
+>webview : Symbol(IntrinsicElements.webview, Decl(index.d.ts, 147, 89))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>DetailedHTMLProps : Symbol(React.DetailedHTMLProps)
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>WebViewHTMLAttributes : Symbol(React.WebViewHTMLAttributes)
+>HTMLWebViewElement : Symbol(HTMLWebViewElement)
+>HTMLWebViewElement : Symbol(HTMLWebViewElement)
+
+            animate: React.SVGProps<SVGElement>; // TODO: It is SVGAnimateElement but is not in TypeScript's lib.dom.d.ts for now.
+>animate : Symbol(IntrinsicElements.animate, Decl(index.d.ts, 148, 114))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGElement : Symbol(SVGElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            animateMotion: React.SVGProps<SVGElement>;
+>animateMotion : Symbol(IntrinsicElements.animateMotion, Decl(index.d.ts, 149, 48))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGElement : Symbol(SVGElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            animateTransform: React.SVGProps<SVGElement>; // TODO: It is SVGAnimateTransformElement but is not in TypeScript's lib.dom.d.ts for now.
+>animateTransform : Symbol(IntrinsicElements.animateTransform, Decl(index.d.ts, 150, 54))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGElement : Symbol(SVGElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            circle: React.SVGProps<SVGCircleElement>;
+>circle : Symbol(IntrinsicElements.circle, Decl(index.d.ts, 151, 57))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGCircleElement : Symbol(SVGCircleElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            clipPath: React.SVGProps<SVGClipPathElement>;
+>clipPath : Symbol(IntrinsicElements.clipPath, Decl(index.d.ts, 152, 53))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGClipPathElement : Symbol(SVGClipPathElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            defs: React.SVGProps<SVGDefsElement>;
+>defs : Symbol(IntrinsicElements.defs, Decl(index.d.ts, 153, 57))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGDefsElement : Symbol(SVGDefsElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            desc: React.SVGProps<SVGDescElement>;
+>desc : Symbol(IntrinsicElements.desc, Decl(index.d.ts, 154, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGDescElement : Symbol(SVGDescElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            ellipse: React.SVGProps<SVGEllipseElement>;
+>ellipse : Symbol(IntrinsicElements.ellipse, Decl(index.d.ts, 155, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGEllipseElement : Symbol(SVGEllipseElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feBlend: React.SVGProps<SVGFEBlendElement>;
+>feBlend : Symbol(IntrinsicElements.feBlend, Decl(index.d.ts, 156, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEBlendElement : Symbol(SVGFEBlendElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feColorMatrix: React.SVGProps<SVGFEColorMatrixElement>;
+>feColorMatrix : Symbol(IntrinsicElements.feColorMatrix, Decl(index.d.ts, 157, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEColorMatrixElement : Symbol(SVGFEColorMatrixElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feComponentTransfer: React.SVGProps<SVGFEComponentTransferElement>;
+>feComponentTransfer : Symbol(IntrinsicElements.feComponentTransfer, Decl(index.d.ts, 158, 67))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEComponentTransferElement : Symbol(SVGFEComponentTransferElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feComposite: React.SVGProps<SVGFECompositeElement>;
+>feComposite : Symbol(IntrinsicElements.feComposite, Decl(index.d.ts, 159, 79))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFECompositeElement : Symbol(SVGFECompositeElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feConvolveMatrix: React.SVGProps<SVGFEConvolveMatrixElement>;
+>feConvolveMatrix : Symbol(IntrinsicElements.feConvolveMatrix, Decl(index.d.ts, 160, 63))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEConvolveMatrixElement : Symbol(SVGFEConvolveMatrixElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feDiffuseLighting: React.SVGProps<SVGFEDiffuseLightingElement>;
+>feDiffuseLighting : Symbol(IntrinsicElements.feDiffuseLighting, Decl(index.d.ts, 161, 73))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEDiffuseLightingElement : Symbol(SVGFEDiffuseLightingElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feDisplacementMap: React.SVGProps<SVGFEDisplacementMapElement>;
+>feDisplacementMap : Symbol(IntrinsicElements.feDisplacementMap, Decl(index.d.ts, 162, 75))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEDisplacementMapElement : Symbol(SVGFEDisplacementMapElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feDistantLight: React.SVGProps<SVGFEDistantLightElement>;
+>feDistantLight : Symbol(IntrinsicElements.feDistantLight, Decl(index.d.ts, 163, 75))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEDistantLightElement : Symbol(SVGFEDistantLightElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feDropShadow: React.SVGProps<SVGFEDropShadowElement>;
+>feDropShadow : Symbol(IntrinsicElements.feDropShadow, Decl(index.d.ts, 164, 69))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEDropShadowElement : Symbol(SVGFEDropShadowElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feFlood: React.SVGProps<SVGFEFloodElement>;
+>feFlood : Symbol(IntrinsicElements.feFlood, Decl(index.d.ts, 165, 65))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEFloodElement : Symbol(SVGFEFloodElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feFuncA: React.SVGProps<SVGFEFuncAElement>;
+>feFuncA : Symbol(IntrinsicElements.feFuncA, Decl(index.d.ts, 166, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEFuncAElement : Symbol(SVGFEFuncAElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feFuncB: React.SVGProps<SVGFEFuncBElement>;
+>feFuncB : Symbol(IntrinsicElements.feFuncB, Decl(index.d.ts, 167, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEFuncBElement : Symbol(SVGFEFuncBElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feFuncG: React.SVGProps<SVGFEFuncGElement>;
+>feFuncG : Symbol(IntrinsicElements.feFuncG, Decl(index.d.ts, 168, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEFuncGElement : Symbol(SVGFEFuncGElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feFuncR: React.SVGProps<SVGFEFuncRElement>;
+>feFuncR : Symbol(IntrinsicElements.feFuncR, Decl(index.d.ts, 169, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEFuncRElement : Symbol(SVGFEFuncRElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feGaussianBlur: React.SVGProps<SVGFEGaussianBlurElement>;
+>feGaussianBlur : Symbol(IntrinsicElements.feGaussianBlur, Decl(index.d.ts, 170, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEGaussianBlurElement : Symbol(SVGFEGaussianBlurElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feImage: React.SVGProps<SVGFEImageElement>;
+>feImage : Symbol(IntrinsicElements.feImage, Decl(index.d.ts, 171, 69))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEImageElement : Symbol(SVGFEImageElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feMerge: React.SVGProps<SVGFEMergeElement>;
+>feMerge : Symbol(IntrinsicElements.feMerge, Decl(index.d.ts, 172, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEMergeElement : Symbol(SVGFEMergeElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feMergeNode: React.SVGProps<SVGFEMergeNodeElement>;
+>feMergeNode : Symbol(IntrinsicElements.feMergeNode, Decl(index.d.ts, 173, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEMergeNodeElement : Symbol(SVGFEMergeNodeElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feMorphology: React.SVGProps<SVGFEMorphologyElement>;
+>feMorphology : Symbol(IntrinsicElements.feMorphology, Decl(index.d.ts, 174, 63))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEMorphologyElement : Symbol(SVGFEMorphologyElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feOffset: React.SVGProps<SVGFEOffsetElement>;
+>feOffset : Symbol(IntrinsicElements.feOffset, Decl(index.d.ts, 175, 65))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEOffsetElement : Symbol(SVGFEOffsetElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            fePointLight: React.SVGProps<SVGFEPointLightElement>;
+>fePointLight : Symbol(IntrinsicElements.fePointLight, Decl(index.d.ts, 176, 57))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFEPointLightElement : Symbol(SVGFEPointLightElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feSpecularLighting: React.SVGProps<SVGFESpecularLightingElement>;
+>feSpecularLighting : Symbol(IntrinsicElements.feSpecularLighting, Decl(index.d.ts, 177, 65))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFESpecularLightingElement : Symbol(SVGFESpecularLightingElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feSpotLight: React.SVGProps<SVGFESpotLightElement>;
+>feSpotLight : Symbol(IntrinsicElements.feSpotLight, Decl(index.d.ts, 178, 77))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFESpotLightElement : Symbol(SVGFESpotLightElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feTile: React.SVGProps<SVGFETileElement>;
+>feTile : Symbol(IntrinsicElements.feTile, Decl(index.d.ts, 179, 63))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFETileElement : Symbol(SVGFETileElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            feTurbulence: React.SVGProps<SVGFETurbulenceElement>;
+>feTurbulence : Symbol(IntrinsicElements.feTurbulence, Decl(index.d.ts, 180, 53))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFETurbulenceElement : Symbol(SVGFETurbulenceElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            filter: React.SVGProps<SVGFilterElement>;
+>filter : Symbol(IntrinsicElements.filter, Decl(index.d.ts, 181, 65))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGFilterElement : Symbol(SVGFilterElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            foreignObject: React.SVGProps<SVGForeignObjectElement>;
+>foreignObject : Symbol(IntrinsicElements.foreignObject, Decl(index.d.ts, 182, 53))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGForeignObjectElement : Symbol(SVGForeignObjectElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            g: React.SVGProps<SVGGElement>;
+>g : Symbol(IntrinsicElements.g, Decl(index.d.ts, 183, 67))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGGElement : Symbol(SVGGElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            image: React.SVGProps<SVGImageElement>;
+>image : Symbol(IntrinsicElements.image, Decl(index.d.ts, 184, 43))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGImageElement : Symbol(SVGImageElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            line: React.SVGProps<SVGLineElement>;
+>line : Symbol(IntrinsicElements.line, Decl(index.d.ts, 185, 51))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGLineElement : Symbol(SVGLineElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            linearGradient: React.SVGProps<SVGLinearGradientElement>;
+>linearGradient : Symbol(IntrinsicElements.linearGradient, Decl(index.d.ts, 186, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGLinearGradientElement : Symbol(SVGLinearGradientElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            marker: React.SVGProps<SVGMarkerElement>;
+>marker : Symbol(IntrinsicElements.marker, Decl(index.d.ts, 187, 69))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGMarkerElement : Symbol(SVGMarkerElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            mask: React.SVGProps<SVGMaskElement>;
+>mask : Symbol(IntrinsicElements.mask, Decl(index.d.ts, 188, 53))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGMaskElement : Symbol(SVGMaskElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            metadata: React.SVGProps<SVGMetadataElement>;
+>metadata : Symbol(IntrinsicElements.metadata, Decl(index.d.ts, 189, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGMetadataElement : Symbol(SVGMetadataElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            mpath: React.SVGProps<SVGElement>;
+>mpath : Symbol(IntrinsicElements.mpath, Decl(index.d.ts, 190, 57))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGElement : Symbol(SVGElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            path: React.SVGProps<SVGPathElement>;
+>path : Symbol(IntrinsicElements.path, Decl(index.d.ts, 191, 46))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGPathElement : Symbol(SVGPathElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            pattern: React.SVGProps<SVGPatternElement>;
+>pattern : Symbol(IntrinsicElements.pattern, Decl(index.d.ts, 192, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGPatternElement : Symbol(SVGPatternElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            polygon: React.SVGProps<SVGPolygonElement>;
+>polygon : Symbol(IntrinsicElements.polygon, Decl(index.d.ts, 193, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGPolygonElement : Symbol(SVGPolygonElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            polyline: React.SVGProps<SVGPolylineElement>;
+>polyline : Symbol(IntrinsicElements.polyline, Decl(index.d.ts, 194, 55))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGPolylineElement : Symbol(SVGPolylineElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            radialGradient: React.SVGProps<SVGRadialGradientElement>;
+>radialGradient : Symbol(IntrinsicElements.radialGradient, Decl(index.d.ts, 195, 57))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGRadialGradientElement : Symbol(SVGRadialGradientElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            rect: React.SVGProps<SVGRectElement>;
+>rect : Symbol(IntrinsicElements.rect, Decl(index.d.ts, 196, 69))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGRectElement : Symbol(SVGRectElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            stop: React.SVGProps<SVGStopElement>;
+>stop : Symbol(IntrinsicElements.stop, Decl(index.d.ts, 197, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGStopElement : Symbol(SVGStopElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            switch: React.SVGProps<SVGSwitchElement>;
+>switch : Symbol(IntrinsicElements.switch, Decl(index.d.ts, 198, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGSwitchElement : Symbol(SVGSwitchElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            symbol: React.SVGProps<SVGSymbolElement>;
+>symbol : Symbol(IntrinsicElements.symbol, Decl(index.d.ts, 199, 53))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGSymbolElement : Symbol(SVGSymbolElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            text: React.SVGProps<SVGTextElement>;
+>text : Symbol(IntrinsicElements.text, Decl(index.d.ts, 200, 53))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGTextElement : Symbol(SVGTextElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            textPath: React.SVGProps<SVGTextPathElement>;
+>textPath : Symbol(IntrinsicElements.textPath, Decl(index.d.ts, 201, 49))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGTextPathElement : Symbol(SVGTextPathElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            tspan: React.SVGProps<SVGTSpanElement>;
+>tspan : Symbol(IntrinsicElements.tspan, Decl(index.d.ts, 202, 57))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGTSpanElement : Symbol(SVGTSpanElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            use: React.SVGProps<SVGUseElement>;
+>use : Symbol(IntrinsicElements.use, Decl(index.d.ts, 203, 51))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGUseElement : Symbol(SVGUseElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+
+            view: React.SVGProps<SVGViewElement>;
+>view : Symbol(IntrinsicElements.view, Decl(index.d.ts, 204, 47))
+>React : Symbol(React, Decl(index.d.ts, 1, 26))
+>SVGProps : Symbol(React.SVGProps)
+>SVGViewElement : Symbol(SVGViewElement, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+        }
+    }
+}
+=== src/components/User.tsx ===
+import { Text } from '@chakra-ui/react';
+>Text : Symbol(Text, Decl(User.tsx, 0, 8))
+
+  return <Text>Connected to {user.did}</Text>;
+>Text : Symbol(Text, Decl(User.tsx, 0, 8))
+>Text : Symbol(Text, Decl(User.tsx, 0, 8))
+
