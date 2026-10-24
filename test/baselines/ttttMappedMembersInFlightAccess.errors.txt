@@ -1,0 +1,19 @@
+ttttMappedMembersInFlightAccess.ts(12,7): error TS2322: Type '0' is not assignable to type '"any"'.
+
+
+==== ttttMappedMembersInFlightAccess.ts (1 errors) ====
+    // An indexed access answered while the object's members are being resolved isn't what the access is: tsc's
+    // resolveMappedTypeMembers sets empty members up front ("recursive references see an empty object type"), so inside
+    // the recursive M<S> the mapped type `{ [P in keyof S]: M<S>[] }` is `{}` and `[keyof S]` of it finds nothing, and tsc
+    // memoizes only deferred indexed accesses (indexedAccessTypes), so a later access recomputes it with the members there.
+    // tttt memoizes more accesses than tsc (access.c), only those computed without a taint event; memoizing this one made
+    // ReturnType<typeof f> lose its `any` (bun95-Z2)
+    type U = { [k: string]: unknown };
+    type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+    type K = 'a' | 'b';
+    type IsAny<T> = 0 extends 1 & T ? 'any' : 'not any';
+    declare function f<O extends K>(op: O): M<O>;
+    const a01: IsAny<ReturnType<typeof f>> = 0;
+          ~~~
+!!! error TS2322: Type '0' is not assignable to type '"any"'.
+    

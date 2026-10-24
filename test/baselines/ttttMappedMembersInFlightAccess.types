@@ -1,0 +1,31 @@
+//// [test/cases/ttttMappedMembersInFlightAccess.ts] ////
+
+=== ttttMappedMembersInFlightAccess.ts ===
+// An indexed access answered while the object's members are being resolved isn't what the access is: tsc's
+// resolveMappedTypeMembers sets empty members up front ("recursive references see an empty object type"), so inside
+// the recursive M<S> the mapped type `{ [P in keyof S]: M<S>[] }` is `{}` and `[keyof S]` of it finds nothing, and tsc
+// memoizes only deferred indexed accesses (indexedAccessTypes), so a later access recomputes it with the members there.
+// tttt memoizes more accesses than tsc (access.c), only those computed without a taint event; memoizing this one made
+// ReturnType<typeof f> lose its `any` (bun95-Z2)
+type U = { [k: string]: unknown };
+>U : U
+>k : string
+
+type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+>M : M<S>
+
+type K = 'a' | 'b';
+>K : K
+
+type IsAny<T> = 0 extends 1 & T ? 'any' : 'not any';
+>IsAny : IsAny<T>
+
+declare function f<O extends K>(op: O): M<O>;
+>f : <O extends K>(op: O) => M<O>
+>op : O
+
+const a01: IsAny<ReturnType<typeof f>> = 0;
+>a01 : "any"
+>f : <O extends K>(op: O) => M<O>
+>0 : 0
+

@@ -1,0 +1,47 @@
+//// [test/cases/ttttMappedMembersInFlightAccess.ts] ////
+
+=== ttttMappedMembersInFlightAccess.ts ===
+// An indexed access answered while the object's members are being resolved isn't what the access is: tsc's
+// resolveMappedTypeMembers sets empty members up front ("recursive references see an empty object type"), so inside
+// the recursive M<S> the mapped type `{ [P in keyof S]: M<S>[] }` is `{}` and `[keyof S]` of it finds nothing, and tsc
+// memoizes only deferred indexed accesses (indexedAccessTypes), so a later access recomputes it with the members there.
+// tttt memoizes more accesses than tsc (access.c), only those computed without a taint event; memoizing this one made
+// ReturnType<typeof f> lose its `any` (bun95-Z2)
+type U = { [k: string]: unknown };
+>U : Symbol(U, Decl(ttttMappedMembersInFlightAccess.ts, 0, 0))
+>k : Symbol(k, Decl(ttttMappedMembersInFlightAccess.ts, 6, 12))
+
+type M<S> = S extends 1 ? { [P in keyof S]: M<S>[] }[keyof S] & {} : U;
+>M : Symbol(M, Decl(ttttMappedMembersInFlightAccess.ts, 6, 34))
+>S : Symbol(S, Decl(ttttMappedMembersInFlightAccess.ts, 7, 7))
+>S : Symbol(S, Decl(ttttMappedMembersInFlightAccess.ts, 7, 7))
+>P : Symbol(P, Decl(ttttMappedMembersInFlightAccess.ts, 7, 29))
+>S : Symbol(S, Decl(ttttMappedMembersInFlightAccess.ts, 7, 7))
+>M : Symbol(M, Decl(ttttMappedMembersInFlightAccess.ts, 6, 34))
+>S : Symbol(S, Decl(ttttMappedMembersInFlightAccess.ts, 7, 7))
+>S : Symbol(S, Decl(ttttMappedMembersInFlightAccess.ts, 7, 7))
+>U : Symbol(U, Decl(ttttMappedMembersInFlightAccess.ts, 0, 0))
+
+type K = 'a' | 'b';
+>K : Symbol(K, Decl(ttttMappedMembersInFlightAccess.ts, 7, 71))
+
+type IsAny<T> = 0 extends 1 & T ? 'any' : 'not any';
+>IsAny : Symbol(IsAny, Decl(ttttMappedMembersInFlightAccess.ts, 8, 19))
+>T : Symbol(T, Decl(ttttMappedMembersInFlightAccess.ts, 9, 11))
+>T : Symbol(T, Decl(ttttMappedMembersInFlightAccess.ts, 9, 11))
+
+declare function f<O extends K>(op: O): M<O>;
+>f : Symbol(f, Decl(ttttMappedMembersInFlightAccess.ts, 9, 52))
+>O : Symbol(O, Decl(ttttMappedMembersInFlightAccess.ts, 10, 19))
+>K : Symbol(K, Decl(ttttMappedMembersInFlightAccess.ts, 7, 71))
+>op : Symbol(op, Decl(ttttMappedMembersInFlightAccess.ts, 10, 32))
+>O : Symbol(O, Decl(ttttMappedMembersInFlightAccess.ts, 10, 19))
+>M : Symbol(M, Decl(ttttMappedMembersInFlightAccess.ts, 6, 34))
+>O : Symbol(O, Decl(ttttMappedMembersInFlightAccess.ts, 10, 19))
+
+const a01: IsAny<ReturnType<typeof f>> = 0;
+>a01 : Symbol(a01, Decl(ttttMappedMembersInFlightAccess.ts, 11, 5))
+>IsAny : Symbol(IsAny, Decl(ttttMappedMembersInFlightAccess.ts, 8, 19))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>f : Symbol(f, Decl(ttttMappedMembersInFlightAccess.ts, 9, 52))
+

@@ -342,9 +342,11 @@ static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index,
 // only: the depth cutoff makes a deeper call's answer differ)
 // (So is an intersection object's and a union index's, whose answers are as large: babel's NodePath
 // `(MemberExpression & Partial<...>)[keyof MemberExpression]`, the constraint of an indexed access that the identity
-// relation reaches through conditional types again and again, react-scan's path-references-import.ts. tsc memoizes every
-// getIndexedAccessType (indexedAccessTypes); these only when their computation was clean, no taint event: a mapped type
-// whose members were in flight answered null for its index signature, bun95-Z2's recursive `M<S>`)
+// relation reaches through conditional types again and again, react-scan's path-references-import.ts. tsc memoizes only
+// deferred indexed accesses (indexedAccessTypes) and recomputes the rest, so these only when their computation was clean,
+// no taint event: a mapped type whose members are being resolved is `{}` to tsc too (resolveMappedTypeMembers sets empty
+// members up front), and an access answered then (null in bun95-Z2's recursive `M<S>`) must not outlive it,
+// ttttMappedMembersInFlightAccess)
 static Ty const access_none;
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
     bool by_parts = object->kind == TY_INTERSECTION || (index->kind == TY_UNION && !(index->flags & TYF_BOOLEAN));
