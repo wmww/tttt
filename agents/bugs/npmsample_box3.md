@@ -254,3 +254,13 @@ for flips); a separate file so the three boxes never conflict.
   src/node.ts:628 (xstate 5 machine setups). tsgo reports no depth diagnostic anywhere on the project, so this is a
   tttt-only limit and not a placement difference. Not K-dependent. reduce.py had cut the own files to 6 when corB
   claimed it. No repro from this box. [flip] [open]
+- Large seed 20261403, akash-network/console@main (commit aa01c1469), apps/deploy-web (tsconfig.json): +58 tttt
+  errors (tsgo 94, tttt 152, so not a flip). Many have `unknown`/`{}` where tsgo has a type: TS7006 "Parameter
+  'stripe' implicitly has an 'any' type" at src/components/billing-usage/AddCreditsWalletButton/AddCreditsWalletButton.tsx:94
+  (`stripePromise.then(async stripe => ...)`), TS18046 "'_response' is of type 'unknown'" at
+  src/queries/useTemplateQuery.tsx:84, TS2322 "Type '{} | null' is not assignable to type 'ProviderSummary | null'"
+  at src/components/providers/ProvidersExplorer/ProvidersExplorer.tsx:82, TS2740 "Type '{}' is missing ... from type
+  'Blob'" at TransactionInvoiceButton.tsx:47. It looks like one upstream inference or resolution loss (Promise
+  `then` callbacks, react-query results) rather than 58 causes. Not K-dependent. No repro. [open]
+- Large seed 20261403, akash-network/console@main, apps/api: spurious TS2877 at tsup.config.ts:1 ("This import uses
+  a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. [open]
