@@ -1376,6 +1376,9 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
             Value value = value_number(index - i);
             Ty const* at = ty_access(me, param->type, ty_literal(me, &value));
             element = at ? at : ty_access(me, param->type, ty_intrinsic(me, TY_NUMBER));
+            // (Nothing there, `(...args: { a: number })`: tsc's getIndexedAccessType without an access node is unknown,
+            // so a destructured parameter falls back to its pattern's type without TS7031)
+            if (!element && !as_rest) element = ty_intrinsic(me, TY_UNKNOWN_);
         }
         return as_rest && element ? ty_array(me, element, false) : element;
     }

@@ -385,7 +385,16 @@ K-dependent.
     named the alias and dropped the head. relate.c apparent_intersection() now drops the alias for such members.
     Test test/cases/rw_n8n_TS2345.ts. [fixed dc6856bd0]
   - +TS7031 x7 (tttt only): agent-execution.service.test.ts:1911 ('allowed', x2), agent-background-job.service.test.ts:380
-    ('expected', x5). [open]
+    ('expected', x5). vitest's `it.each<Row>(rows)(name, ({ a, b }) => ...)` picks the overload whose callback is `(...args:
+    T) => ...` with T the (object) row type; tsc's tryGetTypeAtPosition takes `T[0]` with getIndexedAccessType, which is
+    unknown without an access node, so the destructured parameter falls back to its pattern's type silently. tttt's
+    signature_type_at() gave nothing, and the parameter was typed as uncontextual (TS7031 / TS7006). Test
+    test/cases/rw_n8n_TS7031.ts. [fixed PENDING]
+  - Text only, after both fixes (projdiff: same (file, line, code), 28 lines): TS2339 x4 at a destructuring of an aliased
+    intersection (`const { id } = entity`, agent-config.service.ts:182, agent-task.service.ts:535, agent-tools.service.ts:1100,
+    :1219): tsgo names the apparent type `Agent & { projectId: string; }`, tttt the alias `ProjectAgent`; TS2353 x9 with
+    the EventEmitter truncation (as in nodes-base); one TS2322 elaboration at promotion-binding-preflight.service.test.ts:83
+    (tsgo's source `{ name: string; nodes: INode[]; ... }`, its chain line widened to `{ name: any; ... }`). [open]
 - n8n-nodes-base (packages/nodes-base, bench: composite -> false, declaration true; tsBuildInfoFile -> null): tsgo 7138 /
   tttt 7138, same (file, line, code), 8 text-only lines:
   - TS2684 x3 (Airtop agent.utils.ts:15, run.operation.ts:175, methods/index.ts:46): tsgo prints `body?: IDataObject`
