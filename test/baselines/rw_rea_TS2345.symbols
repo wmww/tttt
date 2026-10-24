@@ -1,0 +1,57 @@
+//// [test/cases/rw_rea_TS2345.ts] ////
+
+=== rw_rea_TS2345.ts ===
+// rea (morluto/rea, zod v4): a mapped type whose `as` clause is generic for one key (`T[k] extends OptionalOut ? never
+// : k` over a shape with one generic member) is generic, but still has the properties of the keys whose names resolve
+// (tsc's resolveMappedTypeMembers goes key by key): `provider` is there
+type OptionalOut = { _zod: { optout: "optional" } };
+>OptionalOut : Symbol(OptionalOut, Decl(rw_rea_TS2345.ts, 0, 0))
+>_zod : Symbol(_zod, Decl(rw_rea_TS2345.ts, 3, 20))
+>optout : Symbol(optout, Decl(rw_rea_TS2345.ts, 3, 28))
+
+interface S<O> { _zod: { output: O } }
+>S : Symbol(S, Decl(rw_rea_TS2345.ts, 3, 52))
+>O : Symbol(O, Decl(rw_rea_TS2345.ts, 4, 12))
+>_zod : Symbol(S._zod, Decl(rw_rea_TS2345.ts, 4, 16))
+>output : Symbol(output, Decl(rw_rea_TS2345.ts, 4, 24))
+>O : Symbol(O, Decl(rw_rea_TS2345.ts, 4, 12))
+
+type Out<T extends Record<string, S<unknown>>> = { [k in keyof T as T[k] extends OptionalOut ? never : k]: T[k]["_zod"]["output"] };
+>Out : Symbol(Out, Decl(rw_rea_TS2345.ts, 4, 38))
+>T : Symbol(T, Decl(rw_rea_TS2345.ts, 5, 9))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>S : Symbol(S, Decl(rw_rea_TS2345.ts, 3, 52))
+>k : Symbol(k, Decl(rw_rea_TS2345.ts, 5, 52))
+>T : Symbol(T, Decl(rw_rea_TS2345.ts, 5, 9))
+>T : Symbol(T, Decl(rw_rea_TS2345.ts, 5, 9))
+>k : Symbol(k, Decl(rw_rea_TS2345.ts, 5, 52))
+>OptionalOut : Symbol(OptionalOut, Decl(rw_rea_TS2345.ts, 0, 0))
+>k : Symbol(k, Decl(rw_rea_TS2345.ts, 5, 52))
+>T : Symbol(T, Decl(rw_rea_TS2345.ts, 5, 9))
+>k : Symbol(k, Decl(rw_rea_TS2345.ts, 5, 52))
+
+type P = { provider: S<string>; other: S<number> };
+>P : Symbol(P, Decl(rw_rea_TS2345.ts, 5, 132))
+>provider : Symbol(provider, Decl(rw_rea_TS2345.ts, 6, 10))
+>S : Symbol(S, Decl(rw_rea_TS2345.ts, 3, 52))
+>other : Symbol(other, Decl(rw_rea_TS2345.ts, 6, 31))
+>S : Symbol(S, Decl(rw_rea_TS2345.ts, 3, 52))
+
+function f<Schema extends S<unknown>>() {
+>f : Symbol(f, Decl(rw_rea_TS2345.ts, 6, 51))
+>Schema : Symbol(Schema, Decl(rw_rea_TS2345.ts, 7, 11))
+>S : Symbol(S, Decl(rw_rea_TS2345.ts, 3, 52))
+
+  let x: Out<P & { result: Schema }> = null!;
+>x : Symbol(x, Decl(rw_rea_TS2345.ts, 8, 5))
+>Out : Symbol(Out, Decl(rw_rea_TS2345.ts, 4, 38))
+>P : Symbol(P, Decl(rw_rea_TS2345.ts, 5, 132))
+>result : Symbol(result, Decl(rw_rea_TS2345.ts, 8, 18))
+>Schema : Symbol(Schema, Decl(rw_rea_TS2345.ts, 7, 11))
+
+  let y: { provider: string } = x;
+>y : Symbol(y, Decl(rw_rea_TS2345.ts, 9, 5))
+>provider : Symbol(provider, Decl(rw_rea_TS2345.ts, 9, 10))
+>x : Symbol(x, Decl(rw_rea_TS2345.ts, 8, 5))
+}
+

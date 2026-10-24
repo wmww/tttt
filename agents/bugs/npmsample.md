@@ -448,6 +448,16 @@ workspace packages). Not flips, not K-dependent.
   tttt's check_decorator_metadata_signature checked the rest parameter's whole annotation. Test
   rw_immich-server_TS1272; repro ttttDecoratorMetadataRestParameter. [fixed 0470ef693]
 
+morluto/rea at its default branch head (corF, 2026-10-25), one sandboxed npm install (private seed 20269004, records
+not committed), a bench config next to each of its 4 tsconfigs. Not K-dependent.
+- rea (tsconfig.json, .build, .reverse-tools-mutation: tsgo 0 / tttt 1 each; .frida-verification 0 / 0): +TS2345 at
+  src/contracts/toolOutputSchemaPrimitives.ts:29, `z.strictObject({ ...evidenceSchema.shape, normalized_result: schema
+  }).superRefine(validate)` in a generic `<Schema extends z.ZodType>` arrow. zod v4's object output is a mapped type
+  with `as T[k] extends OptionalOutSchema ? never : k`; with one generic shape member its `as` clause is generic, which
+  makes the mapped type generic (isGenericMappedType), but tsc's resolveMappedTypeMembers still gives it the properties
+  of the keys whose names resolve. tttt's mapped members gave up on all of them, so `provider` was missing. Members.c
+  now marks it generic and goes on key by key. A flip (tsgo clean). Test test/cases/rw_rea_TS2345.ts. [fixed corF 2026-10-25]
+
 ## Seed 20261301
 
 - forgesteel@14.217.0 (tsconfig.bench.json), src/components/pages/library/library-print/library-print-page.tsx:19, TS2345: `useState<Element>(() => { switch (kind!) { case ...all members: return ...; } })` where `kind` is a destructured `useParams<{kind: K}>()` (`Partial`, so `K | undefined`): tsgo treats the switch over `kind!` as exhaustive (end unreachable, no implicit `undefined` return), tttt reports the callback as returning `Title | undefined`. Probably switch exhaustiveness through a non-null assertion on the switch expression. Test npm_forgesteel_TS2345. Cause: tttt's is_exhaustive_switch() typed the switch expression with its `!` (and `satisfies`) stripped, `K | undefined`, which no case list covers; tsc's computeExhaustiveSwitchStatement checks node.Expression() as written, the non-null K. Repro ttttExhaustiveSwitchNonNull. [flip] [fixed 93c7ee0a0]

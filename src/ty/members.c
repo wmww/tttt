@@ -4653,8 +4653,11 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         Ty const* const* parts;
         u32 part_count;
         union_members(&names, &parts, &part_count);
-        for (u32 i = 0; i < part_count; i++) {
-            if (parts[i]->kind == TY_TYPE_PARAM || (parts[i]->flags & TYF_DEFERRED)) return members;
+        // It still has the properties of the keys whose names resolve (tsc's resolveMappedTypeMembers goes key by key
+        // whether or not the mapped type is generic): zod's `{ [k in keyof T as T[k] extends OptionalOutSchema ? never :
+        // k]: ... }` over a shape with one generic member keeps the others (rea)
+        for (u32 i = 0; i < part_count && !generic; i++) {
+            if (parts[i]->kind == TY_TYPE_PARAM || (parts[i]->flags & TYF_DEFERRED)) generic = true;
         }
     }
     // (Its properties as tsc's getPropertyOfType finds them, on the apparent type: `Pick<T, "a" | "c">` has T's

@@ -1,0 +1,37 @@
+//// [test/cases/rw_rea_TS2345.ts] ////
+
+=== rw_rea_TS2345.ts ===
+// rea (morluto/rea, zod v4): a mapped type whose `as` clause is generic for one key (`T[k] extends OptionalOut ? never
+// : k` over a shape with one generic member) is generic, but still has the properties of the keys whose names resolve
+// (tsc's resolveMappedTypeMembers goes key by key): `provider` is there
+type OptionalOut = { _zod: { optout: "optional" } };
+>OptionalOut : OptionalOut
+>_zod : { optout: "optional"; }
+>optout : "optional"
+
+interface S<O> { _zod: { output: O } }
+>_zod : { output: O; }
+>output : O
+
+type Out<T extends Record<string, S<unknown>>> = { [k in keyof T as T[k] extends OptionalOut ? never : k]: T[k]["_zod"]["output"] };
+>Out : Out<T>
+
+type P = { provider: S<string>; other: S<number> };
+>P : P
+>provider : S<string>
+>other : S<number>
+
+function f<Schema extends S<unknown>>() {
+>f : <Schema extends S<unknown>>() => void
+
+  let x: Out<P & { result: Schema }> = null!;
+>x : Out<P & { result: Schema; }>
+>result : Schema
+>null! : never
+
+  let y: { provider: string } = x;
+>y : { provider: string; }
+>provider : string
+>x : Out<P & { result: Schema; }>
+}
+
