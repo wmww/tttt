@@ -4421,7 +4421,8 @@ static Ty const* mapped_key_flow_constraint(Checker* me, InterfaceMember const* 
     if (!constraint) return nullptr;
     TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {
-        if (!ty_is_tuple(parts.data[i]) && !ty_is_array(me, parts.data[i])) return nullptr;
+        // (tsc's isArrayOrTupleType: `[]` is a tuple too, the tuple target itself: `T extends X[] | []`)
+        if (!ty_tuple_shape(parts.data[i]) && !ty_is_array(me, parts.data[i])) return nullptr;
     }
     Atom const* empty = checker_atom(me, csview_from(""));
     Atom const* texts[2] = { empty, empty };

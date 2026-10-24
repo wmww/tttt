@@ -1,0 +1,48 @@
+//// [test/cases/ttttMappedKeyEmptyTupleConstraint.ts] ////
+
+=== ttttMappedKeyEmptyTupleConstraint.ts ===
+// The key of a homomorphic mapped type over a T constrained to arrays and tuples is also number | `${number}` in its
+// template (tsc's getConditionalFlowTypeOfType, everyType(constraint, isArrayOrTupleType)), `[]` counting as a tuple:
+// `T extends X[] | []` (parabol's mergeAsyncIterators)
+type R<T extends { a: 1 }> = T;
+>R : Symbol(R, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 3, 7))
+>a : Symbol(a, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 3, 18))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 3, 7))
+
+export function f<T extends { a: 1 }[] | []>(x: { [P in keyof T]: [`${P}`, R<T[P]>] }) {}
+>f : Symbol(f, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 3, 31))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 18))
+>a : Symbol(a, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 29))
+>x : Symbol(x, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 45))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 51))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 18))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 51))
+>R : Symbol(R, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 18))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 51))
+
+export function g<T extends { a: 1 }[]>(x: { [P in keyof T]: [`${P}`, R<T[P]>] }) {}
+>g : Symbol(g, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 4, 89))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 18))
+>a : Symbol(a, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 29))
+>x : Symbol(x, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 40))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 46))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 18))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 46))
+>R : Symbol(R, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 18))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 46))
+
+export function h<T extends [] | [{ a: 1 }]>(x: { [P in keyof T]: [`${P}`, R<T[P]>] }) {}
+>h : Symbol(h, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 5, 84))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 18))
+>a : Symbol(a, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 35))
+>x : Symbol(x, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 45))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 51))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 18))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 51))
+>R : Symbol(R, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 18))
+>P : Symbol(P, Decl(ttttMappedKeyEmptyTupleConstraint.ts, 6, 51))
+

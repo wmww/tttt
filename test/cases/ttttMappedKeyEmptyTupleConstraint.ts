@@ -1,0 +1,8 @@
+// The key of a homomorphic mapped type over a T constrained to arrays and tuples is also number | `${number}` in its
+// template (tsc's getConditionalFlowTypeOfType, everyType(constraint, isArrayOrTupleType)), `[]` counting as a tuple:
+// `T extends X[] | []` (parabol's mergeAsyncIterators)
+// @strict: true
+type R<T extends { a: 1 }> = T;
+export function f<T extends { a: 1 }[] | []>(x: { [P in keyof T]: [`${P}`, R<T[P]>] }) {}
+export function g<T extends { a: 1 }[]>(x: { [P in keyof T]: [`${P}`, R<T[P]>] }) {}
+export function h<T extends [] | [{ a: 1 }]>(x: { [P in keyof T]: [`${P}`, R<T[P]>] }) {}

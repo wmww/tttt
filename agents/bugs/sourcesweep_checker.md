@@ -550,8 +550,8 @@ ensure-sources.sh). At --threads 1: 74 / 79 projects, 4 / 6 repos; checkouts in 
   (\`h${level}\` as \`h${T}\`); <Component .../>` with `T extends '1' | ... | '6'`. tsc's
   getUninstantiatedJsxSignaturesOfType (jsx.go) takes getApparentType of the tag type: an instantiable type's base
   constraint, here "h1" | ... | "h6", whose members each give an intrinsic signature. tttt finds no signature for
-  `h${T}` (a type parameter T extends "h1" | "h2" works). Repro test/cases/ttttJsxTemplateLiteralTag.tsx (known
-  failing). 2026-10-24 at 10941157b: still, `sourcesweep.py -f '^comp/'` 18 / 21, the 3 are this +TS2604 (one each). [open]
+  `h${T}` (a type parameter T extends "h1" | "h2" works). Repro test/cases/ttttJsxTemplateLiteralTag.tsx. Fixed:
+  jsx_apparent_type() (call.c) takes a template literal tag's base constraint, also for union members. [fixed corF 2026-10-24]
 - **parabol: -TS7006 on kysely expression-builder callbacks** (packages/embedder, packages/server: 19 missing), e.g.
   packages/embedder/EmbeddingsJobQueueStream.ts:47 `.where('id', '=', (eb) => eb...)` and
   server/graphql/public/mutations/helpers/movePageToNewTeam.ts:19-36: tsgo reports the parameter implicitly any
@@ -561,8 +561,9 @@ ensure-sources.sh). At --threads 1: 74 / 79 projects, 4 / 6 repos; checkouts in 
   keyof T]: [ParseInt<\`${P}\`>, Result<T[P]>]}[number]>` with T a tuple of async iterators: tttt says "Type 'P' is
   not assignable to type 'string | number | bigint | boolean | null | undefined'" (the template literal's placeholder)
   and "Type 'T[P]' does not satisfy the constraint 'AsyncIterator<any, any, any>'": a homomorphic mapped type over a
-  tuple, whose P tsc keeps to the numeric-string keys (and T[P] to the element types). Not reduced. 2026-10-24 at 10941157b: still,
-  projdiff packages/embedder tsgo 318 / tttt 319 (+TS2322, +TS2344 at :52, plus the -TS7006 above). [open]
+  tuple, whose P tsc keeps to the numeric-string keys (and T[P] to the element types). Fixed: lower.c's
+  mapped_key_flow_constraint() didn't count `[]` as a tuple (`T extends X[] | []`); test
+  ttttMappedKeyEmptyTupleConstraint. [fixed corF 2026-10-24]
 
 ## hono tsconfig.build.json: spurious TS2769 at src/request.ts:214 (2026-10-24, corB)
 `parseBody(this, options)` in HonoRequest's `parseBody` method: tttt reports TS2769 (`HonoRequest<P, I>` not
