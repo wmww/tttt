@@ -6953,7 +6953,21 @@ static bool is_for_in_numeric_variable(Checker* me, PropertyExpr const* access) 
     return loop && has_numeric_property_names(me, ty_expr_type(me, &loop->iterable));
 }
 
+// (Out of line: the memo hit below is most calls, ~7 per access, and without the rest its frame is a few instructions:
+// vscode's ty_access_key_type() was 1.3% of its instructions, a third of them the prologue and epilogue)
+[[gnu::noinline]] static Ty const* access_key_type_slow(Checker* me, PropertyExpr const* access);
+
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
+    // (A slot is a dot access's, whose memo is set only for a name that is neither private nor `#`: below)
+    if (access->name_slot) {
+        LazyType memo = { .tag = LAZY_TYPE_EVALUATED, .slot = access->name_slot };
+        LazyMemo const* state = lazy_type_state_peek(&memo);
+        if (state && state->done) return lazy_memo_evaluated(state);
+    }
+    return access_key_type_slow(me, access);
+}
+
+static Ty const* access_key_type_slow(Checker* me, PropertyExpr const* access) {
     if (property_private_class(access) && property_private_class(access)->symbol) {
         return ty_prop_name_literal(me, ty_private_name(me, property_private_class(access)->symbol, span_sv(property_name(access))));
     }
