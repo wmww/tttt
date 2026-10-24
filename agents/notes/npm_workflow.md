@@ -93,3 +93,21 @@ Fixers take the top of `rank` when no flip is open; a finder checks `rank` befor
 - A reduce.py run with --tsgo-clean on a workspace package's sources can keep every file whole, because deleting one
   breaks tsgo's imports, and its line pass over ~150 files then takes hours. When the diagnostic sits inside one
   function, try that function alone in a test file first (octane's TS7022: 10 lines, in minutes).
+
+## The second box (2026-10-23/24, seeds 20261100-20261117; bugs in agents/bugs/npmsample_box2.md from 20261105)
+A coordinator plus two Sonnet finders in worktrees; the coordinator samples (one pacer per host), lands each finder's
+commit by cherry-pick onto main and pushes. ~860 projects in 18 seeds gave 16 repros (6 flips), one unreduced flip
+(soldy's TS2883 in an npm-linked workspace, its clone kept in thirdparty/npmsample/20261115) and one K-dependence
+(discord-api-types' base cycle, fixed by c16033912). What it learned:
+- **Check the tsgo pin first.** This box's thirdparty/typescript was a stale nightly (fed0bf24, `tsc --version` says
+  7.1.0-dev, the pin says 7.1.0-beta); seeds 20261100-20261102 were first compared against it and 20261101's records
+  still are. npmsample.py now runs ensure-typescript.sh before setup and compare (it refuses a stale checkout).
+- A new box needs thirdparty/node (node 24.21.0, bun 1.4.3): ensure-sources.sh's ensure_node/ensure_bun, run alone.
+- A fresh worktree has no release build; compare needs one (`meson setup release --buildtype release`).
+- Land by `git cherry-pick <finder commit>`, not land.sh: a finder that didn't reset after its last landing replays
+  landed commits. The two boxes' appends to the bug files conflict on nearly every landing (keep both sides; the
+  other box also edits existing bullets, e.g. marking them fixed: keep its edit). repros.tsv merges as a union now.
+- Never wait on `pgrep -f PATTERN` from a shell whose own command line contains PATTERN: it matches itself forever
+  (two queued samples sat idle for an hour this way). Chain samples sequentially in one shell instead.
+- A finder costs ~60k tokens for a clean seed and 90-130k with repros; retire it past ~100k of context and start a
+  fresh one rather than resuming.
