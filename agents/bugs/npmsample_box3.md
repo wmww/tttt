@@ -108,7 +108,7 @@ for flips); a separate file so the three boxes never conflict.
   sources (`new Proxy(...) as unknown as X<T>` over glre's recursive node types), and a TS2590 "union type too
   complex" in voxel-three. tsgo hits neither limit. Not a placement difference: tsgo reports no depth error at all,
   so tttt's instantiation goes deeper or caches less. Repro test/cases/npm_voxel-three_TS2589.ts (reduce.py, 6
-  files; the TS2590 is not reproduced separately). [open]
+  files; the TS2590 is not reproduced separately). Cause (det3): no reverse mapped property cache. Struct<T>'s homomorphic mapped type, inferred from X<T> (XImpl: `_X<T>` and ~760 swizzle properties of a few types), made ~25 reverse mapped candidates whose comparison (getCommonSupertype) inferred each property's type anew: 5M instantiations in one expression, the count limit. tsc's inferReverseMappedType caches by (source, mapped type, constraint); infer.c ty_reverse_mapped_prop_type() now does too. The TS2590 in voxel-three couldn't be checked (the clone is gone, and a new setup needs 25 GB free); it is probably the same cause. [fixed 2026-10-24]
 - Large seed 20261400, amcharts/amcharts5@master (root tsconfig.json): +35 errors (TS2339 on never, TS2322,
   TS2345) from `$object.entries(o): Array<[Keyof<O>, O[Keyof<O>]]>` with `Keyof<T> = Extract<keyof T, string>` over
   a number-indexed `{ [id: number]: IParent }`. tsgo types the element `[never, IParent]` (the indexed access through

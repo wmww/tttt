@@ -681,7 +681,20 @@ static bool is_empty_tuple(Ty const* ty) {
 
 // What a property of type `source` says about `T[K]` in the template of `{ [K in keyof T]: Template }` (tsc's
 // inferReverseMappedType): the template is inferred to with `T[K]` as the one type variable
+static Ty const* reverse_mapped_prop_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand);
+// Once per (source, mapped type, operand): tsc's inferReverseMappedType caches by the three (reverseMappedCache), so
+// a reverse mapped type's hundreds of properties of a few types infer a few times (glre's swizzle members: without it
+// the candidates' comparison ran into the instantiation count limit, TS2589)
 Ty const* ty_reverse_mapped_prop_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    u64 key[4] = { KEY_REVERSE_MAPPED_PROP, source->id, (u64)(uintptr_t)mapped, operand->id };
+    void const* known = intern_get(&my links, key, 4);
+    if (known) return known;
+    Ty const* ret = reverse_mapped_prop_type_uncached(me, source, mapped, operand);
+    *intern_slot(me, &my links, key, 4) = ret;
+    return ret;
+}
+
+static Ty const* reverse_mapped_prop_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
     Ty const* indexed = ty_indexed(me, operand, mapped->type_param);
     Inference inf;
     inference_init(&inf, (TyList){ .data = &indexed, .len = 1 });
