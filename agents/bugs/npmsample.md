@@ -205,9 +205,12 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   makes the attributes a union. tsgo reports TS2322 for the whole attributes type at the tag name (suppressed there by
   the ts-ignore); tttt elaborates into the attribute and reports TS2353 at the property line, which the ts-ignore
   doesn't cover. Without the ts-ignore both report, at different lines and codes. Hand-cut repro (reduce.py didn't
-  converge in an hour on MUI's types). Guess: tttt's JSX attribute elaboration descends into a property whose target is
-  a union-derived member where tsc's elaborateJsxComponents/elaborateElementwise gives up on a union source. [open]
-  (11 files from reduce.py). [open]
+  converge in an hour on MUI's types). Not the elaboration (det3): elaborateElement relates InputProps to the
+  union's `Partial<StdInput> | Partial<OutInput> | undefined` and finds it assignable, in both. It's the excess
+  property report inside the relation. tsgo's hasExcessProperties takes the JSX message and keeps the error node (the tag
+  name) when the error node is JSX, also for an object literal nested in an attribute's value. tttt tells "the error
+  node is JSX" by the outermost source being JSX attributes, and with a spread of a union that source is a union of
+  them. relate.c's is_jsx_attributes_source() now accepts the union. [fixed det3]
 - Seed 20261033, DevExpress/devextreme-reactive: `return <P params={...params} />;` in an arrow inside JSX children.
   tsgo reports TS1109 at the `...`, ends the attribute list there and the element without `/>`, and then its
   parseList recovery (abortParsingListOrMoveToNextToken: isInSomeParsingContext, where the enclosing JSX children
@@ -245,12 +248,6 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   tttt checks the constraint `string | symbol` against `Y | ...` / `(string|number|boolean) & Y` instead of the conditional's
   constraint with Y's own constraint substituted (Schema<any,string> is not a primitive, so that branch is never). Repro is the
   vendored file's types, 15 lines. Root cause: From's body starts with a leading `|`, which makes the conditional's check type a union node of one type (`| X`). tttt's is_naked_type_param_node looked at the node and found it not distributive, so `From<Y>`'s constraint wasn't the distributive one with Y's constraint substituted. tsc's isDistributive looks at the type, a type parameter. Repro ttttLeadingBarConditionalDistributes. [fixed 22fdb6b1c]
-  converge in an hour on MUI's types). Not the elaboration (det3): elaborateElement relates InputProps to the
-  union's `Partial<StdInput> | Partial<OutInput> | undefined` and finds it assignable, in both. It's the excess
-  property report inside the relation. tsgo's hasExcessProperties takes the JSX message and keeps the error node (the tag
-  name) when the error node is JSX, also for an object literal nested in an attribute's value. tttt tells "the error
-  node is JSX" by the outermost source being JSX attributes, and with a spread of a union that source is a union of
-  them. relate.c's is_jsx_attributes_source() now accepts the union. [fixed det3]
 ## Seed 20261035
 
 - kirka@6.1.0 (tsconfig.bench.json), src/result/api/debug.ts:2, TS7006: a destructured parameter default `{ ok = (v) => v, err = (e) => e } = {} as { ok?(v: T): string; err?(e: E): string }` gets its arrow functions contextually typed from the `as` type in tsgo (no error); tttt reports the parameters implicitly any. Test npm_kirka_TS7006. (claimed: cor10) Cause: tttt gave the initializer what the pattern implies as its contextual type eagerly, which checked the defaults' arrow functions without context first (their parameters any, TS7006); tsc asks getContextualTypeForInitializerExpression only on demand, and a type assertion's operand takes the asserted type as context, never the outer one. Fixed in initializer_ignores_context (src/binding.c), repro test/cases/ttttAssertedInitializerDefaults.ts. [flip] [fixed 2026-10-24]
