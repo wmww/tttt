@@ -11555,25 +11555,50 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'npm__devexpress_dx-react-grid-material-ui_TS1381': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'npm__markw65_prettier-plugin-monkeyc_TS7034': {
         errors: true,
         symbols: true,
         types: true,
     },
-    'npm__nirholas_crypto-news_TS2345': {
-        errors: false,
+    'npm__mui-treasury_component-number-input_TS2353': {
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
+    },
+    'npm__nest-excalibur_common-api_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm__nirholas_crypto-news_TS2345': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'npm__overture-stack_sqon_TS2345': {
         errors: true,
         symbols: true,
         types: false,
     },
+    'npm__skastr0_quartz-engine_TS2719': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm__tamagui_codemod-flat-values_TS2339': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
+    },
+    'npm__tera-ui_tooltip_TS7031': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'npm__uzm_katex-woff2_TS2577': {
         errors: true,
@@ -11581,7 +11606,7 @@ const baselines = {
         types: true,
     },
     'npm__veto-party_baum__package_manager__npm_TS2339': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -11595,12 +11620,62 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'npm__xneog_dsh-anonymous-user-id_TS2344': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'npm_ciceksepeti_cui-listbox_TS7006': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'npm_dmptranscripts_TS2344': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm_firelab_TS2538': {
         errors: true,
         symbols: true,
         types: true,
     },
+    'npm_kirka_TS7006': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'npm_react-smooth-scroll-hook_TS7016': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_serverless-openapi_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_skilltrace_TS2322': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'npm_slotsmith_TS7006': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_task-definition-ts_TS2339': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_types-momentum_TS2322': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'npm_znicholasbrown-graphql-tools_TS2345': {
         errors: true,
         symbols: true,
         types: true,
@@ -11712,6 +11787,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttArgumentReturnReentersCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttArrayLiteralCandidateOnlyWhereInferred': {
         errors: true,
         symbols: true,
@@ -11727,6 +11807,11 @@ const baselines = {
         symbols: true,
         types: true,
         dts: true,
+    },
+    'ttttAssertedInitializerDefaults': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ttttAssignedThroughNonNullReadType': {
         errors: true,
@@ -11796,6 +11881,11 @@ const baselines = {
         types: true,
     },
     'ttttBaseExpressionTupleIndexCycle': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttBaseReadsDerivedThroughPick': {
         errors: true,
         symbols: true,
         types: true,
@@ -11980,6 +12070,11 @@ const baselines = {
         types: true,
     },
     'ttttComputedAccessorPairChecks': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttComputedBindingKeyImplicitAny': {
         errors: true,
         symbols: true,
         types: true,
@@ -12909,6 +13004,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttDiscriminateLargeUnionContext': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttDiscriminatedManyDiscriminants': {
         errors: true,
         symbols: true,
@@ -12920,6 +13020,11 @@ const baselines = {
         types: true,
     },
     'ttttDistributedBooleanAlias': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttDistributedParamMappedTemplate': {
         errors: true,
         symbols: true,
         types: true,
@@ -14023,6 +14128,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttMappedIndexInferencePriority': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttMappedIntersectionMemberOrder': {
         errors: true,
         symbols: true,
@@ -14671,6 +14781,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ttttSpreadUnionOfGenericArrays': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'ttttStatementFirstWordDispatch': {
         errors: true,
         symbols: true,
@@ -14935,6 +15050,11 @@ const baselines = {
         types: true,
     },
     'ttttUnannotatedCallNoEffects': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'ttttUnconstrainedSourcePushesSourceOnly': {
         errors: true,
         symbols: true,
         types: true,
