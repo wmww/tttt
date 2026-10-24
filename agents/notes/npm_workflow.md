@@ -95,6 +95,7 @@ Fixers take the top of `rank` when no flip is open; a finder checks `rank` befor
   function, try that function alone in a test file first (octane's TS7022: 10 lines, in minutes).
 
 ## The second box (2026-10-23/24, seeds 20261100-20261117; bugs in agents/bugs/npmsample_box2.md from 20261105)
+Seed 20261117 was abandoned (clones failed with the network down): its candidates are committed, no records; rerun it.
 A coordinator plus two Sonnet finders in worktrees; the coordinator samples (one pacer per host), lands each finder's
 commit by cherry-pick onto main and pushes. ~860 projects in 18 seeds gave 16 repros (6 flips), one unreduced flip
 (soldy's TS2883 in an npm-linked workspace, its clone kept in thirdparty/npmsample/20261115) and one K-dependence
