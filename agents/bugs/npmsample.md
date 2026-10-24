@@ -93,11 +93,11 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   jest.Matchers members. tttt's aug_merge_symbol/aug_merge_fixup (scope.c) put the second augmentation's base into
   what the declaration means. Symbols differ too (tsgo's import from 'outer' has 2 declarations). Repro
   test/cases/npm_My-first-stencil-project-001_TS2320.ts (inner/outer/aug, 30 lines). Also seed 20261028's
-  0115-ionic-team-stencil-component-starter (tsgo 0, tttt 13 TS2320, the same augmentation). (claimed: corB) [flip] [open]
-  test/cases/npm_My-first-stencil-project-001_TS2320.ts (inner/outer/aug, 30 lines). Errors fixed: the
-  declaration's heritage is checked as the first clone (aug_one_level, hacks.md); the repro's SYM/TYP still differ (which
-  clone a name means: tsc's getMergedSymbol applied once, twice or more depending on the path). (claimed: corB) [flip]
-  [fixed cf4ba416a]
+  0115-ionic-team-stencil-component-starter (tsgo 0, tttt 13 TS2320) and seed 20261032's
+  0150-anchalmehta567-recipe-planner (tsgo 36, tttt 52: +16 TS2320, not a flip), the same augmentation. Errors fixed:
+  the declaration's heritage is checked as the first clone (aug_one_level, hacks.md); the repro's SYM/TYP still differ
+  (which clone a name means: tsc's getMergedSymbol applied once, twice or more depending on the path). (claimed: corB)
+  [flip] [fixed cf4ba416a]
 - Seed 20261029, nirholas/free-crypto-news: spurious TS2345 on unified's `.use(rehypeHighlight.default, { detect:
   true, ignoreMissing: true })` (`use<P extends unknown[]>(plugin: Plugin<P, Input, Output>, ...parameters: P |
   [boolean])`): tsgo's inference takes P from the arguments (no excess property check against Options), tttt the
@@ -216,3 +216,11 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
 
 ## Seed 20261104 (second box)
 - npm_znicholasbrown-graphql-tools_TS2345 (znicholasbrown-graphql-tools@4.0.6, packages/testing/utils.ts): spreading `...args: Parameters<TSync | TAsync>` into a call of `executeSync: TSync` (TSync extends (...args: TArgs) => any, TAsync likewise, TArgs extends any[]) gives tttt TS2345 "Argument of type 'any[]' is not assignable to parameter of type 'TArgs'"; tsgo accepts it. Guess: the spread of Parameters<union of type parameters> is resolved to its constraint `any[]` and compared against TArgs, where tsgo keeps the deferred conditional/rest type and relates it through the union's constraint. [flip] [open]
+  test/cases/npm__tamagui_codemod-flat-values_TS2339.ts (13 lines). [flip] [open]
+- Seed 20261032, NGHQ/types-momentum (types-momentum@4.6.12): spurious TS2322 "Type 'DayStreak[]' is not assignable to
+  type 'boolean[]'" at src/methods/dates.ts:74 (tsgo 0 errors, tttt 1): `const mutable: boolean[] = [...runningStreak]`
+  with `runningStreak: FixedLengthArray<[DayStreak x7]>`, `Pick<T, Exclude<keyof T, number | mutators>> & {
+  [Symbol.iterator]: () => IterableIterator<...> }`. That type is array-like (assignable to `readonly any[]`) without a
+  number index: tsgo's checkArrayLiteral takes the spread as a variadic element, normalized to a rest element of its
+  number index type or the error type, so `[...x]` is any[]; tttt iterated it. Repro
+  test/cases/npm_types-momentum_TS2322.ts. [flip] [open]

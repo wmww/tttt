@@ -23,3 +23,4 @@ npm_skilltrace_TS2322	yes	skilltrace@0.3.3	https://github.com/hideya/skilltrace	
 npm_kirka_TS7006	yes	kirka@6.1.0	https://github.com/numfin/kirka	0	2	+TS7006
 npm_slotsmith_TS7006	yes	slotsmith@1.10.0	https://github.com/tmzm/slotsmith	0	2	+TS7006
 npm_znicholasbrown-graphql-tools_TS2345	yes	znicholasbrown-graphql-tools@4.0.6	https://github.com/apollographql/graphql-tools	0	2	+TS2345
+npm_types-momentum_TS2322	yes	types-momentum@4.6.12	https://github.com/NGHQ/types-momentum	0	1	+TS2322

@@ -1,0 +1,50 @@
+//// [test/cases/npm_types-momentum_TS2322.ts] ////
+
+=== npm_types-momentum_TS2322.ts ===
+// origin: npm types-momentum@4.6.12 https://github.com/NGHQ/types-momentum tsconfig.bench.json seed 20261032
+// flip: yes
+// A spread of an array-like that isn't an array or tuple (a Pick of a tuple without its number index) is its number
+// index's element, the error type when there's none: `[...p]` is any[], not what its iterator yields (src/methods/dates.ts:74)
+type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' | number
+>ArrayLengthMutationKeys : ArrayLengthMutationKeys
+
+type ArrayItems<T extends Array<unknown>> = T extends Array<infer TItems> ? TItems : never
+>ArrayItems : ArrayItems<T>
+
+type FixedLengthArray<T extends unknown[]> =
+>FixedLengthArray : FixedLengthArray<T>
+
+  Pick<T, Exclude<keyof T, ArrayLengthMutationKeys>>
+  & { [Symbol.iterator]: () => IterableIterator< ArrayItems<T> > }
+>[Symbol.iterator] : () => IterableIterator<ArrayItems<T>>
+>Symbol.iterator : unique symbol
+>Symbol : SymbolConstructor
+>iterator : unique symbol
+
+type DayStreak = { didWatch: boolean; isoTime: string }
+>DayStreak : DayStreak
+>didWatch : boolean
+>isoTime : string
+
+declare const runningStreak: FixedLengthArray<[DayStreak, DayStreak]>;
+>runningStreak : FixedLengthArray<[DayStreak, DayStreak]>
+
+export const mutable: boolean[] = [...runningStreak];
+>mutable : boolean[]
+>[...runningStreak] : any[]
+>...runningStreak : DayStreak
+>runningStreak : FixedLengthArray<[DayStreak, DayStreak]>
+
+export const spread = [...runningStreak];
+>spread : any[]
+>[...runningStreak] : any[]
+>...runningStreak : DayStreak
+>runningStreak : FixedLengthArray<[DayStreak, DayStreak]>
+
+export const pair = [...runningStreak] as const;
+>pair : readonly any[]
+>[...runningStreak] as const : readonly any[]
+>[...runningStreak] : readonly any[]
+>...runningStreak : DayStreak
+>runningStreak : FixedLengthArray<[DayStreak, DayStreak]>
+

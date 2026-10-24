@@ -1,0 +1,63 @@
+//// [test/cases/npm_types-momentum_TS2322.ts] ////
+
+=== npm_types-momentum_TS2322.ts ===
+// origin: npm types-momentum@4.6.12 https://github.com/NGHQ/types-momentum tsconfig.bench.json seed 20261032
+// flip: yes
+// A spread of an array-like that isn't an array or tuple (a Pick of a tuple without its number index) is its number
+// index's element, the error type when there's none: `[...p]` is any[], not what its iterator yields (src/methods/dates.ts:74)
+type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' | number
+>ArrayLengthMutationKeys : Symbol(ArrayLengthMutationKeys, Decl(npm_types-momentum_TS2322.ts, 0, 0))
+
+type ArrayItems<T extends Array<unknown>> = T extends Array<infer TItems> ? TItems : never
+>ArrayItems : Symbol(ArrayItems, Decl(npm_types-momentum_TS2322.ts, 4, 87))
+>T : Symbol(T, Decl(npm_types-momentum_TS2322.ts, 5, 16))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(npm_types-momentum_TS2322.ts, 5, 16))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>TItems : Symbol(TItems, Decl(npm_types-momentum_TS2322.ts, 5, 65))
+>TItems : Symbol(TItems, Decl(npm_types-momentum_TS2322.ts, 5, 65))
+
+type FixedLengthArray<T extends unknown[]> =
+>FixedLengthArray : Symbol(FixedLengthArray, Decl(npm_types-momentum_TS2322.ts, 5, 90))
+>T : Symbol(T, Decl(npm_types-momentum_TS2322.ts, 6, 22))
+
+  Pick<T, Exclude<keyof T, ArrayLengthMutationKeys>>
+>Pick : Symbol(Pick, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_types-momentum_TS2322.ts, 6, 22))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_types-momentum_TS2322.ts, 6, 22))
+>ArrayLengthMutationKeys : Symbol(ArrayLengthMutationKeys, Decl(npm_types-momentum_TS2322.ts, 0, 0))
+
+  & { [Symbol.iterator]: () => IterableIterator< ArrayItems<T> > }
+>[Symbol.iterator] : Symbol([Symbol.iterator], Decl(npm_types-momentum_TS2322.ts, 8, 5))
+>Symbol.iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>Symbol : Symbol(Symbol, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.symbol.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2019.symbol.d.ts, --, --))
+>iterator : Symbol(SymbolConstructor.iterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>IterableIterator : Symbol(IterableIterator, Decl(lib.es2015.iterable.d.ts, --, --))
+>ArrayItems : Symbol(ArrayItems, Decl(npm_types-momentum_TS2322.ts, 4, 87))
+>T : Symbol(T, Decl(npm_types-momentum_TS2322.ts, 6, 22))
+
+type DayStreak = { didWatch: boolean; isoTime: string }
+>DayStreak : Symbol(DayStreak, Decl(npm_types-momentum_TS2322.ts, 8, 66))
+>didWatch : Symbol(didWatch, Decl(npm_types-momentum_TS2322.ts, 9, 18))
+>isoTime : Symbol(isoTime, Decl(npm_types-momentum_TS2322.ts, 9, 37))
+
+declare const runningStreak: FixedLengthArray<[DayStreak, DayStreak]>;
+>runningStreak : Symbol(runningStreak, Decl(npm_types-momentum_TS2322.ts, 10, 13))
+>FixedLengthArray : Symbol(FixedLengthArray, Decl(npm_types-momentum_TS2322.ts, 5, 90))
+>DayStreak : Symbol(DayStreak, Decl(npm_types-momentum_TS2322.ts, 8, 66))
+>DayStreak : Symbol(DayStreak, Decl(npm_types-momentum_TS2322.ts, 8, 66))
+
+export const mutable: boolean[] = [...runningStreak];
+>mutable : Symbol(mutable, Decl(npm_types-momentum_TS2322.ts, 11, 12))
+>runningStreak : Symbol(runningStreak, Decl(npm_types-momentum_TS2322.ts, 10, 13))
+
+export const spread = [...runningStreak];
+>spread : Symbol(spread, Decl(npm_types-momentum_TS2322.ts, 12, 12))
+>runningStreak : Symbol(runningStreak, Decl(npm_types-momentum_TS2322.ts, 10, 13))
+
+export const pair = [...runningStreak] as const;
+>pair : Symbol(pair, Decl(npm_types-momentum_TS2322.ts, 13, 12))
+>runningStreak : Symbol(runningStreak, Decl(npm_types-momentum_TS2322.ts, 10, 13))
+>const : Symbol(const)
+
