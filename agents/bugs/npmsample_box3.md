@@ -319,3 +319,22 @@ for flips); a separate file so the three boxes never conflict.
   children: Element; }' is not assignable to type 'IntrinsicAttributes & DynamicProps<"div" | T, ...>'" (solid-js's
   `<Dynamic component={...}>` with a generic element type T). tsgo 13, tttt 12, not a flip. Not K-dependent. No
   repro. [open]
+- Large seed 20261404, cloudflare/cloudflare-os@main (commit 835de9e87), packages/workshop-backend (tsconfig.json):
+  VARIES. At the defaults (both runs) tttt reports TS5114 "Instantiations of type 'MaybeCallableProvider' appear
+  infinitely circular" at src/overseer.ts:4779. At --threads 1 it doesn't, and tsgo never does (tsgo 9, tttt 10
+  at the defaults). packages/gatekeeper-google of the same repo has the same tttt-only TS5114 at
+  src/gmail-hooks.ts:66 (tsgo 1, tttt 2), where the runs
+  agree. A depth limit reached only when the checker count or file split differs: det3's area. The clone was kept
+  on box3 until the box went away. No repro. [open]
+- Large seed 20261404, vvedantb/eva@main (commit fd387003e), apps/web (tsconfig.json): tsgo 0 errors, tttt 215
+  TS7006, starting with "Parameter 'localStore' implicitly has an 'any' type" at
+  src/lib/components/ChangelogDialog.tsx:37 (`useMutation(api.changelog.dismissChangelog).withOptimisticUpdate((localStore)
+  => ...)`) and NotificationToastStream.tsx:58/:64. Every callback typed through convex's react hooks loses its
+  contextual type: convex's generated `api` (FilterApi/ApiFromModules over the convex/ modules) or the hooks' types
+  probably resolve differently. Not K-dependent. No repro. [flip] [open]
+- Large seed 20261404, CodeWithCJ/SparkyFitness@main (commit 0ec259faf), SparkyFitnessMobile, shared and
+  SparkyFitnessServer: zod 4's TS5115 ('$ZodTypeInternals', '$InferZodRecordInput', 'IsOptionalIn'). tttt reports it
+  at shared/src/schemas/database/FoodAssistant.zod.ts:46 on all three configs. tsgo reports it only on the server, at
+  models/foodAssistantRepository.ts:109, so Mobile and shared flip (0 against 1). On the server tttt also has three
+  TS2578 "Unused '@ts-expect-error'" at services/exerciseService.ts:1900-1904, which the depth limit's error type
+  plausibly explains. The paseo depth-limit family ([design] in npmsample.md). No repro. [design]
