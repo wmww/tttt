@@ -15,7 +15,9 @@ reviewed; deps of random packages are as untrusted as the packages.
    ae871f103047fd698) AND the coordinator at once, with the project kept until det3 has what it needs. det3 owns
    these; they outrank flips.
 2. Flip cases (tsgo and tttt disagree on whether the project has any error).
-3. Finding more cases (sampling, setup, compare, repros) while flips are scarce.
+3. Finding more cases (sampling, setup, compare, repros) while flips are scarce. A flip is EITHER direction (tsgo
+   clean and tttt not, or tsgo erroring and tttt clean: quartz-engine was the second kind), so never pre-filter the
+   sample on tsgo-clean projects; tttt's run is cheap next to the install anyway.
 Nothing else (non-flip divergences, bun cases, text differences, other work) is a work AREA until the flips saturate.
 This is about where agents are pointed, not a ban on other fixes: while solving a flip or a race, fixing related
 problems you meet, or doing the refactor that gives a structural solution instead of a point fix, is welcome (the
