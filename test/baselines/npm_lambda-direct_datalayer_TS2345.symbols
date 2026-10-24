@@ -1,0 +1,82 @@
+//// [test/cases/npm_lambda-direct_datalayer_TS2345.ts] ////
+
+=== npm_lambda-direct_datalayer_TS2345.ts ===
+// origin: npm @lambda-team/datalayer@1.0.11 https://github.com/lambda-direct/datalayer tsconfig.bench.json seed 20261217
+// flip: no
+// Inferring to `keyof T` from a generic key type that isn't a keyof starts over from its apparent type (tsc's
+// inferFromTypes): `{ ... }[keyof TTable]`'s constraint `string | number | symbol` gives T `{ [x: string]: {} }`, so a
+// generic mapped type over those keys isn't assignable to `{ [name in keyof T]: Column }` with an AbstractColumn template
+declare class AbstractColumn<T> { t: T }
+>AbstractColumn : Symbol(AbstractColumn, Decl(npm_lambda-direct_datalayer_TS2345.ts, 0, 0))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 5, 29))
+>t : Symbol(AbstractColumn.t, Decl(npm_lambda-direct_datalayer_TS2345.ts, 5, 33))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 5, 29))
+
+declare class Column<T> extends AbstractColumn<T> { autoIncrement(): void }
+>Column : Symbol(Column, Decl(npm_lambda-direct_datalayer_TS2345.ts, 5, 40))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 6, 21))
+>AbstractColumn : Symbol(AbstractColumn, Decl(npm_lambda-direct_datalayer_TS2345.ts, 0, 0))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 6, 21))
+>autoIncrement : Symbol(Column.autoIncrement, Decl(npm_lambda-direct_datalayer_TS2345.ts, 6, 51))
+
+type Names<TTable> = { [Key in keyof TTable]: TTable[Key] extends Column<infer N> ? Key : never }[keyof TTable];
+>Names : Symbol(Names, Decl(npm_lambda-direct_datalayer_TS2345.ts, 6, 75))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 11))
+>Key : Symbol(Key, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 24))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 11))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 11))
+>Key : Symbol(Key, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 24))
+>Column : Symbol(Column, Decl(npm_lambda-direct_datalayer_TS2345.ts, 5, 40))
+>N : Symbol(N, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 78))
+>Key : Symbol(Key, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 24))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 11))
+
+type Model<TTable> = { [Key in Names<TTable>]?: string };
+>Model : Symbol(Model, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 112))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 8, 11))
+>Key : Symbol(Key, Decl(npm_lambda-direct_datalayer_TS2345.ts, 8, 24))
+>Names : Symbol(Names, Decl(npm_lambda-direct_datalayer_TS2345.ts, 6, 75))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 8, 11))
+
+declare function values<T>(columns: { [name in keyof T]: Column<number> }): T;
+>values : Symbol(values, Decl(npm_lambda-direct_datalayer_TS2345.ts, 8, 57))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 9, 24))
+>columns : Symbol(columns, Decl(npm_lambda-direct_datalayer_TS2345.ts, 9, 27))
+>name : Symbol(name, Decl(npm_lambda-direct_datalayer_TS2345.ts, 9, 39))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 9, 24))
+>Column : Symbol(Column, Decl(npm_lambda-direct_datalayer_TS2345.ts, 5, 40))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 9, 24))
+
+function insert<TTable>(mapper: { [name in keyof Model<TTable>]: AbstractColumn<number> }) {
+>insert : Symbol(insert, Decl(npm_lambda-direct_datalayer_TS2345.ts, 9, 78))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 10, 16))
+>mapper : Symbol(mapper, Decl(npm_lambda-direct_datalayer_TS2345.ts, 10, 24))
+>name : Symbol(name, Decl(npm_lambda-direct_datalayer_TS2345.ts, 10, 35))
+>Model : Symbol(Model, Decl(npm_lambda-direct_datalayer_TS2345.ts, 7, 112))
+>TTable : Symbol(TTable, Decl(npm_lambda-direct_datalayer_TS2345.ts, 10, 16))
+>AbstractColumn : Symbol(AbstractColumn, Decl(npm_lambda-direct_datalayer_TS2345.ts, 0, 0))
+
+  values(mapper);
+>values : Symbol(values, Decl(npm_lambda-direct_datalayer_TS2345.ts, 8, 57))
+>mapper : Symbol(mapper, Decl(npm_lambda-direct_datalayer_TS2345.ts, 10, 24))
+}
+declare function keyed<T>(x: keyof T): T;
+>keyed : Symbol(keyed, Decl(npm_lambda-direct_datalayer_TS2345.ts, 12, 1))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 13, 23))
+>x : Symbol(x, Decl(npm_lambda-direct_datalayer_TS2345.ts, 13, 26))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 13, 23))
+>T : Symbol(T, Decl(npm_lambda-direct_datalayer_TS2345.ts, 13, 23))
+
+function keys<TT>(n: Names<TT>) {
+>keys : Symbol(keys, Decl(npm_lambda-direct_datalayer_TS2345.ts, 13, 41))
+>TT : Symbol(TT, Decl(npm_lambda-direct_datalayer_TS2345.ts, 14, 14))
+>n : Symbol(n, Decl(npm_lambda-direct_datalayer_TS2345.ts, 14, 18))
+>Names : Symbol(Names, Decl(npm_lambda-direct_datalayer_TS2345.ts, 6, 75))
+>TT : Symbol(TT, Decl(npm_lambda-direct_datalayer_TS2345.ts, 14, 14))
+
+  const inferred = keyed(n);
+>inferred : Symbol(inferred, Decl(npm_lambda-direct_datalayer_TS2345.ts, 15, 7))
+>keyed : Symbol(keyed, Decl(npm_lambda-direct_datalayer_TS2345.ts, 12, 1))
+>n : Symbol(n, Decl(npm_lambda-direct_datalayer_TS2345.ts, 14, 18))
+}
+

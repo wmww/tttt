@@ -1,0 +1,32 @@
+npm_lambda-direct_datalayer_TS2345.ts(12,10): error TS2345: Argument of type '{ [name in keyof Model<TTable>]: AbstractColumn<number>; }' is not assignable to parameter of type '{ [x: string]: Column<number>; }'.
+  Property 'autoIncrement' is missing in type 'AbstractColumn<number>' but required in type 'Column<number>'.
+npm_lambda-direct_datalayer_TS2345.ts(16,26): error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+  Type 'symbol' is not assignable to type 'string | number'.
+
+
+==== npm_lambda-direct_datalayer_TS2345.ts (2 errors) ====
+    // origin: npm @lambda-team/datalayer@1.0.11 https://github.com/lambda-direct/datalayer tsconfig.bench.json seed 20261217
+    // flip: no
+    // Inferring to `keyof T` from a generic key type that isn't a keyof starts over from its apparent type (tsc's
+    // inferFromTypes): `{ ... }[keyof TTable]`'s constraint `string | number | symbol` gives T `{ [x: string]: {} }`, so a
+    // generic mapped type over those keys isn't assignable to `{ [name in keyof T]: Column }` with an AbstractColumn template
+    declare class AbstractColumn<T> { t: T }
+    declare class Column<T> extends AbstractColumn<T> { autoIncrement(): void }
+    type Names<TTable> = { [Key in keyof TTable]: TTable[Key] extends Column<infer N> ? Key : never }[keyof TTable];
+    type Model<TTable> = { [Key in Names<TTable>]?: string };
+    declare function values<T>(columns: { [name in keyof T]: Column<number> }): T;
+    function insert<TTable>(mapper: { [name in keyof Model<TTable>]: AbstractColumn<number> }) {
+      values(mapper);
+             ~~~~~~
+!!! error TS2345: Argument of type '{ [name in keyof Model<TTable>]: AbstractColumn<number>; }' is not assignable to parameter of type '{ [x: string]: Column<number>; }'.
+!!! error TS2345:   Property 'autoIncrement' is missing in type 'AbstractColumn<number>' but required in type 'Column<number>'.
+!!! related TS2728 npm_lambda-direct_datalayer_TS2345.ts:7:53: 'autoIncrement' is declared here.
+    }
+    declare function keyed<T>(x: keyof T): T;
+    function keys<TT>(n: Names<TT>) {
+      const inferred = keyed(n);
+                             ~
+!!! error TS2345: Argument of type 'string | number | symbol' is not assignable to parameter of type 'string | number'.
+!!! error TS2345:   Type 'symbol' is not assignable to type 'string | number'.
+    }
+    

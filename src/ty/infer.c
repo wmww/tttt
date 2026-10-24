@@ -2031,6 +2031,17 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             inf->contravariant = !inf->contravariant;
             infer_from(me, inf, source->keyof.operand, target->keyof.operand);
             inf->contravariant = !inf->contravariant;
+        } else if (!inf->always_strict && (source->kind == TY_TYPE_PARAM || source->kind == TY_INDEXED ||
+            source->kind == TY_CONDITIONAL || source->kind == TY_SUBSTITUTION)
+        ) {
+            // Any other generic source starts over from its apparent type (tsc's inferFromTypes, whose last case
+            // restarts with getApparentType when that isn't an object): `{ ... }[keyof TT]` keys to `keyof T`
+            // through their constraint `string | number | symbol`, so T is `{ [x: string]: {} }` (lambda-direct's
+            // datalayer, a mapped type over such keys against `{ [name in keyof T]: Column }`)
+            Ty const* apparent = ty_apparent_type(me, source);
+            if (apparent != source && !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNKNOWN | TYF_ANY | TYF_NEVER))) {
+                infer_from(me, inf, apparent, target);
+            }
         }
     } else if (target->kind == TY_INDEXED) {
         if (source->kind == TY_INDEXED) {

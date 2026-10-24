@@ -1,0 +1,51 @@
+//// [test/cases/npm_lambda-direct_datalayer_TS2345.ts] ////
+
+=== npm_lambda-direct_datalayer_TS2345.ts ===
+// origin: npm @lambda-team/datalayer@1.0.11 https://github.com/lambda-direct/datalayer tsconfig.bench.json seed 20261217
+// flip: no
+// Inferring to `keyof T` from a generic key type that isn't a keyof starts over from its apparent type (tsc's
+// inferFromTypes): `{ ... }[keyof TTable]`'s constraint `string | number | symbol` gives T `{ [x: string]: {} }`, so a
+// generic mapped type over those keys isn't assignable to `{ [name in keyof T]: Column }` with an AbstractColumn template
+declare class AbstractColumn<T> { t: T }
+>AbstractColumn : AbstractColumn<T>
+>t : T
+
+declare class Column<T> extends AbstractColumn<T> { autoIncrement(): void }
+>Column : Column<T>
+>AbstractColumn : AbstractColumn<T>
+>autoIncrement : () => void
+
+type Names<TTable> = { [Key in keyof TTable]: TTable[Key] extends Column<infer N> ? Key : never }[keyof TTable];
+>Names : Names<TTable>
+
+type Model<TTable> = { [Key in Names<TTable>]?: string };
+>Model : Model<TTable>
+
+declare function values<T>(columns: { [name in keyof T]: Column<number> }): T;
+>values : <T>(columns: { [name in keyof T]: Column<number>; }) => T
+>columns : { [name in keyof T]: Column<number>; }
+
+function insert<TTable>(mapper: { [name in keyof Model<TTable>]: AbstractColumn<number> }) {
+>insert : <TTable>(mapper: { [name in keyof Model<TTable>]: AbstractColumn<number>; }) => void
+>mapper : { [name in keyof Model<TTable>]: AbstractColumn<number>; }
+
+  values(mapper);
+>values(mapper) : { [x: string]: {}; }
+>values : <T>(columns: { [name in keyof T]: Column<number>; }) => T
+>mapper : { [name in keyof Model<TTable>]: AbstractColumn<number>; }
+}
+declare function keyed<T>(x: keyof T): T;
+>keyed : <T>(x: keyof T) => T
+>x : keyof T
+
+function keys<TT>(n: Names<TT>) {
+>keys : <TT>(n: Names<TT>) => void
+>n : Names<TT>
+
+  const inferred = keyed(n);
+>inferred : { [x: string]: {}; }
+>keyed(n) : { [x: string]: {}; }
+>keyed : <T>(x: keyof T) => T
+>n : string | number | symbol
+}
+

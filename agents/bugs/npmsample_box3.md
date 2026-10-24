@@ -247,7 +247,12 @@ for flips); a separate file so the three boxes never conflict.
   missing TS2345 at src/builders/highLvlBuilders/insertRequestBuilder.ts:63 "Argument of type '{ [name in keyof
   ExtractModel<TTable>]: AbstractColumn<ColumnType<{}>, true, false>; }' is not assignable to parameter of type '{
   [x: string]: Column<ColumnType<{}>, true, false>; }'" (a generic mapped type against an index signature).
-  tsgo 32, tttt 31, not a flip. Not K-dependent. No repro. (claimed: cor10) [open]
+  tsgo 32, tttt 31, not a flip. Not K-dependent. (claimed: cor10) Re-created at cc98e715 (private seed 20269011),
+  reduced with reduce.py. tsgo infers T of `values<T>(columns: { [name in keyof T]: Column })` from the source's keys
+  `Names<TTable>` (a `{...}[keyof TTable]`): inferFromTypes restarts with its apparent type `string | number | symbol`,
+  and `string` to `keyof T` gives T `{ [x: string]: {} }`, so the AbstractColumn template fails. tttt's keyof-target
+  branch in infer_from() dropped a generic non-keyof source; it now restarts from the apparent type (ty/infer.c).
+  Repro test/cases/npm_lambda-direct_datalayer_TS2345.ts; the project is byte-identical with tsgo. [fixed 2026-10-24]
 - Seed 20261217, googlechrome/lighthouse (tybrs-lighthouse@1.0.0, commit 1a4ffa418, root tsconfig.json, checkJs):
   +7 in JavaScript: TS7008 "Member '_frameNavigations' implicitly has an 'any[]' type" at
   core/gather/driver/network-monitor.js:60 and :89 (a `this._frameNavigations = []` member), TS2339 "Property
