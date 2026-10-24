@@ -1,139 +1,80 @@
 //// [test/cases/npm_akashnetwork_console-web_TS7022.ts] ////
 
-=== app-di-container.ts ===
-import { createContainer } from "./createContainer";
->createContainer : <T extends import("./createContainer").Factories>(factories: T) => import("./createContainer").DIContainer<T>
+=== npm_akashnetwork_console-web_TS7022.ts ===
+// origin: npm @akashnetwork/console-web@3.31.0 https://github.com/akash-network/console apps/deploy-web/tsconfig.bench.json seed 20261304
+// flip: no
+// A DI container whose factories read the container being declared: each `container.x(...)` callee is checked behind
+// its call's barrier (tsc's getResolvedSignature, first resolution), so the declaration in flight is computed again,
+// nested, rather than a cycle; the second factory's reference comes inside the first re-entry (cut down by hand from
+// the reduction, which kept unresolved names)
+type Factories = Record<string, () => any>;
+>Factories : Factories
 
-  const container = createContainer({
->container : import("./createContainer").DIContainer<{ applyAxiosInterceptors: () => typeof withInterceptors; stripe: () => any; stripeService: () => any; providerProxy: () => any; deploymentSetting: () => void; apiKey: () => void; createAxios: any; }>
->createContainer({    applyAxiosInterceptors: (): typeof withInterceptors => {    },    stripe: () =>      new HttpStripeService(      ),    stripeService: () =>      new StripeService({      }),    providerProxy: () => {      return new ProviderProxyService(        container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {          request: [config => ({ ...config, baseURL: getBaseUrl() })]        }),      );    },    deploymentSetting: () =>      container.applyAxiosInterceptors(new DeploymentSettingHttpService(apiConfig), {      }),    apiKey: () =>      container.applyAxiosInterceptors(new ApiKeyHttpService(apiConfig), {      }),    createAxios:        createHttpClient(options),  }) : import("./createContainer").DIContainer<{ applyAxiosInterceptors: () => typeof withInterceptors; stripe: () => any; stripeService: () => any; providerProxy: () => any; deploymentSetting: () => void; apiKey: () => void; createAxios: any; }>
->createContainer : <T extends import("./createContainer").Factories>(factories: T) => import("./createContainer").DIContainer<T>
->{    applyAxiosInterceptors: (): typeof withInterceptors => {    },    stripe: () =>      new HttpStripeService(      ),    stripeService: () =>      new StripeService({      }),    providerProxy: () => {      return new ProviderProxyService(        container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {          request: [config => ({ ...config, baseURL: getBaseUrl() })]        }),      );    },    deploymentSetting: () =>      container.applyAxiosInterceptors(new DeploymentSettingHttpService(apiConfig), {      }),    apiKey: () =>      container.applyAxiosInterceptors(new ApiKeyHttpService(apiConfig), {      }),    createAxios:        createHttpClient(options),  } : { applyAxiosInterceptors: () => typeof withInterceptors; stripe: () => any; stripeService: () => any; providerProxy: () => any; deploymentSetting: () => void; apiKey: () => void; createAxios: any; }
-
-    applyAxiosInterceptors: (): typeof withInterceptors => {
->applyAxiosInterceptors : () => typeof withInterceptors
->(): typeof withInterceptors => {    } : () => typeof withInterceptors
->withInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
-
-    },
-    stripe: () =>
->stripe : () => any
->() =>      new HttpStripeService(      ) : () => any
-
-      new HttpStripeService(
->new HttpStripeService(      ) : any
->HttpStripeService : any
-
-      ),
-    stripeService: () =>
->stripeService : () => any
->() =>      new StripeService({      }) : () => any
-
-      new StripeService({
->new StripeService({      }) : any
->StripeService : any
->{      } : {}
-
-      }),
-    providerProxy: () => {
->providerProxy : () => any
->() => {      return new ProviderProxyService(        container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {          request: [config => ({ ...config, baseURL: getBaseUrl() })]        }),      );    } : () => any
-
-      return new ProviderProxyService(
->new ProviderProxyService(        container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {          request: [config => ({ ...config, baseURL: getBaseUrl() })]        }),      ) : any
->ProviderProxyService : any
-
-        container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {
->container.applyAxiosInterceptors(container.createAxios({ baseURL: "/" }), {          request: [config => ({ ...config, baseURL: getBaseUrl() })]        }) : void
->container.applyAxiosInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
->container : import("./createContainer").DIContainer<{ applyAxiosInterceptors: () => typeof withInterceptors; stripe: () => any; stripeService: () => any; providerProxy: () => any; deploymentSetting: () => void; apiKey: () => void; createAxios: any; }>
->applyAxiosInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
->container.createAxios({ baseURL: "/" }) : any
->container.createAxios : any
->container : import("./createContainer").DIContainer<{ applyAxiosInterceptors: () => typeof withInterceptors; stripe: () => any; stripeService: () => any; providerProxy: () => any; deploymentSetting: () => void; apiKey: () => void; createAxios: any; }>
->createAxios : any
->{ baseURL: "/" } : { baseURL: string; }
->baseURL : string
->"/" : "/"
->{          request: [config => ({ ...config, baseURL: getBaseUrl() })]        } : { request: ((config: InternalAxiosRequestConfig) => any)[]; }
-
-          request: [config => ({ ...config, baseURL: getBaseUrl() })]
->request : ((config: InternalAxiosRequestConfig) => any)[]
->[config => ({ ...config, baseURL: getBaseUrl() })] : ((config: InternalAxiosRequestConfig) => any)[]
->config => ({ ...config, baseURL: getBaseUrl() }) : (config: InternalAxiosRequestConfig) => any
->config : InternalAxiosRequestConfig
->({ ...config, baseURL: getBaseUrl() }) : any
->{ ...config, baseURL: getBaseUrl() } : any
->config : InternalAxiosRequestConfig
->baseURL : any
->getBaseUrl() : any
->getBaseUrl : any
-
-        }),
-      );
-    },
-    deploymentSetting: () =>
->deploymentSetting : () => void
->() =>      container.applyAxiosInterceptors(new DeploymentSettingHttpService(apiConfig), {      }) : () => void
-
-      container.applyAxiosInterceptors(new DeploymentSettingHttpService(apiConfig), {
->container.applyAxiosInterceptors(new DeploymentSettingHttpService(apiConfig), {      }) : void
->container.applyAxiosInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
->container : import("./createContainer").DIContainer<{ applyAxiosInterceptors: () => typeof withInterceptors; stripe: () => any; stripeService: () => any; providerProxy: () => any; deploymentSetting: () => void; apiKey: () => void; createAxios: any; }>
->applyAxiosInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
->new DeploymentSettingHttpService(apiConfig) : any
->DeploymentSettingHttpService : any
->apiConfig : any
->{      } : {}
-
-      }),
-    apiKey: () =>
->apiKey : () => void
->() =>      container.applyAxiosInterceptors(new ApiKeyHttpService(apiConfig), {      }) : () => void
-
-      container.applyAxiosInterceptors(new ApiKeyHttpService(apiConfig), {
->container.applyAxiosInterceptors(new ApiKeyHttpService(apiConfig), {      }) : void
->container.applyAxiosInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
->container : import("./createContainer").DIContainer<{ applyAxiosInterceptors: () => typeof withInterceptors; stripe: () => any; stripeService: () => any; providerProxy: () => any; deploymentSetting: () => void; apiKey: () => void; createAxios: any; }>
->applyAxiosInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
->new ApiKeyHttpService(apiConfig) : any
->ApiKeyHttpService : any
->apiConfig : any
->{      } : {}
-
-      }),
-    createAxios:
->createAxios : any
-
-        createHttpClient(options),
->createHttpClient(options) : any
->createHttpClient : any
->options : any
-
-  });
-export function withInterceptors<T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) {
->withInterceptors : <T extends Axios | AxiosInstance = AxiosInstance>(axios: T, interceptors?: Interceptors) => void
->axios : T
->interceptors : Interceptors | undefined
-}
-type Interceptor<T> = (value: T) => T | Promise<T>;
->Interceptor : Interceptor<T>
->value : T
-
-interface Interceptors {
-  request?: Array<Interceptor<InternalAxiosRequestConfig> | undefined>;
->request : (Interceptor<InternalAxiosRequestConfig> | undefined)[] | undefined
-}
-=== createContainer.ts ===
-export function createContainer<T extends Factories>(factories: T): DIContainer<T> {
->createContainer : <T extends Factories>(factories: T) => DIContainer<T>
->factories : T
-}
-export type DIContainer<T extends Factories> = {
+type DIContainer<T extends Factories> = { [K in keyof T]: ReturnType<T[K]> };
 >DIContainer : DIContainer<T>
 
-  [K in keyof T]: ReturnType<T[K]>;
-};
-export type Factories = Record<string, () => any>;
->Factories : Factories
+declare function createContainer<T extends Factories>(factories: T): DIContainer<T>;
+>createContainer : <T extends Factories>(factories: T) => DIContainer<T>
+>factories : T
+
+declare function withInterceptors<T>(axios: T, interceptors?: { request?: Array<(v: string) => string> }): T;
+>withInterceptors : <T>(axios: T, interceptors?: { request?: Array<(v: string) => string>; }) => T
+>axios : T
+>interceptors : { request?: Array<(v: string) => string>; } | undefined
+>request : ((v: string) => string)[] | undefined
+>v : string
+
+const container = createContainer({
+>container : DIContainer<{ apply: () => typeof withInterceptors; proxy: () => string; setting: () => number; make: () => (o: object) => string; }>
+>createContainer({  apply: (): typeof withInterceptors => withInterceptors,  proxy: () => {    return container.apply(container.make({}), { request: [config => config + "!"] });  },  setting: () => container.apply(1),  make: () => (o: object) => "x",}) : DIContainer<{ apply: () => typeof withInterceptors; proxy: () => string; setting: () => number; make: () => (o: object) => string; }>
+>createContainer : <T extends Factories>(factories: T) => DIContainer<T>
+>{  apply: (): typeof withInterceptors => withInterceptors,  proxy: () => {    return container.apply(container.make({}), { request: [config => config + "!"] });  },  setting: () => container.apply(1),  make: () => (o: object) => "x",} : { apply: () => typeof withInterceptors; proxy: () => string; setting: () => number; make: () => (o: object) => string; }
+
+  apply: (): typeof withInterceptors => withInterceptors,
+>apply : () => typeof withInterceptors
+>(): typeof withInterceptors => withInterceptors : () => typeof withInterceptors
+>withInterceptors : <T>(axios: T, interceptors?: { request?: Array<(v: string) => string>; }) => T
+>withInterceptors : <T>(axios: T, interceptors?: { request?: Array<(v: string) => string>; }) => T
+
+  proxy: () => {
+>proxy : () => string
+>() => {    return container.apply(container.make({}), { request: [config => config + "!"] });  } : () => string
+
+    return container.apply(container.make({}), { request: [config => config + "!"] });
+>container.apply(container.make({}), { request: [config => config + "!"] }) : string
+>container.apply : <T>(axios: T, interceptors?: { request?: Array<(v: string) => string>; }) => T
+>container : DIContainer<{ apply: () => typeof withInterceptors; proxy: () => string; setting: () => number; make: () => (o: object) => string; }>
+>apply : <T>(axios: T, interceptors?: { request?: Array<(v: string) => string>; }) => T
+>container.make({}) : string
+>container.make : (o: object) => string
+>container : DIContainer<{ apply: () => typeof withInterceptors; proxy: () => string; setting: () => number; make: () => (o: object) => string; }>
+>make : (o: object) => string
+>{} : {}
+>{ request: [config => config + "!"] } : { request: ((config: string) => string)[]; }
+>request : ((config: string) => string)[]
+>[config => config + "!"] : ((config: string) => string)[]
+>config => config + "!" : (config: string) => string
+>config : string
+>config + "!" : string
+>config : string
+>"!" : "!"
+
+  },
+  setting: () => container.apply(1),
+>setting : () => number
+>() => container.apply(1) : () => number
+>container.apply(1) : 1
+>container.apply : <T>(axios: T, interceptors?: { request?: Array<(v: string) => string>; }) => T
+>container : DIContainer<{ apply: () => typeof withInterceptors; proxy: () => string; setting: () => number; make: () => (o: object) => string; }>
+>apply : <T>(axios: T, interceptors?: { request?: Array<(v: string) => string>; }) => T
+>1 : 1
+
+  make: () => (o: object) => "x",
+>make : () => (o: object) => string
+>() => (o: object) => "x" : () => (o: object) => string
+>(o: object) => "x" : (o: object) => string
+>o : object
+>"x" : "x"
+
+});
 

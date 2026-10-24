@@ -6160,7 +6160,26 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
         ty_iife_return_type(me, callee->function);
     }
     bool optional = false;
+    // The callee of a call's first resolution is checked behind its barrier (tsc's getResolvedSignature moves
+    // resolutionStart, then resolveCallExpression checks the expression): a declaration in flight that the callee reads
+    // is computed again, nested, not a cycle. akash's DI container: `const container = createContainer({ a: () =>
+    // container.b(...), c: () => container.b(...) })`, the second member's `container.b` in the first re-entry
+    // (A request for the same call while its callee is checked is no first resolution: tsc has set resolvingSignature)
+    // (The calls whose callee is being checked: a short stack, nested calls in callees are few)
+    static _Thread_local CallExpr const* callee_flight[32];
+    static _Thread_local u32 callee_flight_len;
+    bool first_resolution = !call->uses_new && !call->is_extends && callee_flight_len < c_arraylen(callee_flight);
+    for (u32 i = 0; i < callee_flight_len && first_resolution; i++) first_resolution = callee_flight[i] != call;
+    if (first_resolution) first_resolution = !ty_link_get(me, KEY_CALL_RESOLUTION, call);
+    if (first_resolution) {
+        ty_barrier_push(me, BARRIER_CALL);
+        callee_flight[callee_flight_len++] = call;
+    }
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
+    if (first_resolution) {
+        callee_flight_len--;
+        ty_barrier_pop(me);
+    }
     // An incomplete `never` of control flow calls to nothing (tsc's silentNeverSignature)
     if (callee_type == ty_intrinsic(me, TY_SILENT_NEVER)) return callee_type;
     if ((callee_type->flags & TYF_UNKNOWN) && !call->is_extends && compiler_options()->strict_null_checks) {
