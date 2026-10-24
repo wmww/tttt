@@ -1,0 +1,77 @@
+//// [test/cases/npm_lighthouse_TS2339.ts] ////
+
+=== a.js ===
+const d = {
+>d : Symbol(d, Decl(a.js, 0, 5))
+
+  /** @type {(error: Error, options: {level?: string, tags?: {[key: string]: any}, extra?: {[key: string]: any}}) => Promise<void>} */
+  captureException: async () => { },
+>captureException : Symbol(captureException, Decl(a.js, 0, 11))
+
+};
+d.captureException = async (err, opts = {}) => {
+>d.captureException : Symbol(captureException, Decl(a.js, 0, 11))
+>d : Symbol(d, Decl(a.js, 0, 5))
+>captureException : Symbol(captureException, Decl(a.js, 0, 11))
+>err : Symbol(err, Decl(a.js, 4, 28))
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+
+  const tags = opts.tags || {};
+>tags : Symbol(tags, Decl(a.js, 5, 7))
+>opts.tags : Symbol(tags, Decl(a.js, 1, 53))
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+>tags : Symbol(tags, Decl(a.js, 1, 53))
+
+  if (tags.audit) {}
+>tags.audit : Symbol(__index, Decl(a.js, 1, 62))
+>tags : Symbol(tags, Decl(a.js, 5, 7))
+>audit : Symbol(__index, Decl(a.js, 1, 62))
+
+  opts.fingerprint = ['x'];
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+
+  opts.tags = opts.tags || {};
+>opts.tags : Symbol(tags, Decl(a.js, 1, 53))
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+>tags : Symbol(tags, Decl(a.js, 1, 53))
+>opts.tags : Symbol(tags, Decl(a.js, 1, 53))
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+>tags : Symbol(tags, Decl(a.js, 1, 53))
+
+  opts.tags.p = 1;
+>opts.tags.p : Symbol(__index, Decl(a.js, 1, 62))
+>opts.tags : Symbol(tags, Decl(a.js, 1, 53))
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+>tags : Symbol(tags, Decl(a.js, 1, 53))
+>p : Symbol(__index, Decl(a.js, 1, 62))
+
+  if (opts.level) {}
+>opts.level : Symbol(level, Decl(a.js, 1, 38))
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+>level : Symbol(level, Decl(a.js, 1, 38))
+
+  if (opts.extra) {}
+>opts.extra : Symbol(extra, Decl(a.js, 1, 82))
+>opts : Symbol(opts, Decl(a.js, 4, 32))
+>extra : Symbol(extra, Decl(a.js, 1, 82))
+
+};
+/** @param {{a?: number}} o */
+function f(o = {}) {
+>f : Symbol(f, Decl(a.js, 12, 2))
+>o : Symbol(o, Decl(a.js, 14, 11))
+
+  o.b = 1;
+>o : Symbol(o, Decl(a.js, 14, 11))
+
+  return o.a;
+>o.a : Symbol(a, Decl(a.js, 13, 13))
+>o : Symbol(o, Decl(a.js, 14, 11))
+>a : Symbol(a, Decl(a.js, 13, 13))
+}
+const g = (o = {}) => { o.z = 1; return o.z; };
+>g : Symbol(g, Decl(a.js, 18, 5))
+>o : Symbol(o, Decl(a.js, 18, 11))
+>o : Symbol(o, Decl(a.js, 18, 11))
+>o : Symbol(o, Decl(a.js, 18, 11))
+

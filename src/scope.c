@@ -6262,6 +6262,9 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
         case SYMBOL_DECL_VARIABLE: {
             Binding const* binding = value->node;
             if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
+            // (Not a parameter with a default, `(o = {}) => { o.z = 1 }`: tsgo's getInitializerSymbol takes a variable
+            // declaration's initializer only, and `o.z` is TS2339 on `{}`; lighthouse's sentry.js)
+            if (found->is_parameter) return false;
             if (!js && !found->is_const) return false;
             InitializedBinding* initialized = (InitializedBinding*)binding;
             *init_ret = expando_initializer(initialized_binding_value(initialized), js, binding->has_explicit_type);

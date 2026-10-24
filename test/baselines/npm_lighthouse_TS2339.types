@@ -1,0 +1,107 @@
+//// [test/cases/npm_lighthouse_TS2339.ts] ////
+
+=== a.js ===
+const d = {
+>d : { captureException: (error: Error, options: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>; }
+>{  /** @type {(error: Error, options: {level?: string, tags?: {[key: string]: any}, extra?: {[key: string]: any}}) => Promise<void>} */  captureException: async () => { },} : { captureException: (error: Error, options: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>; }
+
+  /** @type {(error: Error, options: {level?: string, tags?: {[key: string]: any}, extra?: {[key: string]: any}}) => Promise<void>} */
+  captureException: async () => { },
+>captureException : (error: Error, options: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>
+>async () => { } : () => Promise<void>
+
+};
+d.captureException = async (err, opts = {}) => {
+>d.captureException = async (err, opts = {}) => {  const tags = opts.tags || {};  if (tags.audit) {}  opts.fingerprint = ['x'];  opts.tags = opts.tags || {};  opts.tags.p = 1;  if (opts.level) {}  if (opts.extra) {}} : (err: Error, opts?: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>
+>d.captureException : (error: Error, options: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>
+>d : { captureException: (error: Error, options: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>; }
+>captureException : (error: Error, options: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>
+>async (err, opts = {}) => {  const tags = opts.tags || {};  if (tags.audit) {}  opts.fingerprint = ['x'];  opts.tags = opts.tags || {};  opts.tags.p = 1;  if (opts.level) {}  if (opts.extra) {}} : (err: Error, opts?: { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }) => Promise<void>
+>err : Error
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>{} : {}
+
+  const tags = opts.tags || {};
+>tags : { [key: string]: any; }
+>opts.tags || {} : { [key: string]: any; }
+>opts.tags : { [key: string]: any; } | undefined
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>tags : { [key: string]: any; } | undefined
+>{} : {}
+
+  if (tags.audit) {}
+>tags.audit : any
+>tags : { [key: string]: any; }
+>audit : any
+
+  opts.fingerprint = ['x'];
+>opts.fingerprint = ['x'] : string[]
+>opts.fingerprint : any
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>fingerprint : any
+>['x'] : string[]
+>'x' : "x"
+
+  opts.tags = opts.tags || {};
+>opts.tags = opts.tags || {} : { [key: string]: any; }
+>opts.tags : { [key: string]: any; } | undefined
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>tags : { [key: string]: any; } | undefined
+>opts.tags || {} : { [key: string]: any; }
+>opts.tags : { [key: string]: any; } | undefined
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>tags : { [key: string]: any; } | undefined
+>{} : {}
+
+  opts.tags.p = 1;
+>opts.tags.p = 1 : 1
+>opts.tags.p : any
+>opts.tags : { [key: string]: any; }
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>tags : { [key: string]: any; }
+>p : any
+>1 : 1
+
+  if (opts.level) {}
+>opts.level : string | undefined
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>level : string | undefined
+
+  if (opts.extra) {}
+>opts.extra : { [key: string]: any; } | undefined
+>opts : { level?: string; tags?: { [key: string]: any; }; extra?: { [key: string]: any; }; }
+>extra : { [key: string]: any; } | undefined
+
+};
+/** @param {{a?: number}} o */
+function f(o = {}) {
+>f : (o?: { a?: number; }) => number | undefined
+>o : { a?: number; }
+>{} : {}
+
+  o.b = 1;
+>o.b = 1 : 1
+>o.b : any
+>o : { a?: number; }
+>b : any
+>1 : 1
+
+  return o.a;
+>o.a : number | undefined
+>o : { a?: number; }
+>a : number | undefined
+}
+const g = (o = {}) => { o.z = 1; return o.z; };
+>g : (o?: {}) => any
+>(o = {}) => { o.z = 1; return o.z; } : (o?: {}) => any
+>o : {}
+>{} : {}
+>o.z = 1 : 1
+>o.z : any
+>o : {}
+>z : any
+>1 : 1
+>o.z : any
+>o : {}
+>z : any
+

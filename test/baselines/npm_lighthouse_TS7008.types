@@ -1,0 +1,61 @@
+//// [test/cases/npm_lighthouse_TS7008.ts] ////
+
+=== a.js ===
+class M {
+>M : M
+
+  /** @type {Array<string>} */
+  _nav = [];
+>_nav : string[]
+>[] : never[]
+
+  /** @type {number[]} */
+  _plain = [];
+>_plain : number[]
+>[] : never[]
+
+  _untyped = [];
+>_untyped : any[]
+>[] : never[]
+
+  constructor() {
+    this._on = () => this._nav.push("x");
+>this._on = () => this._nav.push("x") : () => number
+>this._on : any
+>this : this
+>_on : any
+>() => this._nav.push("x") : () => number
+>this._nav.push("x") : number
+>this._nav.push : (...items: string[]) => number
+>this._nav : string[]
+>this : this
+>_nav : string[]
+>push : (...items: string[]) => number
+>"x" : "x"
+  }
+  enable() {
+>enable : () => void
+
+    this._nav = [];
+>this._nav = [] : never[]
+>this._nav : string[]
+>this : this
+>_nav : string[]
+>[] : never[]
+
+    this._plain = [];
+>this._plain = [] : never[]
+>this._plain : number[]
+>this : this
+>_plain : number[]
+>[] : never[]
+
+    this._untyped = [];
+>this._untyped = [] : never[]
+>this._untyped : any[]
+>this : this
+>_untyped : any[]
+>[] : never[]
+  }
+}
+

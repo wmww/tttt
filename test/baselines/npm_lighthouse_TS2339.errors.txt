@@ -1,0 +1,35 @@
+a.js(8,8): error TS2339: Property 'fingerprint' does not exist on type '{ level?: string | undefined; tags?: { [key: string]: any; } | undefined; extra?: { [key: string]: any; } | undefined; }'.
+a.js(16,5): error TS2339: Property 'b' does not exist on type '{ a?: number | undefined; }'.
+a.js(19,27): error TS2339: Property 'z' does not exist on type '{}'.
+a.js(19,43): error TS2339: Property 'z' does not exist on type '{}'.
+
+
+==== a.js (4 errors) ====
+    const d = {
+      /** @type {(error: Error, options: {level?: string, tags?: {[key: string]: any}, extra?: {[key: string]: any}}) => Promise<void>} */
+      captureException: async () => { },
+    };
+    d.captureException = async (err, opts = {}) => {
+      const tags = opts.tags || {};
+      if (tags.audit) {}
+      opts.fingerprint = ['x'];
+           ~~~~~~~~~~~
+!!! error TS2339: Property 'fingerprint' does not exist on type '{ level?: string | undefined; tags?: { [key: string]: any; } | undefined; extra?: { [key: string]: any; } | undefined; }'.
+      opts.tags = opts.tags || {};
+      opts.tags.p = 1;
+      if (opts.level) {}
+      if (opts.extra) {}
+    };
+    /** @param {{a?: number}} o */
+    function f(o = {}) {
+      o.b = 1;
+        ~
+!!! error TS2339: Property 'b' does not exist on type '{ a?: number | undefined; }'.
+      return o.a;
+    }
+    const g = (o = {}) => { o.z = 1; return o.z; };
+                              ~
+!!! error TS2339: Property 'z' does not exist on type '{}'.
+                                              ~
+!!! error TS2339: Property 'z' does not exist on type '{}'.
+    

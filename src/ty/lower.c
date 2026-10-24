@@ -2484,6 +2484,13 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
 // getWidenedTypeForAssignmentDeclaration): 1 if `value` (an assignment of `[]`) made it any[], 2 if only null or
 // undefined are assigned (any), 3 if the constructor only assigns `[]` (any[]), else 0. Evaluates the member's type
 int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const* value) {
+    // A class member declared in the class body too, a field or method, is typed by that declaration: tsc's
+    // getTypeOfSymbol never widens the assignments then (getWidenedTypeForAssignmentDeclaration), so a `this.x = []`
+    // next to `/** @type {T[]} */ x = []` reports nothing (lighthouse's network-monitor.js)
+    if (member->parent && (member->parent->flags & SYMBOL_CLASS)) {
+        ClassDecl const* cls = symbol_find_node(member->parent, SYMBOL_DECL_CLASS);
+        if (cls && class_decl_find_member(cls, member->name, false)) return 0;
+    }
     // A class member only `this.x = v` outside of the constructor declares is the base class's namesake if it has one
     // (tsc's addInheritedMembers): the member's own type is never asked for, nor reported
     if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&

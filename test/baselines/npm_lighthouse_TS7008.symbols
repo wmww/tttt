@@ -1,0 +1,48 @@
+//// [test/cases/npm_lighthouse_TS7008.ts] ////
+
+=== a.js ===
+class M {
+>M : Symbol(M, Decl(a.js, 0, 0))
+
+  /** @type {Array<string>} */
+  _nav = [];
+>_nav : Symbol(M._nav, Decl(a.js, 0, 9))
+
+  /** @type {number[]} */
+  _plain = [];
+>_plain : Symbol(M._plain, Decl(a.js, 2, 12))
+
+  _untyped = [];
+>_untyped : Symbol(M._untyped, Decl(a.js, 4, 14))
+
+  constructor() {
+    this._on = () => this._nav.push("x");
+>this._on : Symbol(M._on, Decl(a.js, 6, 17))
+>this : Symbol(M, Decl(a.js, 0, 0))
+>_on : Symbol(M._on, Decl(a.js, 6, 17))
+>this._nav.push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+>this._nav : Symbol(M._nav, Decl(a.js, 0, 9))
+>this : Symbol(M, Decl(a.js, 0, 0))
+>_nav : Symbol(M._nav, Decl(a.js, 0, 9))
+>push : Symbol(Array.push, Decl(lib.es5.d.ts, --, --))
+  }
+  enable() {
+>enable : Symbol(M.enable, Decl(a.js, 8, 3))
+
+    this._nav = [];
+>this._nav : Symbol(M._nav, Decl(a.js, 0, 9))
+>this : Symbol(M, Decl(a.js, 0, 0))
+>_nav : Symbol(M._nav, Decl(a.js, 0, 9))
+
+    this._plain = [];
+>this._plain : Symbol(M._plain, Decl(a.js, 2, 12))
+>this : Symbol(M, Decl(a.js, 0, 0))
+>_plain : Symbol(M._plain, Decl(a.js, 2, 12))
+
+    this._untyped = [];
+>this._untyped : Symbol(M._untyped, Decl(a.js, 4, 14))
+>this : Symbol(M, Decl(a.js, 0, 0))
+>_untyped : Symbol(M._untyped, Decl(a.js, 4, 14))
+  }
+}
+

@@ -1,0 +1,22 @@
+a.js(6,3): error TS7008: Member '_untyped' implicitly has an 'any[]' type.
+
+
+==== a.js (1 errors) ====
+    class M {
+      /** @type {Array<string>} */
+      _nav = [];
+      /** @type {number[]} */
+      _plain = [];
+      _untyped = [];
+      ~~~~~~~~
+!!! error TS7008: Member '_untyped' implicitly has an 'any[]' type.
+      constructor() {
+        this._on = () => this._nav.push("x");
+      }
+      enable() {
+        this._nav = [];
+        this._plain = [];
+        this._untyped = [];
+      }
+    }
+    
