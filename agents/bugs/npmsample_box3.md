@@ -200,7 +200,7 @@ for flips); a separate file so the three boxes never conflict.
   TS2322 at src/utils/persist.ts:643 and :644 "Type 'T | Accessor<(readonly unknown[] & Exclude<T,
   NotWrappable>)[number]>' is not assignable to type 'T'", in the returned tuple `[state, setState, init, ...]` of a
   solid-js store helper (solid-js/store's Store/SetStoreFunction, @solid-primitives/storage makePersisted). tsgo 0,
-  tttt 2, so a flip. Not K-dependent. No repro (corB reduces it). [flip] [open]
+  tttt 2, so a flip. Not K-dependent. Root cause (corB, reduce.py then by hand): PersistedState<[T, SetStoreFunction<T>]>'s first branch `S extends Signal<infer T>` must be definitely false. tsgo infers the `infer T` with NoConstraints, so Part<T>'s deferred `[T] extends [readonly unknown[]] ? (item: T[number]) => boolean : never` gives nothing and the T is void (from Setter's return). The permissive check then fails and the second branch is taken. tttt inferred through the conditional's constraint (T[number] -> wildcard), the permissive check passed, and the type stayed deferred. infer.c now skips an instantiable source's apparent type under a conditional's inference (inf->always_strict). Test test/cases/npm__deepagent-code_TS2322.ts. [flip] [fixed PENDING]
 - Large seed 20261402, mui/mui-x@master (commit 215513c6c), packages/x-date-pickers (tsconfig.json): spurious TS2740 at
   src/DateCalendar/PickersFadeTransitionGroup.tsx:54 "Type '{ className: string; ownerState: {...}; children: ... }'
   is missing the following properties from type ...: about, accessKey, ... and 274 more", and TS2322 at

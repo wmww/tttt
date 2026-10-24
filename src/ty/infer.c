@@ -2095,7 +2095,13 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 }
             }
         }
-        if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+        // (Not an instantiable one's constraint for a conditional type's `infer` (tsc's NoConstraints): `Part<T>`'s
+        // deferred `[T] extends [readonly unknown[]] ? (item: T[number]) => boolean : never` says nothing, so a
+        // solid-js SetStoreFunction<T> infers no `T[number]` for Signal's `infer T`)
+        bool instantiable = source->kind == TY_TYPE_PARAM || source->kind == TY_INDEXED || source->kind == TY_CONDITIONAL ||
+            source->kind == TY_SUBSTITUTION || source->kind == TY_KEYOF || source->kind == TY_TEMPLATE_LITERAL ||
+            source->kind == TY_STRING_MAPPING;
+        if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION)) && !(inf->always_strict && instantiable)) {
             Ty const* apparent = ty_apparent_type(me, source);
             if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) {
                 // One that isn't an object starts over: `EB extends Die | Fail<E>` to `Fail<E'>` infers from each member

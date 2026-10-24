@@ -1,0 +1,57 @@
+//// [test/cases/npm__deepagent-code_TS2322.ts] ////
+
+=== npm__deepagent-code_TS2322.ts ===
+// origin: npm deepagent-ltd/deepagent-code https://github.com/deepagent-ltd/deepagent-code packages/app/tsconfig.bench.json seed 20261402 (large)
+// flip: yes
+// A conditional type's `infer` doesn't infer through an instantiable source's constraint (tsc's NoConstraints):
+// SetStoreFunction<T>'s parameter Part<T> holds a deferred conditional whose constraint mentions T[number], and
+// inferring T' = T[number] from it made Signal<T'> not definitely false, so solid-primitives' PersistedState stayed
+// deferred (TS2322 on its first element)
+type Accessor<T> = () => T;
+>Accessor : Accessor<T>
+
+type Setter<T> = {
+>Setter : Setter<T>
+
+    <U extends T>(...args: undefined extends T ? [] : [value: Exclude<U, Function> | ((prev: T) => U)]): undefined extends T ? undefined : U;
+>args : undefined extends T ? [] : [value: ((prev: T) => U) | Exclude<U, Function>]
+>prev : T
+
+    <U extends T>(value: (prev: T) => U): U;
+>value : (prev: T) => U
+>prev : T
+
+};
+type Signal<T> = [get: Accessor<T>, set: Setter<T>];
+>Signal : Signal<T>
+
+type Part<T> = keyof T | ([T] extends [readonly unknown[]] ? (item: T[number]) => boolean : never);
+>Part : Part<T>
+>item : T[number]
+
+interface SetStoreFunction<T> {
+    (k1: Part<T>): void;
+>k1 : Part<T>
+}
+type PersistedState<S> = S extends Signal<infer T> ? [get: Accessor<T>, set: Setter<T>] : S extends [infer T, SetStoreFunction<infer T>] ? [get: T, set: SetStoreFunction<T>] : never;
+>PersistedState : PersistedState<S>
+
+declare function makePersisted<S>(signal: S): PersistedState<S>;
+>makePersisted : <S>(signal: S) => PersistedState<S>
+>signal : S
+
+export function persisted<T>(store: [T, SetStoreFunction<T>]): [T] {
+>persisted : <T>(store: [T, SetStoreFunction<T>]) => [T]
+>store : [T, SetStoreFunction<T>]
+
+  const [state] = makePersisted(store);
+>state : T
+>makePersisted(store) : [get: T, set: SetStoreFunction<T>]
+>makePersisted : <S>(signal: S) => PersistedState<S>
+>store : [T, SetStoreFunction<T>]
+
+  return [state];
+>[state] : [T]
+>state : T
+}
+

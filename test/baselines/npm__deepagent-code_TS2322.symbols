@@ -1,0 +1,111 @@
+//// [test/cases/npm__deepagent-code_TS2322.ts] ////
+
+=== npm__deepagent-code_TS2322.ts ===
+// origin: npm deepagent-ltd/deepagent-code https://github.com/deepagent-ltd/deepagent-code packages/app/tsconfig.bench.json seed 20261402 (large)
+// flip: yes
+// A conditional type's `infer` doesn't infer through an instantiable source's constraint (tsc's NoConstraints):
+// SetStoreFunction<T>'s parameter Part<T> holds a deferred conditional whose constraint mentions T[number], and
+// inferring T' = T[number] from it made Signal<T'> not definitely false, so solid-primitives' PersistedState stayed
+// deferred (TS2322 on its first element)
+type Accessor<T> = () => T;
+>Accessor : Symbol(Accessor, Decl(npm__deepagent-code_TS2322.ts, 0, 0))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 6, 14))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 6, 14))
+
+type Setter<T> = {
+>Setter : Symbol(Setter, Decl(npm__deepagent-code_TS2322.ts, 6, 27))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 7, 12))
+
+    <U extends T>(...args: undefined extends T ? [] : [value: Exclude<U, Function> | ((prev: T) => U)]): undefined extends T ? undefined : U;
+>U : Symbol(U, Decl(npm__deepagent-code_TS2322.ts, 8, 5))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 7, 12))
+>args : Symbol(args, Decl(npm__deepagent-code_TS2322.ts, 8, 18))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 7, 12))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(npm__deepagent-code_TS2322.ts, 8, 5))
+>Function : Symbol(Function, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+>prev : Symbol(prev, Decl(npm__deepagent-code_TS2322.ts, 8, 87))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 7, 12))
+>U : Symbol(U, Decl(npm__deepagent-code_TS2322.ts, 8, 5))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 7, 12))
+>U : Symbol(U, Decl(npm__deepagent-code_TS2322.ts, 8, 5))
+
+    <U extends T>(value: (prev: T) => U): U;
+>U : Symbol(U, Decl(npm__deepagent-code_TS2322.ts, 9, 5))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 7, 12))
+>value : Symbol(value, Decl(npm__deepagent-code_TS2322.ts, 9, 18))
+>prev : Symbol(prev, Decl(npm__deepagent-code_TS2322.ts, 9, 26))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 7, 12))
+>U : Symbol(U, Decl(npm__deepagent-code_TS2322.ts, 9, 5))
+>U : Symbol(U, Decl(npm__deepagent-code_TS2322.ts, 9, 5))
+
+};
+type Signal<T> = [get: Accessor<T>, set: Setter<T>];
+>Signal : Symbol(Signal, Decl(npm__deepagent-code_TS2322.ts, 10, 2))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 11, 12))
+>Accessor : Symbol(Accessor, Decl(npm__deepagent-code_TS2322.ts, 0, 0))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 11, 12))
+>Setter : Symbol(Setter, Decl(npm__deepagent-code_TS2322.ts, 6, 27))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 11, 12))
+
+type Part<T> = keyof T | ([T] extends [readonly unknown[]] ? (item: T[number]) => boolean : never);
+>Part : Symbol(Part, Decl(npm__deepagent-code_TS2322.ts, 11, 52))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 12, 10))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 12, 10))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 12, 10))
+>item : Symbol(item, Decl(npm__deepagent-code_TS2322.ts, 12, 62))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 12, 10))
+
+interface SetStoreFunction<T> {
+>SetStoreFunction : Symbol(SetStoreFunction, Decl(npm__deepagent-code_TS2322.ts, 12, 99))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 13, 27))
+
+    (k1: Part<T>): void;
+>k1 : Symbol(k1, Decl(npm__deepagent-code_TS2322.ts, 14, 5))
+>Part : Symbol(Part, Decl(npm__deepagent-code_TS2322.ts, 11, 52))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 13, 27))
+}
+type PersistedState<S> = S extends Signal<infer T> ? [get: Accessor<T>, set: Setter<T>] : S extends [infer T, SetStoreFunction<infer T>] ? [get: T, set: SetStoreFunction<T>] : never;
+>PersistedState : Symbol(PersistedState, Decl(npm__deepagent-code_TS2322.ts, 15, 1))
+>S : Symbol(S, Decl(npm__deepagent-code_TS2322.ts, 16, 20))
+>S : Symbol(S, Decl(npm__deepagent-code_TS2322.ts, 16, 20))
+>Signal : Symbol(Signal, Decl(npm__deepagent-code_TS2322.ts, 10, 2))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 16, 47))
+>Accessor : Symbol(Accessor, Decl(npm__deepagent-code_TS2322.ts, 0, 0))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 16, 47))
+>Setter : Symbol(Setter, Decl(npm__deepagent-code_TS2322.ts, 6, 27))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 16, 47))
+>S : Symbol(S, Decl(npm__deepagent-code_TS2322.ts, 16, 20))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 16, 106), Decl(npm__deepagent-code_TS2322.ts, 16, 132))
+>SetStoreFunction : Symbol(SetStoreFunction, Decl(npm__deepagent-code_TS2322.ts, 12, 99))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 16, 106), Decl(npm__deepagent-code_TS2322.ts, 16, 132))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 16, 106), Decl(npm__deepagent-code_TS2322.ts, 16, 132))
+>SetStoreFunction : Symbol(SetStoreFunction, Decl(npm__deepagent-code_TS2322.ts, 12, 99))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 16, 106), Decl(npm__deepagent-code_TS2322.ts, 16, 132))
+
+declare function makePersisted<S>(signal: S): PersistedState<S>;
+>makePersisted : Symbol(makePersisted, Decl(npm__deepagent-code_TS2322.ts, 16, 182))
+>S : Symbol(S, Decl(npm__deepagent-code_TS2322.ts, 17, 31))
+>signal : Symbol(signal, Decl(npm__deepagent-code_TS2322.ts, 17, 34))
+>S : Symbol(S, Decl(npm__deepagent-code_TS2322.ts, 17, 31))
+>PersistedState : Symbol(PersistedState, Decl(npm__deepagent-code_TS2322.ts, 15, 1))
+>S : Symbol(S, Decl(npm__deepagent-code_TS2322.ts, 17, 31))
+
+export function persisted<T>(store: [T, SetStoreFunction<T>]): [T] {
+>persisted : Symbol(persisted, Decl(npm__deepagent-code_TS2322.ts, 17, 64))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 18, 26))
+>store : Symbol(store, Decl(npm__deepagent-code_TS2322.ts, 18, 29))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 18, 26))
+>SetStoreFunction : Symbol(SetStoreFunction, Decl(npm__deepagent-code_TS2322.ts, 12, 99))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 18, 26))
+>T : Symbol(T, Decl(npm__deepagent-code_TS2322.ts, 18, 26))
+
+  const [state] = makePersisted(store);
+>state : Symbol(state, Decl(npm__deepagent-code_TS2322.ts, 19, 9))
+>makePersisted : Symbol(makePersisted, Decl(npm__deepagent-code_TS2322.ts, 16, 182))
+>store : Symbol(store, Decl(npm__deepagent-code_TS2322.ts, 18, 29))
+
+  return [state];
+>state : Symbol(state, Decl(npm__deepagent-code_TS2322.ts, 19, 9))
+}
+
