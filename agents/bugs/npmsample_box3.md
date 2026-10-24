@@ -130,7 +130,7 @@ for flips); a separate file so the three boxes never conflict.
   resolves it), and tttt apparently takes the pattern first. The lost base options then cost tsgo's TS2883 and add a
   zod TS5115 on the project. Repro test/cases/npm__pixpilot_cost-calculator_TS6053.ts. (claimed: fixF) Cause: tsconfig.c
   resolve_extends_exports() took the first matching key in order; now an exact key first, else the pattern with the
-  longest prefix (tsc's comparePatternKeys). Repro ttttExtendsExportsExactBeforePattern. [fixed PENDING]
+  longest prefix (tsc's comparePatternKeys). Repro ttttExtendsExportsExactBeforePattern. [fixed eea01cfd2]
 - Seed 20261212, journeyWorker/lute packages/player (@lute-lang/player@0.48.1): tttt aborts (exit 134) at
   ty/lower.c alias_instance(), `check(count <= c_arraylen(stack_key))`: the alias-instance intern key is a fixed
   32-word stack array (2 + the argument count), and xstate 6's `Next_MachineConfig` has 36 type parameters. tsgo
