@@ -288,7 +288,13 @@ for flips); a separate file so the three boxes never conflict.
   TS2589 "Type instantiation is excessively deep and possibly infinite" at src/connection.ts:583 and
   src/node.ts:628 (xstate 5 machine setups). tsgo reports no depth diagnostic anywhere on the project, so this is a
   tttt-only limit and not a placement difference. Not K-dependent. reduce.py had cut the own files to 6 when corB
-  claimed it. No repro from this box. [flip] [open]
+  claimed it. No repro from this box. Root cause (corB): an `infer X` written as a type argument takes the type
+  parameter's constraint, and tsc builds that through getIntersectionType even for a single one, which turns an
+  unresolved name's error type (any with the name as its alias, here an unbuilt xstate's AnyActorLogic) into the plain
+  error type. A conditional type stops at that one. tttt kept the alias, so xstate's `SnapshotFrom<T>` (`R extends
+  Actor<infer TLogic> ? SnapshotFrom<TLogic>`) went SnapshotFrom<AnyActorLogic> -> any -> again, until the tail limit.
+  lower.c ty_implied_infer_constraint() now returns the plain error (or any) for a single any constraint. Tests
+  npm__sanity_comlink_TS2589 and ttttInferImpliedErrorConstraint. [flip] [fixed PENDING]
 - Large seed 20261403, akash-network/console@main (commit aa01c1469), apps/deploy-web (tsconfig.json): +58 tttt
   errors (tsgo 94, tttt 152, so not a flip). Many have `unknown`/`{}` where tsgo has a type: TS7006 "Parameter
   'stripe' implicitly has an 'any' type" at src/components/billing-usage/AddCreditsWalletButton/AddCreditsWalletButton.tsx:94

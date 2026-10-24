@@ -1,0 +1,598 @@
+//// [test/cases/npm__sanity_comlink_TS2589.ts] ////
+
+=== packages/comlink/node_modules/xstate/dist/declarations/src/createActor.d.ts ===
+import type { AnyActorLogic, AnyActorRef, ConditionalRequired, EmittedFrom, EventFromLogic, InputFrom, IsNotNever, Readable, Snapshot, SnapshotFrom } from "./types.js";
+>AnyActorLogic : Symbol(AnyActorLogic, Decl(createActor.d.ts, 0, 13))
+>AnyActorRef : Symbol(AnyActorRef, Decl(createActor.d.ts, 0, 28))
+>ConditionalRequired : Symbol(ConditionalRequired, Decl(createActor.d.ts, 0, 41))
+>EmittedFrom : Symbol(EmittedFrom, Decl(createActor.d.ts, 0, 62))
+>EventFromLogic : Symbol(EventFromLogic, Decl(createActor.d.ts, 0, 75))
+>InputFrom : Symbol(InputFrom, Decl(createActor.d.ts, 0, 91))
+>IsNotNever : Symbol(IsNotNever, Decl(createActor.d.ts, 0, 102))
+>Readable : Symbol(Readable, Decl(createActor.d.ts, 0, 114))
+>Snapshot : Symbol(Snapshot, Decl(createActor.d.ts, 0, 124))
+>SnapshotFrom : Symbol(SnapshotFrom, Decl(createActor.d.ts, 0, 134))
+
+/**
+ */
+export declare class Actor<TLogic extends AnyActorLogic> implements ActorRef<SnapshotFrom<TLogic>, EventFromLogic<TLogic>, EmittedFrom<TLogic>> {
+>Actor : Symbol(Actor, Decl(createActor.d.ts, 0, 168))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 3, 27))
+>AnyActorLogic : Symbol(AnyActorLogic, Decl(createActor.d.ts, 0, 13))
+>SnapshotFrom : Symbol(SnapshotFrom, Decl(createActor.d.ts, 0, 134))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 3, 27))
+>EventFromLogic : Symbol(EventFromLogic, Decl(createActor.d.ts, 0, 75))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 3, 27))
+>EmittedFrom : Symbol(EmittedFrom, Decl(createActor.d.ts, 0, 62))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 3, 27))
+
+    select<TSelected>(selector: (snapshot: SnapshotFrom<TLogic>) => TSelected, equalityFn?: (a: TSelected, b: TSelected) => boolean): Readable<TSelected>;
+>select : Symbol(Actor.select, Decl(createActor.d.ts, 3, 145))
+>TSelected : Symbol(TSelected, Decl(createActor.d.ts, 4, 11))
+>selector : Symbol(selector, Decl(createActor.d.ts, 4, 22))
+>snapshot : Symbol(snapshot, Decl(createActor.d.ts, 4, 33))
+>SnapshotFrom : Symbol(SnapshotFrom, Decl(createActor.d.ts, 0, 134))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 3, 27))
+>TSelected : Symbol(TSelected, Decl(createActor.d.ts, 4, 11))
+>equalityFn : Symbol(equalityFn, Decl(createActor.d.ts, 4, 78))
+>a : Symbol(a, Decl(createActor.d.ts, 4, 93))
+>TSelected : Symbol(TSelected, Decl(createActor.d.ts, 4, 11))
+>b : Symbol(b, Decl(createActor.d.ts, 4, 106))
+>TSelected : Symbol(TSelected, Decl(createActor.d.ts, 4, 11))
+>Readable : Symbol(Readable, Decl(createActor.d.ts, 0, 114))
+>TSelected : Symbol(TSelected, Decl(createActor.d.ts, 4, 11))
+
+    /**
+     */
+}
+export declare function createActor<TLogic extends AnyActorLogic>(logic: TLogic, ...[options]: ConditionalRequired<[
+>createActor : Symbol(createActor, Decl(createActor.d.ts, 7, 1))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 8, 36))
+>AnyActorLogic : Symbol(AnyActorLogic, Decl(createActor.d.ts, 0, 13))
+>logic : Symbol(logic, Decl(createActor.d.ts, 8, 66))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 8, 36))
+>options : Symbol(options, Decl(createActor.d.ts, 8, 85))
+>ConditionalRequired : Symbol(ConditionalRequired, Decl(createActor.d.ts, 0, 41))
+
+], IsNotNever<RequiredActorOptionsKeys<TLogic>>>): Actor<TLogic>;
+>IsNotNever : Symbol(IsNotNever, Decl(createActor.d.ts, 0, 102))
+>RequiredActorOptionsKeys : Symbol(RequiredActorOptionsKeys)
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 8, 36))
+>Actor : Symbol(Actor, Decl(createActor.d.ts, 0, 168))
+>TLogic : Symbol(TLogic, Decl(createActor.d.ts, 8, 36))
+
+=== packages/comlink/node_modules/xstate/dist/declarations/src/index.d.ts ===
+export { Actor, createActor, interpret, type Interpreter, type RequiredActorOptionsKeys as RequiredActorOptionsKeys } from "./createActor.js";
+>Actor : Symbol(Actor, Decl(index.d.ts, 0, 8))
+>createActor : Symbol(createActor, Decl(index.d.ts, 0, 15))
+>interpret : Symbol(interpret, Decl(index.d.ts, 0, 28))
+>Interpreter : Symbol(Interpreter, Decl(index.d.ts, 0, 39))
+>RequiredActorOptionsKeys : Symbol(RequiredActorOptionsKeys, Decl(index.d.ts, 0, 57))
+
+export { setup, type SetupReturn } from "./setup.js";
+>setup : Symbol(setup, Decl(index.d.ts, 1, 8))
+>SetupReturn : Symbol(SetupReturn, Decl(index.d.ts, 1, 15))
+
+export * from "./types.js";
+=== packages/comlink/node_modules/xstate/dist/declarations/src/setup.d.ts ===
+export type SetupReturn<TContext extends MachineContext, TEvent extends AnyEventObject, TActors extends Record<string, UnknownActorLogic>, TChildrenMap extends Record<string, string>, TActions extends Record<string, ParameterizedObject['params'] | undefined>, TGuards extends Record<string, ParameterizedObject['params'] | undefined>, TDelay extends string, TTag extends string, TInput, TOutput extends NonReducibleUnknown, TEmitted extends EventObject, TMeta extends MetaObject> = {
+>SetupReturn : Symbol(SetupReturn, Decl(setup.d.ts, 0, 0))
+>TContext : Symbol(TContext, Decl(setup.d.ts, 0, 24))
+>MachineContext : Symbol(MachineContext)
+>TEvent : Symbol(TEvent, Decl(setup.d.ts, 0, 56))
+>AnyEventObject : Symbol(AnyEventObject)
+>TActors : Symbol(TActors, Decl(setup.d.ts, 0, 87))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>UnknownActorLogic : Symbol(UnknownActorLogic)
+>TChildrenMap : Symbol(TChildrenMap, Decl(setup.d.ts, 0, 138))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TActions : Symbol(TActions, Decl(setup.d.ts, 0, 183))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>ParameterizedObject : Symbol(ParameterizedObject)
+>TGuards : Symbol(TGuards, Decl(setup.d.ts, 0, 259))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>ParameterizedObject : Symbol(ParameterizedObject)
+>TDelay : Symbol(TDelay, Decl(setup.d.ts, 0, 334))
+>TTag : Symbol(TTag, Decl(setup.d.ts, 0, 357))
+>TInput : Symbol(TInput, Decl(setup.d.ts, 0, 378))
+>TOutput : Symbol(TOutput, Decl(setup.d.ts, 0, 386))
+>NonReducibleUnknown : Symbol(NonReducibleUnknown)
+>TEmitted : Symbol(TEmitted, Decl(setup.d.ts, 0, 423))
+>EventObject : Symbol(EventObject)
+>TMeta : Symbol(TMeta, Decl(setup.d.ts, 0, 453))
+>MetaObject : Symbol(MetaObject)
+
+    /**
+     */
+    createMachine: <const TConfig extends MachineConfig<TContext, TEvent, ToProvidedActor<TChildrenMap, TActors>, ToParameterizedObject<TActions>, ToParameterizedObject<TGuards>, TDelay, TTag, TInput, TOutput, TEmitted, TMeta>, TResolvedChildren extends Record<string, string> = MergeChildrenMap<TChildrenMap, Cast<ExtractConfigChildren<TConfig>, Record<string, string>>>>(config: TConfig) => StateMachine<TContext, TEvent | ([RoutableStateId<TConfig>] extends [never] ? never : {
+>createMachine : Symbol(createMachine, Decl(setup.d.ts, 0, 483))
+>TConfig : Symbol(TConfig, Decl(setup.d.ts, 3, 20))
+>MachineConfig : Symbol(MachineConfig)
+>TContext : Symbol(TContext, Decl(setup.d.ts, 0, 24))
+>TEvent : Symbol(TEvent, Decl(setup.d.ts, 0, 56))
+>ToProvidedActor : Symbol(ToProvidedActor)
+>TChildrenMap : Symbol(TChildrenMap, Decl(setup.d.ts, 0, 138))
+>TActors : Symbol(TActors, Decl(setup.d.ts, 0, 87))
+>ToParameterizedObject : Symbol(ToParameterizedObject)
+>TActions : Symbol(TActions, Decl(setup.d.ts, 0, 183))
+>ToParameterizedObject : Symbol(ToParameterizedObject)
+>TGuards : Symbol(TGuards, Decl(setup.d.ts, 0, 259))
+>TDelay : Symbol(TDelay, Decl(setup.d.ts, 0, 334))
+>TTag : Symbol(TTag, Decl(setup.d.ts, 0, 357))
+>TInput : Symbol(TInput, Decl(setup.d.ts, 0, 378))
+>TOutput : Symbol(TOutput, Decl(setup.d.ts, 0, 386))
+>TEmitted : Symbol(TEmitted, Decl(setup.d.ts, 0, 423))
+>TMeta : Symbol(TMeta, Decl(setup.d.ts, 0, 453))
+>TResolvedChildren : Symbol(TResolvedChildren, Decl(setup.d.ts, 3, 227))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>MergeChildrenMap : Symbol(MergeChildrenMap)
+>TChildrenMap : Symbol(TChildrenMap, Decl(setup.d.ts, 0, 138))
+>Cast : Symbol(Cast)
+>ExtractConfigChildren : Symbol(ExtractConfigChildren)
+>TConfig : Symbol(TConfig, Decl(setup.d.ts, 3, 20))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>config : Symbol(config, Decl(setup.d.ts, 3, 373))
+>TConfig : Symbol(TConfig, Decl(setup.d.ts, 3, 20))
+>StateMachine : Symbol(StateMachine)
+>TContext : Symbol(TContext, Decl(setup.d.ts, 0, 24))
+>TEvent : Symbol(TEvent, Decl(setup.d.ts, 0, 56))
+>RoutableStateId : Symbol(RoutableStateId)
+>TConfig : Symbol(TConfig, Decl(setup.d.ts, 3, 20))
+
+    }), Cast<ToChildren<ToProvidedActor<TResolvedChildren, TActors>>, Record<string, AnyActorRef | undefined>>, ToProvidedActor<TResolvedChildren, TActors>, ToParameterizedObject<TActions>, ToParameterizedObject<TGuards>, TDelay, ToStateValue<TConfig>, TTag, TInput, TOutput, TEmitted, TMeta, ToStateSchema<TConfig>>;
+>Cast : Symbol(Cast)
+>ToChildren : Symbol(ToChildren)
+>ToProvidedActor : Symbol(ToProvidedActor)
+>TResolvedChildren : Symbol(TResolvedChildren, Decl(setup.d.ts, 3, 227))
+>TActors : Symbol(TActors, Decl(setup.d.ts, 0, 87))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>AnyActorRef : Symbol(AnyActorRef)
+>ToProvidedActor : Symbol(ToProvidedActor)
+>TResolvedChildren : Symbol(TResolvedChildren, Decl(setup.d.ts, 3, 227))
+>TActors : Symbol(TActors, Decl(setup.d.ts, 0, 87))
+>ToParameterizedObject : Symbol(ToParameterizedObject)
+>TActions : Symbol(TActions, Decl(setup.d.ts, 0, 183))
+>ToParameterizedObject : Symbol(ToParameterizedObject)
+>TGuards : Symbol(TGuards, Decl(setup.d.ts, 0, 259))
+>TDelay : Symbol(TDelay, Decl(setup.d.ts, 0, 334))
+>ToStateValue : Symbol(ToStateValue)
+>TConfig : Symbol(TConfig, Decl(setup.d.ts, 3, 20))
+>TTag : Symbol(TTag, Decl(setup.d.ts, 0, 357))
+>TInput : Symbol(TInput, Decl(setup.d.ts, 0, 378))
+>TOutput : Symbol(TOutput, Decl(setup.d.ts, 0, 386))
+>TEmitted : Symbol(TEmitted, Decl(setup.d.ts, 0, 423))
+>TMeta : Symbol(TMeta, Decl(setup.d.ts, 0, 453))
+>ToStateSchema : Symbol(ToStateSchema)
+>TConfig : Symbol(TConfig, Decl(setup.d.ts, 3, 20))
+
+};
+export declare function setup<TContext extends MachineContext, TEvent extends AnyEventObject, // TODO: consider using a stricter `EventObject` here
+>setup : Symbol(setup, Decl(setup.d.ts, 5, 2))
+>TContext : Symbol(TContext, Decl(setup.d.ts, 6, 30))
+>MachineContext : Symbol(MachineContext)
+>TEvent : Symbol(TEvent, Decl(setup.d.ts, 6, 62))
+>AnyEventObject : Symbol(AnyEventObject)
+
+TActors extends Record<string, UnknownActorLogic> = {}, TChildrenMap extends Record<string, string> = {}, TActions extends Record<string, ParameterizedObject['params'] | undefined> = {}, TGuards extends Record<string, ParameterizedObject['params'] | undefined> = {}, TDelay extends string = never, TTag extends string = string, TInput = NonReducibleUnknown, TOutput extends NonReducibleUnknown = NonReducibleUnknown, TEmitted extends EventObject = EventObject, TMeta extends MetaObject = MetaObject>({ schemas, actors, actions, guards, delays }: {
+>TActors : Symbol(TActors, Decl(setup.d.ts, 6, 93))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>UnknownActorLogic : Symbol(UnknownActorLogic)
+>TChildrenMap : Symbol(TChildrenMap, Decl(setup.d.ts, 7, 55))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TActions : Symbol(TActions, Decl(setup.d.ts, 7, 105))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>ParameterizedObject : Symbol(ParameterizedObject)
+>TGuards : Symbol(TGuards, Decl(setup.d.ts, 7, 186))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>ParameterizedObject : Symbol(ParameterizedObject)
+>TDelay : Symbol(TDelay, Decl(setup.d.ts, 7, 266))
+>TTag : Symbol(TTag, Decl(setup.d.ts, 7, 297))
+>TInput : Symbol(TInput, Decl(setup.d.ts, 7, 327))
+>NonReducibleUnknown : Symbol(NonReducibleUnknown)
+>TOutput : Symbol(TOutput, Decl(setup.d.ts, 7, 357))
+>NonReducibleUnknown : Symbol(NonReducibleUnknown)
+>NonReducibleUnknown : Symbol(NonReducibleUnknown)
+>TEmitted : Symbol(TEmitted, Decl(setup.d.ts, 7, 416))
+>EventObject : Symbol(EventObject)
+>EventObject : Symbol(EventObject)
+>TMeta : Symbol(TMeta, Decl(setup.d.ts, 7, 460))
+>MetaObject : Symbol(MetaObject)
+>MetaObject : Symbol(MetaObject)
+>schemas : Symbol(schemas, Decl(setup.d.ts, 7, 501))
+>actors : Symbol(actors, Decl(setup.d.ts, 7, 510))
+>actions : Symbol(actions, Decl(setup.d.ts, 7, 518))
+>guards : Symbol(guards, Decl(setup.d.ts, 7, 527))
+>delays : Symbol(delays, Decl(setup.d.ts, 7, 535))
+
+}): SetupReturn<TContext, TEvent, TActors, TChildrenMap, TActions, TGuards, TDelay, TTag, TInput, TOutput, TEmitted, TMeta>;
+>SetupReturn : Symbol(SetupReturn, Decl(setup.d.ts, 0, 0))
+>TContext : Symbol(TContext, Decl(setup.d.ts, 6, 30))
+>TEvent : Symbol(TEvent, Decl(setup.d.ts, 6, 62))
+>TActors : Symbol(TActors, Decl(setup.d.ts, 6, 93))
+>TChildrenMap : Symbol(TChildrenMap, Decl(setup.d.ts, 7, 55))
+>TActions : Symbol(TActions, Decl(setup.d.ts, 7, 105))
+>TGuards : Symbol(TGuards, Decl(setup.d.ts, 7, 186))
+>TDelay : Symbol(TDelay, Decl(setup.d.ts, 7, 266))
+>TTag : Symbol(TTag, Decl(setup.d.ts, 7, 297))
+>TInput : Symbol(TInput, Decl(setup.d.ts, 7, 327))
+>TOutput : Symbol(TOutput, Decl(setup.d.ts, 7, 357))
+>TEmitted : Symbol(TEmitted, Decl(setup.d.ts, 7, 416))
+>TMeta : Symbol(TMeta, Decl(setup.d.ts, 7, 460))
+
+=== packages/comlink/node_modules/xstate/dist/declarations/src/types.d.ts ===
+import type { Actor } from "./createActor.js";
+>Actor : Symbol(Actor, Decl(types.d.ts, 0, 13))
+
+/**
+ */
+type ReturnTypeOrValue<T> = T extends AnyFunction ? ReturnType<T> : T;
+>ReturnTypeOrValue : Symbol(ReturnTypeOrValue, Decl(types.d.ts, 0, 46))
+>T : Symbol(T, Decl(types.d.ts, 3, 23))
+>T : Symbol(T, Decl(types.d.ts, 3, 23))
+>AnyFunction : Symbol(AnyFunction)
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(types.d.ts, 3, 23))
+>T : Symbol(T, Decl(types.d.ts, 3, 23))
+
+export interface TransitionDefinition<TContext extends MachineContext, TEvent extends EventObject> extends Omit<TransitionConfig<TContext, TEvent, TEvent, TODO, TODO, TODO, TODO, TODO, // TEmitted
+>TransitionDefinition : Symbol(TransitionDefinition, Decl(types.d.ts, 3, 70))
+>TContext : Symbol(TContext, Decl(types.d.ts, 4, 38))
+>MachineContext : Symbol(MachineContext)
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 4, 70))
+>EventObject : Symbol(EventObject)
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>TransitionConfig : Symbol(TransitionConfig)
+>TContext : Symbol(TContext, Decl(types.d.ts, 4, 38))
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 4, 70))
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 4, 70))
+>TODO : Symbol(TODO)
+>TODO : Symbol(TODO)
+>TODO : Symbol(TODO)
+>TODO : Symbol(TODO)
+>TODO : Symbol(TODO)
+
+TODO>, 'target' | 'guard'> {
+>TODO : Symbol(TODO)
+}
+export interface ActorRef<TSnapshot extends Snapshot<unknown>, TEvent extends EventObject, TEmitted extends EventObject = EventObject> extends Subscribable<TSnapshot>, InteropObservable<TSnapshot> {
+>ActorRef : Symbol(ActorRef, Decl(types.d.ts, 6, 1))
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 7, 26))
+>Snapshot : Symbol(Snapshot)
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 7, 62))
+>EventObject : Symbol(EventObject)
+>TEmitted : Symbol(TEmitted, Decl(types.d.ts, 7, 90))
+>EventObject : Symbol(EventObject)
+>EventObject : Symbol(EventObject)
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 7, 26))
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 7, 26))
+
+    select<TSelected>(selector: (snapshot: TSnapshot) => TSelected, equalityFn?: (a: TSelected, b: TSelected) => boolean): Readable<TSelected>;
+>select : Symbol(ActorRef.select, Decl(types.d.ts, 7, 198))
+>TSelected : Symbol(TSelected, Decl(types.d.ts, 8, 11))
+>selector : Symbol(selector, Decl(types.d.ts, 8, 22))
+>snapshot : Symbol(snapshot, Decl(types.d.ts, 8, 33))
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 7, 26))
+>TSelected : Symbol(TSelected, Decl(types.d.ts, 8, 11))
+>equalityFn : Symbol(equalityFn, Decl(types.d.ts, 8, 67))
+>a : Symbol(a, Decl(types.d.ts, 8, 82))
+>TSelected : Symbol(TSelected, Decl(types.d.ts, 8, 11))
+>b : Symbol(b, Decl(types.d.ts, 8, 95))
+>TSelected : Symbol(TSelected, Decl(types.d.ts, 8, 11))
+>Readable : Symbol(Readable)
+>TSelected : Symbol(TSelected, Decl(types.d.ts, 8, 11))
+}
+export type ActorRefFrom<T> = ReturnTypeOrValue<T> extends infer R ? R extends StateMachine<infer TContext, infer TEvent, infer TChildren, infer _TActor, infer _TAction, infer _TGuard, infer _TDelay, infer TStateValue, infer TTag, infer _TInput, infer TOutput, infer TEmitted, infer TMeta, infer TStateSchema> ? ActorRef<MachineSnapshot<TContext, TEvent, TChildren, TStateValue, TTag, TOutput, TMeta, TStateSchema>, TEvent, TEmitted> : R extends Promise<infer U> ? ActorRefFrom<PromiseActorLogic<U>> : R extends ActorLogic<infer TSnapshot, infer TEvent, infer _TInput, infer _TSystem, infer TEmitted> ? ActorRef<TSnapshot, TEvent, TEmitted> : never : never;
+>ActorRefFrom : Symbol(ActorRefFrom, Decl(types.d.ts, 9, 1))
+>T : Symbol(T, Decl(types.d.ts, 10, 25))
+>ReturnTypeOrValue : Symbol(ReturnTypeOrValue, Decl(types.d.ts, 0, 46))
+>T : Symbol(T, Decl(types.d.ts, 10, 25))
+>R : Symbol(R, Decl(types.d.ts, 10, 64))
+>R : Symbol(R, Decl(types.d.ts, 10, 64))
+>StateMachine : Symbol(StateMachine)
+>TContext : Symbol(TContext, Decl(types.d.ts, 10, 97))
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 10, 113))
+>TChildren : Symbol(TChildren, Decl(types.d.ts, 10, 127))
+>_TActor : Symbol(_TActor, Decl(types.d.ts, 10, 144))
+>_TAction : Symbol(_TAction, Decl(types.d.ts, 10, 159))
+>_TGuard : Symbol(_TGuard, Decl(types.d.ts, 10, 175))
+>_TDelay : Symbol(_TDelay, Decl(types.d.ts, 10, 190))
+>TStateValue : Symbol(TStateValue, Decl(types.d.ts, 10, 205))
+>TTag : Symbol(TTag, Decl(types.d.ts, 10, 224))
+>_TInput : Symbol(_TInput, Decl(types.d.ts, 10, 236))
+>TOutput : Symbol(TOutput, Decl(types.d.ts, 10, 251))
+>TEmitted : Symbol(TEmitted, Decl(types.d.ts, 10, 266))
+>TMeta : Symbol(TMeta, Decl(types.d.ts, 10, 282))
+>TStateSchema : Symbol(TStateSchema, Decl(types.d.ts, 10, 295))
+>ActorRef : Symbol(ActorRef, Decl(types.d.ts, 6, 1))
+>MachineSnapshot : Symbol(MachineSnapshot)
+>TContext : Symbol(TContext, Decl(types.d.ts, 10, 97))
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 10, 113))
+>TChildren : Symbol(TChildren, Decl(types.d.ts, 10, 127))
+>TStateValue : Symbol(TStateValue, Decl(types.d.ts, 10, 205))
+>TTag : Symbol(TTag, Decl(types.d.ts, 10, 224))
+>TOutput : Symbol(TOutput, Decl(types.d.ts, 10, 251))
+>TMeta : Symbol(TMeta, Decl(types.d.ts, 10, 282))
+>TStateSchema : Symbol(TStateSchema, Decl(types.d.ts, 10, 295))
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 10, 113))
+>TEmitted : Symbol(TEmitted, Decl(types.d.ts, 10, 266))
+>R : Symbol(R, Decl(types.d.ts, 10, 64))
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>U : Symbol(U, Decl(types.d.ts, 10, 459))
+>ActorRefFrom : Symbol(ActorRefFrom, Decl(types.d.ts, 9, 1))
+>PromiseActorLogic : Symbol(PromiseActorLogic)
+>U : Symbol(U, Decl(types.d.ts, 10, 459))
+>R : Symbol(R, Decl(types.d.ts, 10, 64))
+>ActorLogic : Symbol(ActorLogic)
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 10, 528))
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 10, 545))
+>_TInput : Symbol(_TInput, Decl(types.d.ts, 10, 559))
+>_TSystem : Symbol(_TSystem, Decl(types.d.ts, 10, 574))
+>TEmitted : Symbol(TEmitted, Decl(types.d.ts, 10, 590))
+>ActorRef : Symbol(ActorRef, Decl(types.d.ts, 6, 1))
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 10, 528))
+>TEvent : Symbol(TEvent, Decl(types.d.ts, 10, 545))
+>TEmitted : Symbol(TEmitted, Decl(types.d.ts, 10, 590))
+
+export type AnyActorScope = ActorScope<any, // TSnapshot
+>AnyActorScope : Symbol(AnyActorScope, Decl(types.d.ts, 10, 657))
+>ActorScope : Symbol(ActorScope)
+
+AnyActorSystem, any>;
+>AnyActorSystem : Symbol(AnyActorSystem)
+
+/**
+ */
+export type SnapshotFrom<T> = ReturnTypeOrValue<T> extends infer R ? R extends ActorRef<infer TSnapshot, infer _, infer __> ? TSnapshot : R extends Actor<infer TLogic> ? SnapshotFrom<TLogic> : R extends ActorLogic<infer _TSnapshot, infer _TEvent, infer _TInput, infer _TEmitted, infer _TSystem> ? ReturnType<R['transition']> : R extends ActorScope<infer TSnapshot, infer _TEvent, infer _TEmitted, infer _TSystem> ? TSnapshot : never : never;
+>SnapshotFrom : Symbol(SnapshotFrom, Decl(types.d.ts, 12, 21))
+>T : Symbol(T, Decl(types.d.ts, 15, 25))
+>ReturnTypeOrValue : Symbol(ReturnTypeOrValue, Decl(types.d.ts, 0, 46))
+>T : Symbol(T, Decl(types.d.ts, 15, 25))
+>R : Symbol(R, Decl(types.d.ts, 15, 64))
+>R : Symbol(R, Decl(types.d.ts, 15, 64))
+>ActorRef : Symbol(ActorRef, Decl(types.d.ts, 6, 1))
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 15, 93))
+>_ : Symbol(_, Decl(types.d.ts, 15, 110))
+>__ : Symbol(__, Decl(types.d.ts, 15, 119))
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 15, 93))
+>R : Symbol(R, Decl(types.d.ts, 15, 64))
+>Actor : Symbol(Actor, Decl(types.d.ts, 0, 13))
+>TLogic : Symbol(TLogic, Decl(types.d.ts, 15, 159))
+>SnapshotFrom : Symbol(SnapshotFrom, Decl(types.d.ts, 12, 21))
+>TLogic : Symbol(TLogic, Decl(types.d.ts, 15, 159))
+>R : Symbol(R, Decl(types.d.ts, 15, 64))
+>ActorLogic : Symbol(ActorLogic)
+>_TSnapshot : Symbol(_TSnapshot, Decl(types.d.ts, 15, 219))
+>_TEvent : Symbol(_TEvent, Decl(types.d.ts, 15, 237))
+>_TInput : Symbol(_TInput, Decl(types.d.ts, 15, 252))
+>_TEmitted : Symbol(_TEmitted, Decl(types.d.ts, 15, 267))
+>_TSystem : Symbol(_TSystem, Decl(types.d.ts, 15, 284))
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+>R : Symbol(R, Decl(types.d.ts, 15, 64))
+>R : Symbol(R, Decl(types.d.ts, 15, 64))
+>ActorScope : Symbol(ActorScope)
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 15, 353))
+>_TEvent : Symbol(_TEvent, Decl(types.d.ts, 15, 370))
+>_TEmitted : Symbol(_TEmitted, Decl(types.d.ts, 15, 385))
+>_TSystem : Symbol(_TSystem, Decl(types.d.ts, 15, 402))
+>TSnapshot : Symbol(TSnapshot, Decl(types.d.ts, 15, 353))
+
+=== packages/comlink/node_modules/xstate/dist/xstate.cjs.d.mts ===
+
+export * from "./declarations/src/index.js";
+=== packages/comlink/src/node.ts ===
+import {
+  createActor,
+>createActor : Symbol(createActor, Decl(node.ts, 0, 8))
+
+  setup,
+>setup : Symbol(setup, Decl(node.ts, 1, 14))
+
+  type ActorRefFrom,
+>ActorRefFrom : Symbol(ActorRefFrom, Decl(node.ts, 2, 8))
+
+} from 'xstate'
+import {createRequestMachine, type RequestActorRef} from './request'
+>createRequestMachine : Symbol(createRequestMachine, Decl(node.ts, 5, 8))
+>RequestActorRef : Symbol(RequestActorRef, Decl(node.ts, 5, 29))
+
+/**
+ */
+export type NodeActorLogic<TSends extends Message, TReceives extends Message> = ReturnType<
+>NodeActorLogic : Symbol(NodeActorLogic, Decl(node.ts, 5, 68))
+>TSends : Symbol(TSends, Decl(node.ts, 8, 27))
+>Message : Symbol(Message)
+>TReceives : Symbol(TReceives, Decl(node.ts, 8, 50))
+>Message : Symbol(Message)
+>ReturnType : Symbol(ReturnType, Decl(lib.es5.d.ts, --, --))
+
+  typeof createNodeMachine<TSends, TReceives>
+>createNodeMachine : Symbol(createNodeMachine, Decl(node.ts, 31, 12))
+>TSends : Symbol(TSends, Decl(node.ts, 8, 27))
+>TReceives : Symbol(TReceives, Decl(node.ts, 8, 50))
+
+>
+/**
+ */
+export type NodeActor<TSends extends Message, TReceives extends Message> = ActorRefFrom<
+>NodeActor : Symbol(NodeActor, Decl(node.ts, 10, 1))
+>TSends : Symbol(TSends, Decl(node.ts, 13, 22))
+>Message : Symbol(Message)
+>TReceives : Symbol(TReceives, Decl(node.ts, 13, 45))
+>Message : Symbol(Message)
+>ActorRefFrom : Symbol(ActorRefFrom, Decl(node.ts, 2, 8))
+
+  NodeActorLogic<TSends, TReceives>
+>NodeActorLogic : Symbol(NodeActorLogic, Decl(node.ts, 5, 68))
+>TSends : Symbol(TSends, Decl(node.ts, 13, 22))
+>TReceives : Symbol(TReceives, Decl(node.ts, 13, 45))
+
+>
+/**
+ */
+export type Node<TSends extends Message, TReceives extends Message> = {
+>Node : Symbol(Node, Decl(node.ts, 15, 1))
+>TSends : Symbol(TSends, Decl(node.ts, 18, 17))
+>Message : Symbol(Message)
+>TReceives : Symbol(TReceives, Decl(node.ts, 18, 40))
+>Message : Symbol(Message)
+
+  actor: NodeActor<TSends, TReceives>
+>actor : Symbol(actor, Decl(node.ts, 18, 71))
+>NodeActor : Symbol(NodeActor, Decl(node.ts, 10, 1))
+>TSends : Symbol(TSends, Decl(node.ts, 18, 17))
+>TReceives : Symbol(TReceives, Decl(node.ts, 18, 40))
+
+  fetch: <TType extends TSends['type'], TMessage extends Extract<TSends, {type: TType}>>(
+>fetch : Symbol(fetch, Decl(node.ts, 19, 37))
+>TType : Symbol(TType, Decl(node.ts, 20, 10))
+>TSends : Symbol(TSends, Decl(node.ts, 18, 17))
+>TMessage : Symbol(TMessage, Decl(node.ts, 20, 39))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>TSends : Symbol(TSends, Decl(node.ts, 18, 17))
+>type : Symbol(type, Decl(node.ts, 20, 74))
+>TType : Symbol(TType, Decl(node.ts, 20, 10))
+
+    ...params:
+>params : Symbol(params, Decl(node.ts, 20, 89))
+
+      | [TType, TMessage['data'], {signal?: AbortSignal; suppressWarnings?: boolean}]
+>TType : Symbol(TType, Decl(node.ts, 20, 10))
+>TMessage : Symbol(TMessage, Decl(node.ts, 20, 39))
+>signal : Symbol(signal, Decl(node.ts, 22, 35))
+>AbortSignal : Symbol(AbortSignal, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>suppressWarnings : Symbol(suppressWarnings, Decl(node.ts, 22, 56))
+
+  ) => TSends extends TMessage
+>TSends : Symbol(TSends, Decl(node.ts, 18, 17))
+>TMessage : Symbol(TMessage, Decl(node.ts, 20, 39))
+
+    ? TSends['type'] extends TType
+>TSends : Symbol(TSends, Decl(node.ts, 18, 17))
+>TType : Symbol(TType, Decl(node.ts, 20, 10))
+
+      ? Promise<TSends['response']>
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>TSends : Symbol(TSends, Decl(node.ts, 18, 17))
+
+      : never
+    : never
+}
+/**
+ */
+export const createNodeMachine = <
+>createNodeMachine : Symbol(createNodeMachine, Decl(node.ts, 31, 12))
+
+  TReceives extends Message, // Receives
+>TReceives : Symbol(TReceives, Decl(node.ts, 31, 34))
+>Message : Symbol(Message)
+
+  TSendsWithoutResponse extends WithoutResponse<TSends> = WithoutResponse<TSends>,
+>TSendsWithoutResponse : Symbol(TSendsWithoutResponse, Decl(node.ts, 32, 28))
+>WithoutResponse : Symbol(WithoutResponse)
+>TSends : Symbol(TSends)
+>WithoutResponse : Symbol(WithoutResponse)
+>TSends : Symbol(TSends)
+
+>() => {
+  const nodeMachine = setup({
+>nodeMachine : Symbol(nodeMachine, Decl(node.ts, 35, 7))
+>setup : Symbol(setup, Decl(node.ts, 1, 14))
+
+    actors: {
+>actors : Symbol(actors, Decl(node.ts, 35, 29))
+
+      requestMachine: createRequestMachine<TSends>(),
+>requestMachine : Symbol(requestMachine, Decl(node.ts, 36, 13))
+>createRequestMachine : Symbol(createRequestMachine, Decl(node.ts, 5, 8))
+>TSends : Symbol(TSends)
+
+    },
+  }).createMachine({
+  })
+  return nodeMachine
+>nodeMachine : Symbol(nodeMachine, Decl(node.ts, 35, 7))
+}
+export const createNode = <TSends extends Message, TReceives extends Message>(
+>createNode : Symbol(createNode, Decl(node.ts, 43, 12))
+>TSends : Symbol(TSends, Decl(node.ts, 43, 27))
+>Message : Symbol(Message)
+>TReceives : Symbol(TReceives, Decl(node.ts, 43, 50))
+>Message : Symbol(Message)
+
+  machine: NodeActorLogic<TSends, TReceives> = createNodeMachine<TSends, TReceives>(),
+>machine : Symbol(machine, Decl(node.ts, 43, 78))
+>NodeActorLogic : Symbol(NodeActorLogic, Decl(node.ts, 5, 68))
+>TSends : Symbol(TSends, Decl(node.ts, 43, 27))
+>TReceives : Symbol(TReceives, Decl(node.ts, 43, 50))
+>createNodeMachine : Symbol(createNodeMachine, Decl(node.ts, 31, 12))
+>TSends : Symbol(TSends, Decl(node.ts, 43, 27))
+>TReceives : Symbol(TReceives, Decl(node.ts, 43, 50))
+
+): Node<TSends, TReceives> => {
+>Node : Symbol(Node, Decl(node.ts, 15, 1))
+>TSends : Symbol(TSends, Decl(node.ts, 43, 27))
+>TReceives : Symbol(TReceives, Decl(node.ts, 43, 50))
+
+  const actor = createActor(machine, {
+>actor : Symbol(actor, Decl(node.ts, 46, 7))
+>createActor : Symbol(createActor, Decl(node.ts, 0, 8))
+>machine : Symbol(machine, Decl(node.ts, 43, 78))
+
+  })
+  return {
+    actor,
+>actor : Symbol(actor, Decl(node.ts, 48, 10))
+  }
+}
+=== packages/comlink/src/request.ts ===
+import {
+  setup,
+>setup : Symbol(setup, Decl(request.ts, 0, 8))
+
+} from 'xstate'
+const throwOnEvent =
+>throwOnEvent : Symbol(throwOnEvent, Decl(request.ts, 3, 5))
+
+      take(1),
+/**
+ */
+export const createRequestMachine = <TSends extends Message>() => {
+>createRequestMachine : Symbol(createRequestMachine, Decl(request.ts, 7, 12))
+>TSends : Symbol(TSends, Decl(request.ts, 7, 37))
+>Message : Symbol(Message)
+
+  return setup({
+>setup : Symbol(setup, Decl(request.ts, 0, 8))
+
+    actions: {
+>actions : Symbol(actions, Decl(request.ts, 8, 16))
+
+      'send message': ({context}, params: {message: ProtocolMessage}) => {
+>'send message' : Symbol('send message', Decl(request.ts, 9, 14))
+>context : Symbol(context, Decl(request.ts, 10, 24))
+>params : Symbol(params, Decl(request.ts, 10, 33))
+>message : Symbol(message, Decl(request.ts, 10, 43))
+>ProtocolMessage : Symbol(ProtocolMessage)
+
+      },
+      'on abort': sendTo(
+>'on abort' : Symbol('on abort', Decl(request.ts, 11, 8))
+
+      ),
+    },
+    guards: {
+>guards : Symbol(guards, Decl(request.ts, 14, 6))
+
+      expectsResponse: ({context}) => context.expectResponse,
+>expectsResponse : Symbol(expectsResponse, Decl(request.ts, 15, 13))
+>context : Symbol(context, Decl(request.ts, 16, 25))
+>context : Symbol(context, Decl(request.ts, 16, 25))
+
+    },
+  }).createMachine({
+        entry: 'on success',
+>entry : Symbol(entry, Decl(request.ts, 18, 20))
+
+  })
+}
+

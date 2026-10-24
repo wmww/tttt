@@ -1,0 +1,46 @@
+//// [test/cases/ttttInferImpliedErrorConstraint.ts] ////
+
+=== ttttInferImpliedErrorConstraint.ts ===
+// An `infer X` constrained by where it is written takes the constraint through tsc's getIntersectionType, even a
+// single one: an unresolved name's error type there is the plain error type, which a conditional type stops at, so
+// Rec<any> ends instead of recursing to the instantiation limit
+declare class Box2<T extends Missing> { v: T }
+>Box2 : Symbol(Box2, Decl(ttttInferImpliedErrorConstraint.ts, 0, 0))
+>T : Symbol(T, Decl(ttttInferImpliedErrorConstraint.ts, 3, 19))
+>Missing : Symbol(Missing)
+>v : Symbol(Box2.v, Decl(ttttInferImpliedErrorConstraint.ts, 3, 39))
+>T : Symbol(T, Decl(ttttInferImpliedErrorConstraint.ts, 3, 19))
+
+type Un3<R> = R extends Box2<infer X> ? [X] : 0;
+>Un3 : Symbol(Un3, Decl(ttttInferImpliedErrorConstraint.ts, 3, 46))
+>R : Symbol(R, Decl(ttttInferImpliedErrorConstraint.ts, 4, 9))
+>R : Symbol(R, Decl(ttttInferImpliedErrorConstraint.ts, 4, 9))
+>Box2 : Symbol(Box2, Decl(ttttInferImpliedErrorConstraint.ts, 0, 0))
+>X : Symbol(X, Decl(ttttInferImpliedErrorConstraint.ts, 4, 34))
+>X : Symbol(X, Decl(ttttInferImpliedErrorConstraint.ts, 4, 34))
+
+declare const a: Un3<any>;
+>a : Symbol(a, Decl(ttttInferImpliedErrorConstraint.ts, 5, 13))
+>Un3 : Symbol(Un3, Decl(ttttInferImpliedErrorConstraint.ts, 3, 46))
+
+const n: string = a;
+>n : Symbol(n, Decl(ttttInferImpliedErrorConstraint.ts, 6, 5))
+>a : Symbol(a, Decl(ttttInferImpliedErrorConstraint.ts, 5, 13))
+
+type Rec<R> = R extends Box2<infer X> ? Rec<X> : 0;
+>Rec : Symbol(Rec, Decl(ttttInferImpliedErrorConstraint.ts, 6, 20))
+>R : Symbol(R, Decl(ttttInferImpliedErrorConstraint.ts, 7, 9))
+>R : Symbol(R, Decl(ttttInferImpliedErrorConstraint.ts, 7, 9))
+>Box2 : Symbol(Box2, Decl(ttttInferImpliedErrorConstraint.ts, 0, 0))
+>X : Symbol(X, Decl(ttttInferImpliedErrorConstraint.ts, 7, 34))
+>Rec : Symbol(Rec, Decl(ttttInferImpliedErrorConstraint.ts, 6, 20))
+>X : Symbol(X, Decl(ttttInferImpliedErrorConstraint.ts, 7, 34))
+
+declare const b: Rec<any>;
+>b : Symbol(b, Decl(ttttInferImpliedErrorConstraint.ts, 8, 13))
+>Rec : Symbol(Rec, Decl(ttttInferImpliedErrorConstraint.ts, 6, 20))
+
+const m: string = b;
+>m : Symbol(m, Decl(ttttInferImpliedErrorConstraint.ts, 9, 5))
+>b : Symbol(b, Decl(ttttInferImpliedErrorConstraint.ts, 8, 13))
+

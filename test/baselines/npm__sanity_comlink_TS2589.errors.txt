@@ -1,0 +1,201 @@
+error TS5096: Option 'allowImportingTsExtensions' can only be used when one of 'noEmit', 'emitDeclarationOnly', or 'rewriteRelativeImportExtensions' is set.
+packages/comlink/src/node.ts(5,8): error TS2307: Cannot find module 'xstate' or its corresponding type declarations.
+packages/comlink/src/node.ts(6,36): error TS2305: Module '"./request"' has no exported member 'RequestActorRef'.
+packages/comlink/src/node.ts(9,43): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(9,70): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(14,38): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(14,65): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(19,33): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(19,60): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(33,21): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(34,33): error TS2304: Cannot find name 'WithoutResponse'.
+packages/comlink/src/node.ts(34,49): error TS2304: Cannot find name 'TSends'.
+packages/comlink/src/node.ts(34,59): error TS2304: Cannot find name 'WithoutResponse'.
+packages/comlink/src/node.ts(34,75): error TS2304: Cannot find name 'TSends'.
+packages/comlink/src/node.ts(38,44): error TS2304: Cannot find name 'TSends'.
+packages/comlink/src/node.ts(44,43): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(44,70): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/node.ts(49,3): error TS2741: Property 'fetch' is missing in type '{ actor: any; }' but required in type 'Node<TSends, TReceives>'.
+packages/comlink/src/request.ts(3,8): error TS2307: Cannot find module 'xstate' or its corresponding type declarations.
+packages/comlink/src/request.ts(5,7): error TS2304: Cannot find name 'take'.
+packages/comlink/src/request.ts(5,14): error TS1009: Trailing comma not allowed.
+packages/comlink/src/request.ts(8,53): error TS2304: Cannot find name 'Message'.
+packages/comlink/src/request.ts(11,25): error TS7031: Binding element 'context' implicitly has an 'any' type.
+packages/comlink/src/request.ts(11,53): error TS2304: Cannot find name 'ProtocolMessage'.
+packages/comlink/src/request.ts(13,19): error TS2304: Cannot find name 'sendTo'.
+packages/comlink/src/request.ts(17,26): error TS7031: Binding element 'context' implicitly has an 'any' type.
+
+
+!!! error TS5096: Option 'allowImportingTsExtensions' can only be used when one of 'noEmit', 'emitDeclarationOnly', or 'rewriteRelativeImportExtensions' is set.
+==== packages/comlink/node_modules/xstate/dist/declarations/src/createActor.d.ts (0 errors) ====
+    import type { AnyActorLogic, AnyActorRef, ConditionalRequired, EmittedFrom, EventFromLogic, InputFrom, IsNotNever, Readable, Snapshot, SnapshotFrom } from "./types.js";
+    /**
+     */
+    export declare class Actor<TLogic extends AnyActorLogic> implements ActorRef<SnapshotFrom<TLogic>, EventFromLogic<TLogic>, EmittedFrom<TLogic>> {
+        select<TSelected>(selector: (snapshot: SnapshotFrom<TLogic>) => TSelected, equalityFn?: (a: TSelected, b: TSelected) => boolean): Readable<TSelected>;
+        /**
+         */
+    }
+    export declare function createActor<TLogic extends AnyActorLogic>(logic: TLogic, ...[options]: ConditionalRequired<[
+    ], IsNotNever<RequiredActorOptionsKeys<TLogic>>>): Actor<TLogic>;
+==== packages/comlink/node_modules/xstate/dist/declarations/src/index.d.ts (0 errors) ====
+    export { Actor, createActor, interpret, type Interpreter, type RequiredActorOptionsKeys as RequiredActorOptionsKeys } from "./createActor.js";
+    export { setup, type SetupReturn } from "./setup.js";
+    export * from "./types.js";
+==== packages/comlink/node_modules/xstate/dist/declarations/src/setup.d.ts (0 errors) ====
+    export type SetupReturn<TContext extends MachineContext, TEvent extends AnyEventObject, TActors extends Record<string, UnknownActorLogic>, TChildrenMap extends Record<string, string>, TActions extends Record<string, ParameterizedObject['params'] | undefined>, TGuards extends Record<string, ParameterizedObject['params'] | undefined>, TDelay extends string, TTag extends string, TInput, TOutput extends NonReducibleUnknown, TEmitted extends EventObject, TMeta extends MetaObject> = {
+        /**
+         */
+        createMachine: <const TConfig extends MachineConfig<TContext, TEvent, ToProvidedActor<TChildrenMap, TActors>, ToParameterizedObject<TActions>, ToParameterizedObject<TGuards>, TDelay, TTag, TInput, TOutput, TEmitted, TMeta>, TResolvedChildren extends Record<string, string> = MergeChildrenMap<TChildrenMap, Cast<ExtractConfigChildren<TConfig>, Record<string, string>>>>(config: TConfig) => StateMachine<TContext, TEvent | ([RoutableStateId<TConfig>] extends [never] ? never : {
+        }), Cast<ToChildren<ToProvidedActor<TResolvedChildren, TActors>>, Record<string, AnyActorRef | undefined>>, ToProvidedActor<TResolvedChildren, TActors>, ToParameterizedObject<TActions>, ToParameterizedObject<TGuards>, TDelay, ToStateValue<TConfig>, TTag, TInput, TOutput, TEmitted, TMeta, ToStateSchema<TConfig>>;
+    };
+    export declare function setup<TContext extends MachineContext, TEvent extends AnyEventObject, // TODO: consider using a stricter `EventObject` here
+    TActors extends Record<string, UnknownActorLogic> = {}, TChildrenMap extends Record<string, string> = {}, TActions extends Record<string, ParameterizedObject['params'] | undefined> = {}, TGuards extends Record<string, ParameterizedObject['params'] | undefined> = {}, TDelay extends string = never, TTag extends string = string, TInput = NonReducibleUnknown, TOutput extends NonReducibleUnknown = NonReducibleUnknown, TEmitted extends EventObject = EventObject, TMeta extends MetaObject = MetaObject>({ schemas, actors, actions, guards, delays }: {
+    }): SetupReturn<TContext, TEvent, TActors, TChildrenMap, TActions, TGuards, TDelay, TTag, TInput, TOutput, TEmitted, TMeta>;
+==== packages/comlink/node_modules/xstate/dist/declarations/src/types.d.ts (0 errors) ====
+    import type { Actor } from "./createActor.js";
+    /**
+     */
+    type ReturnTypeOrValue<T> = T extends AnyFunction ? ReturnType<T> : T;
+    export interface TransitionDefinition<TContext extends MachineContext, TEvent extends EventObject> extends Omit<TransitionConfig<TContext, TEvent, TEvent, TODO, TODO, TODO, TODO, TODO, // TEmitted
+    TODO>, 'target' | 'guard'> {
+    }
+    export interface ActorRef<TSnapshot extends Snapshot<unknown>, TEvent extends EventObject, TEmitted extends EventObject = EventObject> extends Subscribable<TSnapshot>, InteropObservable<TSnapshot> {
+        select<TSelected>(selector: (snapshot: TSnapshot) => TSelected, equalityFn?: (a: TSelected, b: TSelected) => boolean): Readable<TSelected>;
+    }
+    export type ActorRefFrom<T> = ReturnTypeOrValue<T> extends infer R ? R extends StateMachine<infer TContext, infer TEvent, infer TChildren, infer _TActor, infer _TAction, infer _TGuard, infer _TDelay, infer TStateValue, infer TTag, infer _TInput, infer TOutput, infer TEmitted, infer TMeta, infer TStateSchema> ? ActorRef<MachineSnapshot<TContext, TEvent, TChildren, TStateValue, TTag, TOutput, TMeta, TStateSchema>, TEvent, TEmitted> : R extends Promise<infer U> ? ActorRefFrom<PromiseActorLogic<U>> : R extends ActorLogic<infer TSnapshot, infer TEvent, infer _TInput, infer _TSystem, infer TEmitted> ? ActorRef<TSnapshot, TEvent, TEmitted> : never : never;
+    export type AnyActorScope = ActorScope<any, // TSnapshot
+    AnyActorSystem, any>;
+    /**
+     */
+    export type SnapshotFrom<T> = ReturnTypeOrValue<T> extends infer R ? R extends ActorRef<infer TSnapshot, infer _, infer __> ? TSnapshot : R extends Actor<infer TLogic> ? SnapshotFrom<TLogic> : R extends ActorLogic<infer _TSnapshot, infer _TEvent, infer _TInput, infer _TEmitted, infer _TSystem> ? ReturnType<R['transition']> : R extends ActorScope<infer TSnapshot, infer _TEvent, infer _TEmitted, infer _TSystem> ? TSnapshot : never : never;
+==== packages/comlink/node_modules/xstate/dist/xstate.cjs.d.mts (0 errors) ====
+    export * from "./declarations/src/index.js";
+==== packages/comlink/src/node.ts (17 errors) ====
+    import {
+      createActor,
+      setup,
+      type ActorRefFrom,
+    } from 'xstate'
+           ~~~~~~~~
+!!! error TS2307: Cannot find module 'xstate' or its corresponding type declarations.
+    import {createRequestMachine, type RequestActorRef} from './request'
+                                       ~~~~~~~~~~~~~~~
+!!! error TS2305: Module '"./request"' has no exported member 'RequestActorRef'.
+    /**
+     */
+    export type NodeActorLogic<TSends extends Message, TReceives extends Message> = ReturnType<
+                                              ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+                                                                         ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+      typeof createNodeMachine<TSends, TReceives>
+    >
+    /**
+     */
+    export type NodeActor<TSends extends Message, TReceives extends Message> = ActorRefFrom<
+                                         ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+                                                                    ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+      NodeActorLogic<TSends, TReceives>
+    >
+    /**
+     */
+    export type Node<TSends extends Message, TReceives extends Message> = {
+                                    ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+                                                               ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+      actor: NodeActor<TSends, TReceives>
+      fetch: <TType extends TSends['type'], TMessage extends Extract<TSends, {type: TType}>>(
+        ...params:
+          | [TType, TMessage['data'], {signal?: AbortSignal; suppressWarnings?: boolean}]
+      ) => TSends extends TMessage
+        ? TSends['type'] extends TType
+          ? Promise<TSends['response']>
+          : never
+        : never
+    }
+    /**
+     */
+    export const createNodeMachine = <
+      TReceives extends Message, // Receives
+                        ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+      TSendsWithoutResponse extends WithoutResponse<TSends> = WithoutResponse<TSends>,
+                                    ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'WithoutResponse'.
+                                                    ~~~~~~
+!!! error TS2304: Cannot find name 'TSends'.
+                                                              ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'WithoutResponse'.
+                                                                              ~~~~~~
+!!! error TS2304: Cannot find name 'TSends'.
+    >() => {
+      const nodeMachine = setup({
+        actors: {
+          requestMachine: createRequestMachine<TSends>(),
+                                               ~~~~~~
+!!! error TS2304: Cannot find name 'TSends'.
+        },
+      }).createMachine({
+      })
+      return nodeMachine
+    }
+    export const createNode = <TSends extends Message, TReceives extends Message>(
+                                              ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+                                                                         ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+      machine: NodeActorLogic<TSends, TReceives> = createNodeMachine<TSends, TReceives>(),
+    ): Node<TSends, TReceives> => {
+      const actor = createActor(machine, {
+      })
+      return {
+      ~~~~~~
+!!! error TS2741: Property 'fetch' is missing in type '{ actor: any; }' but required in type 'Node<TSends, TReceives>'.
+!!! related TS2728 packages/comlink/src/node.ts:21:3: 'fetch' is declared here.
+        actor,
+      }
+    }
+==== packages/comlink/src/request.ts (8 errors) ====
+    import {
+      setup,
+    } from 'xstate'
+           ~~~~~~~~
+!!! error TS2307: Cannot find module 'xstate' or its corresponding type declarations.
+    const throwOnEvent =
+          take(1),
+          ~~~~
+!!! error TS2304: Cannot find name 'take'.
+                 ~
+!!! error TS1009: Trailing comma not allowed.
+    /**
+     */
+    export const createRequestMachine = <TSends extends Message>() => {
+                                                        ~~~~~~~
+!!! error TS2304: Cannot find name 'Message'.
+      return setup({
+        actions: {
+          'send message': ({context}, params: {message: ProtocolMessage}) => {
+                            ~~~~~~~
+!!! error TS7031: Binding element 'context' implicitly has an 'any' type.
+                                                        ~~~~~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'ProtocolMessage'.
+          },
+          'on abort': sendTo(
+                      ~~~~~~
+!!! error TS2304: Cannot find name 'sendTo'.
+          ),
+        },
+        guards: {
+          expectsResponse: ({context}) => context.expectResponse,
+                             ~~~~~~~
+!!! error TS7031: Binding element 'context' implicitly has an 'any' type.
+        },
+      }).createMachine({
+            entry: 'on success',
+      })
+    }
+    

@@ -995,6 +995,11 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param, bool omit_ty
         }
         if (constraint) found[len++] = constraint;
     }
+    // (tsc's getIntersectionType of the inferences, even of one: an unresolved name's error type (any with the name as
+    // its alias) is the plain error type then, which a conditional type stops at: SnapshotFrom<AnyActorLogic> through
+    // xstate's `R extends Actor<infer TLogic> ? SnapshotFrom<TLogic>` with AnyActorLogic unresolved, which recursed
+    // until the tail limit)
+    if (len == 1 && (found[0]->flags & TYF_ANY)) return ty_intrinsic(me, found[0]->flags & TYF_ERROR ? TY_ERROR : TY_ANY);
     if (len <= 1) return len ? found[0] : nullptr;
     return ty_intersection(me, found, len, nullptr, (TyList){0});
 }

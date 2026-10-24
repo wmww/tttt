@@ -1,0 +1,22 @@
+ttttInferImpliedErrorConstraint.ts(4,30): error TS2304: Cannot find name 'Missing'.
+ttttInferImpliedErrorConstraint.ts(7,7): error TS2322: Type '0 | [any]' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'.
+
+
+==== ttttInferImpliedErrorConstraint.ts (2 errors) ====
+    // An `infer X` constrained by where it is written takes the constraint through tsc's getIntersectionType, even a
+    // single one: an unresolved name's error type there is the plain error type, which a conditional type stops at, so
+    // Rec<any> ends instead of recursing to the instantiation limit
+    declare class Box2<T extends Missing> { v: T }
+                                 ~~~~~~~
+!!! error TS2304: Cannot find name 'Missing'.
+    type Un3<R> = R extends Box2<infer X> ? [X] : 0;
+    declare const a: Un3<any>;
+    const n: string = a;
+          ~
+!!! error TS2322: Type '0 | [any]' is not assignable to type 'string'.
+!!! error TS2322:   Type 'number' is not assignable to type 'string'.
+    type Rec<R> = R extends Box2<infer X> ? Rec<X> : 0;
+    declare const b: Rec<any>;
+    const m: string = b;
+    

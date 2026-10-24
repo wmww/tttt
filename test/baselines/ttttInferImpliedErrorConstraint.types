@@ -1,0 +1,30 @@
+//// [test/cases/ttttInferImpliedErrorConstraint.ts] ////
+
+=== ttttInferImpliedErrorConstraint.ts ===
+// An `infer X` constrained by where it is written takes the constraint through tsc's getIntersectionType, even a
+// single one: an unresolved name's error type there is the plain error type, which a conditional type stops at, so
+// Rec<any> ends instead of recursing to the instantiation limit
+declare class Box2<T extends Missing> { v: T }
+>Box2 : Box2<T>
+>v : T
+
+type Un3<R> = R extends Box2<infer X> ? [X] : 0;
+>Un3 : Un3<R>
+
+declare const a: Un3<any>;
+>a : 0 | [any]
+
+const n: string = a;
+>n : string
+>a : 0 | [any]
+
+type Rec<R> = R extends Box2<infer X> ? Rec<X> : 0;
+>Rec : Rec<R>
+
+declare const b: Rec<any>;
+>b : any
+
+const m: string = b;
+>m : string
+>b : any
+
