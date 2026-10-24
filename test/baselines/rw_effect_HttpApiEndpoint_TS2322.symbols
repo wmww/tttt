@@ -1,0 +1,70 @@
+//// [test/cases/rw_effect_HttpApiEndpoint_TS2322.ts] ////
+
+=== rw_effect_HttpApiEndpoint_TS2322.ts ===
+// origin: foldkit/repos/effect packages/effect (source sweep), http-api/HttpApiEndpoint.ts:1151 (makeProto's return-type inference)
+// Known failing: Q's candidate from the declared return, `P extends Fields ? Struct<P> : P`, is checked against
+// getTypeWithThisArgument(Top, candidate); tsgo passes it, tttt fails the this-argument comparison of P's constraint
+interface Bottom<T, Rebuild extends Top> {
+>Bottom : Symbol(Bottom, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 0, 0))
+>T : Symbol(T, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 3, 17))
+>Rebuild : Symbol(Rebuild, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 3, 19), Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 4, 21))
+>Top : Symbol(Top, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 7, 1))
+
+    readonly Type: T;
+>Type : Symbol(Bottom.Type, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 3, 42))
+>T : Symbol(T, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 3, 17))
+
+    readonly Rebuild: Rebuild;
+>Rebuild : Symbol(Rebuild, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 3, 19), Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 4, 21))
+>Rebuild : Symbol(Rebuild, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 3, 19), Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 4, 21))
+
+    rebuild(): this["Rebuild"];
+>rebuild : Symbol(Bottom.rebuild, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 5, 30))
+}
+interface Top extends Bottom<unknown, Top> {}
+>Top : Symbol(Top, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 7, 1))
+>Bottom : Symbol(Bottom, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 0, 0))
+>Top : Symbol(Top, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 7, 1))
+
+type Fields = { readonly [k: string]: Top };
+>Fields : Symbol(Fields, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 8, 45))
+>k : Symbol(k, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 9, 26))
+>Top : Symbol(Top, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 7, 1))
+
+interface Struct<F extends Fields> extends Bottom<F, Struct<F>> { readonly fields: F }
+>Struct : Symbol(Struct, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 9, 44))
+>F : Symbol(F, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 17))
+>Fields : Symbol(Fields, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 8, 45))
+>Bottom : Symbol(Bottom, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 0, 0))
+>F : Symbol(F, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 17))
+>Struct : Symbol(Struct, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 9, 44))
+>F : Symbol(F, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 17))
+>fields : Symbol(Struct.fields, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 65))
+>F : Symbol(F, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 17))
+
+interface Box<Q extends Top> { q: Q }
+>Box : Symbol(Box, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 86))
+>Q : Symbol(Q, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 11, 14))
+>Top : Symbol(Top, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 7, 1))
+>q : Symbol(Box.q, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 11, 30))
+>Q : Symbol(Q, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 11, 14))
+
+declare function mk<Q extends Top>(): Box<Q>;
+>mk : Symbol(mk, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 11, 37))
+>Q : Symbol(Q, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 12, 20))
+>Top : Symbol(Top, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 7, 1))
+>Box : Symbol(Box, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 86))
+>Q : Symbol(Q, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 12, 20))
+
+export function g<P extends Top>(): Box<P extends Fields ? Struct<P> : P> { return mk(); }
+>g : Symbol(g, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 12, 45))
+>P : Symbol(P, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 13, 18))
+>Top : Symbol(Top, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 7, 1))
+>Box : Symbol(Box, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 10, 86))
+>P : Symbol(P, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 13, 18))
+>Fields : Symbol(Fields, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 8, 45))
+>Struct : Symbol(Struct, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 9, 44))
+>P : Symbol(P, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 13, 18))
+>P : Symbol(P, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 13, 18))
+>mk : Symbol(mk, Decl(rw_effect_HttpApiEndpoint_TS2322.ts, 11, 37))
+

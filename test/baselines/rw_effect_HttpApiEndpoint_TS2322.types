@@ -1,0 +1,35 @@
+//// [test/cases/rw_effect_HttpApiEndpoint_TS2322.ts] ////
+
+=== rw_effect_HttpApiEndpoint_TS2322.ts ===
+// origin: foldkit/repos/effect packages/effect (source sweep), http-api/HttpApiEndpoint.ts:1151 (makeProto's return-type inference)
+// Known failing: Q's candidate from the declared return, `P extends Fields ? Struct<P> : P`, is checked against
+// getTypeWithThisArgument(Top, candidate); tsgo passes it, tttt fails the this-argument comparison of P's constraint
+interface Bottom<T, Rebuild extends Top> {
+    readonly Type: T;
+>Type : T
+
+    readonly Rebuild: Rebuild;
+>Rebuild : Rebuild
+
+    rebuild(): this["Rebuild"];
+>rebuild : () => this["Rebuild"]
+}
+interface Top extends Bottom<unknown, Top> {}
+type Fields = { readonly [k: string]: Top };
+>Fields : Fields
+>k : string
+
+interface Struct<F extends Fields> extends Bottom<F, Struct<F>> { readonly fields: F }
+>fields : F
+
+interface Box<Q extends Top> { q: Q }
+>q : Q
+
+declare function mk<Q extends Top>(): Box<Q>;
+>mk : <Q extends Top>() => Box<Q>
+
+export function g<P extends Top>(): Box<P extends Fields ? Struct<P> : P> { return mk(); }
+>g : <P extends Top>() => Box<P extends Fields ? Struct<P> : P>
+>mk() : Box<P extends Fields ? Struct<P> : P>
+>mk : <Q extends Top>() => Box<Q>
+
