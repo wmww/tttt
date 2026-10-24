@@ -1,0 +1,62 @@
+//// [test/cases/npm_forgesteel_TS2345.ts] ////
+
+=== npm_forgesteel_TS2345.ts ===
+// origin: npm forgesteel@14.217.0 https://github.com/andyaiken/forgesteel tsconfig.bench.json seed 20261301
+// flip: yes
+interface Element { description: string }
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(npm_forgesteel_TS2345.ts, 0, 0))
+>description : Symbol(Element.description, Decl(npm_forgesteel_TS2345.ts, 2, 19))
+
+interface Title extends Element { }
+>Title : Symbol(Title, Decl(npm_forgesteel_TS2345.ts, 2, 41))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(npm_forgesteel_TS2345.ts, 0, 0))
+
+declare function useState<S>(initial: S | (() => S)): [S];
+>useState : Symbol(useState, Decl(npm_forgesteel_TS2345.ts, 3, 35))
+>S : Symbol(S, Decl(npm_forgesteel_TS2345.ts, 4, 26))
+>initial : Symbol(initial, Decl(npm_forgesteel_TS2345.ts, 4, 29))
+>S : Symbol(S, Decl(npm_forgesteel_TS2345.ts, 4, 26))
+>S : Symbol(S, Decl(npm_forgesteel_TS2345.ts, 4, 26))
+>S : Symbol(S, Decl(npm_forgesteel_TS2345.ts, 4, 26))
+
+declare function useParams<T>(): Partial<T>;
+>useParams : Symbol(useParams, Decl(npm_forgesteel_TS2345.ts, 4, 58))
+>T : Symbol(T, Decl(npm_forgesteel_TS2345.ts, 5, 27))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_forgesteel_TS2345.ts, 5, 27))
+
+declare const titles: Title[];
+>titles : Symbol(titles, Decl(npm_forgesteel_TS2345.ts, 6, 13))
+>Title : Symbol(Title, Decl(npm_forgesteel_TS2345.ts, 2, 41))
+
+type K = 'a' | 'b' | 'title';
+>K : Symbol(K, Decl(npm_forgesteel_TS2345.ts, 6, 30))
+
+const { kind } = useParams<{ kind: K }>();
+>kind : Symbol(kind, Decl(npm_forgesteel_TS2345.ts, 8, 7))
+>useParams : Symbol(useParams, Decl(npm_forgesteel_TS2345.ts, 4, 58))
+>kind : Symbol(kind, Decl(npm_forgesteel_TS2345.ts, 8, 28))
+>K : Symbol(K, Decl(npm_forgesteel_TS2345.ts, 6, 30))
+
+const [ element ] = useState<Element>(() => {
+>element : Symbol(element, Decl(npm_forgesteel_TS2345.ts, 9, 7))
+>useState : Symbol(useState, Decl(npm_forgesteel_TS2345.ts, 3, 35))
+>Element : Symbol(Element, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(npm_forgesteel_TS2345.ts, 0, 0))
+
+	switch (kind!) {
+>kind : Symbol(kind, Decl(npm_forgesteel_TS2345.ts, 8, 7))
+
+		case 'a':
+		case 'b':
+		case 'title':
+			return titles.find(e => e.description === 'x')!;
+>titles.find : Symbol(Array.find, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>titles : Symbol(titles, Decl(npm_forgesteel_TS2345.ts, 6, 13))
+>find : Symbol(Array.find, Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --))
+>e : Symbol(e, Decl(npm_forgesteel_TS2345.ts, 14, 22))
+>e.description : Symbol(Element.description, Decl(npm_forgesteel_TS2345.ts, 2, 19))
+>e : Symbol(e, Decl(npm_forgesteel_TS2345.ts, 14, 22))
+>description : Symbol(Element.description, Decl(npm_forgesteel_TS2345.ts, 2, 19))
+	}
+});
+

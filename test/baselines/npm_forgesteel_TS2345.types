@@ -1,0 +1,63 @@
+//// [test/cases/npm_forgesteel_TS2345.ts] ////
+
+=== npm_forgesteel_TS2345.ts ===
+// origin: npm forgesteel@14.217.0 https://github.com/andyaiken/forgesteel tsconfig.bench.json seed 20261301
+// flip: yes
+interface Element { description: string }
+>description : string
+
+interface Title extends Element { }
+declare function useState<S>(initial: S | (() => S)): [S];
+>useState : <S>(initial: S | (() => S)) => [S]
+>initial : S | (() => S)
+
+declare function useParams<T>(): Partial<T>;
+>useParams : <T>() => Partial<T>
+
+declare const titles: Title[];
+>titles : Title[]
+
+type K = 'a' | 'b' | 'title';
+>K : K
+
+const { kind } = useParams<{ kind: K }>();
+>kind : K | undefined
+>useParams<{ kind: K }>() : Partial<{ kind: K; }>
+>useParams : <T>() => Partial<T>
+>kind : K
+
+const [ element ] = useState<Element>(() => {
+>element : Element
+>useState<Element>(() => {	switch (kind!) {		case 'a':		case 'b':		case 'title':			return titles.find(e => e.description === 'x')!;	}}) : [Element]
+>useState : <S>(initial: S | (() => S)) => [S]
+>() => {	switch (kind!) {		case 'a':		case 'b':		case 'title':			return titles.find(e => e.description === 'x')!;	}} : () => Title
+
+	switch (kind!) {
+>kind! : K
+>kind : K | undefined
+
+		case 'a':
+>'a' : "a"
+
+		case 'b':
+>'b' : "b"
+
+		case 'title':
+>'title' : "title"
+
+			return titles.find(e => e.description === 'x')!;
+>titles.find(e => e.description === 'x')! : Title
+>titles.find(e => e.description === 'x') : Title | undefined
+>titles.find : { <S extends Title>(predicate: (value: Title, index: number, obj: Title[]) => value is S, thisArg?: any): S | undefined; (predicate: (value: Title, index: number, obj: Title[]) => unknown, thisArg?: any): Title | undefined; }
+>titles : Title[]
+>find : { <S extends Title>(predicate: (value: Title, index: number, obj: Title[]) => value is S, thisArg?: any): S | undefined; (predicate: (value: Title, index: number, obj: Title[]) => unknown, thisArg?: any): Title | undefined; }
+>e => e.description === 'x' : (e: Title) => boolean
+>e : Title
+>e.description === 'x' : boolean
+>e.description : string
+>e : Title
+>description : string
+>'x' : "x"
+	}
+});
+

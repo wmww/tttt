@@ -438,3 +438,6 @@ workspace packages). Not flips, not K-dependent.
   reference's first type argument (here the literal `'JobRun'`), else nothing (a parenthesized type, `readonly T[]`).
   tttt's check_decorator_metadata_signature checked the rest parameter's whole annotation. Test
   rw_immich-server_TS1272; repro ttttDecoratorMetadataRestParameter. [fixed 0470ef693]
+## Seed 20261301
+
+- forgesteel@14.217.0 (tsconfig.bench.json), src/components/pages/library/library-print/library-print-page.tsx:19, TS2345: `useState<Element>(() => { switch (kind!) { case ...all members: return ...; } })` where `kind` is a destructured `useParams<{kind: K}>()` (`Partial`, so `K | undefined`): tsgo treats the switch over `kind!` as exhaustive (end unreachable, no implicit `undefined` return), tttt reports the callback as returning `Title | undefined`. Probably switch exhaustiveness through a non-null assertion on the switch expression. Test npm_forgesteel_TS2345. [flip] [open]
