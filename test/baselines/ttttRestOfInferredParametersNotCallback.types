@@ -1,0 +1,40 @@
+//// [test/cases/ttttRestOfInferredParametersNotCallback.ts] ////
+
+=== ttttRestOfInferredParametersNotCallback.ts ===
+// The parameters at a rest parameter of a generic type, `(...args: P) => any` instantiated with what `infer P` found, were
+// generic before (tsc's isInstantiatedGenericParameter: tryGetTypeAtPosition gives `P[1]`), so two function-typed
+// parameters there relate as types, here by the alias's variance, not signature against signature as callbacks
+interface Base { kind: string }
+>kind : string
+
+type Narrow<T> = T extends { kind: "x" } ? T : never;
+>Narrow : Narrow<T>
+>kind : "x"
+
+type Cb<T extends Base = Base> = (node: T, parent: Narrow<T>) => void;
+>Cb : Cb<T>
+>node : T
+>parent : Narrow<T>
+
+declare function f(a: number, b: number, c: number): void;
+>f : { (a: number, b: number, c: number): void; <T extends Base>(t: T, cb: Cb<T>): void; }
+>a : number
+>b : number
+>c : number
+
+declare function f<T extends Base>(t: T, cb: Cb<T>): void;
+>f : { (a: number, b: number, c: number): void; <T extends Base>(t: T, cb: Cb<T>): void; }
+>t : T
+>cb : Cb<T>
+
+type P = Parameters<typeof f>;
+>P : [t: Base, cb: Cb<Base>]
+>f : { (a: number, b: number, c: number): void; <T extends Base>(t: T, cb: Cb<T>): void; }
+
+declare const p: P;
+>p : [t: Base, cb: Cb<Base>]
+
+const n: number = p;
+>n : number
+>p : [t: Base, cb: Cb<Base>]
+

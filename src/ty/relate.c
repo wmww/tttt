@@ -1887,6 +1887,17 @@ static bool is_instantiated_generic_param(Checker* me, Signature const* sig, Sig
     Signature const* target = origin ? origin : sig->erased_in_one_step ? sig->declared_by : sig_target(me, sig);
     if (!target) return false;
     signature_resolve(me, target);
+    // (At a rest parameter of a generic type, `(...args: P) => any` of `infer P`, tsc's tryGetTypeAtPosition indexes
+    // it: `P[1]` is generic, where param_type_at() answers the any of an element it can't name)
+    SigResolved const* target_r = sig_res(me, target);
+    if (target_r->param_count && target_r->params[target_r->param_count - 1].rest && i + 1 >= target_r->param_count) {
+        Ty const* rest = target_r->params[target_r->param_count - 1].type;
+        if (!ty_tuple_shape(rest) && rest->kind != TY_UNION && !(rest->kind == TY_REFERENCE && is_array_target(me, rest->reference.target)) &&
+            ty_is_generic_index(rest)
+        ) {
+            return true;
+        }
+    }
     Ty const* type = param_type_at(me, target, i);
     if (!type) return false;
     if (ty_is_generic_index(type)) return true;

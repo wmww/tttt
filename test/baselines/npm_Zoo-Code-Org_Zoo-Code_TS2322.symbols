@@ -1,0 +1,237 @@
+//// [test/cases/npm_Zoo-Code-Org_Zoo-Code_TS2322.ts] ////
+
+=== npm_Zoo-Code-Org_Zoo-Code_TS2322.ts ===
+// origin: npm Zoo-Code-Org/Zoo-Code@main https://github.com/Zoo-Code-Org/Zoo-Code webview-ui/tsconfig.bench.json seed 20261300
+// flip: yes
+// Cut by hand from unist-util-visit 5.1.0's declarations and webview-ui's src/utils/markdown.ts: a remark plugin typed
+// `(tree: Parameters<typeof visit>[0]) => void`. Parameters<> of the overloaded generic `visit` relates its erased
+// overloads to `(...args: P) => any`; at a rest parameter of the generic P tsc's isInstantiatedGenericParameter holds,
+// so the `visitor` parameters relate as types (BuildVisitor's alias variance), not as callbacks. tttt related them as
+// callbacks, failed, and Parameters<> gave never (TS2322 in MarkdownBlock.tsx, TS2345 in a spec: the project's errors).
+interface UnistNode { type: string; data?: {} | undefined; }
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>type : Symbol(UnistNode.type, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 21))
+>data : Symbol(UnistNode.data, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 35))
+
+interface UnistParent extends UnistNode { children: UnistNode[]; }
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>children : Symbol(UnistParent.children, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 8, 41))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+
+type Test = string | null | undefined;
+>Test : Symbol(Test, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 8, 66))
+
+type VisitorResult = boolean | number | null | undefined | void;
+>VisitorResult : Symbol(VisitorResult, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 9, 38))
+
+declare function visit<Tree extends UnistNode, Check extends Test>(tree: Tree, check: Check, visitor: BuildVisitor<Tree, Check>, reverse?: boolean | null | undefined): undefined;
+>visit : Symbol(visit, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 10, 64), Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 178))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 23))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 46))
+>Test : Symbol(Test, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 8, 66))
+>tree : Symbol(tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 67))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 23))
+>check : Symbol(check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 78))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 46))
+>visitor : Symbol(visitor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 92))
+>BuildVisitor : Symbol(BuildVisitor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 171))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 23))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 46))
+>reverse : Symbol(reverse, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 128))
+
+declare function visit<Tree extends UnistNode, Check extends Test>(tree: Tree, visitor: BuildVisitor<Tree>, reverse?: boolean | null | undefined): undefined;
+>visit : Symbol(visit, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 10, 64), Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 178))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 23))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 46))
+>Test : Symbol(Test, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 8, 66))
+>tree : Symbol(tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 67))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 23))
+>visitor : Symbol(visitor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 78))
+>BuildVisitor : Symbol(BuildVisitor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 171))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 23))
+>reverse : Symbol(reverse, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 107))
+
+type MatchesOne<Value, Check> = (Check extends null | undefined ? Value : Value extends { type: Check; } ? Value : Value extends Check ? Value : never);
+>MatchesOne : Symbol(MatchesOne, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 157))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 16))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 22))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 22))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 16))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 16))
+>type : Symbol(type, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 89))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 22))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 16))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 16))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 22))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 16))
+
+type Matches<Value, Check> = (Check extends ReadonlyArray<any> ? MatchesOne<Value, Check[number]> : MatchesOne<Value, Check>);
+>Matches : Symbol(Matches, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 152))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 13))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 19))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 19))
+>ReadonlyArray : Symbol(ReadonlyArray, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2016.array.include.d.ts, --, --) ... and 3 more)
+>MatchesOne : Symbol(MatchesOne, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 157))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 13))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 19))
+>MatchesOne : Symbol(MatchesOne, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 12, 157))
+>Value : Symbol(Value, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 13))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 19))
+
+type Uint = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+>Uint : Symbol(Uint, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 126))
+
+type Increment<I extends Uint = 0> = I extends 0 ? 1 : I extends 1 ? 2 : I extends 2 ? 3 : I extends 3 ? 4 : I extends 4 ? 5 : I extends 5 ? 6 : I extends 6 ? 7 : I extends 7 ? 8 : I extends 8 ? 9 : 10;
+>Increment : Symbol(Increment, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 15, 55))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>Uint : Symbol(Uint, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 126))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+>I : Symbol(I, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 15))
+
+type InternalParent<Node extends UnistNode, Child extends UnistNode> = (Node extends UnistParent ? Node extends { children: Array<infer Children>; } ? Child extends Children ? Node : never : never : never);
+>InternalParent : Symbol(InternalParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 202))
+>Node : Symbol(Node, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 20))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Child : Symbol(Child, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 43))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Node : Symbol(Node, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 20))
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+>Node : Symbol(Node, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 20))
+>children : Symbol(children, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 113))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Children : Symbol(Children, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 135))
+>Child : Symbol(Child, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 43))
+>Children : Symbol(Children, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 135))
+>Node : Symbol(Node, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 20))
+
+type Parent<Tree extends UnistNode, Child extends UnistNode> = InternalParent<InclusiveDescendant<Tree>, Child>;
+>Parent : Symbol(Parent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 206))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 12))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Child : Symbol(Child, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 35))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>InternalParent : Symbol(InternalParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 16, 202))
+>InclusiveDescendant : Symbol(InclusiveDescendant, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 112))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 12))
+>Child : Symbol(Child, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 35))
+
+type InclusiveDescendant<Tree extends UnistNode, Max extends Uint = 10, Depth extends Uint = 0> = (Tree extends UnistParent ? Depth extends Max ? Tree : Tree | InclusiveDescendant<Tree["children"][number], Max, Increment<Depth>> : Tree);
+>InclusiveDescendant : Symbol(InclusiveDescendant, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 112))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 25))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Max : Symbol(Max, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 48))
+>Uint : Symbol(Uint, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 126))
+>Depth : Symbol(Depth, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 71))
+>Uint : Symbol(Uint, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 14, 126))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 25))
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+>Depth : Symbol(Depth, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 71))
+>Max : Symbol(Max, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 48))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 25))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 25))
+>InclusiveDescendant : Symbol(InclusiveDescendant, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 112))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 25))
+>Max : Symbol(Max, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 48))
+>Increment : Symbol(Increment, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 15, 55))
+>Depth : Symbol(Depth, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 71))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 25))
+
+type Visitor<Visited extends UnistNode = UnistNode, Ancestor extends UnistParent = UnistParent> = (node: Visited, index: Visited extends UnistNode ? number | undefined : never, parent: Ancestor extends UnistParent ? Ancestor | undefined : never) => VisitorResult;
+>Visitor : Symbol(Visitor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 237))
+>Visited : Symbol(Visited, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 13))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Ancestor : Symbol(Ancestor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 51))
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+>node : Symbol(node, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 99))
+>Visited : Symbol(Visited, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 13))
+>index : Symbol(index, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 113))
+>Visited : Symbol(Visited, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 13))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>parent : Symbol(parent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 176))
+>Ancestor : Symbol(Ancestor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 51))
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+>Ancestor : Symbol(Ancestor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 51))
+>VisitorResult : Symbol(VisitorResult, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 9, 38))
+
+type BuildVisitorFromMatch<Visited extends UnistNode, Ancestor extends UnistParent> = Visitor<Visited, Parent<Ancestor, Visited>>;
+>BuildVisitorFromMatch : Symbol(BuildVisitorFromMatch, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 263))
+>Visited : Symbol(Visited, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 21, 27))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Ancestor : Symbol(Ancestor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 21, 53))
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+>Visitor : Symbol(Visitor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 19, 237))
+>Visited : Symbol(Visited, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 21, 27))
+>Parent : Symbol(Parent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 17, 206))
+>Ancestor : Symbol(Ancestor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 21, 53))
+>Visited : Symbol(Visited, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 21, 27))
+
+type BuildVisitorFromDescendants<Descendant extends UnistNode, Check extends Test> = (BuildVisitorFromMatch<Matches<Descendant, Check>, Extract<Descendant, UnistParent>>);
+>BuildVisitorFromDescendants : Symbol(BuildVisitorFromDescendants, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 21, 130))
+>Descendant : Symbol(Descendant, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 33))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 62))
+>Test : Symbol(Test, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 8, 66))
+>BuildVisitorFromMatch : Symbol(BuildVisitorFromMatch, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 20, 263))
+>Matches : Symbol(Matches, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 13, 152))
+>Descendant : Symbol(Descendant, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 33))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 62))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>Descendant : Symbol(Descendant, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 33))
+>UnistParent : Symbol(UnistParent, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 7, 60))
+
+type BuildVisitor<Tree extends UnistNode = UnistNode, Check extends Test = Test> = (BuildVisitorFromDescendants<InclusiveDescendant<Tree>, Check>);
+>BuildVisitor : Symbol(BuildVisitor, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 22, 171))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 23, 18))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 23, 53))
+>Test : Symbol(Test, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 8, 66))
+>Test : Symbol(Test, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 8, 66))
+>BuildVisitorFromDescendants : Symbol(BuildVisitorFromDescendants, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 21, 130))
+>InclusiveDescendant : Symbol(InclusiveDescendant, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 18, 112))
+>Tree : Symbol(Tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 23, 18))
+>Check : Symbol(Check, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 23, 53))
+
+export function remarkGithubAlerts() {
+>remarkGithubAlerts : Symbol(remarkGithubAlerts, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 23, 147))
+
+	return (tree: Parameters<typeof visit>[0]) => {
+>tree : Symbol(tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 25, 9))
+>Parameters : Symbol(Parameters, Decl(lib.es5.d.ts, --, --))
+>visit : Symbol(visit, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 10, 64), Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 178))
+
+		visit(tree, "blockquote", (node: any) => {})
+>visit : Symbol(visit, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 10, 64), Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 11, 178))
+>tree : Symbol(tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 25, 9))
+>node : Symbol(node, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 26, 29))
+	}
+}
+declare const anyTree: any;
+>anyTree : Symbol(anyTree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 29, 13))
+
+remarkGithubAlerts()(anyTree);
+>remarkGithubAlerts : Symbol(remarkGithubAlerts, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 23, 147))
+>anyTree : Symbol(anyTree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 29, 13))
+
+type Pluggable = () => (tree: UnistNode) => void;
+>Pluggable : Symbol(Pluggable, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 30, 30))
+>tree : Symbol(tree, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 31, 24))
+>UnistNode : Symbol(UnistNode, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 0, 0))
+
+const plugins: Pluggable[] = [remarkGithubAlerts];
+>plugins : Symbol(plugins, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 32, 5))
+>Pluggable : Symbol(Pluggable, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 30, 30))
+>remarkGithubAlerts : Symbol(remarkGithubAlerts, Decl(npm_Zoo-Code-Org_Zoo-Code_TS2322.ts, 23, 147))
+

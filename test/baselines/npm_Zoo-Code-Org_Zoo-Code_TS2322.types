@@ -1,0 +1,109 @@
+//// [test/cases/npm_Zoo-Code-Org_Zoo-Code_TS2322.ts] ////
+
+=== npm_Zoo-Code-Org_Zoo-Code_TS2322.ts ===
+// origin: npm Zoo-Code-Org/Zoo-Code@main https://github.com/Zoo-Code-Org/Zoo-Code webview-ui/tsconfig.bench.json seed 20261300
+// flip: yes
+// Cut by hand from unist-util-visit 5.1.0's declarations and webview-ui's src/utils/markdown.ts: a remark plugin typed
+// `(tree: Parameters<typeof visit>[0]) => void`. Parameters<> of the overloaded generic `visit` relates its erased
+// overloads to `(...args: P) => any`; at a rest parameter of the generic P tsc's isInstantiatedGenericParameter holds,
+// so the `visitor` parameters relate as types (BuildVisitor's alias variance), not as callbacks. tttt related them as
+// callbacks, failed, and Parameters<> gave never (TS2322 in MarkdownBlock.tsx, TS2345 in a spec: the project's errors).
+interface UnistNode { type: string; data?: {} | undefined; }
+>type : string
+>data : {} | undefined
+
+interface UnistParent extends UnistNode { children: UnistNode[]; }
+>children : UnistNode[]
+
+type Test = string | null | undefined;
+>Test : Test
+
+type VisitorResult = boolean | number | null | undefined | void;
+>VisitorResult : VisitorResult
+
+declare function visit<Tree extends UnistNode, Check extends Test>(tree: Tree, check: Check, visitor: BuildVisitor<Tree, Check>, reverse?: boolean | null | undefined): undefined;
+>visit : { <Tree extends UnistNode, Check extends Test>(tree: Tree, check: Check, visitor: BuildVisitor<Tree, Check>, reverse?: boolean | null | undefined): undefined; <Tree_1 extends UnistNode, Check_1 extends Test>(tree: Tree_1, visitor: BuildVisitor<Tree_1>, reverse?: boolean | null | undefined): undefined; }
+>tree : Tree
+>check : Check
+>visitor : BuildVisitor<Tree, Check>
+>reverse : boolean | null | undefined
+
+declare function visit<Tree extends UnistNode, Check extends Test>(tree: Tree, visitor: BuildVisitor<Tree>, reverse?: boolean | null | undefined): undefined;
+>visit : { <Tree_1 extends UnistNode, Check_1 extends Test>(tree: Tree_1, check: Check_1, visitor: BuildVisitor<Tree_1, Check_1>, reverse?: boolean | null | undefined): undefined; <Tree extends UnistNode, Check extends Test>(tree: Tree, visitor: BuildVisitor<Tree>, reverse?: boolean | null | undefined): undefined; }
+>tree : Tree
+>visitor : BuildVisitor<Tree, Test>
+>reverse : boolean | null | undefined
+
+type MatchesOne<Value, Check> = (Check extends null | undefined ? Value : Value extends { type: Check; } ? Value : Value extends Check ? Value : never);
+>MatchesOne : MatchesOne<Value, Check>
+>type : Check
+
+type Matches<Value, Check> = (Check extends ReadonlyArray<any> ? MatchesOne<Value, Check[number]> : MatchesOne<Value, Check>);
+>Matches : Matches<Value, Check>
+
+type Uint = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+>Uint : Uint
+
+type Increment<I extends Uint = 0> = I extends 0 ? 1 : I extends 1 ? 2 : I extends 2 ? 3 : I extends 3 ? 4 : I extends 4 ? 5 : I extends 5 ? 6 : I extends 6 ? 7 : I extends 7 ? 8 : I extends 8 ? 9 : 10;
+>Increment : Increment<I>
+
+type InternalParent<Node extends UnistNode, Child extends UnistNode> = (Node extends UnistParent ? Node extends { children: Array<infer Children>; } ? Child extends Children ? Node : never : never : never);
+>InternalParent : InternalParent<Node, Child>
+>children : Children[]
+
+type Parent<Tree extends UnistNode, Child extends UnistNode> = InternalParent<InclusiveDescendant<Tree>, Child>;
+>Parent : Parent<Tree, Child>
+
+type InclusiveDescendant<Tree extends UnistNode, Max extends Uint = 10, Depth extends Uint = 0> = (Tree extends UnistParent ? Depth extends Max ? Tree : Tree | InclusiveDescendant<Tree["children"][number], Max, Increment<Depth>> : Tree);
+>InclusiveDescendant : InclusiveDescendant<Tree, Max, Depth>
+
+type Visitor<Visited extends UnistNode = UnistNode, Ancestor extends UnistParent = UnistParent> = (node: Visited, index: Visited extends UnistNode ? number | undefined : never, parent: Ancestor extends UnistParent ? Ancestor | undefined : never) => VisitorResult;
+>Visitor : Visitor<Visited, Ancestor>
+>node : Visited
+>index : Visited extends UnistNode ? number | undefined : never
+>parent : Ancestor extends UnistParent ? Ancestor | undefined : never
+
+type BuildVisitorFromMatch<Visited extends UnistNode, Ancestor extends UnistParent> = Visitor<Visited, Parent<Ancestor, Visited>>;
+>BuildVisitorFromMatch : BuildVisitorFromMatch<Visited, Ancestor>
+
+type BuildVisitorFromDescendants<Descendant extends UnistNode, Check extends Test> = (BuildVisitorFromMatch<Matches<Descendant, Check>, Extract<Descendant, UnistParent>>);
+>BuildVisitorFromDescendants : BuildVisitorFromDescendants<Descendant, Check>
+
+type BuildVisitor<Tree extends UnistNode = UnistNode, Check extends Test = Test> = (BuildVisitorFromDescendants<InclusiveDescendant<Tree>, Check>);
+>BuildVisitor : BuildVisitor<Tree, Check>
+
+export function remarkGithubAlerts() {
+>remarkGithubAlerts : () => (tree: Parameters<typeof visit>[0]) => void
+
+	return (tree: Parameters<typeof visit>[0]) => {
+>(tree: Parameters<typeof visit>[0]) => {		visit(tree, "blockquote", (node: any) => {})	} : (tree: Parameters<typeof visit>[0]) => void
+>tree : UnistNode
+>visit : { <Tree extends UnistNode, Check extends Test>(tree: Tree, check: Check, visitor: BuildVisitor<Tree, Check>, reverse?: boolean | null | undefined): undefined; <Tree extends UnistNode, Check extends Test>(tree: Tree, visitor: BuildVisitor<Tree>, reverse?: boolean | null | undefined): undefined; }
+
+		visit(tree, "blockquote", (node: any) => {})
+>visit(tree, "blockquote", (node: any) => {}) : undefined
+>visit : { <Tree extends UnistNode, Check extends Test>(tree: Tree, check: Check, visitor: BuildVisitor<Tree, Check>, reverse?: boolean | null | undefined): undefined; <Tree extends UnistNode, Check extends Test>(tree: Tree, visitor: BuildVisitor<Tree>, reverse?: boolean | null | undefined): undefined; }
+>tree : UnistNode
+>"blockquote" : "blockquote"
+>(node: any) => {} : (node: any) => undefined
+>node : any
+	}
+}
+declare const anyTree: any;
+>anyTree : any
+
+remarkGithubAlerts()(anyTree);
+>remarkGithubAlerts()(anyTree) : void
+>remarkGithubAlerts() : (tree: Parameters<typeof visit>[0]) => void
+>remarkGithubAlerts : () => (tree: Parameters<typeof visit>[0]) => void
+>anyTree : any
+
+type Pluggable = () => (tree: UnistNode) => void;
+>Pluggable : Pluggable
+>tree : UnistNode
+
+const plugins: Pluggable[] = [remarkGithubAlerts];
+>plugins : Pluggable[]
+>[remarkGithubAlerts] : (() => (tree: Parameters<typeof visit>[0]) => void)[]
+>remarkGithubAlerts : () => (tree: Parameters<typeof visit>[0]) => void
+

@@ -360,3 +360,13 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   `TInferred` its default `unknown`, the updater's `current` parameter fits like tsgo's. Repro
   test/cases/ttttNoInferUnionRemainder.ts (recreated from a sandboxed install; projdiff byte-identical after the fix).
   [fixed 2de37e36a]
+- Zoo-Code-Org/Zoo-Code@main webview-ui (tsconfig.bench.json; a pnpm monorepo installed at the root), tsgo 0 errors,
+  tttt 2: TS2322 at src/components/common/MarkdownBlock.tsx:405 (`'() => (tree: never) => void'` not assignable to
+  `Pluggable`) and TS2345 in src/utils/__tests__/markdown.spec.ts:12, both from a remark plugin typed `(tree:
+  Parameters<typeof visit>[0]) => void` (unist-util-visit 5.1.0). Parameters<> relates the overloaded generic `visit`,
+  its signatures erased, to `(...args: P) => any` instantiated with the inferred P. At a rest parameter of the generic P,
+  tsc's isInstantiatedGenericParameter holds, because tryGetTypeAtPosition gives `P[1]`. So the two `visitor` parameters
+  relate as types (BuildVisitor's alias variance: true) and not signature against signature as callbacks (false:
+  `parent: never`). tttt's is_instantiated_generic_param read the any that param_type_at() gives for an element of a
+  non-tuple rest, so Parameters<> came out never. Test npm_Zoo-Code-Org_Zoo-Code_TS2322; repro of the rule:
+  ttttRestOfInferredParametersNotCallback. (claimed: fixF) [flip] [fixed PENDING]
