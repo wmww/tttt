@@ -1,0 +1,114 @@
+//// [test/cases/rw_vue_TS7006.ts] ////
+
+=== node_modules/psp/index.d.ts ===
+export = parser;
+>parser : typeof parser
+
+type Diff<T, U> = T extends U ? never : T;
+>Diff : Diff<T, U>
+
+declare namespace parser {
+>parser : typeof parser
+
+    interface NodeTypes {
+        root: Root,
+>root : Root
+
+        pseudo: Pseudo,
+>pseudo : Pseudo
+    }
+    type Node = NodeTypes[keyof NodeTypes];
+>Node : Node
+
+    class Processor<
+>Processor : Processor
+
+    > {
+    }
+    interface Container<
+        Value extends string | undefined = string,
+        Child extends Node = Node
+    > extends Base<Value> {
+        nodes: Array<Child>;
+>nodes : Child[]
+
+        each(callback: (node: Child, index: number) => boolean | void): boolean | undefined;
+>each : (callback: (node: Child, index: number) => boolean | void) => boolean | undefined
+>callback : (node: Child, index: number) => boolean | void
+>node : Child
+>index : number
+    }
+    interface Root extends Container<undefined, Selector> {
+    }
+    interface _Selector<S> extends Container<string, Diff<Node, S>> {
+        type: "selector";
+>type : "selector"
+    }
+    type Selector = _Selector<Selector>;
+>Selector : Selector
+
+    interface Pseudo extends Container<string, Selector> {
+        type: "pseudo";
+>type : "pseudo"
+    }
+    /**
+     */
+}
+=== w.ts ===
+import selectorParser from 'psp'
+>selectorParser : typeof selectorParser
+
+export function rewriteSelector(selector: selectorParser.Selector) {
+>rewriteSelector : (selector: selectorParser.Selector) => void
+>selector : selectorParser.Selector
+>selectorParser : any
+
+  selector.each(n => {
+>selector.each(n => {    if (n.type === 'pseudo') {      n.nodes[0].each(ss => {})    }  }) : boolean | undefined
+>selector.each : (callback: (node: selectorParser.Pseudo | selectorParser.Root, index: number) => boolean | void) => boolean | undefined
+>selector : selectorParser.Selector
+>each : (callback: (node: selectorParser.Pseudo | selectorParser.Root, index: number) => boolean | void) => boolean | undefined
+>n => {    if (n.type === 'pseudo') {      n.nodes[0].each(ss => {})    }  } : (n: selectorParser.Pseudo | selectorParser.Root) => void
+>n : selectorParser.Pseudo | selectorParser.Root
+
+    if (n.type === 'pseudo') {
+>n.type === 'pseudo' : boolean
+>n.type : any
+>n : selectorParser.Pseudo | selectorParser.Root
+>type : any
+>'pseudo' : "pseudo"
+
+      n.nodes[0].each(ss => {})
+>n.nodes[0].each(ss => {}) : any
+>n.nodes[0].each : any
+>n.nodes[0] : any
+>n.nodes : any[] | selectorParser.Selector[]
+>n : selectorParser.Pseudo | selectorParser.Root
+>nodes : any[] | selectorParser.Selector[]
+>0 : 0
+>each : any
+>ss => {} : (ss: any) => void
+>ss : any
+    }
+  })
+}
+declare const p: selectorParser.Pseudo;
+>p : selectorParser.Pseudo
+>selectorParser : any
+
+export const pn = p.nodes;
+>pn : any[]
+>p.nodes : any[]
+>p : selectorParser.Pseudo
+>nodes : any[]
+
+declare const r: selectorParser.Root;
+>r : selectorParser.Root
+>selectorParser : any
+
+export const rn = r.nodes;
+>rn : selectorParser.Selector[]
+>r.nodes : selectorParser.Selector[]
+>r : selectorParser.Root
+>nodes : selectorParser.Selector[]
+

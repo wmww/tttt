@@ -297,3 +297,17 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
 ## Seed 20261040
 
 - ag-sockets@14.0.4 (Agamnentzar/ag-sockets, tsconfig.bench.json, src/serverSocket.ts:149, reduced to a 20-line case): tsgo reports TS2345 when a `import * as ws from 'ws'` (an `export =` class merged with a namespace, @types/ws) is used as a type, `socket: ws`, and a `Server<T extends WebSocket>` callback's `client: T` is passed to it (the type is the module's namespace type whose `on(): this` returns are incompatible with `this`); tttt reports nothing (tsgo 19, tttt 18 errors). `test/cases/npm_ag-sockets_TS2345.ts`. [open]
+- **rw_vue_TS7006** (the vue corpus, tsconfig.corpus.json, packages/compiler-sfc/src/style/pluginScoped.ts:190 and
+  :235; the corpus' long-tolerated "0/2 missing", also seen by the second box): tsgo's two TS7006 'ss' in
+  `n.nodes[0].each(ss => ...)`. reduce.py cut it to the file's `selector.each(n => { if (n.type === 'pseudo')
+  n.nodes[0].each(ss => {}) })` and 30 lines of postcss-selector-parser.d.ts (`type Selector = _Selector<Selector>`,
+  `interface _Selector<S> extends Container<string, Diff<Node, S>>`, `type Diff<T, U> = T extends U ? never : T`).
+  Both sides report TS5115 ('Container', 'Diff'). tsgo reaches its instantiation depth limit in a chain
+  getConditionalType (Diff) -> isTypeAssignableTo -> isWeakType -> resolveStructuredTypeMembers of a reference ->
+  resolveObjectTypeMembers instantiating its bases' type arguments -> Diff again (tsgotrace.py 5115), and the
+  errorType it returns at depth 100 ends up in Pseudo's members for good: `Pseudo.nodes` is `any[]`, so
+  `n.nodes[0].each` is any and the callback is checked untyped (resolveErrorCall: TS7006). tttt's TS5115 comes from
+  another path (probe_eager_bases -> a reference's members re-entered, members_reentered_unguarded, reported as the
+  limit), never a 100-deep chain, so no member of Pseudo becomes the error type and `ss` gets `Pseudo | Root`. Matching
+  it means tttt's instantiation sequence reaching tsgo's depth-100 point on the same type (the order members, bases
+  and conditional types are instantiated in), not a local rule. Repro test/cases/rw_vue_TS7006.ts (fails). [design]

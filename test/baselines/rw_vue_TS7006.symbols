@@ -1,0 +1,145 @@
+//// [test/cases/rw_vue_TS7006.ts] ////
+
+=== node_modules/psp/index.d.ts ===
+export = parser;
+>parser : Symbol(parser, Decl(index.d.ts, 1, 42))
+
+type Diff<T, U> = T extends U ? never : T;
+>Diff : Symbol(Diff, Decl(index.d.ts, 0, 16))
+>T : Symbol(T, Decl(index.d.ts, 1, 10))
+>U : Symbol(U, Decl(index.d.ts, 1, 12))
+>T : Symbol(T, Decl(index.d.ts, 1, 10))
+>U : Symbol(U, Decl(index.d.ts, 1, 12))
+>T : Symbol(T, Decl(index.d.ts, 1, 10))
+
+declare namespace parser {
+>parser : Symbol(parser, Decl(index.d.ts, 1, 42))
+
+    interface NodeTypes {
+>NodeTypes : Symbol(NodeTypes, Decl(index.d.ts, 2, 26))
+
+        root: Root,
+>root : Symbol(NodeTypes.root, Decl(index.d.ts, 3, 25))
+>Root : Symbol(Root, Decl(index.d.ts, 17, 5))
+
+        pseudo: Pseudo,
+>pseudo : Symbol(NodeTypes.pseudo, Decl(index.d.ts, 4, 19))
+>Pseudo : Symbol(Pseudo, Decl(index.d.ts, 23, 40))
+    }
+    type Node = NodeTypes[keyof NodeTypes];
+>Node : Symbol(Node, Decl(index.d.ts, 6, 5))
+>NodeTypes : Symbol(NodeTypes, Decl(index.d.ts, 2, 26))
+>NodeTypes : Symbol(NodeTypes, Decl(index.d.ts, 2, 26))
+
+    class Processor<
+>Processor : Symbol(Processor, Decl(index.d.ts, 7, 43))
+
+    > {
+    }
+    interface Container<
+>Container : Symbol(Container, Decl(index.d.ts, 10, 5))
+
+        Value extends string | undefined = string,
+>Value : Symbol(Value, Decl(index.d.ts, 11, 24))
+
+        Child extends Node = Node
+>Child : Symbol(Child, Decl(index.d.ts, 12, 50))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 5))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 5))
+
+    > extends Base<Value> {
+>Value : Symbol(Value, Decl(index.d.ts, 11, 24))
+
+        nodes: Array<Child>;
+>nodes : Symbol(Container.nodes, Decl(index.d.ts, 14, 27))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Child : Symbol(Child, Decl(index.d.ts, 12, 50))
+
+        each(callback: (node: Child, index: number) => boolean | void): boolean | undefined;
+>each : Symbol(Container.each, Decl(index.d.ts, 15, 28))
+>callback : Symbol(callback, Decl(index.d.ts, 16, 13))
+>node : Symbol(node, Decl(index.d.ts, 16, 24))
+>Child : Symbol(Child, Decl(index.d.ts, 12, 50))
+>index : Symbol(index, Decl(index.d.ts, 16, 36))
+    }
+    interface Root extends Container<undefined, Selector> {
+>Root : Symbol(Root, Decl(index.d.ts, 17, 5))
+>Container : Symbol(Container, Decl(index.d.ts, 10, 5))
+>Selector : Symbol(Selector, Decl(index.d.ts, 22, 5))
+    }
+    interface _Selector<S> extends Container<string, Diff<Node, S>> {
+>_Selector : Symbol(_Selector, Decl(index.d.ts, 19, 5))
+>S : Symbol(S, Decl(index.d.ts, 20, 24))
+>Container : Symbol(Container, Decl(index.d.ts, 10, 5))
+>Diff : Symbol(Diff, Decl(index.d.ts, 0, 16))
+>Node : Symbol(Node, Decl(index.d.ts, 6, 5))
+>S : Symbol(S, Decl(index.d.ts, 20, 24))
+
+        type: "selector";
+>type : Symbol(_Selector.type, Decl(index.d.ts, 20, 69))
+    }
+    type Selector = _Selector<Selector>;
+>Selector : Symbol(Selector, Decl(index.d.ts, 22, 5))
+>_Selector : Symbol(_Selector, Decl(index.d.ts, 19, 5))
+>Selector : Symbol(Selector, Decl(index.d.ts, 22, 5))
+
+    interface Pseudo extends Container<string, Selector> {
+>Pseudo : Symbol(Pseudo, Decl(index.d.ts, 23, 40))
+>Container : Symbol(Container, Decl(index.d.ts, 10, 5))
+>Selector : Symbol(Selector, Decl(index.d.ts, 22, 5))
+
+        type: "pseudo";
+>type : Symbol(Pseudo.type, Decl(index.d.ts, 24, 58))
+    }
+    /**
+     */
+}
+=== w.ts ===
+import selectorParser from 'psp'
+>selectorParser : Symbol(selectorParser, Decl(w.ts, 0, 6))
+
+export function rewriteSelector(selector: selectorParser.Selector) {
+>rewriteSelector : Symbol(rewriteSelector, Decl(w.ts, 0, 32))
+>selector : Symbol(selector, Decl(w.ts, 1, 32))
+>selectorParser : Symbol(selectorParser, Decl(w.ts, 0, 6))
+>Selector : Symbol(selectorParser.Selector, Decl(index.d.ts, 22, 5))
+
+  selector.each(n => {
+>selector.each : Symbol(selectorParser.Container.each, Decl(index.d.ts, 15, 28))
+>selector : Symbol(selector, Decl(w.ts, 1, 32))
+>each : Symbol(selectorParser.Container.each, Decl(index.d.ts, 15, 28))
+>n : Symbol(n, Decl(w.ts, 2, 16))
+
+    if (n.type === 'pseudo') {
+>n : Symbol(n, Decl(w.ts, 2, 16))
+
+      n.nodes[0].each(ss => {})
+>n.nodes : Symbol(selectorParser.Container.nodes, Decl(index.d.ts, 14, 27))
+>n : Symbol(n, Decl(w.ts, 2, 16))
+>nodes : Symbol(selectorParser.Container.nodes, Decl(index.d.ts, 14, 27))
+>ss : Symbol(ss, Decl(w.ts, 4, 22))
+    }
+  })
+}
+declare const p: selectorParser.Pseudo;
+>p : Symbol(p, Decl(w.ts, 8, 13))
+>selectorParser : Symbol(selectorParser, Decl(w.ts, 0, 6))
+>Pseudo : Symbol(selectorParser.Pseudo, Decl(index.d.ts, 23, 40))
+
+export const pn = p.nodes;
+>pn : Symbol(pn, Decl(w.ts, 9, 12))
+>p.nodes : Symbol(selectorParser.Container.nodes, Decl(index.d.ts, 14, 27))
+>p : Symbol(p, Decl(w.ts, 8, 13))
+>nodes : Symbol(selectorParser.Container.nodes, Decl(index.d.ts, 14, 27))
+
+declare const r: selectorParser.Root;
+>r : Symbol(r, Decl(w.ts, 10, 13))
+>selectorParser : Symbol(selectorParser, Decl(w.ts, 0, 6))
+>Root : Symbol(selectorParser.Root, Decl(index.d.ts, 17, 5))
+
+export const rn = r.nodes;
+>rn : Symbol(rn, Decl(w.ts, 11, 12))
+>r.nodes : Symbol(selectorParser.Container.nodes, Decl(index.d.ts, 14, 27))
+>r : Symbol(r, Decl(w.ts, 10, 13))
+>nodes : Symbol(selectorParser.Container.nodes, Decl(index.d.ts, 14, 27))
+

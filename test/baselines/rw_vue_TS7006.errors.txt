@@ -1,0 +1,87 @@
+error TS-1: Pre-emit (6) and post-emit (7) diagnostic counts do not match! This can indicate that a semantic _error_ was added by the emit resolver - such an error may not be reflected on the command line or in the editor, but may be captured in a baseline here!
+node_modules/psp/index.d.ts(9,20): error TS1098: Type parameter list cannot be empty.
+node_modules/psp/index.d.ts(15,15): error TS2304: Cannot find name 'Base'.
+node_modules/psp/index.d.ts(19,15): error TS5115: Instantiations of the following types appear infinitely circular: 'Container', 'Diff'.
+node_modules/psp/index.d.ts(19,49): error TS2344: Type 'Selector' does not satisfy the constraint 'Node'.
+  Type '_Selector<Selector>' is not assignable to type 'Pseudo'.
+    Types of property 'type' are incompatible.
+      Type '"selector"' is not assignable to type '"pseudo"'.
+node_modules/psp/index.d.ts(25,48): error TS2344: Type 'Selector' does not satisfy the constraint 'Node'.
+  Type '_Selector<Selector>' is not assignable to type 'Pseudo'.
+    Types of property 'type' are incompatible.
+      Type '"selector"' is not assignable to type '"pseudo"'.
+w.ts(4,11): error TS2339: Property 'type' does not exist on type 'Pseudo | Root'.
+  Property 'type' does not exist on type 'Root'.
+
+
+!!! error TS-1: Pre-emit (6) and post-emit (7) diagnostic counts do not match! This can indicate that a semantic _error_ was added by the emit resolver - such an error may not be reflected on the command line or in the editor, but may be captured in a baseline here!
+!!! related TS-1: The excess diagnostics are:
+!!! related TS5115: Instantiations of the following types appear infinitely circular: 'Container', 'Diff'.
+!!! related TS7006 w.ts:5:23: Parameter 'ss' implicitly has an 'any' type.
+==== node_modules/psp/package.json (0 errors) ====
+    {"name":"psp","version":"1.0.0","types":"index.d.ts"}
+==== node_modules/psp/index.d.ts (5 errors) ====
+    export = parser;
+    type Diff<T, U> = T extends U ? never : T;
+    declare namespace parser {
+        interface NodeTypes {
+            root: Root,
+            pseudo: Pseudo,
+        }
+        type Node = NodeTypes[keyof NodeTypes];
+        class Processor<
+                       ~
+        > {
+    ~~~~~
+!!! error TS1098: Type parameter list cannot be empty.
+        }
+        interface Container<
+            Value extends string | undefined = string,
+            Child extends Node = Node
+        > extends Base<Value> {
+                  ~~~~
+!!! error TS2304: Cannot find name 'Base'.
+            nodes: Array<Child>;
+            each(callback: (node: Child, index: number) => boolean | void): boolean | undefined;
+        }
+        interface Root extends Container<undefined, Selector> {
+                  ~~~~
+!!! error TS5115: Instantiations of the following types appear infinitely circular: 'Container', 'Diff'.
+                                                    ~~~~~~~~
+!!! error TS2344: Type 'Selector' does not satisfy the constraint 'Node'.
+!!! error TS2344:   Type '_Selector<Selector>' is not assignable to type 'Pseudo'.
+!!! error TS2344:     Types of property 'type' are incompatible.
+!!! error TS2344:       Type '"selector"' is not assignable to type '"pseudo"'.
+        }
+        interface _Selector<S> extends Container<string, Diff<Node, S>> {
+            type: "selector";
+        }
+        type Selector = _Selector<Selector>;
+        interface Pseudo extends Container<string, Selector> {
+                                                   ~~~~~~~~
+!!! error TS2344: Type 'Selector' does not satisfy the constraint 'Node'.
+!!! error TS2344:   Type '_Selector<Selector>' is not assignable to type 'Pseudo'.
+!!! error TS2344:     Types of property 'type' are incompatible.
+!!! error TS2344:       Type '"selector"' is not assignable to type '"pseudo"'.
+            type: "pseudo";
+        }
+        /**
+         */
+    }
+==== w.ts (1 errors) ====
+    import selectorParser from 'psp'
+    export function rewriteSelector(selector: selectorParser.Selector) {
+      selector.each(n => {
+        if (n.type === 'pseudo') {
+              ~~~~
+!!! error TS2339: Property 'type' does not exist on type 'Pseudo | Root'.
+!!! error TS2339:   Property 'type' does not exist on type 'Root'.
+          n.nodes[0].each(ss => {})
+        }
+      })
+    }
+    declare const p: selectorParser.Pseudo;
+    export const pn = p.nodes;
+    declare const r: selectorParser.Root;
+    export const rn = r.nodes;
+    
