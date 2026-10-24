@@ -61,4 +61,4 @@ for flips); a separate file so the three boxes never conflict.
   (isClient) return; window.addEventListener(...)` narrows `window` (a `declare var`) through the aliased condition.
   tsgo's aliased-condition narrowing applies only to a constant reference (isConstantReference: a const variable,
   a readonly property, an unassigned parameter), and a var isn't one. tttt narrows the var too. Repro
-  test/cases/npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts (also a plain `declare var w`). [open]
+  test/cases/npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts (also a plain `declare var w`). (claimed: fixF) [open]
