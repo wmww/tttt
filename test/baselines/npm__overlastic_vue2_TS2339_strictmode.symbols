@@ -1,0 +1,18 @@
+//// [test/cases/npm__overlastic_vue2_TS2339_strictmode.tsx] ////
+
+=== global.react.d.ts ===
+declare module 'react' {
+>'react' : Symbol("react", Decl(global.react.d.ts, 0, 0))
+
+  export const createContext: any;
+>createContext : Symbol(createContext, Decl(global.react.d.ts, 1, 14))
+}
+=== main.tsx ===
+import React from 'react'
+>React : Symbol(React, Decl(main.tsx, 0, 6))
+
+const x = <React.StrictMode></React.StrictMode>
+>x : Symbol(x, Decl(main.tsx, 1, 5))
+>React : Symbol(React, Decl(main.tsx, 0, 6))
+>React : Symbol(React, Decl(main.tsx, 0, 6))
+

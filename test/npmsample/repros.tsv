@@ -25,3 +25,6 @@ npm_slotsmith_TS7006	yes	slotsmith@1.10.0	https://github.com/tmzm/slotsmith	0	2	
 npm_znicholasbrown-graphql-tools_TS2345	yes	znicholasbrown-graphql-tools@4.0.6	https://github.com/apollographql/graphql-tools	0	2	+TS2345
 npm_types-momentum_TS2322	yes	types-momentum@4.6.12	https://github.com/NGHQ/types-momentum	0	1	+TS2322
 npm_serverless-openapi_TS2339	no	serverless-openapi@1.1.2	https://github.com/theodo/serverless-openapi	32	31	-TS2339
+npm_rabbitmq-pub-sub_TS2339	no	rabbitmq-pub-sub@0.2.5	https://github.com/cdmbase/rabbitmq-pubsub	31	11	-TS2322 -TS2339 -TS7006
+npm__overlastic_vue2_TS2339	no	@overlastic/vue2@0.9.0	https://github.com/hairyf/overlastic	37	39	+TS2339
+npm__overlastic_vue2_TS2339_strictmode	no	@overlastic/vue2@0.9.0	https://github.com/hairyf/overlastic	37	39	-TS2339

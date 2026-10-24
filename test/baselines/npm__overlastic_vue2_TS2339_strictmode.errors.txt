@@ -1,0 +1,18 @@
+main.tsx(2,18): error TS2339: Property 'StrictMode' does not exist on type 'typeof import("react")'.
+main.tsx(2,37): error TS2339: Property 'StrictMode' does not exist on type 'typeof import("react")'.
+
+
+==== tsconfig.json (0 errors) ====
+    { "compilerOptions": { "jsx": "preserve", "module": "esnext", "moduleResolution": "bundler", "esModuleInterop": true, "strict": true, "noEmit": true, "paths": { "react": ["./global.react.d.ts"] } } }
+==== global.react.d.ts (0 errors) ====
+    declare module 'react' {
+      export const createContext: any;
+    }
+==== main.tsx (2 errors) ====
+    import React from 'react'
+    const x = <React.StrictMode></React.StrictMode>
+                     ~~~~~~~~~~
+!!! error TS2339: Property 'StrictMode' does not exist on type 'typeof import("react")'.
+                                        ~~~~~~~~~~
+!!! error TS2339: Property 'StrictMode' does not exist on type 'typeof import("react")'.
+    

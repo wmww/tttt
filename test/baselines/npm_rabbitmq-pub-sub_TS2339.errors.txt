@@ -1,0 +1,21 @@
+a.ts(3,20): error TS2339: Property 'resolve' does not exist on type 'typeof Bluebird'.
+
+
+==== node_modules/bb/index.d.ts (0 errors) ====
+    declare class Bluebird<R> {
+        static resolve<R>(value: R): Bluebird<R>;
+    }
+    declare namespace Bluebird {
+        interface Inspection<R> {}
+    }
+    export = Bluebird;
+==== node_modules/bb/package.json (0 errors) ====
+    {"name":"bb","types":"index.d.ts"}
+==== a.ts (1 errors) ====
+    import * as Promise from "bb";
+    export function create(): Promise<number> {
+        return Promise.resolve(1);
+                       ~~~~~~~
+!!! error TS2339: Property 'resolve' does not exist on type 'typeof Bluebird'.
+    }
+    

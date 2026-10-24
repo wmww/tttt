@@ -1,0 +1,238 @@
+//// [test/cases/npm__overlastic_vue2_TS2339.ts] ////
+
+=== packages/@vue2/node_modules/vue/types/index.d.ts ===
+import { Vue } from "./vue";
+>Vue : Symbol(Vue, Decl(index.d.ts, 0, 8))
+
+export default Vue;
+>Vue : Symbol(Vue, Decl(index.d.ts, 0, 8))
+
+=== packages/@vue2/node_modules/vue/types/options.d.ts ===
+export type Accessors<T> = {
+>Accessors : Symbol(Accessors, Decl(options.d.ts, 0, 0))
+>T : Symbol(T, Decl(options.d.ts, 0, 22))
+
+  [K in keyof T]: (() => T[K]) | ComputedOptions<T[K]>
+>K : Symbol(K, Decl(options.d.ts, 1, 3))
+>T : Symbol(T, Decl(options.d.ts, 0, 22))
+>T : Symbol(T, Decl(options.d.ts, 0, 22))
+>K : Symbol(K, Decl(options.d.ts, 1, 3))
+>ComputedOptions : Symbol(ComputedOptions, Decl(options.d.ts, 22, 1))
+>T : Symbol(T, Decl(options.d.ts, 0, 22))
+>K : Symbol(K, Decl(options.d.ts, 1, 3))
+}
+export type ThisTypedComponentOptionsWithArrayProps<V extends Vue, Data, Methods, Computed, PropNames extends string> =
+>ThisTypedComponentOptionsWithArrayProps : Symbol(ThisTypedComponentOptionsWithArrayProps, Decl(options.d.ts, 2, 1))
+>V : Symbol(V, Decl(options.d.ts, 3, 52))
+>Vue : Symbol(Vue)
+>Data : Symbol(Data, Decl(options.d.ts, 3, 66))
+>Methods : Symbol(Methods, Decl(options.d.ts, 3, 72))
+>Computed : Symbol(Computed, Decl(options.d.ts, 3, 81))
+>PropNames : Symbol(PropNames, Decl(options.d.ts, 3, 91))
+
+  ComponentOptions<V, DataDef<Data, Record<PropNames, any>, V>, Methods, Computed, PropNames[], Record<PropNames, any>> &
+>ComponentOptions : Symbol(ComponentOptions, Decl(options.d.ts, 9, 78))
+>V : Symbol(V, Decl(options.d.ts, 3, 52))
+>DataDef : Symbol(DataDef)
+>Data : Symbol(Data, Decl(options.d.ts, 3, 66))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>PropNames : Symbol(PropNames, Decl(options.d.ts, 3, 91))
+>V : Symbol(V, Decl(options.d.ts, 3, 52))
+>Methods : Symbol(Methods, Decl(options.d.ts, 3, 72))
+>Computed : Symbol(Computed, Decl(options.d.ts, 3, 81))
+>PropNames : Symbol(PropNames, Decl(options.d.ts, 3, 91))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>PropNames : Symbol(PropNames, Decl(options.d.ts, 3, 91))
+
+  ThisType<CombinedVueInstance<V, Data, Methods, Computed, Readonly<Record<PropNames, any>>>>;
+>ThisType : Symbol(ThisType, Decl(lib.es5.d.ts, --, --))
+>CombinedVueInstance : Symbol(CombinedVueInstance)
+>V : Symbol(V, Decl(options.d.ts, 3, 52))
+>Data : Symbol(Data, Decl(options.d.ts, 3, 66))
+>Methods : Symbol(Methods, Decl(options.d.ts, 3, 72))
+>Computed : Symbol(Computed, Decl(options.d.ts, 3, 81))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>PropNames : Symbol(PropNames, Decl(options.d.ts, 3, 91))
+
+export type ThisTypedComponentOptionsWithRecordProps<V extends Vue, Data, Methods, Computed, Props> =
+>ThisTypedComponentOptionsWithRecordProps : Symbol(ThisTypedComponentOptionsWithRecordProps, Decl(options.d.ts, 5, 94))
+>V : Symbol(V, Decl(options.d.ts, 6, 53))
+>Vue : Symbol(Vue)
+>Data : Symbol(Data, Decl(options.d.ts, 6, 67))
+>Methods : Symbol(Methods, Decl(options.d.ts, 6, 73))
+>Computed : Symbol(Computed, Decl(options.d.ts, 6, 82))
+>Props : Symbol(Props, Decl(options.d.ts, 6, 92))
+
+  ComponentOptions<V, DataDef<Data, Props, V>, Methods, Computed, RecordPropsDefinition<Props>, Props> &
+>ComponentOptions : Symbol(ComponentOptions, Decl(options.d.ts, 9, 78))
+>V : Symbol(V, Decl(options.d.ts, 6, 53))
+>DataDef : Symbol(DataDef)
+>Data : Symbol(Data, Decl(options.d.ts, 6, 67))
+>Props : Symbol(Props, Decl(options.d.ts, 6, 92))
+>V : Symbol(V, Decl(options.d.ts, 6, 53))
+>Methods : Symbol(Methods, Decl(options.d.ts, 6, 73))
+>Computed : Symbol(Computed, Decl(options.d.ts, 6, 82))
+>RecordPropsDefinition : Symbol(RecordPropsDefinition)
+>Props : Symbol(Props, Decl(options.d.ts, 6, 92))
+>Props : Symbol(Props, Decl(options.d.ts, 6, 92))
+
+  ThisType<CombinedVueInstance<V, Data, Methods, Computed, Readonly<Props>>>;
+>ThisType : Symbol(ThisType, Decl(lib.es5.d.ts, --, --))
+>CombinedVueInstance : Symbol(CombinedVueInstance)
+>V : Symbol(V, Decl(options.d.ts, 6, 53))
+>Data : Symbol(Data, Decl(options.d.ts, 6, 67))
+>Methods : Symbol(Methods, Decl(options.d.ts, 6, 73))
+>Computed : Symbol(Computed, Decl(options.d.ts, 6, 82))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(options.d.ts, 6, 92))
+
+type DefaultMethods<V> =  { [key: string]: (this: V, ...args: any[]) => any };
+>DefaultMethods : Symbol(DefaultMethods, Decl(options.d.ts, 8, 77))
+>V : Symbol(V, Decl(options.d.ts, 9, 20))
+>key : Symbol(key, Decl(options.d.ts, 9, 29))
+>this : Symbol(this, Decl(options.d.ts, 9, 44))
+>V : Symbol(V, Decl(options.d.ts, 9, 20))
+>args : Symbol(args, Decl(options.d.ts, 9, 52))
+
+export interface ComponentOptions<
+>ComponentOptions : Symbol(ComponentOptions, Decl(options.d.ts, 9, 78))
+
+  V extends Vue,
+>V : Symbol(V, Decl(options.d.ts, 10, 34))
+>Vue : Symbol(Vue)
+
+  Data=DefaultData<V>,
+>Data : Symbol(Data, Decl(options.d.ts, 11, 16))
+>DefaultData : Symbol(DefaultData)
+>V : Symbol(V, Decl(options.d.ts, 10, 34))
+
+  Methods=DefaultMethods<V>,
+>Methods : Symbol(Methods, Decl(options.d.ts, 12, 22))
+>DefaultMethods : Symbol(DefaultMethods, Decl(options.d.ts, 8, 77))
+>V : Symbol(V, Decl(options.d.ts, 10, 34))
+
+  Computed=DefaultComputed,
+>Computed : Symbol(Computed, Decl(options.d.ts, 13, 28))
+>DefaultComputed : Symbol(DefaultComputed)
+
+  PropsDef=PropsDefinition<DefaultProps>,
+>PropsDef : Symbol(PropsDef, Decl(options.d.ts, 14, 27))
+>PropsDefinition : Symbol(PropsDefinition)
+>DefaultProps : Symbol(DefaultProps)
+
+  Props=DefaultProps> {
+>Props : Symbol(Props, Decl(options.d.ts, 15, 41))
+>DefaultProps : Symbol(DefaultProps)
+
+  props?: PropsDef;
+>props : Symbol(ComponentOptions.props, Decl(options.d.ts, 16, 23))
+>PropsDef : Symbol(PropsDef, Decl(options.d.ts, 14, 27))
+
+  computed?: Accessors<Computed>;
+>computed : Symbol(ComponentOptions.computed, Decl(options.d.ts, 17, 19))
+>Accessors : Symbol(Accessors, Decl(options.d.ts, 0, 0))
+>Computed : Symbol(Computed, Decl(options.d.ts, 13, 28))
+
+  methods?: Methods;
+>methods : Symbol(ComponentOptions.methods, Decl(options.d.ts, 18, 33))
+>Methods : Symbol(Methods, Decl(options.d.ts, 12, 22))
+}
+export interface FunctionalComponentOptions<Props = DefaultProps, PropDefs = PropsDefinition<Props>> {
+>FunctionalComponentOptions : Symbol(FunctionalComponentOptions, Decl(options.d.ts, 20, 1))
+>Props : Symbol(Props, Decl(options.d.ts, 21, 44))
+>DefaultProps : Symbol(DefaultProps)
+>PropDefs : Symbol(PropDefs, Decl(options.d.ts, 21, 65))
+>PropsDefinition : Symbol(PropsDefinition)
+>Props : Symbol(Props, Decl(options.d.ts, 21, 44))
+}
+export interface ComputedOptions<T> {
+>ComputedOptions : Symbol(ComputedOptions, Decl(options.d.ts, 22, 1))
+>T : Symbol(T, Decl(options.d.ts, 23, 33))
+}
+=== packages/@vue2/node_modules/vue/types/vue.d.ts ===
+import {
+  ComponentOptions,
+>ComponentOptions : Symbol(ComponentOptions, Decl(vue.d.ts, 0, 8))
+
+  ThisTypedComponentOptionsWithRecordProps,
+>ThisTypedComponentOptionsWithRecordProps : Symbol(ThisTypedComponentOptionsWithRecordProps, Decl(vue.d.ts, 1, 19))
+
+} from "./options";
+export interface Vue {
+>Vue : Symbol(Vue, Decl(vue.d.ts, 3, 19), Decl(vue.d.ts, 10, 12))
+}
+export interface VueConstructor<V extends Vue = Vue> {
+>VueConstructor : Symbol(VueConstructor, Decl(vue.d.ts, 5, 1))
+>V : Symbol(V, Decl(vue.d.ts, 6, 32))
+>Vue : Symbol(Vue, Decl(vue.d.ts, 3, 19), Decl(vue.d.ts, 10, 12))
+>Vue : Symbol(Vue, Decl(vue.d.ts, 3, 19), Decl(vue.d.ts, 10, 12))
+
+  extend<Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>;
+>extend : Symbol(VueConstructor.extend, Decl(vue.d.ts, 6, 54), Decl(vue.d.ts, 7, 176))
+>Data : Symbol(Data, Decl(vue.d.ts, 7, 9))
+>Methods : Symbol(Methods, Decl(vue.d.ts, 7, 14))
+>Computed : Symbol(Computed, Decl(vue.d.ts, 7, 23))
+>Props : Symbol(Props, Decl(vue.d.ts, 7, 33))
+>options : Symbol(options, Decl(vue.d.ts, 7, 41))
+>ThisTypedComponentOptionsWithRecordProps : Symbol(ThisTypedComponentOptionsWithRecordProps, Decl(vue.d.ts, 1, 19))
+>V : Symbol(V, Decl(vue.d.ts, 6, 32))
+>Data : Symbol(Data, Decl(vue.d.ts, 7, 9))
+>Methods : Symbol(Methods, Decl(vue.d.ts, 7, 14))
+>Computed : Symbol(Computed, Decl(vue.d.ts, 7, 23))
+>Props : Symbol(Props, Decl(vue.d.ts, 7, 33))
+>ExtendedVue : Symbol(ExtendedVue)
+>V : Symbol(V, Decl(vue.d.ts, 6, 32))
+>Data : Symbol(Data, Decl(vue.d.ts, 7, 9))
+>Methods : Symbol(Methods, Decl(vue.d.ts, 7, 14))
+>Computed : Symbol(Computed, Decl(vue.d.ts, 7, 23))
+>Props : Symbol(Props, Decl(vue.d.ts, 7, 33))
+
+  extend(options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>;
+>extend : Symbol(VueConstructor.extend, Decl(vue.d.ts, 6, 54), Decl(vue.d.ts, 7, 176))
+>options : Symbol(options, Decl(vue.d.ts, 8, 9))
+>ComponentOptions : Symbol(ComponentOptions, Decl(vue.d.ts, 0, 8))
+>V : Symbol(V, Decl(vue.d.ts, 6, 32))
+>ExtendedVue : Symbol(ExtendedVue)
+>V : Symbol(V, Decl(vue.d.ts, 6, 32))
+}
+export const Vue: VueConstructor;
+>Vue : Symbol(Vue, Decl(vue.d.ts, 3, 19), Decl(vue.d.ts, 10, 12))
+>VueConstructor : Symbol(VueConstructor, Decl(vue.d.ts, 5, 1))
+
+=== packages/@vue2/src/composable/define.ts ===
+import Vue from 'vue'
+>Vue : Symbol(Vue, Decl(define.ts, 0, 6))
+
+  const mixinOptions = Vue.extend({
+>mixinOptions : Symbol(mixinOptions, Decl(define.ts, 1, 7))
+>Vue.extend : Symbol(VueConstructor.extend, Decl(vue.d.ts, 6, 54), Decl(vue.d.ts, 7, 176))
+>Vue : Symbol(Vue, Decl(define.ts, 0, 6))
+>extend : Symbol(VueConstructor.extend, Decl(vue.d.ts, 6, 54), Decl(vue.d.ts, 7, 176))
+
+    computed: {
+>computed : Symbol(computed, Decl(define.ts, 1, 35))
+
+      $visible: {
+>$visible : Symbol($visible, Decl(define.ts, 2, 15))
+
+        get() {
+>get : Symbol(get, Decl(define.ts, 3, 17))
+
+        },
+      },
+    },
+    methods: {
+>methods : Symbol(methods, Decl(define.ts, 7, 6))
+
+      async $runtime_effect(type: 'confirm' | 'cancel', value: any) {
+>$runtime_effect : Symbol($runtime_effect, Decl(define.ts, 8, 14))
+>type : Symbol(type, Decl(define.ts, 9, 28))
+>value : Symbol(value, Decl(define.ts, 9, 55))
+
+        this.$visible = false
+      },
+    },
+  })
+
+

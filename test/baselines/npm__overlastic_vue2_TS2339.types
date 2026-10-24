@@ -1,0 +1,121 @@
+//// [test/cases/npm__overlastic_vue2_TS2339.ts] ////
+
+=== packages/@vue2/node_modules/vue/types/index.d.ts ===
+import { Vue } from "./vue";
+>Vue : import("./vue").VueConstructor<Vue>
+
+export default Vue;
+>Vue : Vue
+
+=== packages/@vue2/node_modules/vue/types/options.d.ts ===
+export type Accessors<T> = {
+>Accessors : Accessors<T>
+
+  [K in keyof T]: (() => T[K]) | ComputedOptions<T[K]>
+}
+export type ThisTypedComponentOptionsWithArrayProps<V extends Vue, Data, Methods, Computed, PropNames extends string> =
+>ThisTypedComponentOptionsWithArrayProps : ThisTypedComponentOptionsWithArrayProps<V, Data, Methods, Computed, PropNames>
+
+  ComponentOptions<V, DataDef<Data, Record<PropNames, any>, V>, Methods, Computed, PropNames[], Record<PropNames, any>> &
+  ThisType<CombinedVueInstance<V, Data, Methods, Computed, Readonly<Record<PropNames, any>>>>;
+export type ThisTypedComponentOptionsWithRecordProps<V extends Vue, Data, Methods, Computed, Props> =
+>ThisTypedComponentOptionsWithRecordProps : ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>
+
+  ComponentOptions<V, DataDef<Data, Props, V>, Methods, Computed, RecordPropsDefinition<Props>, Props> &
+  ThisType<CombinedVueInstance<V, Data, Methods, Computed, Readonly<Props>>>;
+type DefaultMethods<V> =  { [key: string]: (this: V, ...args: any[]) => any };
+>DefaultMethods : DefaultMethods<V>
+>key : string
+>this : V
+>args : any[]
+
+export interface ComponentOptions<
+  V extends Vue,
+  Data=DefaultData<V>,
+  Methods=DefaultMethods<V>,
+  Computed=DefaultComputed,
+  PropsDef=PropsDefinition<DefaultProps>,
+  Props=DefaultProps> {
+  props?: PropsDef;
+>props : PropsDef | undefined
+
+  computed?: Accessors<Computed>;
+>computed : Accessors<Computed> | undefined
+
+  methods?: Methods;
+>methods : Methods | undefined
+}
+export interface FunctionalComponentOptions<Props = DefaultProps, PropDefs = PropsDefinition<Props>> {
+}
+export interface ComputedOptions<T> {
+}
+=== packages/@vue2/node_modules/vue/types/vue.d.ts ===
+import {
+  ComponentOptions,
+>ComponentOptions : any
+
+  ThisTypedComponentOptionsWithRecordProps,
+>ThisTypedComponentOptionsWithRecordProps : any
+
+} from "./options";
+export interface Vue {
+}
+export interface VueConstructor<V extends Vue = Vue> {
+  extend<Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>;
+>extend : { <Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>; (options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>; }
+>options : ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props> | undefined
+
+  extend(options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>;
+>extend : { <Data, Methods, Computed, Props>(options?: ThisTypedComponentOptionsWithRecordProps<V, Data, Methods, Computed, Props>): ExtendedVue<V, Data, Methods, Computed, Props>; (options?: ComponentOptions<V>): ExtendedVue<V, {}, {}, {}, {}>; }
+>options : ComponentOptions<V, DefaultData<V_1>, import("./options").DefaultMethods<V>, DefaultComputed, PropsDefinition<DefaultProps>, DefaultProps> | undefined
+}
+export const Vue: VueConstructor;
+>Vue : VueConstructor<Vue>
+
+=== packages/@vue2/src/composable/define.ts ===
+import Vue from 'vue'
+>Vue : import("vue/types/vue.js").VueConstructor<Vue>
+
+  const mixinOptions = Vue.extend({
+>mixinOptions : error
+>Vue.extend({    computed: {      $visible: {        get() {        },      },    },    methods: {      async $runtime_effect(type: 'confirm' | 'cancel', value: any) {        this.$visible = false      },    },  }) : error
+>Vue.extend : { <Data, Methods, Computed, Props>(options?: import("vue/types/options").ThisTypedComponentOptionsWithRecordProps<Vue, Data, Methods, Computed, Props> | undefined): ExtendedVue<Vue, Data, Methods, Computed, Props>; (options?: import("vue/types/options").ComponentOptions<Vue, DefaultData<V>, import("vue/types/options").DefaultMethods<Vue>, DefaultComputed, PropsDefinition<DefaultProps>, DefaultProps> | undefined): ExtendedVue<Vue, {}, {}, {}, {}>; }
+>Vue : import("vue/types/vue").VueConstructor<Vue>
+>extend : { <Data, Methods, Computed, Props>(options?: import("vue/types/options").ThisTypedComponentOptionsWithRecordProps<Vue, Data, Methods, Computed, Props> | undefined): ExtendedVue<Vue, Data, Methods, Computed, Props>; (options?: import("vue/types/options").ComponentOptions<Vue, DefaultData<V>, import("vue/types/options").DefaultMethods<Vue>, DefaultComputed, PropsDefinition<DefaultProps>, DefaultProps> | undefined): ExtendedVue<Vue, {}, {}, {}, {}>; }
+>{    computed: {      $visible: {        get() {        },      },    },    methods: {      async $runtime_effect(type: 'confirm' | 'cancel', value: any) {        this.$visible = false      },    },  } : { computed: { $visible: { get(): void; }; }; methods: { $runtime_effect(type: 'confirm' | 'cancel', value: any): Promise<void>; }; }
+
+    computed: {
+>computed : { $visible: { get(): void; }; }
+>{      $visible: {        get() {        },      },    } : { $visible: { get(): void; }; }
+
+      $visible: {
+>$visible : { get(): void; }
+>{        get() {        },      } : { get(): void; }
+
+        get() {
+>get : () => void
+
+        },
+      },
+    },
+    methods: {
+>methods : { $runtime_effect(type: 'confirm' | 'cancel', value: any): Promise<void>; }
+>{      async $runtime_effect(type: 'confirm' | 'cancel', value: any) {        this.$visible = false      },    } : { $runtime_effect(type: 'confirm' | 'cancel', value: any): Promise<void>; }
+
+      async $runtime_effect(type: 'confirm' | 'cancel', value: any) {
+>$runtime_effect : (type: 'confirm' | 'cancel', value: any) => Promise<void>
+>type : "cancel" | "confirm"
+>value : any
+
+        this.$visible = false
+>this.$visible = false : false
+>this.$visible : error
+>this : CombinedVueInstance<V, Data, Methods, Computed, Readonly<Props>>
+>$visible : any
+>false : false
+
+      },
+    },
+  })
+
+

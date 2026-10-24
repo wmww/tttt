@@ -1,0 +1,23 @@
+//// [test/cases/npm__overlastic_vue2_TS2339_strictmode.tsx] ////
+
+=== global.react.d.ts ===
+declare module 'react' {
+>'react' : typeof import("react")
+
+  export const createContext: any;
+>createContext : any
+}
+=== main.tsx ===
+import React from 'react'
+>React : typeof React
+
+const x = <React.StrictMode></React.StrictMode>
+>x : any
+><React.StrictMode></React.StrictMode> : any
+>React.StrictMode : any
+>React : typeof React
+>StrictMode : any
+>React.StrictMode : any
+>React : typeof React
+>StrictMode : any
+

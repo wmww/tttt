@@ -1,0 +1,31 @@
+//// [test/cases/npm_rabbitmq-pub-sub_TS2339.ts] ////
+
+=== node_modules/bb/index.d.ts ===
+declare class Bluebird<R> {
+>Bluebird : Bluebird<R>
+
+    static resolve<R>(value: R): Bluebird<R>;
+>resolve : <R>(value: R) => Bluebird<R>
+>value : R
+}
+declare namespace Bluebird {
+    interface Inspection<R> {}
+}
+export = Bluebird;
+>Bluebird : Bluebird<R>
+
+=== a.ts ===
+import * as Promise from "bb";
+>Promise : typeof Promise
+
+export function create(): Promise<number> {
+>create : () => Promise<number>
+
+    return Promise.resolve(1);
+>Promise.resolve(1) : any
+>Promise.resolve : any
+>Promise : typeof Promise
+>resolve : any
+>1 : 1
+}
+
