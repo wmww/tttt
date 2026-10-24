@@ -264,7 +264,7 @@ for flips); a separate file so the three boxes never conflict.
   in @types/styled-components index.d.ts:196 (the defaultProps ForwardRefExoticBase circularity, like
   rocket-slate's npm__rocket-slate_mentions_TS2615) is missing, and tttt reports TS2313 "Type parameter 'P' has a
   circular constraint" at lib.es5.d.ts:1584 instead. Probably the same root as rocket-slate's entry. Not a flip.
-  No repro. [open]
+  No repro. (claimed: fixF) [open]
 - Seed 20261216, sanity-io/comlink (@sanity/comlink@4.0.3, packages/comlink, tsconfig.json): tsgo 0 errors, tttt 2
   TS2589 "Type instantiation is excessively deep and possibly infinite" at src/connection.ts:583 and
   src/node.ts:628 (xstate 5 machine setups). tsgo reports no depth diagnostic anywhere on the project, so this is a
