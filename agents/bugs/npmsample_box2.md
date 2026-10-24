@@ -64,7 +64,7 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   with `references` to packages/core): both report TS6059 "not under rootDir", tsgo at ../core/src/index.ts(1) naming
   core/src/jsx-runtime.ts, tttt at src/index.tsx(1) naming core/src/index.ts. The same area as the TS6059 entries in
   agents/bugs/harness.md (which root file/import gets the program error). With the plain tsconfig.json tsgo also reports
-  TS6305 at src/index.tsx(449) (output not built) that tttt doesn't. [open]
+  TS6305 at src/index.tsx(449) (output not built) that tttt doesn't. (claimed: fixE) [open]
 - Odd: scripts/test.sh (valgrind, debug build) on the react-above case ends with "264 bytes possibly lost" in
   worker_thread_join (load_pool.c:215) via program_drop, with --exit-on-first-error: a leak-check report, not a memory
   error in the checker; not investigated. [triage]
