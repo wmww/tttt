@@ -1,0 +1,20 @@
+//// [test/cases/npm_blocksuite_TS6133.ts] ////
+
+=== npm_blocksuite_TS6133.ts ===
+// origin: npm toeverything/blocksuite@main https://github.com/toeverything/blocksuite packages/affine/tsconfig.bench.json seed 20261303
+// flip: no
+class B {
+>B : Symbol(B, Decl(npm_blocksuite_TS6133.ts, 0, 0))
+
+  m() {
+>m : Symbol(B.m, Decl(npm_blocksuite_TS6133.ts, 2, 9))
+
+    this._x = false;
+>this._x : Symbol(B._x, Decl(npm_blocksuite_TS6133.ts, 5, 3))
+>this : Symbol(B, Decl(npm_blocksuite_TS6133.ts, 0, 0))
+>_x : Symbol(B._x, Decl(npm_blocksuite_TS6133.ts, 5, 3))
+  }
+  private accessor _x: boolean = false;
+>_x : Symbol(B._x, Decl(npm_blocksuite_TS6133.ts, 5, 3))
+}
+

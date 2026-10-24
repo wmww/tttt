@@ -1,0 +1,23 @@
+//// [test/cases/npm_blocksuite_TS6133.ts] ////
+
+=== npm_blocksuite_TS6133.ts ===
+// origin: npm toeverything/blocksuite@main https://github.com/toeverything/blocksuite packages/affine/tsconfig.bench.json seed 20261303
+// flip: no
+class B {
+>B : B
+
+  m() {
+>m : () => void
+
+    this._x = false;
+>this._x = false : false
+>this._x : boolean
+>this : this
+>_x : boolean
+>false : false
+  }
+  private accessor _x: boolean = false;
+>_x : boolean
+>false : false
+}
+

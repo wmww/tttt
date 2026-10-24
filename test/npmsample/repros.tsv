@@ -75,3 +75,5 @@ npm_akashnetwork_console-web_TS7022	no	@akashnetwork/console-web@3.31.0	https://
 npm_rocicorp_mono_TS2339	yes	rocicorp/mono@main	https://github.com/rocicorp/mono	0	42	+TS2322 +TS2339 +TS2345 +TS2349 +TS2532 +TS2722
 npm_matrix-org_matrix-js-sdk_TS2322	yes	matrix-org/matrix-js-sdk@develop	https://github.com/matrix-org/matrix-js-sdk	0	1	+TS2322
 npm_cellajs_cella_TS2322	yes	cellajs/cella@main	https://github.com/cellajs/cella	0	1	+TS2322 +TS2345
+npm_blocksuite_TS6133	no	toeverything/blocksuite@main	https://github.com/toeverything/blocksuite	16	18	+TS6133
+npm_artsy_metaphysics_TS2741	no	artsy/metaphysics@main	https://github.com/artsy/metaphysics	18	21	+TS2322 +TS2345 +TS2551
