@@ -213,7 +213,7 @@ for flips); a separate file so the three boxes never conflict.
 - Large seed 20261401, Bitterbot-AI/bitterbot-desktop@main (commit 733b74195), root tsconfig.json (declaration
   emit): missing TS5088 at src/telegram/bot.ts:471 "The inferred type of 'createTelegramWebhookCallback' references
   a type with a cyclic structure which cannot be trivially serialized". tsgo 1, tttt 0, so a flip. Not
-  K-dependent. No repro. [flip] [open]
+  K-dependent. No repro. (claimed: fixF) [flip] [open]
 - Large seed 20261401, akan-team/akanjs@main (commit 1324d30dc), pkgs/akanjs (tsconfig.json): tsgo reports TS2322 at
   service/service.test.ts:672 and :675 ("Type '(value: string) => string' is not assignable to type '(value:
   unknown) => string | null'"). tttt doesn't, and instead reports TS2344 at constant/constant.test.ts:182 ("Type
