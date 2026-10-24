@@ -1,0 +1,195 @@
+//// [test/cases/ttttAliasedConditionConstantReference.ts] ////
+
+=== ttttAliasedConditionConstantReference.ts ===
+// An aliased condition narrows only constant references (tsc's isConstantReference in getFlowTypeOfReference's
+// inlining of a const's initializer): a const, an unassigned parameter, catch variable or local let, not a var or an
+// exported let
+declare var w: string | number;
+>w : string | number
+
+declare let gl: string | number;
+>gl : string | number
+
+var gv: string | number = 1;
+>gv : string | number
+>1 : 1
+
+export let el: string | number = 1;
+>el : string | number
+>1 : 1
+
+function f1() { const ok = typeof w === 'string'; if (ok) w; }
+>f1 : () => void
+>ok : boolean
+>typeof w === 'string' : boolean
+>typeof w : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>w : string | number
+>'string' : "string"
+>ok : boolean
+>w : string | number
+
+function f2() { const ok = typeof gl === 'string'; if (ok) gl; }
+>f2 : () => void
+>ok : boolean
+>typeof gl === 'string' : boolean
+>typeof gl : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>gl : string | number
+>'string' : "string"
+>ok : boolean
+>gl : string
+
+function f3() { const ok = typeof gv === 'string'; if (ok) gv; }
+>f3 : () => void
+>ok : boolean
+>typeof gv === 'string' : boolean
+>typeof gv : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>gv : string | number
+>'string' : "string"
+>ok : boolean
+>gv : string | number
+
+function f4() { const ok = typeof el === 'string'; if (ok) el; }
+>f4 : () => void
+>ok : boolean
+>typeof el === 'string' : boolean
+>typeof el : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>el : string | number
+>'string' : "string"
+>ok : boolean
+>el : string | number
+
+function f5(p: string | number) { const ok = typeof p === 'string'; if (ok) p; }
+>f5 : (p: string | number) => void
+>p : string | number
+>ok : boolean
+>typeof p === 'string' : boolean
+>typeof p : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>p : string | number
+>'string' : "string"
+>ok : boolean
+>p : string
+
+function f6() { let l: string | number = 1 as any; const ok = typeof l === 'string'; if (ok) l; }
+>f6 : () => void
+>l : string | number
+>1 as any : any
+>1 : 1
+>ok : boolean
+>typeof l === 'string' : boolean
+>typeof l : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>l : string | number
+>'string' : "string"
+>ok : boolean
+>l : string
+
+function f7() { var v: string | number = 1 as any; const ok = typeof v === 'string'; if (ok) v; }
+>f7 : () => void
+>v : string | number
+>1 as any : any
+>1 : 1
+>ok : boolean
+>typeof v === 'string' : boolean
+>typeof v : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>v : string | number
+>'string' : "string"
+>ok : boolean
+>v : string | number
+
+function f8() { try {} catch (e) { const ok = typeof e === 'string'; if (ok) e; } }
+>f8 : () => void
+>e : unknown
+>ok : boolean
+>typeof e === 'string' : boolean
+>typeof e : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>e : unknown
+>'string' : "string"
+>ok : boolean
+>e : string
+
+function f9() { try {} catch ({ m }) { const ok = typeof m === 'string'; if (ok) m; } }
+>f9 : () => void
+>m : any
+>ok : boolean
+>typeof m === 'string' : boolean
+>typeof m : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>m : any
+>'string' : "string"
+>ok : boolean
+>m : string
+
+const fe = function g(this: any) { const ok = typeof g === 'function'; if (ok) g; };
+>fe : (this: any) => void
+>function g(this: any) { const ok = typeof g === 'function'; if (ok) g; } : (this: any) => void
+>g : (this: any) => void
+>this : any
+>ok : boolean
+>typeof g === 'function' : boolean
+>typeof g : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>g : (this: any) => void
+>'function' : "function"
+>ok : boolean
+>g : (this: any) => void
+
+function f10() { function h() {} const ok = typeof h === 'function'; if (ok) h; }
+>f10 : () => void
+>h : () => void
+>ok : boolean
+>typeof h === 'function' : boolean
+>typeof h : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>h : () => void
+>'function' : "function"
+>ok : boolean
+>h : () => void
+
+function f11() { class C {} const ok = typeof C === 'function'; if (ok) C; }
+>f11 : () => void
+>C : C
+>ok : boolean
+>typeof C === 'function' : boolean
+>typeof C : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>C : typeof C
+>'function' : "function"
+>ok : boolean
+>C : typeof C
+
+function f12({ d }: { d: string | number }) { const ok = typeof d === 'string'; if (ok) d; }
+>f12 : ({ d }: { d: string | number; }) => void
+>d : string | number
+>d : string | number
+>ok : boolean
+>typeof d === 'string' : boolean
+>typeof d : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>d : string | number
+>'string' : "string"
+>ok : boolean
+>d : string
+
+function f13() { let { q } = { q: 1 as string | number }; const ok = typeof q === 'string'; if (ok) q; }
+>f13 : () => void
+>q : string | number
+>{ q: 1 as string | number } : { q: string | number; }
+>q : string | number
+>1 as string | number : string | number
+>1 : 1
+>ok : boolean
+>typeof q === 'string' : boolean
+>typeof q : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>q : string | number
+>'string' : "string"
+>ok : boolean
+>q : string
+
+function f14() { for (let i of [1 as string | number]) { const ok = typeof i === 'string'; if (ok) i; } }
+>f14 : () => void
+>i : string | number
+>[1 as string | number] : (string | number)[]
+>1 as string | number : string | number
+>1 : 1
+>ok : boolean
+>typeof i === 'string' : boolean
+>typeof i : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>i : string | number
+>'string' : "string"
+>ok : boolean
+>i : string
+

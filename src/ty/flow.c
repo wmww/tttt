@@ -3065,6 +3065,15 @@ static Ty const* narrow_by_assertion(FlowQuery* q, Ty const* type, Expr const* e
     return narrow_type(q, type, expr, true, false);
 }
 
+// tsc's isConstantReference of an identifier: a const variable, or a parameter, catch variable or local `let` that is
+// never assigned, or a named function expression's own name. Not a `var`, an exported or global `let`, nor a function,
+// class or import: `const ok = typeof window === "object"; if (ok) return; window.x` leaves `window` alone
+static bool symbol_is_constant_variable(Symbol const* symbol) {
+    if (symbol->is_const) return true;
+    if (symbol_assignments(symbol)->is_assigned) return false;
+    return symbol->is_parameter || (symbol->is_local && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE));
+}
+
 // The declared type of a constant reference (see below), null if it isn't one
 static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32 depth) {
     if (depth > 8) return nullptr;
@@ -3077,7 +3086,7 @@ static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32
             return depth ? ty_identifier_reference_type(me, &reference->identifier) : constant;
         }
         Symbol const* symbol = reference->identifier.target;
-        if (reference->identifier.keyword || !symbol || !(symbol->is_const || !symbol_assignments(symbol)->is_assigned)) return nullptr;
+        if (reference->identifier.keyword || !symbol || !symbol_is_constant_variable(symbol)) return nullptr;
         // (The object of a property is its type there, narrowed: tsc reads the symbol the access resolved to, on the
         // narrowed type, `isVarDecl(node)` then `node.name` is VariableDeclaration's readonly name)
         return depth ? ty_expr_type(me, reference) : constant;
