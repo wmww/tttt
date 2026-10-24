@@ -160,7 +160,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   mappedTypeRelatedTo's template instantiation (the key mapper) turns the source's distributed V into V, against the
   target's distributed V: unrelated, TS5113 in the chain. tttt's ty_instantiate_mapped returned the twin unchanged, and
   report_missing_constraint didn't see the twin as the source (TS2208 tsgo doesn't add). Repro
-  ttttDistributedParamMappedTemplate. (claimed: corB) [flip] [fixed PENDING]
+  ttttDistributedParamMappedTemplate. (claimed: corB) [flip] [fixed f840ca64f]
 - **npm__tera-ui_tooltip_TS7031** (seed 20261025, @tera-ui/tooltip@1.3.3, hieumau12/tera-ui
   packages/utilities/shared-utils/src/object.ts:9): `(k: string, {[k]: old, ...others}) => ...`, an unannotated
   parameter's binding pattern with a computed non-literal key. tsc's getTypeFromObjectBindingPattern leaves that
