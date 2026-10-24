@@ -202,3 +202,9 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   tttt checks the constraint `string | symbol` against `Y | ...` / `(string|number|boolean) & Y` instead of the conditional's
   constraint with Y's own constraint substituted (Schema<any,string> is not a primitive, so that branch is never). Repro is the
   vendored file's types, 15 lines. [open]
+  converge in an hour on MUI's types). Not the elaboration (det3): elaborateElement relates InputProps to the
+  union's `Partial<StdInput> | Partial<OutInput> | undefined` and finds it assignable, in both. It's the excess
+  property report inside the relation. tsgo's hasExcessProperties takes the JSX message and keeps the error node (the tag
+  name) when the error node is JSX, also for an object literal nested in an attribute's value. tttt tells "the error
+  node is JSX" by the outermost source being JSX attributes, and with a spread of a union that source is a union of
+  them. relate.c's is_jsx_attributes_source() now accepts the union. [fixed det3]

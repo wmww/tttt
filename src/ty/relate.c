@@ -7824,6 +7824,17 @@ static csview jsx_attribute_suggestion(Checker* me, Ty const* target, Atom const
     return ret;
 }
 
+// JSX attributes, or a union of them (the attributes with a spread of a union)
+static bool is_jsx_attributes_source(Ty const* ty) {
+    if (ty->kind == TY_ANONYMOUS) return ty->anonymous.jsx_attributes;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* member = ty->composite.types.data[i];
+        if (member->kind == TY_ANONYMOUS && member->anonymous.jsx_attributes) return true;
+    }
+    return false;
+}
+
 static bool has_excess_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     if (!is_excess_property_check_target(target)) return false;
     bool is_jsx = source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes;
@@ -7848,8 +7859,8 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
         if (!is_known_property(me, reduced, prop->name)) {
             // (tsc's hasExcessProperties branches on the error node, which stays the JSX attributes for what is nested
             // in an attribute's value, `data-o={{ alpha: 1, b: 2 }}`: the same message, at the attributes)
-            bool jsx_error_node = is_jsx || (st->source_depth > 0 && st->source_stack[0]->kind == TY_ANONYMOUS &&
-                st->source_stack[0]->anonymous.jsx_attributes);
+            // (A spread of a union makes the attributes a union of them: the error node is the same)
+            bool jsx_error_node = is_jsx || (st->source_depth > 0 && is_jsx_attributes_source(st->source_stack[0]));
             if (report && jsx_error_node) {
                 // Not an object literal to the user: the error moves to the attribute, under the usual head (an
                 // attribute's name is shown as written; one nested in an attribute's value isn't an attribute: it stays)
