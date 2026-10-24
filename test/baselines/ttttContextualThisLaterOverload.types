@@ -1,0 +1,56 @@
+//// [test/cases/ttttContextualThisLaterOverload.ts] ////
+
+=== ttttContextualThisLaterOverload.ts ===
+// `this` in an object literal method that an earlier overload's contextual signature typed (DefaultMethods' `(this: V)`)
+// is the settled overload's again, which gives none: the literal (Vue 2's `extend`, @overlastic/vue2)
+interface Vue {}
+interface CO<T> {}
+type Accessors<T> = { [K in keyof T]: (() => T[K]) | CO<T[K]> };
+>Accessors : Accessors<T>
+
+type DefaultMethods<V> = { [key: string]: (this: V, ...args: any[]) => any };
+>DefaultMethods : DefaultMethods<V>
+>key : string
+>this : V
+>args : any[]
+
+interface ComponentOptions<V, Methods = DefaultMethods<V>, Computed = {}> {
+  computed?: Accessors<Computed>; methods?: Methods;
+>computed : Accessors<Computed> | undefined
+>methods : Methods | undefined
+}
+declare function extend<Methods, Computed>(options?: ComponentOptions<Vue, Methods, Computed>): 1;
+>extend : { <Methods, Computed>(options?: ComponentOptions<Vue, Methods, Computed>): 1; (options?: ComponentOptions<Vue>): 2; }
+>options : ComponentOptions<Vue, Methods, Computed> | undefined
+
+declare function extend(options?: ComponentOptions<Vue>): 2;
+>extend : { <Methods, Computed>(options?: ComponentOptions<Vue, Methods, Computed>): 1; (options?: ComponentOptions<Vue>): 2; }
+>options : ComponentOptions<Vue, DefaultMethods<Vue>, {}> | undefined
+
+const r = extend({
+>r : 1
+>extend({  computed: { $visible: { get: 1 } },  methods: { m(type: string) { this.$visible = false; } },}) : 1
+>extend : { <Methods, Computed>(options?: ComponentOptions<Vue, Methods, Computed>): 1; (options?: ComponentOptions<Vue>): 2; }
+>{  computed: { $visible: { get: 1 } },  methods: { m(type: string) { this.$visible = false; } },} : { computed: { $visible: { get: number; }; }; methods: { m(type: string): void; }; }
+
+  computed: { $visible: { get: 1 } },
+>computed : { $visible: { get: number; }; }
+>{ $visible: { get: 1 } } : { $visible: { get: number; }; }
+>$visible : { get: number; }
+>{ get: 1 } : { get: number; }
+>get : number
+>1 : 1
+
+  methods: { m(type: string) { this.$visible = false; } },
+>methods : { m(type: string): void; }
+>{ m(type: string) { this.$visible = false; } } : { m(type: string): void; }
+>m : (type: string) => void
+>type : string
+>this.$visible = false : false
+>this.$visible : any
+>this : { m(type: string): void; }
+>$visible : any
+>false : false
+
+});
+

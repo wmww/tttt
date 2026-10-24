@@ -1,0 +1,79 @@
+//// [test/cases/ttttContextualThisLaterOverload.ts] ////
+
+=== ttttContextualThisLaterOverload.ts ===
+// `this` in an object literal method that an earlier overload's contextual signature typed (DefaultMethods' `(this: V)`)
+// is the settled overload's again, which gives none: the literal (Vue 2's `extend`, @overlastic/vue2)
+interface Vue {}
+>Vue : Symbol(Vue, Decl(ttttContextualThisLaterOverload.ts, 0, 0))
+
+interface CO<T> {}
+>CO : Symbol(CO, Decl(ttttContextualThisLaterOverload.ts, 2, 16))
+>T : Symbol(T, Decl(ttttContextualThisLaterOverload.ts, 3, 13))
+
+type Accessors<T> = { [K in keyof T]: (() => T[K]) | CO<T[K]> };
+>Accessors : Symbol(Accessors, Decl(ttttContextualThisLaterOverload.ts, 3, 18))
+>T : Symbol(T, Decl(ttttContextualThisLaterOverload.ts, 4, 15))
+>K : Symbol(K, Decl(ttttContextualThisLaterOverload.ts, 4, 23))
+>T : Symbol(T, Decl(ttttContextualThisLaterOverload.ts, 4, 15))
+>T : Symbol(T, Decl(ttttContextualThisLaterOverload.ts, 4, 15))
+>K : Symbol(K, Decl(ttttContextualThisLaterOverload.ts, 4, 23))
+>CO : Symbol(CO, Decl(ttttContextualThisLaterOverload.ts, 2, 16))
+>T : Symbol(T, Decl(ttttContextualThisLaterOverload.ts, 4, 15))
+>K : Symbol(K, Decl(ttttContextualThisLaterOverload.ts, 4, 23))
+
+type DefaultMethods<V> = { [key: string]: (this: V, ...args: any[]) => any };
+>DefaultMethods : Symbol(DefaultMethods, Decl(ttttContextualThisLaterOverload.ts, 4, 64))
+>V : Symbol(V, Decl(ttttContextualThisLaterOverload.ts, 5, 20))
+>key : Symbol(key, Decl(ttttContextualThisLaterOverload.ts, 5, 28))
+>this : Symbol(this, Decl(ttttContextualThisLaterOverload.ts, 5, 43))
+>V : Symbol(V, Decl(ttttContextualThisLaterOverload.ts, 5, 20))
+>args : Symbol(args, Decl(ttttContextualThisLaterOverload.ts, 5, 51))
+
+interface ComponentOptions<V, Methods = DefaultMethods<V>, Computed = {}> {
+>ComponentOptions : Symbol(ComponentOptions, Decl(ttttContextualThisLaterOverload.ts, 5, 77))
+>V : Symbol(V, Decl(ttttContextualThisLaterOverload.ts, 6, 27))
+>Methods : Symbol(Methods, Decl(ttttContextualThisLaterOverload.ts, 6, 29))
+>DefaultMethods : Symbol(DefaultMethods, Decl(ttttContextualThisLaterOverload.ts, 4, 64))
+>V : Symbol(V, Decl(ttttContextualThisLaterOverload.ts, 6, 27))
+>Computed : Symbol(Computed, Decl(ttttContextualThisLaterOverload.ts, 6, 58))
+
+  computed?: Accessors<Computed>; methods?: Methods;
+>computed : Symbol(ComponentOptions.computed, Decl(ttttContextualThisLaterOverload.ts, 6, 75))
+>Accessors : Symbol(Accessors, Decl(ttttContextualThisLaterOverload.ts, 3, 18))
+>Computed : Symbol(Computed, Decl(ttttContextualThisLaterOverload.ts, 6, 58))
+>methods : Symbol(ComponentOptions.methods, Decl(ttttContextualThisLaterOverload.ts, 7, 33))
+>Methods : Symbol(Methods, Decl(ttttContextualThisLaterOverload.ts, 6, 29))
+}
+declare function extend<Methods, Computed>(options?: ComponentOptions<Vue, Methods, Computed>): 1;
+>extend : Symbol(extend, Decl(ttttContextualThisLaterOverload.ts, 8, 1), Decl(ttttContextualThisLaterOverload.ts, 9, 98))
+>Methods : Symbol(Methods, Decl(ttttContextualThisLaterOverload.ts, 9, 24))
+>Computed : Symbol(Computed, Decl(ttttContextualThisLaterOverload.ts, 9, 32))
+>options : Symbol(options, Decl(ttttContextualThisLaterOverload.ts, 9, 43))
+>ComponentOptions : Symbol(ComponentOptions, Decl(ttttContextualThisLaterOverload.ts, 5, 77))
+>Vue : Symbol(Vue, Decl(ttttContextualThisLaterOverload.ts, 0, 0))
+>Methods : Symbol(Methods, Decl(ttttContextualThisLaterOverload.ts, 9, 24))
+>Computed : Symbol(Computed, Decl(ttttContextualThisLaterOverload.ts, 9, 32))
+
+declare function extend(options?: ComponentOptions<Vue>): 2;
+>extend : Symbol(extend, Decl(ttttContextualThisLaterOverload.ts, 8, 1), Decl(ttttContextualThisLaterOverload.ts, 9, 98))
+>options : Symbol(options, Decl(ttttContextualThisLaterOverload.ts, 10, 24))
+>ComponentOptions : Symbol(ComponentOptions, Decl(ttttContextualThisLaterOverload.ts, 5, 77))
+>Vue : Symbol(Vue, Decl(ttttContextualThisLaterOverload.ts, 0, 0))
+
+const r = extend({
+>r : Symbol(r, Decl(ttttContextualThisLaterOverload.ts, 11, 5))
+>extend : Symbol(extend, Decl(ttttContextualThisLaterOverload.ts, 8, 1), Decl(ttttContextualThisLaterOverload.ts, 9, 98))
+
+  computed: { $visible: { get: 1 } },
+>computed : Symbol(computed, Decl(ttttContextualThisLaterOverload.ts, 11, 18))
+>$visible : Symbol($visible, Decl(ttttContextualThisLaterOverload.ts, 12, 13))
+>get : Symbol(get, Decl(ttttContextualThisLaterOverload.ts, 12, 25))
+
+  methods: { m(type: string) { this.$visible = false; } },
+>methods : Symbol(methods, Decl(ttttContextualThisLaterOverload.ts, 12, 37))
+>m : Symbol(m, Decl(ttttContextualThisLaterOverload.ts, 13, 12))
+>type : Symbol(type, Decl(ttttContextualThisLaterOverload.ts, 13, 15))
+>this : Symbol(__object, Decl(ttttContextualThisLaterOverload.ts, 13, 10))
+
+});
+

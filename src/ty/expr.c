@@ -1965,7 +1965,11 @@ static void assign_contextual_signature_as(
         // it is looked at (tsc's getContextualThisParameterType asks getContextualSignature each time): the last one, of
         // the overload a call settles on after a candidate that gave none checked it first
         Signature const* late = given ? given : contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
-        if (late && sig_res(me, late)->this_type) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_THIS, (u64)(uintptr_t)function }, 2) = sig_res(me, late)->this_type;
+        // (None from this one, nothing: a `this` an earlier candidate's signature gave doesn't outlive it, Vue 2's
+        // `extend` overloads, the second's DefaultMethods `(this: V)` tried and then the first settled on)
+        Ty const* late_this = late ? sig_res(me, late)->this_type : nullptr;
+        u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
+        if (late_this || intern_get(&my links, this_key, 2)) *intern_slot(me, &my links, this_key, 2) = late_this;
         return;
     }
     if (checked) return;
