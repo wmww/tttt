@@ -1,0 +1,304 @@
+//// [test/cases/npm_paseo-agent-todos_TS5115.tsx] ////
+
+=== client/todos-surface.tsx ===
+import { openExternalUrl, usePaseo, useRpc, useSettings, type PluginSurfaceProps } from "@getpaseo/plugin/client";
+>openExternalUrl : any
+>usePaseo : () => import("@getpaseo/client").PaseoApi
+>useRpc : any
+>useSettings : any
+>PluginSurfaceProps : any
+
+function LaunchForm({
+>LaunchForm : ({}: {}) => void
+
+}) {
+  const paseo = usePaseo();
+>paseo : import("@getpaseo/client").PaseoApi
+>usePaseo() : import("@getpaseo/client").PaseoApi
+>usePaseo : () => import("@getpaseo/client").PaseoApi
+
+  const modes = useQuery({
+>modes : any
+>useQuery({    queryFn: () => paseo.providers.listModes(preset!.provider, { cwd: cwd! }),  }) : any
+>useQuery : any
+>{    queryFn: () => paseo.providers.listModes(preset!.provider, { cwd: cwd! }),  } : { queryFn: () => Promise<PaseoProviderModesResult>; }
+
+    queryFn: () => paseo.providers.listModes(preset!.provider, { cwd: cwd! }),
+>queryFn : () => Promise<PaseoProviderModesResult>
+>() => paseo.providers.listModes(preset!.provider, { cwd: cwd! }) : () => Promise<PaseoProviderModesResult>
+>paseo.providers.listModes(preset!.provider, { cwd: cwd! }) : Promise<PaseoProviderModesResult>
+>paseo.providers.listModes : (provider: import("@getpaseo/client").PaseoAgentProvider, options?: PaseoProviderListOptions) => Promise<PaseoProviderModesResult>
+>paseo.providers : import("@getpaseo/client").PaseoProviderActions
+>paseo : import("@getpaseo/client").PaseoApi
+>providers : import("@getpaseo/client").PaseoProviderActions
+>listModes : (provider: import("@getpaseo/client").PaseoAgentProvider, options?: PaseoProviderListOptions) => Promise<PaseoProviderModesResult>
+>preset!.provider : any
+>preset! : any
+>preset : any
+>provider : any
+>{ cwd: cwd! } : { cwd: any; }
+>cwd : any
+>cwd! : any
+>cwd : any
+
+  });
+}
+=== node_modules/@getpaseo/client/dist/index.d.ts ===
+import type { AgentSnapshotPayload, CreationSnapshot, CreateAgentRequestMessage, FetchWorkspacesRequestMessage, FetchWorkspacesResponseMessage, GetProvidersSnapshotResponseMessage, ListAvailableProvidersResponse, ListCommandsResponse, ListProviderFeaturesRequestMessage, ListProviderFeaturesResponseMessage, ListProviderModelsResponseMessage, ProjectListRequestMessage, ProjectListResponseMessage, ListProviderModesResponseMessage, MutableDaemonConfig, MutableDaemonConfigPatch, ProviderDiagnosticResponseMessage, ProviderUsageListResponseMessage, ProjectPlacementPayload, WorkspaceProjectDescriptorPayload, RefreshProvidersSnapshotResponseMessage, SendAgentMessageRequest, SessionOutboundMessage, WorkspaceDescriptorPayload, WorkspaceCreateRequest } from "@getpaseo/protocol/messages";
+>AgentSnapshotPayload : any
+>CreationSnapshot : any
+>CreateAgentRequestMessage : { providerOptions?: unknown; }
+>FetchWorkspacesRequestMessage : any
+>FetchWorkspacesResponseMessage : any
+>GetProvidersSnapshotResponseMessage : any
+>ListAvailableProvidersResponse : any
+>ListCommandsResponse : any
+>ListProviderFeaturesRequestMessage : any
+>ListProviderFeaturesResponseMessage : any
+>ListProviderModelsResponseMessage : any
+>ProjectListRequestMessage : any
+>ProjectListResponseMessage : any
+>ListProviderModesResponseMessage : any
+>MutableDaemonConfig : any
+>MutableDaemonConfigPatch : any
+>ProviderDiagnosticResponseMessage : any
+>ProviderUsageListResponseMessage : any
+>ProjectPlacementPayload : any
+>WorkspaceProjectDescriptorPayload : any
+>RefreshProvidersSnapshotResponseMessage : any
+>SendAgentMessageRequest : any
+>SessionOutboundMessage : any
+>WorkspaceDescriptorPayload : any
+>WorkspaceCreateRequest : any
+
+type PaseoAgentSessionConfig = CreateAgentRequestMessage["config"];
+>PaseoAgentSessionConfig : any
+
+export type PaseoAgentProvider = PaseoAgentSessionConfig["provider"];
+>PaseoAgentProvider : any
+
+export interface PaseoProviderActions {
+    listModes(provider: PaseoAgentProvider, options?: PaseoProviderListOptions): Promise<PaseoProviderModesResult>;
+>listModes : (provider: PaseoAgentProvider, options?: PaseoProviderListOptions) => Promise<PaseoProviderModesResult>
+>provider : any
+>options : any
+}
+export interface PaseoApi {
+    readonly providers: PaseoProviderActions;
+>providers : PaseoProviderActions
+}
+=== node_modules/@getpaseo/plugin/dist/client/index.d.ts ===
+export { usePaseo } from "./paseo-context.js";
+>usePaseo : () => import("@getpaseo/client").PaseoApi
+
+=== node_modules/@getpaseo/plugin/dist/client/paseo-context.d.ts ===
+import type { PaseoApi } from "@getpaseo/client";
+>PaseoApi : PaseoApi
+
+export declare function usePaseo(): PaseoApi;
+>usePaseo : () => PaseoApi
+
+=== node_modules/@getpaseo/protocol/dist/messages.d.ts ===
+import { z } from "zod";
+>z : typeof z
+
+export declare const CreateAgentRequestMessageSchema: z.ZodObject<{
+>CreateAgentRequestMessageSchema : z.ZodObject<{ providerOptions: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodJSONSchema>>; }, z.core.$strip>
+>z : any
+
+        providerOptions: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodJSONSchema>>;
+>providerOptions : z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodJSONSchema>>
+>z : any
+>z : any
+>z : any
+>z : any
+
+}, z.core.$strip>;
+>z : any
+>core : any
+
+/**
+ */
+export type CreateAgentRequestMessage = z.infer<typeof CreateAgentRequestMessageSchema>;
+>CreateAgentRequestMessage : { providerOptions?: unknown; }
+>z : any
+>CreateAgentRequestMessageSchema : z.ZodObject<{ providerOptions: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodJSONSchema>>; }, z.core.$strip>
+
+=== node_modules/@types/react/index.d.ts ===
+
+export {};
+=== node_modules/zod/index.d.cts ===
+import * as z from "./v4/classic/external.cjs";
+>z : typeof z
+
+export { z, z as default };
+>z : typeof z
+>z : typeof z
+>default : typeof z
+
+=== node_modules/zod/v4/classic/external.d.cts ===
+export * as core from "../core/index.cjs";
+>core : typeof import("../core/index.cjs")
+
+export * from "./schemas.cjs";
+export type { infer } from "../core/index.cjs";
+>infer : import("../core/core.d.cts").output<T>
+
+=== node_modules/zod/v4/classic/schemas.d.cts ===
+import * as core from "../core/index.cjs";
+>core : typeof core
+
+export interface ZodType<out Output = unknown, out Input = unknown, out Internals extends core.$ZodTypeInternals<Output, Input> = core.$ZodTypeInternals<Output, Input>> extends core.$ZodType<Output, Input, Internals> {
+>core : any
+>core : any
+>core : any
+}
+export interface _ZodType<out Internals extends core.$ZodTypeInternals = core.$ZodTypeInternals> extends ZodType<any, any, Internals> {
+>core : any
+>core : any
+}
+export interface ZodObject<
+out Shape extends core.$ZodShape = core.$ZodLooseShape, out Config extends core.$ZodObjectConfig = core.$strip> extends _ZodType<core.$ZodObjectInternals<Shape, Config>>, core.$ZodObject<Shape, Config> {
+>core : any
+>core : any
+>core : any
+>core : any
+>core : any
+>core : any
+}
+export interface ZodUnion<T extends readonly core.SomeType[] = readonly core.$ZodType[]> extends _ZodType<core.$ZodUnionInternals<T>>, core.$ZodUnion<T> {
+>core : any
+>core : any
+>core : any
+>core : any
+}
+export interface ZodRecord<Key extends core.$ZodRecordKey = core.$ZodRecordKey, Value extends core.SomeType = core.$ZodType> extends _ZodType<core.$ZodRecordInternals<Key, Value>>, core.$ZodRecord<Key, Value> {
+>core : any
+>core : any
+>core : any
+>core : any
+>core : any
+>core : any
+}
+export interface ZodOptional<T extends core.SomeType = core.$ZodType> extends _ZodType<core.$ZodOptionalInternals<T>>, core.$ZodOptional<T> {
+>core : any
+>core : any
+>core : any
+>core : any
+}
+type _ZodJSONSchema = ZodUnion<[
+>_ZodJSONSchema : _ZodJSONSchema
+
+    ZodRecord<ZodString, ZodJSONSchema>
+]>;
+export interface ZodJSONSchema extends _ZodJSONSchema {
+}
+=== node_modules/zod/v4/core/core.d.cts ===
+export type output<T> = T extends {
+>output : output<T>
+
+} ? T["_zod"]["output"] : unknown;
+export type { output as infer };
+>output : any
+>infer : output<T>
+
+=== node_modules/zod/v4/core/index.d.cts ===
+
+export * from "./core.cjs";
+export * from "./schemas.cjs";
+=== node_modules/zod/v4/core/schemas.d.cts ===
+import * as core from "./core.cjs";
+>core : typeof core
+
+import * as util from "./util.cjs";
+>util : typeof util
+
+export interface $ZodTypeInternals<out O = unknown, out I = unknown> extends _$ZodTypeInternals {
+}
+export interface $ZodType<O = unknown, I = unknown, Internals extends $ZodTypeInternals<O, I> = $ZodTypeInternals<O, I>> {
+    _zod: Internals;
+>_zod : Internals
+}
+/**
+ */
+type OptionalInSchema = {
+>OptionalInSchema : OptionalInSchema
+
+    _zod: {
+>_zod : { optin: "optional" | "defaulted"; }
+
+        optin: "optional" | "defaulted";
+>optin : "defaulted" | "optional"
+
+    };
+};
+export type $InferObjectOutput<T extends $ZodLooseShape, Extra extends Record<string, unknown>> = string extends keyof T ? util.IsAny<T[keyof T]> extends true ? Record<string, unknown> : {
+>$InferObjectOutput : $InferObjectOutput<T, Extra>
+>util : any
+>true : true
+
+} : keyof (T & Extra) extends never ? Record<string, never> : util.Prettify<{
+>util : any
+
+    -readonly [k in keyof T as T[k] extends OptionalOutSchema ? k : never]?: T[k]["_zod"]["output"];
+} & Extra>;
+export type $strip = {
+>$strip : $strip
+
+};
+export interface $ZodObjectInternals<
+out Shape extends $ZodShape = $ZodShape, out Config extends $ZodObjectConfig = $ZodObjectConfig> extends _$ZodTypeInternals {
+    output: $InferObjectOutput<Shape, Config["out"]>;
+>output : $InferObjectOutput<Shape, Config["out"]>
+}
+export interface $ZodObject<
+out Shape extends Readonly<$ZodShape> = Readonly<$ZodShape>, out Params extends $ZodObjectConfig = $ZodObjectConfig> extends $ZodType<any, any, $ZodObjectInternals<Shape, Params>> {
+}
+type IsOptionalIn<T extends SomeType> = T extends OptionalInSchema ? true : false;
+>IsOptionalIn : IsOptionalIn<T>
+>true : true
+>false : false
+
+export interface $ZodUnionInternals<T extends readonly SomeType[] = readonly $ZodType[]> extends _$ZodTypeInternals {
+    optin: IsOptionalIn<T[number]> extends false ? "optional" | "defaulted" | undefined : "optional" | "defaulted";
+>optin : IsOptionalIn<T[number]> extends false ? "defaulted" | "optional" | undefined : "defaulted" | "optional"
+>false : false
+}
+export type $InferZodRecordInput<Key extends $ZodRecordKey = $ZodRecordKey, Value extends SomeType = $ZodType> = Key extends $partial ? Partial<Record<core.input<Key> & PropertyKey, core.input<Value>>> : [
+>$InferZodRecordInput : $InferZodRecordInput<Key, Value>
+>core : any
+>core : any
+
+    Value
+] extends [OptionalInSchema] ? Partial<Record<core.input<Key> & PropertyKey, core.input<Value>>> : Record<core.input<Key> & PropertyKey, core.input<Value>>;
+>core : any
+>core : any
+>core : any
+>core : any
+
+export interface $ZodRecordInternals<Key extends $ZodRecordKey = $ZodRecordKey, Value extends SomeType = $ZodType> extends $ZodTypeInternals<$InferZodRecordOutput<Key, Value>, $InferZodRecordInput<Key, Value>> {
+}
+export type $partial = {
+>$partial : $partial
+
+    "~~partial": true;
+>"~~partial" : true
+>true : true
+
+};
+export interface $ZodEnumInternals<
+out T extends util.EnumLike = util.EnumLike> extends $ZodTypeInternals<$InferEnumOutput<T>, $InferEnumInput<T>> {
+>util : any
+>util : any
+}
+export interface $ZodOptionalInternals<T extends SomeType = $ZodType> extends $ZodTypeInternals<core.output<T> | undefined, core.input<T> | undefined> {
+>core : any
+>core : any
+}
+=== node_modules/zod/v4/core/util.d.cts ===
+export type Prettify<T> = {
+>Prettify : { [K in keyof T]: T[K]; }
+
+    [K in keyof T]: T[K];
+} & {};
+

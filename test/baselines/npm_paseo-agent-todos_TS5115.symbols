@@ -1,0 +1,528 @@
+//// [test/cases/npm_paseo-agent-todos_TS5115.tsx] ////
+
+=== client/todos-surface.tsx ===
+import { openExternalUrl, usePaseo, useRpc, useSettings, type PluginSurfaceProps } from "@getpaseo/plugin/client";
+>openExternalUrl : Symbol(openExternalUrl, Decl(todos-surface.tsx, 0, 8))
+>usePaseo : Symbol(usePaseo, Decl(todos-surface.tsx, 0, 25))
+>useRpc : Symbol(useRpc, Decl(todos-surface.tsx, 0, 35))
+>useSettings : Symbol(useSettings, Decl(todos-surface.tsx, 0, 43))
+>PluginSurfaceProps : Symbol(PluginSurfaceProps, Decl(todos-surface.tsx, 0, 56))
+
+function LaunchForm({
+>LaunchForm : Symbol(LaunchForm, Decl(todos-surface.tsx, 0, 114))
+
+}) {
+  const paseo = usePaseo();
+>paseo : Symbol(paseo, Decl(todos-surface.tsx, 3, 7))
+>usePaseo : Symbol(usePaseo, Decl(todos-surface.tsx, 0, 25))
+
+  const modes = useQuery({
+>modes : Symbol(modes, Decl(todos-surface.tsx, 4, 7))
+
+    queryFn: () => paseo.providers.listModes(preset!.provider, { cwd: cwd! }),
+>queryFn : Symbol(queryFn, Decl(todos-surface.tsx, 4, 26))
+>paseo.providers.listModes : Symbol(PaseoProviderActions.listModes, Decl(index.d.ts, 3, 39))
+>paseo.providers : Symbol(PaseoApi.providers, Decl(index.d.ts, 6, 27))
+>paseo : Symbol(paseo, Decl(todos-surface.tsx, 3, 7))
+>providers : Symbol(PaseoApi.providers, Decl(index.d.ts, 6, 27))
+>listModes : Symbol(PaseoProviderActions.listModes, Decl(index.d.ts, 3, 39))
+>cwd : Symbol(cwd, Decl(todos-surface.tsx, 5, 64))
+
+  });
+}
+=== node_modules/@getpaseo/client/dist/index.d.ts ===
+import type { AgentSnapshotPayload, CreationSnapshot, CreateAgentRequestMessage, FetchWorkspacesRequestMessage, FetchWorkspacesResponseMessage, GetProvidersSnapshotResponseMessage, ListAvailableProvidersResponse, ListCommandsResponse, ListProviderFeaturesRequestMessage, ListProviderFeaturesResponseMessage, ListProviderModelsResponseMessage, ProjectListRequestMessage, ProjectListResponseMessage, ListProviderModesResponseMessage, MutableDaemonConfig, MutableDaemonConfigPatch, ProviderDiagnosticResponseMessage, ProviderUsageListResponseMessage, ProjectPlacementPayload, WorkspaceProjectDescriptorPayload, RefreshProvidersSnapshotResponseMessage, SendAgentMessageRequest, SessionOutboundMessage, WorkspaceDescriptorPayload, WorkspaceCreateRequest } from "@getpaseo/protocol/messages";
+>AgentSnapshotPayload : Symbol(AgentSnapshotPayload, Decl(index.d.ts, 0, 13))
+>CreationSnapshot : Symbol(CreationSnapshot, Decl(index.d.ts, 0, 35))
+>CreateAgentRequestMessage : Symbol(CreateAgentRequestMessage, Decl(index.d.ts, 0, 53))
+>FetchWorkspacesRequestMessage : Symbol(FetchWorkspacesRequestMessage, Decl(index.d.ts, 0, 80))
+>FetchWorkspacesResponseMessage : Symbol(FetchWorkspacesResponseMessage, Decl(index.d.ts, 0, 111))
+>GetProvidersSnapshotResponseMessage : Symbol(GetProvidersSnapshotResponseMessage, Decl(index.d.ts, 0, 143))
+>ListAvailableProvidersResponse : Symbol(ListAvailableProvidersResponse, Decl(index.d.ts, 0, 180))
+>ListCommandsResponse : Symbol(ListCommandsResponse, Decl(index.d.ts, 0, 212))
+>ListProviderFeaturesRequestMessage : Symbol(ListProviderFeaturesRequestMessage, Decl(index.d.ts, 0, 234))
+>ListProviderFeaturesResponseMessage : Symbol(ListProviderFeaturesResponseMessage, Decl(index.d.ts, 0, 270))
+>ListProviderModelsResponseMessage : Symbol(ListProviderModelsResponseMessage, Decl(index.d.ts, 0, 307))
+>ProjectListRequestMessage : Symbol(ProjectListRequestMessage, Decl(index.d.ts, 0, 342))
+>ProjectListResponseMessage : Symbol(ProjectListResponseMessage, Decl(index.d.ts, 0, 369))
+>ListProviderModesResponseMessage : Symbol(ListProviderModesResponseMessage, Decl(index.d.ts, 0, 397))
+>MutableDaemonConfig : Symbol(MutableDaemonConfig, Decl(index.d.ts, 0, 431))
+>MutableDaemonConfigPatch : Symbol(MutableDaemonConfigPatch, Decl(index.d.ts, 0, 452))
+>ProviderDiagnosticResponseMessage : Symbol(ProviderDiagnosticResponseMessage, Decl(index.d.ts, 0, 478))
+>ProviderUsageListResponseMessage : Symbol(ProviderUsageListResponseMessage, Decl(index.d.ts, 0, 513))
+>ProjectPlacementPayload : Symbol(ProjectPlacementPayload, Decl(index.d.ts, 0, 547))
+>WorkspaceProjectDescriptorPayload : Symbol(WorkspaceProjectDescriptorPayload, Decl(index.d.ts, 0, 572))
+>RefreshProvidersSnapshotResponseMessage : Symbol(RefreshProvidersSnapshotResponseMessage, Decl(index.d.ts, 0, 607))
+>SendAgentMessageRequest : Symbol(SendAgentMessageRequest, Decl(index.d.ts, 0, 648))
+>SessionOutboundMessage : Symbol(SessionOutboundMessage, Decl(index.d.ts, 0, 673))
+>WorkspaceDescriptorPayload : Symbol(WorkspaceDescriptorPayload, Decl(index.d.ts, 0, 697))
+>WorkspaceCreateRequest : Symbol(WorkspaceCreateRequest, Decl(index.d.ts, 0, 725))
+
+type PaseoAgentSessionConfig = CreateAgentRequestMessage["config"];
+>PaseoAgentSessionConfig : Symbol(PaseoAgentSessionConfig, Decl(index.d.ts, 0, 786))
+>CreateAgentRequestMessage : Symbol(CreateAgentRequestMessage, Decl(index.d.ts, 0, 53))
+
+export type PaseoAgentProvider = PaseoAgentSessionConfig["provider"];
+>PaseoAgentProvider : Symbol(PaseoAgentProvider, Decl(index.d.ts, 1, 67))
+>PaseoAgentSessionConfig : Symbol(PaseoAgentSessionConfig, Decl(index.d.ts, 0, 786))
+
+export interface PaseoProviderActions {
+>PaseoProviderActions : Symbol(PaseoProviderActions, Decl(index.d.ts, 2, 69))
+
+    listModes(provider: PaseoAgentProvider, options?: PaseoProviderListOptions): Promise<PaseoProviderModesResult>;
+>listModes : Symbol(PaseoProviderActions.listModes, Decl(index.d.ts, 3, 39))
+>provider : Symbol(provider, Decl(index.d.ts, 4, 14))
+>PaseoAgentProvider : Symbol(PaseoAgentProvider, Decl(index.d.ts, 1, 67))
+>options : Symbol(options, Decl(index.d.ts, 4, 43))
+>PaseoProviderListOptions : Symbol(PaseoProviderListOptions)
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --), Decl(lib.es2018.promise.d.ts, --, --))
+>PaseoProviderModesResult : Symbol(PaseoProviderModesResult)
+}
+export interface PaseoApi {
+>PaseoApi : Symbol(PaseoApi, Decl(index.d.ts, 5, 1))
+
+    readonly providers: PaseoProviderActions;
+>providers : Symbol(PaseoApi.providers, Decl(index.d.ts, 6, 27))
+>PaseoProviderActions : Symbol(PaseoProviderActions, Decl(index.d.ts, 2, 69))
+}
+=== node_modules/@getpaseo/plugin/dist/client/index.d.ts ===
+export { usePaseo } from "./paseo-context.js";
+>usePaseo : Symbol(usePaseo, Decl(index.d.ts, 0, 8))
+
+=== node_modules/@getpaseo/plugin/dist/client/paseo-context.d.ts ===
+import type { PaseoApi } from "@getpaseo/client";
+>PaseoApi : Symbol(PaseoApi, Decl(paseo-context.d.ts, 0, 13))
+
+export declare function usePaseo(): PaseoApi;
+>usePaseo : Symbol(usePaseo, Decl(paseo-context.d.ts, 0, 49))
+>PaseoApi : Symbol(PaseoApi, Decl(paseo-context.d.ts, 0, 13))
+
+=== node_modules/@getpaseo/protocol/dist/messages.d.ts ===
+import { z } from "zod";
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+
+export declare const CreateAgentRequestMessageSchema: z.ZodObject<{
+>CreateAgentRequestMessageSchema : Symbol(CreateAgentRequestMessageSchema, Decl(messages.d.ts, 1, 20))
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+>ZodObject : Symbol(z.ZodObject, Decl(schemas.d.cts, 4, 1))
+
+        providerOptions: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodJSONSchema>>;
+>providerOptions : Symbol(providerOptions, Decl(messages.d.ts, 1, 67))
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+>ZodOptional : Symbol(z.ZodOptional, Decl(schemas.d.cts, 11, 1))
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+>ZodRecord : Symbol(z.ZodRecord, Decl(schemas.d.cts, 9, 1))
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+>ZodString : Symbol(z.ZodString)
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+>ZodJSONSchema : Symbol(z.ZodJSONSchema, Decl(schemas.d.cts, 16, 3))
+
+}, z.core.$strip>;
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+>core : Symbol(z.core, Decl(external.d.cts, 0, 6))
+>$strip : Symbol(z.core.$strip, Decl(schemas.d.cts, 17, 11))
+
+/**
+ */
+export type CreateAgentRequestMessage = z.infer<typeof CreateAgentRequestMessageSchema>;
+>CreateAgentRequestMessage : Symbol(CreateAgentRequestMessage, Decl(messages.d.ts, 3, 18))
+>z : Symbol(z, Decl(messages.d.ts, 0, 8))
+>infer : Symbol(z.infer, Decl(external.d.cts, 2, 13))
+>CreateAgentRequestMessageSchema : Symbol(CreateAgentRequestMessageSchema, Decl(messages.d.ts, 1, 20))
+
+=== node_modules/@types/react/index.d.ts ===
+
+export {};
+=== node_modules/zod/index.d.cts ===
+import * as z from "./v4/classic/external.cjs";
+>z : Symbol(z, Decl(index.d.cts, 0, 6))
+
+export { z, z as default };
+>z : Symbol(z, Decl(index.d.cts, 1, 8))
+>z : Symbol(z, Decl(index.d.cts, 0, 6))
+>default : Symbol(default, Decl(index.d.cts, 1, 11))
+
+=== node_modules/zod/v4/classic/external.d.cts ===
+export * as core from "../core/index.cjs";
+>core : Symbol(core, Decl(external.d.cts, 0, 6))
+
+export * from "./schemas.cjs";
+export type { infer } from "../core/index.cjs";
+>infer : Symbol(infer, Decl(external.d.cts, 2, 13))
+
+=== node_modules/zod/v4/classic/schemas.d.cts ===
+import * as core from "../core/index.cjs";
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+
+export interface ZodType<out Output = unknown, out Input = unknown, out Internals extends core.$ZodTypeInternals<Output, Input> = core.$ZodTypeInternals<Output, Input>> extends core.$ZodType<Output, Input, Internals> {
+>ZodType : Symbol(ZodType, Decl(schemas.d.cts, 0, 42))
+>Output : Symbol(Output, Decl(schemas.d.cts, 1, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 1, 46))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 1, 67))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>Output : Symbol(Output, Decl(schemas.d.cts, 1, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 1, 46))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>Output : Symbol(Output, Decl(schemas.d.cts, 1, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 1, 46))
+>core.$ZodType : Symbol(core.$ZodType, Decl(schemas.d.cts, 3, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodType : Symbol(core.$ZodType, Decl(schemas.d.cts, 3, 1))
+>Output : Symbol(Output, Decl(schemas.d.cts, 1, 25))
+>Input : Symbol(Input, Decl(schemas.d.cts, 1, 46))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 1, 67))
+}
+export interface _ZodType<out Internals extends core.$ZodTypeInternals = core.$ZodTypeInternals> extends ZodType<any, any, Internals> {
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 2, 1))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 3, 26))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodTypeInternals : Symbol(core.$ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>ZodType : Symbol(ZodType, Decl(schemas.d.cts, 0, 42))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 3, 26))
+}
+export interface ZodObject<
+>ZodObject : Symbol(ZodObject, Decl(schemas.d.cts, 4, 1))
+
+out Shape extends core.$ZodShape = core.$ZodLooseShape, out Config extends core.$ZodObjectConfig = core.$strip> extends _ZodType<core.$ZodObjectInternals<Shape, Config>>, core.$ZodObject<Shape, Config> {
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 5, 27))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodShape : Symbol(core.$ZodShape)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodLooseShape : Symbol(core.$ZodLooseShape)
+>Config : Symbol(Config, Decl(schemas.d.cts, 6, 55))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodObjectConfig : Symbol(core.$ZodObjectConfig)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$strip : Symbol(core.$strip, Decl(schemas.d.cts, 17, 11))
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 2, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodObjectInternals : Symbol(core.$ZodObjectInternals, Decl(schemas.d.cts, 19, 2))
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 5, 27))
+>Config : Symbol(Config, Decl(schemas.d.cts, 6, 55))
+>core.$ZodObject : Symbol(core.$ZodObject, Decl(schemas.d.cts, 23, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodObject : Symbol(core.$ZodObject, Decl(schemas.d.cts, 23, 1))
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 5, 27))
+>Config : Symbol(Config, Decl(schemas.d.cts, 6, 55))
+}
+export interface ZodUnion<T extends readonly core.SomeType[] = readonly core.$ZodType[]> extends _ZodType<core.$ZodUnionInternals<T>>, core.$ZodUnion<T> {
+>ZodUnion : Symbol(ZodUnion, Decl(schemas.d.cts, 7, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 8, 26))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>SomeType : Symbol(core.SomeType)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodType : Symbol(core.$ZodType, Decl(schemas.d.cts, 3, 1))
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 2, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodUnionInternals : Symbol(core.$ZodUnionInternals, Decl(schemas.d.cts, 27, 82))
+>T : Symbol(T, Decl(schemas.d.cts, 8, 26))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>T : Symbol(T, Decl(schemas.d.cts, 8, 26))
+}
+export interface ZodRecord<Key extends core.$ZodRecordKey = core.$ZodRecordKey, Value extends core.SomeType = core.$ZodType> extends _ZodType<core.$ZodRecordInternals<Key, Value>>, core.$ZodRecord<Key, Value> {
+>ZodRecord : Symbol(ZodRecord, Decl(schemas.d.cts, 9, 1))
+>Key : Symbol(Key, Decl(schemas.d.cts, 10, 27))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodRecordKey : Symbol(core.$ZodRecordKey)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodRecordKey : Symbol(core.$ZodRecordKey)
+>Value : Symbol(Value, Decl(schemas.d.cts, 10, 79))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>SomeType : Symbol(core.SomeType)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodType : Symbol(core.$ZodType, Decl(schemas.d.cts, 3, 1))
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 2, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodRecordInternals : Symbol(core.$ZodRecordInternals, Decl(schemas.d.cts, 33, 156))
+>Key : Symbol(Key, Decl(schemas.d.cts, 10, 27))
+>Value : Symbol(Value, Decl(schemas.d.cts, 10, 79))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>Key : Symbol(Key, Decl(schemas.d.cts, 10, 27))
+>Value : Symbol(Value, Decl(schemas.d.cts, 10, 79))
+}
+export interface ZodOptional<T extends core.SomeType = core.$ZodType> extends _ZodType<core.$ZodOptionalInternals<T>>, core.$ZodOptional<T> {
+>ZodOptional : Symbol(ZodOptional, Decl(schemas.d.cts, 11, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 12, 29))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>SomeType : Symbol(core.SomeType)
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodType : Symbol(core.$ZodType, Decl(schemas.d.cts, 3, 1))
+>_ZodType : Symbol(_ZodType, Decl(schemas.d.cts, 2, 1))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>$ZodOptionalInternals : Symbol(core.$ZodOptionalInternals, Decl(schemas.d.cts, 41, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 12, 29))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>T : Symbol(T, Decl(schemas.d.cts, 12, 29))
+}
+type _ZodJSONSchema = ZodUnion<[
+>_ZodJSONSchema : Symbol(_ZodJSONSchema, Decl(schemas.d.cts, 13, 1))
+>ZodUnion : Symbol(ZodUnion, Decl(schemas.d.cts, 7, 1))
+
+    ZodRecord<ZodString, ZodJSONSchema>
+>ZodRecord : Symbol(ZodRecord, Decl(schemas.d.cts, 9, 1))
+>ZodString : Symbol(ZodString)
+>ZodJSONSchema : Symbol(ZodJSONSchema, Decl(schemas.d.cts, 16, 3))
+
+]>;
+export interface ZodJSONSchema extends _ZodJSONSchema {
+>ZodJSONSchema : Symbol(ZodJSONSchema, Decl(schemas.d.cts, 16, 3))
+>_ZodJSONSchema : Symbol(_ZodJSONSchema, Decl(schemas.d.cts, 13, 1))
+}
+=== node_modules/zod/v4/core/core.d.cts ===
+export type output<T> = T extends {
+>output : Symbol(output, Decl(core.d.cts, 0, 0))
+>T : Symbol(T, Decl(core.d.cts, 0, 19))
+>T : Symbol(T, Decl(core.d.cts, 0, 19))
+
+} ? T["_zod"]["output"] : unknown;
+>T : Symbol(T, Decl(core.d.cts, 0, 19))
+
+export type { output as infer };
+>output : Symbol(output, Decl(core.d.cts, 0, 0))
+>infer : Symbol(infer, Decl(core.d.cts, 2, 13))
+
+=== node_modules/zod/v4/core/index.d.cts ===
+
+export * from "./core.cjs";
+export * from "./schemas.cjs";
+=== node_modules/zod/v4/core/schemas.d.cts ===
+import * as core from "./core.cjs";
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+
+import * as util from "./util.cjs";
+>util : Symbol(util, Decl(schemas.d.cts, 1, 6))
+
+export interface $ZodTypeInternals<out O = unknown, out I = unknown> extends _$ZodTypeInternals {
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>O : Symbol(O, Decl(schemas.d.cts, 2, 35))
+>I : Symbol(I, Decl(schemas.d.cts, 2, 51))
+}
+export interface $ZodType<O = unknown, I = unknown, Internals extends $ZodTypeInternals<O, I> = $ZodTypeInternals<O, I>> {
+>$ZodType : Symbol($ZodType, Decl(schemas.d.cts, 3, 1))
+>O : Symbol(O, Decl(schemas.d.cts, 4, 26))
+>I : Symbol(I, Decl(schemas.d.cts, 4, 38))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 4, 51))
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>O : Symbol(O, Decl(schemas.d.cts, 4, 26))
+>I : Symbol(I, Decl(schemas.d.cts, 4, 38))
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>O : Symbol(O, Decl(schemas.d.cts, 4, 26))
+>I : Symbol(I, Decl(schemas.d.cts, 4, 38))
+
+    _zod: Internals;
+>_zod : Symbol($ZodType._zod, Decl(schemas.d.cts, 4, 122))
+>Internals : Symbol(Internals, Decl(schemas.d.cts, 4, 51))
+}
+/**
+ */
+type OptionalInSchema = {
+>OptionalInSchema : Symbol(OptionalInSchema, Decl(schemas.d.cts, 6, 1))
+
+    _zod: {
+>_zod : Symbol(_zod, Decl(schemas.d.cts, 9, 25))
+
+        optin: "optional" | "defaulted";
+>optin : Symbol(optin, Decl(schemas.d.cts, 10, 11))
+
+    };
+};
+export type $InferObjectOutput<T extends $ZodLooseShape, Extra extends Record<string, unknown>> = string extends keyof T ? util.IsAny<T[keyof T]> extends true ? Record<string, unknown> : {
+>$InferObjectOutput : Symbol($InferObjectOutput, Decl(schemas.d.cts, 13, 2))
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>$ZodLooseShape : Symbol($ZodLooseShape)
+>Extra : Symbol(Extra, Decl(schemas.d.cts, 14, 56))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>util : Symbol(util, Decl(schemas.d.cts, 1, 6))
+>IsAny : Symbol(util.IsAny)
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+
+} : keyof (T & Extra) extends never ? Record<string, never> : util.Prettify<{
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>Extra : Symbol(Extra, Decl(schemas.d.cts, 14, 56))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>util : Symbol(util, Decl(schemas.d.cts, 1, 6))
+>Prettify : Symbol(util.Prettify, Decl(util.d.cts, 0, 0))
+
+    -readonly [k in keyof T as T[k] extends OptionalOutSchema ? k : never]?: T[k]["_zod"]["output"];
+>k : Symbol(k, Decl(schemas.d.cts, 16, 15))
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>k : Symbol(k, Decl(schemas.d.cts, 16, 15))
+>OptionalOutSchema : Symbol(OptionalOutSchema)
+>k : Symbol(k, Decl(schemas.d.cts, 16, 15))
+>T : Symbol(T, Decl(schemas.d.cts, 14, 31))
+>k : Symbol(k, Decl(schemas.d.cts, 16, 15))
+
+} & Extra>;
+>Extra : Symbol(Extra, Decl(schemas.d.cts, 14, 56))
+
+export type $strip = {
+>$strip : Symbol($strip, Decl(schemas.d.cts, 17, 11))
+
+};
+export interface $ZodObjectInternals<
+>$ZodObjectInternals : Symbol($ZodObjectInternals, Decl(schemas.d.cts, 19, 2))
+
+out Shape extends $ZodShape = $ZodShape, out Config extends $ZodObjectConfig = $ZodObjectConfig> extends _$ZodTypeInternals {
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 20, 37))
+>$ZodShape : Symbol($ZodShape)
+>$ZodShape : Symbol($ZodShape)
+>Config : Symbol(Config, Decl(schemas.d.cts, 21, 40))
+>$ZodObjectConfig : Symbol($ZodObjectConfig)
+>$ZodObjectConfig : Symbol($ZodObjectConfig)
+
+    output: $InferObjectOutput<Shape, Config["out"]>;
+>output : Symbol($ZodObjectInternals.output, Decl(schemas.d.cts, 21, 125))
+>$InferObjectOutput : Symbol($InferObjectOutput, Decl(schemas.d.cts, 13, 2))
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 20, 37))
+>Config : Symbol(Config, Decl(schemas.d.cts, 21, 40))
+}
+export interface $ZodObject<
+>$ZodObject : Symbol($ZodObject, Decl(schemas.d.cts, 23, 1))
+
+out Shape extends Readonly<$ZodShape> = Readonly<$ZodShape>, out Params extends $ZodObjectConfig = $ZodObjectConfig> extends $ZodType<any, any, $ZodObjectInternals<Shape, Params>> {
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 24, 28))
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>$ZodShape : Symbol($ZodShape)
+>Readonly : Symbol(Readonly, Decl(lib.es5.d.ts, --, --))
+>$ZodShape : Symbol($ZodShape)
+>Params : Symbol(Params, Decl(schemas.d.cts, 25, 60))
+>$ZodObjectConfig : Symbol($ZodObjectConfig)
+>$ZodObjectConfig : Symbol($ZodObjectConfig)
+>$ZodType : Symbol($ZodType, Decl(schemas.d.cts, 3, 1))
+>$ZodObjectInternals : Symbol($ZodObjectInternals, Decl(schemas.d.cts, 19, 2))
+>Shape : Symbol(Shape, Decl(schemas.d.cts, 24, 28))
+>Params : Symbol(Params, Decl(schemas.d.cts, 25, 60))
+}
+type IsOptionalIn<T extends SomeType> = T extends OptionalInSchema ? true : false;
+>IsOptionalIn : Symbol(IsOptionalIn, Decl(schemas.d.cts, 26, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 27, 18))
+>SomeType : Symbol(SomeType)
+>T : Symbol(T, Decl(schemas.d.cts, 27, 18))
+>OptionalInSchema : Symbol(OptionalInSchema, Decl(schemas.d.cts, 6, 1))
+
+export interface $ZodUnionInternals<T extends readonly SomeType[] = readonly $ZodType[]> extends _$ZodTypeInternals {
+>$ZodUnionInternals : Symbol($ZodUnionInternals, Decl(schemas.d.cts, 27, 82))
+>T : Symbol(T, Decl(schemas.d.cts, 28, 36))
+>SomeType : Symbol(SomeType)
+>$ZodType : Symbol($ZodType, Decl(schemas.d.cts, 3, 1))
+
+    optin: IsOptionalIn<T[number]> extends false ? "optional" | "defaulted" | undefined : "optional" | "defaulted";
+>optin : Symbol($ZodUnionInternals.optin, Decl(schemas.d.cts, 28, 117))
+>IsOptionalIn : Symbol(IsOptionalIn, Decl(schemas.d.cts, 26, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 28, 36))
+}
+export type $InferZodRecordInput<Key extends $ZodRecordKey = $ZodRecordKey, Value extends SomeType = $ZodType> = Key extends $partial ? Partial<Record<core.input<Key> & PropertyKey, core.input<Value>>> : [
+>$InferZodRecordInput : Symbol($InferZodRecordInput, Decl(schemas.d.cts, 30, 1))
+>Key : Symbol(Key, Decl(schemas.d.cts, 31, 33))
+>$ZodRecordKey : Symbol($ZodRecordKey)
+>$ZodRecordKey : Symbol($ZodRecordKey)
+>Value : Symbol(Value, Decl(schemas.d.cts, 31, 75))
+>SomeType : Symbol(SomeType)
+>$ZodType : Symbol($ZodType, Decl(schemas.d.cts, 3, 1))
+>Key : Symbol(Key, Decl(schemas.d.cts, 31, 33))
+>$partial : Symbol($partial, Decl(schemas.d.cts, 35, 1))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>input : Symbol(core.input)
+>Key : Symbol(Key, Decl(schemas.d.cts, 31, 33))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>input : Symbol(core.input)
+>Value : Symbol(Value, Decl(schemas.d.cts, 31, 75))
+
+    Value
+>Value : Symbol(Value, Decl(schemas.d.cts, 31, 75))
+
+] extends [OptionalInSchema] ? Partial<Record<core.input<Key> & PropertyKey, core.input<Value>>> : Record<core.input<Key> & PropertyKey, core.input<Value>>;
+>OptionalInSchema : Symbol(OptionalInSchema, Decl(schemas.d.cts, 6, 1))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>input : Symbol(core.input)
+>Key : Symbol(Key, Decl(schemas.d.cts, 31, 33))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>input : Symbol(core.input)
+>Value : Symbol(Value, Decl(schemas.d.cts, 31, 75))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>input : Symbol(core.input)
+>Key : Symbol(Key, Decl(schemas.d.cts, 31, 33))
+>PropertyKey : Symbol(PropertyKey, Decl(lib.es5.d.ts, --, --))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>input : Symbol(core.input)
+>Value : Symbol(Value, Decl(schemas.d.cts, 31, 75))
+
+export interface $ZodRecordInternals<Key extends $ZodRecordKey = $ZodRecordKey, Value extends SomeType = $ZodType> extends $ZodTypeInternals<$InferZodRecordOutput<Key, Value>, $InferZodRecordInput<Key, Value>> {
+>$ZodRecordInternals : Symbol($ZodRecordInternals, Decl(schemas.d.cts, 33, 156))
+>Key : Symbol(Key, Decl(schemas.d.cts, 34, 37))
+>$ZodRecordKey : Symbol($ZodRecordKey)
+>$ZodRecordKey : Symbol($ZodRecordKey)
+>Value : Symbol(Value, Decl(schemas.d.cts, 34, 79))
+>SomeType : Symbol(SomeType)
+>$ZodType : Symbol($ZodType, Decl(schemas.d.cts, 3, 1))
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>$InferZodRecordOutput : Symbol($InferZodRecordOutput)
+>Key : Symbol(Key, Decl(schemas.d.cts, 34, 37))
+>Value : Symbol(Value, Decl(schemas.d.cts, 34, 79))
+>$InferZodRecordInput : Symbol($InferZodRecordInput, Decl(schemas.d.cts, 30, 1))
+>Key : Symbol(Key, Decl(schemas.d.cts, 34, 37))
+>Value : Symbol(Value, Decl(schemas.d.cts, 34, 79))
+}
+export type $partial = {
+>$partial : Symbol($partial, Decl(schemas.d.cts, 35, 1))
+
+    "~~partial": true;
+>"~~partial" : Symbol("~~partial", Decl(schemas.d.cts, 36, 24))
+
+};
+export interface $ZodEnumInternals<
+>$ZodEnumInternals : Symbol($ZodEnumInternals, Decl(schemas.d.cts, 38, 2))
+
+out T extends util.EnumLike = util.EnumLike> extends $ZodTypeInternals<$InferEnumOutput<T>, $InferEnumInput<T>> {
+>T : Symbol(T, Decl(schemas.d.cts, 39, 35))
+>util : Symbol(util, Decl(schemas.d.cts, 1, 6))
+>EnumLike : Symbol(util.EnumLike)
+>util : Symbol(util, Decl(schemas.d.cts, 1, 6))
+>EnumLike : Symbol(util.EnumLike)
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>$InferEnumOutput : Symbol($InferEnumOutput)
+>T : Symbol(T, Decl(schemas.d.cts, 39, 35))
+>$InferEnumInput : Symbol($InferEnumInput)
+>T : Symbol(T, Decl(schemas.d.cts, 39, 35))
+}
+export interface $ZodOptionalInternals<T extends SomeType = $ZodType> extends $ZodTypeInternals<core.output<T> | undefined, core.input<T> | undefined> {
+>$ZodOptionalInternals : Symbol($ZodOptionalInternals, Decl(schemas.d.cts, 41, 1))
+>T : Symbol(T, Decl(schemas.d.cts, 42, 39))
+>SomeType : Symbol(SomeType)
+>$ZodType : Symbol($ZodType, Decl(schemas.d.cts, 3, 1))
+>$ZodTypeInternals : Symbol($ZodTypeInternals, Decl(schemas.d.cts, 1, 35))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>output : Symbol(core.output, Decl(core.d.cts, 0, 0))
+>T : Symbol(T, Decl(schemas.d.cts, 42, 39))
+>core : Symbol(core, Decl(schemas.d.cts, 0, 6))
+>input : Symbol(core.input)
+>T : Symbol(T, Decl(schemas.d.cts, 42, 39))
+}
+=== node_modules/zod/v4/core/util.d.cts ===
+export type Prettify<T> = {
+>Prettify : Symbol(Prettify, Decl(util.d.cts, 0, 0))
+>T : Symbol(T, Decl(util.d.cts, 0, 21))
+
+    [K in keyof T]: T[K];
+>K : Symbol(K, Decl(util.d.cts, 1, 5))
+>T : Symbol(T, Decl(util.d.cts, 0, 21))
+>T : Symbol(T, Decl(util.d.cts, 0, 21))
+>K : Symbol(K, Decl(util.d.cts, 1, 5))
+
+} & {};
+

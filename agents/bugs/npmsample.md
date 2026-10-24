@@ -315,3 +315,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
 ## Seed 20261042
 
 - mlok@0.1.5 (smolijar/mlok, tsconfig.bench.json, src/index.spec.ts:77, reduced to a 20-line self-contained case): tttt reports TS2322 "Type 'string' is not assignable to type '"foo"'" on `const foo: 'foo' = mlokNode<Req>({}).override({ getHeaders: () => 'foo' } as const).getHeaders()`; tsgo accepts (the recursive conditional `Mlok<..., O>` intersection with a `as const` override should give a return type whose call yields `"foo"`; tttt picks the base `string`). tsgo 24, tttt 25 errors. `test/cases/npm_mlok_TS2322.ts`. Cause (det3): the arrow's unit return type. tsc computes it lazily, after the call inferred O from the argument itself, so its contextual signature is its own and getReturnTypeFromBody keeps "foo". tttt has that through call anchors, but record_anchors_in() didn't go through a const assertion (whose operand has the assertion's contextual type), so `id({ f: () => 'foo' } as const)` widened to string. [fixed det3]
+
+## Seed 20261045
+
+- **npm_paseo-agent-todos_TS5115** (paseo-agent-todos@0.1.1, tsconfig.bench.json, client/todos-surface.tsx:6, 13-file case with zod's v4 core `.d.cts` reduced in node_modules): tsgo reports TS5115 ('$ZodTypeInternals', '$InferZodRecordInput', 'IsOptionalIn') from `useQuery({queryFn: ...})` over zod types; tttt reports nothing (tsgo's instantiation depth limit is not reached). Same key as ergolabs-ergo-sdk-js's TS5115. [flip] [open]
