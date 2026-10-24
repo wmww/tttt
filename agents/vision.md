@@ -8,7 +8,11 @@ faster; correctness is never traded. Completeness first in the sense that nothin
 be fast or can't be complete. The suite's baselines are the first oracle, not the goal; real projects that are clean
 under tsc are the second.
 
-## State (2026-10-25: release candidate; full oracles at 5de65a46b, quick oracles at the rc commit)
+## State (2026-10-25: v1 released; full oracles at 5de65a46b, quick oracles at 45397f75f and 86bcd7ba4)
+- **Released: tag `v1` = 438727981** (the human's choice, 2026-10-25: the tree they tested; the README updated in
+  c7ad9918a). Main past the tag holds the memory refactor (45397f75f: huge pages off by default, the pool reads free
+  memory now), perf3's four output-identical wins (2fd330892, 862617c2e, aac3864d6, b509189b3) and the docs, all
+  gated clean (quick oracles at 86bcd7ba4: suite 15656, 0 lost, corpora 0/0): the next release's content.
 - **Target: TypeScript 7.1.0-beta** (tag `v7.1-beta` = 3e923636, `thirdparty/typescript`); every cache is tsgo 7.1's.
 - **The rc** is the commit this section lands in: main after the 2026-10-24/25 random-npm correctness sweep (three
   boxes, ~2000 small packages and ~500 large-repository sub-projects compared; 95.7% byte-identical with tsgo; every
