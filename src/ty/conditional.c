@@ -479,9 +479,13 @@ static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
 }
 
 // The branch instantiated with the `infer` results too: in one go with what the branch has been instantiated with so
-// far, like tsc's combinedMapper (a substitution type in it resolves differently in two steps)
+// far, like tsc's combinedMapper (a substitution type in it resolves differently in two steps). That is
+// combineTypeMappers(context.mapper, mapper): the inferred types instantiated by the branch's mapper, the branch's own
+// targets left alone. A target can mention the root's own `infer` type parameter from an outer instance of the same
+// declaration: `T3<[arg], [rest, ...Stack]>` in T3's true branch maps Stack to the outer `rest`, which this
+// resolution's `rest` (the same symbol) must not replace
 static Ty const* branch_type_with(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
-    if (mapper) return ty_cond_branch_compute(me, branch, ty_compose_mappers(me, branch->mapper, mapper));
+    if (mapper) return ty_cond_branch_compute(me, branch, branch->mapper ? ty_compose_mappers(me, mapper, branch->mapper) : mapper);
     return ty_instantiate_tail(me, branch_type(me, branch), mapper);
 }
 

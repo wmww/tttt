@@ -1,0 +1,37 @@
+// A recursive alias reference in a conditional's branch, `T3<[arg], [rest, ...Stack]>`, maps Stack to the outer `rest`, the
+// root's own `infer` type parameter: this resolution's own `rest` (tsc's combinedMapper, combineTypeMappers(context.mapper,
+// mapper)) must not replace it. foxp's type-level regex engine (cion's _TapeEval) lost its stack
+type T<S extends string, Tape, F extends string, Stack extends unknown[]> =
+  Tape extends []
+    ? Stack extends [infer sf, ...infer sr extends unknown[]] ? T<S, sf, F, sr> : [F, S]
+  : Tape extends [infer first, ...infer rest extends unknown[]]
+    ? first extends ["?", infer arg]
+      ? T<S, [arg], F, [rest, ...Stack]> extends [infer M extends string, infer N extends string] ? [M, N] : 'fail'
+    : first extends ["char", infer C extends string]
+      ? S extends `${C}${infer R}` ? T<R, rest, `${F}${C}`, Stack> : 'nomatch'
+    : 'bad'
+  : 'never';
+type E<X> = X extends infer Y ? [Y] : never
+export const p1: E<T<'x y', [["?", ["char", "x"]], ["char", " "], ["char", "y"]], '', []>> = 1;
+export const p2: E<T<'x y', [["char", "x"]], '', [[["char", " "], ["char", "y"]]]>> = 1;
+type W<A, B> = [A, B]
+type T1<Tape, Stack extends unknown[]> =
+  Tape extends [infer first, ...infer rest extends unknown[]]
+    ? first extends ["?", infer arg] ? [rest, ...Stack] : 'x'
+  : 'never';
+export const p1: E<T1<[["?", 1], 2, 3], []>> = 1;
+type T2<Tape, Stack extends unknown[]> =
+  Tape extends [infer first, ...infer rest extends unknown[]]
+    ? first extends ["?", infer arg] ? W<[arg], [rest, ...Stack]> extends [infer M, infer N] ? N : 'f' : 'x'
+  : 'never';
+export const p2: E<T2<[["?", 1], 2, 3], []>> = 1;
+type T3<Tape, Stack extends unknown[]> =
+  Tape extends [infer first, ...infer rest extends unknown[]]
+    ? first extends ["?", infer arg] ? T3<[arg], [rest, ...Stack]> : [Tape, Stack]
+  : [Tape, Stack];
+export const p3: E<T3<[["?", 1], 2, 3], []>> = 1;
+type T4<Tape, Stack extends unknown[]> =
+  Tape extends [infer first, ...infer rest extends unknown[]]
+    ? first extends ["?", infer arg] ? T4<[arg], [rest, ...Stack]> extends infer Z ? Z : 0 : [Tape, Stack]
+  : [Tape, Stack];
+export const p4: E<T4<[["?", 1], 2, 3], []>> = 1;

@@ -1,0 +1,199 @@
+//// [test/cases/ttttConditionalOwnInferInBranchArgs.ts] ////
+
+=== ttttConditionalOwnInferInBranchArgs.ts ===
+// A recursive alias reference in a conditional's branch, `T3<[arg], [rest, ...Stack]>`, maps Stack to the outer `rest`, the
+// root's own `infer` type parameter: this resolution's own `rest` (tsc's combinedMapper, combineTypeMappers(context.mapper,
+// mapper)) must not replace it. foxp's type-level regex engine (cion's _TapeEval) lost its stack
+type T<S extends string, Tape, F extends string, Stack extends unknown[]> =
+>T : Symbol(T, Decl(ttttConditionalOwnInferInBranchArgs.ts, 0, 0))
+>S : Symbol(S, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 7))
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 24))
+>F : Symbol(F, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 30))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 48))
+
+  Tape extends []
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 24))
+
+    ? Stack extends [infer sf, ...infer sr extends unknown[]] ? T<S, sf, F, sr> : [F, S]
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 48))
+>sf : Symbol(sf, Decl(ttttConditionalOwnInferInBranchArgs.ts, 5, 26))
+>sr : Symbol(sr, Decl(ttttConditionalOwnInferInBranchArgs.ts, 5, 39))
+>T : Symbol(T, Decl(ttttConditionalOwnInferInBranchArgs.ts, 0, 0))
+>S : Symbol(S, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 7))
+>sf : Symbol(sf, Decl(ttttConditionalOwnInferInBranchArgs.ts, 5, 26))
+>F : Symbol(F, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 30))
+>sr : Symbol(sr, Decl(ttttConditionalOwnInferInBranchArgs.ts, 5, 39))
+>F : Symbol(F, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 30))
+>S : Symbol(S, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 7))
+
+  : Tape extends [infer first, ...infer rest extends unknown[]]
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 24))
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 6, 23))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 6, 39))
+
+    ? first extends ["?", infer arg]
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 6, 23))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 7, 31))
+
+      ? T<S, [arg], F, [rest, ...Stack]> extends [infer M extends string, infer N extends string] ? [M, N] : 'fail'
+>T : Symbol(T, Decl(ttttConditionalOwnInferInBranchArgs.ts, 0, 0))
+>S : Symbol(S, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 7))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 7, 31))
+>F : Symbol(F, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 30))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 6, 39))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 48))
+>M : Symbol(M, Decl(ttttConditionalOwnInferInBranchArgs.ts, 8, 55))
+>N : Symbol(N, Decl(ttttConditionalOwnInferInBranchArgs.ts, 8, 79))
+>M : Symbol(M, Decl(ttttConditionalOwnInferInBranchArgs.ts, 8, 55))
+>N : Symbol(N, Decl(ttttConditionalOwnInferInBranchArgs.ts, 8, 79))
+
+    : first extends ["char", infer C extends string]
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 6, 23))
+>C : Symbol(C, Decl(ttttConditionalOwnInferInBranchArgs.ts, 9, 34))
+
+      ? S extends `${C}${infer R}` ? T<R, rest, `${F}${C}`, Stack> : 'nomatch'
+>S : Symbol(S, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 7))
+>C : Symbol(C, Decl(ttttConditionalOwnInferInBranchArgs.ts, 9, 34))
+>R : Symbol(R, Decl(ttttConditionalOwnInferInBranchArgs.ts, 10, 30))
+>T : Symbol(T, Decl(ttttConditionalOwnInferInBranchArgs.ts, 0, 0))
+>R : Symbol(R, Decl(ttttConditionalOwnInferInBranchArgs.ts, 10, 30))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 6, 39))
+>F : Symbol(F, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 30))
+>C : Symbol(C, Decl(ttttConditionalOwnInferInBranchArgs.ts, 9, 34))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 3, 48))
+
+    : 'bad'
+  : 'never';
+type E<X> = X extends infer Y ? [Y] : never
+>E : Symbol(E, Decl(ttttConditionalOwnInferInBranchArgs.ts, 12, 12))
+>X : Symbol(X, Decl(ttttConditionalOwnInferInBranchArgs.ts, 13, 7))
+>X : Symbol(X, Decl(ttttConditionalOwnInferInBranchArgs.ts, 13, 7))
+>Y : Symbol(Y, Decl(ttttConditionalOwnInferInBranchArgs.ts, 13, 27))
+>Y : Symbol(Y, Decl(ttttConditionalOwnInferInBranchArgs.ts, 13, 27))
+
+export const p1: E<T<'x y', [["?", ["char", "x"]], ["char", " "], ["char", "y"]], '', []>> = 1;
+>p1 : Symbol(p1, Decl(ttttConditionalOwnInferInBranchArgs.ts, 14, 12))
+>E : Symbol(E, Decl(ttttConditionalOwnInferInBranchArgs.ts, 12, 12))
+>T : Symbol(T, Decl(ttttConditionalOwnInferInBranchArgs.ts, 0, 0))
+
+export const p2: E<T<'x y', [["char", "x"]], '', [[["char", " "], ["char", "y"]]]>> = 1;
+>p2 : Symbol(p2, Decl(ttttConditionalOwnInferInBranchArgs.ts, 15, 12))
+>E : Symbol(E, Decl(ttttConditionalOwnInferInBranchArgs.ts, 12, 12))
+>T : Symbol(T, Decl(ttttConditionalOwnInferInBranchArgs.ts, 0, 0))
+
+type W<A, B> = [A, B]
+>W : Symbol(W, Decl(ttttConditionalOwnInferInBranchArgs.ts, 15, 88))
+>A : Symbol(A, Decl(ttttConditionalOwnInferInBranchArgs.ts, 16, 7))
+>B : Symbol(B, Decl(ttttConditionalOwnInferInBranchArgs.ts, 16, 9))
+>A : Symbol(A, Decl(ttttConditionalOwnInferInBranchArgs.ts, 16, 7))
+>B : Symbol(B, Decl(ttttConditionalOwnInferInBranchArgs.ts, 16, 9))
+
+type T1<Tape, Stack extends unknown[]> =
+>T1 : Symbol(T1, Decl(ttttConditionalOwnInferInBranchArgs.ts, 16, 21))
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 17, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 17, 13))
+
+  Tape extends [infer first, ...infer rest extends unknown[]]
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 17, 8))
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 18, 21))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 18, 37))
+
+    ? first extends ["?", infer arg] ? [rest, ...Stack] : 'x'
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 18, 21))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 19, 31))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 18, 37))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 17, 13))
+
+  : 'never';
+export const p1: E<T1<[["?", 1], 2, 3], []>> = 1;
+>p1 : Symbol(p1, Decl(ttttConditionalOwnInferInBranchArgs.ts, 21, 12))
+>E : Symbol(E, Decl(ttttConditionalOwnInferInBranchArgs.ts, 12, 12))
+>T1 : Symbol(T1, Decl(ttttConditionalOwnInferInBranchArgs.ts, 16, 21))
+
+type T2<Tape, Stack extends unknown[]> =
+>T2 : Symbol(T2, Decl(ttttConditionalOwnInferInBranchArgs.ts, 21, 49))
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 22, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 22, 13))
+
+  Tape extends [infer first, ...infer rest extends unknown[]]
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 22, 8))
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 23, 21))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 23, 37))
+
+    ? first extends ["?", infer arg] ? W<[arg], [rest, ...Stack]> extends [infer M, infer N] ? N : 'f' : 'x'
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 23, 21))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 24, 31))
+>W : Symbol(W, Decl(ttttConditionalOwnInferInBranchArgs.ts, 15, 88))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 24, 31))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 23, 37))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 22, 13))
+>M : Symbol(M, Decl(ttttConditionalOwnInferInBranchArgs.ts, 24, 80))
+>N : Symbol(N, Decl(ttttConditionalOwnInferInBranchArgs.ts, 24, 89))
+>N : Symbol(N, Decl(ttttConditionalOwnInferInBranchArgs.ts, 24, 89))
+
+  : 'never';
+export const p2: E<T2<[["?", 1], 2, 3], []>> = 1;
+>p2 : Symbol(p2, Decl(ttttConditionalOwnInferInBranchArgs.ts, 26, 12))
+>E : Symbol(E, Decl(ttttConditionalOwnInferInBranchArgs.ts, 12, 12))
+>T2 : Symbol(T2, Decl(ttttConditionalOwnInferInBranchArgs.ts, 21, 49))
+
+type T3<Tape, Stack extends unknown[]> =
+>T3 : Symbol(T3, Decl(ttttConditionalOwnInferInBranchArgs.ts, 26, 49))
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 13))
+
+  Tape extends [infer first, ...infer rest extends unknown[]]
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 8))
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 28, 21))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 28, 37))
+
+    ? first extends ["?", infer arg] ? T3<[arg], [rest, ...Stack]> : [Tape, Stack]
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 28, 21))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 29, 31))
+>T3 : Symbol(T3, Decl(ttttConditionalOwnInferInBranchArgs.ts, 26, 49))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 29, 31))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 28, 37))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 13))
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 13))
+
+  : [Tape, Stack];
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 27, 13))
+
+export const p3: E<T3<[["?", 1], 2, 3], []>> = 1;
+>p3 : Symbol(p3, Decl(ttttConditionalOwnInferInBranchArgs.ts, 31, 12))
+>E : Symbol(E, Decl(ttttConditionalOwnInferInBranchArgs.ts, 12, 12))
+>T3 : Symbol(T3, Decl(ttttConditionalOwnInferInBranchArgs.ts, 26, 49))
+
+type T4<Tape, Stack extends unknown[]> =
+>T4 : Symbol(T4, Decl(ttttConditionalOwnInferInBranchArgs.ts, 31, 49))
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 13))
+
+  Tape extends [infer first, ...infer rest extends unknown[]]
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 8))
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 33, 21))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 33, 37))
+
+    ? first extends ["?", infer arg] ? T4<[arg], [rest, ...Stack]> extends infer Z ? Z : 0 : [Tape, Stack]
+>first : Symbol(first, Decl(ttttConditionalOwnInferInBranchArgs.ts, 33, 21))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 34, 31))
+>T4 : Symbol(T4, Decl(ttttConditionalOwnInferInBranchArgs.ts, 31, 49))
+>arg : Symbol(arg, Decl(ttttConditionalOwnInferInBranchArgs.ts, 34, 31))
+>rest : Symbol(rest, Decl(ttttConditionalOwnInferInBranchArgs.ts, 33, 37))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 13))
+>Z : Symbol(Z, Decl(ttttConditionalOwnInferInBranchArgs.ts, 34, 80))
+>Z : Symbol(Z, Decl(ttttConditionalOwnInferInBranchArgs.ts, 34, 80))
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 13))
+
+  : [Tape, Stack];
+>Tape : Symbol(Tape, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 8))
+>Stack : Symbol(Stack, Decl(ttttConditionalOwnInferInBranchArgs.ts, 32, 13))
+
+export const p4: E<T4<[["?", 1], 2, 3], []>> = 1;
+>p4 : Symbol(p4, Decl(ttttConditionalOwnInferInBranchArgs.ts, 36, 12))
+>E : Symbol(E, Decl(ttttConditionalOwnInferInBranchArgs.ts, 12, 12))
+>T4 : Symbol(T4, Decl(ttttConditionalOwnInferInBranchArgs.ts, 31, 49))
+
