@@ -223,4 +223,4 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   [Symbol.iterator]: () => IterableIterator<...> }`. That type is array-like (assignable to `readonly any[]`) without a
   number index: tsgo's checkArrayLiteral takes the spread as a variadic element, normalized to a rest element of its
   number index type or the error type, so `[...x]` is any[]; tttt iterated it. Repro
-  test/cases/npm_types-momentum_TS2322.ts. [flip] [open]
+  test/cases/npm_types-momentum_TS2322.ts. [flip] [fixed 83a82b68e]
