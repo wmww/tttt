@@ -1,0 +1,27 @@
+//// [test/cases/npm_lumiverse_TS2322.ts] ////
+
+=== npm_lumiverse_TS2322.ts ===
+// origin: npm lumiverse-backend@1.2.5 https://github.com/prolix-oc/Lumiverse tsconfig.bench.json seed 20261302
+// flip: yes
+export function reorder(userId: string, ids: string[]): void {
+>reorder : Symbol(reorder, Decl(npm_lumiverse_TS2322.ts, 0, 0))
+>userId : Symbol(userId, Decl(npm_lumiverse_TS2322.ts, 2, 24))
+>ids : Symbol(ids, Decl(npm_lumiverse_TS2322.ts, 2, 39))
+
+  return finish(mutate(getDb(), { action: "reorder", args: [userId, ids] }), userId);
+>finish : Symbol(finish, Decl(npm_lumiverse_TS2322.ts, 4, 1))
+>action : Symbol(action, Decl(npm_lumiverse_TS2322.ts, 3, 33))
+>args : Symbol(args, Decl(npm_lumiverse_TS2322.ts, 3, 52))
+>userId : Symbol(userId, Decl(npm_lumiverse_TS2322.ts, 2, 24))
+>ids : Symbol(ids, Decl(npm_lumiverse_TS2322.ts, 2, 39))
+>userId : Symbol(userId, Decl(npm_lumiverse_TS2322.ts, 2, 24))
+}
+function finish<T>(result: Result, userId: string): T {
+>finish : Symbol(finish, Decl(npm_lumiverse_TS2322.ts, 4, 1))
+>T : Symbol(T, Decl(npm_lumiverse_TS2322.ts, 5, 16))
+>result : Symbol(result, Decl(npm_lumiverse_TS2322.ts, 5, 19))
+>Result : Symbol(Result)
+>userId : Symbol(userId, Decl(npm_lumiverse_TS2322.ts, 5, 34))
+>T : Symbol(T, Decl(npm_lumiverse_TS2322.ts, 5, 16))
+}
+

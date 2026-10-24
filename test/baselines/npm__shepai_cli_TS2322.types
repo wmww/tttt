@@ -1,0 +1,62 @@
+//// [test/cases/npm__shepai_cli_TS2322.ts] ////
+
+=== notifier.ts ===
+interface NotificationLike {
+  on?(event: 'failed', listener: (event: unknown, error: string) => void): unknown;
+>on : ((event: 'failed', listener: (event: unknown, error: string) => void) => unknown) | undefined
+>event : "failed"
+>listener : (event: unknown, error: string) => void
+>event : unknown
+>error : string
+}
+export interface Deps {
+  createNotification: (opts: { title: string; body: string }) => NotificationLike;
+>createNotification : (opts: { title: string; body: string; }) => NotificationLike
+>opts : { title: string; body: string; }
+>title : string
+>body : string
+}
+=== test.ts ===
+import type { Deps } from './notifier';
+>Deps : Deps
+
+declare function fn<T extends (...args: any[]) => any>(impl?: T): Mock<T>;
+>fn : <T extends (...args: any[]) => any>(impl?: T) => Mock<T>
+>args : any[]
+>impl : T | undefined
+
+interface Mock<T extends (...args: any[]) => any> { (...args: Parameters<T>): ReturnType<T>; mock: T }
+>args : any[]
+>args : Parameters<T>
+>mock : T
+
+declare let deps: Deps;
+>deps : Deps
+
+deps.createNotification = fn(() => ({
+>deps.createNotification = fn(() => ({  show: fn(),  on: fn((event: string, listener: (...args: unknown[]) => void) => {}),})) : Mock<() => { show: Mock<(...args: any[]) => any>; on: Mock<(event: string, listener: (...args: unknown[]) => void) => void>; }>
+>deps.createNotification : (opts: { title: string; body: string; }) => NotificationLike
+>deps : Deps
+>createNotification : (opts: { title: string; body: string; }) => NotificationLike
+>fn(() => ({  show: fn(),  on: fn((event: string, listener: (...args: unknown[]) => void) => {}),})) : Mock<() => { show: Mock<(...args: any[]) => any>; on: Mock<(event: string, listener: (...args: unknown[]) => void) => void>; }>
+>fn : <T extends (...args: any[]) => any>(impl?: T) => Mock<T>
+>() => ({  show: fn(),  on: fn((event: string, listener: (...args: unknown[]) => void) => {}),}) : () => { show: Mock<(...args: any[]) => any>; on: Mock<(event: string, listener: (...args: unknown[]) => void) => void>; }
+>({  show: fn(),  on: fn((event: string, listener: (...args: unknown[]) => void) => {}),}) : { show: Mock<(...args: any[]) => any>; on: Mock<(event: string, listener: (...args: unknown[]) => void) => void>; }
+>{  show: fn(),  on: fn((event: string, listener: (...args: unknown[]) => void) => {}),} : { show: Mock<(...args: any[]) => any>; on: Mock<(event: string, listener: (...args: unknown[]) => void) => void>; }
+
+  show: fn(),
+>show : Mock<(...args: any[]) => any>
+>fn() : Mock<(...args: any[]) => any>
+>fn : <T extends (...args: any[]) => any>(impl?: T) => Mock<T>
+
+  on: fn((event: string, listener: (...args: unknown[]) => void) => {}),
+>on : Mock<(event: string, listener: (...args: unknown[]) => void) => void>
+>fn((event: string, listener: (...args: unknown[]) => void) => {}) : Mock<(event: string, listener: (...args: unknown[]) => void) => void>
+>fn : <T extends (...args: any[]) => any>(impl?: T) => Mock<T>
+>(event: string, listener: (...args: unknown[]) => void) => {} : (event: string, listener: (...args: unknown[]) => void) => void
+>event : string
+>listener : (...args: unknown[]) => void
+>args : unknown[]
+
+}));
+

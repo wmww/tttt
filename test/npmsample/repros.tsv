@@ -64,3 +64,5 @@ npm_vinext_TS2345	no	vinext@1.3.0	https://github.com/cloudflare/vinext	1	2	TS234
 npm__pixpilot_cost-calculator_TS6053	no	@pixpilot/cost-calculator@0.1.0	https://github.com/pixpilot/credit-calculator	1	2	-TS2883 +TS5115 +TS6053
 npm__lute-lang_player_crash	yes	@lute-lang/player@0.48.1	https://github.com/journeyWorker/lute	2	crash	-TS2307 crash
 npm_mcp-namecheap_TS2883	yes	mcp-namecheap@1.0.0	https://github.com/cfdude/mcp-namecheap	0	1	+TS2883
+npm_lumiverse_TS2322	yes	lumiverse-backend@1.2.5	https://github.com/prolix-oc/Lumiverse	0	1	TS2322
+npm__shepai_cli_TS2322	yes	@shepai/cli@1.247.0	https://github.com/shep-ai/shep	0	1	TS2322

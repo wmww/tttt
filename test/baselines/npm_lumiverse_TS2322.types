@@ -1,0 +1,32 @@
+//// [test/cases/npm_lumiverse_TS2322.ts] ////
+
+=== npm_lumiverse_TS2322.ts ===
+// origin: npm lumiverse-backend@1.2.5 https://github.com/prolix-oc/Lumiverse tsconfig.bench.json seed 20261302
+// flip: yes
+export function reorder(userId: string, ids: string[]): void {
+>reorder : (userId: string, ids: string[]) => void
+>userId : string
+>ids : string[]
+
+  return finish(mutate(getDb(), { action: "reorder", args: [userId, ids] }), userId);
+>finish(mutate(getDb(), { action: "reorder", args: [userId, ids] }), userId) : void
+>finish : <T>(result: Result, userId: string) => T
+>mutate(getDb(), { action: "reorder", args: [userId, ids] }) : any
+>mutate : any
+>getDb() : any
+>getDb : any
+>{ action: "reorder", args: [userId, ids] } : { action: string; args: (string | string[])[]; }
+>action : string
+>"reorder" : "reorder"
+>args : (string | string[])[]
+>[userId, ids] : (string | string[])[]
+>userId : string
+>ids : string[]
+>userId : string
+}
+function finish<T>(result: Result, userId: string): T {
+>finish : <T>(result: Result, userId: string) => T
+>result : Result
+>userId : string
+}
+

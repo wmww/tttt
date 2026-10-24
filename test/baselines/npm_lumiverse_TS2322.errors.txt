@@ -1,0 +1,23 @@
+npm_lumiverse_TS2322.ts(4,17): error TS2304: Cannot find name 'mutate'.
+npm_lumiverse_TS2322.ts(4,24): error TS2304: Cannot find name 'getDb'.
+npm_lumiverse_TS2322.ts(6,28): error TS2304: Cannot find name 'Result'.
+npm_lumiverse_TS2322.ts(6,53): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+
+
+==== npm_lumiverse_TS2322.ts (4 errors) ====
+    // origin: npm lumiverse-backend@1.2.5 https://github.com/prolix-oc/Lumiverse tsconfig.bench.json seed 20261302
+    // flip: yes
+    export function reorder(userId: string, ids: string[]): void {
+      return finish(mutate(getDb(), { action: "reorder", args: [userId, ids] }), userId);
+                    ~~~~~~
+!!! error TS2304: Cannot find name 'mutate'.
+                           ~~~~~
+!!! error TS2304: Cannot find name 'getDb'.
+    }
+    function finish<T>(result: Result, userId: string): T {
+                               ~~~~~~
+!!! error TS2304: Cannot find name 'Result'.
+                                                        ~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+    }
+    
