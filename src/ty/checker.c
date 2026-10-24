@@ -4826,15 +4826,31 @@ static SourceFile const* resolving_entry_file(Resolving const* entry) {
     return span_valid(span) ? span_source(span) : nullptr;
 }
 
-// A cycle among the entries from `first` on: when one of them is in another file than the one being checked (or its file
-// is unknown), what is reported about it depends on where the cycle was entered (error_cycle_foreign)
+// A cycle among the entries from `first` on, marked circular. Two things about it say whether a circularity it causes
+// depends on where the cycle was entered (program.c's history_dependent_matters()):
+// - error_cycle_foreign: an entry is a declaration in another file than the one being checked (or of an unknown file);
+// - error_cycle_entry_dependent: it is more than one function's return type inferring itself (its FUNCTION_RETURN and
+//   SIGNATURE_RETURN entries): entered elsewhere, another of its declarations may be the one found in flight (nest's
+//   self-recursive methods give the same TS7023 from any entry; sequelize's `models` field and its initializer don't)
 static void resolving_mark_cycle(Checker* me, u32 first) {
     bool foreign = false;
+    bool entry_dependent = false;
+    FunctionImpl const* function = nullptr;
     for (u32 j = first; j < my resolving_len; j++) {
-        my resolving[j].circular = true;
-        if (!foreign && error_checking_file) foreign = resolving_entry_file(&my resolving[j]) != error_checking_file;
+        Resolving* entry = &my resolving[j];
+        entry->circular = true;
+        // (The constraints and type arguments resolved on the way aren't declarations a circularity is reported at)
+        bool declaration = entry->kind != RESOLVING_BASE_CONSTRAINT && entry->kind != RESOLVING_MAPPED_CONSTRAINT &&
+            entry->kind != RESOLVING_TYPE_ARGUMENTS && entry->kind != RESOLVING_BASE_CONSTRUCTOR;
+        if (!declaration) continue;
+        if (!foreign && error_checking_file) foreign = resolving_entry_file(entry) != error_checking_file;
+        FunctionImpl const* own = entry->kind == RESOLVING_FUNCTION_RETURN || entry->kind == RESOLVING_ARGUMENT_RETURN ?
+            entry->key : entry->kind == RESOLVING_SIGNATURE_RETURN ? ((Signature const*)entry->key)->function : nullptr;
+        if (!own || (function && own != function)) entry_dependent = true;
+        function = own;
     }
     if (foreign) error_cycle_foreign = true;
+    if (entry_dependent) error_cycle_entry_dependent = true;
 }
 
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {

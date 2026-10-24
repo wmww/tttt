@@ -789,6 +789,7 @@ static Error* global_insert(ErrorCtx* me, Error error) {
 thread_local _Atomic bool* error_history_flag;
 thread_local struct SourceFile const* error_checking_file;
 thread_local bool error_cycle_foreign;
+thread_local bool error_cycle_entry_dependent;
 
 static inline void note_history_dependent(unsigned ts_code) {
     if (__builtin_expect(error_history_flag != nullptr, 0) && error_is_history_dependent(ts_code) &&
@@ -893,6 +894,7 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
         .phase = my phase,
         .history_foreign = error_checking_file && error_is_history_dependent(ts_code) &&
             (span_source(span) != error_checking_file || (error_cycle_foreign && error_is_circularity(ts_code))),
+        .history_entry_dependent = error_cycle_entry_dependent && error_is_circularity(ts_code),
     });
 }
 

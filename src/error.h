@@ -46,6 +46,9 @@ typedef struct Error {
     // (error_cycle_foreign): what it is about was reached from elsewhere, where one checker in program order may reach it
     // first from a third file (program.c's history_dependent_matters())
     bool history_foreign;
+    // A circularity reported while a cycle of more than one function's return type was found in this file
+    // (error_cycle_entry_dependent): where the cycle is entered may decide what is reported
+    bool history_entry_dependent;
     // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
     // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order
     // (the index of the file being checked), which is the one a single checker reports
@@ -112,6 +115,9 @@ extern thread_local struct SourceFile const* error_checking_file;
 // A cycle found while checking error_checking_file went through another file's declarations (ty/checker.c's
 // resolving_mark_cycle()): a circularity reported then is Error.history_foreign. Reset per checked file
 extern thread_local bool error_cycle_foreign;
+// A cycle found while checking error_checking_file was more than one function's return type (resolving_mark_cycle()): a
+// circularity reported then is Error.history_entry_dependent. Reset per checked file
+extern thread_local bool error_cycle_entry_dependent;
 // The diagnostics a checker reports where it first runs into something it then caches: the instantiation and relation
 // limits (TS2589, TS5114, TS5115, TS2590, TS2321, TS2859) and the circularities (TS2615, TS7022, TS7023, TS7024, TS2456,
 // TS2502). Which file reaches it first decides where, and what the cached error type silences afterwards

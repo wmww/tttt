@@ -5057,24 +5057,63 @@ bool program_limit_history_dependent(Program const* me) {
     return atomic_load(&my history_reported) && (my checker_count > 1 || program_recycled(me));
 }
 
+// Whether a checked file before `source` in program order reaches it through imports (module_refs, transitively), or
+// `source` is a script, whose declarations every file sees. Breadth-first from the earlier files; asked only for a
+// shown circularity, so rarely
+static bool reached_from_earlier(Program* me, SourceFile const* source) {
+    if (!source->is_module) return true;
+    isize files = vec_source_file_ptr_size(&my source_files_ordered);
+    u32 limit = UINT32_MAX;
+    for (u32 at = 0; at < (u32)vec_source_file_ptr_size(&my check_files); at++) {
+        if (vec_source_file_ptr_at(&my check_files, at)[0] == source) {
+            limit = at;
+            break;
+        }
+    }
+    if (limit == UINT32_MAX || !limit) return limit == UINT32_MAX;
+    bool* seen = calloc((size_t)files + 1, 1);
+    SourceFile const** queue = c_new_n(SourceFile const*, files + 1);
+    u32 head = 0, tail = 0;
+    for (u32 at = 0; at < limit; at++) {
+        SourceFile const* file = vec_source_file_ptr_at(&my check_files, at)[0];
+        if (file->program_order < files && !seen[file->program_order]) {
+            seen[file->program_order] = true;
+            queue[tail++] = file;
+        }
+    }
+    bool found = false;
+    while (head < tail && !found) {
+        SourceFile const* file = queue[head++];
+        for (u32 r = 0; r < file->module_ref_count && !found; r++) {
+            SourceFile const* next = file->module_refs[r]->file;
+            if (!next || next->program_order >= files || seen[next->program_order]) continue;
+            if (next == source) found = true;
+            seen[next->program_order] = true;
+            queue[tail++] = next;
+        }
+    }
+    free(seen);
+    free(queue);
+    return found;
+}
+
 // Whether the parallel pass's output may differ from one checker's because of a history-dependent diagnostic
-// (error_is_history_dependent()), which is what the one-checker rerun is for. Only diagnostics the output shows count:
-// not in an unchecked or excluded file (error_ctx_remove_unchecked()), not under a @ts-expect-error/@ts-ignore
-// (program_apply_comment_directives()); type-fest's and effect's suppressed TS2589/TS2590 reran their programs for a
-// diagnostic nobody sees. Of those, one says the history mattered when (agents/notes/one_checker_rerun.md):
-// - it is about another file than the one its checker was checking (Error.history_foreign): what it is about was
-//   reached from elsewhere, and one checker may reach it first from a third file. appflare's TS5115 (every checker
-//   trips the same types at the first site its own files reach), bun 92-R16b's TS2615 pair across two files;
-// - two checkers report a limit (sunmao-ui's TS2590 at each checker's first union of that size);
-// - a checker was recycled, or the diagnostic has no file.
-// - it is an implicit-any circularity (TS7022, TS7023, TS7024), even inside the file being checked: sequelize's
-//   `models` field forms its cycle only where no earlier file resolved the class first.
-// The other circularities and a lone checker's limit in the file it was checking are what one checker reports too:
-// vue's TS5115 (75 of the 87 source sweep configs that reran on 2026-10-24 had output identical to --checkers 1 without
-// the rerun)
+// (error_is_history_dependent()), which is what the one-checker rerun is for (agents/notes/one_checker_rerun.md). Only
+// diagnostics the output shows count: not in an unchecked or excluded file (error_ctx_remove_unchecked()), not under a
+// @ts-expect-error/@ts-ignore (program_apply_comment_directives()); type-fest's and effect's suppressed TS2589/TS2590
+// reran their programs for a diagnostic nobody sees. Of those, it reruns for:
+// - any limit (TS2589, TS5114, TS5115, TS2590, TS2321, TS2859): where one trips depends on what its checker
+//   instantiated before, also in the file it checks itself, and its error type silences diagnostics later
+//   (cloudflare-os workshop-backend's TS5114, appflare's TS5115 at every checker's first site);
+// - a circularity reported in another file than the one its checker was checking, or after a cycle through another
+//   file's declarations (Error.history_foreign): bun 92-R16b's TS2615 pair across two files;
+// - an implicit-any circularity (TS7022, TS7023, TS7024) from a cycle of more than one function's return type
+//   (Error.history_entry_dependent) in a file that a file before it in program order reaches through imports
+//   (reached_from_earlier()): sequelize's `models` field forms its cycle only where no earlier file resolved the class
+//   first. A function inferring its own return type (nest's TS7023 samples) is found at that function from any entry;
+// - anything after a recycle, or without a file.
 static bool history_dependent_matters(Program* me, ErrorCtx const* checker_errs, u32 count) {
     bool recycled = program_recycled(me);
-    u32 limit_checker = UINT32_MAX;
     for (u32 c = 0; c < count; c++) {
         for_each (e, vec_error, &checker_errs[c].errors) {
             if (!error_is_history_dependent(e->ts_code) || e->suggestion) continue;
@@ -5083,16 +5122,18 @@ static bool history_dependent_matters(Program* me, ErrorCtx const* checker_errs,
             if (source->excluded || source->unchecked) continue;
             if (preceding_comment_directive(source, e->span)) continue;
             if (recycled || e->history_foreign) return true;
-            // (An implicit-any circularity, TS7022/TS7023/TS7024, always: whether it forms at all can depend on an earlier
-            // file having resolved its class first, with every entry of the cycle in this file: sequelize's `models` field,
-            // 3 of 15 runs at the defaults without this)
-            if (e->ts_code == 7022 || e->ts_code == 7023 || e->ts_code == 7024) return true;
-            if (e->ts_code == 2589 || e->ts_code == 5114 || e->ts_code == 5115 || e->ts_code == 2590 ||
-                e->ts_code == 2321 || e->ts_code == 2859
+            // (An implicit-any circularity of more than one function in a file an earlier file reaches: whether it forms
+            // at all can depend on that earlier file having resolved its declarations first, with every entry of the cycle
+            // in this file: sequelize's `models` field, 3 of 15 runs at the defaults without this)
+            if ((e->ts_code == 7022 || e->ts_code == 7023 || e->ts_code == 7024) && e->history_entry_dependent &&
+                reached_from_earlier(me, source)
             ) {
-                if (limit_checker != UINT32_MAX && limit_checker != c) return true;
-                limit_checker = c;
+                return true;
             }
+            // (Any limit: where one trips depends on what its checker instantiated before even in the file it checks, and
+            // its error type silences diagnostics in later files: cloudflare-os workshop-backend's TS5114 at every K but
+            // 1, with 1 to 12 more errors depending on the deal)
+            if (!error_is_circularity(e->ts_code)) return true;
         }
     }
     return false;
@@ -5800,6 +5841,7 @@ static bool pool_recycle_due(Program* me, Checker* checker, u32 c, u32 count) {
 static void check_file(Program* me, Checker* checker, SourceFile* source, u32 at) {
     error_checking_file = source;
     error_cycle_foreign = false;
+    error_cycle_entry_dependent = false;
     __atomic_store_n(&checker->file_order, at, __ATOMIC_RELAXED);
     checker->member_ref_order = at;
 #ifdef TTTT_SURVIVORS
