@@ -1,0 +1,37 @@
+//// [test/cases/ttttDistributedParamMappedTemplate.ts] ////
+
+=== ttttDistributedParamMappedTemplate.ts ===
+// Instantiating a distributed type parameter through a mapper that doesn't map it gives its original (tsgo's
+// getMappedType maps getNonDistributedTypeParameter(t)): two conditional types over V written twice have generic mapped
+// false branches whose templates, instantiated for the key, compare V with the distributed V, unrelated (TS2719, with
+// TS5113's elaboration and no TS2208 for the original V: its synthetic constraint would be circular)
+function h1<K extends string, V>(x: V extends undefined ? 1 : { [P in K]: V }) { const y: V extends undefined ? 1 : { [P in K]: V } = x; }
+>h1 : <K extends string, V>(x: V extends undefined ? 1 : { [P in K]: V; }) => void
+>x : V extends undefined ? 1 : { [P in K]: V; }
+>y : V extends undefined ? 1 : { [P in K]: V; }
+>x : V extends undefined ? 1 : { [P in K]: V; }
+
+function h2<K extends string, V>(x: V extends undefined ? 1 : { [P in K]: 2 }) { const y: V extends undefined ? 1 : { [P in K]: 2 } = x; }
+>h2 : <K extends string, V>(x: V extends undefined ? 1 : { [P in K]: 2; }) => void
+>x : V extends undefined ? 1 : { [P in K]: 2; }
+>y : V extends undefined ? 1 : { [P in K]: 2; }
+>x : V extends undefined ? 1 : { [P in K]: 2; }
+
+function h3<K extends string, V>(x: V extends undefined ? 1 : { [P in "a"]: V }) { const y: V extends undefined ? 1 : { [P in "a"]: V } = x; }
+>h3 : <K extends string, V>(x: V extends undefined ? 1 : { [P in "a"]: V; }) => void
+>x : V extends undefined ? 1 : { a: V; }
+>y : V extends undefined ? 1 : { a: V; }
+>x : V extends undefined ? 1 : { a: V; }
+
+function h4<K extends string, V>(x: V extends 1 ? 1 : { [P in K]: V }) { const y: V extends 1 ? 1 : { [P in K]: V } = x; }
+>h4 : <K extends string, V>(x: V extends 1 ? 1 : { [P in K]: V; }) => void
+>x : V extends 1 ? 1 : { [P in K]: V; }
+>y : V extends 1 ? 1 : { [P in K]: V; }
+>x : V extends 1 ? 1 : { [P in K]: V; }
+
+function h5<K extends string, V>(x: V extends undefined ? { [P in K]: V } : 1) { const y: V extends undefined ? { [P in K]: V } : 1 = x; }
+>h5 : <K extends string, V>(x: V extends undefined ? { [P in K]: V; } : 1) => void
+>x : V extends undefined ? { [P in K]: V; } : 1
+>y : V extends undefined ? { [P in K]: V; } : 1
+>x : V extends undefined ? { [P in K]: V; } : 1
+

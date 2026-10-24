@@ -1,0 +1,83 @@
+//// [test/cases/ttttDistributedParamMappedTemplate.ts] ////
+
+=== ttttDistributedParamMappedTemplate.ts ===
+// Instantiating a distributed type parameter through a mapper that doesn't map it gives its original (tsgo's
+// getMappedType maps getNonDistributedTypeParameter(t)): two conditional types over V written twice have generic mapped
+// false branches whose templates, instantiated for the key, compare V with the distributed V, unrelated (TS2719, with
+// TS5113's elaboration and no TS2208 for the original V: its synthetic constraint would be circular)
+function h1<K extends string, V>(x: V extends undefined ? 1 : { [P in K]: V }) { const y: V extends undefined ? 1 : { [P in K]: V } = x; }
+>h1 : Symbol(h1, Decl(ttttDistributedParamMappedTemplate.ts, 0, 0))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 4, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 4, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 4, 33))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 4, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 4, 65))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 4, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 4, 29))
+>y : Symbol(y, Decl(ttttDistributedParamMappedTemplate.ts, 4, 86))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 4, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 4, 119))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 4, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 4, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 4, 33))
+
+function h2<K extends string, V>(x: V extends undefined ? 1 : { [P in K]: 2 }) { const y: V extends undefined ? 1 : { [P in K]: 2 } = x; }
+>h2 : Symbol(h2, Decl(ttttDistributedParamMappedTemplate.ts, 4, 138))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 5, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 5, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 5, 33))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 5, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 5, 65))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 5, 12))
+>y : Symbol(y, Decl(ttttDistributedParamMappedTemplate.ts, 5, 86))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 5, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 5, 119))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 5, 12))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 5, 33))
+
+function h3<K extends string, V>(x: V extends undefined ? 1 : { [P in "a"]: V }) { const y: V extends undefined ? 1 : { [P in "a"]: V } = x; }
+>h3 : Symbol(h3, Decl(ttttDistributedParamMappedTemplate.ts, 5, 138))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 6, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 6, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 6, 33))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 6, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 6, 65))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 6, 29))
+>y : Symbol(y, Decl(ttttDistributedParamMappedTemplate.ts, 6, 88))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 6, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 6, 121))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 6, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 6, 33))
+
+function h4<K extends string, V>(x: V extends 1 ? 1 : { [P in K]: V }) { const y: V extends 1 ? 1 : { [P in K]: V } = x; }
+>h4 : Symbol(h4, Decl(ttttDistributedParamMappedTemplate.ts, 6, 142))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 7, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 7, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 7, 33))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 7, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 7, 57))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 7, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 7, 29))
+>y : Symbol(y, Decl(ttttDistributedParamMappedTemplate.ts, 7, 78))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 7, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 7, 103))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 7, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 7, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 7, 33))
+
+function h5<K extends string, V>(x: V extends undefined ? { [P in K]: V } : 1) { const y: V extends undefined ? { [P in K]: V } : 1 = x; }
+>h5 : Symbol(h5, Decl(ttttDistributedParamMappedTemplate.ts, 7, 122))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 8, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 8, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 8, 33))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 8, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 8, 61))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 8, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 8, 29))
+>y : Symbol(y, Decl(ttttDistributedParamMappedTemplate.ts, 8, 86))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 8, 29))
+>P : Symbol(P, Decl(ttttDistributedParamMappedTemplate.ts, 8, 115))
+>K : Symbol(K, Decl(ttttDistributedParamMappedTemplate.ts, 8, 12))
+>V : Symbol(V, Decl(ttttDistributedParamMappedTemplate.ts, 8, 29))
+>x : Symbol(x, Decl(ttttDistributedParamMappedTemplate.ts, 8, 33))
+

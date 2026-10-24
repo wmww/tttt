@@ -924,6 +924,9 @@ void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* 
 // (A conditional type's default constraint is its branches', an indexed access into an object type with a generic
 // index is its properties': `FlatArray<T, D>`, `{ done: T, recur: ... }[D extends -1 ? "done" : "recur"]`)
 static bool constraint_resolves_through(Checker* me, Ty const* ty, Ty const* source, Ty const* declared, u32 depth) {
+    // (A distributed twin of it too: the synthetic parameter's constraint is the target instantiated with the source
+    // mapped to it, which maps the twin like its original, tsgo's getMappedType)
+    ty = ty_non_distributed(ty);
     if (ty == source || ty == declared) return true;
     if (depth > 8) return false;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {

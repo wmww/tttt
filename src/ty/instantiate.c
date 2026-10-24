@@ -1385,12 +1385,15 @@ static Ty const* instantiate_structured(Checker* me, Ty const* ty, TyMapper cons
         return ty_intrinsic(me, TY_ERROR);
     }
     my instantiation_count++;
-    // (A distributed type parameter is mapped like its original: tsgo's getMappedType)
+    // (A distributed type parameter is mapped like its original, and a mapper that doesn't map it gives the original:
+    // tsgo's getMappedType maps getNonDistributedTypeParameter(t). So two generic mapped types `{ [P in K]: V }` of two
+    // conditional types over V aren't related, their templates instantiated for the key give V against the
+    // distributed V: TS2719, @skastr0/quartz-engine)
     Ty const* key = ty_non_distributed(ty);
     for (u32 i = 0; i < mapper->len; i++) {
         if (mapper->sources[i] == key) return mapper->targets[i];
     }
-    return ty;
+    return key;
 }
 
 __attribute__((noinline)) static Ty const* instantiate_structured(Checker* me, Ty const* ty, TyMapper const* mapper, bool tail) {

@@ -1,0 +1,52 @@
+ttttDistributedParamMappedTemplate.ts(5,88): error TS2719: Type 'V extends undefined ? 1 : { [P in K]: V; }' is not assignable to type 'V extends undefined ? 1 : { [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+  Type '1 | { [P in K]: V; }' is not assignable to type 'V extends undefined ? 1 : { [P in K]: V; }'.
+    Type '1' is not assignable to type 'V extends undefined ? 1 : { [P in K]: V; }'.
+      Type '{ [P in K]: V; }' is not assignable to type '{ [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+        Type 'V' is not assignable to type 'V'. Two different types with this name exist, but they are unrelated.
+          'V' is only assignable to the non-distributed 'V', but 'V' has been distributed here.
+ttttDistributedParamMappedTemplate.ts(8,80): error TS2719: Type 'V extends 1 ? 1 : { [P in K]: V; }' is not assignable to type 'V extends 1 ? 1 : { [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+  Type '1 | { [P in K]: V; }' is not assignable to type 'V extends 1 ? 1 : { [P in K]: V; }'.
+    Type '1' is not assignable to type 'V extends 1 ? 1 : { [P in K]: V; }'.
+      Type '{ [P in K]: V; }' is not assignable to type '{ [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+        Type 'V' is not assignable to type 'V'. Two different types with this name exist, but they are unrelated.
+          'V' is only assignable to the non-distributed 'V', but 'V' has been distributed here.
+ttttDistributedParamMappedTemplate.ts(9,88): error TS2719: Type 'V extends undefined ? { [P in K]: V; } : 1' is not assignable to type 'V extends undefined ? { [P in K]: V; } : 1'. Two different types with this name exist, but they are unrelated.
+  Type '1 | { [P in K]: V; }' is not assignable to type 'V extends undefined ? { [P in K]: V; } : 1'.
+    Type '1' is not assignable to type 'V extends undefined ? { [P in K]: V; } : 1'.
+      Type '{ [P in K]: V; }' is not assignable to type '{ [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+        Type 'undefined & V' is not assignable to type 'V'.
+          'undefined & V' is only assignable to the non-distributed 'V', but 'V' has been distributed here.
+
+
+==== ttttDistributedParamMappedTemplate.ts (3 errors) ====
+    // Instantiating a distributed type parameter through a mapper that doesn't map it gives its original (tsgo's
+    // getMappedType maps getNonDistributedTypeParameter(t)): two conditional types over V written twice have generic mapped
+    // false branches whose templates, instantiated for the key, compare V with the distributed V, unrelated (TS2719, with
+    // TS5113's elaboration and no TS2208 for the original V: its synthetic constraint would be circular)
+    function h1<K extends string, V>(x: V extends undefined ? 1 : { [P in K]: V }) { const y: V extends undefined ? 1 : { [P in K]: V } = x; }
+                                                                                           ~
+!!! error TS2719: Type 'V extends undefined ? 1 : { [P in K]: V; }' is not assignable to type 'V extends undefined ? 1 : { [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type '1 | { [P in K]: V; }' is not assignable to type 'V extends undefined ? 1 : { [P in K]: V; }'.
+!!! error TS2719:     Type '1' is not assignable to type 'V extends undefined ? 1 : { [P in K]: V; }'.
+!!! error TS2719:       Type '{ [P in K]: V; }' is not assignable to type '{ [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:         Type 'V' is not assignable to type 'V'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:           'V' is only assignable to the non-distributed 'V', but 'V' has been distributed here.
+    function h2<K extends string, V>(x: V extends undefined ? 1 : { [P in K]: 2 }) { const y: V extends undefined ? 1 : { [P in K]: 2 } = x; }
+    function h3<K extends string, V>(x: V extends undefined ? 1 : { [P in "a"]: V }) { const y: V extends undefined ? 1 : { [P in "a"]: V } = x; }
+    function h4<K extends string, V>(x: V extends 1 ? 1 : { [P in K]: V }) { const y: V extends 1 ? 1 : { [P in K]: V } = x; }
+                                                                                   ~
+!!! error TS2719: Type 'V extends 1 ? 1 : { [P in K]: V; }' is not assignable to type 'V extends 1 ? 1 : { [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type '1 | { [P in K]: V; }' is not assignable to type 'V extends 1 ? 1 : { [P in K]: V; }'.
+!!! error TS2719:     Type '1' is not assignable to type 'V extends 1 ? 1 : { [P in K]: V; }'.
+!!! error TS2719:       Type '{ [P in K]: V; }' is not assignable to type '{ [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:         Type 'V' is not assignable to type 'V'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:           'V' is only assignable to the non-distributed 'V', but 'V' has been distributed here.
+    function h5<K extends string, V>(x: V extends undefined ? { [P in K]: V } : 1) { const y: V extends undefined ? { [P in K]: V } : 1 = x; }
+                                                                                           ~
+!!! error TS2719: Type 'V extends undefined ? { [P in K]: V; } : 1' is not assignable to type 'V extends undefined ? { [P in K]: V; } : 1'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:   Type '1 | { [P in K]: V; }' is not assignable to type 'V extends undefined ? { [P in K]: V; } : 1'.
+!!! error TS2719:     Type '1' is not assignable to type 'V extends undefined ? { [P in K]: V; } : 1'.
+!!! error TS2719:       Type '{ [P in K]: V; }' is not assignable to type '{ [P in K]: V; }'. Two different types with this name exist, but they are unrelated.
+!!! error TS2719:         Type 'undefined & V' is not assignable to type 'V'.
+!!! error TS2719:           'undefined & V' is only assignable to the non-distributed 'V', but 'V' has been distributed here.
+    

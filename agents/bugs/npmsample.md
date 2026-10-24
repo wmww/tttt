@@ -155,7 +155,12 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   to type 'V | undefined'", two distinct V's, which suggests one side's V is a substituted or instantiated copy.
   tttt relates them. Guess: tsgo relates a deferred conditional to another only when the check and extends types are
   identical and both branches are related both ways, through instantiations its constraint machinery makes distinct.
-  The fix needs the tsgo trace (scripts/tsgotrace.py 2719). [flip] [open]
+  The fix needs the tsgo trace (scripts/tsgotrace.py 2719). Root cause: tsgo 7.1's getMappedType maps a distributed
+  type parameter like its original, and a mapper that doesn't map it gives the original, not the distributed twin. So
+  mappedTypeRelatedTo's template instantiation (the key mapper) turns the source's distributed V into V, against the
+  target's distributed V: unrelated, TS5113 in the chain. tttt's ty_instantiate_mapped returned the twin unchanged, and
+  report_missing_constraint didn't see the twin as the source (TS2208 tsgo doesn't add). Repro
+  ttttDistributedParamMappedTemplate. (claimed: corB) [flip] [fixed PENDING]
 - **npm__tera-ui_tooltip_TS7031** (seed 20261025, @tera-ui/tooltip@1.3.3, hieumau12/tera-ui
   packages/utilities/shared-utils/src/object.ts:9): `(k: string, {[k]: old, ...others}) => ...`, an unannotated
   parameter's binding pattern with a computed non-literal key. tsc's getTypeFromObjectBindingPattern leaves that
@@ -168,7 +173,9 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   deferred conditional type over `Entity[P]` with `infer U`. tsgo relates them only if their extends types are
   identical, and two `infer U`s are distinct type parameters, so the source falls back to its branches and fails:
   TS2345. tttt finds them assignable. Likely related to npm__skastr0_quartz-engine_TS2719, where tttt also relates
-  two deferred conditionals that tsgo doesn't. [open]
+  two deferred conditionals that tsgo doesn't. Not the same root cause: no distributed type parameter is involved
+  (it still differs after quartz's fix); tttt's relation reaches deeply-nested Maybe results through
+  `U[P][string]`-like indexed accesses where tsgo's fails first (TTTT_DEBUG_RELATE_NESTED). (claimed: corB) [open]
 - **npm__mui-treasury_component-number-input_TS2353** (seed 20261031, @mui-treasury/component-number-input@0.0.1-alpha.3,
   siriwatknp/mui-treasury-next; tsgo 75, tttt 81). Six `<TextField {...args} InputProps={{ ..., disableUnderline:
   true }}/>` in packages/style-textfield-{ant,bootstrap,standard} stories, each under a `{/* @ts-ignore */}` line.
