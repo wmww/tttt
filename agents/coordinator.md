@@ -60,6 +60,9 @@ brief, you don't understand the task yet. The common rules, each learned from an
   killed one. Kill by a PID you started. Never `rm -rf` a glob, `*`, or a path built from a shell variable: each
   raises a permission prompt on the human's side, which they deny (`rm -rf *` in a probe directory did, 2026-10-23).
   Literal paths only; a fresh `mktemp -d` directory per probe, removed by one literal `rm -rf PATH` at the end.
+- Every wait is bounded: `until COND || [ $n -ge 60 ]; do sleep 20; n=$((n+1)); done`, never an open `until [ -s
+  task.output ]`: on 2026-10-25 six such loops from finished agents had polled empty task files for 3-9 hours, cluttering
+  the human's task list (and a notification woke a 9-hour-old agent when they were killed).
 - Never create a symlink into `thirdparty/` from scratch, nor copy a project by following its links: a write
   through one lands in the shared, hardlinked checkouts (a reducer once stubbed 690 dependency files across every
   repo). Reduce with `scripts/reduce.py` (symlink-free copy, bwrap sandbox); `scripts/sourcescheck.sh` tells.
