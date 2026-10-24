@@ -541,6 +541,7 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
   declaration's type (likely its error-callee path, or a quick non-generic return type for `lazyToolNames(...)`), so
   it has no cycle. Next step: those 3 files as a test/cases repro (an undeclared callee alone may reproduce it). Not continued: the npm workflow comes
   first. Fixed: the cause was the order, not the unresolved callees. tsc infers a function argument's return type during its contextual check, before relating it, and tttt did that only for inferring calls; check_arg() now does it for every call (test/cases/ttttArgumentReturnReentersCycle.ts). [fixed corF 2026-10-24]
+- **foldkit/repos/effect/packages/tools/bundle/tsconfig.src.json: 11 missing TS18046/TS7006/TS2322/TS2345** at src/Cli.ts:75,81 and src/Reporter.ts:195-205: `fixtures`, from the `Fixtures` service whose `make` is `Effect.promise(() => Glob.glob(...)).pipe(Effect.map(Array.sort(Order.String)), ...)` (`glob` unresolved, so an Effect of unknown), read as any instead of unknown. Stable at every K and file order. Missing at a015c5c48, matching from 9ba61e39e on (under SkipGenericFunctions, a generic call argument returning a generic function is skipped by the inference: `Array.sort(Order.String)`); the opencode TS2488 repro covers it. [fixed 9ba61e39e]
 
 ## Refresh 7: application monorepos on generic libraries (2026-10-23, cor9)
 Six repos installed before the installs were stopped (repos.txt "Refresh 7"; the rest pending a sandboxed
