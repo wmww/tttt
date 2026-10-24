@@ -220,3 +220,7 @@ intersection's property symbol to bugs/type_core.md.
   ("Class 'CastableBase<t>' incorrectly extends base class 't'. 'CastableBase<t>' is assignable to the constraint of
   type 't', but 't' could be instantiated with a different subtype of constraint 'object'."), nothing in tttt
   (arktype silences it with @ts-ignore; test/cases/ttttClassBaseTypeParamDynamic.ts too). [open]
+- Extra elaboration line on a named-union intersection (corB, 2026-10-24): assigning `(As<any> & As) | undefined`
+  (chakra-ui's `as` prop, As an imported alias of React's ElementType) to `number` gives tttt a second line "Type
+  'undefined' is not assignable to type 'number'." that tsgo doesn't print (header line identical). Text only, seen in
+  a probe while fixing the 0xsonic TS2590. [text]
