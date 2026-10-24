@@ -28,3 +28,8 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   TS2339/TS2551 (src/components/BaseInfo/index.tsx(75) "Property 'data_' does not exist on type 'Vue'"). [open]
 - The batch's first compare crashed on the varies project (fixed: npmsample.py's NameError) after deleting the
   identical clones, so 20261107.results.jsonl has only the 5 kept projects; the other 52 of 57 were identical.
+
+## Seed 20261108
+- No divergence: 57 accepted of 57 set up, 56 byte-identical, 57/57 same (file, line, code), clean agreement 57/57, no
+  K-dependence. The one text-only difference (unbywyd-postcss-color-extractor src/index.ts(108) TS5115: tttt's column is
+  11, tsgo's 26) is not a divergence here. No repros.
