@@ -86,6 +86,37 @@ static bool tsc_could_contain_type_variables(Ty const* ty, u32 depth) {
     }
 }
 
+// The type parameters from outside that an overloaded method's signatures mention, false if not known: each
+// overload declaration's (they share the scope of one class or object literal), without resolving any signature, so a
+// constraint like `K extends InjectKey` isn't lowered while InjectKey is (tsc's permissive instantiation of the method
+// type is lazy: getObjectTypeInstantiation only asks which outer type parameters its declarations can reference)
+static bool overloads_free_params(Checker* me, Ty const* target, TyList* out) {
+    TyBuf params = {0};
+    bool known = true;
+    for (u32 i = 0; i < target->anonymous.overload_count && known; i++) {
+        TyList own;
+        FunctionImpl const* overload = target->anonymous.overloads[i];
+        if (!ty_function_free_params(me, overload, &own)) {
+            // (An overload signature whose implementation's body may mention any of them, the class's `this` among
+            // them: every type parameter in scope, which a permissive mapping may map without looking at the
+            // signatures. tsc's instantiation of the method type is lazy all the same)
+            if (overload->has_body) {
+                known = false;
+                break;
+            }
+            own = ty_function_outer_type_params(me, overload);
+        }
+        for (u32 j = 0; j < own.len; j++) {
+            bool seen = false;
+            for (u32 k = 0; k < params.len && !seen; k++) seen = params.data[k] == own.data[j];
+            if (!seen) ty_buf_push(&params, own.data[j]);
+        }
+    }
+    if (known) *out = ty_list_copy(me, params.data, params.len);
+    ty_buf_drop(&params);
+    return known;
+}
+
 static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk, u32 depth) {
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !(walk->collect && tsc_could_contain_type_variables(ty, 0))) return false;
     if (ty->kind == TY_TYPE_PARAM) {
@@ -158,7 +189,9 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             bool known = target->kind == TY_ANONYMOUS && !ty->anonymous.applies_type_args && (
                 (target->anonymous.node && !target->anonymous.free_params_unknown) ||
                 (target->anonymous.function && !target->anonymous.node && !target->anonymous.overload_count &&
-                    !target->anonymous.is_reverse && !target->anonymous.merged_value && ty_function_free_params(me, target->anonymous.function, &params)));
+                    !target->anonymous.is_reverse && !target->anonymous.merged_value && ty_function_free_params(me, target->anonymous.function, &params)) ||
+                (!target->anonymous.node && target->anonymous.overload_count && !target->anonymous.is_reverse &&
+                    overloads_free_params(me, target, &params)));
             if (known) {
                 for (u32 i = 0; i < params.len; i++) {
                     Ty const* param = params.data[i];
