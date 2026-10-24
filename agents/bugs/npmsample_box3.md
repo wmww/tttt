@@ -138,4 +138,4 @@ for flips); a separate file so the three boxes never conflict.
   cannot be named without a reference to 'Server'..." in a `// @ts-nocheck` file under declaration: true. tsgo
   reports no diagnostics for a nocheck file, declaration diagnostics included, and tttt's declaration walk reports
   them anyway. A second oddity: the anonymous `export default function` is named '(Missing)'. Repro
-  test/cases/npm_mcp-namecheap_TS2883.ts (reduce.py, then by hand). [flip] [open]
+  test/cases/npm_mcp-namecheap_TS2883.ts (reduce.py, then by hand). (claimed: fixF) [flip] [open]
