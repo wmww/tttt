@@ -83,7 +83,7 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
 
 ## Seed 20261111
 - 52 accepted, 51 byte-identical, 51/52 same (file, line, code), clean agreement 51/52, no K-dependence (no varies).
-- **npm__framelia_dashboard-server_TS2532** (seed 20261111, @framelia/dashboard-server@0.0.5, hungify/framelia at cb6fb0e packages/dashboard-server/src/model.ts(35); tsgo 0, tttt 1) **[flip]**
+- **npm__framelia_dashboard-server_TS2532** (seed 20261111, @framelia/dashboard-server@0.0.5, hungify/framelia at cb6fb0e packages/dashboard-server/src/model.ts(35); tsgo 0, tttt 1) (claimed: fixE) **[flip]**
   (test: test/cases/npm__framelia_dashboard-server_TS2532.ts, 7 lines): `s[c.status] += 1` with `noUncheckedIndexedAccess`, `s: Record<"queued"|"running", number> & {"masked-pass"?: number; total: number}`
   and `c.status: "queued"|"running"|"masked-pass"`: tttt reports TS2532 "Object is possibly 'undefined'" for the compound assignment target, tsgo nothing. Guess: tsgo
   doesn't add `| undefined` for the read of an element-access write target (compound assignment reads) when the key is a union over an intersection with an optional member,
