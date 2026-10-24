@@ -1,0 +1,70 @@
+//// [test/cases/ttttThisInstantiatedAnnotatedImplementation.ts] ////
+
+=== ttttThisInstantiatedAnnotatedImplementation.ts ===
+// The counterpart of ttttThisInstantiatedMethodErased: with the implementation's return type annotated, no declaration
+// of `valid` possibly references `this` (tsc's isTypeParameterPossiblyReferenced), so the declared type's `valid` is
+// the declared method type itself, `this` related to the union compares the signatures unerased, and it fails: TS2345
+type Input = { in?: {}; out?: {} };
+>Input : Symbol(Input, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 0, 0))
+>in : Symbol(in, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 3, 14))
+>out : Symbol(out, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 3, 23))
+
+type VT = { json: any; form: string };
+>VT : Symbol(VT, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 3, 35))
+>json : Symbol(json, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 4, 11))
+>form : Symbol(form, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 4, 22))
+
+type ToData<T extends Input['out'], Target extends keyof VT> = T extends { [K in Target]: infer R } ? R : never;
+>ToData : Symbol(ToData, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 4, 38))
+>T : Symbol(T, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 12))
+>Input : Symbol(Input, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 0, 0))
+>Target : Symbol(Target, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 35))
+>VT : Symbol(VT, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 3, 35))
+>T : Symbol(T, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 12))
+>K : Symbol(K, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 76))
+>Target : Symbol(Target, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 35))
+>R : Symbol(R, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 95))
+>R : Symbol(R, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 95))
+
+interface R { r: string }
+>R : Symbol(R, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 112))
+>r : Symbol(R.r, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 6, 13))
+
+declare function parseBody(request: HonoRequest | R): void;
+>parseBody : Symbol(parseBody, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 6, 25))
+>request : Symbol(request, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 7, 27))
+>HonoRequest : Symbol(HonoRequest, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 7, 59))
+>R : Symbol(R, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 5, 112))
+
+export class HonoRequest<I extends Input['out'] = {}> {
+>HonoRequest : Symbol(HonoRequest, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 7, 59))
+>I : Symbol(I, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 9, 25))
+>Input : Symbol(Input, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 0, 0))
+
+  parseBody() {
+>parseBody : Symbol(HonoRequest.parseBody, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 9, 55))
+
+    return parseBody(this)
+>parseBody : Symbol(parseBody, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 6, 25))
+>this : Symbol(HonoRequest, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 7, 59))
+  }
+  valid<T extends keyof I & keyof VT>(target: T): ToData<I, T>
+>valid : Symbol(HonoRequest.valid, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 12, 3), Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 13, 62))
+>T : Symbol(T, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 13, 8))
+>I : Symbol(I, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 9, 25))
+>VT : Symbol(VT, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 3, 35))
+>target : Symbol(target, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 13, 38))
+>T : Symbol(T, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 13, 8))
+>ToData : Symbol(ToData, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 4, 38))
+>I : Symbol(I, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 9, 25))
+>T : Symbol(T, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 13, 8))
+
+  valid(target: keyof VT): any {
+>valid : Symbol(HonoRequest.valid, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 12, 3), Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 13, 62))
+>target : Symbol(target, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 14, 8))
+>VT : Symbol(VT, Decl(ttttThisInstantiatedAnnotatedImplementation.ts, 3, 35))
+
+    return 0 as any
+  }
+}
+

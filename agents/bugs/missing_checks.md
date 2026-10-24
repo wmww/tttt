@@ -158,8 +158,8 @@ the single-signature path compares unerased. What tttt would change: members res
 declared type gives a qualifying method (tsgo's possibly-referenced rule for `this`) an instance with `this -> the
 declared type`, while `this`'s apparent type keeps the raw members; same_signature_origin then works unchanged. Not the
 relation-only patch (treating a raw method type as an instance of itself): the relation can't tell a declared-type read
-from a `this` read, and tsc compares the latter unerased. Owner: whoever owns members resolution (hot path; an extra
-instance per qualifying method). [design]
+from a `this` read, and tsc compares the latter unerased. Fixed (det3, 2026-10-24) far more narrowly: ty_function_free_params() counts the
+overload's implementation, so the declared type's member is an instance (agents/notes/this_instantiated_members.md). [fixed det3]
 
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols

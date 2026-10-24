@@ -1,0 +1,51 @@
+//// [test/cases/ttttThisInstantiatedAnnotatedImplementation.ts] ////
+
+=== ttttThisInstantiatedAnnotatedImplementation.ts ===
+// The counterpart of ttttThisInstantiatedMethodErased: with the implementation's return type annotated, no declaration
+// of `valid` possibly references `this` (tsc's isTypeParameterPossiblyReferenced), so the declared type's `valid` is
+// the declared method type itself, `this` related to the union compares the signatures unerased, and it fails: TS2345
+type Input = { in?: {}; out?: {} };
+>Input : Input
+>in : {} | undefined
+>out : {} | undefined
+
+type VT = { json: any; form: string };
+>VT : VT
+>json : any
+>form : string
+
+type ToData<T extends Input['out'], Target extends keyof VT> = T extends { [K in Target]: infer R } ? R : never;
+>ToData : ToData<T, Target>
+
+interface R { r: string }
+>r : string
+
+declare function parseBody(request: HonoRequest | R): void;
+>parseBody : (request: HonoRequest | R) => void
+>request : HonoRequest<{}> | R
+
+export class HonoRequest<I extends Input['out'] = {}> {
+>HonoRequest : HonoRequest<I>
+
+  parseBody() {
+>parseBody : () => void
+
+    return parseBody(this)
+>parseBody(this) : void
+>parseBody : (request: HonoRequest | R) => void
+>this : this
+  }
+  valid<T extends keyof I & keyof VT>(target: T): ToData<I, T>
+>valid : <T extends keyof I & keyof VT>(target: T) => ToData<I, T>
+>target : T
+
+  valid(target: keyof VT): any {
+>valid : <T extends keyof I & keyof VT>(target: T) => ToData<I, T>
+>target : keyof VT
+
+    return 0 as any
+>0 as any : any
+>0 : 0
+  }
+}
+

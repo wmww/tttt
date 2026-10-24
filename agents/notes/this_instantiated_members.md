@@ -86,7 +86,27 @@ the structural fix; this note is the plan and the log.
 - Stage 3: as found.
 
 ## Progress log
-- 2026-10-24: note written. Stage 1 started. The two changes above (thisless per isThisless, the implementation's free
-  parameters) don't flip the test yet. The source of the failing comparison is still the raw `valid` (relate.c debug
-  print), so the declared type's member isn't the one being related, or instantiate_anonymous() keeps it. Next: find
-  which members the relation reads (the `HonoRequest<P, I> & this` intersection's property).
+- 2026-10-24: note written, stage 1 started.
+- 2026-10-24, stage 1 landed, much smaller than planned: `valid`'s type is a function anonymous (Ty.anonymous.function,
+  the first overload), not an overloads type. instantiate_anonymous() narrows its free parameters with
+  ty_function_free_params(), which looked at that one declaration only. It now gives up (unknown) when the overload's
+  implementation has a body and no return type annotation (tsc's isTypeParameterPossiblyReferenced over all
+  declarations). The declared type's `valid` is then an instance with `this ->` the type, same_signature_origin()
+  pairs it with `HonoRequest<{}>`'s instance erased, and the test passes.
+  - The annotated-implementation probe keeps tsgo's TS2345, now test/cases/ttttThisInstantiatedAnnotatedImplementation.ts.
+  - hono's build and spec configs are byte-identical to tsgo.
+  - Not needed after all: the Prop.thisless change (isThisless's single declaration) and the overloads-type change in
+    ty_anonymous_from_overloads(); both were tried and dropped.
+  - **Stage 2 is not needed.** relate.c already relates a declared type with a `this` type to references of itself
+    through variances (`source_self`/`target_self`, "a class or interface with a `this` type is a reference to
+    itself"; corB checked it, variancetrace agrees with tsgo's [3]). The "Variances" paragraph above was wrong about
+    tttt.
+  - Gates:
+    - quickgate --vs-main -k: suite +2/-0, realworld 0/0, threadcheck, checkerdiff.
+    - instrcount: drizzle +0.00%, zod -0.02%, vscode +0.00%, excalidraw +0.01%, nest -0.02%.
+    - $ExpectType: 68640/68640.
+    - DT sweep: 8595/8595.
+    - Source sweep --sample 4: 1663/1671. All eight mismatches are byte-identical to main's build (openclaw times
+      out).
+- Next: ty_display.c's method_this_instantiated() may now be redundant (the instances say it), a cleanup to try
+  separately.

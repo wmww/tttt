@@ -587,4 +587,4 @@ reverted: "declared type == instantiation of itself" in same_signature_origin(),
 reference `this`, fixes hono and that test. But a class's declared type is a TY_DECLARED in tttt, not a reference, so
 `HonoRequest<I> -> HonoRequest<{}>` goes structural instead of through variances, and with `valid` now erased it passes
 where tsgo reports TS2345 (the test's method with an annotated implementation). The members-level design in
-missing_checks.md, together with variances for a declared type against its instantiations, is the fix. [design]
+missing_checks.md, together with variances for a declared type against its instantiations, is the fix. Fixed (det3, 2026-10-24) with a five-line change instead (ty_function_free_params() counts an overload's implementation; agents/notes/this_instantiated_members.md): build and spec configs byte-identical. [fixed det3]

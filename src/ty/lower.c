@@ -1369,6 +1369,11 @@ bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* 
         for_each (i, vec_function_arg, &function->args) {
             if (!i->initializer.binding.has_explicit_type && !initializer_mentions_no_type_params(&i->initializer)) eligible = false;
         }
+        // (An overload's implementation is a declaration of the method too: tsc's isTypeParameterPossiblyReferenced
+        // looks at all of them, and a body without a return type annotation may mention any type parameter, the
+        // class's `this` among them, so the method is instantiated per `this`: hono's `valid`)
+        FunctionImpl const* implementation = function_impl_rare(function)->overload_implementation;
+        if (implementation && implementation != function && implementation->has_body && !implementation->ret_explicit) eligible = false;
         if (eligible) {
             FreeParams found = {0};
             collect_free_params_of_function(me, function, &found);
