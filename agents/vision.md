@@ -74,6 +74,13 @@ measured wins first; land fast and gate in batches.
 6. **Re-pin to 7.1.0 stable** when it ships.
 
 ## Decisions (each with its reason; the narrative is in git history of this file)
+- **The sweep is biased heavily toward big projects** (2026-10-24, the human: "its time to heavily bias towards big
+  projects"). After ~1900 random npm projects (95.7% identical, 20 flips found and all fixed), small packages return
+  mostly clean batches, while the large-repo refreshes showed 9 of 20 repos diverging. `scripts/npmsample.py sample
+  --large` draws random large TypeScript repositories from GitHub search (reposearch.py's size buckets) and `setup
+  --large` accepts up to a few workspace sub-projects per repo (installed once, sandboxed) with a minimum TypeScript
+  file count; finders run that mode from now on (seeds 20261300+ here, 20261400+ the remote box); the npm registry
+  sampling stays available for breadth.
 - **The npm workflow is the only priority; races and thread-count dependence outrank even it** (2026-10-23 late, the
   human). Order: (1) any race or thread/checker-count dependence found anywhere (det3 owns them); (2) flip cases from
   the random-npm sweep (tsgo and tttt disagree on whether a project has ANY error), each a minimal `test/cases/npm_*`
