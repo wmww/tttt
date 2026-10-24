@@ -1,0 +1,41 @@
+// @strict: true
+// A distributive conditional type as written (tsgo: its check type is the distributed twin of the type parameter)
+// isn't identical to one instantiated onto that type parameter (the twin mapped back to the original), and identity
+// is cached for the pair in either order: expect-type's toEqualTypeOf on es-toolkit/compat against lodash
+var v1: <T>() => T extends string ? 1 : 2;
+var v1: <T>() => T extends string ? 1 : 2;
+var v2: <T>(x: T) => T[];
+var v2: <T>(x: T) => T[];
+
+interface I<T> { x: T extends string ? 1 : 2 }
+interface I<T> { x: T extends string ? 1 : 2 }
+// (A later class declaration's parameters are the interface's, its default instantiated for them: as written still)
+interface B<A extends string | undefined, N extends Record<string, 'x'> = A extends string ? Record<A, 'x'> : {}> { a: A; n: N }
+declare class B<A extends string | undefined, N extends Record<string, 'x'> = A extends string ? Record<A, 'x'> : {}> { m(): void }
+
+type Same<L, R> = (<T>() => T extends (L & T) | T ? true : false) extends <T>() => T extends (R & T) | T ? true : false ? true : false;
+type C<T> = T extends string ? 1 : 2;
+declare const ok: [
+    Same<<T>() => T extends string ? 1 : 2, <T>() => T extends string ? 1 : 2>,
+    Same<<T>() => C<T>, <T>() => C<T>>,
+    Same<<T>() => C<T>, <T>() => T extends string ? 1 : 2>,
+    Same<<T>(x: T) => T extends string ? T : 1, <T>(x: T) => T extends string ? T : 1>,
+    Same<{ x: <T>() => T extends string ? 1 : 2 }, { x: <T>() => T extends string ? 1 : 2 }>,
+    Same<I<number>["x"], 2>,
+];
+ok;
+
+namespace L {
+    type List<T> = ArrayLike<T>;
+    interface RecursiveArray<T> extends Array<T | RecursiveArray<T>> {}
+    interface ListOfRecursiveArraysOrValues<T> extends List<T | RecursiveArray<T>> {}
+    type Flat<T> = T extends string ? T : (T extends List<any> ? never : T);
+    export declare function flattenDeep<T>(array: ListOfRecursiveArraysOrValues<T> | null | undefined): Array<Flat<T>>;
+}
+namespace E {
+    interface RecursiveArray<T> extends Array<T | RecursiveArray<T>> {}
+    interface ListOfRecursiveArraysOrValues<T> extends ArrayLike<T | RecursiveArray<T>> {}
+    export declare function flattenDeep<T>(array: ListOfRecursiveArraysOrValues<T> | null | undefined): Array<T extends string ? T : T extends ArrayLike<any> ? never : T>;
+}
+declare function toEqualTypeOf<A, B extends (Same<A, B> extends true ? unknown : 1)>(): void;
+toEqualTypeOf<typeof E.flattenDeep, typeof L.flattenDeep>();

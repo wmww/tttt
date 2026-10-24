@@ -5563,6 +5563,17 @@ structural:;
     return result;
 }
 
+// A conditional type as written, or an instance of it that maps every outer type parameter to itself (tsgo's seeded
+// root.instantiations give back the written one, whose check type is the distributed twin)
+static bool conditional_as_written(Ty const* ty) {
+    if (ty->conditional.root == ty || !ty->conditional.mapper) return true;
+    TyMapper const* mapper = ty->conditional.mapper;
+    for (u32 i = 0; i < mapper->len; i++) {
+        if (mapper->sources[i] != mapper->targets[i]) return false;
+    }
+    return true;
+}
+
 static Ternary identity_structured(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     Ternary result = TERNARY_FALSE;
     switch ((TyKind)source->kind) {
@@ -5579,6 +5590,16 @@ static Ternary identity_structured(Checker* me, RelationState* st, Ty const* sou
             return result;
         case TY_CONDITIONAL:
             if (source->conditional.distributive != target->conditional.distributive) return TERNARY_FALSE;
+            // (tsgo's check type of a distributive conditional type as written is the distributed twin of its type
+            // parameter, and every instantiation of it with other type arguments maps the twin back to the original
+            // (getMappedType), so one written conditional type isn't identical to another one instantiated onto the
+            // same type parameter: `var v: <T>() => T extends string ? 1 : 2` declared twice, TS2403. tttt keeps the
+            // original as the check type of both: the root alone stands for the twin here)
+            if (source->conditional.distributive && source->conditional.check->kind == TY_TYPE_PARAM &&
+                target->conditional.check->kind == TY_TYPE_PARAM && conditional_as_written(source) != conditional_as_written(target)
+            ) {
+                return TERNARY_FALSE;
+            }
             result = is_related_to(me, st, source->conditional.check, target->conditional.check, false);
             if (result) result &= is_related_to(me, st, source->conditional.extends, target->conditional.extends, false);
             if (result) {
@@ -7190,7 +7211,16 @@ static void relation_publish(Checker* me, RelationState* st, u64 key, unsigned v
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     RelationCache* cache = &my relations[st->relation];
     bool constrained;
-    u64 key = relation_key_of(me, source, target, &constrained);
+    // (Identity is keyed by the pair in id order, so one direction's result answers the other: tsc's getRelationKey
+    // swaps them. Which direction is computed first is observable where identity isn't symmetric, a written
+    // distributive conditional type against an instantiated one: expect-type's toEqualTypeOf, es-toolkit)
+    Ty const* key_source = source;
+    Ty const* key_target = target;
+    if (st->relation == TY_RELATION_IDENTITY && source->id > target->id) {
+        key_source = target;
+        key_target = source;
+    }
+    u64 key = relation_key_of(me, key_source, key_target, &constrained);
     // Relating to an intersection's members is a question of its own (tsc's getRelationKey postfix): no excess property
     // checks, and a pair compared inside it isn't the same pair on the stack outside it
     u64 intersection_bits = (st->intersection_target ? 1ull << 63 : 0) | (st->intersection_source ? 1ull << 62 : 0);
@@ -7251,7 +7281,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     // that is being compared (tsc's broadestEquivalentId)
     if (constrained) {
         bool unused;
-        if (maybe_contains(st, generic_relation_key(me, source, target, true, &unused) ^ intersection_bits)) return TERNARY_MAYBE;
+        if (maybe_contains(st, generic_relation_key(me, key_source, key_target, true, &unused) ^ intersection_bits)) return TERNARY_MAYBE;
     }
     if (__builtin_expect(my graph_memo_on, 0) && !cached && relation_shares(key)) {
         unsigned shared = graph_relation_get(my graph, st->relation, key);

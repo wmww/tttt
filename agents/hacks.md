@@ -651,7 +651,9 @@ and the oracle that would show it wrong. How things work belongs in documentatio
   (its `conditional.check ==` identity tests broke 12 tests) and emulates the rest: `conditional_source_related()`
   maps twins back, `instantiate_conditional()` keeps identity mappings of params with a twin (unless every outer
   parameter maps to itself: tsgo's seeded root.instantiations), the identity relation
-  treats a twin as its original. Correct: distribute the node and replace the identity tests.
+  treats a twin as its original, and `identity_structured()` tells a written distributive conditional (the root,
+  whose check type is tsgo's twin) from one instantiated onto the same parameter (tsgo's original): an instance whose
+  outer mapping is the identity is a root in tsgo but not here. Correct: distribute the node and replace the identity tests.
 - `ty_tuple_target()`: all tuple targets share `Checker.tuple_params` (tsgo: fresh per target; type-fest's IntRange
   made 4.5M). Unsound if a type mentions two targets' raw parameters at once. Element props share the read-only
   `ty_prop_decl_value_name` (`prop_decl_shared()` guards writes).

@@ -1,0 +1,236 @@
+//// [test/cases/ttttConditionalIdentityWrittenVsInstantiated.ts] ////
+
+=== ttttConditionalIdentityWrittenVsInstantiated.ts ===
+// A distributive conditional type as written (tsgo: its check type is the distributed twin of the type parameter)
+// isn't identical to one instantiated onto that type parameter (the twin mapped back to the original), and identity
+// is cached for the pair in either order: expect-type's toEqualTypeOf on es-toolkit/compat against lodash
+var v1: <T>() => T extends string ? 1 : 2;
+>v1 : Symbol(v1, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 3, 3), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 4, 3))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 3, 9))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 3, 9))
+
+var v1: <T>() => T extends string ? 1 : 2;
+>v1 : Symbol(v1, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 3, 3), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 4, 3))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 4, 9))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 4, 9))
+
+var v2: <T>(x: T) => T[];
+>v2 : Symbol(v2, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 5, 3), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 3))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 5, 9))
+>x : Symbol(x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 5, 12))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 5, 9))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 5, 9))
+
+var v2: <T>(x: T) => T[];
+>v2 : Symbol(v2, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 5, 3), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 3))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 9))
+>x : Symbol(x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 12))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 9))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 9))
+
+interface I<T> { x: T extends string ? 1 : 2 }
+>I : Symbol(I, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 25), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 46))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 12))
+>x : Symbol(I.x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 16), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 16))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 12))
+
+interface I<T> { x: T extends string ? 1 : 2 }
+>I : Symbol(I, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 25), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 46))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 12))
+>x : Symbol(I.x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 16), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 16))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 12))
+
+// (A later class declaration's parameters are the interface's, its default instantiated for them: as written still)
+interface B<A extends string | undefined, N extends Record<string, 'x'> = A extends string ? Record<A, 'x'> : {}> { a: A; n: N }
+>B : Symbol(B, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 46), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 128))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 16))
+>N : Symbol(N, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 41), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 45))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 16))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 16))
+>a : Symbol(B.a, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 115))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 16))
+>n : Symbol(B.n, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 121))
+>N : Symbol(N, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 41), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 45))
+
+declare class B<A extends string | undefined, N extends Record<string, 'x'> = A extends string ? Record<A, 'x'> : {}> { m(): void }
+>B : Symbol(B, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 9, 46), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 128))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 16))
+>N : Symbol(N, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 41), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 45))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 16))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 11, 12), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 16))
+>m : Symbol(B.m, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 119))
+
+type Same<L, R> = (<T>() => T extends (L & T) | T ? true : false) extends <T>() => T extends (R & T) | T ? true : false ? true : false;
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>L : Symbol(L, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 10))
+>R : Symbol(R, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 12))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 20))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 20))
+>L : Symbol(L, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 20))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 20))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 75))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 75))
+>R : Symbol(R, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 12))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 75))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 75))
+
+type C<T> = T extends string ? 1 : 2;
+>C : Symbol(C, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 135))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 15, 7))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 15, 7))
+
+declare const ok: [
+>ok : Symbol(ok, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 16, 13))
+
+    Same<<T>() => T extends string ? 1 : 2, <T>() => T extends string ? 1 : 2>,
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 17, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 17, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 17, 45))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 17, 45))
+
+    Same<<T>() => C<T>, <T>() => C<T>>,
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 18, 10))
+>C : Symbol(C, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 135))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 18, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 18, 25))
+>C : Symbol(C, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 135))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 18, 25))
+
+    Same<<T>() => C<T>, <T>() => T extends string ? 1 : 2>,
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 19, 10))
+>C : Symbol(C, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 14, 135))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 19, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 19, 25))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 19, 25))
+
+    Same<<T>(x: T) => T extends string ? T : 1, <T>(x: T) => T extends string ? T : 1>,
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 10))
+>x : Symbol(x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 13))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 49))
+>x : Symbol(x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 52))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 49))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 49))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 20, 49))
+
+    Same<{ x: <T>() => T extends string ? 1 : 2 }, { x: <T>() => T extends string ? 1 : 2 }>,
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>x : Symbol(x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 21, 10))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 21, 15))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 21, 15))
+>x : Symbol(x, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 21, 52))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 21, 57))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 21, 57))
+
+    Same<I<number>["x"], 2>,
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>I : Symbol(I, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 6, 25), Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 8, 46))
+
+];
+ok;
+>ok : Symbol(ok, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 16, 13))
+
+namespace L {
+>L : Symbol(L, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 24, 3))
+
+    type List<T> = ArrayLike<T>;
+>List : Symbol(List, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 26, 13))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 27, 14))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 27, 14))
+
+    interface RecursiveArray<T> extends Array<T | RecursiveArray<T>> {}
+>RecursiveArray : Symbol(RecursiveArray, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 27, 32))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 28, 29))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 28, 29))
+>RecursiveArray : Symbol(RecursiveArray, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 27, 32))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 28, 29))
+
+    interface ListOfRecursiveArraysOrValues<T> extends List<T | RecursiveArray<T>> {}
+>ListOfRecursiveArraysOrValues : Symbol(ListOfRecursiveArraysOrValues, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 28, 71))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 29, 44))
+>List : Symbol(List, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 26, 13))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 29, 44))
+>RecursiveArray : Symbol(RecursiveArray, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 27, 32))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 29, 44))
+
+    type Flat<T> = T extends string ? T : (T extends List<any> ? never : T);
+>Flat : Symbol(Flat, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 29, 85))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 14))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 14))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 14))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 14))
+>List : Symbol(List, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 26, 13))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 14))
+
+    export declare function flattenDeep<T>(array: ListOfRecursiveArraysOrValues<T> | null | undefined): Array<Flat<T>>;
+>flattenDeep : Symbol(flattenDeep, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 76))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 31, 40))
+>array : Symbol(array, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 31, 43))
+>ListOfRecursiveArraysOrValues : Symbol(ListOfRecursiveArraysOrValues, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 28, 71))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 31, 40))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>Flat : Symbol(Flat, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 29, 85))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 31, 40))
+}
+namespace E {
+>E : Symbol(E, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 32, 1))
+
+    interface RecursiveArray<T> extends Array<T | RecursiveArray<T>> {}
+>RecursiveArray : Symbol(RecursiveArray, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 33, 13))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 34, 29))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 34, 29))
+>RecursiveArray : Symbol(RecursiveArray, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 33, 13))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 34, 29))
+
+    interface ListOfRecursiveArraysOrValues<T> extends ArrayLike<T | RecursiveArray<T>> {}
+>ListOfRecursiveArraysOrValues : Symbol(ListOfRecursiveArraysOrValues, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 34, 71))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 35, 44))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 35, 44))
+>RecursiveArray : Symbol(RecursiveArray, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 33, 13))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 35, 44))
+
+    export declare function flattenDeep<T>(array: ListOfRecursiveArraysOrValues<T> | null | undefined): Array<T extends string ? T : T extends ArrayLike<any> ? never : T>;
+>flattenDeep : Symbol(flattenDeep, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 35, 90))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 36, 40))
+>array : Symbol(array, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 36, 43))
+>ListOfRecursiveArraysOrValues : Symbol(ListOfRecursiveArraysOrValues, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 34, 71))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 36, 40))
+>Array : Symbol(Array, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.core.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --) ... and 4 more)
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 36, 40))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 36, 40))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 36, 40))
+>ArrayLike : Symbol(ArrayLike, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 36, 40))
+}
+declare function toEqualTypeOf<A, B extends (Same<A, B> extends true ? unknown : 1)>(): void;
+>toEqualTypeOf : Symbol(toEqualTypeOf, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 37, 1))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 38, 31))
+>B : Symbol(B, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 38, 33))
+>Same : Symbol(Same, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 12, 131))
+>A : Symbol(A, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 38, 31))
+>B : Symbol(B, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 38, 33))
+
+toEqualTypeOf<typeof E.flattenDeep, typeof L.flattenDeep>();
+>toEqualTypeOf : Symbol(toEqualTypeOf, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 37, 1))
+>E.flattenDeep : Symbol(E.flattenDeep, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 35, 90))
+>E : Symbol(E, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 32, 1))
+>flattenDeep : Symbol(E.flattenDeep, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 35, 90))
+>L.flattenDeep : Symbol(L.flattenDeep, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 76))
+>L : Symbol(L, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 24, 3))
+>flattenDeep : Symbol(L.flattenDeep, Decl(ttttConditionalIdentityWrittenVsInstantiated.ts, 30, 76))
+
