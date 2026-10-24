@@ -1,0 +1,39 @@
+ttttClassTypeParamListRecovery.ts(3,10): error TS1005: '>' expected.
+ttttClassTypeParamListRecovery.ts(5,12): error TS1139: Type parameter declaration expected.
+ttttClassTypeParamListRecovery.ts(5,12): error TS2365: Operator '>' cannot be applied to types 'number' and '{}'.
+ttttClassTypeParamListRecovery.ts(5,13): error TS1109: Expression expected.
+ttttClassTypeParamListRecovery.ts(6,18): error TS1139: Type parameter declaration expected.
+ttttClassTypeParamListRecovery.ts(6,18): error TS2365: Operator '>' cannot be applied to types 'number' and '{}'.
+ttttClassTypeParamListRecovery.ts(7,10): error TS1005: '>' expected.
+ttttClassTypeParamListRecovery.ts(7,18): error TS2304: Cannot find name 'X'.
+ttttClassTypeParamListRecovery.ts(9,1): error TS1005: '>' expected.
+
+
+==== ttttClassTypeParamListRecovery.ts (9 errors) ====
+    // A class's `<` commits to a type parameter list (tsc's parseTypeParameters): a token that can't start one is TS1139
+    // and skipped unless a list being parsed takes it; `(`, `{`, extends and implements end it
+    class A< {}
+             ~
+!!! error TS1005: '>' expected.
+    class B<> {}
+    class C<T, %> {}
+               ~
+!!! error TS1139: Type parameter declaration expected.
+               ~~~~~
+!!! error TS2365: Operator '>' cannot be applied to types 'number' and '{}'.
+                ~
+!!! error TS1109: Expression expected.
+    const D = class <1> {};
+                     ~
+!!! error TS1139: Type parameter declaration expected.
+                     ~~~~~
+!!! error TS2365: Operator '>' cannot be applied to types 'number' and '{}'.
+    class E< extends X {}
+             ~~~~~~~
+!!! error TS1005: '>' expected.
+                     ~
+!!! error TS2304: Cannot find name 'X'.
+    class F<T,
+    
+    
+!!! error TS1005: '>' expected.

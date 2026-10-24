@@ -2827,6 +2827,18 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
             p.pos++;
             hop_whitespace(&p);
             continue;
+        } else if (owner == TYPE_PARAM_OF_CLASS && !tok_is_eof(tok_peek(&p)) && *p.pos != '(' && *p.pos != '{' &&
+            !tok_is(tok_peek(&p), "extends") && !tok_is(tok_peek(&p), "implements")
+        ) {
+            // A class's `<` commits to a type parameter list (tsc's parseTypeParameters, never speculative there): a
+            // token that can't start one is TS1139 and skipped, unless a list being parsed takes it (tsc's
+            // abortParsingListOrMoveToNextToken): `class <%= classify(name) %>Component` of a schematics template
+            Tok t = tok_peek(&p);
+            parse_error(&p, span_from_token(&p), 1139, "Type parameter declaration expected.");
+            if (list_token_wanted(&p, p.shared->parsing_context, t)) break;
+            p.pos = t.end;
+            hop_whitespace(&p);
+            continue;
         } else {
             break;
         }
@@ -2841,7 +2853,7 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
         hop_whitespace(&p);
     }
 
-    if (generic_empty(ret) && *p.pos != '>') {
+    if (generic_empty(ret) && *p.pos != '>' && owner != TYPE_PARAM_OF_CLASS) {
         generic_drop(ret);
         return parse_fail(&p);
     }

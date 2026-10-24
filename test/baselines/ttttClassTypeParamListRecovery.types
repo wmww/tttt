@@ -1,0 +1,33 @@
+//// [test/cases/ttttClassTypeParamListRecovery.ts] ////
+
+=== ttttClassTypeParamListRecovery.ts ===
+// A class's `<` commits to a type parameter list (tsc's parseTypeParameters): a token that can't start one is TS1139
+// and skipped unless a list being parsed takes it; `(`, `{`, extends and implements end it
+class A< {}
+>A : A
+
+class B<> {}
+>B : B
+
+class C<T, %> {}
+>C : C<T>
+>%> {} : boolean
+>% : number
+> : any
+> : any
+>{} : {}
+
+const D = class <1> {};
+>D : typeof D
+>class < : typeof D
+>1> {} : boolean
+>1 : 1
+>{} : {}
+
+class E< extends X {}
+>E : E
+>X : any
+
+class F<T,
+>F : F<T>
+
