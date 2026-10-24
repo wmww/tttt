@@ -42,3 +42,4 @@ npm_mlok_TS2322	no	mlok@0.1.5	https://github.com/smolijar/mlok	24	25	+TS2322
 npm__fireproof_core-types-protocols-cloud_TS18048	no	@fireproof/core-types-protocols-cloud@0.24.19	https://github.com/fireproof-storage/fireproof	1	2	+TS18048
 npm__abrevior_apollo-federation-upload_TS7016	no	@abrevior/apollo-federation-upload@4.2.0	https://github.com/abrevior/apollo-federation-file-upload	21	3	-TS2554 -TS2694 +TS7016
 npm__bunicorn_server_TS6196	no	@bunicorn/server@0.0.30	https://github.com/ragokan/bunicorn	6	7	+TS6196
+npm__framelia_dashboard-server_TS2532	yes	@framelia/dashboard-server@0.0.5	https://github.com/hungify/framelia	0	1	TS2532

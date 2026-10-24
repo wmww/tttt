@@ -57,3 +57,11 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   package.json (name `elysia`, `exports` pointing at a `./dist/index.d.ts` that doesn't exist, nothing built) and a dev dependency `node_modules/elysia` (another
   version): tsgo resolves `import 'elysia'` to node_modules after the self-reference fails, tttt reports TS2307. tttt's self-name resolution returned
   "not found" definitively instead of falling through to the node_modules lookup when the exports target is missing. 8 lines. The same cause as augu/utils: the test passes since 667f403ca (det3). [fixed 667f403ca]
+
+## Seed 20261111
+- 52 accepted, 51 byte-identical, 51/52 same (file, line, code), clean agreement 51/52, no K-dependence (no varies).
+- **npm__framelia_dashboard-server_TS2532** (seed 20261111, @framelia/dashboard-server@0.0.5, hungify/framelia at cb6fb0e packages/dashboard-server/src/model.ts(35); tsgo 0, tttt 1) **[flip]**
+  (test: test/cases/npm__framelia_dashboard-server_TS2532.ts, 7 lines): `s[c.status] += 1` with `noUncheckedIndexedAccess`, `s: Record<"queued"|"running", number> & {"masked-pass"?: number; total: number}`
+  and `c.status: "queued"|"running"|"masked-pass"`: tttt reports TS2532 "Object is possibly 'undefined'" for the compound assignment target, tsgo nothing. Guess: tsgo
+  doesn't add `| undefined` for the read of an element-access write target (compound assignment reads) when the key is a union over an intersection with an optional member,
+  or its optional-member `undefined` is removed by the assignment's read type (getTypeOfExpression of the target under `CheckMode`); tttt keeps it. [open]

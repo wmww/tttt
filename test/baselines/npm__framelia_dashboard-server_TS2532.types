@@ -1,0 +1,29 @@
+//// [test/cases/npm__framelia_dashboard-server_TS2532.ts] ////
+
+=== npm__framelia_dashboard-server_TS2532.ts ===
+// origin: npm @framelia/dashboard-server@0.0.5 https://github.com/hungify/framelia packages/dashboard-server/tsconfig.bench.json seed 20261111
+// flip: yes
+type V = "queued" | "running" | "masked-pass";
+>V : V
+
+type S = Record<Exclude<V, "masked-pass">, number> & { "masked-pass"?: number; total: number };
+>S : S
+>"masked-pass" : number | undefined
+>total : number
+
+declare const s: S;
+>s : S
+
+declare const c: { status: V };
+>c : { status: V; }
+>status : V
+
+s[c.status] += 1;
+>s[c.status] += 1 : number
+>s[c.status] : number
+>s : S
+>c.status : V
+>c : { status: V; }
+>status : V
+>1 : 1
+

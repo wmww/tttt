@@ -1,0 +1,31 @@
+//// [test/cases/npm__framelia_dashboard-server_TS2532.ts] ////
+
+=== npm__framelia_dashboard-server_TS2532.ts ===
+// origin: npm @framelia/dashboard-server@0.0.5 https://github.com/hungify/framelia packages/dashboard-server/tsconfig.bench.json seed 20261111
+// flip: yes
+type V = "queued" | "running" | "masked-pass";
+>V : Symbol(V, Decl(npm__framelia_dashboard-server_TS2532.ts, 0, 0))
+
+type S = Record<Exclude<V, "masked-pass">, number> & { "masked-pass"?: number; total: number };
+>S : Symbol(S, Decl(npm__framelia_dashboard-server_TS2532.ts, 2, 46))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>V : Symbol(V, Decl(npm__framelia_dashboard-server_TS2532.ts, 0, 0))
+>"masked-pass" : Symbol("masked-pass", Decl(npm__framelia_dashboard-server_TS2532.ts, 3, 54))
+>total : Symbol(total, Decl(npm__framelia_dashboard-server_TS2532.ts, 3, 78))
+
+declare const s: S;
+>s : Symbol(s, Decl(npm__framelia_dashboard-server_TS2532.ts, 4, 13))
+>S : Symbol(S, Decl(npm__framelia_dashboard-server_TS2532.ts, 2, 46))
+
+declare const c: { status: V };
+>c : Symbol(c, Decl(npm__framelia_dashboard-server_TS2532.ts, 5, 13))
+>status : Symbol(status, Decl(npm__framelia_dashboard-server_TS2532.ts, 5, 18))
+>V : Symbol(V, Decl(npm__framelia_dashboard-server_TS2532.ts, 0, 0))
+
+s[c.status] += 1;
+>s : Symbol(s, Decl(npm__framelia_dashboard-server_TS2532.ts, 4, 13))
+>c.status : Symbol(status, Decl(npm__framelia_dashboard-server_TS2532.ts, 5, 18))
+>c : Symbol(c, Decl(npm__framelia_dashboard-server_TS2532.ts, 5, 13))
+>status : Symbol(status, Decl(npm__framelia_dashboard-server_TS2532.ts, 5, 18))
+
