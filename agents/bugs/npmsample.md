@@ -179,7 +179,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   parameter's binding pattern with a computed non-literal key. tsc's getTypeFromObjectBindingPattern leaves that
   element out of the implied type, and a rest element adds an `any` index signature. The element then indexes the
   implied type by string: `any` with a rest element (no TS7031), TS2537 "has no matching index signature" without
-  one. tttt reports TS7031 for the element in both cases, and misses the TS2537. [open]
+  one. tttt reports TS7031 for the element in both cases, and misses the TS2537. (claimed: cor10) [open]
 - **npm__nest-excalibur_common-api_TS2345** (seed 20261025, @nest-excalibur/common-api@0.1.0,
   src/api/api-principal/services/principal.service.ts:55): typeorm's `repository.update(id, record)` with a
   `DeepPartial<Entity>` record, where the parameter is `QueryDeepPartialEntity<Entity>`. Each mapped property is a
