@@ -277,7 +277,10 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   tttt reports neither (tsgo 9, tttt 6 diagnostics). The depth/circularity limit is reached in checking the
   declaration file, not by a use. reduce.py on the node_modules files timed out after 50 minutes (ts-toolbelt's
   single index.d.ts) and the partial cut no longer reproduced; the clone is deleted, the project is reproducible
-  from test/npmsample/20261033.setup.jsonl. [open]
+  from test/npmsample/20261033.setup.jsonl. Same key as npm_paseo-agent-todos_TS5115, whose write-up (seed 20261045)
+  shows tsgo's depth-100 instantiation limit reached through eager instantiation that tttt doesn't do. Here the chain is
+  ts-toolbelt's own recursion (`___ListOf`) checked in the declaration file. The mechanism is not traced, so it may be
+  a different route to the same limit; it is depth-limit territory either way. [design]
 
 ## Seed 20261036
 
