@@ -94,6 +94,46 @@ Fixers take the top of `rank` when no flip is open; a finder checks `rank` befor
   breaks tsgo's imports, and its line pass over ~150 files then takes hours. When the diagnostic sits inside one
   function, try that function alone in a test file first (octane's TS7022: 10 lines, in minutes).
 
+- **Pull main right before every compare.** compare builds release/ from whatever tree is there. The first
+  wrappers never pulled, so akash's two divergences were filed on a build hours old, and one of them was already
+  fixed. The wrappers below pull just before compare.
+- Large mode (seeds 20261400-20261404): without a GitHub token, `sample --large -n 60` takes about 75 minutes
+  (languages API, 60 calls an hour per IP); with GITHUB_TOKEN it takes 3 minutes. `setup --large -N 50 --per-repo 3`
+  takes 50-80 minutes on 4 cores, dominated by big monorepo installs (compass 393 s, teleport 318 s, both trial
+  rejects). The large batches gave 0-6 flips each, many more than ordinary seeds (0-1). Reducing them all on one
+  box was the bottleneck, so from 20261402 on the box only filed bullets with the details (repo, commit, directory,
+  config, first diagnostics at file:line, flip, K-dependence) and the fixers cloned and reduced.
+- The token lived in /home/finder/.github_token (mode 600), read by the wrappers into GITHUB_TOKEN, never printed or
+  committed. It was deleted from the box at wind-down.
+- Totals (2026-10-24, seeds 20261200-20261218 ordinary, 20261400-20261404 large): about 1500 projects. 27 repros in
+  test/cases (npm_*/npm__* whose origin line has a seed 202612xx or 202614xx), 12 of them flips, counting lute's
+  crash (the 32-word alias key), and a further dozen bullets without repros. One varies: cloudflare-os
+  workshop-backend's TS5114, at every --checkers K but 1, with more K-dependent errors at K=2 and 8 (det3; the
+  rule that came of it: limits always rerun).
+- Redoing this on a new box: (1) apt install bubblewrap meson ninja-build clang lld valgrind; (2) `useradd -m
+  finder`, copy the deploy key and known_hosts into ~finder/.ssh, set git user.name/email; (3) as finder, `git clone
+  git@github.com:wmww/tttt.git`, copy thirdparty/node over (or run ensure-sources.sh's node/bun fetchers),
+  `scripts/fasttest.sh -f '^nothing$'` (release build plus ensure-typescript.sh, about 4 minutes on 4 cores); (4) the
+  sandbox check above; (5) the two wrappers, then one tmux session per seed. run-seed.sh (ordinary; run-large.sh is
+  the same with `sample --large --seed $S -n 60` and `setup --large --seed $S -N 50 --per-repo 3`):
+
+      #!/bin/bash
+      # run-seed.sh SEED [WAITFILE]
+      S=$1
+      cd /home/finder/tttt || exit 1
+      [ -r /home/finder/.github_token ] && export GITHUB_TOKEN=$(cat /home/finder/.github_token)
+      if [ -n "$2" ]; then until [ -e "$2" ]; do sleep 10; done; fi
+      [ -e test/npmsample/$S.candidates.jsonl ] || scripts/npmsample.py sample --seed $S || exit 1
+      touch /home/finder/sampled-$S
+      scripts/npmsample.py setup --seed $S -N 50 --prefer-large || exit 1
+      git pull -q --rebase || echo PULL-FAILED
+      scripts/npmsample.py compare --seed $S
+      echo DONE-$S
+
+  A second seed's wrapper takes the first's `sampled-S` file as WAITFILE, so only one sampler paces the registry
+  from the host. Reducers launched together race on `ninja -C release` (one failed with CalledProcessError), so
+  build once before starting several.
+
 ## The second box (2026-10-23/24, seeds 20261100-20261117; bugs in agents/bugs/npmsample_box2.md from 20261105)
 Seeds 20261116 and 20261117 were abandoned in setup (clones and installs failed with the network down): their candidates are committed, no records; rerun them.
 A coordinator plus two Sonnet finders in worktrees; the coordinator samples (one pacer per host), lands each finder's
