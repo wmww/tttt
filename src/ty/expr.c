@@ -1967,7 +1967,7 @@ static Ty const* derive_anchor_context(Checker* me, ContextAnchor const* anchor,
             Ty const* ret = signature_return_type(me, sig);
             // (What function_impl_enter_return_context() makes of it)
             if (function->is_async) return ret ? ty_async_return_expressions_context(me, ret) : nullptr;
-            return ret && !(ret->flags & TYF_VOID) ? ret : nullptr;
+            return ret;
         }
     }
     return nullptr;

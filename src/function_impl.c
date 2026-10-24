@@ -682,7 +682,9 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : function_impl_setter_type(me), (LowerCtx){ .generic = true });
         // (An any annotation is a context too, which makes `this` in a returned object literal's methods any: tsc's
         // getContextualTypeForReturnExpression)
-        checker->return_context = annotated->flags & TYF_VOID ? nullptr : annotated;
+        // (void too: a generic call returned in a `void` function infers from it, tsc's
+        // getContextualTypeForReturnExpression has no exception)
+        checker->return_context = annotated;
     } else {
         checker->return_context = ty_return_expressions_context(checker, me);
     }

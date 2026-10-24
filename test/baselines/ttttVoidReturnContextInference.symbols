@@ -1,0 +1,47 @@
+//// [test/cases/ttttVoidReturnContextInference.ts] ////
+
+=== ttttVoidReturnContextInference.ts ===
+// A `void` return type is a contextual type for the returned expression like any other (tsc's
+// getContextualTypeForReturnExpression): a generic call there infers `void` for a type parameter only its return
+// mentions
+declare function finish<T>(userId: string): T;
+>finish : Symbol(finish, Decl(ttttVoidReturnContextInference.ts, 0, 0))
+>T : Symbol(T, Decl(ttttVoidReturnContextInference.ts, 3, 24))
+>userId : Symbol(userId, Decl(ttttVoidReturnContextInference.ts, 3, 27))
+>T : Symbol(T, Decl(ttttVoidReturnContextInference.ts, 3, 24))
+
+export function a(): void { return finish("u"); }
+>a : Symbol(a, Decl(ttttVoidReturnContextInference.ts, 3, 46))
+>finish : Symbol(finish, Decl(ttttVoidReturnContextInference.ts, 0, 0))
+
+export function b(): number { return finish("u"); }
+>b : Symbol(b, Decl(ttttVoidReturnContextInference.ts, 4, 49))
+>finish : Symbol(finish, Decl(ttttVoidReturnContextInference.ts, 0, 0))
+
+export const c = (): void => finish("u");
+>c : Symbol(c, Decl(ttttVoidReturnContextInference.ts, 6, 12))
+>finish : Symbol(finish, Decl(ttttVoidReturnContextInference.ts, 0, 0))
+
+export const d: () => void = () => finish("u");
+>d : Symbol(d, Decl(ttttVoidReturnContextInference.ts, 7, 12))
+>finish : Symbol(finish, Decl(ttttVoidReturnContextInference.ts, 0, 0))
+
+export function e(): void { return [1].map(x => x) as any; }
+>e : Symbol(e, Decl(ttttVoidReturnContextInference.ts, 7, 47))
+>[1].map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>map : Symbol(Array.map, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(ttttVoidReturnContextInference.ts, 8, 43))
+>x : Symbol(x, Decl(ttttVoidReturnContextInference.ts, 8, 43))
+
+declare function id<T>(x: T): T;
+>id : Symbol(id, Decl(ttttVoidReturnContextInference.ts, 8, 60))
+>T : Symbol(T, Decl(ttttVoidReturnContextInference.ts, 9, 20))
+>x : Symbol(x, Decl(ttttVoidReturnContextInference.ts, 9, 23))
+>T : Symbol(T, Decl(ttttVoidReturnContextInference.ts, 9, 20))
+>T : Symbol(T, Decl(ttttVoidReturnContextInference.ts, 9, 20))
+
+export function f(): void { return id(undefined); }
+>f : Symbol(f, Decl(ttttVoidReturnContextInference.ts, 9, 32))
+>id : Symbol(id, Decl(ttttVoidReturnContextInference.ts, 8, 60))
+>undefined : Symbol(undefined)
+

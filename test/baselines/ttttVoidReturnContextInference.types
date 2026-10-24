@@ -1,0 +1,58 @@
+//// [test/cases/ttttVoidReturnContextInference.ts] ////
+
+=== ttttVoidReturnContextInference.ts ===
+// A `void` return type is a contextual type for the returned expression like any other (tsc's
+// getContextualTypeForReturnExpression): a generic call there infers `void` for a type parameter only its return
+// mentions
+declare function finish<T>(userId: string): T;
+>finish : <T>(userId: string) => T
+>userId : string
+
+export function a(): void { return finish("u"); }
+>a : () => void
+>finish("u") : void
+>finish : <T>(userId: string) => T
+>"u" : "u"
+
+export function b(): number { return finish("u"); }
+>b : () => number
+>finish("u") : number
+>finish : <T>(userId: string) => T
+>"u" : "u"
+
+export const c = (): void => finish("u");
+>c : () => void
+>(): void => finish("u") : () => void
+>finish("u") : void
+>finish : <T>(userId: string) => T
+>"u" : "u"
+
+export const d: () => void = () => finish("u");
+>d : () => void
+>() => finish("u") : () => void
+>finish("u") : void
+>finish : <T>(userId: string) => T
+>"u" : "u"
+
+export function e(): void { return [1].map(x => x) as any; }
+>e : () => void
+>[1].map(x => x) as any : any
+>[1].map(x => x) : number[]
+>[1].map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>[1] : number[]
+>1 : 1
+>map : <U>(callbackfn: (value: number, index: number, array: number[]) => U, thisArg?: any) => U[]
+>x => x : (x: number) => number
+>x : number
+>x : number
+
+declare function id<T>(x: T): T;
+>id : <T>(x: T) => T
+>x : T
+
+export function f(): void { return id(undefined); }
+>f : () => void
+>id(undefined) : undefined
+>id : <T>(x: T) => T
+>undefined : undefined
+
