@@ -1,0 +1,49 @@
+//// [test/cases/npm_cellajs_cella_TS2322.ts] ////
+
+=== npm_cellajs_cella_TS2322.ts ===
+// origin: npm cellajs/cella@main https://github.com/cellajs/cella frontend/tsconfig.json seed 20261402
+// flip: yes
+// Object.entries over `Partial<Record<keyof T, string>>` (T generic): inferring `{ [s: string]: U }` from the generic
+// mapped type gives tsgo `Record<keyof T, string>[string] | undefined`, tttt `unknown` (then `{}` after the truthy
+// test, TS2322 against string; the backend has the same shape as TS2345).
+export const rewriteUrlToSlug = <T extends Record<string, string>>(params: T, slugOverrides: Partial<Record<keyof T, string>>) => {
+>rewriteUrlToSlug : Symbol(rewriteUrlToSlug, Decl(npm_cellajs_cella_TS2322.ts, 5, 12))
+>T : Symbol(T, Decl(npm_cellajs_cella_TS2322.ts, 5, 33))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>params : Symbol(params, Decl(npm_cellajs_cella_TS2322.ts, 5, 67))
+>T : Symbol(T, Decl(npm_cellajs_cella_TS2322.ts, 5, 33))
+>slugOverrides : Symbol(slugOverrides, Decl(npm_cellajs_cella_TS2322.ts, 5, 77))
+>Partial : Symbol(Partial, Decl(lib.es5.d.ts, --, --))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(npm_cellajs_cella_TS2322.ts, 5, 33))
+
+  const newParams: Record<string, string> = { ...params };
+>newParams : Symbol(newParams, Decl(npm_cellajs_cella_TS2322.ts, 6, 7))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>params : Symbol(params, Decl(npm_cellajs_cella_TS2322.ts, 5, 67))
+
+  for (const [key, slug] of Object.entries(slugOverrides)) {
+>key : Symbol(key, Decl(npm_cellajs_cella_TS2322.ts, 7, 14))
+>slug : Symbol(slug, Decl(npm_cellajs_cella_TS2322.ts, 7, 18))
+>Object.entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>Object : Symbol(Object, Decl(lib.es5.d.ts, --, --), Decl(lib.es5.d.ts, --, --))
+>entries : Symbol(ObjectConstructor.entries, Decl(lib.es2017.object.d.ts, --, --), Decl(lib.es2017.object.d.ts, --, --))
+>slugOverrides : Symbol(slugOverrides, Decl(npm_cellajs_cella_TS2322.ts, 5, 77))
+
+    if (slug && params[key] !== slug) {
+>slug : Symbol(slug, Decl(npm_cellajs_cella_TS2322.ts, 7, 18))
+>params : Symbol(params, Decl(npm_cellajs_cella_TS2322.ts, 5, 67))
+>key : Symbol(key, Decl(npm_cellajs_cella_TS2322.ts, 7, 14))
+>slug : Symbol(slug, Decl(npm_cellajs_cella_TS2322.ts, 7, 18))
+
+      newParams[key] = slug;
+>newParams : Symbol(newParams, Decl(npm_cellajs_cella_TS2322.ts, 6, 7))
+>key : Symbol(key, Decl(npm_cellajs_cella_TS2322.ts, 7, 14))
+>slug : Symbol(slug, Decl(npm_cellajs_cella_TS2322.ts, 7, 18))
+    }
+  }
+  return newParams;
+>newParams : Symbol(newParams, Decl(npm_cellajs_cella_TS2322.ts, 6, 7))
+
+};
+

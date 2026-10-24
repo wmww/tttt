@@ -1,0 +1,50 @@
+//// [test/cases/npm_cellajs_cella_TS2322.ts] ////
+
+=== npm_cellajs_cella_TS2322.ts ===
+// origin: npm cellajs/cella@main https://github.com/cellajs/cella frontend/tsconfig.json seed 20261402
+// flip: yes
+// Object.entries over `Partial<Record<keyof T, string>>` (T generic): inferring `{ [s: string]: U }` from the generic
+// mapped type gives tsgo `Record<keyof T, string>[string] | undefined`, tttt `unknown` (then `{}` after the truthy
+// test, TS2322 against string; the backend has the same shape as TS2345).
+export const rewriteUrlToSlug = <T extends Record<string, string>>(params: T, slugOverrides: Partial<Record<keyof T, string>>) => {
+>rewriteUrlToSlug : <T extends Record<string, string>>(params: T, slugOverrides: Partial<Record<keyof T, string>>) => Record<string, string>
+><T extends Record<string, string>>(params: T, slugOverrides: Partial<Record<keyof T, string>>) => {  const newParams: Record<string, string> = { ...params };  for (const [key, slug] of Object.entries(slugOverrides)) {    if (slug && params[key] !== slug) {      newParams[key] = slug;    }  }  return newParams;} : <T extends Record<string, string>>(params: T, slugOverrides: Partial<Record<keyof T, string>>) => Record<string, string>
+>params : T
+>slugOverrides : Partial<Record<keyof T, string>>
+
+  const newParams: Record<string, string> = { ...params };
+>newParams : Record<string, string>
+>{ ...params } : T
+>params : T
+
+  for (const [key, slug] of Object.entries(slugOverrides)) {
+>key : string
+>slug : Record<keyof T, string>[string] | undefined
+>Object.entries(slugOverrides) : [string, Record<keyof T, string>[string] | undefined][]
+>Object.entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>Object : ObjectConstructor
+>entries : { <T_1>(o: { [s: string]: T_1; } | ArrayLike<T_1>): [string, T_1][]; (o: {}): [string, any][]; }
+>slugOverrides : Partial<Record<keyof T, string>>
+
+    if (slug && params[key] !== slug) {
+>slug && params[key] !== slug : boolean | undefined
+>slug : Record<keyof T, string>[string] | undefined
+>params[key] !== slug : boolean
+>params[key] : string
+>params : T
+>key : string
+>slug : Record<keyof T, string>[string]
+
+      newParams[key] = slug;
+>newParams[key] = slug : Record<keyof T, string>[string]
+>newParams[key] : string
+>newParams : Record<string, string>
+>key : string
+>slug : Record<keyof T, string>[string]
+    }
+  }
+  return newParams;
+>newParams : Record<string, string>
+
+};
+

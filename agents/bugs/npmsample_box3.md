@@ -173,3 +173,8 @@ for flips); a separate file so the three boxes never conflict.
   SecretsBundle { ... } }`). tsgo resolves the call to the augmentation's signature (the later declaration's
   overloads first), and tttt takes the class's. Repro test/cases/npm_matrix-org_matrix-js-sdk_TS2322.ts (by
   hand). [flip] [open]
+- Large seed 20261402, cellajs/cella@main backend and frontend: spurious TS2322/TS2345 "'{}' is not assignable to
+  'string'". `Object.entries(o)` with `o: Partial<Record<keyof T, string>>` (T a type parameter) infers U for
+  `{ [s: string]: U }` as `Record<keyof T, string>[string] | undefined` in tsgo (an index signature read off the
+  generic mapped type) and as `unknown` in tttt. Repro test/cases/npm_cellajs_cella_TS2322.ts (by hand). [flip]
+  [open]
