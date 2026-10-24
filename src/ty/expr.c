@@ -6534,8 +6534,14 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 return check_yield(me, expr->unary_op, ctx);
             }
             // `x!` has the contextual type of its operand
+            // (Checked as tsc's checkNonNullAssertion does, checkExpression without the check mode: not inferentially,
+            // so a generic reference with a union constraint in a context that isn't generic is its constraint even
+            // inside a call's inference, narrowable_type(): effect's `Object.hasOwn(mapping, k) ? mapping[k]! : k`)
             if (expr->unary_op->op == UNARY_OP_RIGHT_BANG && ctx.contextual) {
+                u32 inferential_depth = my inferential_depth;
+                my inferential_depth = 0;
                 Ty const* type = check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = ctx.contextual });
+                my inferential_depth = inferential_depth;
                 return ty_non_nullable(me, type);
             }
             // tsc's getContextualTypeForAwaitOperand: what the context awaits to, or a promise of it

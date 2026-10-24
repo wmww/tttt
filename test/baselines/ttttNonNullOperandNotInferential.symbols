@@ -1,0 +1,42 @@
+//// [test/cases/ttttNonNullOperandNotInferential.ts] ////
+
+=== ttttNonNullOperandNotInferential.ts ===
+// The operand of `x!` is checked without the check mode (tsc's checkNonNullAssertion calls checkExpression): even
+// inside a call's inference, a generic element access with a union constraint in a context that isn't generic is its
+// constraint (getNarrowableTypeForReference). effect's Struct.renameKeys through buildStruct
+// (The types component also shows a pre-existing difference: `m[k]` in a generic call's argument prints unsubstituted)
+declare function buildStruct<S extends object, F extends (k: keyof S, v: S[keyof S]) => [string | number, unknown] | undefined>(source: S, f: F): any;
+>buildStruct : Symbol(buildStruct, Decl(ttttNonNullOperandNotInferential.ts, 0, 0))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 4, 29))
+>F : Symbol(F, Decl(ttttNonNullOperandNotInferential.ts, 4, 46))
+>k : Symbol(k, Decl(ttttNonNullOperandNotInferential.ts, 4, 58))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 4, 29))
+>v : Symbol(v, Decl(ttttNonNullOperandNotInferential.ts, 4, 69))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 4, 29))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 4, 29))
+>source : Symbol(source, Decl(ttttNonNullOperandNotInferential.ts, 4, 128))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 4, 29))
+>f : Symbol(f, Decl(ttttNonNullOperandNotInferential.ts, 4, 138))
+>F : Symbol(F, Decl(ttttNonNullOperandNotInferential.ts, 4, 46))
+
+function rename<S extends object, const M extends { readonly [K in keyof S]?: string | number }>(self: S, mapping: M) {
+>rename : Symbol(rename, Decl(ttttNonNullOperandNotInferential.ts, 4, 150))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 5, 16))
+>M : Symbol(M, Decl(ttttNonNullOperandNotInferential.ts, 5, 33))
+>K : Symbol(K, Decl(ttttNonNullOperandNotInferential.ts, 5, 62))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 5, 16))
+>self : Symbol(self, Decl(ttttNonNullOperandNotInferential.ts, 5, 97))
+>S : Symbol(S, Decl(ttttNonNullOperandNotInferential.ts, 5, 16))
+>mapping : Symbol(mapping, Decl(ttttNonNullOperandNotInferential.ts, 5, 105))
+>M : Symbol(M, Decl(ttttNonNullOperandNotInferential.ts, 5, 33))
+
+    return buildStruct(self, (k, v) => [mapping[k]!, v]);
+>buildStruct : Symbol(buildStruct, Decl(ttttNonNullOperandNotInferential.ts, 0, 0))
+>self : Symbol(self, Decl(ttttNonNullOperandNotInferential.ts, 5, 97))
+>k : Symbol(k, Decl(ttttNonNullOperandNotInferential.ts, 6, 30))
+>v : Symbol(v, Decl(ttttNonNullOperandNotInferential.ts, 6, 32))
+>mapping : Symbol(mapping, Decl(ttttNonNullOperandNotInferential.ts, 5, 105))
+>k : Symbol(k, Decl(ttttNonNullOperandNotInferential.ts, 6, 30))
+>v : Symbol(v, Decl(ttttNonNullOperandNotInferential.ts, 6, 32))
+}
+

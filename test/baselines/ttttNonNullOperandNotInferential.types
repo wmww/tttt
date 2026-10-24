@@ -1,0 +1,34 @@
+//// [test/cases/ttttNonNullOperandNotInferential.ts] ////
+
+=== ttttNonNullOperandNotInferential.ts ===
+// The operand of `x!` is checked without the check mode (tsc's checkNonNullAssertion calls checkExpression): even
+// inside a call's inference, a generic element access with a union constraint in a context that isn't generic is its
+// constraint (getNarrowableTypeForReference). effect's Struct.renameKeys through buildStruct
+// (The types component also shows a pre-existing difference: `m[k]` in a generic call's argument prints unsubstituted)
+declare function buildStruct<S extends object, F extends (k: keyof S, v: S[keyof S]) => [string | number, unknown] | undefined>(source: S, f: F): any;
+>buildStruct : <S extends object, F extends (k: keyof S, v: S[keyof S]) => [string | number, unknown] | undefined>(source: S, f: F) => any
+>k : keyof S
+>v : S[keyof S]
+>source : S
+>f : F
+
+function rename<S extends object, const M extends { readonly [K in keyof S]?: string | number }>(self: S, mapping: M) {
+>rename : <S extends object, const M extends { readonly [K in keyof S]?: string | number; }>(self: S, mapping: M) => any
+>self : S
+>mapping : M
+
+    return buildStruct(self, (k, v) => [mapping[k]!, v]);
+>buildStruct(self, (k, v) => [mapping[k]!, v]) : any
+>buildStruct : <S_1 extends object, F extends (k: keyof S_1, v: S_1[keyof S_1]) => [string | number, unknown] | undefined>(source: S_1, f: F) => any
+>self : S
+>(k, v) => [mapping[k]!, v] : (k: keyof S, v: S[keyof S]) => [string | number, S[keyof S]]
+>k : keyof S
+>v : S[keyof S]
+>[mapping[k]!, v] : [string | number, S[keyof S]]
+>mapping[k]! : string | number
+>mapping[k] : string | number | undefined
+>mapping : M
+>k : keyof S
+>v : S[keyof S]
+}
+
