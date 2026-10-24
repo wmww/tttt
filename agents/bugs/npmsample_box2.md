@@ -21,7 +21,7 @@ boxes' appends never conflict. One section per seed, one bullet per repro, statu
   kept on the second box. To reproduce on another box: discordjs-choice-selectmenu-builder@2.1.0,
   https://github.com/LeCarbonator/discordjs-choice-selectmenu-builder at 63ad5355, candidate i=93 of
   test/npmsample/20261107.candidates.jsonl (setup.jsonl has its install and bench-config changes); `scripts/projdiff.py`
-  on the clone shows both runs. [open]
+  on the clone shows both runs. Fixed by cor10's base-cycle change (members.c, "An interface's base cycle is found by its bases alone"), verified on a scratch install of discord-api-types 0.33.5 at K1..16, the defaults and --checker-memory 0. [fixed 2026-10-24]
 - Unreduced, non-flip (the clones are kept): vuejs-core packages/compiler-sfc/src/style/pluginScoped.ts(190) missing 2
   TS7006 (tsgo 5, tttt 3); renzosunico/adonis5-gigya adonis-typings/index.ts(48) 2 extra TS2308 "Module
   'gigya/dist/lib/gigya' has already exported a member named 'RequestParams'"; menglimu/ml-components 8 extra
