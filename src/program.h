@@ -205,6 +205,10 @@ void program_set_threads(Program* me, u32 count);
 // first needs one parses and walks all of its file's (program_typecheck(), function_impl_body()). Off by default.
 // Call it before loading anything
 void program_set_defer_bodies(Program* me, bool defer);
+// Whether a history-dependent diagnostic reported by several checkers or a recycled one makes program_typecheck() check
+// again in one checker (tsgo --singleThreaded's output at any K; the default). Off: the parallel pass's output, faster,
+// where such a diagnostic's site may depend on the checker count and the schedule (main.c's --no-rerun, TTTT_NO_RERUN=1)
+void program_set_history_rerun(Program* me, bool rerun);
 // Whether some file had bodies deferred: an output that needs them all before checking (syntax errors that gate the
 // checking) has to run again without deferral
 bool program_has_deferred_bodies(Program const* me);

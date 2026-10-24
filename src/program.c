@@ -207,6 +207,7 @@ typedef struct Program {
     bool emit_declarations; // program_set_emit_declarations()
     bool declarations_only; // program_set_declarations_only()
     bool defer_bodies; // program_set_defer_bodies()
+    bool no_rerun; // program_set_history_rerun(): no one-checker rerun on a history-dependent diagnostic
     _Atomic bool defer_failed; // program_defer_failed()
     _Atomic bool history_reported; // A history-dependent diagnostic was reported (error_history_flag)
     // program_member_referenced(): open addressing, keys the members' declaration texts, values the earliest order
@@ -4919,6 +4920,10 @@ void program_set_threads(Program* me, u32 count) {
     my threads = count;
 }
 
+void program_set_history_rerun(Program* me, bool rerun) {
+    my no_rerun = !rerun;
+}
+
 void program_set_defer_bodies(Program* me, bool defer) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my defer_bodies = defer;
@@ -6740,7 +6745,10 @@ again:
     // what the error type it caches silences, is that history's (error_is_history_dependent()). Checked again in one
     // fresh checker, in program order, never recycled but by the memory pool: tsgo --singleThreaded's output, at any
     // checker count
-    if (!limit_rerun && !my graph && program_limit_history_dependent(me) && history_dependent_shown(checker_errs, count)) {
+    // (Not with --no-rerun: program_set_history_rerun())
+    if (!limit_rerun && !my graph && !my no_rerun && program_limit_history_dependent(me) &&
+        history_dependent_shown(checker_errs, count)
+    ) {
         if (getenv("TTTT_DEBUG_LIMIT_RERUN")) eprintln("tttt: limit rerun in one checker");
         typecheck_pass_drop(me, checker_errs, count);
         member_refs_clear(me);

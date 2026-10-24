@@ -61,6 +61,7 @@ typedef struct Options {
     bool time;    // Print how long each phase took to stderr
     bool keep_going; // Typecheck and report everything even after syntactic or options diagnostics (tsc stops)
     bool no_defer_bodies; // --no-defer-bodies: parse and resolve every function body up front (plan 78)
+    int rerun; // --rerun 1, --no-rerun 0, -1 when not given (on unless TTTT_NO_RERUN=1): program_set_history_rerun()
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
     const char* project; // -p: a tsconfig.json or the directory of one
     bool build; // -b: paths are projects, each checked with everything it references, in build order
@@ -841,6 +842,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     // could list them, program_deferred_bodies_parse())
     if (opts->list_files_only) defer = false;
     program_set_defer_bodies(program, defer);
+    program_set_history_rerun(program, opts->rerun >= 0 ? opts->rerun : !(getenv("TTTT_NO_RERUN") && streq(getenv("TTTT_NO_RERUN"), "1")));
     if (opts->emit_view) {
         program_set_realpath(program, emit_view_real_path, opts->emit_view);
         program_set_file_size(program, emit_view_file_size, opts->emit_view);
@@ -1626,6 +1628,10 @@ static void print_help(void) {
         "                that the checkers holding the most start fresh\n"
         "  --shared-graph  the checkers share one type graph, never recycled (plan 86 stage 4; also\n"
         "                TTTT_SHARED_GRAPH=1)\n"
+        "  --no-rerun    when several checkers (or a recycled one) report an instantiation limit or a\n"
+        "                circularity, keep their output instead of checking everything again in one checker\n"
+        "                (faster; where such a diagnostic lands may then depend on the checkers). --rerun: the\n"
+        "                default, tsc --singleThreaded's output at any K; TTTT_NO_RERUN=1 is --no-rerun\n"
         "  --first-touch-stamps  deep nesting orders types by when each checker met them first, not by id\n"
         "                The output doesn't depend on it\n"
         "  --threads N   parse, bind and check on N threads (default: the number of cores; checking uses at\n"
@@ -1711,7 +1717,7 @@ static int run(int argc, const char** argv) {
     // Every core parses and binds; checking uses at most `checkers` of them (0: one per core, fewer for a small program,
     // auto_checker_count(): the output doesn't depend on the count, plan 62)
     Options opts = {
-        .paths = argv, .pretty = -1, .checkers = 0, .threads = cores < 1 ? 1 : (u32)cores,
+        .paths = argv, .pretty = -1, .rerun = -1, .checkers = 0, .threads = cores < 1 ? 1 : (u32)cores,
         .checker_memory = default_checker_memory(),
         .memory_pool = memory_pool_default(),
     };
@@ -1757,6 +1763,10 @@ static int run(int argc, const char** argv) {
             opts.keep_going = true;
         } else if (streq(argv[i], "--no-defer-bodies")) {
             opts.no_defer_bodies = true;
+        } else if (streq(argv[i], "--no-rerun")) {
+            opts.rerun = 0;
+        } else if (streq(argv[i], "--rerun")) {
+            opts.rerun = 1;
         } else if (streq(argv[i], "--ignoreConfig")) {
             opts.ignore_config = true;
         } else if (streq(argv[i], "--listFiles")) {
