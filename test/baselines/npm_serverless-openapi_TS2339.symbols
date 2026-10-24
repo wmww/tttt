@@ -1,0 +1,43 @@
+//// [test/cases/npm_serverless-openapi_TS2339.ts] ////
+
+=== node_modules/json-schema-ref-parser/lib/index.d.ts ===
+export = $RefParser
+>$RefParser : Symbol($RefParser, Decl(index.d.ts, 0, 19))
+
+/**
+ */
+declare class $RefParser {
+>$RefParser : Symbol($RefParser, Decl(index.d.ts, 0, 19))
+
+  static bundle(schema: string | $RefParser.JSONSchema, callback: $RefParser.SchemaCallback): void;
+>bundle : Symbol($RefParser.bundle, Decl(index.d.ts, 3, 26))
+>schema : Symbol(schema, Decl(index.d.ts, 4, 16))
+>$RefParser : Symbol($RefParser)
+>JSONSchema : Symbol($RefParser.JSONSchema)
+>callback : Symbol(callback, Decl(index.d.ts, 4, 55))
+>$RefParser : Symbol($RefParser)
+>SchemaCallback : Symbol($RefParser.SchemaCallback)
+
+  /**
+   */
+}
+=== src/parse.ts ===
+import * as $RefParser from "json-schema-ref-parser";
+>$RefParser : Symbol($RefParser, Decl(parse.ts, 0, 6))
+
+export async function parseModels(
+>parseModels : Symbol(parseModels, Decl(parse.ts, 0, 53))
+
+): Promise<{}> {
+>Promise : Symbol(Promise, Decl(lib.es5.d.ts, --, --), Decl(lib.es2015.iterable.d.ts, --, --), Decl(lib.es2015.promise.d.ts, --, --), Decl(lib.es2015.symbol.wellknown.d.ts, --, --))
+
+    const schema = (typeof model.schema === "string"
+>schema : Symbol(schema, Decl(parse.ts, 3, 9))
+
+      ? await $RefParser.bundle(path.resolve(root, model.schema))
+>$RefParser : Symbol($RefParser, Decl(parse.ts, 0, 6))
+
+      : model.schema) as JSONSchema7;
+>JSONSchema7 : Symbol(JSONSchema7)
+}
+

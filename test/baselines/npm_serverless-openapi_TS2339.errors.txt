@@ -1,0 +1,57 @@
+node_modules/json-schema-ref-parser/lib/index.d.ts(5,34): error TS2702: '$RefParser' only refers to a type, but is being used as a namespace here.
+node_modules/json-schema-ref-parser/lib/index.d.ts(5,67): error TS2702: '$RefParser' only refers to a type, but is being used as a namespace here.
+src/parse.ts(3,4): error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+src/parse.ts(4,11): error TS6133: 'schema' is declared but its value is never read.
+src/parse.ts(4,28): error TS2304: Cannot find name 'model'.
+src/parse.ts(5,26): error TS2339: Property 'bundle' does not exist on type 'typeof $RefParser'.
+src/parse.ts(5,33): error TS2304: Cannot find name 'path'.
+src/parse.ts(5,46): error TS2304: Cannot find name 'root'.
+src/parse.ts(5,52): error TS2304: Cannot find name 'model'.
+src/parse.ts(6,9): error TS2304: Cannot find name 'model'.
+src/parse.ts(6,26): error TS2304: Cannot find name 'JSONSchema7'.
+
+
+==== node_modules/json-schema-ref-parser/package.json (0 errors) ====
+    {"name": "json-schema-ref-parser", "version": "6.1.0", "main": "lib/index.js", "typings": "lib/index.d.ts"}
+==== package.json (0 errors) ====
+    {"name": "serverless-openapi", "version": "1.1.2", "main": "index.js"}
+==== node_modules/json-schema-ref-parser/lib/index.d.ts (2 errors) ====
+    export = $RefParser
+    /**
+     */
+    declare class $RefParser {
+      static bundle(schema: string | $RefParser.JSONSchema, callback: $RefParser.SchemaCallback): void;
+                                     ~~~~~~~~~~
+!!! error TS2702: '$RefParser' only refers to a type, but is being used as a namespace here.
+                                                                      ~~~~~~~~~~
+!!! error TS2702: '$RefParser' only refers to a type, but is being used as a namespace here.
+      /**
+       */
+    }
+==== src/parse.ts (9 errors) ====
+    import * as $RefParser from "json-schema-ref-parser";
+    export async function parseModels(
+    ): Promise<{}> {
+       ~~~~~~~~~~~
+!!! error TS2355: A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.
+        const schema = (typeof model.schema === "string"
+              ~~~~~~
+!!! error TS6133: 'schema' is declared but its value is never read.
+                               ~~~~~
+!!! error TS2304: Cannot find name 'model'.
+          ? await $RefParser.bundle(path.resolve(root, model.schema))
+                             ~~~~~~
+!!! error TS2339: Property 'bundle' does not exist on type 'typeof $RefParser'.
+                                    ~~~~
+!!! error TS2304: Cannot find name 'path'.
+                                                 ~~~~
+!!! error TS2304: Cannot find name 'root'.
+                                                       ~~~~~
+!!! error TS2304: Cannot find name 'model'.
+          : model.schema) as JSONSchema7;
+            ~~~~~
+!!! error TS2304: Cannot find name 'model'.
+                             ~~~~~~~~~~~
+!!! error TS2304: Cannot find name 'JSONSchema7'.
+    }
+    

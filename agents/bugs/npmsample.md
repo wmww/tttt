@@ -268,3 +268,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   declaration file, not by a use. reduce.py on the node_modules files timed out after 50 minutes (ts-toolbelt's
   single index.d.ts) and the partial cut no longer reproduced; the clone is deleted, the project is reproducible
   from test/npmsample/20261033.setup.jsonl. [open]
+
+## Seed 20261036
+
+- Seed 20261036, theodo/serverless-openapi (serverless-openapi@1.1.2), tsconfig.bench.json, src/parse.ts:50, TS2339: tsgo reports "Property 'bundle' does not exist on type 'typeof $RefParser'" for `import * as $RefParser` of an `export =` class (json-schema-ref-parser) with a static `bundle`; tttt resolves the static (the reduced test then reports TS2554 on the call instead). Test npm_serverless-openapi_TS2339. [open]

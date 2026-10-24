@@ -1,0 +1,62 @@
+//// [test/cases/npm_serverless-openapi_TS2339.ts] ////
+
+=== node_modules/json-schema-ref-parser/lib/index.d.ts ===
+export = $RefParser
+>$RefParser : $RefParser
+
+/**
+ */
+declare class $RefParser {
+>$RefParser : $RefParser
+
+  static bundle(schema: string | $RefParser.JSONSchema, callback: $RefParser.SchemaCallback): void;
+>bundle : (schema: string | $RefParser.JSONSchema, callback: $RefParser.SchemaCallback) => void
+>schema : any
+>$RefParser : any
+>callback : $RefParser.SchemaCallback
+>$RefParser : any
+
+  /**
+   */
+}
+=== src/parse.ts ===
+import * as $RefParser from "json-schema-ref-parser";
+>$RefParser : typeof $RefParser
+
+export async function parseModels(
+>parseModels : () => Promise<{}>
+
+): Promise<{}> {
+    const schema = (typeof model.schema === "string"
+>schema : JSONSchema7
+>(typeof model.schema === "string"      ? await $RefParser.bundle(path.resolve(root, model.schema))      : model.schema) as JSONSchema7 : JSONSchema7
+>(typeof model.schema === "string"      ? await $RefParser.bundle(path.resolve(root, model.schema))      : model.schema) : any
+>typeof model.schema === "string"      ? await $RefParser.bundle(path.resolve(root, model.schema))      : model.schema : any
+>typeof model.schema === "string" : boolean
+>typeof model.schema : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>model.schema : any
+>model : any
+>schema : any
+>"string" : "string"
+
+      ? await $RefParser.bundle(path.resolve(root, model.schema))
+>await $RefParser.bundle(path.resolve(root, model.schema)) : any
+>$RefParser.bundle(path.resolve(root, model.schema)) : any
+>$RefParser.bundle : any
+>$RefParser : typeof $RefParser
+>bundle : any
+>path.resolve(root, model.schema) : any
+>path.resolve : any
+>path : any
+>resolve : any
+>root : any
+>model.schema : any
+>model : any
+>schema : any
+
+      : model.schema) as JSONSchema7;
+>model.schema : any
+>model : any
+>schema : any
+}
+
