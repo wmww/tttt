@@ -48,3 +48,4 @@ npm__bumblebee032_ng-feedback_TS2345	no	@bumblebee032/ng-feedback@2.0.97	https:/
 npm__octanejs_sanity-icons_TS7022	yes	@octanejs/sanity-icons@0.1.16	https://github.com/octanejs/octane	0	1	+TS7022
 npm_paseo-agent-todos_TS5115	yes	paseo-agent-todos@0.1.1	https://github.com/abhi-wan-kenobi/paseo-agent-todos	1	0	-TS5115
 npm__nbholleweger_eva-icons_TS1110	no	@nbholleweger/eva-icons@0.0.5	https://github.com/akveo/nebular	34	33	-TS1005 -TS1139 +TS1110
+npm__gatsby-project-kb_transformer-wiki-references_TS2339	no	@gatsby-project-kb/transformer-wiki-references@0.3.1	https://github.com/hikerpig/gatsby-project-kb	57	58	+TS2339

@@ -1,0 +1,61 @@
+//// [test/cases/npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts] ////
+
+=== npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts ===
+// origin: npm @gatsby-project-kb/transformer-wiki-references@0.3.1 https://github.com/hikerpig/gatsby-project-kb tsconfig.json seed 20261206
+// flip: no
+// An aliased condition (`const isClient = typeof window === 'object'`) narrows only const variables, readonly
+// properties and unassigned parameters (tsgo's isConstantReference). `window`/`w` are `var`s, so tsgo leaves them
+// alone after `if (isClient) return`. tttt narrows them to never (spurious TS2339).
+declare var w: { a(): void };
+>w : { a(): void; }
+>a : () => void
+
+export function f() {
+>f : () => void
+
+  const ok = typeof w === 'object'
+>ok : boolean
+>typeof w === 'object' : boolean
+>typeof w : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>w : { a(): void; }
+>'object' : "object"
+
+  if (ok) {
+>ok : boolean
+
+    return
+  }
+  w.a()
+>w.a() : void
+>w.a : () => void
+>w : { a(): void; }
+>a : () => void
+}
+export function useWindowSize() {
+>useWindowSize : () => () => void
+
+  const isClient = typeof window === 'object'
+>isClient : boolean
+>typeof window === 'object' : boolean
+>typeof window : "bigint" | "boolean" | "function" | "number" | "object" | "string" | "symbol" | "undefined"
+>window : Window & typeof globalThis
+>'object' : "object"
+
+  return () => {
+>() => {    if (isClient) {      return    }    window.addEventListener('resize', () => {})  } : () => void
+
+    if (isClient) {
+>isClient : boolean
+
+      return
+    }
+    window.addEventListener('resize', () => {})
+>window.addEventListener('resize', () => {}) : void
+>window.addEventListener : { <K extends keyof WindowEventMap>(type: K, listener: (this: Window, ev: WindowEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void; (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void; } & { <K extends keyof WindowEventMap>(type: K, listener: (this: Window, ev: WindowEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void; (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void; }
+>window : Window & typeof globalThis
+>addEventListener : { <K extends keyof WindowEventMap>(type: K, listener: (this: Window, ev: WindowEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void; (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void; } & { <K extends keyof WindowEventMap>(type: K, listener: (this: Window, ev: WindowEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void; (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void; }
+>'resize' : "resize"
+>() => {} : () => void
+  }
+}
+

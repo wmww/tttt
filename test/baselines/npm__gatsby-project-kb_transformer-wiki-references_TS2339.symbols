@@ -1,0 +1,49 @@
+//// [test/cases/npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts] ////
+
+=== npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts ===
+// origin: npm @gatsby-project-kb/transformer-wiki-references@0.3.1 https://github.com/hikerpig/gatsby-project-kb tsconfig.json seed 20261206
+// flip: no
+// An aliased condition (`const isClient = typeof window === 'object'`) narrows only const variables, readonly
+// properties and unassigned parameters (tsgo's isConstantReference). `window`/`w` are `var`s, so tsgo leaves them
+// alone after `if (isClient) return`. tttt narrows them to never (spurious TS2339).
+declare var w: { a(): void };
+>w : Symbol(w, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 5, 11))
+>a : Symbol(a, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 5, 16))
+
+export function f() {
+>f : Symbol(f, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 5, 29))
+
+  const ok = typeof w === 'object'
+>ok : Symbol(ok, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 7, 7))
+>w : Symbol(w, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 5, 11))
+
+  if (ok) {
+>ok : Symbol(ok, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 7, 7))
+
+    return
+  }
+  w.a()
+>w.a : Symbol(a, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 5, 16))
+>w : Symbol(w, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 5, 11))
+>a : Symbol(a, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 5, 16))
+}
+export function useWindowSize() {
+>useWindowSize : Symbol(useWindowSize, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 12, 1))
+
+  const isClient = typeof window === 'object'
+>isClient : Symbol(isClient, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 14, 7))
+>window : Symbol(window, Decl(lib.dom.d.ts, --, --))
+
+  return () => {
+    if (isClient) {
+>isClient : Symbol(isClient, Decl(npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts, 14, 7))
+
+      return
+    }
+    window.addEventListener('resize', () => {})
+>window.addEventListener : Symbol(addEventListener, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+>window : Symbol(window, Decl(lib.dom.d.ts, --, --))
+>addEventListener : Symbol(addEventListener, Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --), Decl(lib.dom.d.ts, --, --))
+  }
+}
+

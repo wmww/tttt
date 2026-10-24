@@ -57,3 +57,9 @@ for flips); a separate file so the three boxes never conflict.
   tttt reports them at packages/core/src/types/core.ts:70/77/82 ('Array', 'ExternalTypeOf'). It's the same
   instantiation-depth placement class as above (tsgo's depth-100 point against tttt's re-entry probe), and its
   places also depend on tsgo's checker count (tsgo_divergences.md). No repro yet. [design]
+- Seed 20261206, hikerpig/gatsby-project-kb (@gatsby-project-kb/transformer-wiki-references@0.3.1): spurious TS2339
+  "Property 'addEventListener' does not exist on type 'never'". `const isClient = typeof window === 'object'; if
+  (isClient) return; window.addEventListener(...)` narrows `window` (a `declare var`) through the aliased condition.
+  tsgo's aliased-condition narrowing applies only to a constant reference (isConstantReference: a const variable,
+  a readonly property, an unassigned parameter), and a var isn't one. tttt narrows the var too. Repro
+  test/cases/npm__gatsby-project-kb_transformer-wiki-references_TS2339.ts (also a plain `declare var w`). [open]
