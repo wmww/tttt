@@ -298,7 +298,20 @@ for flips); a separate file so the three boxes never conflict.
   'Blob'" at TransactionInvoiceButton.tsx:47. It looks like one upstream inference or resolution loss (Promise
   `then` callbacks, react-query results) rather than 58 causes. Not K-dependent. No repro. Re-checked at
   7a1056d63 (after cor10's 2b43a7cd4; seed 20261490, the same commit aa01c1469 re-set up): still 94 against 152
-  with the same first lines, so it isn't console-web's DI-container TS7022 cascade. (claimed: fixE) [open]
+  with the same first lines, so it isn't console-web's DI-container TS7022 cascade. fixE, 2026-10-25 (stopped for
+  the release wind-down, clone deleted; re-create it from 20261403.setup.jsonl with installsandbox.py, make_bench
+  changes "baseUrl -> null, paths rebased", "downlevelIteration -> null"): projdiff at main 1676eb513 still 94 / 152,
+  the 58 tttt-only are 23 TS7006, 18 TS2347 ("Untyped function calls may not accept type arguments": a callee that is
+  any), 4 TS7031, 3 TS2345, 3 TS18048, 2 TS18046, TS2740, TS2739, TS2352, TS2322. In file order the first are
+  src/services/app-di-container/app-di-container.ts(102) and browser-di-container.ts(38): TS7006 'config' in
+  `request: [config => ({ ...config, baseURL: getBaseUrl() })]` passed to `container.applyAxiosInterceptors(...)`
+  inside a factory of `const container = createContainer({ ..., providerProxy: () => { ... container.X ... } })`,
+  and RootContainerProvider.tsx(14) TS2345 on `Partial<Factories & { api: ... }>`. So `container` (and the
+  `services` built from it with createChildContainer) loses its type in tttt while its own initializer's factories
+  are inferred: a self-referential initializer through deferred factory functions, the re-entry model's area
+  (agents/notes/reentrancy.md; compare cor10's 2b43a7cd4 for console-web's DI case). The stripe/react-query errors
+  are downstream (services any). Next step: reduce createContainer/createChildContainer (src/services/container/
+  createContainer.ts) with one self-referencing factory, then scripts/reentrytrace.py. [open]
 - Large seed 20261403, akash-network/console@main, apps/api: spurious TS2877 at tsup.config.ts:1 ("This import uses
   a '.ts' extension ... not a relative path"), the same as latitude-llm's apps/web entry above. Not a flip. Re-checked at 7a1056d63 (seed 20261490, the same commit aa01c1469): byte-identical. [fixed ee1a75319]
 - Seed 20261218, wakaztahir/solid-staggered-grid (solid-staggered-grid@1.0.22, commit 4bf293019, root tsconfig.json):
