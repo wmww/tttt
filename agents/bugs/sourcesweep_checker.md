@@ -549,7 +549,7 @@ from there; tsgo's verdicts in test/sourcesweep/tsc.jsonl.gz.
 - **coop: +TS2345 at server/services/networkingService/index.ts:385** (5 projects, 17 in all): the `default:` of a
   `switch (handleResponseBody)` over a generic `T extends HandleResponseBody` passes it to `assertUnreachable(_x: never)`;
   tttt says "Argument of type 'T & Exclude<T, "as-readable-stream">' is not assignable", tsgo narrows it to never
-  through every case. Fixed: the destructured element narrowed by its pattern was not made narrowable afterwards (identifier_flow_type); test ttttDestructuredNarrowedThenNarrowable. [fixed corF 2026-10-24]
+  through every case. Fixed: the destructured element narrowed by its pattern was not made narrowable afterwards (identifier_flow_type); test ttttDestructuredNarrowedThenNarrowable. [fixed cbdcc76bb]
 - **coop: -TS2416 at server/services/signalsService/signals/PluginSignalAdapter.ts:112** (3 projects): an `override async
   run(input)` whose return type annotation tsgo finds incompatible with the base's; tttt missed it. Fixed by det3's a236facd4 (alias variances only when the source has type arguments). [fixed a236facd4]
 
