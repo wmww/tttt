@@ -215,7 +215,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   `...params} />;` and the next `}` are JSX text (TS1381, TS1382). tttt's parse_jsx_attributes stops too, but the
   rest is parsed on in the arrow body (`/>;` a regex: TS1161, then TS1005). The parser has no general unwinding to an
   enclosing context that would take the token. Repro test/cases/npm__devexpress_dx-react-grid-material-ui_TS1381.tsx.
-  [open]
+  (claimed: corB) [open]
 - Seed 20261033, ionic-team/stencil-component-starter again (another npm package of the same template repo): the
   TS2320 flip above. [dup]
 
@@ -240,7 +240,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   `Y extends Schema<any, string>` and `From<Y>` is a distributive conditional with a `X extends string|number|boolean ? Schema<X>` branch:
   tttt checks the constraint `string | symbol` against `Y | ...` / `(string|number|boolean) & Y` instead of the conditional's
   constraint with Y's own constraint substituted (Schema<any,string> is not a primitive, so that branch is never). Repro is the
-  vendored file's types, 15 lines. [open]
+  vendored file's types, 15 lines. (claimed: corB) [open]
   converge in an hour on MUI's types). Not the elaboration (det3): elaborateElement relates InputProps to the
   union's `Partial<StdInput> | Partial<OutInput> | undefined` and finds it assignable, in both. It's the excess
   property report inside the relation. tsgo's hasExcessProperties takes the JSX message and keeps the error node (the tag
