@@ -1,0 +1,285 @@
+//// [test/cases/npm_fui-fancyui_TS7053.tsx] ////
+
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/styled-components/dist/constructors/constructWithOptions.d.ts ===
+import { Attrs, BaseObject, ExecutionProps, Interpolation, IStyledComponent, IStyledComponentFactory, KnownTarget, KnownTargetPropsWithRef, MakeAttrsOptional, MergeProps, Runtime, StyledOptions, StyledTarget, Styles, TargetProps, WidenForUntypedTarget } from '../types';
+>Attrs : any
+>BaseObject : any
+>ExecutionProps : any
+>Interpolation : any
+>IStyledComponent : any
+>IStyledComponentFactory : any
+>KnownTarget : any
+>KnownTargetPropsWithRef : any
+>MakeAttrsOptional : any
+>MergeProps : any
+>Runtime : any
+>StyledOptions : any
+>StyledTarget : any
+>Styles : any
+>TargetProps : any
+>WidenForUntypedTarget : any
+
+/**
+ */
+export interface Styled<out R extends Runtime, out Target extends StyledTarget<R>, in out OuterProps extends object, out OuterStatics extends object = BaseObject, out AttrsKeys extends keyof any = never> {
+    <Props extends object = BaseObject, Statics extends object = BaseObject>(initialStyles: Styles<MergeProps<OuterProps, NoInfer<Props>>>, ...interpolations: Interpolation<MergeProps<OuterProps, NoInfer<Props>>>[]): IStyledComponent<R, WidenForUntypedTarget<TargetProps<R, Target>, MakeAttrsOptional<MergeProps<OuterProps, Props>, AttrsKeys>>> & OuterStatics & Statics & (R extends 'web' ? Target extends string ? {} : Omit<Target, keyof React.Component<any>> : {});
+>initialStyles : Styles<MergeProps<OuterProps, NoInfer<Props>>>
+>interpolations : Interpolation<MergeProps<OuterProps, NoInfer<Props>>>[]
+>React : any
+}
+=== node_modules/styled-components/dist/constructors/styled.d.ts ===
+import { Styled as StyledInstance } from './constructWithOptions';
+>Styled : any
+>StyledInstance : any
+
+/**
+ */
+declare const baseStyled: <Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => StyledInstance<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>;
+>baseStyled : <Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => StyledInstance<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>
+>tag : Target
+
+declare const styled: typeof baseStyled & { [E in SupportedHTMLElements]: StyledInstance<"web", E, TargetProps<"web", E>>; };
+>styled : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => StyledInstance<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: StyledInstance<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+>baseStyled : <Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => StyledInstance<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>
+
+export default styled;
+>styled : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => StyledInstance<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: StyledInstance<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+
+=== node_modules/styled-components/dist/index.d.ts ===
+import styled, { LibraryStyled, Styled, StyledInstance } from './constructors/styled';
+>styled : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => import("styled-components/dist/constructors/constructWithOptions").Styled<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+>LibraryStyled : any
+>Styled : any
+>StyledInstance : any
+
+export { styled as default, LibraryStyled, Styled, styled, StyledInstance };
+>styled : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => import("styled-components/dist/constructors/constructWithOptions").Styled<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+>default : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => import("styled-components/dist/constructors/constructWithOptions").Styled<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+>LibraryStyled : any
+>Styled : any
+>styled : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => import("styled-components/dist/constructors/constructWithOptions").Styled<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+>StyledInstance : any
+
+=== node_modules/styled-components/dist/types.d.ts ===
+/**
+ */
+export type StyledComponentBrand = {
+>StyledComponentBrand : StyledComponentBrand
+
+};
+export type FastOmit<T extends BaseObject, U extends string | number | symbol> = {
+>FastOmit : FastOmit<T, U>
+
+};
+export interface ExecutionContext extends ExecutionProps {
+}
+export interface StyleFunction<Props extends BaseObject> {
+    (executionContext: ExecutionContext & Props): Interpolation<Props>;
+>executionContext : ExecutionContext & Props
+}
+export type Interpolation<Props extends BaseObject> = StyleFunction<Props> | StyledObject<Props> | TemplateStringsArray | string | number | false | undefined | null | Keyframes | StyledComponentBrand | RuleSet<Props>;
+>Interpolation : Interpolation<Props>
+>false : false
+
+export type RuleSet<Props extends BaseObject = BaseObject> = Interpolation<Props>[];
+>RuleSet : RuleSet<Props>
+
+export interface Keyframes {
+}
+/**
+ */
+export interface StyledObject<Props extends BaseObject = BaseObject> extends CSSProperties, CSSPseudos {
+}
+/**
+ */
+export type MergeProps<A extends BaseObject, B> = keyof B extends never ? {} extends B ? A : Merged<A, B> : Merged<A, B>;
+>MergeProps : MergeProps<A, B>
+
+/** The taken branch of {@link MergeProps}, named so hovers print a name rather
+ * than the expansion. Keep it named; see {@link Substituted}. */
+export type Merged<A extends BaseObject, B> = FastOmit<A, Exclude<keyof B, 'style'>> & B;
+>Merged : Merged<A, B>
+
+/**
+ */
+=== src/components/atoms/AlignedLabel/AlignedLabel.style.tsx ===
+import { styled } from 'styled-components';
+>styled : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => import("styled-components/dist/constructors/constructWithOptions").Styled<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+
+import { TAlignedLabelProps } from './TAlinedLabel.model';
+>TAlignedLabelProps : any
+
+import { leftRightCenterToFlexJustify } from '../../../design/designFunctions/leftRightCenterToFlexJustify';
+>leftRightCenterToFlexJustify : Record<import("../../../types/TTextAlignLRC.ts").TTextAlignLRC, import("../../../design/designFunctions/leftRightCenterToFlexJustify/leftRightCenterToFlexJustify.ts").TLeftRightCenterToFlexJustify>
+
+import { TTheme } from '../../../types/TTheme';
+>TTheme : any
+
+import { TStyledPrefixAndPicker } from '../../../types/TStyledPrefixAndPicker';
+>TStyledPrefixAndPicker : any
+
+type TStyledAlignedLabel = TStyledPrefixAndPicker<TAlignedLabelProps> & { theme: TTheme };
+>TStyledAlignedLabel : TStyledAlignedLabel
+>theme : TTheme
+
+export const StyledAlignedLabel = styled.label<TStyledAlignedLabel>`
+>StyledAlignedLabel : any
+>styled.label<TStyledAlignedLabel>`  justify-content: ${({ $align }) => leftRightCenterToFlexJustify[$align ?? 'left']};` : any
+>styled.label : import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>
+>styled : (<Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => import("styled-components/dist/constructors/constructWithOptions").Styled<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>) & { [x: string]: import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>; }
+>label : import("styled-components/dist/constructors/constructWithOptions").Styled<"web", SupportedHTMLElements, TargetProps<"web", E>, BaseObject, never>
+>`  justify-content: ${({ $align }) => leftRightCenterToFlexJustify[$align ?? 'left']};` : string
+
+  justify-content: ${({ $align }) => leftRightCenterToFlexJustify[$align ?? 'left']};
+>({ $align }) => leftRightCenterToFlexJustify[$align ?? 'left'] : ({ $align }: import("styled-components/dist/types").ExecutionContext & NoInfer<TStyledAlignedLabel>) => import("../../../design/designFunctions/leftRightCenterToFlexJustify/leftRightCenterToFlexJustify").TLeftRightCenterToFlexJustify
+>$align : import("../../../types/TTextAlignLRC").TTextAlignLRC | undefined
+>leftRightCenterToFlexJustify[$align ?? 'left'] : import("../../../design/designFunctions/leftRightCenterToFlexJustify/leftRightCenterToFlexJustify").TLeftRightCenterToFlexJustify
+>leftRightCenterToFlexJustify : Record<import("../../../types/TTextAlignLRC").TTextAlignLRC, import("../../../design/designFunctions/leftRightCenterToFlexJustify/leftRightCenterToFlexJustify").TLeftRightCenterToFlexJustify>
+>$align ?? 'left' : import("../../../types/TTextAlignLRC").TTextAlignLRC
+>$align : import("../../../types/TTextAlignLRC").TTextAlignLRC | undefined
+>'left' : "left"
+
+`;
+=== src/components/atoms/AlignedLabel/TAlinedLabel.model.ts ===
+import { TLayer } from '../../../types/TLayer';
+>TLayer : any
+
+import { TUiColorsSystemMessage } from '../../../types/TUiColorsSystemMessage';
+>TUiColorsSystemMessage : any
+
+import { TUiColorsNotTransparent } from '../../../types/TUiColorsNotTransparent';
+>TUiColorsNotTransparent : any
+
+import { TTextAlignLRC } from '../../../types/TTextAlignLRC';
+>TTextAlignLRC : any
+
+export type TAlignedLabelProps = {
+>TAlignedLabelProps : TAlignedLabelProps
+
+  align?: TTextAlignLRC;
+>align : TTextAlignLRC | undefined
+
+  systemMessageType?: TUiColorsSystemMessage;
+>systemMessageType : undefined
+
+  themeType?: TUiColorsNotTransparent;
+>themeType : "secondary" | undefined
+
+  layer?: TLayer;
+>layer : TLayer | undefined
+
+};
+=== src/design/designFunctions/leftRightCenterToFlexJustify/index.ts ===
+export { default as leftRightCenterToFlexJustify } from './leftRightCenterToFlexJustify';
+>default : Record<import("../../../types/TTextAlignLRC.ts").TTextAlignLRC, import("./leftRightCenterToFlexJustify").TLeftRightCenterToFlexJustify>
+>leftRightCenterToFlexJustify : Record<import("../../../types/TTextAlignLRC.ts").TTextAlignLRC, import("./leftRightCenterToFlexJustify").TLeftRightCenterToFlexJustify>
+
+=== src/design/designFunctions/leftRightCenterToFlexJustify/leftRightCenterToFlexJustify.ts ===
+import { TTextAlignLRC } from '../../../types/TTextAlignLRC';
+>TTextAlignLRC : any
+
+export type TLeftRightCenterToFlexJustify = 'flex-start' | 'flex-end' | 'center';
+>TLeftRightCenterToFlexJustify : TLeftRightCenterToFlexJustify
+
+const leftRightCenterToFlexJustify: Record<TTextAlignLRC, TLeftRightCenterToFlexJustify> = {
+>leftRightCenterToFlexJustify : Record<TTextAlignLRC, TLeftRightCenterToFlexJustify>
+>{  left: 'flex-start',  right: 'flex-end',  center: 'center',} : { left: "flex-start"; right: "flex-end"; center: "center"; }
+
+  left: 'flex-start',
+>left : "flex-start"
+>'flex-start' : "flex-start"
+
+  right: 'flex-end',
+>right : "flex-end"
+>'flex-end' : "flex-end"
+
+  center: 'center',
+>center : "center"
+>'center' : "center"
+
+};
+export default leftRightCenterToFlexJustify;
+>leftRightCenterToFlexJustify : Record<TTextAlignLRC, TLeftRightCenterToFlexJustify>
+
+=== src/design/theme/generateThemeColor/generateThemeColor.ts ===
+import { TLayer } from '../../../types/TLayer';
+>TLayer : any
+
+const themeColors = {
+>themeColors : { secondary: string; }
+>{  secondary: '#f0f0ef',} : { secondary: string; }
+
+  secondary: '#f0f0ef',
+>secondary : string
+>'#f0f0ef' : "#f0f0ef"
+
+};
+export { themeColors };
+>themeColors : { secondary: string; }
+
+export type TthemeColorGroup = Record<TLayer, string>;
+>TthemeColorGroup : TthemeColorGroup
+
+=== src/types/TLayer.ts ===
+export type TLayer = 9 | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0;
+>TLayer : TLayer
+
+=== src/types/TStyledPrefixAndPicker.ts ===
+type StringKeys<T> = Extract<keyof T, string>;
+>StringKeys : StringKeys<T>
+
+type RequiredKeysOfSubset<T, U extends StringKeys<T>> = {
+>RequiredKeysOfSubset : RequiredKeysOfSubset<T, U>
+
+  [K in U]: undefined extends T[K] ? never : K;
+}[U];
+type OptionalKeysOfSubset<T, U extends StringKeys<T>> = Exclude<U, RequiredKeysOfSubset<T, U>>;
+>OptionalKeysOfSubset : OptionalKeysOfSubset<T, U>
+
+export type TStyledPrefixAndPicker<T extends Record<string, any>, U extends StringKeys<T> = StringKeys<T>> = {
+>TStyledPrefixAndPicker : TStyledPrefixAndPicker<T, U>
+
+  [P in OptionalKeysOfSubset<T, U> as `$${P}`]?: T[P];
+};
+=== src/types/TTextAlignLRC.ts ===
+export type TTextAlignLRC = 'left' | 'right' | 'center';
+>TTextAlignLRC : TTextAlignLRC
+
+=== src/types/TTheme.ts ===
+export type TTheme = {
+>TTheme : TTheme
+
+};
+=== src/types/TUiColorTypes.ts ===
+import { TUiColorsTypeObject } from './TUiColorsTypeObject';
+>TUiColorsTypeObject : any
+
+export type TUiColorTypes = keyof TUiColorsTypeObject | 'transparent';
+>TUiColorTypes : TUiColorTypes
+
+=== src/types/TUiColorsNotTransparent.ts ===
+import { TUiColorTypes } from './TUiColorTypes';
+>TUiColorTypes : any
+
+export type TUiColorsNotTransparent = Exclude<TUiColorTypes, 'transparent'>;
+>TUiColorsNotTransparent : "secondary"
+
+=== src/types/TUiColorsSystemMessage.ts ===
+import { TUiColorTypes } from './TUiColorTypes';
+>TUiColorTypes : any
+
+export type TUiColorsSystemMessage = Extract<TUiColorTypes, 'success' | 'error' | 'info' | 'warning'>;
+>TUiColorsSystemMessage : never
+
+=== src/types/TUiColorsTypeObject.ts ===
+import { TthemeColorGroup, themeColors } from '../design/theme/generateThemeColor/generateThemeColor';
+>TthemeColorGroup : any
+>themeColors : { secondary: string; }
+
+export type TUiColorsTypeObject = { [key in keyof typeof themeColors]: TthemeColorGroup };
+>TUiColorsTypeObject : TUiColorsTypeObject
+>themeColors : { secondary: string; }
+

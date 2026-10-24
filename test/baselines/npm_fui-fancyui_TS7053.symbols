@@ -1,0 +1,442 @@
+//// [test/cases/npm_fui-fancyui_TS7053.tsx] ////
+
+=== node_modules/@types/node/index.d.ts ===
+
+export {};
+=== node_modules/styled-components/dist/constructors/constructWithOptions.d.ts ===
+import { Attrs, BaseObject, ExecutionProps, Interpolation, IStyledComponent, IStyledComponentFactory, KnownTarget, KnownTargetPropsWithRef, MakeAttrsOptional, MergeProps, Runtime, StyledOptions, StyledTarget, Styles, TargetProps, WidenForUntypedTarget } from '../types';
+>Attrs : Symbol(Attrs, Decl(constructWithOptions.d.ts, 0, 8))
+>BaseObject : Symbol(BaseObject, Decl(constructWithOptions.d.ts, 0, 15))
+>ExecutionProps : Symbol(ExecutionProps, Decl(constructWithOptions.d.ts, 0, 27))
+>Interpolation : Symbol(Interpolation, Decl(constructWithOptions.d.ts, 0, 43))
+>IStyledComponent : Symbol(IStyledComponent, Decl(constructWithOptions.d.ts, 0, 58))
+>IStyledComponentFactory : Symbol(IStyledComponentFactory, Decl(constructWithOptions.d.ts, 0, 76))
+>KnownTarget : Symbol(KnownTarget, Decl(constructWithOptions.d.ts, 0, 101))
+>KnownTargetPropsWithRef : Symbol(KnownTargetPropsWithRef, Decl(constructWithOptions.d.ts, 0, 114))
+>MakeAttrsOptional : Symbol(MakeAttrsOptional, Decl(constructWithOptions.d.ts, 0, 139))
+>MergeProps : Symbol(MergeProps, Decl(constructWithOptions.d.ts, 0, 158))
+>Runtime : Symbol(Runtime, Decl(constructWithOptions.d.ts, 0, 170))
+>StyledOptions : Symbol(StyledOptions, Decl(constructWithOptions.d.ts, 0, 179))
+>StyledTarget : Symbol(StyledTarget, Decl(constructWithOptions.d.ts, 0, 194))
+>Styles : Symbol(Styles, Decl(constructWithOptions.d.ts, 0, 208))
+>TargetProps : Symbol(TargetProps, Decl(constructWithOptions.d.ts, 0, 216))
+>WidenForUntypedTarget : Symbol(WidenForUntypedTarget, Decl(constructWithOptions.d.ts, 0, 229))
+
+/**
+ */
+export interface Styled<out R extends Runtime, out Target extends StyledTarget<R>, in out OuterProps extends object, out OuterStatics extends object = BaseObject, out AttrsKeys extends keyof any = never> {
+>Styled : Symbol(Styled, Decl(constructWithOptions.d.ts, 0, 270))
+>R : Symbol(R, Decl(constructWithOptions.d.ts, 3, 24))
+>Runtime : Symbol(Runtime, Decl(constructWithOptions.d.ts, 0, 170))
+>Target : Symbol(Target, Decl(constructWithOptions.d.ts, 3, 46))
+>StyledTarget : Symbol(StyledTarget, Decl(constructWithOptions.d.ts, 0, 194))
+>R : Symbol(R, Decl(constructWithOptions.d.ts, 3, 24))
+>OuterProps : Symbol(OuterProps, Decl(constructWithOptions.d.ts, 3, 82))
+>OuterStatics : Symbol(OuterStatics, Decl(constructWithOptions.d.ts, 3, 116))
+>BaseObject : Symbol(BaseObject, Decl(constructWithOptions.d.ts, 0, 15))
+>AttrsKeys : Symbol(AttrsKeys, Decl(constructWithOptions.d.ts, 3, 162))
+
+    <Props extends object = BaseObject, Statics extends object = BaseObject>(initialStyles: Styles<MergeProps<OuterProps, NoInfer<Props>>>, ...interpolations: Interpolation<MergeProps<OuterProps, NoInfer<Props>>>[]): IStyledComponent<R, WidenForUntypedTarget<TargetProps<R, Target>, MakeAttrsOptional<MergeProps<OuterProps, Props>, AttrsKeys>>> & OuterStatics & Statics & (R extends 'web' ? Target extends string ? {} : Omit<Target, keyof React.Component<any>> : {});
+>Props : Symbol(Props, Decl(constructWithOptions.d.ts, 4, 5))
+>BaseObject : Symbol(BaseObject, Decl(constructWithOptions.d.ts, 0, 15))
+>Statics : Symbol(Statics, Decl(constructWithOptions.d.ts, 4, 39))
+>BaseObject : Symbol(BaseObject, Decl(constructWithOptions.d.ts, 0, 15))
+>initialStyles : Symbol(initialStyles, Decl(constructWithOptions.d.ts, 4, 77))
+>Styles : Symbol(Styles, Decl(constructWithOptions.d.ts, 0, 208))
+>MergeProps : Symbol(MergeProps, Decl(constructWithOptions.d.ts, 0, 158))
+>OuterProps : Symbol(OuterProps, Decl(constructWithOptions.d.ts, 3, 82))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(constructWithOptions.d.ts, 4, 5))
+>interpolations : Symbol(interpolations, Decl(constructWithOptions.d.ts, 4, 139))
+>Interpolation : Symbol(Interpolation, Decl(constructWithOptions.d.ts, 0, 43))
+>MergeProps : Symbol(MergeProps, Decl(constructWithOptions.d.ts, 0, 158))
+>OuterProps : Symbol(OuterProps, Decl(constructWithOptions.d.ts, 3, 82))
+>NoInfer : Symbol(NoInfer, Decl(lib.es5.d.ts, --, --))
+>Props : Symbol(Props, Decl(constructWithOptions.d.ts, 4, 5))
+>IStyledComponent : Symbol(IStyledComponent, Decl(constructWithOptions.d.ts, 0, 58))
+>R : Symbol(R, Decl(constructWithOptions.d.ts, 3, 24))
+>WidenForUntypedTarget : Symbol(WidenForUntypedTarget, Decl(constructWithOptions.d.ts, 0, 229))
+>TargetProps : Symbol(TargetProps, Decl(constructWithOptions.d.ts, 0, 216))
+>R : Symbol(R, Decl(constructWithOptions.d.ts, 3, 24))
+>Target : Symbol(Target, Decl(constructWithOptions.d.ts, 3, 46))
+>MakeAttrsOptional : Symbol(MakeAttrsOptional, Decl(constructWithOptions.d.ts, 0, 139))
+>MergeProps : Symbol(MergeProps, Decl(constructWithOptions.d.ts, 0, 158))
+>OuterProps : Symbol(OuterProps, Decl(constructWithOptions.d.ts, 3, 82))
+>Props : Symbol(Props, Decl(constructWithOptions.d.ts, 4, 5))
+>AttrsKeys : Symbol(AttrsKeys, Decl(constructWithOptions.d.ts, 3, 162))
+>OuterStatics : Symbol(OuterStatics, Decl(constructWithOptions.d.ts, 3, 116))
+>Statics : Symbol(Statics, Decl(constructWithOptions.d.ts, 4, 39))
+>R : Symbol(R, Decl(constructWithOptions.d.ts, 3, 24))
+>Target : Symbol(Target, Decl(constructWithOptions.d.ts, 3, 46))
+>Omit : Symbol(Omit, Decl(lib.es5.d.ts, --, --))
+>Target : Symbol(Target, Decl(constructWithOptions.d.ts, 3, 46))
+>React : Symbol(React)
+>Component : Symbol(React.Component)
+}
+=== node_modules/styled-components/dist/constructors/styled.d.ts ===
+import { Styled as StyledInstance } from './constructWithOptions';
+>Styled : Symbol(StyledInstance, Decl(constructWithOptions.d.ts, 0, 270))
+>StyledInstance : Symbol(StyledInstance, Decl(styled.d.ts, 0, 8))
+
+/**
+ */
+declare const baseStyled: <Target extends WebTarget, InjectedProps extends object = BaseObject>(tag: Target) => StyledInstance<"web", Target, TargetProps<"web", Target> & InjectedProps, BaseObject, never>;
+>baseStyled : Symbol(baseStyled, Decl(styled.d.ts, 3, 13))
+>Target : Symbol(Target, Decl(styled.d.ts, 3, 27))
+>WebTarget : Symbol(WebTarget)
+>InjectedProps : Symbol(InjectedProps, Decl(styled.d.ts, 3, 52))
+>BaseObject : Symbol(BaseObject)
+>tag : Symbol(tag, Decl(styled.d.ts, 3, 96))
+>Target : Symbol(Target, Decl(styled.d.ts, 3, 27))
+>StyledInstance : Symbol(StyledInstance, Decl(styled.d.ts, 0, 8))
+>Target : Symbol(Target, Decl(styled.d.ts, 3, 27))
+>TargetProps : Symbol(TargetProps)
+>Target : Symbol(Target, Decl(styled.d.ts, 3, 27))
+>InjectedProps : Symbol(InjectedProps, Decl(styled.d.ts, 3, 52))
+>BaseObject : Symbol(BaseObject)
+
+declare const styled: typeof baseStyled & { [E in SupportedHTMLElements]: StyledInstance<"web", E, TargetProps<"web", E>>; };
+>styled : Symbol(styled, Decl(styled.d.ts, 4, 13))
+>baseStyled : Symbol(baseStyled, Decl(styled.d.ts, 3, 13))
+>E : Symbol(E, Decl(styled.d.ts, 4, 45))
+>SupportedHTMLElements : Symbol(SupportedHTMLElements)
+>StyledInstance : Symbol(StyledInstance, Decl(styled.d.ts, 0, 8))
+>E : Symbol(E, Decl(styled.d.ts, 4, 45))
+>TargetProps : Symbol(TargetProps)
+>E : Symbol(E, Decl(styled.d.ts, 4, 45))
+
+export default styled;
+>styled : Symbol(styled, Decl(styled.d.ts, 4, 13))
+
+=== node_modules/styled-components/dist/index.d.ts ===
+import styled, { LibraryStyled, Styled, StyledInstance } from './constructors/styled';
+>styled : Symbol(styled, Decl(index.d.ts, 0, 6))
+>LibraryStyled : Symbol(LibraryStyled, Decl(index.d.ts, 0, 16))
+>Styled : Symbol(Styled, Decl(index.d.ts, 0, 31))
+>StyledInstance : Symbol(StyledInstance, Decl(index.d.ts, 0, 39))
+
+export { styled as default, LibraryStyled, Styled, styled, StyledInstance };
+>styled : Symbol(styled, Decl(index.d.ts, 0, 6))
+>default : Symbol(default, Decl(index.d.ts, 1, 8))
+>LibraryStyled : Symbol(LibraryStyled, Decl(index.d.ts, 1, 27))
+>Styled : Symbol(Styled, Decl(index.d.ts, 1, 42))
+>styled : Symbol(styled, Decl(index.d.ts, 1, 50))
+>StyledInstance : Symbol(StyledInstance, Decl(index.d.ts, 1, 58))
+
+=== node_modules/styled-components/dist/types.d.ts ===
+/**
+ */
+export type StyledComponentBrand = {
+>StyledComponentBrand : Symbol(StyledComponentBrand, Decl(types.d.ts, 0, 0))
+
+};
+export type FastOmit<T extends BaseObject, U extends string | number | symbol> = {
+>FastOmit : Symbol(FastOmit, Decl(types.d.ts, 3, 2))
+>T : Symbol(T, Decl(types.d.ts, 4, 21))
+>BaseObject : Symbol(BaseObject)
+>U : Symbol(U, Decl(types.d.ts, 4, 42))
+
+};
+export interface ExecutionContext extends ExecutionProps {
+>ExecutionContext : Symbol(ExecutionContext, Decl(types.d.ts, 5, 2))
+}
+export interface StyleFunction<Props extends BaseObject> {
+>StyleFunction : Symbol(StyleFunction, Decl(types.d.ts, 7, 1))
+>Props : Symbol(Props, Decl(types.d.ts, 8, 31))
+>BaseObject : Symbol(BaseObject)
+
+    (executionContext: ExecutionContext & Props): Interpolation<Props>;
+>executionContext : Symbol(executionContext, Decl(types.d.ts, 9, 5))
+>ExecutionContext : Symbol(ExecutionContext, Decl(types.d.ts, 5, 2))
+>Props : Symbol(Props, Decl(types.d.ts, 8, 31))
+>Interpolation : Symbol(Interpolation, Decl(types.d.ts, 10, 1))
+>Props : Symbol(Props, Decl(types.d.ts, 8, 31))
+}
+export type Interpolation<Props extends BaseObject> = StyleFunction<Props> | StyledObject<Props> | TemplateStringsArray | string | number | false | undefined | null | Keyframes | StyledComponentBrand | RuleSet<Props>;
+>Interpolation : Symbol(Interpolation, Decl(types.d.ts, 10, 1))
+>Props : Symbol(Props, Decl(types.d.ts, 11, 26))
+>BaseObject : Symbol(BaseObject)
+>StyleFunction : Symbol(StyleFunction, Decl(types.d.ts, 7, 1))
+>Props : Symbol(Props, Decl(types.d.ts, 11, 26))
+>StyledObject : Symbol(StyledObject, Decl(types.d.ts, 14, 1))
+>Props : Symbol(Props, Decl(types.d.ts, 11, 26))
+>TemplateStringsArray : Symbol(TemplateStringsArray, Decl(lib.es5.d.ts, --, --))
+>Keyframes : Symbol(Keyframes, Decl(types.d.ts, 12, 84))
+>StyledComponentBrand : Symbol(StyledComponentBrand, Decl(types.d.ts, 0, 0))
+>RuleSet : Symbol(RuleSet, Decl(types.d.ts, 11, 217))
+>Props : Symbol(Props, Decl(types.d.ts, 11, 26))
+
+export type RuleSet<Props extends BaseObject = BaseObject> = Interpolation<Props>[];
+>RuleSet : Symbol(RuleSet, Decl(types.d.ts, 11, 217))
+>Props : Symbol(Props, Decl(types.d.ts, 12, 20))
+>BaseObject : Symbol(BaseObject)
+>BaseObject : Symbol(BaseObject)
+>Interpolation : Symbol(Interpolation, Decl(types.d.ts, 10, 1))
+>Props : Symbol(Props, Decl(types.d.ts, 12, 20))
+
+export interface Keyframes {
+>Keyframes : Symbol(Keyframes, Decl(types.d.ts, 12, 84))
+}
+/**
+ */
+export interface StyledObject<Props extends BaseObject = BaseObject> extends CSSProperties, CSSPseudos {
+>StyledObject : Symbol(StyledObject, Decl(types.d.ts, 14, 1))
+>Props : Symbol(Props, Decl(types.d.ts, 17, 30))
+>BaseObject : Symbol(BaseObject)
+>BaseObject : Symbol(BaseObject)
+}
+/**
+ */
+export type MergeProps<A extends BaseObject, B> = keyof B extends never ? {} extends B ? A : Merged<A, B> : Merged<A, B>;
+>MergeProps : Symbol(MergeProps, Decl(types.d.ts, 18, 1))
+>A : Symbol(A, Decl(types.d.ts, 21, 23))
+>BaseObject : Symbol(BaseObject)
+>B : Symbol(B, Decl(types.d.ts, 21, 44))
+>B : Symbol(B, Decl(types.d.ts, 21, 44))
+>B : Symbol(B, Decl(types.d.ts, 21, 44))
+>A : Symbol(A, Decl(types.d.ts, 21, 23))
+>Merged : Symbol(Merged, Decl(types.d.ts, 21, 121))
+>A : Symbol(A, Decl(types.d.ts, 21, 23))
+>B : Symbol(B, Decl(types.d.ts, 21, 44))
+>Merged : Symbol(Merged, Decl(types.d.ts, 21, 121))
+>A : Symbol(A, Decl(types.d.ts, 21, 23))
+>B : Symbol(B, Decl(types.d.ts, 21, 44))
+
+/** The taken branch of {@link MergeProps}, named so hovers print a name rather
+ * than the expansion. Keep it named; see {@link Substituted}. */
+export type Merged<A extends BaseObject, B> = FastOmit<A, Exclude<keyof B, 'style'>> & B;
+>Merged : Symbol(Merged, Decl(types.d.ts, 21, 121))
+>A : Symbol(A, Decl(types.d.ts, 24, 19))
+>BaseObject : Symbol(BaseObject)
+>B : Symbol(B, Decl(types.d.ts, 24, 40))
+>FastOmit : Symbol(FastOmit, Decl(types.d.ts, 3, 2))
+>A : Symbol(A, Decl(types.d.ts, 24, 19))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>B : Symbol(B, Decl(types.d.ts, 24, 40))
+>B : Symbol(B, Decl(types.d.ts, 24, 40))
+
+/**
+ */
+=== src/components/atoms/AlignedLabel/AlignedLabel.style.tsx ===
+import { styled } from 'styled-components';
+>styled : Symbol(styled, Decl(AlignedLabel.style.tsx, 0, 8))
+
+import { TAlignedLabelProps } from './TAlinedLabel.model';
+>TAlignedLabelProps : Symbol(TAlignedLabelProps, Decl(AlignedLabel.style.tsx, 1, 8))
+
+import { leftRightCenterToFlexJustify } from '../../../design/designFunctions/leftRightCenterToFlexJustify';
+>leftRightCenterToFlexJustify : Symbol(leftRightCenterToFlexJustify, Decl(AlignedLabel.style.tsx, 2, 8))
+
+import { TTheme } from '../../../types/TTheme';
+>TTheme : Symbol(TTheme, Decl(AlignedLabel.style.tsx, 3, 8))
+
+import { TStyledPrefixAndPicker } from '../../../types/TStyledPrefixAndPicker';
+>TStyledPrefixAndPicker : Symbol(TStyledPrefixAndPicker, Decl(AlignedLabel.style.tsx, 4, 8))
+
+type TStyledAlignedLabel = TStyledPrefixAndPicker<TAlignedLabelProps> & { theme: TTheme };
+>TStyledAlignedLabel : Symbol(TStyledAlignedLabel, Decl(AlignedLabel.style.tsx, 4, 79))
+>TStyledPrefixAndPicker : Symbol(TStyledPrefixAndPicker, Decl(AlignedLabel.style.tsx, 4, 8))
+>TAlignedLabelProps : Symbol(TAlignedLabelProps, Decl(AlignedLabel.style.tsx, 1, 8))
+>theme : Symbol(theme, Decl(AlignedLabel.style.tsx, 5, 73))
+>TTheme : Symbol(TTheme, Decl(AlignedLabel.style.tsx, 3, 8))
+
+export const StyledAlignedLabel = styled.label<TStyledAlignedLabel>`
+>StyledAlignedLabel : Symbol(StyledAlignedLabel, Decl(AlignedLabel.style.tsx, 6, 12))
+>styled : Symbol(styled, Decl(AlignedLabel.style.tsx, 0, 8))
+>TStyledAlignedLabel : Symbol(TStyledAlignedLabel, Decl(AlignedLabel.style.tsx, 4, 79))
+
+  justify-content: ${({ $align }) => leftRightCenterToFlexJustify[$align ?? 'left']};
+>$align : Symbol($align, Decl(AlignedLabel.style.tsx, 7, 23))
+>leftRightCenterToFlexJustify : Symbol(leftRightCenterToFlexJustify, Decl(AlignedLabel.style.tsx, 2, 8))
+>$align : Symbol($align, Decl(AlignedLabel.style.tsx, 7, 23))
+
+`;
+=== src/components/atoms/AlignedLabel/TAlinedLabel.model.ts ===
+import { TLayer } from '../../../types/TLayer';
+>TLayer : Symbol(TLayer, Decl(TAlinedLabel.model.ts, 0, 8))
+
+import { TUiColorsSystemMessage } from '../../../types/TUiColorsSystemMessage';
+>TUiColorsSystemMessage : Symbol(TUiColorsSystemMessage, Decl(TAlinedLabel.model.ts, 1, 8))
+
+import { TUiColorsNotTransparent } from '../../../types/TUiColorsNotTransparent';
+>TUiColorsNotTransparent : Symbol(TUiColorsNotTransparent, Decl(TAlinedLabel.model.ts, 2, 8))
+
+import { TTextAlignLRC } from '../../../types/TTextAlignLRC';
+>TTextAlignLRC : Symbol(TTextAlignLRC, Decl(TAlinedLabel.model.ts, 3, 8))
+
+export type TAlignedLabelProps = {
+>TAlignedLabelProps : Symbol(TAlignedLabelProps, Decl(TAlinedLabel.model.ts, 3, 61))
+
+  align?: TTextAlignLRC;
+>align : Symbol(align, Decl(TAlinedLabel.model.ts, 4, 34))
+>TTextAlignLRC : Symbol(TTextAlignLRC, Decl(TAlinedLabel.model.ts, 3, 8))
+
+  systemMessageType?: TUiColorsSystemMessage;
+>systemMessageType : Symbol(systemMessageType, Decl(TAlinedLabel.model.ts, 5, 24))
+>TUiColorsSystemMessage : Symbol(TUiColorsSystemMessage, Decl(TAlinedLabel.model.ts, 1, 8))
+
+  themeType?: TUiColorsNotTransparent;
+>themeType : Symbol(themeType, Decl(TAlinedLabel.model.ts, 6, 45))
+>TUiColorsNotTransparent : Symbol(TUiColorsNotTransparent, Decl(TAlinedLabel.model.ts, 2, 8))
+
+  layer?: TLayer;
+>layer : Symbol(layer, Decl(TAlinedLabel.model.ts, 7, 38))
+>TLayer : Symbol(TLayer, Decl(TAlinedLabel.model.ts, 0, 8))
+
+};
+=== src/design/designFunctions/leftRightCenterToFlexJustify/index.ts ===
+export { default as leftRightCenterToFlexJustify } from './leftRightCenterToFlexJustify';
+>default : Symbol(default, Decl(leftRightCenterToFlexJustify.ts, 6, 2))
+>leftRightCenterToFlexJustify : Symbol(leftRightCenterToFlexJustify, Decl(index.ts, 0, 8))
+
+=== src/design/designFunctions/leftRightCenterToFlexJustify/leftRightCenterToFlexJustify.ts ===
+import { TTextAlignLRC } from '../../../types/TTextAlignLRC';
+>TTextAlignLRC : Symbol(TTextAlignLRC, Decl(leftRightCenterToFlexJustify.ts, 0, 8))
+
+export type TLeftRightCenterToFlexJustify = 'flex-start' | 'flex-end' | 'center';
+>TLeftRightCenterToFlexJustify : Symbol(TLeftRightCenterToFlexJustify, Decl(leftRightCenterToFlexJustify.ts, 0, 61))
+
+const leftRightCenterToFlexJustify: Record<TTextAlignLRC, TLeftRightCenterToFlexJustify> = {
+>leftRightCenterToFlexJustify : Symbol(leftRightCenterToFlexJustify, Decl(leftRightCenterToFlexJustify.ts, 2, 5))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TTextAlignLRC : Symbol(TTextAlignLRC, Decl(leftRightCenterToFlexJustify.ts, 0, 8))
+>TLeftRightCenterToFlexJustify : Symbol(TLeftRightCenterToFlexJustify, Decl(leftRightCenterToFlexJustify.ts, 0, 61))
+
+  left: 'flex-start',
+>left : Symbol(left, Decl(leftRightCenterToFlexJustify.ts, 2, 92))
+
+  right: 'flex-end',
+>right : Symbol(right, Decl(leftRightCenterToFlexJustify.ts, 3, 21))
+
+  center: 'center',
+>center : Symbol(center, Decl(leftRightCenterToFlexJustify.ts, 4, 20))
+
+};
+export default leftRightCenterToFlexJustify;
+>leftRightCenterToFlexJustify : Symbol(leftRightCenterToFlexJustify, Decl(leftRightCenterToFlexJustify.ts, 2, 5))
+
+=== src/design/theme/generateThemeColor/generateThemeColor.ts ===
+import { TLayer } from '../../../types/TLayer';
+>TLayer : Symbol(TLayer, Decl(generateThemeColor.ts, 0, 8))
+
+const themeColors = {
+>themeColors : Symbol(themeColors, Decl(generateThemeColor.ts, 1, 5))
+
+  secondary: '#f0f0ef',
+>secondary : Symbol(secondary, Decl(generateThemeColor.ts, 1, 21))
+
+};
+export { themeColors };
+>themeColors : Symbol(themeColors, Decl(generateThemeColor.ts, 4, 8))
+
+export type TthemeColorGroup = Record<TLayer, string>;
+>TthemeColorGroup : Symbol(TthemeColorGroup, Decl(generateThemeColor.ts, 4, 23))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>TLayer : Symbol(TLayer, Decl(generateThemeColor.ts, 0, 8))
+
+=== src/types/TLayer.ts ===
+export type TLayer = 9 | 8 | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0;
+>TLayer : Symbol(TLayer, Decl(TLayer.ts, 0, 0))
+
+=== src/types/TStyledPrefixAndPicker.ts ===
+type StringKeys<T> = Extract<keyof T, string>;
+>StringKeys : Symbol(StringKeys, Decl(TStyledPrefixAndPicker.ts, 0, 0))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 0, 16))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 0, 16))
+
+type RequiredKeysOfSubset<T, U extends StringKeys<T>> = {
+>RequiredKeysOfSubset : Symbol(RequiredKeysOfSubset, Decl(TStyledPrefixAndPicker.ts, 0, 46))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 1, 26))
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 1, 28))
+>StringKeys : Symbol(StringKeys, Decl(TStyledPrefixAndPicker.ts, 0, 0))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 1, 26))
+
+  [K in U]: undefined extends T[K] ? never : K;
+>K : Symbol(K, Decl(TStyledPrefixAndPicker.ts, 2, 3))
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 1, 28))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 1, 26))
+>K : Symbol(K, Decl(TStyledPrefixAndPicker.ts, 2, 3))
+>K : Symbol(K, Decl(TStyledPrefixAndPicker.ts, 2, 3))
+
+}[U];
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 1, 28))
+
+type OptionalKeysOfSubset<T, U extends StringKeys<T>> = Exclude<U, RequiredKeysOfSubset<T, U>>;
+>OptionalKeysOfSubset : Symbol(OptionalKeysOfSubset, Decl(TStyledPrefixAndPicker.ts, 3, 5))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 4, 26))
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 4, 28))
+>StringKeys : Symbol(StringKeys, Decl(TStyledPrefixAndPicker.ts, 0, 0))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 4, 26))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 4, 28))
+>RequiredKeysOfSubset : Symbol(RequiredKeysOfSubset, Decl(TStyledPrefixAndPicker.ts, 0, 46))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 4, 26))
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 4, 28))
+
+export type TStyledPrefixAndPicker<T extends Record<string, any>, U extends StringKeys<T> = StringKeys<T>> = {
+>TStyledPrefixAndPicker : Symbol(TStyledPrefixAndPicker, Decl(TStyledPrefixAndPicker.ts, 4, 95))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 5, 35))
+>Record : Symbol(Record, Decl(lib.es5.d.ts, --, --))
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 5, 65))
+>StringKeys : Symbol(StringKeys, Decl(TStyledPrefixAndPicker.ts, 0, 0))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 5, 35))
+>StringKeys : Symbol(StringKeys, Decl(TStyledPrefixAndPicker.ts, 0, 0))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 5, 35))
+
+  [P in OptionalKeysOfSubset<T, U> as `$${P}`]?: T[P];
+>P : Symbol(P, Decl(TStyledPrefixAndPicker.ts, 6, 3))
+>OptionalKeysOfSubset : Symbol(OptionalKeysOfSubset, Decl(TStyledPrefixAndPicker.ts, 3, 5))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 5, 35))
+>U : Symbol(U, Decl(TStyledPrefixAndPicker.ts, 5, 65))
+>P : Symbol(P, Decl(TStyledPrefixAndPicker.ts, 6, 3))
+>T : Symbol(T, Decl(TStyledPrefixAndPicker.ts, 5, 35))
+>P : Symbol(P, Decl(TStyledPrefixAndPicker.ts, 6, 3))
+
+};
+=== src/types/TTextAlignLRC.ts ===
+export type TTextAlignLRC = 'left' | 'right' | 'center';
+>TTextAlignLRC : Symbol(TTextAlignLRC, Decl(TTextAlignLRC.ts, 0, 0))
+
+=== src/types/TTheme.ts ===
+export type TTheme = {
+>TTheme : Symbol(TTheme, Decl(TTheme.ts, 0, 0))
+
+};
+=== src/types/TUiColorTypes.ts ===
+import { TUiColorsTypeObject } from './TUiColorsTypeObject';
+>TUiColorsTypeObject : Symbol(TUiColorsTypeObject, Decl(TUiColorTypes.ts, 0, 8))
+
+export type TUiColorTypes = keyof TUiColorsTypeObject | 'transparent';
+>TUiColorTypes : Symbol(TUiColorTypes, Decl(TUiColorTypes.ts, 0, 60))
+>TUiColorsTypeObject : Symbol(TUiColorsTypeObject, Decl(TUiColorTypes.ts, 0, 8))
+
+=== src/types/TUiColorsNotTransparent.ts ===
+import { TUiColorTypes } from './TUiColorTypes';
+>TUiColorTypes : Symbol(TUiColorTypes, Decl(TUiColorsNotTransparent.ts, 0, 8))
+
+export type TUiColorsNotTransparent = Exclude<TUiColorTypes, 'transparent'>;
+>TUiColorsNotTransparent : Symbol(TUiColorsNotTransparent, Decl(TUiColorsNotTransparent.ts, 0, 48))
+>Exclude : Symbol(Exclude, Decl(lib.es5.d.ts, --, --))
+>TUiColorTypes : Symbol(TUiColorTypes, Decl(TUiColorsNotTransparent.ts, 0, 8))
+
+=== src/types/TUiColorsSystemMessage.ts ===
+import { TUiColorTypes } from './TUiColorTypes';
+>TUiColorTypes : Symbol(TUiColorTypes, Decl(TUiColorsSystemMessage.ts, 0, 8))
+
+export type TUiColorsSystemMessage = Extract<TUiColorTypes, 'success' | 'error' | 'info' | 'warning'>;
+>TUiColorsSystemMessage : Symbol(TUiColorsSystemMessage, Decl(TUiColorsSystemMessage.ts, 0, 48))
+>Extract : Symbol(Extract, Decl(lib.es5.d.ts, --, --))
+>TUiColorTypes : Symbol(TUiColorTypes, Decl(TUiColorsSystemMessage.ts, 0, 8))
+
+=== src/types/TUiColorsTypeObject.ts ===
+import { TthemeColorGroup, themeColors } from '../design/theme/generateThemeColor/generateThemeColor';
+>TthemeColorGroup : Symbol(TthemeColorGroup, Decl(TUiColorsTypeObject.ts, 0, 8))
+>themeColors : Symbol(themeColors, Decl(TUiColorsTypeObject.ts, 0, 26))
+
+export type TUiColorsTypeObject = { [key in keyof typeof themeColors]: TthemeColorGroup };
+>TUiColorsTypeObject : Symbol(TUiColorsTypeObject, Decl(TUiColorsTypeObject.ts, 0, 102))
+>key : Symbol(key, Decl(TUiColorsTypeObject.ts, 1, 37))
+>themeColors : Symbol(themeColors, Decl(TUiColorsTypeObject.ts, 0, 26))
+>TthemeColorGroup : Symbol(TthemeColorGroup, Decl(TUiColorsTypeObject.ts, 0, 8))
+

@@ -343,3 +343,8 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
     conditional base arguments would emulate this case, at the cost of evaluating conditional types tttt otherwise
     never needs, in every program, for a diagnostic that marks no real error. Not done.
   [flip] [design]
+
+
+## Seed 20261044
+
+- fui-fancyui@0.6.12 (tsconfig.bench.json), src/components/atoms/AlignedLabel/AlignedLabel.style.tsx:8, TS7053 (65x, plus TS7006): tttt types the destructured `$align` of a styled-components interpolation function (`styled.label<Props>`) as any, so indexing `Record<TTextAlignLRC,...>` errors; tsgo infers the prop type. Test npm_fui-fancyui_TS7053. [open]
