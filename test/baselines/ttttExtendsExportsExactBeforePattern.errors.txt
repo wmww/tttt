@@ -1,0 +1,26 @@
+a.ts(1,45): error TS18048: 'x' is possibly 'undefined'.
+a.ts(2,17): error TS7030: Not all code paths return a value.
+a.ts(3,19): error TS7006: Parameter 'y' implicitly has an 'any' type.
+
+
+==== tsconfig.json (0 errors) ====
+    { "extends": ["cfg/typescript", "cfg/configs/implicit"], "compilerOptions": { "noEmit": true }, "files": ["a.ts"] }
+==== a.ts (3 errors) ====
+    export const f = (x: number | undefined) => x.toFixed();
+                                                ~
+!!! error TS18048: 'x' is possibly 'undefined'.
+    export function g(b: boolean) { if (b) return 1; }
+                    ~
+!!! error TS7030: Not all code paths return a value.
+    export const h = (y) => y;
+                      ~
+!!! error TS7006: Parameter 'y' implicitly has an 'any' type.
+    
+==== node_modules/cfg/package.json (0 errors) ====
+    {"name": "cfg", "version": "1.0.0", "exports": {"./*": "./dist/*.json", "./configs/*": "./configs/*.json", "./typescript": "./dist/base.json"}}
+==== node_modules/cfg/dist/base.json (0 errors) ====
+    { "compilerOptions": { "strict": true } }
+==== node_modules/cfg/dist/configs/implicit.json (0 errors) ====
+    { "compilerOptions": { "noImplicitAny": false } }
+==== node_modules/cfg/configs/implicit.json (0 errors) ====
+    { "compilerOptions": { "noImplicitReturns": true } }

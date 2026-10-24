@@ -440,18 +440,22 @@ static JsonValue const* exports_target(JsonValue const* target) {
     return target && target->tag == JSON_STRING ? target : nullptr;
 }
 
-// `"extends": "pkg/sub"` through the package's `exports` (tsc resolves it like a module import: an exact subpath or
-// a `./x/*` pattern). False if the package has no exports or they don't have it
+// `"extends": "pkg/sub"` through the package's `exports` (tsc resolves it like a module import: an exact subpath
+// first, whatever the keys' order, else the most specific `./x/*` pattern, tsc's loadModuleFromExportsOrImports with
+// comparePatternKeys). False if the package has no exports or they don't have it
 static bool resolve_extends_exports(ConfigLoad* me, JsonValue const* package_json, csview package_dir, csview subpath, cstr* out) {
     JsonValue const* exports = json_get_tagged(package_json, "exports", JSON_OBJECT);
     if (!exports) return false;
-    for (isize i = 0; i < exports->count; i++) {
-        csview key = cstr_sv(&exports->members[i].key);
-        isize star = csview_find_sv(key, c_sv("*"));
-        csview middle = {0};
-        if (star == c_NPOS) {
-            if (!csview_equals_sv(key, subpath)) continue;
-        } else {
+    isize chosen = -1;
+    for (isize i = 0; i < exports->count && chosen < 0; i++) {
+        if (csview_equals_sv(cstr_sv(&exports->members[i].key), subpath)) chosen = i;
+    }
+    if (chosen < 0) {
+        isize best_prefix = -1;
+        for (isize i = 0; i < exports->count; i++) {
+            csview key = cstr_sv(&exports->members[i].key);
+            isize star = csview_find_sv(key, c_sv("*"));
+            if (star == c_NPOS) continue;
             csview prefix = csview_slice(key, 0, star);
             csview suffix = csview_slice(key, star + 1, key.size);
             if (subpath.size < prefix.size + suffix.size ||
@@ -460,6 +464,22 @@ static bool resolve_extends_exports(ConfigLoad* me, JsonValue const* package_jso
             ) {
                 continue;
             }
+            // (The longer prefix first, then the longer key: comparePatternKeys)
+            if (star > best_prefix || (star == best_prefix && key.size > cstr_size(&exports->members[chosen].key))) {
+                best_prefix = star;
+                chosen = i;
+            }
+        }
+    }
+    if (chosen < 0) return false;
+    {
+        isize i = chosen;
+        csview key = cstr_sv(&exports->members[i].key);
+        isize star = csview_find_sv(key, c_sv("*"));
+        csview middle = {0};
+        if (star != c_NPOS) {
+            csview prefix = csview_slice(key, 0, star);
+            csview suffix = csview_slice(key, star + 1, key.size);
             middle = csview_slice(subpath, prefix.size, subpath.size - suffix.size);
         }
         JsonValue const* target = exports_target(&exports->members[i].value);

@@ -1,0 +1,24 @@
+//// [test/cases/ttttExtendsExportsExactBeforePattern.ts] ////
+
+=== a.ts ===
+export const f = (x: number | undefined) => x.toFixed();
+>f : (x: number | undefined) => string
+>(x: number | undefined) => x.toFixed() : (x: number | undefined) => string
+>x : number | undefined
+>x.toFixed() : string
+>x.toFixed : (fractionDigits?: number) => string
+>x : number | undefined
+>toFixed : (fractionDigits?: number) => string
+
+export function g(b: boolean) { if (b) return 1; }
+>g : (b: boolean) => 1 | undefined
+>b : boolean
+>b : boolean
+>1 : 1
+
+export const h = (y) => y;
+>h : (y: any) => any
+>(y) => y : (y: any) => any
+>y : any
+>y : any
+

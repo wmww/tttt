@@ -1,0 +1,20 @@
+//// [test/cases/ttttExtendsExportsExactBeforePattern.ts] ////
+
+=== a.ts ===
+export const f = (x: number | undefined) => x.toFixed();
+>f : Symbol(f, Decl(a.ts, 0, 12))
+>x : Symbol(x, Decl(a.ts, 0, 18))
+>x.toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+>x : Symbol(x, Decl(a.ts, 0, 18))
+>toFixed : Symbol(Number.toFixed, Decl(lib.es5.d.ts, --, --))
+
+export function g(b: boolean) { if (b) return 1; }
+>g : Symbol(g, Decl(a.ts, 0, 56))
+>b : Symbol(b, Decl(a.ts, 1, 18))
+>b : Symbol(b, Decl(a.ts, 1, 18))
+
+export const h = (y) => y;
+>h : Symbol(h, Decl(a.ts, 2, 12))
+>y : Symbol(y, Decl(a.ts, 2, 18))
+>y : Symbol(y, Decl(a.ts, 2, 18))
+
