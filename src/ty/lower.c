@@ -4265,6 +4265,13 @@ Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
 }
 
 static bool is_naked_type_param_node(TypeNode const* node) {
+    // (A leading `|` or `&`, `| T extends U ? A : B`, makes a union or intersection node of one type, its placeholder
+    // operand aside: T itself, tsc's isDistributive looks at the type, a type parameter)
+    if ((node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION) && node->composite.size == 2 &&
+        node->composite.data[0].placeholder
+    ) {
+        node = &node->composite.data[1];
+    }
     if (node->tag != TYPE_IDENTIFIER || !node->identifier->target) return false;
     Symbol const* decl = node->identifier->target;
     return (decl->flags & SYMBOL_TYPE_PARAMETER) != 0;

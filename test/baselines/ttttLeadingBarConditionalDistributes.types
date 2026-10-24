@@ -1,0 +1,36 @@
+//// [test/cases/ttttLeadingBarConditionalDistributes.ts] ////
+
+=== ttttLeadingBarConditionalDistributes.ts ===
+// A conditional type's check type after a leading `|` or `&` is a union or intersection node of one type: the type
+// parameter itself, so the conditional distributes (tsc's isDistributive looks at the type, not the node)
+type F<X> = | X extends string ? 1 : 2
+>F : F<X>
+
+type T1 = F<string | number>
+>T1 : T1
+
+declare const t: T1; const u: 3 = t;
+>t : T1
+>u : 3
+>t : T1
+
+type H<X> = | X extends string ? X : 2
+>H : H<X>
+
+function g<Y extends string>(y: H<Y>) { const q: 3 = y; }
+>g : <Y extends string>(y: H<Y>) => void
+>y : H<Y>
+>q : 3
+>y : H<Y>
+
+type G<X> = & X extends string ? 1 : 2
+>G : G<X>
+
+type T2 = G<string | number>
+>T2 : T2
+
+declare const t2: T2; const u2: 3 = t2;
+>t2 : T2
+>u2 : 3
+>t2 : T2
+

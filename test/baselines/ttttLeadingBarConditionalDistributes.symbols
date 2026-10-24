@@ -1,0 +1,50 @@
+//// [test/cases/ttttLeadingBarConditionalDistributes.ts] ////
+
+=== ttttLeadingBarConditionalDistributes.ts ===
+// A conditional type's check type after a leading `|` or `&` is a union or intersection node of one type: the type
+// parameter itself, so the conditional distributes (tsc's isDistributive looks at the type, not the node)
+type F<X> = | X extends string ? 1 : 2
+>F : Symbol(F, Decl(ttttLeadingBarConditionalDistributes.ts, 0, 0))
+>X : Symbol(X, Decl(ttttLeadingBarConditionalDistributes.ts, 2, 7))
+>X : Symbol(X, Decl(ttttLeadingBarConditionalDistributes.ts, 2, 7))
+
+type T1 = F<string | number>
+>T1 : Symbol(T1, Decl(ttttLeadingBarConditionalDistributes.ts, 2, 38))
+>F : Symbol(F, Decl(ttttLeadingBarConditionalDistributes.ts, 0, 0))
+
+declare const t: T1; const u: 3 = t;
+>t : Symbol(t, Decl(ttttLeadingBarConditionalDistributes.ts, 4, 13))
+>T1 : Symbol(T1, Decl(ttttLeadingBarConditionalDistributes.ts, 2, 38))
+>u : Symbol(u, Decl(ttttLeadingBarConditionalDistributes.ts, 4, 26))
+>t : Symbol(t, Decl(ttttLeadingBarConditionalDistributes.ts, 4, 13))
+
+type H<X> = | X extends string ? X : 2
+>H : Symbol(H, Decl(ttttLeadingBarConditionalDistributes.ts, 4, 36))
+>X : Symbol(X, Decl(ttttLeadingBarConditionalDistributes.ts, 5, 7))
+>X : Symbol(X, Decl(ttttLeadingBarConditionalDistributes.ts, 5, 7))
+>X : Symbol(X, Decl(ttttLeadingBarConditionalDistributes.ts, 5, 7))
+
+function g<Y extends string>(y: H<Y>) { const q: 3 = y; }
+>g : Symbol(g, Decl(ttttLeadingBarConditionalDistributes.ts, 5, 38))
+>Y : Symbol(Y, Decl(ttttLeadingBarConditionalDistributes.ts, 6, 11))
+>y : Symbol(y, Decl(ttttLeadingBarConditionalDistributes.ts, 6, 29))
+>H : Symbol(H, Decl(ttttLeadingBarConditionalDistributes.ts, 4, 36))
+>Y : Symbol(Y, Decl(ttttLeadingBarConditionalDistributes.ts, 6, 11))
+>q : Symbol(q, Decl(ttttLeadingBarConditionalDistributes.ts, 6, 45))
+>y : Symbol(y, Decl(ttttLeadingBarConditionalDistributes.ts, 6, 29))
+
+type G<X> = & X extends string ? 1 : 2
+>G : Symbol(G, Decl(ttttLeadingBarConditionalDistributes.ts, 6, 57))
+>X : Symbol(X, Decl(ttttLeadingBarConditionalDistributes.ts, 7, 7))
+>X : Symbol(X, Decl(ttttLeadingBarConditionalDistributes.ts, 7, 7))
+
+type T2 = G<string | number>
+>T2 : Symbol(T2, Decl(ttttLeadingBarConditionalDistributes.ts, 7, 38))
+>G : Symbol(G, Decl(ttttLeadingBarConditionalDistributes.ts, 6, 57))
+
+declare const t2: T2; const u2: 3 = t2;
+>t2 : Symbol(t2, Decl(ttttLeadingBarConditionalDistributes.ts, 9, 13))
+>T2 : Symbol(T2, Decl(ttttLeadingBarConditionalDistributes.ts, 7, 38))
+>u2 : Symbol(u2, Decl(ttttLeadingBarConditionalDistributes.ts, 9, 27))
+>t2 : Symbol(t2, Decl(ttttLeadingBarConditionalDistributes.ts, 9, 13))
+

@@ -240,7 +240,7 @@ differences (same file, line, code) aren't divergences for the npm workflow and 
   `Y extends Schema<any, string>` and `From<Y>` is a distributive conditional with a `X extends string|number|boolean ? Schema<X>` branch:
   tttt checks the constraint `string | symbol` against `Y | ...` / `(string|number|boolean) & Y` instead of the conditional's
   constraint with Y's own constraint substituted (Schema<any,string> is not a primitive, so that branch is never). Repro is the
-  vendored file's types, 15 lines. (claimed: corB) [open]
+  vendored file's types, 15 lines. Root cause: From's body starts with a leading `|`, which makes the conditional's check type a union node of one type (`| X`). tttt's is_naked_type_param_node looked at the node and found it not distributive, so `From<Y>`'s constraint wasn't the distributive one with Y's constraint substituted. tsc's isDistributive looks at the type, a type parameter. Repro ttttLeadingBarConditionalDistributes. [fixed PENDING]
   converge in an hour on MUI's types). Not the elaboration (det3): elaborateElement relates InputProps to the
   union's `Partial<StdInput> | Partial<OutInput> | undefined` and finds it assignable, in both. It's the excess
   property report inside the relation. tsgo's hasExcessProperties takes the JSX message and keeps the error node (the tag
