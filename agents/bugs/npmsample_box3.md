@@ -210,7 +210,7 @@ for flips); a separate file so the three boxes never conflict.
   { [prop: string]: any }`: tsc's union property `about` is optional (the member with an applicable index signature
   takes part without making it required); tttt's modifiers_prop() (ty/members.c) looked for that index signature only
   on object members, not intersections, and made the attributes required. Repro
-  test/cases/ttttPickUnionIntersectionIndexOptional.ts. [flip] [fixed 2026-10-24]
+  test/cases/ttttPickUnionIntersectionIndexOptional.ts. [flip] [fixed 3606770d3]
 - Large seed 20261402, latitude-dev/latitude-llm@development (commit 4914acc6c), apps/web (tsconfig.json): spurious
   TS2877 at src/domains/annotations/annotations.functions.ts:7 "This import uses a '.ts' extension to resolve to an
   input TypeScript file, but will not be rewritten during emit because it is not a relative path". tsgo 4 errors,
