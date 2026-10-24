@@ -555,8 +555,7 @@ ensure-sources.sh). At --threads 1: 74 / 79 projects, 4 / 6 repos; checkouts in 
 - **parabol: -TS7006 on kysely expression-builder callbacks** (packages/embedder, packages/server: 19 missing), e.g.
   packages/embedder/EmbeddingsJobQueueStream.ts:47 `.where('id', '=', (eb) => eb...)` and
   server/graphql/public/mutations/helpers/movePageToNewTeam.ts:19-36: tsgo reports the parameter implicitly any
-  (the contextual type there gives `eb` none), tttt types it from context. Not reduced. 2026-10-24 at 10941157b: still, projdiff
-  packages/server tsgo 6061 / tttt 6043 (18 -TS7006, nothing else), packages/embedder 1 -TS7006. [open]
+  (the contextual type there gives `eb` none), tttt types it from context. Root cause: kysely's `where<RE, VE extends OperandValueExpressionOrList<DB, TB, RE>>(..., rhs: VE)` with the database type an error (any). Its constraint is a union with V in it, and tsc's contextual signature of a type parameter goes through getApparentType, the base constraint, which for a union whose member has no constraint is none (unknown): no contextual signature. tttt's contextual_signature took the declared constraint and found the factory's signature. It now takes ty_base_constraint. Repro ttttContextualTypeParamBaseConstraint. [fixed PENDING]
 - **parabol/packages/embedder: +TS2322 and +TS2344 at mergeAsyncIterators.ts:52**: `AsyncIterableIterator<{[P in
   keyof T]: [ParseInt<\`${P}\`>, Result<T[P]>]}[number]>` with T a tuple of async iterators: tttt says "Type 'P' is
   not assignable to type 'string | number | bigint | boolean | null | undefined'" (the template literal's placeholder)

@@ -1,0 +1,173 @@
+//// [test/cases/ttttContextualTypeParamBaseConstraint.ts] ////
+
+=== ttttContextualTypeParamBaseConstraint.ts ===
+// A type parameter's contextual signature comes from its base constraint (tsc's getApparentType), and the base
+// constraint of a union with an unconstrained type parameter in it is none: `V extends D | ((eb: EB) => void)` gives
+// the callback nothing, TS7006 (kysely's OperandValueExpressionOrList with an `any` database)
+interface EB { e: 1 }
+>EB : Symbol(EB, Decl(ttttContextualTypeParamBaseConstraint.ts, 0, 0))
+>e : Symbol(EB.e, Decl(ttttContextualTypeParamBaseConstraint.ts, 3, 14))
+
+declare function h1<D, V extends D | ((eb: EB) => void)>(v: V): void;
+>h1 : Symbol(h1, Decl(ttttContextualTypeParamBaseConstraint.ts, 3, 21))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 4, 20))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 4, 22))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 4, 20))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 4, 39))
+>EB : Symbol(EB, Decl(ttttContextualTypeParamBaseConstraint.ts, 0, 0))
+>v : Symbol(v, Decl(ttttContextualTypeParamBaseConstraint.ts, 4, 57))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 4, 22))
+
+h1((eb) => {});
+>h1 : Symbol(h1, Decl(ttttContextualTypeParamBaseConstraint.ts, 3, 21))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 5, 4))
+
+declare function h5<D extends object, V extends D | ((eb: EB) => void)>(v: V): void;
+>h5 : Symbol(h5, Decl(ttttContextualTypeParamBaseConstraint.ts, 5, 15))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 6, 20))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 6, 37))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 6, 20))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 6, 54))
+>EB : Symbol(EB, Decl(ttttContextualTypeParamBaseConstraint.ts, 0, 0))
+>v : Symbol(v, Decl(ttttContextualTypeParamBaseConstraint.ts, 6, 72))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 6, 37))
+
+h5((eb) => {});
+>h5 : Symbol(h5, Decl(ttttContextualTypeParamBaseConstraint.ts, 5, 15))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 7, 4))
+
+function k<D>() {
+>k : Symbol(k, Decl(ttttContextualTypeParamBaseConstraint.ts, 7, 15))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 8, 11))
+
+  const x: D | ((eb: EB) => void) = (eb) => {};
+>x : Symbol(x, Decl(ttttContextualTypeParamBaseConstraint.ts, 9, 7))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 8, 11))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 9, 17))
+>EB : Symbol(EB, Decl(ttttContextualTypeParamBaseConstraint.ts, 0, 0))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 9, 37))
+}
+function k2<D, V extends D | ((eb: EB) => void)>() {
+>k2 : Symbol(k2, Decl(ttttContextualTypeParamBaseConstraint.ts, 10, 1))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 11, 12))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 11, 14))
+>D : Symbol(D, Decl(ttttContextualTypeParamBaseConstraint.ts, 11, 12))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 11, 31))
+>EB : Symbol(EB, Decl(ttttContextualTypeParamBaseConstraint.ts, 0, 0))
+
+  const x: V = (eb) => {};
+>x : Symbol(x, Decl(ttttContextualTypeParamBaseConstraint.ts, 12, 7))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 11, 14))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 12, 16))
+}
+interface Expression<T> { t: T }
+>Expression : Symbol(Expression, Decl(ttttContextualTypeParamBaseConstraint.ts, 13, 1))
+>T : Symbol(T, Decl(ttttContextualTypeParamBaseConstraint.ts, 14, 21))
+>t : Symbol(Expression.t, Decl(ttttContextualTypeParamBaseConstraint.ts, 14, 25))
+>T : Symbol(T, Decl(ttttContextualTypeParamBaseConstraint.ts, 14, 21))
+
+interface QB<DB, TB> { db: DB; tb: TB }
+>QB : Symbol(QB, Decl(ttttContextualTypeParamBaseConstraint.ts, 14, 32))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 13))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 16))
+>db : Symbol(QB.db, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 22))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 13))
+>tb : Symbol(QB.tb, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 30))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 16))
+
+type OperandExpressionFactory<DB, TB extends keyof DB, V> = (eb: QB<DB, TB>) => Expression<V>;
+>OperandExpressionFactory : Symbol(OperandExpressionFactory, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 39))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 30))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 33))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 30))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 54))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 61))
+>QB : Symbol(QB, Decl(ttttContextualTypeParamBaseConstraint.ts, 14, 32))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 30))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 33))
+>Expression : Symbol(Expression, Decl(ttttContextualTypeParamBaseConstraint.ts, 13, 1))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 54))
+
+type ValueExpression<DB, TB extends keyof DB, V> = V | Expression<V> | OperandExpressionFactory<DB, TB, V>;
+>ValueExpression : Symbol(ValueExpression, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 94))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 21))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 24))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 21))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 45))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 45))
+>Expression : Symbol(Expression, Decl(ttttContextualTypeParamBaseConstraint.ts, 13, 1))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 45))
+>OperandExpressionFactory : Symbol(OperandExpressionFactory, Decl(ttttContextualTypeParamBaseConstraint.ts, 15, 39))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 21))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 24))
+>V : Symbol(V, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 45))
+
+type SelectType<T> = T extends { s: infer S } ? S : T;
+>SelectType : Symbol(SelectType, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 107))
+>T : Symbol(T, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 16))
+>T : Symbol(T, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 16))
+>s : Symbol(s, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 32))
+>S : Symbol(S, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 41))
+>S : Symbol(S, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 41))
+>T : Symbol(T, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 16))
+
+type XT<DB, TB extends keyof DB, RE> = SelectType<RE extends string ? DB[TB] : unknown>;
+>XT : Symbol(XT, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 54))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 8))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 11))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 8))
+>RE : Symbol(RE, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 32))
+>SelectType : Symbol(SelectType, Decl(ttttContextualTypeParamBaseConstraint.ts, 17, 107))
+>RE : Symbol(RE, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 32))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 8))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 11))
+
+declare class UQB<DB, TB extends keyof DB> {
+>UQB : Symbol(UQB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 88))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 18))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 21))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 18))
+
+  where<RE extends string, VE extends ValueExpression<DB, TB, XT<DB, TB, RE> | null>>(lhs: RE, op: string, rhs: VE): UQB<DB, TB>;
+>where : Symbol(UQB.where, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 44))
+>RE : Symbol(RE, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 8))
+>VE : Symbol(VE, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 26))
+>ValueExpression : Symbol(ValueExpression, Decl(ttttContextualTypeParamBaseConstraint.ts, 16, 94))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 18))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 21))
+>XT : Symbol(XT, Decl(ttttContextualTypeParamBaseConstraint.ts, 18, 54))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 18))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 21))
+>RE : Symbol(RE, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 8))
+>lhs : Symbol(lhs, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 86))
+>RE : Symbol(RE, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 8))
+>op : Symbol(op, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 94))
+>rhs : Symbol(rhs, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 106))
+>VE : Symbol(VE, Decl(ttttContextualTypeParamBaseConstraint.ts, 21, 26))
+>UQB : Symbol(UQB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 88))
+>DB : Symbol(DB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 18))
+>TB : Symbol(TB, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 21))
+}
+declare const q: UQB<any, "a">;
+>q : Symbol(q, Decl(ttttContextualTypeParamBaseConstraint.ts, 23, 13))
+>UQB : Symbol(UQB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 88))
+
+q.where('id', '=', (eb) => eb);
+>q.where : Symbol(UQB.where, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 44))
+>q : Symbol(q, Decl(ttttContextualTypeParamBaseConstraint.ts, 23, 13))
+>where : Symbol(UQB.where, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 44))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 24, 20))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 24, 20))
+
+declare const q2: UQB<{ a: number }, "a">;
+>q2 : Symbol(q2, Decl(ttttContextualTypeParamBaseConstraint.ts, 25, 13))
+>UQB : Symbol(UQB, Decl(ttttContextualTypeParamBaseConstraint.ts, 19, 88))
+>a : Symbol(a, Decl(ttttContextualTypeParamBaseConstraint.ts, 25, 23))
+
+q2.where('id', '=', (eb) => eb);
+>q2.where : Symbol(UQB.where, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 44))
+>q2 : Symbol(q2, Decl(ttttContextualTypeParamBaseConstraint.ts, 25, 13))
+>where : Symbol(UQB.where, Decl(ttttContextualTypeParamBaseConstraint.ts, 20, 44))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 26, 21))
+>eb : Symbol(eb, Decl(ttttContextualTypeParamBaseConstraint.ts, 26, 21))
+

@@ -1,0 +1,108 @@
+//// [test/cases/ttttContextualTypeParamBaseConstraint.ts] ////
+
+=== ttttContextualTypeParamBaseConstraint.ts ===
+// A type parameter's contextual signature comes from its base constraint (tsc's getApparentType), and the base
+// constraint of a union with an unconstrained type parameter in it is none: `V extends D | ((eb: EB) => void)` gives
+// the callback nothing, TS7006 (kysely's OperandValueExpressionOrList with an `any` database)
+interface EB { e: 1 }
+>e : 1
+
+declare function h1<D, V extends D | ((eb: EB) => void)>(v: V): void;
+>h1 : <D, V extends D | ((eb: EB) => void)>(v: V) => void
+>eb : EB
+>v : V
+
+h1((eb) => {});
+>h1((eb) => {}) : void
+>h1 : <D, V extends D | ((eb: EB) => void)>(v: V) => void
+>(eb) => {} : (eb: any) => void
+>eb : any
+
+declare function h5<D extends object, V extends D | ((eb: EB) => void)>(v: V): void;
+>h5 : <D extends object, V extends D | ((eb: EB) => void)>(v: V) => void
+>eb : EB
+>v : V
+
+h5((eb) => {});
+>h5((eb) => {}) : void
+>h5 : <D extends object, V extends D | ((eb: EB) => void)>(v: V) => void
+>(eb) => {} : (eb: EB) => void
+>eb : EB
+
+function k<D>() {
+>k : <D>() => void
+
+  const x: D | ((eb: EB) => void) = (eb) => {};
+>x : D | ((eb: EB) => void)
+>eb : EB
+>(eb) => {} : (eb: EB) => void
+>eb : EB
+}
+function k2<D, V extends D | ((eb: EB) => void)>() {
+>k2 : <D, V extends D | ((eb: EB) => void)>() => void
+>eb : EB
+
+  const x: V = (eb) => {};
+>x : V
+>(eb) => {} : (eb: any) => void
+>eb : any
+}
+interface Expression<T> { t: T }
+>t : T
+
+interface QB<DB, TB> { db: DB; tb: TB }
+>db : DB
+>tb : TB
+
+type OperandExpressionFactory<DB, TB extends keyof DB, V> = (eb: QB<DB, TB>) => Expression<V>;
+>OperandExpressionFactory : OperandExpressionFactory<DB, TB, V>
+>eb : QB<DB, TB>
+
+type ValueExpression<DB, TB extends keyof DB, V> = V | Expression<V> | OperandExpressionFactory<DB, TB, V>;
+>ValueExpression : ValueExpression<DB, TB, V>
+
+type SelectType<T> = T extends { s: infer S } ? S : T;
+>SelectType : SelectType<T>
+>s : S
+
+type XT<DB, TB extends keyof DB, RE> = SelectType<RE extends string ? DB[TB] : unknown>;
+>XT : XT<DB, TB, RE>
+
+declare class UQB<DB, TB extends keyof DB> {
+>UQB : UQB<DB, TB>
+
+  where<RE extends string, VE extends ValueExpression<DB, TB, XT<DB, TB, RE> | null>>(lhs: RE, op: string, rhs: VE): UQB<DB, TB>;
+>where : <RE extends string, VE extends ValueExpression<DB, TB, XT<DB, TB, RE> | null>>(lhs: RE, op: string, rhs: VE) => UQB<DB, TB>
+>lhs : RE
+>op : string
+>rhs : VE
+}
+declare const q: UQB<any, "a">;
+>q : UQB<any, "a">
+
+q.where('id', '=', (eb) => eb);
+>q.where('id', '=', (eb) => eb) : UQB<any, "a">
+>q.where : <RE extends string, VE extends ValueExpression<any, "a", XT<any, "a", RE> | null>>(lhs: RE, op: string, rhs: VE) => UQB<any, "a">
+>q : UQB<any, "a">
+>where : <RE extends string, VE extends ValueExpression<any, "a", XT<any, "a", RE> | null>>(lhs: RE, op: string, rhs: VE) => UQB<any, "a">
+>'id' : "id"
+>'=' : "="
+>(eb) => eb : (eb: any) => any
+>eb : any
+>eb : any
+
+declare const q2: UQB<{ a: number }, "a">;
+>q2 : UQB<{ a: number; }, "a">
+>a : number
+
+q2.where('id', '=', (eb) => eb);
+>q2.where('id', '=', (eb) => eb) : UQB<{ a: number; }, "a">
+>q2.where : <RE extends string, VE extends ValueExpression<{ a: number; }, "a", XT<{ a: number; }, "a", RE> | null>>(lhs: RE, op: string, rhs: VE) => UQB<{ a: number; }, "a">
+>q2 : UQB<{ a: number; }, "a">
+>where : <RE extends string, VE extends ValueExpression<{ a: number; }, "a", XT<{ a: number; }, "a", RE> | null>>(lhs: RE, op: string, rhs: VE) => UQB<{ a: number; }, "a">
+>'id' : "id"
+>'=' : "="
+>(eb) => eb : (eb: QB<{ a: number; }, "a">) => QB<{ a: number; }, "a">
+>eb : QB<{ a: number; }, "a">
+>eb : QB<{ a: number; }, "a">
+

@@ -1,0 +1,53 @@
+ttttContextualTypeParamBaseConstraint.ts(6,5): error TS7006: Parameter 'eb' implicitly has an 'any' type.
+ttttContextualTypeParamBaseConstraint.ts(13,9): error TS2322: Type '(eb: any) => void' is not assignable to type 'V'.
+  'V' could be instantiated with an arbitrary type which could be unrelated to '(eb: any) => void'.
+ttttContextualTypeParamBaseConstraint.ts(13,17): error TS7006: Parameter 'eb' implicitly has an 'any' type.
+ttttContextualTypeParamBaseConstraint.ts(25,21): error TS7006: Parameter 'eb' implicitly has an 'any' type.
+ttttContextualTypeParamBaseConstraint.ts(27,21): error TS2345: Argument of type '(eb: QB<{ a: number; }, "a">) => QB<{ a: number; }, "a">' is not assignable to parameter of type 'ValueExpression<{ a: number; }, "a", number | null>'.
+  Type '(eb: QB<{ a: number; }, "a">) => QB<{ a: number; }, "a">' is not assignable to type 'OperandExpressionFactory<{ a: number; }, "a", number | null>'.
+    Property 't' is missing in type 'QB<{ a: number; }, "a">' but required in type 'Expression<number | null>'.
+
+
+==== ttttContextualTypeParamBaseConstraint.ts (5 errors) ====
+    // A type parameter's contextual signature comes from its base constraint (tsc's getApparentType), and the base
+    // constraint of a union with an unconstrained type parameter in it is none: `V extends D | ((eb: EB) => void)` gives
+    // the callback nothing, TS7006 (kysely's OperandValueExpressionOrList with an `any` database)
+    interface EB { e: 1 }
+    declare function h1<D, V extends D | ((eb: EB) => void)>(v: V): void;
+    h1((eb) => {});
+        ~~
+!!! error TS7006: Parameter 'eb' implicitly has an 'any' type.
+    declare function h5<D extends object, V extends D | ((eb: EB) => void)>(v: V): void;
+    h5((eb) => {});
+    function k<D>() {
+      const x: D | ((eb: EB) => void) = (eb) => {};
+    }
+    function k2<D, V extends D | ((eb: EB) => void)>() {
+      const x: V = (eb) => {};
+            ~
+!!! error TS2322: Type '(eb: any) => void' is not assignable to type 'V'.
+!!! error TS2322:   'V' could be instantiated with an arbitrary type which could be unrelated to '(eb: any) => void'.
+                    ~~
+!!! error TS7006: Parameter 'eb' implicitly has an 'any' type.
+    }
+    interface Expression<T> { t: T }
+    interface QB<DB, TB> { db: DB; tb: TB }
+    type OperandExpressionFactory<DB, TB extends keyof DB, V> = (eb: QB<DB, TB>) => Expression<V>;
+    type ValueExpression<DB, TB extends keyof DB, V> = V | Expression<V> | OperandExpressionFactory<DB, TB, V>;
+    type SelectType<T> = T extends { s: infer S } ? S : T;
+    type XT<DB, TB extends keyof DB, RE> = SelectType<RE extends string ? DB[TB] : unknown>;
+    declare class UQB<DB, TB extends keyof DB> {
+      where<RE extends string, VE extends ValueExpression<DB, TB, XT<DB, TB, RE> | null>>(lhs: RE, op: string, rhs: VE): UQB<DB, TB>;
+    }
+    declare const q: UQB<any, "a">;
+    q.where('id', '=', (eb) => eb);
+                        ~~
+!!! error TS7006: Parameter 'eb' implicitly has an 'any' type.
+    declare const q2: UQB<{ a: number }, "a">;
+    q2.where('id', '=', (eb) => eb);
+                        ~~~~~~~~~~
+!!! error TS2345: Argument of type '(eb: QB<{ a: number; }, "a">) => QB<{ a: number; }, "a">' is not assignable to parameter of type 'ValueExpression<{ a: number; }, "a", number | null>'.
+!!! error TS2345:   Type '(eb: QB<{ a: number; }, "a">) => QB<{ a: number; }, "a">' is not assignable to type 'OperandExpressionFactory<{ a: number; }, "a", number | null>'.
+!!! error TS2345:     Property 't' is missing in type 'QB<{ a: number; }, "a">' but required in type 'Expression<number | null>'.
+!!! related TS2728 ttttContextualTypeParamBaseConstraint.ts:15:27: 't' is declared here.
+    

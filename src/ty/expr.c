@@ -1289,8 +1289,10 @@ static Signature const* contextual_signature(Checker* me, Ty const* contextual, 
         if (found != stack_buf) free(found);
         return ret;
     }
+    // A type parameter as its base constraint (tsc's getApparentType: getBaseConstraintOfType || unknown): nothing for
+    // `V extends D | ((eb: EB) => R)` with D unconstrained, whose union's base constraint is none
     if (contextual->kind == TY_TYPE_PARAM) {
-        Ty const* constraint = ty_param_constraint(me, contextual);
+        Ty const* constraint = ty_base_constraint(me, contextual);
         return constraint && constraint != contextual ? contextual_signature(me, constraint, function, depth + 1) : nullptr;
     }
     // An indexed access or conditional type: its constraint's (tsc's getApparentTypeOfContextualType)
