@@ -118,7 +118,7 @@ for flips); a separate file so the three boxes never conflict.
   index-signature lookup. Repro test/cases/npm_amcharts_amcharts5_TS2339.ts (by hand, 18 lines). (claimed: fixF) Cause: never_index_read()'s
   HACK made any non-mapped anonymous object indexed by never `never`; tsc's getPropertyTypeForIndexType reads the index
   signature never is assignable to. Now a type literal as written (no instantiation) goes to ty_access(); instantiated
-  ones keep the hack (xstate's TS5115, hacks.md). Repro ttttNeverIndexTypeLiteral. [fixed PENDING]
+  ones keep the hack (xstate's TS5115, hacks.md). Repro ttttNeverIndexTypeLiteral. [fixed 95ffcd29e]
 - Large seed 20261400, sixb-ai/sixb@main packages/core: missing TS2339 `item.account` on DatasetWriteValue. A type
   parameter inferred from `readValues: async () => (async function* () { try { yield {...} } finally {} })()`
   (Promise<Iterable<T> | AsyncIterable<T>>) next to a context-sensitive method that uses T. tsgo gets no inference
